@@ -1,5 +1,5 @@
 // The S1 gates (the derived automation core; tmt-automation-plan §8). Appends one section to results/SUMMARY.md.
-//   node gates-s1.mjs --part 1|1s|2|… [--no-summary] [--pool 6]
+//   node gates-s1.mjs --part 1|1s|2|2s-p|2s-f|2s-q|3 [--no-summary] [--pool 6]
 // Part 1 (S1-1): the off anchors (contract-only page and au excluded), goldens and check-manifest for ptr and something;
 // PINNED BEHAVIOUR — the A1-3 / A2-3 / §12d / A2-1 runs under the derived tables restricted to kinds=reset,upgrades,buyables,
 // each mark at its SUMMARY tick with the game state equal. `hash` (the full stateJSON) includes player.au, whose
@@ -10,6 +10,8 @@
 // predicate compiler vs the harness's --until (node and page), and the table-less generality probe (the-omega-tree).
 // Part 1s: the §12d stall pair alone (two 9-min-walled detector runs need whole cores). The au tab page checks are
 // gates-a1 part 2, run separately (`node gates-a1.mjs --part 2 ptr something`).
+// Part 2 (S1-2): the S1 frontier (PTR, every derived kind on, fresh game) with the toggles' yield checks, an informative
+// second frontier row, the challenges smoke tests. Parts 2s-p / 2s-f / 2s-q: the reset-policy sweeps. Part 3 (S1-3): parity.
 // Node children run through a pool (≤ 8 at once, each ≤ 10 min); every row carries the commit, ticks, gameSeconds, diff, hash.
 import fs from 'node:fs';
 import os from 'node:os';
@@ -33,13 +35,17 @@ export const MARKS = {
   a2st: [['(i) primitive reset ≥ 1 (primitive.total ≥ 1)', 'player.primitive.total.gte(1)'], ['(ii) primitive ms 1 ("10 Numbers")', "hasMilestone('primitive', 1)"], ['(iii) primitive ms 2 ("100,000 Numbers")', "hasMilestone('primitive', 2)"]],
 };
 const KINDS_PINNED = 'kinds=reset,upgrades,buyables';
-// Every pinned SUMMARY row: [ticks, full hash] per mark (A1-3 @ 3bc12bf rows 154–166; A2-3 @ b695e47 rows 243–245;
-// A2-3 next stall row 260; A2-1 @ 71da72e rows 187–189), and the commit that reproduces it as it was recorded.
+// Every pinned SUMMARY row: [ticks, full hash] per mark (A1-3 @ 3bc12bf rows 154–169; A2-3 @ b695e47 rows 243–245;
+// A2-3 next stall row 260; A2-1 @ 71da72e rows 187–192), and the commit that reproduces it as it was recorded.
 const PINS = [
   { key: 'a1-3-ptr', tag: 'A1-3 ptr', id: 'ptr', baseline: '3bc12bf', marks: 'a1ptr', o: { diff: 1, ticks: 14000 }, want: [[1361, 'd76c70bf74ede9ba'], [2360, 'f8a1534d326a4840'], [2936, 'dc00ee1692610100']] },
   { key: 'a2-3-ptr', tag: 'A2-3 ptr', id: 'ptr', baseline: '17260e03', marks: 'a2ptr', o: { diff: 1, ticks: 30000, 'wall-ms': 540000 }, want: [[3550, '0513ad9b24806ecc'], [6037, 'f226c34064109dcb'], [8035, '67743dd40de0b570']] },
   { key: 'stall-ptr', tag: '§12d stall ptr', id: 'ptr', baseline: '17260e03', marks: 'a2ptr', o: { diff: 1, ticks: 30000, 'marks-continue': true, stall: 3600, 'stall-seen': true, 'wall-ms': 540000 }, stall: { ticks: 14131, hash: '46df73d4545bb4e2', lastProgress: 10531 } },
   { key: 'a1-3-st', tag: 'A1-3 something', id: 'something', baseline: '3bc12bf', marks: 'a1st', o: { diff: 0.05, ticks: 14000 }, want: [[102, 'bf6f8809a163efd8'], [3733, '0253605cd2e69318']] },
+  // diff 1 on Something Tree too: a game that unlocks a layer INSIDE gameLoop shows a one-tick timing difference only at
+  // a coarse diff (S1's first derived reset unlocked() read tmp.layerShown: 310 / 400 / 580 here — see tmt-auto.js)
+  { key: 'a1-3-st-d1', tag: 'A1-3 something diff 1', id: 'something', baseline: '3bc12bf', marks: 'a1st', o: { diff: 1, ticks: 3000 }, want: [[6, 'c3444d05fd80bba0'], [308, '86da1eaa518021ad']] },
+  { key: 'a2-1-st-d1', tag: 'A2-1 something diff 1', id: 'something', baseline: '71da72e', marks: 'a2st', o: { diff: 1, ticks: 20000, 'wall-ms': 540000 }, want: [[309, '6da92645ec93a9ab'], [399, '53240faafd36f329'], [579, '30d121d791768aa4']] },
   { key: 'a2-1-st', tag: 'A2-1 something', id: 'something', baseline: '17260e03', marks: 'a2st', o: { diff: 0.05, ticks: 40000, 'wall-ms': 540000 }, want: [[4163, '0c88dcd6b5a9e1cb'], [5963, '5682500e1f849fb8'], [9563, '449775de97d4af2d']] },
 ];
 
@@ -324,6 +330,20 @@ async function part2s(key) {
   });
 }
 
+// ---- Part 3 ----------------------------------------------------------------------------------------------------------
+// Node ≡ page with the derived tables: ptr at A2-3 (i)'s tick under profile all; something at A2-1 (ii)'s tick under
+// profile all; something 1000×0.05 idle at profile off (§11e.12: on 2.7 an extra updateTemp() between ticks moves
+// player — node and page equal here means nothing S1 added calls it). The L1 battery is gates.mjs, run separately.
+async function part3(browser, base) {
+  const { parity } = await import('./parity.mjs');
+  for (const [id, ticks, diff, profile] of [['ptr', 3550, 1, 'all'], ['something', 5963, 0.05, 'all'], ['something', 1000, 0.05, 'off']]) {
+    const p = await parity(id, { ticks, diff, leg: 'idle', base, browser, profile });
+    const same = JSON.stringify(p.node?.hook) === JSON.stringify(p.page?.hook);
+    row({ gate: `S1-3 parity node≡page, profile ${profile}, derived table`, id, leg: `idle, profile ${profile}`, ok: !!p.ok && same, ticks: p.ticks, gameSeconds: p.gameSeconds, diff, hash: p.node?.hash,
+      notes: p.ok ? `page ${p.page.hash} in ${p.page.ms} ms; hookStats equal ${same}; hooked ${p.node?.hook?.hooked?.length}; actions ${JSON.stringify(p.node?.hook?.actions)}` : `DIVERGED ${JSON.stringify(p.divergence || p.error).slice(0, 300)}` });
+  }
+}
+
 const browser = await chromium.launch();
 const server = await startServer(REPO);
 const base = server.url;
@@ -331,6 +351,7 @@ try {
   if (PART === '1') await part1(browser, base);
   else if (PART === '1s') await part1s();
   else if (PART === '2') await part2();
+  else if (PART === '3') await part3(browser, base);
   else if (SWEEPS[PART]) await part2s(PART);
   else throw new Error(`no part ${PART}`);
 } finally {

@@ -639,9 +639,17 @@
   }
   function titleOf(l) { var n = String(layers[l].name || l); return n.charAt(0).toUpperCase() + n.slice(1); }
   // Derived unlocked(): a purchase kind needs the layer unlocked (nothing to buy before); a reset needs the layer's node
-  // visible (`tmp[l].layerShown !== false`) — the moment a human could click it, which is before it is unlocked.
+  // visible (layerShown !== false) — the moment a human could click it, which is before it is unlocked. layerShown is
+  // evaluated LIVE, not read from tmp: updateTemp computes tmp[l].layerShown before gameLoop, and a game may unlock a
+  // layer inside gameLoop (Something Tree's unlock.update() sets player.fundamental.unlocked), so the tmp value lags
+  // by one tick — measured: S1 part 2's diff-1 primitive sweep reached A2-1's marks one tick late (310 / 400 / 580 vs
+  // 309 / 399 / 579) until this read went live.
   function derivedUnlocked(kind, l) {
-    if (kind === 'reset') return function () { return !!tmp[l] && tmp[l].layerShown !== false; };
+    if (kind === 'reset') return function () {
+      var L = layers[l];
+      var v = typeof L.layerShown === 'function' ? L.layerShown.call(L) : L.layerShown;
+      return v !== false;
+    };
     return function () { return !!player[l] && !!player[l].unlocked; };
   }
   // Table-less defaults. reset: a static layer's gain is its requirement-paced 1 per reset, so `always` (A2-3: the

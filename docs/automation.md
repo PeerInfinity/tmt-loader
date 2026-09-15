@@ -70,7 +70,7 @@ order**:
 | `buyables` | `buyables:<l>` | numeric ids in `buyables` | `buy` | `player[l].unlocked` |
 | `challenges` | `challenges:<l>` | numeric ids in `challenges` | `off`; `sequential` when the table gives `order` | `player[l].unlocked` |
 | `clickables` | `clickables:<l>` | numeric ids in `clickables` | `off`; `when` when the table lists the layer's clickables | `player[l].unlocked` |
-| `reset` | `reset:<l>` | a prestige: `type` `normal`, `static` or `custom` | `always` for a static layer; `gain>=2x` for normal / custom | `tmp[l].layerShown !== false` (the node is visible) |
+| `reset` | `reset:<l>` | a prestige: `type` `normal`, `static` or `custom` | `always` for a static layer; `gain>=2x` for normal / custom | `layerShown !== false` evaluated live (the node is visible) — not `tmp[l].layerShown`, which `updateTemp` computes before `gameLoop` and so lags a layer the game unlocks inside `gameLoop` by one tick |
 
 The generic **kind order** is `toggles → upgrades → buyables → challenges → clickables → reset` (one-off purchases before
 repeatable ones; the reset last, so a tick's purchases spend the pre-reset balance). A table may give its own
