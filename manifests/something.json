@@ -1,0 +1,140 @@
+{
+  "schema": 1,
+  "id": "something",
+  "name": "Justcubing97's Something Tree",
+  "version": "0.5.9",
+  "author": "Justcubing97",
+  "upstream": {
+    "repo": "Justcubing97/JC97sSomethingTree",
+    "url": "https://github.com/Justcubing97/JC97sSomethingTree.git",
+    "branch": "list",
+    "commit": "30a311be6b91470f9c7818b6747bd7426b1b1f90",
+    "pushed_at": "2026-08-02T23:10:35Z"
+  },
+  "engine": {
+    "tmtNum": "2.7",
+    "stock_commit": "4d8a86c",
+    "moved": false,
+    "deviation": {
+      "added": 51,
+      "removed": 11
+    }
+  },
+  "entry": "index.html",
+  "load": {
+    "onload": "load()",
+    "scripts": [
+      "js/technical/break_eternity.js",
+      "js/technical/layerSupport.js",
+      "js/mod.js",
+      "js/technical/loader.js",
+      "js/technical/temp.js",
+      "js/technical/displays.js",
+      "js/game.js",
+      "js/utils.js",
+      "js/utils/easyAccess.js",
+      "js/technical/systemComponents.js",
+      "js/components.js",
+      "js/technical/canvas.js",
+      "js/technical/particleSystem.js",
+      "js/utils/NumberFormating.js",
+      "js/utils/options.js",
+      "js/utils/save.js",
+      "js/utils/themes.js"
+    ],
+    "renderOnly": [
+      "js/technical/systemComponents.js",
+      "js/components.js",
+      "js/technical/canvas.js",
+      "js/technical/particleSystem.js"
+    ],
+    "modFilesPrefix": "js/",
+    "modFiles": [
+      "achievements.js",
+      "savebank.js",
+      "unlock.js",
+      "fundamental.js",
+      "primitive.js",
+      "numbercore.js",
+      "corebooster.js",
+      "arithmetic.js",
+      "addition.js",
+      "subtraction.js",
+      "multiplication.js",
+      "division.js",
+      "dimension.js",
+      "polygon.js",
+      "planetary.js",
+      "pbooster.js",
+      "tree.js"
+    ],
+    "external": {
+      "https://unpkg.com/vue@2.7.16/dist/vue.min.js": "vendor",
+      "https://fonts.googleapis.com/css?family=Inconsolata": "drop"
+    },
+    "vendor": {}
+  },
+  "save": {
+    "keyRule": "getModID (modInfo.id ?? name-author)",
+    "key": "Justcubing97's-Something-Tree-Justcubing97"
+  },
+  "headless": {
+    "prestubs": [],
+    "renderStubs": [
+      "loadVue",
+      "resizeCanvas",
+      "retrieveCanvasData",
+      "drawTree",
+      "drawComponentBranches",
+      "drawTreeBranch",
+      "makeParticles",
+      "makeShinies",
+      "updateParticles",
+      "setDir",
+      "setSpeed",
+      "updateMouse",
+      "getOpacity",
+      "constructParticleStyle",
+      "clearParticles",
+      "sin",
+      "cos",
+      "tan",
+      "asin",
+      "acos",
+      "atan"
+    ],
+    "idleHash": {
+      "ticks": 200,
+      "diff": 0.05,
+      "hash": "46bb8c5b1a96f03a"
+    },
+    "deterministic": true
+  },
+  "license": {
+    "githubSpdx": "NOASSERTION",
+    "files": {
+      "LICENSE": "MIT",
+      "Prestige-tree-license": "MIT"
+    },
+    "verdict": "MIT"
+  },
+  "census": {
+    "full_name": "Justcubing97/JC97sSomethingTree",
+    "head": "30a311b",
+    "score": 76.36,
+    "layers": 14,
+    "rows": 7,
+    "milestones": 68,
+    "upgrades": 175,
+    "buyables": 23,
+    "challenges": 11,
+    "achievements": 52,
+    "trace_fields": 8
+  },
+  "patches": [],
+  "generated": {
+    "by": "tmt-fork-census scripts/manifest.mjs",
+    "commit": "27c6654",
+    "at": "2026-09-15T01:25:20.786Z"
+  }
+}

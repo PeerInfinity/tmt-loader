@@ -1,0 +1,103 @@
+{
+  "schema": 1,
+  "id": "ptr",
+  "name": "Prestige Tree Rewritten",
+  "version": "1.3",
+  "author": "Jacorb",
+  "upstream": {
+    "repo": "Jacorb90/Prestige-Tree",
+    "url": "https://github.com/Jacorb90/Prestige-Tree.git",
+    "branch": "master",
+    "commit": "cec9198c8ce9a5c6d107179871cbe84fab92ae0d",
+    "pushed_at": "2021-05-25T11:01:46-04:00"
+  },
+  "engine": {
+    "tmtNum": "2.2.1",
+    "stock_commit": "360d8ac",
+    "moved": false,
+    "deviation": {
+      "added": 1137,
+      "removed": 242
+    }
+  },
+  "entry": "index.html",
+  "load": {
+    "onload": "load()",
+    "scripts": [
+      "js/technical/break_eternity.js",
+      "js/technical/layerSupport.js",
+      "js/tree.js",
+      "js/sc.js",
+      "js/help.js",
+      "js/layers.js",
+      "js/mod.js",
+      "js/technical/temp.js",
+      "js/game.js",
+      "js/utils.js",
+      "js/technical/systemComponents.js",
+      "js/components.js",
+      "js/technical/canvas.js"
+    ],
+    "renderOnly": [
+      "js/technical/systemComponents.js",
+      "js/components.js",
+      "js/technical/canvas.js"
+    ],
+    "modFilesPrefix": null,
+    "modFiles": [],
+    "external": {
+      "https://cdn.jsdelivr.net/npm/vue@2.6.12": "vendor",
+      "https://fonts.googleapis.com/css?family=Inconsolata": "drop"
+    },
+    "vendor": {}
+  },
+  "save": {
+    "keyRule": "modInfo.id",
+    "key": "ptr"
+  },
+  "headless": {
+    "prestubs": [
+      "colors"
+    ],
+    "renderStubs": [
+      "loadVue",
+      "resizeCanvas",
+      "retrieveCanvasData",
+      "drawTree",
+      "drawTreeBranch"
+    ],
+    "idleHash": {
+      "ticks": 200,
+      "diff": 0.05,
+      "hash": "d9c5ace6665833d0"
+    },
+    "deterministic": true
+  },
+  "license": {
+    "githubSpdx": "MIT",
+    "files": {
+      "LICENSE": "MIT",
+      "Prestige-tree-license": "MIT"
+    },
+    "verdict": "MIT"
+  },
+  "census": {
+    "full_name": "calibration:Prestige-Tree",
+    "head": "cec9198",
+    "score": 89.97,
+    "layers": 28,
+    "rows": 7,
+    "milestones": 85,
+    "upgrades": 172,
+    "buyables": 52,
+    "challenges": 9,
+    "achievements": 80,
+    "trace_fields": 20
+  },
+  "patches": [],
+  "generated": {
+    "by": "tmt-fork-census scripts/manifest.mjs",
+    "commit": "27c6654",
+    "at": "2026-09-15T01:25:20.578Z"
+  }
+}
