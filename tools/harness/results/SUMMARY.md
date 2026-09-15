@@ -786,3 +786,20 @@ Reading this section: GREEN here = the mutated gate went RED as it must. Each ma
 | L2b mutant (b) G1 must be RED | bobbit-s-tech-tree | — | — | — | — | — | GREEN | load.known.errorsBeforeReady removed → G1 RED: failedNotDeclared 0, blockedNotDeclared 0, skippedEqualsDeclared true, page errors before ready 24 (declared false) |
 | L2b mutant (c) G1 must be RED | the-periodic-table-tree | — | — | — | — | — | GREEN | load.known.externalHosts emptied → G1 RED: failedNotDeclared 0, blockedNotDeclared 10, skippedEqualsDeclared true, page errors before ready 0 (declared false) |
 | L2b mutant (d) check-manifest must be RED | the-dressy-tree | — | — | — | — | — | GREEN | load.known = {missingScripts: ["js/nope.js"]} (a file that is not missing) → check-manifest RED: [{"field":"load.known.missingScripts","declaredNotInTree":["js/nope.js"],"inTreeNotDeclared":[]}] |
+
+## 2026-09-15T07:05:54Z — L2b-1 G5 (`node tools/check-pages.mjs --games ptr,the-pro-tree,bobbit-s-tech-tree,the-periodic-table-tree`) — commit `fd56706f` — 10/10 green
+
+Reading this section: depth-1 clone of fd56706f9b6e1c02fa119d558fb3d84d445b5e20 served under /tmt-loader/; G1 rows there are judged against each manifest's load.known (failed = the-pro-tree's 5 skipped scripts, 404 + abort each; pageErrors = bobbit's pre-load() timer; blocked = periodic's i.postimg.cc images).
+
+| gate | game | leg | ticks | gameSeconds | diff | hash | result | notes |
+|---|---|---|---|---|---|---|---|---|
+| L2b-1 G5 clone | bare clone | — | — | — | — | — | GREEN | {"clone":"/tmp/tmt-loader-pages-kdWIih/tmt-loader","head":"fd56706f9b6e1c02fa119d558fb3d84d445b5e20"} |
+| L2b-1 G5 G1 load ptr @ subpath | ptr | — | — | — | — | — | GREEN | {"readyMs":585,"layerNodes":8,"requests":139,"blocked":0,"failed":0,"pageErrors":0,"keys":["tmt-loader:ptr:ptr"]} |
+| L2b-1 G5 G1 load the-pro-tree @ subpath | the-pro-tree | — | — | — | — | — | GREEN | {"readyMs":1729,"layerNodes":15,"requests":139,"blocked":0,"failed":10,"pageErrors":0,"keys":["tmt-loader:the-pro-tree:1_options","tmt-loader:the-pro-tree:1"]} |
+| L2b-1 G5 G1 load bobbit-s-tech-tree @ subpath | bobbit-s-tech-tree | — | — | — | — | — | GREEN | {"readyMs":890,"layerNodes":28,"requests":68,"blocked":0,"failed":0,"pageErrors":25,"keys":["tmt-loader:bobbit-s-tech-tree:btt_options","tmt-loader:bobbit-s-tech-tree:btt"]} |
+| L2b-1 G5 G1 load the-periodic-table-tree @ subpath | the-periodic-table-tree | — | — | — | — | — | GREEN | {"readyMs":954,"layerNodes":7,"requests":80,"blocked":10,"failed":0,"pageErrors":0,"keys":["tmt-loader:the-periodic-table-tree:118","tmt-loader:the-periodic-table-tree:118_options"]} |
+| L2b-1 G5 picker entries name repo@sha, engine, license | bare clone | — | — | — | — | — | GREEN | {"count":40,"bad":[]} |
+| L2b-1 G5 picker lists every game | bare clone | — | — | — | — | — | GREEN | {"blocked":0,"failed":[],"pageErrors":[]} |
+| L2b-1 G5 picker links stay under the sub-path | bare clone | — | — | — | — | — | GREEN | {} |
+| L2b-1 G5 clone unmodified | bare clone | — | — | — | — | — | GREEN | {"status":""} |
+| L2b-1 G5 repo clean | bare clone | — | — | — | — | — | GREEN | {"status":"## main...origin/main [ahead 1]"} |
