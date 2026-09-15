@@ -34,7 +34,7 @@ try {
     if (want('G1')) {
       const out = execFileSync(process.execPath, [path.join(REPO, 'tools/harness/page.mjs'), id, '--gate', 'load', '--base', base], { encoding: 'utf8', cwd: REPO }).split('\n').filter((l) => l.startsWith('{'));
       const r = JSON.parse(out[0]);
-      row({ gate: 'G1 load', id, ok: r.ok, ticks: r.ticks, gameSeconds: r.ticks * 0.05, diff: 0.05, hash: null,
+      row({ gate: 'G1 load', id, ok: r.ok, ticks: r.ticks, gameSeconds: Math.round(r.ticks * 0.05 * 1e9) / 1e9, diff: 0.05, hash: null,
         notes: `ready ${r.loadMs} ms; ${r.layerNodes} \`#app .treeNode\`; ${r.requests} requests, ${r.blocked} blocked, ${r.failed.length} failed, ${r.pageErrors.length} page errors; keys ${r.keys.map((k) => '`' + k + '`').join(', ')}; other game ${r.other.id}: ${r.other.keys.length} keys in its own prefix, first untouched=${r.firstUntouched}` });
     }
     let straight = {};
