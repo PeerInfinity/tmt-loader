@@ -151,6 +151,8 @@ async function part2Page(id) {
     check(!!target, `an unlocked feature to click (${target && target.title})`);
     if (target) {
       await page.locator('#app button.upg').filter({ hasText: target.title }).first().click();
+      // the page is paused (no game loop): one updateTemp() refreshes tmp, which both engines' tab text renders from
+      await page.evaluate(() => updateTemp());
       await page.waitForTimeout(400);
       const st = await page.evaluate((k) => ({ on: player.au.features[layers.au.clickables[k].tmtFeature], disclosed: player.au.disclosed, text: document.querySelector('#app').innerText }), target.id);
       check(st.on === true, `click turned "${target.title}" on`);
