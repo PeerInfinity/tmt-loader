@@ -4,7 +4,7 @@ One static page that loads games built on [The Modding Tree](https://github.com/
 (TMT) **on each game's own engine version**, with no CDN and no build step, plus a Node harness that boots the same
 games headless and is proven equal to the page.
 
-**AI disclosure.** The code, the documentation and the results page in this repository were AI-generated (Claude Code sessions directed by PeerInfinity, who set the questions and reviewed the output). Every number is produced by the scripts here, run against the games' own source files, and can be regenerated with the harness in `tools/`.
+**AI disclosure.** The code, the documentation and the harness in this repository were AI-generated (Claude Code sessions directed by PeerInfinity, who set the questions and reviewed the output). Every gate number is produced by the harness in `tools/` and can be regenerated.
 
 ## What it does
 

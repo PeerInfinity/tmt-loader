@@ -300,3 +300,116 @@ Reading this section: reset:e swept with the other row-2 resets at their default
 | A2-3 sweep reset:e interval>=120 | ptr | profile all | 8035 | 8035 | 1 | `67743dd40de0b570` | GREEN | game-s to (i)/(ii)/(iii): 3550 / 6037 / 8035; reset:e 1; actions {"reset:p":804,"upgrades:p":475,"reset:g":450,"upgrades:g":90,"reset:b":547,"upgrades:b":120,"reset:s":16,"buyables:s":27,"upgrades:s":5,"reset:t":8,"upgrades:t":1,"reset:e":1,"buyables:e":1} |
 | A2-3 sweep reset:e always — control | ptr | profile all | 8035 | 8035 | 1 | `67743dd40de0b570` | GREEN | game-s to (i)/(ii)/(iii): 3550 / 6037 / 8035; reset:e 1; actions {"reset:p":804,"upgrades:p":475,"reset:g":450,"upgrades:g":90,"reset:b":547,"upgrades:b":120,"reset:s":16,"buyables:s":27,"upgrades:s":5,"reset:t":8,"upgrades:t":1,"reset:e":1,"buyables:e":1} |
 | A2-3 sweep reset:e gain>=1 — control | ptr | profile all | 8035 | 8035 | 1 | `67743dd40de0b570` | GREEN | game-s to (i)/(ii)/(iii): 3550 / 6037 / 8035; reset:e 1; actions {"reset:p":804,"upgrades:p":475,"reset:g":450,"upgrades:g":90,"reset:b":547,"upgrades:b":120,"reset:s":16,"buyables:s":27,"upgrades:s":5,"reset:t":8,"upgrades:t":1,"reset:e":1,"buyables:e":1} |
+
+## 2026-09-15T06:01:55Z — L2 part 1 (`node tools/harness/gates-l2.mjs --part 1`) — commit `e917a5d` — 10/10 green
+
+Reading this section: automation is opt-in: the plain page and `run.mjs --no-automation` are the game plus the contract; the census anchors hold with no `--exclude au`.
+
+| gate | game | leg | ticks | gameSeconds | diff | hash | result | notes |
+|---|---|---|---|---|---|---|---|---|
+| L2-1 G1 load, plain page (no flag) | ptr | — | 3 | 0.15 | 0.05 | — | GREEN | ready 628 ms; 8 `#app .treeNode` (L1: 8); `#app .smallNode.au` × 0; player.au absent; games-auto requests 0; 83 requests, 0 blocked, 0 failed, 0 page errors |
+| L2-1 G1 load WITH ?automation=1 (control) | ptr | — | 3 | 0.15 | 0.05 | — | GREEN | ready 869 ms; 8 `#app .treeNode`; `#app .smallNode.au` × 1; player.au present; games-auto requests 1 (/games-auto/ptr.js); 85 requests, 0 blocked, 0 failed, 0 page errors |
+| L2-1 census idle hash, Node --no-automation (no --exclude) | ptr | — | 200 | 10 | 0.05 | `d9c5ace6665833d0` | GREEN | census d9c5ace6665833d0; automation false; features 0; player keys incl. au: false |
+| L2-1 census idle hash, plain page (no --exclude) | ptr | — | 200 | 10 | 0.05 | `d9c5ace6665833d0` | GREEN | census d9c5ace6665833d0; page 3972 ms; 0 blocked, 0 failed, 0 page errors |
+| L2-1 ?profile=all&autoOpt= without the flag → ignored + warning | ptr | — | 0 | 0 | — | — | GREEN | ready true; automation false; profile off; registerAutoFeature undefined; au false; options {}; au nodes 0; warnings: "tmt-loader: ?profile= is ignored without ?automation=1", "tmt-loader: ?autoOpt= is ignored without ?automation=1"; 0 page errors, 0 console errors |
+| L2-1 G1 load, plain page (no flag) | something | — | 3 | 0.15 | 0.05 | — | GREEN | ready 1190 ms; 10 `#app .treeNode` (L1: 10); `#app .smallNode.au` × 0; player.au absent; games-auto requests 0; 83 requests, 0 blocked, 0 failed, 0 page errors |
+| L2-1 G1 load WITH ?automation=1 (control) | something | — | 3 | 0.15 | 0.05 | — | GREEN | ready 1318 ms; 11 `#app .treeNode`; `#app .smallNode.au` × 1; player.au present; games-auto requests 1 (/games-auto/something.js); 85 requests, 0 blocked, 0 failed, 0 page errors |
+| L2-1 census idle hash, Node --no-automation (no --exclude) | something | — | 200 | 10 | 0.05 | `46bb8c5b1a96f03a` | GREEN | census 46bb8c5b1a96f03a; automation false; features 0; player keys incl. au: false |
+| L2-1 census idle hash, plain page (no --exclude) | something | — | 200 | 10 | 0.05 | `46bb8c5b1a96f03a` | GREEN | census 46bb8c5b1a96f03a; page 3738 ms; 0 blocked, 0 failed, 0 page errors |
+| L2-1 ?profile=all&autoOpt= without the flag → ignored + warning | something | — | 0 | 0 | — | — | GREEN | ready true; automation false; profile off; registerAutoFeature undefined; au false; options {}; au nodes 0; warnings: "tmt-loader: ?profile= is ignored without ?automation=1", "tmt-loader: ?autoOpt= is ignored without ?automation=1"; 0 page errors, 0 console errors |
+
+## 2026-09-15T06:01:56Z — gates.mjs, automation ON — commit `e917a5d` (tree DIRTY) — 34/34 green
+
+| gate | game | leg | ticks | gameSeconds | diff | hash | result | notes |
+|---|---|---|---|---|---|---|---|---|
+| G1 load | ptr | — | 3 | 0.15 | 0.05 | — | GREEN | ready 1669 ms; 8 `#app .treeNode`; 85 requests, 0 blocked, 0 failed, 0 page errors; keys `tmt-loader:ptr:ptr`; other game something: 2 keys in its own prefix, first untouched=true |
+| G2a determinism (node ×2) | ptr | idle | 1000 | 50 | 0.05 | `bbbea2c5700357dd` | GREEN | run2 1000 ticks bbbea2c5700357dd |
+| G2b save→fresh boot on storage (node) | ptr | idle | 1000 | 50 | 0.05 | `bbbea2c5700357dd` | GREEN | 500 (b4432a973059b267) + 500 after reload vs 1000 straight bbbea2c5700357dd; saved keys 1 |
+| G2b save→loadFrom (node) | ptr | idle | 1000 | 50 | 0.05 | `bbbea2c5700357dd` | GREEN | importSave requested reload=true; vs 1000 straight bbbea2c5700357dd |
+| G2b save→loadFrom (page, reload) | ptr | idle | 1000 | 50 | 0.05 | `bbbea2c5700357dd` | GREEN | page 500 b4432a973059b267 (node 500 b4432a973059b267); vs node 1000 straight bbbea2c5700357dd |
+| G2a determinism (node ×2) | ptr | policy | 1000 | 50 | 0.05 | `7b32d1b37908bd26` | GREEN | run2 1000 ticks 7b32d1b37908bd26 |
+| G2b save→fresh boot on storage (node) | ptr | policy | 1000 | 50 | 0.05 | `7b32d1b37908bd26` | GREEN | 500 (aed8f2f6ef58c1aa) + 500 after reload vs 1000 straight 7b32d1b37908bd26; saved keys 1 |
+| G2b save→loadFrom (node) | ptr | policy | 1000 | 50 | 0.05 | `7b32d1b37908bd26` | GREEN | importSave requested reload=true; vs 1000 straight 7b32d1b37908bd26 |
+| G2b save→loadFrom (page, reload) | ptr | policy | 1000 | 50 | 0.05 | `7b32d1b37908bd26` | GREEN | page 500 aed8f2f6ef58c1aa (node 500 aed8f2f6ef58c1aa); vs node 1000 straight 7b32d1b37908bd26 |
+| G2c upstream export → loadFrom | ptr | idle | 200 | 10 | 0.05 | `d9c5ace6665833d0` | GREEN | upstream d9c5ace6665833d0; equalRaw=true equalCanonical=true; exported 13924 b64 chars |
+| G3 idle hash = census | ptr | idle | 200 | 10 | 0.05 | `d9c5ace6665833d0` | GREEN | census d9c5ace6665833d0 @ 200×0.05; automation true (au excluded) |
+| G3 parity node≡page | ptr | idle | 1000 | 50 | 0.05 | `bbbea2c5700357dd` | GREEN | page bbbea2c5700357dd in 29382 ms |
+| G3 parity node≡page | ptr | idle | 200 | 200 | 1 | `681ab939b36dd333` | GREEN | page 681ab939b36dd333 in 7142 ms |
+| G3 parity node≡page | ptr | policy | 1000 | 50 | 0.05 | `7b32d1b37908bd26` | GREEN | page 7b32d1b37908bd26 in 30539 ms |
+| G3 parity control (page +1 point, must diverge) | ptr | idle | 200 | 10 | 0.05 | `5738d67e916b743f` | GREEN | diverged at key "points" |
+| G4 goldens | ptr | — | 0 | 0 | — | — | GREEN | 398 ids, 35 layers; ms 85 / upg 172 / buy 52 / ch 9 / ach 80 (census equal=true) |
+| G4 check-manifest | ptr | — | 0 | 0 | — | — | GREEN | 13 scripts, 0 modFiles, vendor sha256 ok, subtree split cec9198, games/ptr pristine |
+| G1 load | something | — | 3 | 0.15 | 0.05 | — | GREEN | ready 1238 ms; 11 `#app .treeNode`; 85 requests, 0 blocked, 0 failed, 0 page errors; keys `tmt-loader:something:Justcubing97's-Something-Tree-Justcubing97_options`, `tmt-loader:something:Justcubing97's-Something-Tree-Justcubing97`; other game ptr: 1 keys in its own prefix, first untouched=true |
+| G2a determinism (node ×2) | something | idle | 1000 | 50 | 0.05 | `07434b9b191874b7` | GREEN | run2 1000 ticks 07434b9b191874b7 |
+| G2b save→fresh boot on storage (node) | something | idle | 1000 | 50 | 0.05 | `07434b9b191874b7` | GREEN | 500 (6f89dc8f66c95ae2) + 500 after reload vs 1000 straight 07434b9b191874b7; saved keys 2 |
+| G2b save→loadFrom (node) | something | idle | 1000 | 50 | 0.05 | `07434b9b191874b7` | GREEN | importSave requested reload=true; vs 1000 straight 07434b9b191874b7 |
+| G2b save→loadFrom (page, reload) | something | idle | 1000 | 50 | 0.05 | `07434b9b191874b7` | GREEN | page 500 6f89dc8f66c95ae2 (node 500 6f89dc8f66c95ae2); vs node 1000 straight 07434b9b191874b7 |
+| G2a determinism (node ×2) | something | policy | 1000 | 50 | 0.05 | `3099e519164fd0e1` | GREEN | run2 1000 ticks 3099e519164fd0e1 |
+| G2b save→fresh boot on storage (node) | something | policy | 1000 | 50 | 0.05 | `3099e519164fd0e1` | GREEN | 500 (67cc684a830113c8) + 500 after reload vs 1000 straight 3099e519164fd0e1; saved keys 2 |
+| G2b save→loadFrom (node) | something | policy | 1000 | 50 | 0.05 | `3099e519164fd0e1` | GREEN | importSave requested reload=true; vs 1000 straight 3099e519164fd0e1 |
+| G2b save→loadFrom (page, reload) | something | policy | 1000 | 50 | 0.05 | `3099e519164fd0e1` | GREEN | page 500 67cc684a830113c8 (node 500 67cc684a830113c8); vs node 1000 straight 3099e519164fd0e1 |
+| G2c upstream export → loadFrom | something | idle | 200 | 10 | 0.05 | `3b3387ad418fed58` | GREEN | upstream 686f6bdfdeb146ba; equalRaw=false equalCanonical=true (raw differs in KEY ORDER only: the upstream page's async modFiles race); exported 11228 b64 chars |
+| G3 idle hash = census | something | idle | 200 | 10 | 0.05 | `46bb8c5b1a96f03a` | GREEN | census 46bb8c5b1a96f03a @ 200×0.05; automation true (au excluded) |
+| G3 parity node≡page | something | idle | 1000 | 50 | 0.05 | `07434b9b191874b7` | GREEN | page 07434b9b191874b7 in 8239 ms |
+| G3 parity node≡page | something | idle | 200 | 200 | 1 | `9f1ac98062ef88e3` | GREEN | page 9f1ac98062ef88e3 in 1714 ms |
+| G3 parity node≡page | something | policy | 1000 | 50 | 0.05 | `3099e519164fd0e1` | GREEN | page 3099e519164fd0e1 in 13563 ms |
+| G3 parity control (page +1 point, must diverge) | something | idle | 200 | 10 | 0.05 | `f48357b2f71f5247` | GREEN | diverged at key "points" |
+| G4 goldens | something | — | 0 | 0 | — | — | GREEN | 329 ids, 21 layers; ms 68 / upg 175 / buy 23 / ch 11 / ach 52 (census equal=true) |
+| G4 check-manifest | something | — | 0 | 0 | — | — | GREEN | 17 scripts, 17 modFiles, vendor sha256 ok, subtree split 30a311b, games/something pristine |
+
+## 2026-09-15T06:11:07Z — A1 part 2 (`node tools/harness/gates-a1.mjs --part 2`) — commit `e917a5d` (tree DIRTY) — 22/22 green
+
+| gate | game | leg | ticks | gameSeconds | diff | hash | result | notes |
+|---|---|---|---|---|---|---|---|---|
+| A1-2 anchor (exclude au, profile off) | ptr | idle | 200 | 10 | 0.05 | `d9c5ace6665833d0` | GREEN | L1 anchor d9c5ace6665833d0; full state incl. au e46d4e0a59172eaf; features registered 14 (games-auto/ptr.js) |
+| A1-2 anchor (exclude au, profile off) | ptr | idle | 1000 | 50 | 0.05 | `86067be644ce481c` | GREEN | L1 anchor 86067be644ce481c; full state incl. au bbbea2c5700357dd; features registered 14 (games-auto/ptr.js) |
+| A1-2 anchor (exclude au, profile off) | ptr | policy | 1000 | 50 | 0.05 | `5ce24001caa4f31f` | GREEN | L1 anchor 5ce24001caa4f31f; full state incl. au 7b32d1b37908bd26; features registered 14 (games-auto/ptr.js) |
+| A1-2 wrapper calls = 1 per hooked layer per tick | ptr | policy | 1000 | 50 | 0.05 | `5ce24001caa4f31f` | GREEN | 28 layers hooked (hookAll probe); loops 1000; doubles 0; own automate slot: 1 (p); au fallback (layer's slot skipped by the engine): 27 (b g t e s sb sg h q o ss m ba ps hn n hs i ma ge mc en ne id r ai c); hash = policy anchor |
+| A1-2 updateTemp does not call automate | ptr | policy | 200 | 10 | 0.05 | `00a4d66586c7396e` | GREEN | updateTemp() ×3 after each of 200 ticks moved the counter: false; predicate errors 0 |
+| A1-2 parity node≡page (full state) | ptr | idle | 1000 | 50 | 0.05 | `bbbea2c5700357dd` | GREEN | page bbbea2c5700357dd in 22124 ms |
+| A1-2 parity hookAll (counters node≡page) | ptr | policy | 200 | 10 | 0.05 | `00a4d66586c7396e` | GREEN | state equal true; hookStats equal true; page loops 200 |
+| A1-2 check-goldens unchanged | ptr | — | 0 | 0 | — | — | GREEN | 398 ids, 35 layers |
+| A1-2 check-manifest | ptr | — | 0 | 0 | — | — | GREEN | 13 scripts, 0 modFiles, games/ptr pristine, auto games-auto/ptr.js |
+| A1-2 au layer in the page | ptr | — | 0 | 0 | — | — | GREEN | tmp.au true; row side; doReset false; player.au.features {}; disclosed false; managed profile off; 14 features; `#app .smallNode.au` × 1; 0 page errors, 0 failed, 0 blocked |
+| A1-2 au tab (page) | ptr | — | 0 | 0 | — | — | GREEN | ✓ unmanaged default profile = saved; ✓ 14 feature toggles; ✓ fresh boot: every toggle Off/Locked (Off, Locked); ✓ au tab renders its title; ✓ no disclosure before any click; ✓ ?profile=all: toggles On (On (profile all), Locked); ✓ ?profile=all did not write the save (saved au.features {}); ✓ reload without ?profile: Off again; ✓ an unlocked feature to click (Prestige reset); ✓ click turned "Prestige reset" on; ✓ disclosure line after the first click; ✓ save namespaced (1 keys under tmt-loader:ptr:); ✓ toggle persists across reload (On); ✓ 0 page errors, 0 failed, 0 blocked; screenshots results/ptr-au-{off,all,toggled}.png |
+| A1-2 anchor (exclude au, profile off) | something | idle | 200 | 10 | 0.05 | `46bb8c5b1a96f03a` | GREEN | L1 anchor 46bb8c5b1a96f03a; full state incl. au c3332a16dcef363c; features registered 7 (games-auto/something.js) |
+| A1-2 anchor (exclude au, profile off) | something | idle | 1000 | 50 | 0.05 | `5739997ed0e70447` | GREEN | L1 anchor 5739997ed0e70447; full state incl. au 07434b9b191874b7; features registered 7 (games-auto/something.js) |
+| A1-2 anchor (exclude au, profile off) | something | policy | 1000 | 50 | 0.05 | `52ffa8d3c5eaba03` | GREEN | L1 anchor 52ffa8d3c5eaba03; full state incl. au 3099e519164fd0e1; features registered 7 (games-auto/something.js) |
+| A1-2 wrapper calls = 1 per hooked layer per tick | something | policy | 1000 | 50 | 0.05 | `52ffa8d3c5eaba03` | GREEN | 14 layers hooked (hookAll probe); loops 1000; doubles 0; own automate slot: 14 (planetary pbooster polygon dimension arithmetic addition subtraction multiplication division primitive numbercore corebooster fundamental unlock); au fallback (layer's slot skipped by the engine): 0; hash = policy anchor |
+| A1-2 updateTemp does not call automate | something | policy | 200 | 10 | 0.05 | `d25c967e821a0d6a` | GREEN | updateTemp() ×3 after each of 200 ticks moved the counter: false; predicate errors 0 |
+| A1-2 parity node≡page (full state) | something | idle | 1000 | 50 | 0.05 | `07434b9b191874b7` | GREEN | page 07434b9b191874b7 in 23142 ms |
+| A1-2 parity hookAll (counters node≡page) | something | policy | 200 | 10 | 0.05 | `15d3fc1cb1de1bcf` | GREEN | state equal true; hookStats equal true; page loops 200 |
+| A1-2 check-goldens unchanged | something | — | 0 | 0 | — | — | GREEN | 329 ids, 21 layers |
+| A1-2 check-manifest | something | — | 0 | 0 | — | — | GREEN | 17 scripts, 17 modFiles, games/something pristine, auto games-auto/something.js |
+| A1-2 au layer in the page | something | — | 0 | 0 | — | — | GREEN | tmp.au true; row side; doReset false; player.au.features {}; disclosed false; managed profile off; 7 features; `#app .smallNode.au` × 1; 0 page errors, 0 failed, 0 blocked |
+| A1-2 au tab (page) | something | — | 0 | 0 | — | — | GREEN | ✓ unmanaged default profile = saved; ✓ 7 feature toggles; ✓ fresh boot: every toggle Off/Locked (Off, Locked); ✓ au tab renders its title; ✓ no disclosure before any click; ✓ ?profile=all: toggles On (On (profile all), Locked); ✓ ?profile=all did not write the save (saved au.features {}); ✓ reload without ?profile: Off again; ✓ an unlocked feature to click (Unlock reset); ✓ click turned "Unlock reset" on; ✓ disclosure line after the first click; ✓ save namespaced (2 keys under tmt-loader:something:); ✓ toggle persists across reload (On); ✓ 0 page errors, 0 failed, 0 blocked; screenshots results/something-au-{off,all,toggled}.png |
+
+## 2026-09-15T06:14:37Z — A2 part 1 (`node tools/harness/gates-a2.mjs --part 1`) — commit `e917a5d` (tree DIRTY) — 23/23 green
+
+Reading this section: GREEN = the run completed and (where a second run exists) was equal; a predicate's own verdict is in its notes (MET / NOT MET). The sweep rows are ordered by policy; the default is the fastest to (ii), ties broken by (iii).
+
+| gate | game | leg | ticks | gameSeconds | diff | hash | result | notes |
+|---|---|---|---|---|---|---|---|---|
+| A2-1 anchor (exclude au, profile off) | something | idle | 200 | 10 | 0.05 | `46bb8c5b1a96f03a` | GREEN | L1 anchor 46bb8c5b1a96f03a; features registered 7 |
+| A2-1 anchor (exclude au, profile off) | something | idle | 1000 | 50 | 0.05 | `5739997ed0e70447` | GREEN | L1 anchor 5739997ed0e70447; features registered 7 |
+| A2-1 anchor (exclude au, profile off) | something | policy | 1000 | 50 | 0.05 | `52ffa8d3c5eaba03` | GREEN | L1 anchor 52ffa8d3c5eaba03; features registered 7 |
+| A2-1 check-goldens unchanged | something | — | 0 | 0 | — | — | GREEN | 329 ids, 21 layers |
+| A2-1 rung (default reset:primitive interval>=90) (i) primitive reset ≥ 1 (primitive.total ≥ 1) | something | profile all | 4163 | 208.15 | 0.05 | `0c88dcd6b5a9e1cb` | GREEN | MET; second run 4163 ticks / 208.15 s / 0c88dcd6b5a9e1cb — equal true |
+| A2-1 rung (default reset:primitive interval>=90) (ii) primitive ms 1 ("10 Numbers") | something | profile all | 5963 | 298.15 | 0.05 | `5682500e1f849fb8` | GREEN | MET; second run 5963 ticks / 298.15 s / 5682500e1f849fb8 — equal true |
+| A2-1 rung (default reset:primitive interval>=90) (iii) primitive ms 2 ("100,000 Numbers") | something | profile all | 9563 | 478.15 | 0.05 | `449775de97d4af2d` | GREEN | MET; second run 9563 ticks / 478.15 s / 449775de97d4af2d — equal true |
+| A2-1 coarse diff (sweep row interval>=90) (i) primitive reset ≥ 1 (primitive.total ≥ 1) | something | profile all | 309 | 309 | 1 | `6da92645ec93a9ab` | GREEN | MET |
+| A2-1 coarse diff (sweep row interval>=90) (ii) primitive ms 1 ("10 Numbers") | something | profile all | 399 | 399 | 1 | `53240faafd36f329` | GREEN | MET |
+| A2-1 coarse diff (sweep row interval>=90) (iii) primitive ms 2 ("100,000 Numbers") | something | profile all | 579 | 579 | 1 | `30d121d791768aa4` | GREEN | MET |
+| A2-1 sweep reset:primitive interval>=5 | something | profile all | 20000 | 20000 | 1 | `0c865919e527e189` | GREEN | game-s to (i)/(ii)/(iii): 309 / 501 / NOT MET; primitive resets 754; actions {"reset:unlock":10797,"upgrades:unlock":2,"reset:fundamental":3847,"upgrades:fundamental":8305,"reset:primitive":754,"upgrades:primitive":2} |
+| A2-1 sweep reset:primitive interval>=10 | something | profile all | 20000 | 20000 | 1 | `0c865919e527e189` | GREEN | game-s to (i)/(ii)/(iii): 309 / 501 / NOT MET; primitive resets 754; actions {"reset:unlock":10797,"upgrades:unlock":2,"reset:fundamental":3847,"upgrades:fundamental":8305,"reset:primitive":754,"upgrades:primitive":2} |
+| A2-1 sweep reset:primitive interval>=30 | something | profile all | 20000 | 20000 | 1 | `5ad9aa738e6504bf` | GREEN | game-s to (i)/(ii)/(iii): 309 / 501 / NOT MET; primitive resets 654; actions {"reset:unlock":10697,"upgrades:unlock":2,"reset:fundamental":3997,"upgrades:fundamental":7205,"reset:primitive":654,"upgrades:primitive":2} |
+| A2-1 sweep reset:primitive interval>=60 | something | profile all | 17109 | 17109 | 1 | `5d0661751e5e7690` | GREEN | game-s to (i)/(ii)/(iii): 309 / 429 / 17109; primitive resets 281; actions {"reset:unlock":9705,"upgrades:unlock":2,"reset:fundamental":3421,"upgrades:fundamental":3368,"reset:primitive":281,"upgrades:primitive":2} |
+| A2-1 sweep reset:primitive interval>=90 — fastest | something | profile all | 579 | 579 | 1 | `30d121d791768aa4` | GREEN | game-s to (i)/(ii)/(iii): 309 / 399 / 579; primitive resets 4; actions {"reset:unlock":341,"upgrades:unlock":2,"reset:fundamental":115,"upgrades:fundamental":46,"reset:primitive":4,"upgrades:primitive":2} |
+| A2-1 sweep reset:primitive interval>=120 | something | profile all | 669 | 669 | 1 | `00a563430e2de3ff` | GREEN | game-s to (i)/(ii)/(iii): 309 / 429 / 669; primitive resets 4; actions {"reset:unlock":395,"upgrades:unlock":2,"reset:fundamental":133,"upgrades:fundamental":46,"reset:primitive":4,"upgrades:primitive":3} |
+| A2-1 sweep reset:primitive interval>=180 | something | profile all | 849 | 849 | 1 | `d234618fa372212c` | GREEN | game-s to (i)/(ii)/(iii): 309 / 489 / 849; primitive resets 4; actions {"reset:unlock":503,"upgrades:unlock":2,"reset:fundamental":169,"upgrades:fundamental":46,"reset:primitive":4,"upgrades:primitive":3} |
+| A2-1 sweep reset:primitive interval>=240 | something | profile all | 789 | 789 | 1 | `4dce5624e4639a9d` | GREEN | game-s to (i)/(ii)/(iii): 309 / 549 / 789; primitive resets 3; actions {"reset:unlock":469,"upgrades:unlock":2,"reset:fundamental":157,"upgrades:fundamental":35,"reset:primitive":3,"upgrades:primitive":3} |
+| A2-1 sweep reset:primitive interval>=300 | something | profile all | 909 | 909 | 1 | `54c4783f5595f490` | GREEN | game-s to (i)/(ii)/(iii): 309 / 609 / 909; primitive resets 3; actions {"reset:unlock":541,"upgrades:unlock":2,"reset:fundamental":181,"upgrades:fundamental":35,"reset:primitive":3,"upgrades:primitive":3} |
+| A2-1 sweep reset:primitive always — control | something | profile all | 20000 | 20000 | 1 | `0c865919e527e189` | GREEN | game-s to (i)/(ii)/(iii): 309 / 501 / NOT MET; primitive resets 754; actions {"reset:unlock":10797,"upgrades:unlock":2,"reset:fundamental":3847,"upgrades:fundamental":8305,"reset:primitive":754,"upgrades:primitive":2} |
+| A2-1 sweep reset:primitive gain>=1 — control | something | profile all | 20000 | 20000 | 1 | `0c865919e527e189` | GREEN | game-s to (i)/(ii)/(iii): 309 / 501 / NOT MET; primitive resets 754; actions {"reset:unlock":10797,"upgrades:unlock":2,"reset:fundamental":3847,"upgrades:fundamental":8305,"reset:primitive":754,"upgrades:primitive":2} |
+| A2-1 parity node≡page, profile all, at (ii)'s tick | something | profile all | 5963 | 298.15 | 0.05 | `5682500e1f849fb8` | GREEN | page 5682500e1f849fb8 in 144437 ms; hookStats equal true; actions {"reset:unlock":5803,"upgrades:unlock":2,"reset:fundamental":59,"upgrades:fundamental":22,"reset:primitive":2,"upgrades:primitive":1} |
+| A2-1 next stall (diff 1, 3600 game-s window, 2 min wall) | something | profile all | 3908 | 3908 | 1 | `0da3d59c9ecb9d57` | GREEN | stalled false, wall-bounded true; last progress tick 3870 (3870 s); marks ; points 1.21512526604597e28; actions {"reset:unlock":2265,"upgrades:unlock":2,"reset:fundamental":781,"upgrades:fundamental":490,"reset:primitive":40,"upgrades:primitive":3}; state: unlock{pts 42,803,354 best 0.000; upg [11,12]; ms []; canReset false nextAt 1.000; next upg 13@1.000e20 14@1.000e50 15@1.000e400 16@1.000e925 17@1.000e1550} fundamental{pts 3.889e28 best 3.889e28; upg [23,11,12,13,14,15,16,17,21,22,24,25,26]; ms []; canReset false nextAt 10.000; next upg 27@1.000e51} primitive{pts 20,700,364 best 20,700,364; upg [11,12,13]; ms [1,2]; canReset true gain 596,606 nextAt 3.889e28; next upg 14@250,000,000; next ms 3: 3: 1e11 Numbers \| 4: 4: 1e24 Numbers} |
