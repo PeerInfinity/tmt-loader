@@ -4,6 +4,7 @@
 //   node boot.mjs <id> [--ticks N] [--diff d] [--leg idle|policy] [--prestubs a,b] [--until "<js>"]
 //                      [--storage in.json] [--import player.json] [--save] [--save-storage out.json]
 //                      [--state-out f] [--player-out f] [--ids-out f] [--census]
+//                      [--profile off|all|saved] [--exclude k1,k2] [--auto-opt "k=v;k2=v2"] [--no-auto]
 // Prints one line "BOOTRESULT {json}" on stdout. Scripts run via vm.runInThisContext (Node's own global — never
 // host intrinsics into a sandbox: TMT's `x.constructor === Object` test fails cross-realm). The plan comes from
 // loader/interpret.mjs + manifests/<id>.json, the same code path as the page; render-only files and vendored Vue are
@@ -26,7 +27,7 @@ const A = { _: [] };
 for (let i = 0; i < argv.length; i++) {
   const a = argv[i];
   if (!a.startsWith('--')) A._.push(a);
-  else if (['save', 'census'].includes(a.slice(2))) A[a.slice(2)] = true;
+  else if (['save', 'census', 'no-auto'].includes(a.slice(2))) A[a.slice(2)] = true;
   else A[a.slice(2)] = argv[++i];
 }
 const ID = A._[0];
@@ -150,19 +151,29 @@ for (const f of declared) {
 }
 globalThis.__hit = hit;
 // loader/tmt-auto.js — the same file the page inserts last
+const OPTIONS = {};
+for (const part of String(A['auto-opt'] || '').split(';')) { if (!part) continue; const i = part.indexOf('='); if (i < 0) OPTIONS[part] = '1'; else OPTIONS[part.slice(0, i)] = part.slice(i + 1); }
+const PROFILE = A.profile || 'off';
+const EXCLUDE = A.exclude ? String(A.exclude).split(',').filter(Boolean) : [];
+R.profile = PROFILE; if (EXCLUDE.length) R.exclude = EXCLUDE; if (Object.keys(OPTIONS).length) R.options = OPTIONS;
 globalThis.tmtLoader = {
-  id: ID, manifest, managed: true, ready: false, error: null, sha256hex,
+  id: ID, manifest, managed: true, ready: false, error: null, sha256hex, options: OPTIONS,
   pause() { return 0; }, resume() { return 0; },
   storage: { prefix: storageShim.prefix, list: () => storageShim.list(lsStore), clear: () => storageShim.clear(lsStore) },
 };
 try { run(fs.readFileSync(path.join(REPO, 'loader/tmt-auto.js'), 'utf8'), 'loader/tmt-auto.js'); }
 catch (e) { R.file_errors.push({ file: 'loader/tmt-auto.js', error: String(e.message).slice(0, 200) }); }
+// the per-game automation table (manifest.auto), as the page inserts it right after tmt-auto.js
+if (manifest.auto && !A['no-auto']) {
+  try { run(fs.readFileSync(path.join(REPO, manifest.auto), 'utf8'), manifest.auto); R.auto = manifest.auto; }
+  catch (e) { R.file_errors.push({ file: manifest.auto, error: String(e.message).slice(0, 200) }); }
+}
 R.load_ms = Date.now() - t0;
 const errText = (e) => { const st = String(e && e.stack || ''); const at = (st.match(/^\s+at .*$/m) || [''])[0].trim(); return `${e && e.name || 'Error'}: ${String(e && e.message || e).slice(0, 300)}${at ? ' @ ' + at.slice(0, 160) : ''}`; };
 const fail = (stage, e) => { R.ok = false; R.failed_at = stage; R.error = errText(e); out(R); proc.exit(0); };
 // A global defined only in a skipped file surfaces as a ReferenceError inside load(); report the name and let the
 // parent re-spawn with it pre-stubbed (bounded there).
-try { run(plan.onload && /load\s*\(/.test(plan.onload) ? plan.onload : 'load()', 'onload'); run('tmtLoader.ready = true', 'x'); }
+try { run(plan.onload && /load\s*\(/.test(plan.onload) ? plan.onload : 'load()', 'onload'); run(`tmtLoader.profile(${JSON.stringify(PROFILE)})`, 'profile'); run('tmtLoader.ready = true', 'x'); }
 catch (e) {
   const m = e && e.name === 'ReferenceError' && /^([\w$]+) is not defined/.exec(e.message);
   if (m && !R.prestubs.includes(m[1])) R.needs_stub = m[1];
@@ -209,8 +220,12 @@ try {
   if (A.until) R.until = { expr: A.until, met: r.met, errors: r.untilErrors, stoppedAtTick: run('tmtLoader.ticks', 'x') };
   Object.assign(R, run('({ ticks: tmtLoader.ticks, gameSeconds: tmtLoader.gameSeconds })', 'x'));
   R.diff = diff;
-  const json = run('tmtLoader.stateJSON()', 'state');
-  R.hash = await run('tmtLoader.hash()', 'hash');
+  const SOPTS = JSON.stringify({ exclude: EXCLUDE });
+  const json = run(`tmtLoader.stateJSON(${SOPTS})`, 'state');
+  R.hash = await run(`tmtLoader.hash(${SOPTS})`, 'hash');
+  if (EXCLUDE.length) R.hashFull = await run('tmtLoader.hash()', 'hash');
+  R.hook = run('tmtLoader.hookStats ? tmtLoader.hookStats() : null', 'x');
+  R.features = run('(tmtLoader.features || []).map(f => f.id)', 'x');
   R.state_paths = {};
   const st = JSON.parse(json);
   for (const k in st) {

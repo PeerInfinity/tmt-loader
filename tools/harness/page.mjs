@@ -1,6 +1,7 @@
 // Playwright page runner (plan §4). One headless Chromium; every non-localhost request is aborted and counted.
 //   node page.mjs <id> --ticks N --diff d [--leg idle|policy] [--until js] [--load-from player.json] [--base URL]
 //                 [--state-out f] [--player-out f] [--json out]                                → one JSON line, like run.mjs
+//                 [--profile off|all|saved] [--exclude au] [--auto-opt "k=v;k2=v2"]
 //   node page.mjs [<id>...] --gate load [--base URL]                                   → gate G1 (both games by default)
 import fs from 'node:fs';
 import path from 'node:path';
@@ -32,8 +33,9 @@ export async function openContext(browser, { allowExternal = false } = {}) {
 }
 
 /** Navigates to the loader for `id` and polls tmtLoader.ready || tmtLoader.error (30 s bound). */
-export async function openGame(page, base, id, { managed = true, timeout = 30000 } = {}) {
-  const url = new URL(`index.html?mod=${encodeURIComponent(id)}${managed ? '&managed=1' : ''}`, base).href;
+export async function openGame(page, base, id, { managed = true, timeout = 30000, profile = null, autoOpt = null } = {}) {
+  const q = `${managed ? '&managed=1' : ''}${profile ? `&profile=${encodeURIComponent(profile)}` : ''}${autoOpt ? `&autoOpt=${encodeURIComponent(autoOpt)}` : ''}`;
+  const url = new URL(`index.html?mod=${encodeURIComponent(id)}${q}`, base).href;
   const t0 = Date.now();
   await page.goto(url, { waitUntil: 'load' });
   return waitReady(page, t0, timeout);
@@ -57,7 +59,7 @@ export async function pageLoadFrom(page, json) {
   return waitReady(page);
 }
 export const pagePlayerJSON = (page) => page.evaluate(() => JSON.stringify(player));
-export const pageState = (page) => page.evaluate(async () => ({ ticks: tmtLoader.ticks, gameSeconds: tmtLoader.gameSeconds, hash: await tmtLoader.hash(), json: tmtLoader.stateJSON(), points: String(player.points) }));
+export const pageState = (page, exclude = []) => page.evaluate(async (ex) => ({ ticks: tmtLoader.ticks, gameSeconds: tmtLoader.gameSeconds, hash: await tmtLoader.hash({ exclude: ex }), hashFull: await tmtLoader.hash(), json: tmtLoader.stateJSON({ exclude: ex }), points: String(player.points), profile: tmtLoader.profile(), hook: tmtLoader.hookStats ? tmtLoader.hookStats() : null }), exclude);
 
 async function gateLoad(browser, base, ids) {
   const rows = [];
@@ -101,11 +103,11 @@ async function gateLoad(browser, base, ids) {
   return rows;
 }
 
-export async function runPage(browser, base, id, { ticks, diff, leg = 'idle', until = null, stateOut, loadFrom = null, playerOut = null, mutant = false }) {
+export async function runPage(browser, base, id, { ticks, diff, leg = 'idle', until = null, stateOut, loadFrom = null, playerOut = null, mutant = false, profile = null, exclude = [], autoOpt = null }) {
   const { context, stats } = await openContext(browser);
   try {
     const page = await context.newPage();
-    const r = await openGame(page, base, id, { managed: true });
+    const r = await openGame(page, base, id, { managed: true, profile, autoOpt });
     if (!r.ready) throw new Error(`not ready: ${JSON.stringify(r.error)}`);
     if (loadFrom != null) {
       const r2 = await pageLoadFrom(page, loadFrom);
@@ -115,11 +117,11 @@ export async function runPage(browser, base, id, { ticks, diff, leg = 'idle', un
     const t0 = Date.now();
     const drive = await pageDrive(page, { ticks, diff, leg, until });
     const ms = Date.now() - t0;
-    const st = await pageState(page);
+    const st = await pageState(page, exclude);
     if (stateOut) fs.writeFileSync(stateOut, st.json);
     const player = playerOut ? await pagePlayerJSON(page) : null;
     if (playerOut) fs.writeFileSync(playerOut, player);
-    return { runner: 'page', id, leg, until: until ? { expr: until, met: drive.met, stoppedAtTick: st.ticks } : undefined, policy_errors: leg === 'policy' ? drive.policyErrors : undefined, player, ticks: st.ticks, gameSeconds: st.gameSeconds, diff, hash: st.hash, ms, summary: { points: st.points }, blocked: stats.blocked.length, failed: stats.failed.length, pageErrors: stats.pageErrors, json: st.json };
+    return { runner: 'page', id, leg, until: until ? { expr: until, met: drive.met, stoppedAtTick: st.ticks } : undefined, policy_errors: leg === 'policy' ? drive.policyErrors : undefined, player, ticks: st.ticks, gameSeconds: st.gameSeconds, diff, hash: st.hash, hashFull: exclude.length ? st.hashFull : undefined, profile: st.profile, exclude: exclude.length ? exclude : undefined, hook: st.hook && st.hook.hooked.length ? st.hook : undefined, ms, summary: { points: st.points }, blocked: stats.blocked.length, failed: stats.failed.length, pageErrors: stats.pageErrors, json: st.json };
   } finally { await context.close(); }
 }
 
@@ -137,7 +139,7 @@ async function main() {
       code = rows.every((r) => r.ok) ? 0 : 1;
       console.log(`G1 load: ${rows.map((r) => `${r.id}=${r.ok ? 'GREEN' : 'RED'}`).join(' ')}`);
     } else {
-      const out = await runPage(browser, base, ids[0], { ticks: Number(a.ticks ?? 200), diff: Number(a.diff ?? 0.05), leg: a.leg || 'idle', until: a.until || null, stateOut: a['state-out'], playerOut: a['player-out'], loadFrom: a['load-from'] ? fs.readFileSync(a['load-from'], 'utf8') : null });
+      const out = await runPage(browser, base, ids[0], { ticks: Number(a.ticks ?? 200), diff: Number(a.diff ?? 0.05), leg: a.leg || 'idle', until: a.until || null, stateOut: a['state-out'], playerOut: a['player-out'], loadFrom: a['load-from'] ? fs.readFileSync(a['load-from'], 'utf8') : null, profile: a.profile || null, exclude: a.exclude ? a.exclude.split(',') : [], autoOpt: a['auto-opt'] || null });
       delete out.json; delete out.player;
       console.log(JSON.stringify(out));
       if (a.json) writeJSON(a.json, out);

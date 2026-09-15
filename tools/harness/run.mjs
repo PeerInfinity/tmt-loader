@@ -1,6 +1,7 @@
 // The Node CLI (plan §4). Spawns boot.mjs — ONE game per child process — and re-spawns with a pre-stub on a
 // ReferenceError in load() (≤ 12, the census's scripts/3-boot.mjs loop). EVERY state claim carries ticks + gameSeconds.
-//   node run.mjs <id> [--ticks N] [--diff d] [--leg idle|policy] [--until "<js>"] [--profile off] [--json out]
+//   node run.mjs <id> [--ticks N] [--diff d] [--leg idle|policy] [--until "<js>"] [--profile off|all|saved] [--json out]
+//                     [--exclude au] [--auto-opt "k=v;k2=v2"] [--no-auto]
 //                     [--storage in.json] [--load-from player.json] [--save --save-storage out.json]
 //                     [--state-out f] [--player-out f] [--ids-out f]
 import fs from 'node:fs';
@@ -31,8 +32,11 @@ export function bootChild(id, args, { timeoutMs = 600e3 } = {}) {
 /** Run one game in Node. Returns the boot result plus the orchestration record. */
 export function runNode(id, o = {}) {
   const ticks = Number(o.ticks ?? 200), diff = Number(o.diff ?? 0.05);
-  if (o.profile && o.profile !== 'off') throw new Error(`profile "${o.profile}" is not in L1 (only "off")`);
   const args = ['--ticks', String(ticks), '--diff', String(diff), '--leg', o.leg || 'idle'];
+  if (o.profile) args.push('--profile', String(o.profile));
+  if (o.exclude) args.push('--exclude', String(o.exclude));
+  if (o['auto-opt']) args.push('--auto-opt', String(o['auto-opt']));
+  if (o['no-auto']) args.push('--no-auto');
   if (o.until != null) args.push('--until', String(o.until));
   // the child runs with cwd = os.tmpdir(): every file argument is made absolute here
   for (const k of ['state-out', 'player-out', 'ids-out', 'save-storage']) if (o[k] != null) args.push(`--${k}`, path.resolve(String(o[k])));
@@ -56,11 +60,13 @@ export function runNode(id, o = {}) {
 }
 
 async function main() {
-  const a = parseArgs(process.argv.slice(2), ['save']);
+  const a = parseArgs(process.argv.slice(2), ['save', 'no-auto']);
   const id = a._[0];
   if (!id) { console.error('usage: node run.mjs <id> [--ticks N] [--diff d] [--until "<js>"] [--json out] …'); process.exit(2); }
   const res = runNode(id, a);
-  const line = { id, ok: res.ok, ticks: res.ticks, gameSeconds: res.gameSeconds, diff: res.diff, hash: res.hash, summary: res.summary };
+  const line = { id, ok: res.ok, profile: res.profile, ticks: res.ticks, gameSeconds: res.gameSeconds, diff: res.diff, hash: res.hash, summary: res.summary };
+  if (res.exclude) { line.exclude = res.exclude; line.hashFull = res.hashFull; }
+  if (res.hook && res.hook.hooked.length) line.hook = res.hook;
   if (res.until) line.until = res.until;
   if (!res.ok) Object.assign(line, { failed_at: res.failed_at, error: res.error });
   if (res.steps) line.steps = res.steps;

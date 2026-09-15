@@ -1,4 +1,4 @@
-# `window.tmtLoader` — the hook contract (L1)
+# `window.tmtLoader` — the hook contract (L1 + A1)
 
 `loader/page.js` creates `window.tmtLoader` before any game script; `loader/tmt-auto.js` (a classic script, inserted
 after the game's scripts, and run unchanged by the Node harness through `vm.runInThisContext`) fills in the members
@@ -17,13 +17,16 @@ It reads the engine's globals as **bare identifiers** inside its members, never 
 | `timers` | `{paused, counts, list()}` |
 | `tick(diff, n = 1)` | `n` × (`updateTemp(); gameLoop(diff); fixNaNs?.()`) — the census/probe loop; returns `{ticks, gameSeconds}` |
 | `ticks`, `gameSeconds` | counters owned by `tick()`; reset by a page load |
-| `stateJSON()` | `JSON.stringify(player)` without keys named `time` / `offTime` at any depth, plus `manifest.headless.stateMask` |
-| `hash()` | Promise of the first 16 hex of sha256(`stateJSON()`) — `crypto.subtle` in the page, `node:crypto` in Node (injected as `sha256hex`); equal by gate G3 |
+| `stateJSON(opts)` | `JSON.stringify(player)` without keys named `time` / `offTime` at any depth, plus `manifest.headless.stateMask`; `opts.exclude` = top-level `player` keys to drop (`['au']` compares against a pre-A1 anchor) |
+| `hash(opts)` | Promise of the first 16 hex of sha256(`stateJSON(opts)`) — `crypto.subtle` in the page, `node:crypto` in Node (injected as `sha256hex`); equal by gate G3 |
 | `save()` | the game's own `save()` with **no argument**; returns `storage.list()` |
 | `loadFrom(json)` | `importSave(btoa(json), true)` — the game's own import. **Both engines then reload the page**; the import completes on the next `ready`. In Node the harness boots a fresh process on the storage `importSave` wrote. |
-| `ids()` | `{layers: {id: {row, type}}, ids: ["<layer>:<ms\|upg\|buy\|ch\|ach>:<id>"], counts}` — numeric ids only (the census rule) |
-| `profile(name)` | only `"off"` in L1; anything else throws |
-| `registerAutoFeature(def)`, `features` | the automation registry shape; L1 records, never runs |
+| `ids()` | `{layers: {id: {row, type}}, ids: ["<layer>:<ms\|upg\|buy\|ch\|ach>:<id>"], counts}` — numeric ids only (the census rule); layers the loader adds (`au`, flagged `tmtLoaderLayer`) are left out |
+| `profile(name)` | `off` \| `all` \| `saved` (docs/automation.md); no argument returns the current one. The page applies `?profile=` after `onload` (default `off` when managed, else `saved`); the Node harness `--profile` (default `off`) |
+| `registerAutoFeature(def)`, `features` | the automation registry (docs/automation.md): kinds `reset` / `upgrades` / `buyables`, default OFF; registering hooks the layer's `automate` |
+| `setPolicy(id, policy)`, `featureState(id)` | switch a feature's policy at runtime (never saved); a feature's saved/unlocked/active state |
+| `hookLayer(layer)`, `hookStats()` | install the automate wrapper without a feature (test probe; `?autoOpt=hookAll=1` hooks every tree layer); per-layer call counters, `doubles`, `loops`, actions per feature |
+| `options` | table options: `?autoOpt=k=v;k2=v2` in the page, `--auto-opt` in the harness |
 | `storage` | `{prefix, raw, list(), clear()}` — the save namespace (`tmt-loader:<id>:`) and the raw `Storage` methods |
 
 ## Per-engine notes (measured in L1)
@@ -35,5 +38,8 @@ It reads the engine's globals as **bare identifiers** inside its members, never 
 | intervals at load | 3 (game loop 50 ms, canvas flag 500 ms, autosave 5 s) | 3 at load; components add hold-to-buy intervals |
 | `modInfo` | global `let`; no `modFiles` | global `let`; 17 `modFiles`, prefix `js/` |
 | state mask | `time`, `offTime` | `time`, `offTime` (no drift found) |
-| layer node selector | `#app .treeNode` | `#app .treeNode` |
+| layer node selector | `#app .treeNode` | `#app .treeNode` (the `au` side node also carries `.treeNode` here, so the count is one higher from A1 on) |
+| side node (`au`) | `#app .smallNode.au` | `#app .smallNode.au` |
+| `automate()` per `gameLoop` | once per layer, but **skipped for a layer not unlocked** (`unl(layer)`); never from `updateTemp` | once per layer, every tree layer; never from `updateTemp` |
+| side layers | no reset (`rowReset("side")` skips `layerDataReset`) | no reset (`!isNaN(row)` guard); `gameLoop` writes `player[side].best` from `points` every tick |
 | headless prestubs | `colors` (declared only in the skipped `canvas.js`) | none |

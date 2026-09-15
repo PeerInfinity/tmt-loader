@@ -8,9 +8,18 @@ const SELF = new URL('.', location.href);
 const params = new URLSearchParams(location.search);
 const MOD = params.get('mod');
 const MANAGED = params.get('managed') === '1';
+// ?profile=off|all|saved (automation profile, applied after onload, never saved); default: off when managed, else saved.
+const PROFILE = params.get('profile') || (MANAGED ? 'off' : 'saved');
+// ?autoOpt=k=v;k2=v2 — options the automation tables read (tmtLoader.options), e.g. unlockOrder=g,b
+const OPTIONS = parseOptions(params.get('autoOpt'));
+function parseOptions(s) {
+  const o = {};
+  for (const part of (s || '').split(';')) { if (!part) continue; const i = part.indexOf('='); if (i < 0) o[part] = '1'; else o[part.slice(0, i)] = part.slice(i + 1); }
+  return o;
+}
 const abs = (p) => new URL(p, SELF).href;
 
-const T = (window.tmtLoader = { id: MOD, manifest: null, ready: false, error: null, managed: MANAGED, step: 'init', loaded: [] });
+const T = (window.tmtLoader = { id: MOD, manifest: null, ready: false, error: null, managed: MANAGED, options: OPTIONS, step: 'init', loaded: [] });
 
 function overlay(title, detail) {
   const d = document.createElement('div');
@@ -105,6 +114,13 @@ async function boot(id) {
   }
   step('script loader/tmt-auto.js');
   await insertScript({ src: abs('loader/tmt-auto.js') }, 'loader/tmt-auto.js');
+  T.loaded.push('loader/tmt-auto.js');
+  if (manifest.auto) {
+    // the per-game automation table (games-auto/<id>.js): registerAutoFeature calls only, before onload
+    step(`script ${manifest.auto}`);
+    await insertScript({ src: abs(manifest.auto) }, manifest.auto);
+    T.loaded.push(manifest.auto);
+  }
 
   // body attributes (onmousemove, …) once the functions they name exist; onload is run explicitly below
   for (const [k, v] of Object.entries(plan.body.attrs)) document.body.setAttribute(k, v);
@@ -112,6 +128,8 @@ async function boot(id) {
   // 7. onload, then managed mode's pause, then ready
   step(`onload ${plan.onload}`);
   if (plan.onload) new Function(plan.onload).call(window);
+  step(`profile ${PROFILE}`);
+  T.profile(PROFILE);
   if (MANAGED) T.pause();
   T.ready = true;
   step('ready');
