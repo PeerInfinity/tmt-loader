@@ -2,18 +2,20 @@
 // serves the clone's PARENT with python3 -m http.server (PID recorded, stopped in finally) so the loader lives under
 // /tmt-loader/ exactly as on GitHub Pages, runs gate G1 (tools/harness/page.mjs --gate load --base …) against it,
 // loads index.html with no ?mod= and asserts the picker lists every game, then checks nothing in the clone changed.
-//   node tools/check-pages.mjs [--keep]
+//   node tools/check-pages.mjs [--keep] [--games id1,id2,…]   (G1 on those games only — default every game; the picker
+//                                                             check always covers the whole roster)
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { execFileSync, spawnSync } from 'node:child_process';
 import { chromium } from 'playwright';
-import { REPO, GAMES, parseArgs, startServer, headCommit } from './harness/lib.mjs';
+import { REPO, GAMES, parseArgs, startServer, headCommit, readManifest } from './harness/lib.mjs';
 import { openContext, waitReady } from './harness/page.mjs';
 
 const a = parseArgs(process.argv.slice(2), ['keep']);
 const git = (cwd, ...args) => execFileSync('git', ['-C', cwd, ...args], { encoding: 'utf8' }).trim();
-const result = { gate: 'G5 bare clone', commit: headCommit(), repoClean: git(REPO, 'status', '--porcelain') === '', steps: [] };
+const SAMPLE = a.games ? String(a.games).split(',').filter(Boolean) : GAMES();
+const result = { gate: 'G5 bare clone', games: SAMPLE, commit: headCommit(), repoClean: git(REPO, 'status', '--porcelain') === '', steps: [] };
 const step = (name, ok, detail = {}) => { result.steps.push({ name, ok, ...detail }); console.log(`${ok ? 'GREEN' : 'RED  '} ${name} ${JSON.stringify(detail)}`); };
 
 const parent = fs.mkdtempSync(path.join(os.tmpdir(), 'tmt-loader-pages-'));
@@ -29,10 +31,10 @@ result.serverPid = server.pid;
 let browser;
 try {
   // G1 against the clone, at the sub-path
-  const g1 = spawnSync(process.execPath, [path.join(REPO, 'tools/harness/page.mjs'), '--gate', 'load', '--base', base], { encoding: 'utf8', cwd: REPO, timeout: 300e3 });
+  const g1 = spawnSync(process.execPath, [path.join(REPO, 'tools/harness/page.mjs'), ...SAMPLE, '--gate', 'load', '--base', base], { encoding: 'utf8', cwd: REPO, timeout: 120e3 * SAMPLE.length });
   const g1rows = (g1.stdout || '').split('\n').filter((l) => l.startsWith('{')).map((l) => JSON.parse(l));
   for (const r of g1rows) step(`G1 load ${r.id} @ subpath`, r.ok, { readyMs: r.loadMs, layerNodes: r.layerNodes, requests: r.requests, blocked: r.blocked, failed: r.failed.length, pageErrors: r.pageErrors.length, keys: r.keys });
-  if (g1.status !== 0 || g1rows.length !== GAMES().length) step('G1 exit', false, { status: g1.status, stderr: (g1.stderr || '').slice(-400) });
+  if (g1.status !== 0 || g1rows.length !== SAMPLE.length) step('G1 exit', false, { status: g1.status, stderr: (g1.stderr || '').slice(-400) });
 
   // the picker: no ?mod=
   browser = await chromium.launch();
@@ -44,6 +46,9 @@ try {
     const r = await waitReady(page, t0);
     const listed = await page.$$eval('#picker li.game', (els) => els.map((e) => ({ id: e.dataset.id, name: e.querySelector('a').textContent, href: e.querySelector('a').href, meta: e.querySelector('.meta').textContent })));
     const want = GAMES();
+    // each entry names the game, its upstream repo @ commit, its engine and its license verdict (from its manifest)
+    const metaBad = listed.filter((x) => { const m = readManifest(x.id); return !(x.name === m.name && x.meta.includes(`${m.upstream.repo} @ ${m.upstream.commit.slice(0, 7)}`) && x.meta.includes(`TMT ${m.engine.tmtNum}`) && x.meta.includes(`license ${m.license.verdict}`)); }).map((x) => x.id);
+    step('picker entries name repo@sha, engine, license', listed.length === want.length && metaBad.length === 0, { count: listed.length, bad: metaBad });
     step('picker lists every game', r.ready && !r.error && listed.map((x) => x.id).join() === want.join() && stats.blocked.length === 0 && stats.failed.length === 0 && stats.pageErrors.length === 0,
       { listed, blocked: stats.blocked.length, failed: stats.failed, pageErrors: stats.pageErrors });
     // a picker link resolves under the sub-path
@@ -58,7 +63,8 @@ step('clone unmodified', cloneStatus === '', { status: cloneStatus });
 step('repo clean', git(REPO, 'status', '--porcelain') === '', { status: git(REPO, 'status', '-sb') });
 result.ok = result.steps.every((s) => s.ok);
 if (!a.keep) fs.rmSync(parent, { recursive: true, force: true });
-console.log(`G5 bare clone: ${result.ok ? 'GREEN' : 'RED'} (commit ${result.commit}, ${base})`);
+result.pickerCount = (result.steps.find((x) => x.name === 'picker lists every game') || {}).listed?.length;
+console.log(`G5 bare clone: ${result.ok ? 'GREEN' : 'RED'} (commit ${result.commit}, ${base}; G1 on ${SAMPLE.join(', ')}; picker ${result.pickerCount} games)`);
 fs.mkdirSync(path.join(REPO, 'tools/harness/results/tmp'), { recursive: true });
 fs.writeFileSync(path.join(REPO, 'tools/harness/results/tmp/check-pages-last.json'), JSON.stringify(result, null, 2));
 process.exit(result.ok ? 0 : 1);

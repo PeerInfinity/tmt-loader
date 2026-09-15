@@ -1,26 +1,63 @@
 # Adding a game
 
-1. **Subtree** at a pinned commit, squashed, under `games/<id>/` (never edit files there):
+One command does it, from a checkout of [tmt-fork-census](https://github.com/PeerInfinity/tmt-fork-census) beside this
+repository (`--census <dir>` or `TMT_CENSUS` otherwise; the census is a dev-time dependency of the tool only — the page
+and the harness never import it):
+
+```
+node tools/add-game.mjs <owner/repo> --dry-run          # id, SHA, license verdicts and the manifest; no git
+node tools/add-game.mjs <owner/repo> [<owner/repo>...]  # add, then gate
+```
+
+A game must have a census row (booted, with its shallow clone under `clones/`). Options: `--id <id>` and
+`--sha <full sha>` override the defaults for a single target; `--tag <text>` prefixes the SUMMARY gate names;
+`--au-check` also opens the game with `?automation=1` and checks that the empty `au` tab renders; `--json <out>`.
+It prints one JSON line per game: `{id, repo, rank, sha, license, added, gates: {checkManifest, idleHash, goldens, load}}`
+(plus `skipped`, `detail`, `idCollision`, `error` where they apply).
+
+## What it does
+
+1. **Preflight** (every target first; no git operation):
+   - **id** = the census row's `mod_name` lower-cased, every run of non-alphanumerics → `-`, trimmed. It collides with an
+     existing `manifests/<id>.json`, the same slug of an existing manifest's `name`, or an id produced earlier in the
+     run → append `-<owner lower-cased>` (e.g. `prestige-tree-rewritten-unsoftcapped4` beside `ptr`). An id that is not
+     `^[a-z0-9-]+$` is refused (pass `--id`). A repo already in the loader (matched on `upstream.repo`) keeps its id and
+     is not added again; `--dry-run` then reports whether the emitted manifest reproduces the committed one.
+   - **SHA** = the census boot row's `head`, resolved to the full SHA in the census clone.
+   - **License**: every license-like file at the clone's root is read by the census's `classifyLicenseText`. **Every
+     file must classify `MIT`**; otherwise the game is recorded `skipped: license` with the verdicts and nothing is
+     fetched.
+   - **Manifest**: `scripts/manifest.mjs <owner/repo> --id <id>` from the census, into a temp file; `load.vendor` is
+     filled from the vendored files the existing manifests already pin (sha256 re-checked against `vendor/`); a `vendor`
+     URL no manifest pins **stops the run** before any git operation (vendor it by hand: fetch into
+     `vendor/<lib>-<version>.min.js`, check it is JavaScript, record `{path, sha256}` in a manifest); `patches: []`;
+     no `auto` (a game without a per-game table still gets the registry and an empty `au` tab under `?automation=1`).
+2. **Subtree** (the working tree must have no tracked changes — `git subtree add` refuses them):
    ```
    git remote add -f <id>-upstream https://github.com/<owner>/<repo>.git
    git remote set-url --push <id>-upstream no-push
    git subtree add --prefix=games/<id> <full sha> --squash
+   diff -r -x .git games/<id> <census clone>                # must be empty, else abort and report — never patch
    ```
-   Verify `games/<id>` is not a repo of its own and `diff -r -x .git games/<id> <a clone at that sha>` is empty.
-2. **Manifest** from the census emitter (`docs/manifest.md`), then `patches: []` and a `manifests/index.json` entry.
-   A game the census has not booted needs a census row first.
-3. **Vendor** every `load.external` URL marked `vendor`: one fetch into `vendor/`, check it is JavaScript (not an
-   HTML error page), record `{path, sha256}` in `load.vendor`, name the sha256 in the commit message.
-4. **Gates** (`tools/harness/results/SUMMARY.md` gets the rows):
-   ```
-   node --test loader/                                   # add the game to loader/interpret.test.mjs
-   node tools/harness/check-manifest.mjs <id>
-   node tools/harness/run.mjs <id> --ticks 200 --diff 0.05  # must print manifest.headless.idleHash.hash
-   node tools/harness/check-goldens.mjs <id> --write      # then review the counts against manifest.census
-   node tools/harness/gates.mjs <id>                      # G1–G4
-   node tools/check-pages.mjs                             # G5
-   ```
-   If the Node boot needs a stub the manifest lacks, `run.mjs` re-spawns with it (≤ 12) and reports
-   `respawn_prestubs`; add those to `headless.prestubs`. If a field of `player` drifts between two identical runs,
-   add it to `headless.stateMask` and say why in the commit.
-5. If the game cannot load without a patch: stop and record why before patching anything under `games/<id>/`.
+3. **Manifest + index**: `manifests/<id>.json`, and `{id, name, repo}` appended to `manifests/index.json` (the picker's
+   roster; `repo` = `upstream.repo`, what the census joins on).
+4. **Gates** (rows appended to `tools/harness/results/SUMMARY.md`; a red gate keeps the subtree, which is pristine and
+   licensed, and is recorded as `RED: <message>`):
+   - `check-manifest` — the pin vs the live `index.html`, vendor sha256, `games/<id>` pristine at the squash;
+   - **idle hash**: `run.mjs <id> --ticks 200 --diff 0.05 --no-automation` = `manifest.headless.idleHash.hash` (the
+     census's). A game the census marks nondeterministic is run twice and recorded `nondeterministic`, not failed;
+   - **goldens**: `tools/harness/goldens/<id>.ids.json` written, counts = `manifest.census`;
+   - **G1 load**: `page.mjs <id> --gate load` on the plain page — 0 non-localhost requests, 0 failed, 0 page errors,
+     ≥ 1 `#app .treeNode`, 0 `au` nodes.
+
+Commit what the tool leaves uncommitted (`manifests/`, `tools/harness/goldens/`, `SUMMARY.md`) on top of its subtree
+commits, then run `node tools/check-pages.mjs` (G5) on the committed HEAD. For several games, pass them in one call:
+all subtrees go in first, then the manifests and gates, so one commit covers the batch.
+
+## By hand, when the tool cannot
+
+- If the Node boot needs a stub the manifest lacks, `run.mjs` re-spawns with it (≤ 12) and reports
+  `respawn_prestubs`; add those to `headless.prestubs`. If a field of `player` drifts between two identical runs, add it
+  to `headless.stateMask` and say why in the commit.
+- If the game cannot load without a patch: stop and record why before patching anything under `games/<id>/`.
+- Optional for a game with unusual markup: add it to `loader/interpret.test.mjs` (`node --test loader/`).

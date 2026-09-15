@@ -1,10 +1,12 @@
 [
   {
     "id": "ptr",
-    "name": "Prestige Tree Rewritten"
+    "name": "Prestige Tree Rewritten",
+    "repo": "Jacorb90/Prestige-Tree"
   },
   {
     "id": "something",
-    "name": "Justcubing97's Something Tree"
+    "name": "Justcubing97's Something Tree",
+    "repo": "Justcubing97/JC97sSomethingTree"
   }
 ]

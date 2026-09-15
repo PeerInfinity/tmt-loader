@@ -29,7 +29,15 @@ on drift — after a `git subtree pull`, re-emit the manifest.
 | `auto` | optional (A1): the per-game automation table, `games-auto/<id>.js` — a classic script loaded right after `loader/tmt-auto.js` by the page and the Node boot (docs/automation.md). **Hand-written: the census emitter does not write it**; keep it when re-emitting a manifest. `check-manifest` checks the path shape and that the file exists |
 | `generated` | the emitter and its commit |
 
+## `manifests/index.json`
+
+The roster, in the order games were added: `[{id, name, repo}]` — `repo` = the manifest's `upstream.repo` (what an
+outside index such as the census joins on; never join on `id`). The picker reads each entry's manifest for the rest.
+
 ## Emitting
+
+`node tools/add-game.mjs <owner/repo>` does all of the below and the gates (`docs/add-a-game.md`). By hand:
+
 
 ```
 cd tmt-fork-census
