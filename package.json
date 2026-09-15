@@ -1,0 +1,21 @@
+{
+  "name": "tmt-loader",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Loads The-Modding-Tree-family games on their own engines from one static page, plus a Node harness proven equal to the page.",
+  "license": "MIT",
+  "type": "module",
+  "scripts": {
+    "harness:test": "node --test loader/",
+    "harness:run": "node tools/harness/run.mjs",
+    "harness:page": "node tools/harness/page.mjs",
+    "harness:load": "node tools/harness/page.mjs --gate load",
+    "harness:parity": "node tools/harness/parity.mjs",
+    "harness:goldens": "node tools/harness/check-goldens.mjs",
+    "harness:manifest": "node tools/harness/check-manifest.mjs",
+    "harness:pages": "node tools/check-pages.mjs"
+  },
+  "devDependencies": {
+    "playwright": "1.56.0"
+  }
+}

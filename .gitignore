@@ -1,0 +1,5 @@
+node_modules/
+results/*.png
+tools/harness/results/*.png
+tools/harness/results/tmp/
+test-results/
