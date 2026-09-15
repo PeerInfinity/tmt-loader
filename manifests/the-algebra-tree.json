@@ -62,6 +62,11 @@
         "path": "vendor/vue-2.7.16.min.js",
         "sha256": "3c1d4b0c549e8de9d4a9bafb12ab70b6a1ac747d07293b98c5b25b6632999afd"
       }
+    },
+    "known": {
+      "externalHosts": [
+        "i.imgur.com"
+      ]
     }
   },
   "save": {

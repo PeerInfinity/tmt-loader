@@ -48,7 +48,10 @@ It prints one JSON line per game: `{id, repo, rank, sha, license, added, gates: 
      census's). A game the census marks nondeterministic is run twice and recorded `nondeterministic`, not failed;
    - **goldens**: `tools/harness/goldens/<id>.ids.json` written, counts = `manifest.census`;
    - **G1 load**: `page.mjs <id> --gate load` on the plain page — 0 non-localhost requests, 0 failed, 0 page errors,
-     ≥ 1 `#app .treeNode`, 0 `au` nodes.
+     ≥ 1 `#app .treeNode`, 0 `au` nodes — except what the manifest's hand-kept `load.known` declares (docs/manifest.md).
+     A new game that is red only because its index names a missing script, its own timers throw before `load()`, or it
+     hotlinks images: re-run `check-manifest <id>` with `"known": {}` in `load`, copy the drift it reports into the block
+     (plus an `errorsBeforeReady` reason if needed), and re-run the gates. `add-game.mjs` keeps an existing `known`.
 
 Commit what the tool leaves uncommitted (`manifests/`, `tools/harness/goldens/`, `SUMMARY.md`) on top of its subtree
 commits, then run `node tools/check-pages.mjs` (G5) on the committed HEAD. For several games, pass them in one call:

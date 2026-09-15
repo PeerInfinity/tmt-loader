@@ -62,6 +62,9 @@
         "path": "vendor/vue-2.6.12.min.js",
         "sha256": "29296ccacaa9ed35ed168fc51e36f54fd6f8db9c7786bbf38cc59a27229ba5c2"
       }
+    },
+    "known": {
+      "errorsBeforeReady": "js/mod.js: a top-level setInterval (var timer, 10 ms) reads player.showHumanity before js/game.js declares player and load() fills it; the game's own errors, raised until onload"
     }
   },
   "save": {

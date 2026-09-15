@@ -146,8 +146,8 @@ for (const repoArg of a._) {
   res._L = L;
   if (present) {
     res.present = true;
-    const strip = (m) => { const c = structuredClone(m); delete c.auto; if (c.generated) delete c.generated.at; return c; };
-    res.reproduces = { manifest: `manifests/${present.id}.json`, equal: JSON.stringify(strip(present)) === JSON.stringify(strip(em.manifest)), diff: jsonDiff(strip(present), strip(em.manifest)), ignored: ['generated.at', 'auto (hand-written)'] };
+    const strip = (m) => { const c = structuredClone(m); delete c.auto; if (c.load) delete c.load.known; if (c.generated) delete c.generated.at; return c; };
+    res.reproduces = { manifest: `manifests/${present.id}.json`, equal: JSON.stringify(strip(present)) === JSON.stringify(strip(em.manifest)), diff: jsonDiff(strip(present), strip(em.manifest)), ignored: ['generated.at', 'auto (hand-written)', 'load.known (hand-kept)'] };
   }
 }
 
@@ -165,7 +165,7 @@ if (a['dry-run']) {
   if (a.summary) {
     const { appendSection } = await import('./harness/summary.mjs');
     appendSection({ title: `${TAG} dry-run (\`node tools/add-game.mjs ${a._.join(' ')} --dry-run\`)`, commit: headCommit(), dirty: treeDirty(), slug: `add-game-dry-${TAG.replace(/[^\w-]+/g, '_')}`,
-      reading: 'no git operation; a game already in the loader is matched by upstream.repo and its emitted manifest compared to the committed one without generated.at and the hand-written auto.',
+      reading: 'no git operation; a game already in the loader is matched by upstream.repo and its emitted manifest compared to the committed one without generated.at, the hand-written auto and the hand-kept load.known.',
       rows: results.map((r) => ({ gate: `${TAG} dry-run${r.present ? ' reproduces manifest' : ''}`, id: r.id || r.repo, ok: !r.skipped && (!r.present || r.reproduces.equal), notes: `${r.repo} @ ${r.sha}; license ${r.license?.verdict} ${JSON.stringify(r.license?.files || {})}${r.skipped ? '; SKIPPED ' + r.skipped + ' ' + JSON.stringify(r.detail) : ''}${r.idCollision ? `; id collision with ${r.idCollision.with} → ${r.idCollision.resolved}` : ''}${r.present ? `; manifests/${r.id}.json equal=${r.reproduces.equal}${r.reproduces.diff.length ? ' diff ' + r.reproduces.diff.join('; ') : ''}` : ''}` })) });
   }
   printLines();
@@ -206,6 +206,13 @@ const added = results.filter((r) => r.added);
 const indexFile = path.join(manifestsDir, 'index.json');
 const index = JSON.parse(fs.readFileSync(indexFile, 'utf8'));
 for (const r of added) {
+  // the hand-written `auto` and the hand-kept `load.known` survive a re-emit (the census emitter writes neither)
+  const prev = path.join(manifestsDir, `${r.id}.json`);
+  if (fs.existsSync(prev)) {
+    const old = JSON.parse(fs.readFileSync(prev, 'utf8'));
+    if (old.auto !== undefined) r.manifest.auto = old.auto;
+    if (old.load && old.load.known !== undefined) r.manifest.load.known = old.load.known;
+  }
   writeJSON(path.join(manifestsDir, `${r.id}.json`), r.manifest);
   if (!index.some((e) => e.id === r.id)) index.push({ id: r.id, name: r.manifest.name, repo: r.manifest.upstream.repo });
 }
@@ -259,8 +266,8 @@ if (added.length) {
       const lr = (g.stdout || '').split('\n').filter((l) => l.startsWith('{')).map((l) => JSON.parse(l))[0];
       if (!lr) { r.gates.load = RED(`page.mjs exit ${g.status}: ${(g.stderr || '').slice(-300)}`); row('G1 load (plain page)', false, { notes: r.gates.load }); }
       else {
-        r.gates.load = lr.ok ? 'GREEN' : RED(`ready ${lr.ready} error ${JSON.stringify(lr.error)}; ${lr.layerNodes} treeNodes; blocked ${lr.blocked} ${JSON.stringify(lr.blockedUrls)}; failed ${JSON.stringify(lr.failed)}; page errors ${JSON.stringify(lr.pageErrors)}${lr.exception ? '; ' + lr.exception : ''}`);
-        row('G1 load (plain page)', lr.ok, { ticks: lr.ticks, gameSeconds: lr.ticks != null ? Math.round(lr.ticks * 0.05 * 1e9) / 1e9 : null, diff: 0.05, notes: `ready ${lr.loadMs} ms; ${lr.layerNodes} \`#app .treeNode\`; ${lr.requests} requests, ${lr.blocked} non-localhost, ${lr.failed?.length} failed, ${lr.pageErrors?.length} page errors; au nodes ${lr.auNodes}; keys ${(lr.keys || []).map((k) => '`' + k + '`').join(', ')}${lr.ok ? '' : '; ' + r.gates.load}` });
+        r.gates.load = lr.ok ? 'GREEN' : RED(`ready ${lr.ready} error ${JSON.stringify(lr.error)}; ${lr.layerNodes} treeNodes; blocked ${lr.blocked} ${JSON.stringify(lr.blockedUrls)}; failed ${JSON.stringify(lr.failed)}; page errors ${JSON.stringify(lr.pageErrors)}; verdict vs load.known ${JSON.stringify(lr.loadVerdict)}${lr.exception ? '; ' + lr.exception : ''}`);
+        row('G1 load (plain page)', lr.ok, { ticks: lr.ticks, gameSeconds: lr.ticks != null ? Math.round(lr.ticks * 0.05 * 1e9) / 1e9 : null, diff: 0.05, notes: `ready ${lr.loadMs} ms; ${lr.layerNodes} \`#app .treeNode\`; ${lr.requests} requests, ${lr.blocked} non-localhost, ${lr.failed?.length} failed, ${lr.pageErrors?.length} page errors; au nodes ${lr.auNodes}${lr.allowed ? `; allowed ${JSON.stringify(lr.allowed)}` : ''}; keys ${(lr.keys || []).map((k) => '`' + k + '`').join(', ')}${lr.ok ? '' : '; ' + r.gates.load}` });
       }
     }
     // once: the registry under ?automation=1 with no per-game table renders an empty au tab without error

@@ -8,31 +8,64 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { chromium } from 'playwright';
-import { REPO, GAMES, parseArgs, startServer, writeJSON, headCommit } from './lib.mjs';
+import { REPO, GAMES, parseArgs, startServer, writeJSON, headCommit, readManifest } from './lib.mjs';
 import { DRIVE_SRC } from './policy.mjs';
 
 const LOCAL = new Set(['127.0.0.1', 'localhost']);
 export const LAYER_NODE_SELECTOR = '#app .treeNode';
 export const AU_NODE_SELECTOR = '#app .smallNode.au';
 
-/** Opens a browser context with the non-localhost block and the request/error counters. */
+/** Opens a browser context with the non-localhost block and the request/error counters. `stats.of(page)` holds the same
+ * lists for one page (the G1 row checks its game's page against that game's `load.known`). */
 export async function openContext(browser, { allowExternal = false } = {}) {
   const context = await browser.newContext();
+  const fresh = () => ({ blocked: [], failed: [], pageErrors: [] });
   const stats = { blocked: [], failed: [], pageErrors: [], consoleErrors: [], consoleWarnings: [], requests: 0, urls: [] };
+  const perPage = new Map();
+  stats.of = (page) => { if (!perPage.has(page)) perPage.set(page, fresh()); return perPage.get(page); };
+  const pageOfReq = (req) => { try { return req.frame().page(); } catch { return null; } };
+  const push = (req, key, value) => { stats[key].push(value); const p = req && pageOfReq(req); if (p) stats.of(p)[key].push(value); };
   await context.route('**', (route) => {
     const u = new URL(route.request().url());
-    if (!allowExternal && (u.protocol === 'http:' || u.protocol === 'https:') && !LOCAL.has(u.hostname)) { stats.blocked.push(u.href); return route.abort('blockedbyclient'); }
+    if (!allowExternal && (u.protocol === 'http:' || u.protocol === 'https:') && !LOCAL.has(u.hostname)) { push(route.request(), 'blocked', u.href); return route.abort('blockedbyclient'); }
     return route.continue();
   });
   context.on('request', (r) => { stats.requests++; stats.urls.push(r.url()); });
-  context.on('requestfailed', (r) => { if (!stats.blocked.includes(r.url())) stats.failed.push(`${r.url()} ${r.failure() && r.failure().errorText}`); });
-  context.on('response', (r) => { if (r.status() >= 400) stats.failed.push(`${r.url()} HTTP ${r.status()}`); });
+  context.on('requestfailed', (r) => { if (!stats.blocked.includes(r.url())) push(r, 'failed', `${r.url()} ${r.failure() && r.failure().errorText}`); });
+  context.on('response', (r) => { if (r.status() >= 400) push(r.request(), 'failed', `${r.url()} HTTP ${r.status()}`); });
   const watch = (page) => {
-    page.on('pageerror', (e) => stats.pageErrors.push(String(e).slice(0, 300)));
+    page.on('pageerror', (e) => { const m = String(e).slice(0, 300); stats.pageErrors.push(m); stats.of(page).pageErrors.push(m); });
     page.on('console', (m) => { if (m.type() === 'error') stats.consoleErrors.push(m.text().slice(0, 300)); if (m.type() === 'warning') stats.consoleWarnings.push(m.text().slice(0, 300)); });
   };
   context.on('page', watch);
   return { context, stats };
+}
+
+/**
+ * G1's load verdict for ONE page against its manifest's `load.known` (docs/manifest.md). Without a known block: 0 blocked,
+ * 0 failed, 0 page errors. With one: a failed request only for a URL whose path is a declared missing script (and
+ * tmtLoader.skipped must equal that list), a blocked request only for a declared host, page errors before ready only when
+ * errorsBeforeReady is declared, and never one after ready. `pw` = this page's Playwright lists (stats.of(page)),
+ * `loader` = {skipped, pageErrors} read from tmtLoader AFTER `pw` was snapshotted (so loader ⊇ pw).
+ */
+export function judgeLoad(manifest, base, pw, loader) {
+  const known = (manifest.load && manifest.load.known) || null;
+  const missing = new Set((known && known.missingScripts) || []);
+  const hosts = new Set((known && known.externalHosts) || []);
+  const gamePath = new URL(`games/${manifest.id}/`, base).pathname;
+  const pathOf = (u) => { try { const p = new URL(u.split(' ')[0]).pathname; return p.startsWith(gamePath) ? p.slice(gamePath.length) : null; } catch { return null; } };
+  const hostOf = (u) => { try { return new URL(u).hostname; } catch { return null; } };
+  const failedBad = pw.failed.filter((f) => !missing.has(pathOf(f)));
+  const blockedBad = pw.blocked.filter((u) => !hosts.has(hostOf(u)));
+  const skipped = [...(loader.skipped || [])].sort();
+  const skippedOk = JSON.stringify(skipped) === JSON.stringify([...missing].sort());
+  const before = (loader.pageErrors || []).filter((e) => e.when === 'before-ready');
+  const after = (loader.pageErrors || []).filter((e) => e.when !== 'before-ready');
+  // Playwright's own count cannot exceed the loader's (read later); anything else means an error the loader did not see
+  const errorsOk = known && known.errorsBeforeReady ? after.length === 0 && pw.pageErrors.length <= before.length + after.length : pw.pageErrors.length === 0 && after.length === 0 && before.length === 0;
+  const ok = failedBad.length === 0 && blockedBad.length === 0 && skippedOk && errorsOk;
+  const allowed = known ? { skipped: skipped.filter((f) => missing.has(f)).length, blockedHosts: [...new Set(pw.blocked.filter((u) => hosts.has(hostOf(u))).map(hostOf))].sort(), errorsBeforeReady: known.errorsBeforeReady ? before.length : 0 } : null;
+  return { ok, allowed, failedBad, blockedBad, skippedOk, skipped, errorsBeforeReady: before.length, errorsAfterReady: after.length, errorsAfterReadySample: after.slice(0, 3) };
 }
 
 /** Navigates to the loader for `id` and polls tmtLoader.ready || tmtLoader.error (30 s bound). */
@@ -98,9 +131,17 @@ async function gateLoad(browser, base, ids, { automation = false } = {}) {
       const otherKeys = Object.keys(both).filter((k) => !(k in mine));
       row.other = { id: other, ready: r2.ready, keys: otherKeys, keysInNamespace: otherKeys.length > 0 && otherKeys.every((k) => k.startsWith(`tmt-loader:${other}:`)) };
       row.firstUntouched = Object.entries(mine).every(([k, v]) => both[k] === v);
+      // each page judged against its OWN manifest's load.known (the other game shares the context, not the allowances)
+      const judge = async (p, gid) => { const pw = structuredClone({ ...stats.of(p) }); const loader = await p.evaluate(() => ({ skipped: tmtLoader.skipped, pageErrors: tmtLoader.pageErrors })); return judgeLoad(readManifest(gid), base, pw, loader); };
+      const j = await judge(page, id);
+      const j2 = await judge(page2, other);
       await page2.close();
-      Object.assign(row, { requests: stats.requests, blocked: stats.blocked.length, blockedUrls: [...new Set(stats.blocked)], failed: stats.failed, pageErrors: stats.pageErrors, consoleErrors: stats.consoleErrors });
-      row.ok = !!(r.ready && !r.error && row.optInOk && stats.blocked.length === 0 && stats.failed.length === 0 && stats.pageErrors.length === 0 && row.layerNodes >= 1
+      const mine1 = stats.of(page);
+      Object.assign(row, { requests: stats.requests, blocked: mine1.blocked.length, blockedUrls: [...new Set(mine1.blocked)], failed: mine1.failed, pageErrors: mine1.pageErrors, consoleErrors: stats.consoleErrors,
+        known: readManifest(id).load.known ?? null, allowed: j.allowed, skipped: j.skipped, errorsBeforeReady: j.errorsBeforeReady, errorsAfterReady: j.errorsAfterReady,
+        loadVerdict: { ok: j.ok, failedNotDeclared: j.failedBad, blockedNotDeclared: j.blockedBad, skippedEqualsDeclared: j.skippedOk, errorsAfterReadySample: j.errorsAfterReadySample },
+        otherLoadVerdict: { ok: j2.ok, failedNotDeclared: j2.failedBad, blockedNotDeclared: j2.blockedBad, skippedEqualsDeclared: j2.skippedOk, errorsAfterReady: j2.errorsAfterReady } });
+      row.ok = !!(r.ready && !r.error && row.optInOk && j.ok && j2.ok && row.layerNodes >= 1
         && row.keysInNamespace && row.other.ready && row.other.keysInNamespace && row.firstUntouched);
     } catch (e) {
       row.exception = String(e && e.stack || e).slice(0, 600);
@@ -126,10 +167,13 @@ export async function runPage(browser, base, id, { ticks, diff, leg = 'idle', un
     const drive = await pageDrive(page, { ticks, diff, leg, until });
     const ms = Date.now() - t0;
     const st = await pageState(page, exclude);
+    // the load and the drive judged against the game's load.known (the same rule as G1)
+    const pw = structuredClone({ ...stats.of(page) });
+    const loadVerdict = judgeLoad(readManifest(id), base, pw, await page.evaluate(() => ({ skipped: tmtLoader.skipped, pageErrors: tmtLoader.pageErrors })));
     if (stateOut) fs.writeFileSync(stateOut, st.json);
     const player = playerOut ? await pagePlayerJSON(page) : null;
     if (playerOut) fs.writeFileSync(playerOut, player);
-    return { runner: 'page', id, automation, leg, until: until ? { expr: until, met: drive.met, stoppedAtTick: st.ticks } : undefined, policy_errors: leg === 'policy' ? drive.policyErrors : undefined, player, ticks: st.ticks, gameSeconds: st.gameSeconds, diff, hash: st.hash, hashFull: exclude.length ? st.hashFull : undefined, profile: st.profile, exclude: exclude.length ? exclude : undefined, hook: st.hook && st.hook.hooked.length ? st.hook : undefined, ms, summary: { points: st.points }, blocked: stats.blocked.length, failed: stats.failed.length, pageErrors: stats.pageErrors, json: st.json };
+    return { runner: 'page', id, automation, leg, until: until ? { expr: until, met: drive.met, stoppedAtTick: st.ticks } : undefined, policy_errors: leg === 'policy' ? drive.policyErrors : undefined, player, ticks: st.ticks, gameSeconds: st.gameSeconds, diff, hash: st.hash, hashFull: exclude.length ? st.hashFull : undefined, profile: st.profile, exclude: exclude.length ? exclude : undefined, hook: st.hook && st.hook.hooked.length ? st.hook : undefined, ms, summary: { points: st.points }, blocked: stats.blocked.length, failed: stats.failed.length, pageErrors: stats.pageErrors, loadVerdict: { ok: loadVerdict.ok, allowed: loadVerdict.allowed, failedNotDeclared: loadVerdict.failedBad.length, blockedNotDeclared: loadVerdict.blockedBad.length, errorsAfterReady: loadVerdict.errorsAfterReady }, json: st.json };
   } finally { await context.close(); }
 }
 
@@ -145,7 +189,7 @@ async function main() {
       const rows = await gateLoad(browser, base, ids, { automation: !!a.automation });
       if (a.json) writeJSON(a.json, { commit: headCommit(), base, rows });
       code = rows.every((r) => r.ok) ? 0 : 1;
-      console.log(`G1 load: ${rows.map((r) => `${r.id}=${r.ok ? 'GREEN' : 'RED'}`).join(' ')}`);
+      console.log(`G1 load: ${rows.map((r) => `${r.id}=${r.ok ? 'GREEN' : 'RED'}${r.allowed ? ` allowed: ${JSON.stringify(r.allowed)}` : ''}`).join(' ')}`);
     } else {
       const out = await runPage(browser, base, ids[0], { ticks: Number(a.ticks ?? 200), diff: Number(a.diff ?? 0.05), leg: a.leg || 'idle', until: a.until || null, stateOut: a['state-out'], playerOut: a['player-out'], loadFrom: a['load-from'] ? fs.readFileSync(a['load-from'], 'utf8') : null, profile: a.profile || null, exclude: a.exclude ? a.exclude.split(',') : [], autoOpt: a['auto-opt'] || null, automation: !a['no-automation'] });
       delete out.json; delete out.player;

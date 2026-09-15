@@ -20,10 +20,11 @@ export async function parity(id, { ticks, diff, leg = 'idle', base, browser, mut
   const page = await runPage(browser, base, id, { ticks, diff, leg, mutant, profile, exclude, autoOpt, automation });
   const div = firstDivergence(nodeJson, page.json);
   return {
-    id, ok: !div && node.ticks === page.ticks && node.gameSeconds === page.gameSeconds && page.blocked === 0 && page.failed === 0 && page.pageErrors.length === 0,
+    // the page's load noise is judged against load.known (0 blocked / failed / page errors for a game without one)
+    id, ok: !div && node.ticks === page.ticks && node.gameSeconds === page.gameSeconds && page.loadVerdict.ok,
     ticks: node.ticks, gameSeconds: node.gameSeconds, diff, leg, automation, profile: profile || 'off',
     node: { ticks: node.ticks, gameSeconds: node.gameSeconds, hash: node.hash, jsonHash: hash16(nodeJson), hook: node.hook },
-    page: { ticks: page.ticks, gameSeconds: page.gameSeconds, hash: page.hash, hook: page.hook, ms: page.ms, blocked: page.blocked, failed: page.failed, pageErrors: page.pageErrors },
+    page: { ticks: page.ticks, gameSeconds: page.gameSeconds, hash: page.hash, hook: page.hook, ms: page.ms, blocked: page.blocked, failed: page.failed, pageErrors: page.pageErrors, loadVerdict: page.loadVerdict },
     divergence: div,
   };
 }
