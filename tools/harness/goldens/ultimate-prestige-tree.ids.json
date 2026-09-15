@@ -1,0 +1,181 @@
+{
+  "id": "ultimate-prestige-tree",
+  "commit": "ddddb4606d908f0f9ccde34be51547e8a54bb54a",
+  "layers": {
+    "info-tab": {
+      "row": "otherside",
+      "type": "none"
+    },
+    "options-tab": {
+      "row": "otherside",
+      "type": "none"
+    },
+    "changelog-tab": {
+      "row": "otherside",
+      "type": "none"
+    },
+    "p": {
+      "row": 0,
+      "type": "normal"
+    },
+    "mp": {
+      "row": 1,
+      "type": "normal"
+    },
+    "b": {
+      "row": 1,
+      "type": "static"
+    },
+    "g": {
+      "row": 1,
+      "type": "static"
+    },
+    "e": {
+      "row": 2,
+      "type": "normal"
+    },
+    "t": {
+      "row": 2,
+      "type": "normal"
+    },
+    "f": {
+      "row": 2,
+      "type": "normal"
+    },
+    "te": {
+      "row": 3,
+      "type": "static"
+    },
+    "tt": {
+      "row": 3,
+      "type": "normal"
+    },
+    "ge": {
+      "row": 3,
+      "type": "static"
+    },
+    "w": {
+      "row": 3,
+      "type": "static"
+    },
+    "blank": {
+      "row": null,
+      "type": "none"
+    },
+    "tree-tab": {
+      "row": null,
+      "type": "none"
+    }
+  },
+  "ids": [
+    "p:ms:0",
+    "p:ms:1",
+    "p:upg:11",
+    "p:upg:12",
+    "p:upg:13",
+    "p:upg:14",
+    "p:upg:15",
+    "p:upg:21",
+    "p:upg:22",
+    "mp:upg:11",
+    "mp:upg:12",
+    "mp:upg:13",
+    "mp:upg:14",
+    "mp:upg:21",
+    "mp:upg:22",
+    "mp:upg:23",
+    "mp:upg:24",
+    "mp:upg:31",
+    "mp:upg:32",
+    "mp:upg:33",
+    "mp:upg:34",
+    "b:ms:0",
+    "b:ms:1",
+    "b:upg:11",
+    "b:upg:12",
+    "b:upg:13",
+    "b:upg:21",
+    "b:upg:22",
+    "b:upg:23",
+    "b:upg:31",
+    "b:upg:32",
+    "b:upg:33",
+    "b:upg:41",
+    "b:upg:42",
+    "b:upg:43",
+    "b:buy:11",
+    "b:buy:12",
+    "b:buy:21",
+    "g:ms:0",
+    "g:ms:1",
+    "g:ms:2",
+    "g:upg:11",
+    "g:upg:12",
+    "g:upg:13",
+    "g:upg:21",
+    "g:upg:22",
+    "g:upg:23",
+    "g:buy:11",
+    "g:buy:12",
+    "g:buy:13",
+    "g:buy:21",
+    "g:buy:22",
+    "g:buy:23",
+    "g:buy:31",
+    "e:ms:0",
+    "e:ms:1",
+    "e:ms:2",
+    "e:ms:3",
+    "e:upg:11",
+    "e:upg:12",
+    "e:upg:13",
+    "e:upg:14",
+    "e:upg:21",
+    "e:upg:22",
+    "e:upg:23",
+    "e:upg:24",
+    "e:buy:11",
+    "t:ms:0",
+    "t:ms:1",
+    "t:ms:2",
+    "t:ms:3",
+    "t:ms:4",
+    "t:ms:5",
+    "t:upg:11",
+    "t:upg:12",
+    "t:upg:13",
+    "t:upg:21",
+    "t:upg:22",
+    "t:upg:23",
+    "t:upg:31",
+    "t:upg:32",
+    "t:upg:33",
+    "t:upg:41",
+    "t:upg:42",
+    "t:upg:43",
+    "t:upg:51",
+    "t:upg:52",
+    "t:upg:53",
+    "t:buy:11",
+    "f:ms:0",
+    "f:ms:1",
+    "f:ms:2",
+    "f:upg:11",
+    "f:upg:12",
+    "f:upg:13",
+    "f:upg:14",
+    "f:buy:11",
+    "f:buy:12",
+    "f:buy:13",
+    "te:ms:0",
+    "te:ms:1",
+    "te:ms:2"
+  ],
+  "counts": {
+    "ms": 23,
+    "upg": 64,
+    "buy": 15,
+    "ch": 0,
+    "ach": 0
+  }
+}

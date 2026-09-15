@@ -1,0 +1,209 @@
+{
+  "id": "the-algebra-tree",
+  "commit": "9868edc947eb812b97b0308062af7cd288f3a9b3",
+  "layers": {
+    "info-tab": {
+      "row": "otherside",
+      "type": "none"
+    },
+    "options-tab": {
+      "row": "otherside",
+      "type": "none"
+    },
+    "changelog-tab": {
+      "row": "otherside",
+      "type": "none"
+    },
+    "Set": {
+      "row": 0,
+      "type": "none"
+    },
+    "Mag": {
+      "row": 1,
+      "type": "normal"
+    },
+    "Set<sub>&lowast;</sub>": {
+      "row": 1,
+      "type": "normal"
+    },
+    "QGrp": {
+      "row": 2,
+      "type": "none"
+    },
+    "FlexMag": {
+      "row": 2,
+      "type": "static"
+    },
+    "UMag": {
+      "row": 2,
+      "type": "none"
+    },
+    "SGrp": {
+      "row": 2,
+      "type": "none"
+    },
+    "AltMag": {
+      "row": 3,
+      "type": "static"
+    },
+    "Loop": {
+      "row": 3,
+      "type": "none"
+    },
+    "AssQGrp": {
+      "row": 3,
+      "type": "none"
+    },
+    "Mon": {
+      "row": 3,
+      "type": "none"
+    },
+    "MLoop": {
+      "row": 4,
+      "type": "static"
+    },
+    "Grp": {
+      "row": 4,
+      "type": "static"
+    },
+    "NARg": {
+      "row": 5,
+      "type": "normal"
+    },
+    "NARng": {
+      "row": 6,
+      "type": "none"
+    },
+    "NARig": {
+      "row": 6,
+      "type": "none"
+    },
+    "blank": {
+      "row": null,
+      "type": "none"
+    },
+    "tree-tab": {
+      "row": null,
+      "type": "none"
+    }
+  },
+  "ids": [
+    "Set:upg:11",
+    "Set:upg:12",
+    "Set:upg:13",
+    "Set:upg:14",
+    "Set:upg:21",
+    "Set:buy:11",
+    "Set:buy:12",
+    "Set:buy:15",
+    "Set:buy:16",
+    "Set:buy:17",
+    "Set:buy:18",
+    "Set:buy:19",
+    "Mag:ms:0",
+    "Mag:ms:1",
+    "Mag:ms:2",
+    "Mag:ms:3",
+    "Mag:ms:4",
+    "Mag:upg:11",
+    "Mag:upg:12",
+    "Mag:upg:13",
+    "Mag:upg:21",
+    "Mag:upg:22",
+    "Mag:upg:23",
+    "Mag:upg:31",
+    "Mag:upg:32",
+    "Mag:upg:33",
+    "Mag:upg:34",
+    "Set<sub>&lowast;</sub>:upg:11",
+    "Set<sub>&lowast;</sub>:upg:12",
+    "Set<sub>&lowast;</sub>:upg:13",
+    "Set<sub>&lowast;</sub>:upg:14",
+    "Set<sub>&lowast;</sub>:upg:15",
+    "Set<sub>&lowast;</sub>:upg:21",
+    "Set<sub>&lowast;</sub>:upg:22",
+    "Set<sub>&lowast;</sub>:upg:23",
+    "Set<sub>&lowast;</sub>:upg:24",
+    "Set<sub>&lowast;</sub>:buy:11",
+    "QGrp:upg:11",
+    "QGrp:upg:12",
+    "QGrp:upg:21",
+    "QGrp:buy:11",
+    "QGrp:buy:12",
+    "FlexMag:ms:0",
+    "FlexMag:ms:1",
+    "FlexMag:upg:11",
+    "FlexMag:upg:12",
+    "FlexMag:buy:11",
+    "UMag:upg:11",
+    "UMag:upg:21",
+    "UMag:upg:22",
+    "UMag:buy:11",
+    "SGrp:upg:11",
+    "SGrp:upg:12",
+    "SGrp:upg:13",
+    "SGrp:upg:21",
+    "SGrp:buy:11",
+    "SGrp:buy:12",
+    "SGrp:buy:21",
+    "AltMag:ms:0",
+    "AltMag:ms:1",
+    "AltMag:ms:2",
+    "AltMag:upg:11",
+    "AltMag:buy:11",
+    "Loop:upg:11",
+    "Loop:upg:21",
+    "Loop:upg:22",
+    "Loop:buy:11",
+    "AssQGrp:upg:11",
+    "AssQGrp:upg:12",
+    "AssQGrp:upg:21",
+    "AssQGrp:buy:11",
+    "AssQGrp:buy:12",
+    "Mon:upg:11",
+    "Mon:upg:12",
+    "Mon:buy:11",
+    "Mon:buy:21",
+    "MLoop:ms:0",
+    "MLoop:ms:1",
+    "MLoop:ms:2",
+    "MLoop:upg:11",
+    "MLoop:buy:11",
+    "Grp:ms:0",
+    "Grp:ms:1",
+    "Grp:ms:2",
+    "Grp:ms:3",
+    "Grp:ms:4",
+    "Grp:ms:5",
+    "Grp:ms:6",
+    "Grp:ms:7",
+    "Grp:ms:8",
+    "Grp:upg:11",
+    "Grp:upg:12",
+    "Grp:upg:13",
+    "Grp:upg:14",
+    "Grp:upg:19",
+    "Grp:buy:11",
+    "Grp:buy:12",
+    "Grp:buy:13",
+    "Grp:buy:14",
+    "Grp:buy:15",
+    "NARg:ms:0",
+    "NARg:ms:1",
+    "NARg:upg:11",
+    "NARg:upg:12",
+    "NARng:upg:11",
+    "NARng:buy:11",
+    "NARig:upg:11",
+    "NARig:upg:12",
+    "NARig:upg:21",
+    "NARig:buy:11"
+  ],
+  "counts": {
+    "ms": 24,
+    "upg": 57,
+    "buy": 29,
+    "ch": 0,
+    "ach": 0
+  }
+}

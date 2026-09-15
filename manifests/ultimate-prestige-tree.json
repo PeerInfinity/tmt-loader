@@ -1,0 +1,130 @@
+{
+  "schema": 1,
+  "id": "ultimate-prestige-tree",
+  "name": "Ultimate Prestige Tree",
+  "version": "0.2.3",
+  "author": "Krembo",
+  "upstream": {
+    "repo": "KremboMC/Ultimate-Prestige-Tree",
+    "url": "https://github.com/KremboMC/Ultimate-Prestige-Tree.git",
+    "branch": "master",
+    "commit": "ddddb4606d908f0f9ccde34be51547e8a54bb54a",
+    "pushed_at": "2026-09-05T13:25:07Z"
+  },
+  "engine": {
+    "tmtNum": "2.7",
+    "stock_commit": "4d8a86c",
+    "moved": false,
+    "deviation": {
+      "added": 0,
+      "removed": 0
+    }
+  },
+  "entry": "index.html",
+  "load": {
+    "onload": "load()",
+    "scripts": [
+      "js/technical/break_eternity.js",
+      "js/technical/layerSupport.js",
+      "js/mod.js",
+      "js/technical/loader.js",
+      "js/technical/temp.js",
+      "js/technical/displays.js",
+      "js/game.js",
+      "js/utils.js",
+      "js/utils/easyAccess.js",
+      "js/technical/systemComponents.js",
+      "js/components.js",
+      "js/technical/canvas.js",
+      "js/technical/particleSystem.js",
+      "js/utils/NumberFormating.js",
+      "js/utils/options.js",
+      "js/utils/save.js",
+      "js/utils/themes.js"
+    ],
+    "renderOnly": [
+      "js/technical/systemComponents.js",
+      "js/components.js",
+      "js/technical/canvas.js",
+      "js/technical/particleSystem.js"
+    ],
+    "modFilesPrefix": "js/",
+    "modFiles": [
+      "layers.js",
+      "tree.js"
+    ],
+    "external": {
+      "https://unpkg.com/vue@2.7.16/dist/vue.min.js": "vendor",
+      "https://fonts.googleapis.com/css?family=Inconsolata": "drop"
+    },
+    "vendor": {
+      "https://unpkg.com/vue@2.7.16/dist/vue.min.js": {
+        "path": "vendor/vue-2.7.16.min.js",
+        "sha256": "3c1d4b0c549e8de9d4a9bafb12ab70b6a1ac747d07293b98c5b25b6632999afd"
+      }
+    }
+  },
+  "save": {
+    "keyRule": "getModID (modInfo.id ?? name-author)",
+    "key": "Ultimate-Prestige-Tree-Krembo"
+  },
+  "headless": {
+    "prestubs": [],
+    "renderStubs": [
+      "loadVue",
+      "resizeCanvas",
+      "retrieveCanvasData",
+      "drawTree",
+      "drawComponentBranches",
+      "drawTreeBranch",
+      "makeParticles",
+      "makeShinies",
+      "updateParticles",
+      "setDir",
+      "setSpeed",
+      "updateMouse",
+      "getOpacity",
+      "constructParticleStyle",
+      "clearParticles",
+      "sin",
+      "cos",
+      "tan",
+      "asin",
+      "acos",
+      "atan"
+    ],
+    "idleHash": {
+      "ticks": 200,
+      "diff": 0.05,
+      "hash": "21b44c794ad7844e"
+    },
+    "deterministic": true
+  },
+  "license": {
+    "githubSpdx": "NOASSERTION",
+    "files": {
+      "LICENSE": "MIT",
+      "Prestige-tree-license": "MIT"
+    },
+    "verdict": "MIT"
+  },
+  "census": {
+    "full_name": "KremboMC/Ultimate-Prestige-Tree",
+    "head": "ddddb46",
+    "score": 65.2,
+    "layers": 11,
+    "rows": 4,
+    "milestones": 23,
+    "upgrades": 64,
+    "buyables": 15,
+    "challenges": 0,
+    "achievements": 0,
+    "trace_fields": 8
+  },
+  "patches": [],
+  "generated": {
+    "by": "tmt-fork-census scripts/manifest.mjs",
+    "commit": "27c6654",
+    "at": "2026-09-15T06:28:01.463Z"
+  }
+}

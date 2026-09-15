@@ -1,0 +1,201 @@
+{
+  "schema": 1,
+  "id": "the-pro-tree",
+  "name": "The Pro Tree",
+  "version": "0.9c",
+  "author": "ProGamesGrinder",
+  "upstream": {
+    "repo": "CrazyHighNumbers69/The-Modding-Tree",
+    "url": "https://github.com/CrazyHighNumbers69/The-Modding-Tree.git",
+    "branch": "master",
+    "commit": "06ca3439716974eba550862c36c50bb1a2f64ef2",
+    "pushed_at": "2023-09-23T00:34:27Z"
+  },
+  "engine": {
+    "tmtNum": "2.6.0.1",
+    "stock_commit": "affdd85",
+    "moved": false,
+    "deviation": {
+      "added": 1899,
+      "removed": 3692
+    }
+  },
+  "entry": "index.html",
+  "load": {
+    "onload": "load()",
+    "scripts": [
+      "js/technical/break_eternity.js",
+      "js/technical/layerSupport.js",
+      "js/mod.js",
+      "js/technical/loader.js",
+      "js/technical/temp.js",
+      "js/technical/displays.js",
+      "js/game.js",
+      "js/utils.js",
+      "js/utils/easyAccess.js",
+      "js/technical/systemComponents.js",
+      "js/components.js",
+      "js/technical/canvas.js",
+      "js/technical/particleSystem.js",
+      "js/utils/NumberFormating.js",
+      "js/utils/options.js",
+      "js/utils/save.js",
+      "js/utils/themes.js",
+      "js/tree.js",
+      "js/layers.js",
+      "js/buttonpower.js",
+      "js/ascension.js",
+      "js/grass.js",
+      "js/cups.js",
+      "js/dices.js",
+      "js/fruits.js",
+      "js/achievements.js",
+      "js/electricity.js",
+      "js/houses.js",
+      "js/ice.js",
+      "js/jetpacks.js",
+      "js/keys.js",
+      "js/lights.js",
+      "js/money.js",
+      "js/notes.js",
+      "js/objects.js",
+      "js/quantums.js",
+      "js/rings.js",
+      "js/sand.js",
+      "js/trans.js",
+      "js/universal.js",
+      "js/reincarnation.js",
+      "js/void.js",
+      "js/wood.js",
+      "js/xray.js",
+      "js/yard.js",
+      "js/zones.js",
+      "js/arrows.js",
+      "js/ball.js"
+    ],
+    "renderOnly": [
+      "js/technical/systemComponents.js",
+      "js/components.js",
+      "js/technical/canvas.js",
+      "js/technical/particleSystem.js"
+    ],
+    "modFilesPrefix": "js/",
+    "modFiles": [
+      "layers.js",
+      "tree.js",
+      "buttonpower.js",
+      "ant.js",
+      "grass.js",
+      "cups.js",
+      "dices.js",
+      "fruits.js",
+      "electricity.js",
+      "houses.js",
+      "ice.js",
+      "achievements.js",
+      "jetpacks.js",
+      "keys.js",
+      "lights.js",
+      "money.js",
+      "notes.js",
+      "onions.js",
+      "quadrilaterals.js",
+      "rings.js",
+      "sand.js",
+      "trees.js",
+      "universal.js",
+      "void.js",
+      "reincarnation.js",
+      "wood.js",
+      "xray.js",
+      "yard.js",
+      "zebras.js",
+      "arrows.js",
+      "ball.js",
+      "circles.js",
+      "duck.js",
+      "eggs.js",
+      "fire.js",
+      "games.js",
+      "hammers.js",
+      "islands.js",
+      "juice.js",
+      "supernova.js",
+      "sacrifice.js",
+      "asc.js"
+    ],
+    "external": {
+      "https://cdn.jsdelivr.net/npm/vue@2.6.12": "vendor",
+      "https://fonts.googleapis.com/css?family=Inconsolata": "drop"
+    },
+    "vendor": {
+      "https://cdn.jsdelivr.net/npm/vue@2.6.12": {
+        "path": "vendor/vue-2.6.12.min.js",
+        "sha256": "29296ccacaa9ed35ed168fc51e36f54fd6f8db9c7786bbf38cc59a27229ba5c2"
+      }
+    }
+  },
+  "save": {
+    "keyRule": "modInfo.id",
+    "key": "1"
+  },
+  "headless": {
+    "prestubs": [],
+    "renderStubs": [
+      "loadVue",
+      "resizeCanvas",
+      "retrieveCanvasData",
+      "drawTree",
+      "drawComponentBranches",
+      "drawTreeBranch",
+      "makeParticles",
+      "makeShinies",
+      "updateParticles",
+      "setDir",
+      "setSpeed",
+      "updateMouse",
+      "getOpacity",
+      "constructParticleStyle",
+      "clearParticles",
+      "sin",
+      "cos",
+      "tan",
+      "asin",
+      "acos",
+      "atan"
+    ],
+    "idleHash": {
+      "ticks": 200,
+      "diff": 0.05,
+      "hash": "f2a681aabe407370"
+    },
+    "deterministic": true
+  },
+  "license": {
+    "githubSpdx": "NOASSERTION",
+    "files": {
+      "LICENSE": "MIT",
+      "Prestige-tree-license": "MIT"
+    },
+    "verdict": "MIT"
+  },
+  "census": {
+    "full_name": "CrazyHighNumbers69/The-Modding-Tree",
+    "head": "06ca343",
+    "score": 95.06,
+    "layers": 40,
+    "rows": 12,
+    "milestones": 95,
+    "upgrades": 1207,
+    "buyables": 34,
+    "challenges": 72,
+    "achievements": 187,
+    "trace_fields": 127
+  },
+  "patches": [],
+  "generated": {
+    "by": "tmt-fork-census scripts/manifest.mjs",
+    "commit": "27c6654",
+    "at": "2026-09-15T06:28:00.456Z"
+  }
+}

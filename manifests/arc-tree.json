@@ -1,0 +1,145 @@
+{
+  "schema": 1,
+  "id": "arc-tree",
+  "name": "Arc Tree",
+  "version": "0.0.4",
+  "author": "TEWAR",
+  "upstream": {
+    "repo": "peacefulwar/Arc-Tree",
+    "url": "https://github.com/peacefulwar/Arc-Tree.git",
+    "branch": "master",
+    "commit": "eb5125d4dc7820ae4453e1066743596a60e8afc5",
+    "pushed_at": "2025-05-25T15:31:53Z"
+  },
+  "engine": {
+    "tmtNum": "2.7",
+    "stock_commit": "4d8a86c",
+    "moved": false,
+    "deviation": {
+      "added": 17,
+      "removed": 1
+    }
+  },
+  "entry": "index.html",
+  "load": {
+    "onload": "load()",
+    "scripts": [
+      "js/technical/break_eternity.js",
+      "js/technical/layerSupport.js",
+      "js/mod.js",
+      "js/technical/loader.js",
+      "js/technical/temp.js",
+      "js/technical/displays.js",
+      "js/game.js",
+      "js/utils.js",
+      "js/utils/easyAccess.js",
+      "js/technical/systemComponents.js",
+      "js/components.js",
+      "js/technical/canvas.js",
+      "js/technical/particleSystem.js",
+      "js/technical/color.js",
+      "js/utils/NumberFormating.js",
+      "js/utils/options.js",
+      "js/utils/save.js",
+      "js/utils/themes.js",
+      "layers/achievements.js",
+      "layers/light.js",
+      "layers/dark.js",
+      "layers/kou.js",
+      "layers/lethe.js",
+      "layers/lab.js",
+      "layers/zero.js",
+      "layers/axium.js",
+      "layers/world.js",
+      "layers/story.js",
+      "layers/etoluna.js",
+      "layers/saya.js",
+      "layers/softcap.js",
+      "layers/library.js"
+    ],
+    "renderOnly": [
+      "js/technical/systemComponents.js",
+      "js/components.js",
+      "js/technical/canvas.js",
+      "js/technical/particleSystem.js"
+    ],
+    "modFilesPrefix": "js/",
+    "modFiles": [
+      "layers.js",
+      "tree.js"
+    ],
+    "external": {
+      "https://unpkg.com/vue@2.7.16/dist/vue.min.js": "vendor",
+      "https://fonts.googleapis.com/css?family=Inconsolata": "drop"
+    },
+    "vendor": {
+      "https://unpkg.com/vue@2.7.16/dist/vue.min.js": {
+        "path": "vendor/vue-2.7.16.min.js",
+        "sha256": "3c1d4b0c549e8de9d4a9bafb12ab70b6a1ac747d07293b98c5b25b6632999afd"
+      }
+    }
+  },
+  "save": {
+    "keyRule": "getModID (modInfo.id ?? name-author)",
+    "key": "Arc-Tree-TEWAR"
+  },
+  "headless": {
+    "prestubs": [],
+    "renderStubs": [
+      "loadVue",
+      "resizeCanvas",
+      "retrieveCanvasData",
+      "drawTree",
+      "drawComponentBranches",
+      "drawTreeBranch",
+      "makeParticles",
+      "makeShinies",
+      "updateParticles",
+      "setDir",
+      "setSpeed",
+      "updateMouse",
+      "getOpacity",
+      "constructParticleStyle",
+      "clearParticles",
+      "sin",
+      "cos",
+      "tan",
+      "asin",
+      "acos",
+      "atan"
+    ],
+    "idleHash": {
+      "ticks": 200,
+      "diff": 0.05,
+      "hash": "e451203623a10f70"
+    },
+    "deterministic": true
+  },
+  "license": {
+    "githubSpdx": "NOASSERTION",
+    "files": {
+      "LICENSE": "MIT",
+      "Prestige-tree-license": "MIT"
+    },
+    "verdict": "MIT"
+  },
+  "census": {
+    "full_name": "peacefulwar/Arc-Tree",
+    "head": "eb5125d",
+    "score": 62.28,
+    "layers": 13,
+    "rows": 6,
+    "milestones": 65,
+    "upgrades": 170,
+    "buyables": 17,
+    "challenges": 13,
+    "achievements": 65,
+    "trace_fields": 20
+  },
+  "patches": [],
+  "generated": {
+    "by": "tmt-fork-census scripts/manifest.mjs",
+    "commit": "27c6654",
+    "at": "2026-09-15T06:28:02.222Z"
+  }
+}
