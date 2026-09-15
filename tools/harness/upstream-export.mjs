@@ -10,7 +10,9 @@ import { openContext, openGame, pageLoadFrom } from './page.mjs';
 
 const MASK_SRC = (mask) => `JSON.stringify(player, (k, v) => ${JSON.stringify(mask)}.includes(k) ? undefined : v)`;
 
-export async function upstreamExport(id, { upstreamDir, ticks = 200, diff = 0.05, base, browser }) {
+// With automation on (the harness default) the loader's player gains `au`, which the upstream save cannot have: the
+// comparison then excludes that one top-level key (the A1 anchor rule).
+export async function upstreamExport(id, { upstreamDir, ticks = 200, diff = 0.05, base, browser, automation = true }) {
   const manifest = readManifest(id);
   const mask = ['time', 'offTime', ...(manifest.headless?.stateMask || [])];
   const up = await startServer(upstreamDir);
@@ -45,12 +47,13 @@ export async function upstreamExport(id, { upstreamDir, ticks = 200, diff = 0.05
     const { context: c2, stats: s2 } = await openContext(browser);
     try {
       const page = await c2.newPage();
-      const r0 = await openGame(page, base, id, { managed: true });
+      const r0 = await openGame(page, base, id, { managed: true, automation });
       if (!r0.ready) throw new Error(`loader not ready: ${JSON.stringify(r0.error)}`);
       const json = Buffer.from(row._exported, 'base64').toString('binary'); // atob
       const r1 = await pageLoadFrom(page, json);
       if (!r1.ready) throw new Error(`loader not ready after loadFrom: ${JSON.stringify(r1.error)}`);
-      const st = await page.evaluate(async () => ({ json: tmtLoader.stateJSON(), hash: await tmtLoader.hash(), ticks: tmtLoader.ticks }));
+      const st = await page.evaluate(async (ex) => ({ json: tmtLoader.stateJSON({ exclude: ex }), hash: await tmtLoader.hash({ exclude: ex }), ticks: tmtLoader.ticks }), automation ? ['au'] : []);
+      row.automation = automation;
       const div = firstDivergence(row._upstreamState, st.json);
       const canonDiv = firstDivergence(canonicalJSON(row._upstreamState), canonicalJSON(st.json));
       // The upstream 2.5+ page inserts modFiles with setAttribute("async","false") — async stays TRUE — so its layer
@@ -76,13 +79,13 @@ export async function upstreamExport(id, { upstreamDir, ticks = 200, diff = 0.05
 }
 
 async function main() {
-  const a = parseArgs(process.argv.slice(2));
+  const a = parseArgs(process.argv.slice(2), ['no-automation']);
   const id = a._[0];
   if (!id || !a.upstream) { console.error('usage: node upstream-export.mjs <id> --upstream <clone dir> [--ticks N] [--diff d]'); process.exit(2); }
   const browser = await chromium.launch();
   const server = a.base ? null : await startServer(REPO);
   let r;
-  try { r = await upstreamExport(id, { upstreamDir: a.upstream, ticks: Number(a.ticks ?? 200), diff: Number(a.diff ?? 0.05), base: a.base || server.url, browser }); }
+  try { r = await upstreamExport(id, { upstreamDir: a.upstream, ticks: Number(a.ticks ?? 200), diff: Number(a.diff ?? 0.05), base: a.base || server.url, browser, automation: !a['no-automation'] }); }
   finally { await browser.close(); if (server) server.stop(); }
   if (r.divergence) console.log(`DIVERGED at key "${r.divergence.key}"\n  upstream: …${r.divergence.a}…\n  loader:   …${r.divergence.b}…`);
   console.log(JSON.stringify({ ...r, divergence: r.divergence ? { index: r.divergence.index, key: r.divergence.key } : null }));

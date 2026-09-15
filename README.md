@@ -15,7 +15,8 @@ Before any game script runs it installs a `localStorage` prefix shim (every key 
 games on one origin never share a save) and a timer recorder, then sets `<base href="games/<id>/">` so every relative
 URL the game uses resolves without rewriting. `window.tmtLoader` (`loader/tmt-auto.js`, see `docs/contract.md`) is
 the one interface a runner talks to. Without `?mod=` the page shows a picker. `?managed=1` pauses the game after
-`onload` so a runner drives `tmtLoader.tick(diff)`.
+`onload` so a runner drives `tmtLoader.tick(diff)`. `?automation=1` opts in to the automation tools
+(`docs/automation.md`); without it the loader adds nothing to the game — no layer, no UI, nothing in the save.
 
 Games live under `games/<id>/` as **git subtrees**, pristine at the upstream commit their manifest records.
 

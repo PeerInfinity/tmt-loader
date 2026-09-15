@@ -122,7 +122,7 @@ async function part2Page(id) {
   try {
     const page = await context.newPage();
     // normal (unmanaged) boot: the page's default profile is `saved`
-    const url = (q = '') => new URL(`index.html?mod=${encodeURIComponent(id)}${q}`, base).href;
+    const url = (q = '') => new URL(`index.html?mod=${encodeURIComponent(id)}&automation=1${q}`, base).href;
     const open = async (q) => { await page.goto(url(q), { waitUntil: 'load' }); await page.waitForFunction(() => window.tmtLoader && (tmtLoader.ready || tmtLoader.error), null, { timeout: 30000 }); await page.evaluate(() => tmtLoader.pause()); };
     const auTab = async () => { await page.evaluate(() => showTab('au')); await page.waitForTimeout(400); };
     const buttons = () => page.evaluate(() => Object.keys(layers.au.clickables).filter((k) => !isNaN(k) && k !== '11').map((k) => ({ id: k, title: layers.au.clickables[k].title, display: layers.au.clickables[k].display() })));

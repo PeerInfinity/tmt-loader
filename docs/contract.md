@@ -4,6 +4,13 @@
 after the game's scripts, and run unchanged by the Node harness through `vm.runInThisContext`) fills in the members
 below. Runners (the Playwright harness, later an embedding page) talk only to this object.
 
+**Automation is opt-in.** The page defines `tmtLoader.automation` from `?automation=1` (the Node harness: ON by default,
+`--no-automation` for the plain page) before `tmt-auto.js` runs. Without it the file stops after the contract members
+— `tick`, `stateJSON`, `hash`, `pause`/`resume`, `save`, `loadFrom`, `ids`, `storage`, `profile('off')` — and adds
+**no `au` layer, no DOM, nothing in `player`**, and the page does not load `games-auto/<id>.js`. The registry members
+(`registerAutoFeature`, `features`, `setPolicy`, `featureState`, `hookLayer`, `hookStats`) are then undefined, `profile()`
+accepts only `off` (anything else throws), and `?profile=` / `?autoOpt=` are ignored with a console warning.
+
 It reads the engine's globals as **bare identifiers** inside its members, never at load: `player`, `layers`, `tmp`,
 `modInfo` may be global `let`s (Something Tree's `modInfo` is), which are not `window` properties.
 
@@ -11,6 +18,7 @@ It reads the engine's globals as **bare identifiers** inside its members, never 
 |---|---|
 | `id`, `manifest` | the game id (`?mod=`) and its parsed `manifests/<id>.json` |
 | `ready`, `error`, `step` | `ready` turns true after `onload` (and the managed pause); any failure sets `error = {step, message}` and shows an overlay. Poll `ready \|\| error`, never a bare timeout. |
+| `automation` | `?automation=1` (docs/automation.md); `false` = contract-only mode, the rows below marked *(automation)* do not exist |
 | `managed` | `?managed=1`: the loader calls `pause()` right after `onload`; the runner drives `tick()` |
 | `plan`, `loaded`, `modFiles` | the `interpret()` plan, the files executed in order, the modFiles paths |
 | `pause()` / `resume()` | stop / restart every `setInterval` the timer recorder saw (game loop, autosave, canvas flag, component timers). Interval ids are logical and survive a pause, so a later `clearInterval(id)` still works. Timeouts and animation frames are counted, not paused. |
@@ -22,11 +30,11 @@ It reads the engine's globals as **bare identifiers** inside its members, never 
 | `save()` | the game's own `save()` with **no argument**; returns `storage.list()` |
 | `loadFrom(json)` | `importSave(btoa(json), true)` — the game's own import. **Both engines then reload the page**; the import completes on the next `ready`. In Node the harness boots a fresh process on the storage `importSave` wrote. |
 | `ids()` | `{layers: {id: {row, type}}, ids: ["<layer>:<ms\|upg\|buy\|ch\|ach>:<id>"], counts}` — numeric ids only (the census rule); layers the loader adds (`au`, flagged `tmtLoaderLayer`) are left out |
-| `profile(name)` | `off` \| `all` \| `saved` (docs/automation.md); no argument returns the current one. The page applies `?profile=` after `onload` (default `off` when managed, else `saved`); the Node harness `--profile` (default `off`) |
-| `registerAutoFeature(def)`, `features` | the automation registry (docs/automation.md): kinds `reset` / `upgrades` / `buyables`, default OFF; registering hooks the layer's `automate` |
-| `setPolicy(id, policy)`, `featureState(id)` | switch a feature's policy at runtime (never saved); a feature's saved/unlocked/active state |
-| `hookLayer(layer)`, `hookStats()` | install the automate wrapper without a feature (test probe; `?autoOpt=hookAll=1` hooks every tree layer); per-layer call counters, `doubles`, `loops`, actions per feature |
-| `options` | table options: `?autoOpt=k=v;k2=v2` in the page, `--auto-opt` in the harness |
+| `profile(name)` | *(automation)* `off` \| `all` \| `saved`; contract-only: `off` only (docs/automation.md); no argument returns the current one. The page applies `?profile=` after `onload` (default `off` when managed, else `saved`); the Node harness `--profile` (default `off`) |
+| `registerAutoFeature(def)`, `features` | *(automation)* the automation registry (docs/automation.md): kinds `reset` / `upgrades` / `buyables`, default OFF; registering hooks the layer's `automate` |
+| `setPolicy(id, policy)`, `featureState(id)` | *(automation)* switch a feature's policy at runtime (never saved); a feature's saved/unlocked/active state |
+| `hookLayer(layer)`, `hookStats()` | *(automation)* install the automate wrapper without a feature (test probe; `?autoOpt=hookAll=1` hooks every tree layer); per-layer call counters, `doubles`, `loops`, actions per feature |
+| `options` | *(automation)* table options: `?autoOpt=k=v;k2=v2` in the page, `--auto-opt` in the harness |
 | `storage` | `{prefix, raw, list(), clear()}` — the save namespace (`tmt-loader:<id>:`) and the raw `Storage` methods |
 
 ## Per-engine notes (measured in L1)
@@ -38,7 +46,7 @@ It reads the engine's globals as **bare identifiers** inside its members, never 
 | intervals at load | 3 (game loop 50 ms, canvas flag 500 ms, autosave 5 s) | 3 at load; components add hold-to-buy intervals |
 | `modInfo` | global `let`; no `modFiles` | global `let`; 17 `modFiles`, prefix `js/` |
 | state mask | `time`, `offTime` | `time`, `offTime` (no drift found) |
-| layer node selector | `#app .treeNode` | `#app .treeNode` (the `au` side node also carries `.treeNode` here, so the count is one higher from A1 on) |
+| layer node selector | `#app .treeNode` | `#app .treeNode` (the `au` side node also carries `.treeNode` here, so the count is one higher with `?automation=1`) |
 | side node (`au`) | `#app .smallNode.au` | `#app .smallNode.au` |
 | `automate()` per `gameLoop` | once per layer, but **skipped for a layer not unlocked** (`unl(layer)`); never from `updateTemp` | once per layer, every tree layer; never from `updateTemp` |
 | side layers | no reset (`rowReset("side")` skips `layerDataReset`) | no reset (`!isNaN(row)` guard); `gameLoop` writes `player[side].best` from `points` every tick |

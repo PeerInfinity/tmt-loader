@@ -6,7 +6,8 @@
 // `setupTemp()` pick both up. It reads the engine's globals (layers, player, tmp, updateTemp, gameLoop, doReset,
 // buyUpgrade, …) as BARE identifiers — `player`, `layers`, `modInfo` may be global `let`s, not globalThis properties.
 // The host (loader/page.js or tools/harness/boot.mjs) creates `globalThis.tmtLoader` first with id, manifest, managed,
-// pause/resume, storage, `options` and, in Node, sha256hex; this file adds the rest.
+// automation, pause/resume, storage, `options` and, in Node, sha256hex; this file adds the rest. Without
+// `tmtLoader.automation` only the contract members are defined (tick, stateJSON, hash, save, loadFrom, ids, profile('off')).
 (function () {
   var T = globalThis.tmtLoader || (globalThis.tmtLoader = {});
   var G = globalThis;
@@ -93,6 +94,20 @@
     }
     return out;
   };
+
+  // ---- contract-only mode ----------------------------------------------------------------------------------------------
+  // Automation is opt-in (`?automation=1` in the page, the harness's default): without `tmtLoader.automation` this file
+  // stops here — no registry, no `au` layer, no DOM, no `player.au`. `profile()` exists and knows only `off`.
+  if (!T.automation) {
+    T.automation = false;
+    T.profiles = ['off'];
+    T.profile = function (name) {
+      if (name === undefined || name === 'off') return 'off';
+      throw new Error('profile "' + name + '" needs automation (?automation=1); contract-only mode knows only off');
+    };
+    return;
+  }
+  T.automation = true;
 
   // ---- automation registry -------------------------------------------------------------------------------------------
   var AU = 'au';

@@ -5,11 +5,25 @@ default.** Nothing in a game changes: no formula is edited, and a feature only c
 (`doReset`, `buyUpgrade`, `buyMaxBuyable` / `buyBuyable`) at the point in the tick where the engine calls each layer's
 `automate()`.
 
-To try everything at once: `index.html?mod=<id>&profile=all`.
+## Enabling
+
+Automation is **opt-in**: add `automation=1` to the URL. Without it the loader is the game plus the hook contract
+(`docs/contract.md`) — no `au` layer, no toggles, nothing written to the save, `games-auto/<id>.js` never fetched — and
+`?profile=` / `?autoOpt=` are ignored with a console warning.
+
+```
+index.html?mod=<id>&automation=1                 # the au tab, toggles as saved
+index.html?mod=<id>&automation=1&profile=all     # everything at once
+```
+
+The harness is the other way round: `run.mjs`, `page.mjs` runs, `parity.mjs`, `gates*.mjs` default to automation ON and
+take `--no-automation` for the plain page; `page.mjs --gate load` checks the PLAIN page unless given `--automation`.
+A save made with automation keeps its `player.au`; opened without the flag the engine carries that key along untouched
+and nothing reads it.
 
 ## The `au` side layer
 
-`tmt-auto.js` adds a side layer **`au` ("Automation Tools", symbol AU)** to every game, shown next to the game's other
+With `?automation=1`, `tmt-auto.js` adds a side layer **`au` ("Automation Tools", symbol AU)** to every game, shown next to the game's other
 side nodes (selector `#app .smallNode.au` on both engines). Its tab has:
 
 - one toggle per registered feature: **On / Off / Locked** (Locked while the feature's `unlocked()` is false), with the
@@ -29,9 +43,9 @@ The toggles live in `player.au.features` (`{featureId: true|false}`), `player.au
 
 | Profile | What runs | Selected by |
 |---|---|---|
-| `off` | nothing — `player.au.features` is ignored | default under `?managed=1` and in the Node harness |
+| `off` | nothing — `player.au.features` is ignored | default under `?managed=1`, in the Node harness, and the only profile without `?automation=1` |
 | `all` | every registered feature whose `unlocked()` holds, with its default policy | `?profile=all`, `--profile all` |
-| `saved` | the features toggled on in `player.au.features` (and unlocked) | default for a normal page load |
+| `saved` | the features toggled on in `player.au.features` (and unlocked) | default for a normal page load with `?automation=1` |
 
 A profile is applied after `load()` and is never written into the save: reload without `?profile=` and the toggles
 show what the save says. `tmtLoader.profile(name)` switches at runtime.

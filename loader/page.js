@@ -8,10 +8,14 @@ const SELF = new URL('.', location.href);
 const params = new URLSearchParams(location.search);
 const MOD = params.get('mod');
 const MANAGED = params.get('managed') === '1';
+// ?automation=1 opts in to the automation tools (the registry, the `au` side layer, games-auto/<id>.js). Without it the
+// page is the game plus the contract (docs/contract.md): no layer, no DOM, nothing in the save.
+const AUTOMATION = params.get('automation') === '1';
+for (const p of ['profile', 'autoOpt']) if (!AUTOMATION && params.has(p)) console.warn(`tmt-loader: ?${p}= is ignored without ?automation=1`);
 // ?profile=off|all|saved (automation profile, applied after onload, never saved); default: off when managed, else saved.
-const PROFILE = params.get('profile') || (MANAGED ? 'off' : 'saved');
+const PROFILE = !AUTOMATION ? 'off' : params.get('profile') || (MANAGED ? 'off' : 'saved');
 // ?autoOpt=k=v;k2=v2 — options the automation tables read (tmtLoader.options), e.g. unlockOrder=g,b
-const OPTIONS = parseOptions(params.get('autoOpt'));
+const OPTIONS = AUTOMATION ? parseOptions(params.get('autoOpt')) : {};
 function parseOptions(s) {
   const o = {};
   for (const part of (s || '').split(';')) { if (!part) continue; const i = part.indexOf('='); if (i < 0) o[part] = '1'; else o[part.slice(0, i)] = part.slice(i + 1); }
@@ -19,7 +23,7 @@ function parseOptions(s) {
 }
 const abs = (p) => new URL(p, SELF).href;
 
-const T = (window.tmtLoader = { id: MOD, manifest: null, ready: false, error: null, managed: MANAGED, options: OPTIONS, step: 'init', loaded: [] });
+const T = (window.tmtLoader = { id: MOD, manifest: null, ready: false, error: null, managed: MANAGED, automation: AUTOMATION, options: OPTIONS, step: 'init', loaded: [] });
 
 function overlay(title, detail) {
   const d = document.createElement('div');
@@ -115,7 +119,7 @@ async function boot(id) {
   step('script loader/tmt-auto.js');
   await insertScript({ src: abs('loader/tmt-auto.js') }, 'loader/tmt-auto.js');
   T.loaded.push('loader/tmt-auto.js');
-  if (manifest.auto) {
+  if (AUTOMATION && manifest.auto) {
     // the per-game automation table (games-auto/<id>.js): registerAutoFeature calls only, before onload
     step(`script ${manifest.auto}`);
     await insertScript({ src: abs(manifest.auto) }, manifest.auto);

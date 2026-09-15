@@ -1,7 +1,8 @@
 // The Node CLI (plan §4). Spawns boot.mjs — ONE game per child process — and re-spawns with a pre-stub on a
 // ReferenceError in load() (≤ 12, the census's scripts/3-boot.mjs loop). EVERY state claim carries ticks + gameSeconds.
 //   node run.mjs <id> [--ticks N] [--diff d] [--leg idle|policy] [--until "<js>"] [--profile off|all|saved] [--json out]
-//                     [--exclude au] [--auto-opt "k=v;k2=v2"] [--no-auto]
+//                     [--exclude au] [--auto-opt "k=v;k2=v2"] [--no-auto] [--no-automation | --automation 0]
+//   automation (the page's ?automation=1) is ON by default here; --no-automation boots the plain page's contract-only mode
 //                     [--storage in.json] [--load-from player.json] [--save --save-storage out.json]
 //                     [--state-out f] [--player-out f] [--ids-out f]
 import fs from 'node:fs';
@@ -29,6 +30,9 @@ export function bootChild(id, args, { timeoutMs = 600e3 } = {}) {
   return { ok: false, failed_at: 'load()', error: 'prestub limit (12) reached', prestubs };
 }
 
+/** The harness default is automation ON; off by `--no-automation`, `--automation 0`, or `{automation: false}`. */
+export const automationOn = (o = {}) => !(o['no-automation'] || o.automation === false || o.automation === '0' || o.automation === 'false');
+
 /** Run one game in Node. Returns the boot result plus the orchestration record. */
 export function runNode(id, o = {}) {
   const ticks = Number(o.ticks ?? 200), diff = Number(o.diff ?? 0.05);
@@ -37,6 +41,7 @@ export function runNode(id, o = {}) {
   if (o.exclude) args.push('--exclude', String(o.exclude));
   if (o['auto-opt']) args.push('--auto-opt', String(o['auto-opt']));
   if (o['no-auto']) args.push('--no-auto');
+  if (!automationOn(o)) args.push('--no-automation');
   if (o.marks) args.push('--marks', path.resolve(String(o.marks)));
   if (o['marks-continue']) args.push('--marks-continue');
   if (o.stall) args.push('--stall', String(o.stall));
@@ -66,11 +71,11 @@ export function runNode(id, o = {}) {
 }
 
 async function main() {
-  const a = parseArgs(process.argv.slice(2), ['save', 'no-auto', 'marks-continue', 'stall-seen']);
+  const a = parseArgs(process.argv.slice(2), ['save', 'no-auto', 'no-automation', 'marks-continue', 'stall-seen']);
   const id = a._[0];
   if (!id) { console.error('usage: node run.mjs <id> [--ticks N] [--diff d] [--until "<js>"] [--json out] …'); process.exit(2); }
   const res = runNode(id, a);
-  const line = { id, ok: res.ok, profile: res.profile, ticks: res.ticks, gameSeconds: res.gameSeconds, diff: res.diff, hash: res.hash, summary: res.summary };
+  const line = { id, ok: res.ok, automation: res.automation, profile: res.profile, ticks: res.ticks, gameSeconds: res.gameSeconds, diff: res.diff, hash: res.hash, summary: res.summary };
   if (res.exclude) { line.exclude = res.exclude; line.hashFull = res.hashFull; }
   if (res.hook && res.hook.hooked.length) line.hook = res.hook;
   if (res.marks) line.marks = res.marks;

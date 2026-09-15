@@ -4,7 +4,7 @@
 //   node boot.mjs <id> [--ticks N] [--diff d] [--leg idle|policy] [--prestubs a,b] [--until "<js>"]
 //                      [--storage in.json] [--import player.json] [--save] [--save-storage out.json]
 //                      [--state-out f] [--player-out f] [--ids-out f] [--census]
-//                      [--profile off|all|saved] [--exclude k1,k2] [--auto-opt "k=v;k2=v2"] [--no-auto]
+//                      [--profile off|all|saved] [--exclude k1,k2] [--auto-opt "k=v;k2=v2"] [--no-auto] [--no-automation]
 //                      [--marks marks.json ([[name, "<js>"], …])] [--marks-continue] [--stall <game-seconds> [--stall-seen]] [--wall-ms <ms>]
 // Prints one line "BOOTRESULT {json}" on stdout. Scripts run via vm.runInThisContext (Node's own global — never
 // host intrinsics into a sandbox: TMT's `x.constructor === Object` test fails cross-realm). The plan comes from
@@ -28,7 +28,7 @@ const A = { _: [] };
 for (let i = 0; i < argv.length; i++) {
   const a = argv[i];
   if (!a.startsWith('--')) A._.push(a);
-  else if (['save', 'census', 'no-auto', 'marks-continue', 'stall-seen'].includes(a.slice(2))) A[a.slice(2)] = true;
+  else if (['save', 'census', 'no-auto', 'no-automation', 'marks-continue', 'stall-seen'].includes(a.slice(2))) A[a.slice(2)] = true;
   else A[a.slice(2)] = argv[++i];
 }
 const ID = A._[0];
@@ -154,18 +154,20 @@ globalThis.__hit = hit;
 // loader/tmt-auto.js — the same file the page inserts last
 const OPTIONS = {};
 for (const part of String(A['auto-opt'] || '').split(';')) { if (!part) continue; const i = part.indexOf('='); if (i < 0) OPTIONS[part] = '1'; else OPTIONS[part.slice(0, i)] = part.slice(i + 1); }
+// automation (the page's ?automation=1) is ON by default in the harness; --no-automation = the plain page (contract only)
+const AUTOMATION = !A['no-automation'];
 const PROFILE = A.profile || 'off';
 const EXCLUDE = A.exclude ? String(A.exclude).split(',').filter(Boolean) : [];
-R.profile = PROFILE; if (EXCLUDE.length) R.exclude = EXCLUDE; if (Object.keys(OPTIONS).length) R.options = OPTIONS;
+R.profile = PROFILE; R.automation = AUTOMATION; if (EXCLUDE.length) R.exclude = EXCLUDE; if (Object.keys(OPTIONS).length) R.options = OPTIONS;
 globalThis.tmtLoader = {
-  id: ID, manifest, managed: true, ready: false, error: null, sha256hex, options: OPTIONS,
+  id: ID, manifest, managed: true, automation: AUTOMATION, ready: false, error: null, sha256hex, options: OPTIONS,
   pause() { return 0; }, resume() { return 0; },
   storage: { prefix: storageShim.prefix, list: () => storageShim.list(lsStore), clear: () => storageShim.clear(lsStore) },
 };
 try { run(fs.readFileSync(path.join(REPO, 'loader/tmt-auto.js'), 'utf8'), 'loader/tmt-auto.js'); }
 catch (e) { R.file_errors.push({ file: 'loader/tmt-auto.js', error: String(e.message).slice(0, 200) }); }
 // the per-game automation table (manifest.auto), as the page inserts it right after tmt-auto.js
-if (manifest.auto && !A['no-auto']) {
+if (AUTOMATION && manifest.auto && !A['no-auto']) {
   try { run(fs.readFileSync(path.join(REPO, manifest.auto), 'utf8'), manifest.auto); R.auto = manifest.auto; }
   catch (e) { R.file_errors.push({ file: manifest.auto, error: String(e.message).slice(0, 200) }); }
 }
