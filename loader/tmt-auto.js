@@ -253,8 +253,13 @@
     if (def.policy === 'keepsUpgrades' && !(def.keepMilestone && def.keepMilestone.layer && def.keepMilestone.id !== undefined)) throw new Error('registerAutoFeature ' + def.id + ': keepsUpgrades needs keepMilestone {layer, id}');
     if (def.policy === 'order' && !Array.isArray(def.order)) throw new Error('registerAutoFeature ' + def.id + ': policy order needs order[]');
     if (!layers[def.layer]) throw new Error('registerAutoFeature ' + def.id + ': no layer "' + def.layer + '"');
+    // options['policy:<id>'] overrides the table's default policy (harness A/B lever; any valid policy of the kind)
+    var ov = T.options && T.options['policy:' + def.id];
+    if (ov !== undefined) {
+      if (!policyOk(def.kind, ov)) throw new Error('registerAutoFeature ' + def.id + ': option policy "' + ov + '" is not a ' + def.kind + ' policy');
+    }
     var f = {
-      id: def.id, layer: def.layer, kind: def.kind, policy: def.policy, title: def.title || def.id,
+      id: def.id, layer: def.layer, kind: def.kind, policy: ov !== undefined ? ov : def.policy, title: def.title || def.id,
       unlocked: typeof def.unlocked === 'function' ? def.unlocked : function () { return true; },
       default: false,
       policies: Array.isArray(def.policies) ? def.policies.slice() : [def.policy],

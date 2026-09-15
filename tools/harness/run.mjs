@@ -37,6 +37,9 @@ export function runNode(id, o = {}) {
   if (o.exclude) args.push('--exclude', String(o.exclude));
   if (o['auto-opt']) args.push('--auto-opt', String(o['auto-opt']));
   if (o['no-auto']) args.push('--no-auto');
+  if (o.marks) args.push('--marks', path.resolve(String(o.marks)));
+  if (o.stall) args.push('--stall', String(o.stall));
+  if (o['wall-ms']) args.push('--wall-ms', String(o['wall-ms']));
   if (o.until != null) args.push('--until', String(o.until));
   // the child runs with cwd = os.tmpdir(): every file argument is made absolute here
   for (const k of ['state-out', 'player-out', 'ids-out', 'save-storage']) if (o[k] != null) args.push(`--${k}`, path.resolve(String(o[k])));
@@ -67,6 +70,9 @@ async function main() {
   const line = { id, ok: res.ok, profile: res.profile, ticks: res.ticks, gameSeconds: res.gameSeconds, diff: res.diff, hash: res.hash, summary: res.summary };
   if (res.exclude) { line.exclude = res.exclude; line.hashFull = res.hashFull; }
   if (res.hook && res.hook.hooked.length) line.hook = res.hook;
+  if (res.marks) line.marks = res.marks;
+  if (res.stall) line.stall = res.stall;
+  if (res.ticks_ms != null) line.ticks_ms = res.ticks_ms;
   if (res.until) line.until = res.until;
   if (!res.ok) Object.assign(line, { failed_at: res.failed_at, error: res.error });
   if (res.steps) line.steps = res.steps;

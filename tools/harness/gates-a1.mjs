@@ -1,9 +1,12 @@
 // The A1 gates (automation registry + au side layer). Appends one section to results/SUMMARY.md.
-//   node gates-a1.mjs --part 1|2 [<id>...]
+//   node gates-a1.mjs --part 1|2|3 [<id>...]
 // Part 1 (A1-1): anchors with `au` excluded, the wrapper-call counter, updateTemp never calls automate, parity, goldens,
 // manifest, and the au layer present in Node and the page. `--no-auto` keeps any manifest `auto` table out (Part 1 is
 // the registry with games-auto/ absent). Part 2 (A1-2): A1-1's rows re-run WITH the tables at profile off, plus the page
 // checks of the au tab (all Off; ?profile=all shows On without writing the save; a toggle persists; the disclosure).
+// Part 3 (A1-3): the rung under profile all — each predicate's first tick (marks) with gameSeconds + hash, a second run
+// equal; PTR's pair order both ways; the next stall per game (L1 detector, 3600 game-s, 2 min wall); parity node ≡ page
+// under profile all at the (i) predicate's tick count. Node runs go in parallel child processes (each ≤ 10 min).
 // Every row carries the commit, ticks, gameSeconds, diff and hash.
 import fs from 'node:fs';
 import path from 'node:path';
@@ -14,6 +17,8 @@ import { openContext, openGame, pageTick } from './page.mjs';
 import { parity } from './parity.mjs';
 import { checkManifest } from './check-manifest.mjs';
 import { nodeIds, compareIds } from './check-goldens.mjs';
+import os from 'node:os';
+import { spawn } from 'node:child_process';
 
 // L1's off-profile anchors (results/SUMMARY.md, L1 section at 56c5e34): idle 1000×0.05 and census policy 1000×0.05.
 // The 200×0.05 idle anchor is the census's, read from manifest.headless.idleHash.
@@ -37,7 +42,8 @@ const browser = await chromium.launch();
 const server = await startServer(REPO);
 const base = server.url;
 try {
-  for (const id of ids) {
+  if (PART === '3') await part3();
+  else for (const id of ids) {
     const m = readManifest(id);
     const tag = noAuto ? 'A1-1' : 'A1-2';
     // anchors, au excluded
@@ -172,6 +178,99 @@ async function part2Page(id) {
   } catch (e) { ok = false; notes.push('EXCEPTION ' + String(e && e.stack || e).slice(0, 400)); }
   finally { await context.close(); }
   row({ gate: 'A1-2 au tab (page)', id, ok, ticks: 0, gameSeconds: 0, diff: null, hash: null, notes: notes.join('; ') + `; screenshots results/${id}-au-{off,all,toggled}.png` });
+}
+
+// ---- Part 3 --------------------------------------------------------------------------------------------------------
+const MARKS = {
+  ptr: [['(i) b and g unlocked', 'player.b.unlocked && player.g.unlocked'], ['(ii) keep-upgrade milestones b0 + g0', "hasMilestone('b',0) && hasMilestone('g',0)"], ['(iii) b.best ≥ 15 and g.best ≥ 15', 'player.b.best.gte(15) && player.g.best.gte(15)']],
+  // fundamental.js has no milestones: (iii) is the next milestone in the tree, primitive ms 1 ("10 Numbers") — a row-2
+  // layer no A1 feature resets, so it is expected unmet (a finding, and A2's input)
+  something: [['(i) first fundamental reset (fundamental.total ≥ 1)', 'player.fundamental.total.gte(1)'], ['(ii) unlock:upg:12', "hasUpgrade('unlock', 12)"], ['(iii) primitive ms 1 (next milestone in the tree)', "hasMilestone('primitive', 1)"]],
+};
+function runAsync(id, o) {
+  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'tmt-loader-a1-3-'));
+  const out = path.join(tmp, 'r.json');
+  const args = [path.join(REPO, 'tools/harness/run.mjs'), id, '--json', out];
+  for (const [k, v] of Object.entries(o)) if (v !== undefined && v !== null) args.push(`--${k}`, String(v));
+  return new Promise((resolve) => {
+    const c = spawn(process.execPath, args, { cwd: REPO, stdio: ['ignore', 'ignore', 'pipe'] });
+    let err = '';
+    c.stderr.on('data', (d) => { err += d; });
+    c.on('exit', () => { try { resolve(JSON.parse(fs.readFileSync(out, 'utf8'))); } catch (e) { resolve({ ok: false, error: `no result: ${err.slice(-400)}` }); } });
+  });
+}
+function marksFile(id) {
+  const f = path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'tmt-loader-marks-')), 'marks.json');
+  fs.writeFileSync(f, JSON.stringify(MARKS[id]));
+  return f;
+}
+const fmtMark = (m) => (m ? `${m.ticks} ticks / ${m.gameSeconds} s / ${m.hash}` : 'NOT MET');
+async function part3() {
+  const want = (id) => ids.includes(id);
+  const jobs = {};
+  if (want('ptr')) {
+    const mf = marksFile('ptr');
+    jobs.ptr1 = runAsync('ptr', { profile: 'all', diff: 1, ticks: 14000, marks: mf });
+    jobs.ptr2 = runAsync('ptr', { profile: 'all', diff: 1, ticks: 14000, marks: mf });
+    jobs.ptrBG = runAsync('ptr', { profile: 'all', diff: 1, ticks: 14000, marks: mf, 'auto-opt': 'unlockOrder=b,g' });
+    jobs.ptrFine = runAsync('ptr', { profile: 'all', diff: 0.05, ticks: 40000, marks: mf, 'wall-ms': 480000 });
+    jobs.ptrAlways = runAsync('ptr', { profile: 'all', diff: 1, ticks: 14000, marks: mf, stall: 3600, 'wall-ms': 120000, 'auto-opt': 'policy:reset:p=always' });
+    jobs.ptrStall = runAsync('ptr', { profile: 'all', diff: 1, ticks: 200000, stall: 3600, 'wall-ms': 120000 });
+  }
+  if (want('something')) {
+    const mf = marksFile('something');
+    jobs.st1 = runAsync('something', { profile: 'all', diff: 0.05, ticks: 14000, marks: mf });
+    jobs.st2 = runAsync('something', { profile: 'all', diff: 0.05, ticks: 14000, marks: mf });
+    jobs.stD1 = runAsync('something', { profile: 'all', diff: 1, ticks: 3000, marks: mf });
+    jobs.stGain = runAsync('something', { profile: 'all', diff: 1, ticks: 14000, marks: mf, stall: 3600, 'wall-ms': 120000, 'auto-opt': 'policy:reset:fundamental=gain>=1' });
+    jobs.stStall = runAsync('something', { profile: 'all', diff: 1, ticks: 200000, stall: 3600, 'wall-ms': 120000 });
+  }
+  const R = Object.fromEntries(await Promise.all(Object.entries(jobs).map(async ([k, p]) => [k, await p])));
+  const names = (id) => MARKS[id].map((m) => m[0]);
+  const markRows = (id, a, b, diff, tag) => {
+    for (const n of names(id)) {
+      const x = a.marks?.[n], y = b ? b.marks?.[n] : undefined;
+      const equal = b ? JSON.stringify(x) === JSON.stringify(y) : null;
+      row({ gate: `A1-3 ${tag} ${n}`, id, leg: 'profile all', ok: a.ok && (b ? b.ok && equal : true), ticks: x?.ticks ?? a.ticks, gameSeconds: x?.gameSeconds ?? a.gameSeconds, diff, hash: x?.hash ?? null,
+        notes: `${x ? 'MET' : `NOT MET (run stopped at ${a.ticks} ticks)`}${b ? `; second run ${fmtMark(y)} — equal ${equal}` : ''}${a.error ? '; ' + a.error : ''}` });
+    }
+  };
+  if (want('ptr')) {
+    markRows('ptr', R.ptr1, R.ptr2, 1, 'rung (defaults: reset:p interval>=10, unlockOrder g,b)');
+    for (const n of names('ptr')) {
+      const g = R.ptr1.marks?.[n], b = R.ptrBG.marks?.[n];
+      row({ gate: `A1-3 pair order b,g (alternative) ${n}`, id: 'ptr', leg: 'profile all', ok: R.ptrBG.ok, ticks: b?.ticks, gameSeconds: b?.gameSeconds, diff: 1, hash: b?.hash, notes: `b first ${fmtMark(b)} vs g first ${fmtMark(g)}: g first ahead by ${b && g ? b.gameSeconds - g.gameSeconds : '—'} game-s` });
+    }
+    markRows('ptr', R.ptrFine, null, 0.05, 'fine diff (8 min wall bound)');
+    const al = R.ptrAlways;
+    row({ gate: 'A1-3 reset:p always (brief default) — control', id: 'ptr', leg: 'profile all', ok: al.ok, ticks: al.ticks, gameSeconds: al.gameSeconds, diff: 1, hash: al.hash, notes: `marks: ${names('ptr').map((n) => fmtMark(al.marks?.[n])).join(' · ')}; stalled ${al.stall?.stalled} (last progress tick ${al.stall?.lastProgress?.ticks}); points ${al.summary?.points}` });
+  }
+  if (want('something')) {
+    markRows('something', R.st1, R.st2, 0.05, 'rung (defaults: reset:fundamental interval>=5)');
+    markRows('something', R.stD1, null, 1, 'coarse diff');
+    const g = R.stGain;
+    row({ gate: 'A1-3 reset:fundamental gain>=1 (brief default) — control', id: 'something', leg: 'profile all', ok: g.ok, ticks: g.ticks, gameSeconds: g.gameSeconds, diff: 1, hash: g.hash, notes: `marks: ${names('something').map((n) => fmtMark(g.marks?.[n])).join(' · ')}; stalled ${g.stall?.stalled} (last progress tick ${g.stall?.lastProgress?.ticks}); actions ${JSON.stringify(g.hook?.actions)}` });
+  }
+  for (const [id, k] of [['ptr', 'ptrStall'], ['something', 'stStall']]) {
+    if (!want(id)) continue;
+    const r = R[k];
+    const d = r.detail || {};
+    const brief = Object.entries(d).map(([l, o]) => `${l}{${o.unlocked ? '' : 'LOCKED '}pts ${o.points}${o.best ? ' best ' + o.best : ''}; upg [${o.upgrades}]; ms [${o.milestones}]${Object.keys(o.buyables || {}).length ? '; buy ' + JSON.stringify(o.buyables) : ''}; canReset ${o.canReset}${o.nextAt ? ' nextAt ' + o.nextAt : ''}${o.nextUpgrades?.length ? '; next upg ' + o.nextUpgrades.join(' ') : ''}${o.nextMilestones?.length ? '; next ms ' + o.nextMilestones.join(' | ') : ''}}`).join(' ');
+    row({ gate: 'A1-3 next stall (diff 1, 3600 game-s window, 2 min wall)', id, leg: 'profile all', ok: r.ok, ticks: r.ticks, gameSeconds: r.gameSeconds, diff: 1, hash: r.hash,
+      notes: `stalled ${r.stall?.stalled}, wall-bounded ${r.stall?.walled}; last progress tick ${r.stall?.lastProgress?.ticks} (${r.stall?.lastProgress?.gameSeconds} s); actions ${JSON.stringify(r.hook?.actions)}; state: ${brief}` });
+    writeJSON(path.join(REPO, `tools/harness/results/tmp/a1-3-${id}-stall.json`), r);
+  }
+  // parity under profile all at the (i) predicate's tick count
+  const pars = [];
+  if (want('ptr') && R.ptr1.marks?.[names('ptr')[0]]) pars.push(['ptr', R.ptr1.marks[names('ptr')[0]].ticks, 1]);
+  if (want('something') && R.st1.marks?.[names('something')[0]]) pars.push(['something', R.st1.marks[names('something')[0]].ticks, 0.05], ['something', R.st1.marks[names('something')[1]]?.ticks, 0.05]);
+  for (const [id, ticks, diff] of pars) {
+    if (!ticks) continue;
+    const p = await parity(id, { ticks, diff, leg: 'idle', base, browser, profile: 'all' });
+    const same = JSON.stringify(p.node?.hook) === JSON.stringify(p.page?.hook);
+    row({ gate: 'A1-3 parity node≡page, profile all, at a predicate tick', id, leg: 'profile all', ok: p.ok && same, ticks: p.ticks, gameSeconds: p.gameSeconds, diff, hash: p.node?.hash,
+      notes: p.ok ? `page ${p.page.hash} in ${p.page.ms} ms; hookStats equal ${same}; actions ${JSON.stringify(p.node?.hook?.actions)}` : `DIVERGED ${JSON.stringify(p.divergence || p.error).slice(0, 300)}` });
+  }
 }
 
 const SUMMARY = path.join(REPO, 'tools/harness/results/SUMMARY.md');

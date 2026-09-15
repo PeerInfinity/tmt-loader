@@ -4,12 +4,18 @@
   var T = tmtLoader;
   // unlockOrder: which of the row-1 pair resets first. Both are static at 200 points, but the SECOND one unlocked
   // costs ×5000 (`unlockOrder` in layers.js requires()), so the second pair member's reset waits for the first to unlock.
-  // Table option: ?autoOpt=unlockOrder=g,b / --auto-opt unlockOrder=g,b. Default b,g (A1 part 3 measured both).
-  var order = String((T.options && T.options.unlockOrder) || 'b,g').split(',');
+  // Table option: ?autoOpt=unlockOrder=b,g / --auto-opt unlockOrder=b,g. Default g,b: A1 part 3 measured both at diff 1
+  // (reset:p interval>=10) — g first reached both unlocked / both keep-upgrade milestones / both best ≥ 15 at
+  // 1361 / 2360 / 2936 game-s vs b first 1532 / 2491 / 3067, and g first was ahead at every p interval tried (5–120 s).
+  var order = String((T.options && T.options.unlockOrder) || 'g,b').split(',');
   if (order.length !== 2 || order.indexOf('b') < 0 || order.indexOf('g') < 0) throw new Error('games-auto/ptr.js: unlockOrder must be b,g or g,b');
   T.autoTable = { id: 'ptr', unlockOrder: order };
 
-  T.registerAutoFeature({ id: 'reset:p', layer: 'p', kind: 'reset', policy: 'always', policies: ['always', 'gain>=1'], title: 'Prestige reset', default: false });
+  // reset:p default interval>=10, not always: `always` resets p the moment points reach 10 (gain 1), so points never
+  // reach the 200 the b/g pair needs — a hard wall at diff 0.05 and diff 1 alike (A1 part 3). gain>=N (N>1) never
+  // fires at all from a fresh game (no point generation before the first p reset). An interval resets p once at once,
+  // then lets points accumulate; 10 s reached the row-1 predicates fastest of 5/10/30/60/120 s.
+  T.registerAutoFeature({ id: 'reset:p', layer: 'p', kind: 'reset', policy: 'interval>=10', policies: ['interval>=10', 'always', 'gain>=1'], title: 'Prestige reset', default: false });
   T.registerAutoFeature({ id: 'upgrades:p', layer: 'p', kind: 'upgrades', policy: 'cheapest-first', title: 'Prestige upgrades', unlocked: function () { return player.p.unlocked; }, default: false });
   // the b/g milestone 0 ("8 Boosters" / "8 Generators": "Keep Prestige Upgrades on reset.") is the keepsUpgrades gate
   [['b', 'Booster reset'], ['g', 'Generator reset']].forEach(function (x) {

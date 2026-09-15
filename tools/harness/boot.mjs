@@ -5,6 +5,7 @@
 //                      [--storage in.json] [--import player.json] [--save] [--save-storage out.json]
 //                      [--state-out f] [--player-out f] [--ids-out f] [--census]
 //                      [--profile off|all|saved] [--exclude k1,k2] [--auto-opt "k=v;k2=v2"] [--no-auto]
+//                      [--marks marks.json ([[name, "<js>"], …])] [--stall <game-seconds>] [--wall-ms <ms>]
 // Prints one line "BOOTRESULT {json}" on stdout. Scripts run via vm.runInThisContext (Node's own global — never
 // host intrinsics into a sandbox: TMT's `x.constructor === Object` test fails cross-realm). The plan comes from
 // loader/interpret.mjs + manifests/<id>.json, the same code path as the page; render-only files and vendored Vue are
@@ -17,7 +18,7 @@ import path from 'node:path';
 import crypto from 'node:crypto';
 import { interpret, executionOrder, modFilePaths } from '../../loader/interpret.mjs';
 import { installSavePrefix } from '../../loader/shims/save-prefix.js';
-import { DRIVE_SRC } from './policy.mjs';
+import { DRIVE_SRC, MONITOR_SRC } from './policy.mjs';
 
 const proc = process;
 const REPO = path.resolve(new URL('../..', import.meta.url).pathname);
@@ -213,7 +214,17 @@ if (A['ids-out']) writeOut(A['ids-out'], JSON.stringify(run('tmtLoader.ids()', '
 // source the page runs). --until stops after the first tick whose predicate is true.
 try {
   const t1 = Date.now();
-  const r = run(`${DRIVE_SRC}(${ticks}, ${diff}, ${LEG === 'policy'}, ${A.until ? `function(){ return (${A.until}); }` : 'null'})`, 'ticks-' + LEG);
+  const MARKS = A.marks ? JSON.parse(fs.readFileSync(A.marks, 'utf8')) : [];
+  const monitored = MARKS.length || A.stall || A['wall-ms'];
+  if (monitored) run(`globalThis.__tmtMonitor = ${MONITOR_SRC}([${MARKS.map(([n, e]) => `[${JSON.stringify(n)}, function(){ return (${e}); }]`).join(',')}], ${Number(A.stall || 0)}, ${Number(A['wall-ms'] || 0)})`, 'monitor');
+  const untilSrc = monitored ? `function(){ ${A.until ? `if (${A.until}) return true;` : ''} return __tmtMonitor.check(); }` : A.until ? `function(){ return (${A.until}); }` : 'null';
+  const r = run(`${DRIVE_SRC}(${ticks}, ${diff}, ${LEG === 'policy'}, ${untilSrc})`, 'ticks-' + LEG);
+  if (monitored) {
+    const m = run('__tmtMonitor.result()', 'monitor');
+    R.marks = {};
+    for (const [n] of MARKS) R.marks[n] = m.hits[n] ? { ticks: m.hits[n].ticks, gameSeconds: m.hits[n].gameSeconds, hash: sha256hex(m.hits[n].json).slice(0, 16) } : null;
+    if (A.stall || A['wall-ms']) R.stall = { window: Number(A.stall || 0), stalled: m.stalled, walled: m.walled, wallMs: Number(A['wall-ms'] || 0), lastProgress: m.lastProgress };
+  }
   R.ticks_ms = Date.now() - t1;
   R.leg = LEG;
   if (LEG === 'policy') R.policy_errors = r.policyErrors;
@@ -233,6 +244,18 @@ try {
     else R.state_paths[k] = sha256hex(JSON.stringify(st[k]) ?? 'u').slice(0, 16);
   }
   R.summary = run(`({ points: String(player.points), unlocked: Object.keys(layers).filter(l => player[l] && player[l].unlocked) })`, 'x');
+  // --stall / --detail: a readable state at the stop, for "what would a human click next"
+  if (A.stall || A.detail) R.detail = run(`(function(){
+    const f = (x) => { try { return x === undefined || x === null ? null : (typeof x === 'object' && x.mag !== undefined ? format(x) : String(x)); } catch (e) { return String(x); } };
+    const out = {};
+    for (const l in layers) { const L = layers[l], P = player[l], t = tmp[l]; if (!P || !t || L.tmtLoaderLayer || isNaN(L.row)) continue;
+      if (!P.unlocked && !t.layerShown) continue;
+      const o = { row: L.row, type: L.type, unlocked: !!P.unlocked, points: f(P.points), best: f(P.best), canReset: t.canReset === true, resetGain: f(t.resetGain), nextAt: f(t.nextAt), requires: f(t.requires), baseAmount: f(t.baseAmount),
+        upgrades: (P.upgrades || []).join(','), milestones: (P.milestones || []).join(','), buyables: Object.fromEntries(Object.entries(P.buyables || {}).filter(([k, v]) => String(v) !== '0').map(([k, v]) => [k, f(v)])) };
+      if (L.upgrades && t.upgrades) o.nextUpgrades = Object.keys(L.upgrades).filter(id => !isNaN(id) && t.upgrades[id] && t.upgrades[id].unlocked && !(P.upgrades || []).map(String).includes(String(id))).map(id => id + '@' + f(t.upgrades[id].cost)).slice(0, 6);
+      if (L.milestones) o.nextMilestones = Object.keys(L.milestones).filter(id => !isNaN(id) && !(P.milestones || []).map(String).includes(String(id))).slice(0, 2).map(id => id + ': ' + (L.milestones[id].requirementDescription || ''));
+      out[l] = o; }
+    return out; })()`, 'detail');
   if (A['state-out']) writeOut(A['state-out'], json);
   if (A['player-out']) writeOut(A['player-out'], run('JSON.stringify(player)', 'player'));
   if (A.save) { run('tmtLoader.save()', 'save'); const s = storageShim.list(lsStore); R.storage_keys = Object.keys(s); if (A['save-storage']) writeOut(A['save-storage'], JSON.stringify(s, null, 1)); }
