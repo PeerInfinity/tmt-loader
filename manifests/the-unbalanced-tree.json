@@ -1,0 +1,130 @@
+{
+  "schema": 1,
+  "id": "the-unbalanced-tree",
+  "name": "The Unbalanced Tree",
+  "version": "0.1.3",
+  "author": "me",
+  "upstream": {
+    "repo": "weyrhvwvrwuvureurw/The-Modding-Tree",
+    "url": "https://github.com/weyrhvwvrwuvureurw/The-Modding-Tree.git",
+    "branch": "master",
+    "commit": "5a0ca10b623253a86c3911d41eeb4dc190a503e2",
+    "pushed_at": "2023-09-07T11:43:28Z"
+  },
+  "engine": {
+    "tmtNum": "2.6.6.2",
+    "stock_commit": "8cf14c4",
+    "moved": false,
+    "deviation": {
+      "added": 0,
+      "removed": 0
+    }
+  },
+  "entry": "index.html",
+  "load": {
+    "onload": "load()",
+    "scripts": [
+      "js/technical/break_eternity.js",
+      "js/technical/layerSupport.js",
+      "js/mod.js",
+      "js/technical/loader.js",
+      "js/technical/temp.js",
+      "js/technical/displays.js",
+      "js/game.js",
+      "js/utils.js",
+      "js/utils/easyAccess.js",
+      "js/technical/systemComponents.js",
+      "js/components.js",
+      "js/technical/canvas.js",
+      "js/technical/particleSystem.js",
+      "js/utils/NumberFormating.js",
+      "js/utils/options.js",
+      "js/utils/save.js",
+      "js/utils/themes.js"
+    ],
+    "renderOnly": [
+      "js/technical/systemComponents.js",
+      "js/components.js",
+      "js/technical/canvas.js",
+      "js/technical/particleSystem.js"
+    ],
+    "modFilesPrefix": "js/",
+    "modFiles": [
+      "layers.js",
+      "tree.js"
+    ],
+    "external": {
+      "https://cdn.jsdelivr.net/npm/vue@2.6.12": "vendor",
+      "https://fonts.googleapis.com/css?family=Inconsolata": "drop"
+    },
+    "vendor": {
+      "https://cdn.jsdelivr.net/npm/vue@2.6.12": {
+        "path": "vendor/vue-2.6.12.min.js",
+        "sha256": "29296ccacaa9ed35ed168fc51e36f54fd6f8db9c7786bbf38cc59a27229ba5c2"
+      }
+    }
+  },
+  "save": {
+    "keyRule": "modInfo.id",
+    "key": "tutr"
+  },
+  "headless": {
+    "prestubs": [],
+    "renderStubs": [
+      "loadVue",
+      "resizeCanvas",
+      "retrieveCanvasData",
+      "drawTree",
+      "drawComponentBranches",
+      "drawTreeBranch",
+      "makeParticles",
+      "makeShinies",
+      "updateParticles",
+      "setDir",
+      "setSpeed",
+      "updateMouse",
+      "getOpacity",
+      "constructParticleStyle",
+      "clearParticles",
+      "sin",
+      "cos",
+      "tan",
+      "asin",
+      "acos",
+      "atan"
+    ],
+    "idleHash": {
+      "ticks": 200,
+      "diff": 0.05,
+      "hash": "b2e289c57386e47c"
+    },
+    "deterministic": true
+  },
+  "license": {
+    "githubSpdx": "NOASSERTION",
+    "files": {
+      "LICENSE": "MIT",
+      "Prestige-tree-license": "MIT"
+    },
+    "verdict": "MIT"
+  },
+  "census": {
+    "full_name": "weyrhvwvrwuvureurw/The-Modding-Tree",
+    "head": "5a0ca10",
+    "score": 49.09,
+    "layers": 5,
+    "rows": 3,
+    "milestones": 10,
+    "upgrades": 41,
+    "buyables": 0,
+    "challenges": 21,
+    "achievements": 0,
+    "trace_fields": 2
+  },
+  "patches": [],
+  "generated": {
+    "by": "tmt-fork-census scripts/manifest.mjs",
+    "commit": "27c6654",
+    "at": "2026-09-15T06:31:59.542Z"
+  }
+}

@@ -1,0 +1,87 @@
+{
+  "id": "sheep-incremental",
+  "commit": "d2b4372b768206e8b28e4248d9001b6003fdf71b",
+  "layers": {
+    "info-tab": {
+      "row": "otherside",
+      "type": "none"
+    },
+    "options-tab": {
+      "row": "otherside",
+      "type": "none"
+    },
+    "changelog-tab": {
+      "row": "otherside",
+      "type": "none"
+    },
+    "s": {
+      "row": 0,
+      "type": "normal"
+    },
+    "p": {
+      "row": 1,
+      "type": "normal"
+    },
+    "m": {
+      "row": 1,
+      "type": "normal"
+    },
+    "w": {
+      "row": 1,
+      "type": "normal"
+    },
+    "blank": {
+      "row": null,
+      "type": "none"
+    },
+    "tree-tab": {
+      "row": null,
+      "type": "none"
+    }
+  },
+  "ids": [
+    "s:ms:0",
+    "s:ms:1",
+    "s:ms:2",
+    "s:upg:11",
+    "s:upg:12",
+    "s:upg:13",
+    "s:upg:14",
+    "s:upg:15",
+    "s:upg:21",
+    "s:upg:22",
+    "s:upg:23",
+    "s:upg:24",
+    "s:upg:25",
+    "s:buy:11",
+    "p:ms:0",
+    "p:ms:1",
+    "p:ms:2",
+    "p:upg:11",
+    "p:upg:12",
+    "p:upg:13",
+    "p:upg:14",
+    "p:upg:15",
+    "m:ms:0",
+    "m:ms:1",
+    "m:ms:2",
+    "m:ms:3",
+    "m:ms:4",
+    "m:upg:11",
+    "m:upg:12",
+    "m:upg:13",
+    "m:upg:14",
+    "m:upg:31",
+    "m:upg:32",
+    "m:upg:33",
+    "m:upg:34",
+    "w:upg:11"
+  ],
+  "counts": {
+    "ms": 11,
+    "upg": 24,
+    "buy": 1,
+    "ch": 0,
+    "ach": 0
+  }
+}

@@ -1,0 +1,135 @@
+{
+  "schema": 1,
+  "id": "the-upgradeverse-tree",
+  "name": "The Upgradeverse Tree",
+  "version": "1.1.0",
+  "author": "liam",
+  "upstream": {
+    "repo": "liamthecatguy/The-Upgradeverse-Tree",
+    "url": "https://github.com/liamthecatguy/The-Upgradeverse-Tree.git",
+    "branch": "master",
+    "commit": "34014a5b1bd67cd7d6c084c00d8b781b708f658b",
+    "pushed_at": "2026-03-02T21:35:55Z"
+  },
+  "engine": {
+    "tmtNum": "2.7",
+    "stock_commit": "4d8a86c",
+    "moved": false,
+    "deviation": {
+      "added": 0,
+      "removed": 0
+    }
+  },
+  "entry": "index.html",
+  "load": {
+    "onload": "load()",
+    "scripts": [
+      "js/technical/break_eternity.js",
+      "js/technical/layerSupport.js",
+      "js/mod.js",
+      "js/technical/loader.js",
+      "js/technical/temp.js",
+      "js/technical/displays.js",
+      "js/game.js",
+      "js/utils.js",
+      "js/utils/easyAccess.js",
+      "js/technical/systemComponents.js",
+      "js/components.js",
+      "js/technical/canvas.js",
+      "js/technical/particleSystem.js",
+      "js/utils/NumberFormating.js",
+      "js/utils/options.js",
+      "js/utils/save.js",
+      "js/utils/themes.js"
+    ],
+    "renderOnly": [
+      "js/technical/systemComponents.js",
+      "js/components.js",
+      "js/technical/canvas.js",
+      "js/technical/particleSystem.js"
+    ],
+    "modFilesPrefix": "js/",
+    "modFiles": [
+      "tree.js",
+      "up.js",
+      "p.js",
+      "sp.js",
+      "c.js",
+      "m.js",
+      "u.js"
+    ],
+    "external": {
+      "https://unpkg.com/vue@2.7.16/dist/vue.min.js": "vendor",
+      "https://fonts.googleapis.com/css?family=Inconsolata": "drop"
+    },
+    "vendor": {
+      "https://unpkg.com/vue@2.7.16/dist/vue.min.js": {
+        "path": "vendor/vue-2.7.16.min.js",
+        "sha256": "3c1d4b0c549e8de9d4a9bafb12ab70b6a1ac747d07293b98c5b25b6632999afd"
+      }
+    }
+  },
+  "save": {
+    "keyRule": "getModID (modInfo.id ?? name-author)",
+    "key": "The-Upgradeverse-Tree-liam"
+  },
+  "headless": {
+    "prestubs": [],
+    "renderStubs": [
+      "loadVue",
+      "resizeCanvas",
+      "retrieveCanvasData",
+      "drawTree",
+      "drawComponentBranches",
+      "drawTreeBranch",
+      "makeParticles",
+      "makeShinies",
+      "updateParticles",
+      "setDir",
+      "setSpeed",
+      "updateMouse",
+      "getOpacity",
+      "constructParticleStyle",
+      "clearParticles",
+      "sin",
+      "cos",
+      "tan",
+      "asin",
+      "acos",
+      "atan"
+    ],
+    "idleHash": {
+      "ticks": 200,
+      "diff": 0.05,
+      "hash": "c6f0e6879154a837"
+    },
+    "deterministic": true
+  },
+  "license": {
+    "githubSpdx": "NOASSERTION",
+    "files": {
+      "LICENSE": "MIT",
+      "Prestige-tree-license": "MIT"
+    },
+    "verdict": "MIT"
+  },
+  "census": {
+    "full_name": "liamthecatguy/The-Upgradeverse-Tree",
+    "head": "34014a5",
+    "score": 49.8,
+    "layers": 6,
+    "rows": 5,
+    "milestones": 3,
+    "upgrades": 36,
+    "buyables": 0,
+    "challenges": 0,
+    "achievements": 0,
+    "trace_fields": 1
+  },
+  "patches": [],
+  "generated": {
+    "by": "tmt-fork-census scripts/manifest.mjs",
+    "commit": "27c6654",
+    "at": "2026-09-15T06:31:58.759Z"
+  }
+}

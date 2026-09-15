@@ -1,0 +1,93 @@
+{
+  "id": "a-tree-about-layers",
+  "commit": "485e62f8d25ae9a3df5d5690511bf66cc88bd61f",
+  "layers": {
+    "info-tab": {
+      "row": "otherside",
+      "type": "none"
+    },
+    "options-tab": {
+      "row": "otherside",
+      "type": "none"
+    },
+    "changelog-tab": {
+      "row": "otherside",
+      "type": "none"
+    },
+    "p": {
+      "row": 1,
+      "type": "normal"
+    },
+    "bp": {
+      "row": 2,
+      "type": "normal"
+    },
+    "sp": {
+      "row": 3,
+      "type": "normal"
+    },
+    "r": {
+      "row": 4,
+      "type": "normal"
+    },
+    "m": {
+      "row": 4,
+      "type": "static"
+    },
+    "ac": {
+      "row": "side",
+      "type": "none"
+    },
+    "blank": {
+      "row": null,
+      "type": "none"
+    },
+    "tree-tab": {
+      "row": null,
+      "type": "none"
+    }
+  },
+  "ids": [
+    "p:upg:11",
+    "p:upg:12",
+    "p:upg:13",
+    "p:upg:14",
+    "bp:upg:11",
+    "bp:upg:12",
+    "bp:upg:13",
+    "bp:upg:14",
+    "bp:upg:21",
+    "bp:upg:22",
+    "bp:upg:23",
+    "bp:upg:24",
+    "sp:upg:11",
+    "sp:upg:12",
+    "sp:upg:13",
+    "sp:upg:14",
+    "sp:upg:21",
+    "sp:upg:22",
+    "sp:upg:23",
+    "sp:upg:24",
+    "sp:upg:31",
+    "sp:upg:32",
+    "sp:upg:33",
+    "sp:upg:34",
+    "r:upg:11",
+    "r:upg:12",
+    "r:upg:13",
+    "m:upg:11",
+    "m:upg:12",
+    "ac:ach:11",
+    "ac:ach:12",
+    "ac:ach:13",
+    "ac:ach:14",
+    "ac:ach:21"
+  ],
+  "counts": {
+    "ms": 0,
+    "upg": 29,
+    "buy": 0,
+    "ch": 0,
+    "ach": 5
+  }
+}

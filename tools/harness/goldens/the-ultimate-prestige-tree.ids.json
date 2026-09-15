@@ -1,0 +1,89 @@
+{
+  "id": "the-ultimate-prestige-tree",
+  "commit": "0ec9480c8474789c20af3bdedd71fc728d7af009",
+  "layers": {
+    "info-tab": {
+      "row": "otherside",
+      "type": "none"
+    },
+    "options-tab": {
+      "row": "otherside",
+      "type": "none"
+    },
+    "changelog-tab": {
+      "row": "otherside",
+      "type": "none"
+    },
+    "p": {
+      "row": 0,
+      "type": "normal"
+    },
+    "r": {
+      "row": 1,
+      "type": "normal"
+    },
+    "d": {
+      "row": 3,
+      "type": "static"
+    },
+    "o": {
+      "row": 4,
+      "type": "normal"
+    },
+    "blank": {
+      "row": null,
+      "type": "none"
+    },
+    "tree-tab": {
+      "row": null,
+      "type": "none"
+    }
+  },
+  "ids": [
+    "p:ms:0",
+    "p:ms:1",
+    "p:ms:2",
+    "p:upg:11",
+    "p:upg:12",
+    "p:upg:13",
+    "p:upg:14",
+    "r:ms:0",
+    "r:upg:11",
+    "r:upg:12",
+    "r:upg:13",
+    "r:upg:14",
+    "r:upg:15",
+    "r:upg:16",
+    "r:upg:17",
+    "d:ms:0",
+    "d:ms:1",
+    "d:ms:2",
+    "d:ms:3",
+    "d:ms:4",
+    "d:ms:5",
+    "d:ms:6",
+    "d:ms:7",
+    "d:ms:8",
+    "d:ms:9",
+    "d:upg:11",
+    "d:upg:12",
+    "d:upg:13",
+    "d:upg:14",
+    "d:ch:11",
+    "o:ms:0",
+    "o:ms:1",
+    "o:ms:2",
+    "o:ms:3",
+    "o:ms:4",
+    "o:ms:5",
+    "o:ms:6",
+    "o:ms:7"
+  ],
+  "counts": {
+    "ms": 22,
+    "upg": 15,
+    "buy": 0,
+    "ch": 1,
+    "ach": 0
+  }
+}
