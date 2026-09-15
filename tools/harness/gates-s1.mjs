@@ -1,5 +1,5 @@
 // The S1 gates (the derived automation core; tmt-automation-plan §8). Appends one section to results/SUMMARY.md.
-//   node gates-s1.mjs --part 1|1s|2|2s-p|2s-f|2s-q|3 [--no-summary] [--pool 6]
+//   node gates-s1.mjs --part 1|1s|2|2s-p|2s-f|2s-q|2k|3 [--no-summary] [--pool 6]
 // Part 1 (S1-1): the off anchors (contract-only page and au excluded), goldens and check-manifest for ptr and something;
 // PINNED BEHAVIOUR — the A1-3 / A2-3 / §12d / A2-1 runs under the derived tables restricted to kinds=reset,upgrades,buyables,
 // each mark at its SUMMARY tick with the game state equal. `hash` (the full stateJSON) includes player.au, whose
@@ -330,6 +330,24 @@ async function part2s(key) {
   });
 }
 
+// Part 2k (informative): the generic kind order (plan §5b: purchases first, the reset last) against the tables'
+// reset-first order, on the pinned marks at diff 1 — the basis for the derivation's generic default.
+const GENERIC_KIND_ORDER = 'toggles,upgrades,buyables,challenges,clickables,reset';
+async function part2k() {
+  const sets = [['ptr', 'a1ptr', 14000, '1361 / 2360 / 2936'], ['something', 'a1st', 3000, '6 / 308'], ['something', 'a2st', 20000, '309 / 399 / 579']];
+  const rs = sets.map(([id, mk, ticks]) => {
+    const o = { profile: 'all', diff: 1, ticks, marks: marksFile(MARKS[mk]), stall: 3600, 'stall-seen': true, 'wall-ms': 540000 };
+    return [job(id, o), job(id, { ...o, 'auto-opt': `kindOrder=${GENERIC_KIND_ORDER}` })];
+  });
+  for (let i = 0; i < sets.length; i++) {
+    const [id, mk, , summary] = sets[i];
+    const [t, g] = await Promise.all(rs[i]);
+    const fmt = (r) => MARKS[mk].map(([n]) => r.marks?.[n]?.gameSeconds ?? 'NOT MET').join(' / ');
+    row({ gate: `S1-2k kind order: generic (${GENERIC_KIND_ORDER}) vs the table's reset-first`, id, leg: `profile all, marks ${mk}`, ok: !!t.ok && !!g.ok, ticks: g.ticks, gameSeconds: g.gameSeconds, diff: 1, hash: g.hash,
+      notes: `game-s to ${MARKS[mk].map(([n]) => n).join(' / ')}: generic ${fmt(g)} vs table order ${fmt(t)} (SUMMARY ${summary}); generic ended ${g.stall?.stalled ? 'stalled' : g.stall?.walled ? 'wall-bounded' : 'all marks met'}; actions generic ${JSON.stringify(g.hook?.actions)}` });
+  }
+}
+
 // ---- Part 3 ----------------------------------------------------------------------------------------------------------
 // Node ≡ page with the derived tables: ptr at A2-3 (i)'s tick under profile all; something at A2-1 (ii)'s tick under
 // profile all; something 1000×0.05 idle at profile off (§11e.12: on 2.7 an extra updateTemp() between ticks moves
@@ -352,6 +370,7 @@ try {
   else if (PART === '1s') await part1s();
   else if (PART === '2') await part2();
   else if (PART === '3') await part3(browser, base);
+  else if (PART === '2k') await part2k();
   else if (SWEEPS[PART]) await part2s(PART);
   else throw new Error(`no part ${PART}`);
 } finally {
