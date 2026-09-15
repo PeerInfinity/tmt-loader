@@ -1247,3 +1247,10 @@ Reading this section: per mark: game-seconds and the % against diff 1 run 1 (✗
 | H1-3r from pinned/M06 → M07 at a coarse diff | ptr | profile all, kinds=reset,upgrades,buyables, --from-snapshot | — | 3550 | 5/20/60 | — | GREEN | stretch 3540 → 3550 s (10 s) at ×1; ×5: NOT MET (ticks), twice equal true, 1251 ms · ×20: NOT MET (ticks), twice equal true, 450 ms · ×60: NOT MET (ticks), twice equal true, 255 ms; diffFromPrev = ×1; load 2.71, 1.94, 1.94 |
 | H1-3r from pinned/M07 → M08 at a coarse diff | ptr | profile all, kinds=reset,upgrades,buyables, --from-snapshot | — | 6037 | 5/20/60 | — | GREEN | stretch 3550 → 6037 s (2487 s) at ×1; ×5: NOT MET (stalled), twice equal true, 48559 ms · ×20: NOT MET (stalled), twice equal true, 8126 ms · ×60: NOT MET (stalled), twice equal true, 2880 ms; diffFromPrev = ×1; load 2.71, 1.94, 1.94 |
 | H1-3r from pinned/M08 → M09 at a coarse diff | ptr | profile all, kinds=reset,upgrades,buyables, --from-snapshot | — | 8035 | 5/20/60 | — | GREEN | stretch 6037 → 8035 s (1998 s) at ×1; ×5: NOT MET (stalled), twice equal true, 25733 ms · ×20: NOT MET (stalled), twice equal true, 7814 ms · ×60: NOT MET (stalled), twice equal true, 3970 ms; diffFromPrev = ×1; load 2.30, 1.98, 1.95 |
+
+## 2026-09-15T20:33:35Z — H1 part 3v (`node tools/harness/gates-h1.mjs --part 3v`) — commit `ae5fe0d7` — 2/2 green
+
+| gate | game | leg | ticks | gameSeconds | diff | hash | result | notes |
+|---|---|---|---|---|---|---|---|---|
+| H1-3 ladder-diff run (×1 → M09) | ptr | profile all, kinds=reset,upgrades,buyables | — | — | per mark | — | GREEN | M01 ×1 1s vs ×1 1s · M02 ×1 1361s vs ×1 1361s · M03 ×1 2360s vs ×1 2360s · M04 ×1 2629s vs ×1 2629s · M05 ×1 2936s vs ×1 2936s · M06 ×1 3540s vs ×1 3540s · M07 ×1 3550s vs ×1 3550s · M08 ×1 6037s vs ×1 6037s · M09 ×1 8035s vs ×1 8035s; segments 1; ticks_ms total 163007 |
+| H1-3 ladder-diff run (×1 → S05) | something | profile all, kinds=reset,upgrades,buyables | — | — | per mark | — | GREEN | S01 ×1 6s vs ×1 6s · S02 ×1 308s vs ×1 308s · S03 ×1 309s vs ×1 309s · S04 ×1 399s vs ×1 399s · S05 ×1 579s vs ×1 579s; segments 1; ticks_ms total 4968 |
