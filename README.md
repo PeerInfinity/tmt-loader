@@ -91,6 +91,8 @@ It works from any sub-path (GitHub Pages serves under `/tmt-loader/`); nothing i
 | `node tools/harness/check-goldens.mjs` / `check-manifest.mjs` | frozen `tmtLoader.ids()` / manifest pin vs the live `index.html` |
 | `node tools/harness/upstream-export.mjs <id> --upstream <clone>` | a save exported from the upstream page imports equal |
 | `node tools/harness/gates.mjs` | gates G1–G4 for every game, rows appended to `results/SUMMARY.md` |
+| `node tools/harness/run.mjs <id> --ladder <file> --to <mark> [--from-snapshot <file>] [--snapshots <dir>]` | a stretch of a game's ladder, from a committed snapshot; `docs/harness.md` |
+| `node tools/harness/ladder-summary.mjs` | the ladder as reached (marks, calibrated diffs, snapshot fixtures) |
 | `node tools/check-pages.mjs` | gate G5: a bare `git clone` served from a sub-path loads both games |
 
 Results are recorded in `tools/harness/results/SUMMARY.md`.

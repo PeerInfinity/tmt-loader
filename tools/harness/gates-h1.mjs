@@ -19,7 +19,7 @@ import { REPO, parseArgs, headCommit, treeDirty, writeJSON, readLadder, writeLad
 import { appendSection } from './summary.mjs';
 import { ladderSlice } from './run.mjs';
 
-const a = parseArgs(process.argv.slice(2), ['no-summary']);
+const a = parseArgs(process.argv.slice(2), ['no-summary', 'rerender']);
 const PART = String(a.part || '1');
 const commit = headCommit(), dirty = treeDirty();
 const rows = [];
@@ -39,7 +39,7 @@ const STALL12D = { ticks: 14131, lastProgress: 10531, hashGame: 'f53368c9f575c56
 const Q_EVAL = "({unlockOrder: {t: player.t.unlockOrder, e: player.e.unlockOrder, s: player.s.unlockOrder}, space: layers.s.space(), spent: player.s.spent, sBest: player.s.best, sPoints: player.s.points, buildings: player.s.buyables, a53: hasAchievement('a', 53), tEnergy: player.t.energy, tPoints: player.t.points, ePoints: player.e.points, enhancers: player.e.buyables[11], gPower: player.g.power, points: player.points})";
 
 // ---- a pool of run.mjs children ---------------------------------------------------------------------------------------
-const POOL = Number(a.pool || (PART === '2f' ? 2 : PART === '3' || PART === '3v' ? 2 : 4));
+const POOL = Number(a.pool || (PART === '2f' ? 2 : PART === '3' || PART === '3v' ? 2 : PART === '3r' ? 3 : 4));
 let running = 0;
 const queue = [];
 const uptime = () => { try { return execFileSync('uptime', { encoding: 'utf8' }).trim().replace(/.*load average:\s*/, ''); } catch { return null; } };
@@ -216,6 +216,9 @@ const CAL = {
 };
 const within = (x, y) => Math.abs(x - y) / y <= 0.02;
 async function part3() {
+  // --rerender: the rows and the ladder fields from the saved calibration JSON (no new runs) — used once, when the first
+  // record's row criterion counted a diff that does not reach a mark as RED
+  if (a.rerender) return renderCalibration(JSON.parse(fs.readFileSync(path.join(REPO, 'tools/harness/results/tmp/h1-3-calibration.json'), 'utf8')));
   const jobs = [];
   // diff 1 first (the reference) — then coarse; twice each; Something Tree's runs are seconds long
   for (const d of DIFFS) for (const game of ['ptr', 'something']) for (const run of [1, 2]) {
@@ -232,7 +235,10 @@ async function part3() {
     if (j.game === 'ptr' && fs.existsSync(path.join(j.dir, 'M09.json'))) tEnergy = String(JSON.parse(JSON.parse(fs.readFileSync(path.join(j.dir, 'M09.json'), 'utf8')).player).t.energy);
     (res[j.game] ||= {})[`${j.d}/${j.run}`] = { ok: !!r.ok, ticks: r.ticks, gameSeconds: r.gameSeconds, ticks_ms: r.ticks_ms, load: r.load, marks, tEnergy, why: r.ladder?.stoppedAt?.why, error: r.error };
   }
-  writeJSON(path.join(REPO, 'tools/harness/results/tmp/h1-3-calibration.json'), { commit, res });
+  writeJSON(path.join(REPO, 'tools/harness/results/tmp/h1-3-calibration.json'), { commit, dirty, date: new Date().toISOString(), res });
+  return renderCalibration({ commit, dirty, res });
+}
+function renderCalibration({ commit, dirty, res }) {
   for (const game of ['ptr', 'something']) {
     const R = res[game], C = CAL[game];
     const L = readLadder(C.ladder);
@@ -245,8 +251,8 @@ async function part3() {
       const cells = ids.map((m) => { const v = x.marks[m], r1 = ref[m]; if (!v || !r1) return `${m} ${v ? v.gameSeconds : 'NOT MET'}`; const pct = ((v.gameSeconds - r1.gameSeconds) / r1.gameSeconds * 100); return `${m} ${v.gameSeconds}s (${pct >= 0 ? '+' : ''}${pct.toFixed(2)} %${within(v.gameSeconds, r1.gameSeconds) ? '' : ' ✗'}${d !== 1 ? (v.hashGame === r1.hashGame ? ', hash =' : ', hash ≠') : ''})`; });
       const msTick = x.ticks ? x.ticks_ms / x.ticks : null;
       const dayWall = x.gameSeconds ? x.ticks_ms / x.gameSeconds * 86400 / 1000 : null;
-      row({ gate: `H1-3 calibration ${game} diff ${d} run ${run}`, id: game, leg: `profile all, ${KINDS_PINNED}, --to ${C.to}`, ok: x.ok && x.why === 'to' && equal, ticks: x.ticks, gameSeconds: x.gameSeconds, diff: d, hash: null,
-        notes: `${cells.join(' · ')}; twice equal ${equal}; ticks_ms ${x.ticks_ms} (${msTick?.toFixed(2)} ms/tick; a game-day ≈ ${dayWall ? (dayWall / 60).toFixed(1) : '—'} min wall); load (1/5/15 min) start ${x.load.start} end ${x.load.end}${game === 'ptr' ? `; t.energy at M09 ${x.tEnergy}` : ''}${x.error ? '; ' + x.error : ''}` });
+      row({ gate: `H1-3 calibration ${game} diff ${d} run ${run}`, id: game, leg: `profile all, ${KINDS_PINNED}, --to ${C.to}`, ok: x.ok && equal && (d !== 1 || x.why === 'to'), ticks: x.ticks, gameSeconds: x.gameSeconds, diff: d, hash: null,
+        notes: `${d !== 1 ? `ended ${x.why}; ` : ''}${cells.join(' · ')}; twice equal ${equal}; ticks_ms ${x.ticks_ms} (${msTick?.toFixed(2)} ms/tick; a game-day ≈ ${dayWall ? (dayWall / 60).toFixed(1) : '—'} min wall); load (1/5/15 min) start ${x.load.start} end ${x.load.end}${game === 'ptr' ? `; t.energy at M09 ${x.tEnergy}` : ''}${x.error ? '; ' + x.error : ''}` });
     }
     // the ladder's diff: the coarsest diff whose BOTH runs land within 2 % of diff 1's game-seconds (hashes differ — timing is the criterion)
     const date = new Date().toISOString().slice(0, 10);
@@ -297,7 +303,47 @@ async function part3v() {
   }
 }
 
-const parts = { 1: part1, 2: part2, '2f': part2f, 3: part3, '3v': part3v };
+// Part 3r: the calibration a rung actually needs — from each committed pinned snapshot to the NEXT mark at diff 5 / 20 / 60,
+// twice each; the reference is the fresh diff-1 run (= the next snapshot; H1-2 shows a diff-1 resume lands on it exactly).
+// Fills `diffFromPrev` (the coarsest diff usable for the stretch from the previous mark's snapshot).
+async function part3r() {
+  const L = readLadder(PTR_LADDER);
+  const snaps = Object.fromEntries(fs.readdirSync(path.join(REPO, SNAP.pinned)).map((f) => { const s = readSnap(path.join(SNAP.pinned, f)); return [s.mark, s]; }));
+  const ids = L.marks.slice(0, 9).map((m) => m.id);
+  const jobs = [];
+  for (let i = 1; i < ids.length; i++) for (const d of [5, 20, 60]) for (const run of [1, 2]) {
+    const prev = snaps[ids[i - 1]], next = snaps[ids[i]];
+    const span = next.gameSeconds - prev.gameSeconds;
+    jobs.push({ m: ids[i], d, run, p: job('ptr', { profile: 'all', diff: d, ticks: Math.ceil((span * 3 + 120) / d), ladder: PTR_LADDER, to: ids[i], 'from-snapshot': `${SNAP.pinned}/${ids[i - 1]}.json`, 'auto-opt': KINDS_PINNED, stall: 3600, 'stall-seen': true, 'wall-ms': 540000 }) });
+  }
+  const R = {};
+  for (const j of jobs) { const r = await j.p; (R[j.m] ||= {})[`${j.d}/${j.run}`] = { ok: !!r.ok, gs: r.marks?.[j.m]?.gameSeconds ?? null, ticks: r.ticks, hashGame: r.marks?.[j.m]?.hashGame ?? null, why: r.ladder?.stoppedAt?.why, ticks_ms: r.ticks_ms, load: r.load, error: r.error }; }
+  writeJSON(path.join(REPO, 'tools/harness/results/tmp/h1-3r-calibration.json'), { commit, dirty, date: new Date().toISOString(), R });
+  const date = new Date().toISOString().slice(0, 10);
+  for (let i = 1; i < ids.length; i++) {
+    const m = ids[i], prev = snaps[ids[i - 1]], ref = snaps[m];
+    const span = ref.gameSeconds - prev.gameSeconds;
+    const usable = [1];
+    const cells = [5, 20, 60].map((d) => {
+      const x1 = R[m][`${d}/1`], x2 = R[m][`${d}/2`];
+      const eq = x1.gs === x2.gs && x1.hashGame === x2.hashGame;
+      // within 2 % of the mark's game-seconds (the brief's rule), and — stricter — of the stretch's own length
+      const okAbs = x1.gs !== null && eq && within(x1.gs, ref.gameSeconds);
+      const okSpan = okAbs && Math.abs(x1.gs - ref.gameSeconds) <= 0.02 * span;
+      if (okAbs) usable.push(d);
+      return `×${d}: ${x1.gs ?? 'NOT MET (' + x1.why + ')'}${x1.gs !== null ? ` (${(x1.gs - ref.gameSeconds >= 0 ? '+' : '')}${x1.gs - ref.gameSeconds} s = ${((x1.gs - ref.gameSeconds) / ref.gameSeconds * 100).toFixed(2)} % of the mark, ${((x1.gs - ref.gameSeconds) / span * 100).toFixed(1)} % of the stretch${okSpan ? '' : okAbs ? '; outside 2 % of the stretch' : ' ✗'})` : ''}, twice equal ${eq}, ${x1.ticks_ms} ms`;
+    });
+    const lm = L.marks.find((x) => x.id === m);
+    lm.diffFromPrev = Math.max(...usable);
+    lm.diffFromPrevSource = `H1-3r @${commit}${dirty ? ' (dirty)' : ''} ${date}: from pinned/${ids[i - 1]} (${prev.gameSeconds} s) — ×1 ${ref.gameSeconds} s (the fresh run), ${[5, 20, 60].map((d) => `×${d} ${R[m][`${d}/1`].gs ?? '—'} s`).join(', ')}`;
+    const allRan = [5, 20, 60].every((d) => R[m][`${d}/1`].ok && R[m][`${d}/2`].ok && R[m][`${d}/1`].gs === R[m][`${d}/2`].gs);
+    row({ gate: `H1-3r from pinned/${ids[i - 1]} → ${m} at a coarse diff`, id: 'ptr', leg: `profile all, ${KINDS_PINNED}, --from-snapshot`, ok: allRan, ticks: null, gameSeconds: ref.gameSeconds, diff: '5/20/60', hash: null,
+      notes: `stretch ${prev.gameSeconds} → ${ref.gameSeconds} s (${span} s) at ×1; ${cells.join(' · ')}; diffFromPrev = ×${lm.diffFromPrev}; load ${R[m]['5/1'].load.start}` });
+  }
+  writeLadder(PTR_LADDER, L);
+}
+
+const parts = { 1: part1, 2: part2, '2f': part2f, 3: part3, '3v': part3v, '3r': part3r };
 if (!parts[PART]) throw new Error(`no part ${PART}`);
 await parts[PART]();
 const READING = {

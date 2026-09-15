@@ -1,0 +1,112 @@
+# The harness path for long games: ladder, snapshots, diff calibration
+
+A full game of a Modding Tree fork is days of game time; at diff 1 one Prestige Tree Rewritten game-day is tens of
+minutes of wall time in Node. The harness therefore measures a game as a **ladder** of machine-checkable marks, keeps a
+**snapshot** at every mark it reaches, and runs each new stretch **from the previous mark's snapshot** at the coarsest
+**diff** the calibration allows. Everything here is harness-side: the page, the save format and the automation core's
+behaviour are unchanged (the core only gained `tmtLoader.runtimeState()` / `restoreRuntime()`, automation mode only).
+
+## The ladder file
+
+`tools/harness/ladder/<game>.json` — header keys, then one mark per line:
+
+```json
+{
+  "game": "ptr",
+  "plan": "…where the marks come from…",
+  "diffRule": "…",
+  "helpers": { "hasUpgrade": "games/ptr/js/utils.js:633", … },
+  "marks": [
+    {"id": "M02", "name": "b and g unlocked", "predicate": "player.b.unlocked && player.g.unlocked", "wall": "…", "source": {"plan": "§3a M02", "digest": ["L1.2"], "reached": "A1-3 (i) …"}, "diff": 1, "diffSource": "H1-3 @… ×1 1361s, ×5 …"},
+    …
+  ]
+}
+```
+
+- **`predicate`** is a JS expression over the engine's globals — the same mini-language as `run.mjs --until` / `--marks`
+  and the automation table's `gates` (compiled once with `new Function` in the game's global scope). A predicate that
+  throws reads as **false** (PTR's `getBuyableAmount` returns a plain `0` for a locked layer, so `.gte(1)` throws until
+  the layer unlocks).
+- **`source`** carries provenance: the plan row, the walkthrough-digest steps, the SUMMARY row that first reached it.
+- **`diff`** is the calibrated diff for the mark (below); `null` until a run has calibrated it.
+- Marks are ordered as the walkthrough orders them; a run may reach them out of order (PTR's M10, the native toggles,
+  holds before M09 when the `toggles` kind runs).
+
+`gates-h1.mjs --part 1` checks that every predicate compiles and that the helpers exist at the recorded lines.
+
+## Runner flags (`tools/harness/run.mjs`)
+
+| Flag | Meaning |
+|---|---|
+| `--ladder <file>` | the marks are the ladder's entries after `--from` (exclusive) through `--to` (inclusive; default the last), recorded without stopping; the run stops at the first tick `--to` holds (or a stall / the wall / `--ticks`) |
+| `--from <mark>` / `--to <mark>` | the slice |
+| `--until-all` | stop when **every** mark of the slice holds instead of when `--to` does |
+| `--snapshots <dir>` | at the first tick each mark holds, write `<dir>/<mark>.json` |
+| `--from-snapshot <file>` | boot from a snapshot (below); `--from` defaults to its mark and `--diff` to its diff |
+| `--no-runtime` | (a control) restore the snapshot's counters but not the memory outside `player` |
+| `--predicates <list.json>` | `[[name, "<js>"], …]` compiled and evaluated once after load (`R.predicates`) |
+| `--eval "<js>"` | an expression evaluated at the stop, returned as JSON (`R.eval`) |
+
+The result (and the one-line summary) gains `ladder: {from, to, reached: [{id, ticks, gameSeconds, hash, hashGame}],
+stoppedAt: {ticks, gameSeconds, why}}` with `why` = `to` | `stalled` | `walled` | `ticks`. Long runs keep using
+`--stall <game-s> --stall-seen --wall-ms 540000` (one process ≤ 10 min).
+
+## Snapshots
+
+A snapshot is
+
+```
+{ mark, commit, dirty, ticks, gameSeconds, diff, hash, hashGame, config: {profile, auto-opt, from},
+  player: "<JSON.stringify(player)>",
+  runtime: { auto: tmtLoader.runtimeState(), monitor: {seen, bmax, lastTick, lastGs} } }
+```
+
+taken **after** the mark's tick (the same state the mark's `hashGame` hashes). `runtime.auto` is the automation core's
+memory outside `player`: each interval reset's `lastReset` (compared with `player.timePlayed`; undefined after a re-boot,
+so the policy would fire at once), the loop counter and per-layer ran-at marks of the double-call check, and the hook
+statistics (action counts continue). `runtime.monitor` is the stall detector's seen-set, buyable maxima and last-progress
+point, so a resumed run stalls where the uninterrupted one does. `dirty` ignores `tools/harness/snapshots` and
+`tools/harness/results`.
+
+`--from-snapshot` boots through the existing `--load-from` path — one child calls the game's own
+`importSave(btoa(player), true)` (`tmtLoader.loadFrom`), a fresh child boots on the storage that wrote — then restores
+`runtime` and sets `tmtLoader.ticks` / `gameSeconds` to the snapshot's counts, so **ticks and game-seconds continue**. The
+importing child registers the same features as the run (same `--auto-opt`), so even the full hash (which includes
+`player.au.clickables`, one key per au button) round-trips. Marks compare **`hashGame`** (the state without `player.au`)
+across any change to the feature set.
+
+**Fixtures.** Snapshots of the marks the tables reach are committed under `tools/harness/snapshots/<game>/<set>/`:
+for PTR, `pinned/` (`--auto-opt kinds=reset,upgrades,buyables`, the A1/A2 configuration every pinned number was measured
+in) and `all/` (every derived kind, the S1 frontier configuration rungs continue from). A PTR `player` is ~11 KB, a
+snapshot ~15–18 KB. Measured fidelity (H1-2): a resume lands on every later mark at the same tick, game-second and
+`hashGame` as the fresh run, and reproduces the frontier stall's tick and full hash; without `runtime` (the control) it
+lands one tick early where an interval reset was mid-interval.
+
+## Diff calibration
+
+The engine's `gameLoop(diff)` is not linear in diff: a coarse diff reaches a mark at a different game-second (resets and
+purchases happen at most once per tick; a layer unlocked inside `gameLoop` shows a one-tick class of difference). The
+rule: for diffs {1, 5, 20, 60}, two fresh runs each to the ladder's calibrated range; **a diff is usable for a mark when
+both runs' game-seconds at the mark are within 2 % of diff 1's** (hashes differ at a coarse diff — the criterion is the
+mark's timing). The ladder records the coarsest usable diff per mark (`diff`, with the measurement in `diffSource`);
+marks no calibration reached stay `null` and are filled by the rung that first reaches them, by the same rule. Diff 1 is
+the reference, not ground truth (Something Tree's A2-1 (i) is 208 s at diff 0.05 and 309 s at diff 1). Node ≡ page parity
+stays at diff 0.05 and is untouched by any of this. `gates-h1.mjs --part 3` runs it (and records wall-clock per run and
+the box load); `--part 3v` re-runs the ladder at each mark's recorded diff.
+
+## How a rung uses it
+
+```
+node tools/harness/run.mjs ptr --profile all --ladder tools/harness/ladder/ptr.json \
+  --from-snapshot tools/harness/snapshots/ptr/all/M09.json --to M16 \
+  --diff <the ladder's diff for the marks> --stall 3600 --stall-seen --wall-ms 540000 \
+  --snapshots tools/harness/snapshots/ptr/all --json out.json
+```
+
+1. Start from the committed snapshot of the last mark reached (`--from-snapshot <prev mark>`), in the configuration the
+   rung changes (`--auto-opt`, or the table itself).
+2. Run `--ladder --to <next mark>`; a sweep varies one policy and compares game-seconds to the next mark.
+3. When a new mark is reached, commit its snapshot (the fixture the next rung starts from), calibrate its `diff` if it is
+   `null`, and print the ladder with `node tools/harness/ladder-summary.mjs [--append]`.
+4. A change to the core or a table re-checks the earlier fixtures by resuming from them: the marks after must land at
+   the recorded tick and `hashGame` (or the change is a finding, not a re-record).

@@ -8,7 +8,7 @@ below. Runners (the Playwright harness, later an embedding page) talk only to th
 `--no-automation` for the plain page) before `tmt-auto.js` runs. Without it the file stops after the contract members
 — `tick`, `stateJSON`, `hash`, `pause`/`resume`, `save`, `loadFrom`, `ids`, `storage`, `profile('off')` — and adds
 **no `au` layer, no DOM, nothing in `player`**, and the page does not load `games-auto/<id>.js`. The registry members
-(`registerAutoFeature`, `features`, `setPolicy`, `featureState`, `hookLayer`, `hookStats`, `predicate`, `autoDerivation`, …) are then undefined, `profile()`
+(`registerAutoFeature`, `features`, `setPolicy`, `featureState`, `hookLayer`, `hookStats`, `runtimeState`, `predicate`, `autoDerivation`, …) are then undefined, `profile()`
 accepts only `off` (anything else throws), and `?profile=` / `?autoOpt=` are ignored with a console warning.
 
 It reads the engine's globals as **bare identifiers** inside its members, never at load: `player`, `layers`, `tmp`,
@@ -40,6 +40,7 @@ It reads the engine's globals as **bare identifiers** inside its members, never 
 | `registerAutoFeature(def)` | *(automation)* registers one feature by hand (what the derivation calls): kinds as above, a valid policy for the kind, `default` must be false (true throws); registering hooks the layer's `automate` |
 | `setPolicy(id, policy)`, `featureState(id)` | *(automation)* switch a feature's policy at runtime (never saved); a feature's saved/unlocked/active state |
 | `hookLayer(layer)`, `hookStats()` | *(automation)* install the automate wrapper without a feature (test probe; `?autoOpt=hookAll=1` hooks every tree layer); per-layer call counters, `doubles`, `loops`, `actions` per feature, `challenges` enters / exits per feature |
+| `runtimeState()`, `restoreRuntime(rt)` | *(automation)* the registry's memory outside `player` as plain JSON — each interval reset's `lastReset`, the loop counter and ran-at marks, the hook statistics — and its restore (`restoreRuntime(runtimeState())` is the identity); the harness's snapshots carry it (`docs/harness.md`) |
 | `options` | *(automation)* `?autoOpt=k=v;k2=v2` in the page, `--auto-opt` in the harness: `policy:<id>=…`, `kinds=…`, `kindOrder=…`, `unlockOrder=…`, `rowTwoOrder=…`, `hookAll=1`, free keys |
 | `storage` | `{prefix, raw, list(), clear()}` — the save namespace (`tmt-loader:<id>:`) and the raw `Storage` methods |
 
