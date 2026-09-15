@@ -10,8 +10,8 @@ export const CENSUS_POLICY_SRC = `function censusPolicy() {
 
 /**
  * Source of a MONITOR factory (marks, stallSeconds) → {check(), result()} evaluated in the game's global scope after
- * each tick. marks = [[name, fn]]: the first tick each fn is true is recorded with ticks, gameSeconds and the stateJSON
- * at that tick. stallSeconds: the L1 stall detector — progress = a new unlocked layer / upgrade / milestone /
+ * each tick. marks = [[name, fn]]: the first tick each fn is true is recorded with ticks, gameSeconds, the stateJSON
+ * and the feature action counts (hookStats().actions) at that tick. stallSeconds: the L1 stall detector — progress = a new unlocked layer / upgrade / milestone /
  * achievement / challenge completion / buyable amount; stop once stallSeconds game-seconds pass without progress.
  * WALL_MS: also stop after this much wall-clock time (walled: true).
  * check() returns true when the run should stop (every mark met, the stall window elapsed, or the wall bound).
@@ -35,7 +35,7 @@ export const MONITOR_SRC = `(function(MARKS, STALL, WALL_MS, CONTINUE, SEEN){
   const hits = {}; if (SEEN) grow(); let last = sig(), lastTick = tmtLoader.ticks, lastGs = tmtLoader.gameSeconds, stalled = false;
   return {
     check() {
-      for (const [name, fn] of MARKS) if (!hits[name]) { let v = false; try { v = !!fn(); } catch (e) {} if (v) hits[name] = { ticks: tmtLoader.ticks, gameSeconds: tmtLoader.gameSeconds, json: tmtLoader.stateJSON() }; }
+      for (const [name, fn] of MARKS) if (!hits[name]) { let v = false; try { v = !!fn(); } catch (e) {} if (v) hits[name] = { ticks: tmtLoader.ticks, gameSeconds: tmtLoader.gameSeconds, json: tmtLoader.stateJSON(), actions: tmtLoader.hookStats ? tmtLoader.hookStats().actions : null }; }
       if (STALL) { const moved = SEEN ? grow() : (() => { const s = sig(); const m = s !== last; last = s; return m; })(); if (moved) { lastTick = tmtLoader.ticks; lastGs = tmtLoader.gameSeconds; } else if (tmtLoader.gameSeconds - lastGs >= STALL) { stalled = true; return true; } }
       if (WALL_MS && Date.now() - t0 >= WALL_MS) { walled = true; return true; }
       return !CONTINUE && MARKS.length > 0 && MARKS.every(([n]) => hits[n]);

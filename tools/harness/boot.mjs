@@ -151,7 +151,7 @@ for (const f of declared) {
   } catch {}
 }
 globalThis.__hit = hit;
-// loader/tmt-auto.js — the same file the page inserts last
+// loader/tmt-auto.js — the same file the page inserts last (after the automation table)
 const OPTIONS = {};
 for (const part of String(A['auto-opt'] || '').split(';')) { if (!part) continue; const i = part.indexOf('='); if (i < 0) OPTIONS[part] = '1'; else OPTIONS[part.slice(0, i)] = part.slice(i + 1); }
 // automation (the page's ?automation=1) is ON by default in the harness; --no-automation = the plain page (contract only)
@@ -164,13 +164,14 @@ globalThis.tmtLoader = {
   pause() { return 0; }, resume() { return 0; },
   storage: { prefix: storageShim.prefix, list: () => storageShim.list(lsStore), clear: () => storageShim.clear(lsStore) },
 };
-try { run(fs.readFileSync(path.join(REPO, 'loader/tmt-auto.js'), 'utf8'), 'loader/tmt-auto.js'); }
-catch (e) { R.file_errors.push({ file: 'loader/tmt-auto.js', error: String(e.message).slice(0, 200) }); }
-// the per-game automation table (manifest.auto), as the page inserts it right after tmt-auto.js
+// the per-game automation table (manifest.auto): DATA, inserted before tmt-auto.js as the page does (tmt-auto.js derives
+// the features from it); --no-auto = no table (derived defaults only)
 if (AUTOMATION && manifest.auto && !A['no-auto']) {
   try { run(fs.readFileSync(path.join(REPO, manifest.auto), 'utf8'), manifest.auto); R.auto = manifest.auto; }
   catch (e) { R.file_errors.push({ file: manifest.auto, error: String(e.message).slice(0, 200) }); }
 }
+try { run(fs.readFileSync(path.join(REPO, 'loader/tmt-auto.js'), 'utf8'), 'loader/tmt-auto.js'); }
+catch (e) { R.file_errors.push({ file: 'loader/tmt-auto.js', error: String(e.message).slice(0, 200) }); }
 R.load_ms = Date.now() - t0;
 const errText = (e) => { const st = String(e && e.stack || ''); const at = (st.match(/^\s+at .*$/m) || [''])[0].trim(); return `${e && e.name || 'Error'}: ${String(e && e.message || e).slice(0, 300)}${at ? ' @ ' + at.slice(0, 160) : ''}`; };
 const fail = (stage, e) => { R.ok = false; R.failed_at = stage; R.error = errText(e); out(R); proc.exit(0); };
@@ -224,7 +225,10 @@ try {
   if (monitored) {
     const m = run('__tmtMonitor.result()', 'monitor');
     R.marks = {};
-    for (const [n] of MARKS) R.marks[n] = m.hits[n] ? { ticks: m.hits[n].ticks, gameSeconds: m.hits[n].gameSeconds, hash: sha256hex(m.hits[n].json).slice(0, 16) } : null;
+    // hashGame: the same state without player.au — the au layer's own fields (clickables: one key per au button) move
+    // with the NUMBER of registered features, so a table change moves `hash` without any game state moving
+    const exAu = (j) => { const o = JSON.parse(j); delete o.au; return JSON.stringify(o); };
+    for (const [n] of MARKS) R.marks[n] = m.hits[n] ? { ticks: m.hits[n].ticks, gameSeconds: m.hits[n].gameSeconds, hash: sha256hex(m.hits[n].json).slice(0, 16), hashGame: sha256hex(exAu(m.hits[n].json)).slice(0, 16), actions: m.hits[n].actions } : null;
     if (A.stall || A['wall-ms']) R.stall = { window: Number(A.stall || 0), seen: !!A['stall-seen'], stalled: m.stalled, walled: m.walled, wallMs: Number(A['wall-ms'] || 0), lastProgress: m.lastProgress };
   }
   R.ticks_ms = Date.now() - t1;
@@ -237,8 +241,12 @@ try {
   const json = run(`tmtLoader.stateJSON(${SOPTS})`, 'state');
   R.hash = await run(`tmtLoader.hash(${SOPTS})`, 'hash');
   if (EXCLUDE.length) R.hashFull = await run('tmtLoader.hash()', 'hash');
+  if (AUTOMATION) R.hashGame = await run(`tmtLoader.hash({ exclude: ['au'] })`, 'hash');
   R.hook = run('tmtLoader.hookStats ? tmtLoader.hookStats() : null', 'x');
   R.features = run('(tmtLoader.features || []).map(f => f.id)', 'x');
+  R.featureStates = run('(tmtLoader.features || []).map(f => { const s = tmtLoader.featureState(f.id); return [f.id, s.unlocked, s.policy]; })', 'x');
+  R.derivation = run('tmtLoader.autoDerivation || null', 'x');
+  R.excluded = run('tmtLoader.autoExcluded || null', 'x');
   R.state_paths = {};
   const st = JSON.parse(json);
   for (const k in st) {

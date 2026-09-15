@@ -1,4 +1,4 @@
-# `window.tmtLoader` — the hook contract (L1 + A1)
+# `window.tmtLoader` — the hook contract (L1 + A1 + S1)
 
 `loader/page.js` creates `window.tmtLoader` before any game script; `loader/tmt-auto.js` (a classic script, inserted
 after the game's scripts, and run unchanged by the Node harness through `vm.runInThisContext`) fills in the members
@@ -8,7 +8,7 @@ below. Runners (the Playwright harness, later an embedding page) talk only to th
 `--no-automation` for the plain page) before `tmt-auto.js` runs. Without it the file stops after the contract members
 — `tick`, `stateJSON`, `hash`, `pause`/`resume`, `save`, `loadFrom`, `ids`, `storage`, `profile('off')` — and adds
 **no `au` layer, no DOM, nothing in `player`**, and the page does not load `games-auto/<id>.js`. The registry members
-(`registerAutoFeature`, `features`, `setPolicy`, `featureState`, `hookLayer`, `hookStats`) are then undefined, `profile()`
+(`registerAutoFeature`, `features`, `setPolicy`, `featureState`, `hookLayer`, `hookStats`, `predicate`, `autoDerivation`, …) are then undefined, `profile()`
 accepts only `off` (anything else throws), and `?profile=` / `?autoOpt=` are ignored with a console warning.
 
 It reads the engine's globals as **bare identifiers** inside its members, never at load: `player`, `layers`, `tmp`,
@@ -33,10 +33,14 @@ It reads the engine's globals as **bare identifiers** inside its members, never 
 | `loadFrom(json)` | `importSave(btoa(json), true)` — the game's own import. **Both engines then reload the page**; the import completes on the next `ready`. In Node the harness boots a fresh process on the storage `importSave` wrote. |
 | `ids()` | `{layers: {id: {row, type}}, ids: ["<layer>:<ms\|upg\|buy\|ch\|ach>:<id>"], counts}` — numeric ids only (the census rule); layers the loader adds (`au`, flagged `tmtLoaderLayer`) are left out |
 | `profile(name)` | *(automation)* `off` \| `all` \| `saved`; contract-only: `off` only (docs/automation.md); no argument returns the current one. The page applies `?profile=` after `onload` (default `off` when managed, else `saved`); the Node harness `--profile` (default `off`) |
-| `registerAutoFeature(def)`, `features` | *(automation)* the automation registry (docs/automation.md): kinds `reset` / `upgrades` / `buyables`, default OFF; registering hooks the layer's `automate` |
+| `autoTable` | *(automation)* the per-game DATA table, assigned by `games-auto/<id>.js` BEFORE `tmt-auto.js` runs (absent = `{}`): `id`, `unlockOrder`, `kindOrder`, `policies`, `alternatives`, `order`, `gates`, `off`, `keep`, `clickables`, `options` (docs/automation.md); an unknown key or feature id throws at load |
+| `features` | *(automation)* the registered features, in layer order × kind order — DERIVED from each tree layer's declarations (`toggles` / `upgrades` / `buyables` / `challenges` / `clickables` / `reset`) and shaped by `autoTable` |
+| `autoDerivation`, `autoExcluded`, `autoOptions` | *(automation)* the derivation's summary (`kindOrder`, `kinds`, `candidates`, `registered`, `excluded`, `outOfKinds`, `multiTogglesSkipped`, `unlockOrder`); the table's `off` entries with their reasons; the table's `options` with `?autoOpt=` on top |
+| `predicate(src)` | *(automation)* the compiled predicate `new Function('return (' + src + ')')` (cached) — the global scope, the harness's `--until` / `--marks` language |
+| `registerAutoFeature(def)` | *(automation)* registers one feature by hand (what the derivation calls): kinds as above, a valid policy for the kind, `default` must be false (true throws); registering hooks the layer's `automate` |
 | `setPolicy(id, policy)`, `featureState(id)` | *(automation)* switch a feature's policy at runtime (never saved); a feature's saved/unlocked/active state |
-| `hookLayer(layer)`, `hookStats()` | *(automation)* install the automate wrapper without a feature (test probe; `?autoOpt=hookAll=1` hooks every tree layer); per-layer call counters, `doubles`, `loops`, actions per feature |
-| `options` | *(automation)* table options: `?autoOpt=k=v;k2=v2` in the page, `--auto-opt` in the harness |
+| `hookLayer(layer)`, `hookStats()` | *(automation)* install the automate wrapper without a feature (test probe; `?autoOpt=hookAll=1` hooks every tree layer); per-layer call counters, `doubles`, `loops`, `actions` per feature, `challenges` enters / exits per feature |
+| `options` | *(automation)* `?autoOpt=k=v;k2=v2` in the page, `--auto-opt` in the harness: `policy:<id>=…`, `kinds=…`, `kindOrder=…`, `unlockOrder=…`, `rowTwoOrder=…`, `hookAll=1`, free keys |
 | `storage` | `{prefix, raw, list(), clear()}` — the save namespace (`tmt-loader:<id>:`) and the raw `Storage` methods |
 
 ## Per-engine notes (measured in L1)

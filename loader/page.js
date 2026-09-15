@@ -118,7 +118,7 @@ async function boot(id) {
   document.body.removeAttribute('class');
   document.body.innerHTML = plan.body.html;
 
-  // 6. scripts, one by one, awaited, in order; modFiles after the last static script; tmt-auto.js last
+  // 6. scripts, one by one, awaited, in order; modFiles after the last static script; the automation table, then tmt-auto.js last
   const { static: statics, slot } = executionOrder(plan);
   for (const s of statics) {
     const file = s.vendor ? s.vendor.path : s.inline != null ? s.name : s.src;
@@ -132,15 +132,16 @@ async function boot(id) {
     T.modFiles = files;
     for (const f of files) { step(`modFile ${f}`); await insertScript({ src: f }, f, { skippable: true }); if (!T.skipped.includes(f)) T.loaded.push(f); }
   }
-  step('script loader/tmt-auto.js');
-  await insertScript({ src: abs('loader/tmt-auto.js') }, 'loader/tmt-auto.js');
-  T.loaded.push('loader/tmt-auto.js');
   if (AUTOMATION && manifest.auto) {
-    // the per-game automation table (games-auto/<id>.js): registerAutoFeature calls only, before onload
+    // the per-game automation table (games-auto/<id>.js): DATA (tmtLoader.autoTable), inserted BEFORE tmt-auto.js, which
+    // reads it when it derives the features — before onload, so load() picks up the hooks and the au layer
     step(`script ${manifest.auto}`);
     await insertScript({ src: abs(manifest.auto) }, manifest.auto);
     T.loaded.push(manifest.auto);
   }
+  step('script loader/tmt-auto.js');
+  await insertScript({ src: abs('loader/tmt-auto.js') }, 'loader/tmt-auto.js');
+  T.loaded.push('loader/tmt-auto.js');
 
   // body attributes (onmousemove, …) once the functions they name exist; onload is run explicitly below
   for (const [k, v] of Object.entries(plan.body.attrs)) document.body.setAttribute(k, v);

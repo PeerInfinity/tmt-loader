@@ -110,12 +110,19 @@
   T.automation = true;
 
   // ---- automation registry -------------------------------------------------------------------------------------------
+  // S1 (docs/automation.md): the features are DERIVED from what each tree layer declares (derive(), at the end of this
+  // file), shaped by the per-game DATA table `tmtLoader.autoTable` (games-auto/<id>.js, inserted BEFORE this file).
   var AU = 'au';
+  var NUM = '\\d+(\\.\\d+)?';
   var POLICIES = {
-    reset: /^(always|gain>=\d+(\.\d+)?|keepsUpgrades|interval>=\d+(\.\d+)?)$/,
-    upgrades: /^(cheapest-first|order)$/,
-    buyables: /^(buyMax|buy)$/,
+    reset: new RegExp('^(always|gain>=' + NUM + 'x?|keepsUpgrades|interval>=' + NUM + '|unlocks-purchase)$'),
+    upgrades: /^(cheapest-first|order|order-then-cheapest)$/,
+    buyables: /^(buyMax|buy|highest-first|buy-unless-saving)$/,
+    toggles: /^on$/,
+    challenges: /^(sequential|off)$/,
+    clickables: /^(when|off)$/,
   };
+  var KINDS_ALL = ['toggles', 'upgrades', 'buyables', 'challenges', 'clickables', 'reset'];
   var features = [];
   var byId = {};
   T.features = features;
@@ -123,8 +130,19 @@
   var hookOrder = [];
   var loopNo = 0;          // one per gameLoop: advanced by the au layer's automate, the last automate a gameLoop calls
   var ranAt = {};          // layer → loopNo it last ran in
-  var stats = { calls: {}, viaSlot: {}, viaFallback: {}, doubles: 0, loops: 0, actions: {} };
+  var stats = { calls: {}, viaSlot: {}, viaFallback: {}, doubles: 0, loops: 0, actions: {}, challenges: {} };
   var lastReset = {};      // feature id → player.timePlayed of its last reset (interval policy; runtime only)
+
+  // Predicate strings (table gates, clickable `when`) compiled ONCE in the engine's global scope — the same scope as the
+  // harness's --until / --marks (vm.runInThisContext of `function(){ return (<src>); }`), so a gate and a ladder mark
+  // are one mini-language. A predicate that throws reads as false.
+  var compiled = {};
+  T.predicate = function (src) {
+    if (typeof src !== 'string' || !src) throw new Error('predicate: a non-empty string is required');
+    if (!compiled[src]) compiled[src] = new Function('return (' + src + ')');
+    return compiled[src];
+  };
+  function holds(fn) { try { return !!fn(); } catch (e) { return false; } }
 
   function isOnSaved(f) { return !!(player[AU] && player[AU].features && player[AU].features[f.id]); }
   function featureUnlocked(f) { try { return !!f.unlocked(); } catch (e) { return false; } }
@@ -137,26 +155,79 @@
   T.featureState = function (id) {
     var f = byId[id];
     if (!f) throw new Error('no feature "' + id + '"');
-    return { id: id, layer: f.layer, kind: f.kind, policy: f.policy, saved: isOnSaved(f), unlocked: featureUnlocked(f), active: active(f) };
+    return { id: id, layer: f.layer, kind: f.kind, policy: f.policy, saved: isOnSaved(f), unlocked: featureUnlocked(f), active: active(f), gate: f.gateSrc, gateHolds: f.gate ? holds(f.gate) : null, after: f.after.slice(), order: f.order ? f.order.slice() : null, multiSkipped: f.multiSkipped || 0 };
   };
 
   function D(x) { return x instanceof Decimal ? x : new Decimal(x === undefined || x === null ? 0 : x); }
   function numIds(obj) { var o = []; for (var id in obj) if (!isNaN(id)) o.push(Number(id)); return o.sort(function (a, b) { return a - b; }); }
+  function owned(l, id) { return player[l].upgrades.indexOf(id) >= 0 || player[l].upgrades.indexOf(String(id)) >= 0; }
+  // upgrades a feature may buy: unlocked, unowned, not a pseudo-upgrade (`pseudoUnl`, PTR)
+  function buyableUpgrade(l, id) {
+    var L = layers[l], U = tmp[l] && tmp[l].upgrades;
+    return !!(U && U[id] && L.upgrades[id] && L.upgrades[id].pseudoUnl === undefined && U[id].unlocked && !owned(l, id));
+  }
+  // An upgrade / buyable costed in the layer's own points (no currencyInternalName / currencyLocation / currencyLayer):
+  // the only costs `unlocks-purchase` can compare against the layer's points without reading the item's own code.
+  function ownCurrency(def) { return def && def.currencyInternalName === undefined && def.currencyLocation === undefined && def.currencyLayer === undefined; }
 
   function wantsReset(f) {
     var l = f.layer;
     if (!tmp[l] || tmp[l].canReset !== true) return false;
+    // yield to native: while the game's own auto-reset predicate holds, gameLoop resets this layer itself
+    if (tmp[l].autoPrestige) return false;
     for (var i = 0; i < f.after.length; i++) if (!player[f.after[i]] || !player[f.after[i]].unlocked) return false;
     var p = f.policy, m;
     if (p === 'always') return true;
+    // gain>=Nx: the gain is at least N × the points held (dimensionless); gain>=N: the gain is at least N
+    if ((m = /^gain>=(.*)x$/.exec(p))) return D(tmp[l].resetGain).gte(D(player[l].points).times(Number(m[1])));
     if ((m = /^gain>=(.*)$/.exec(p))) return D(tmp[l].resetGain).gte(Number(m[1]));
     if (p === 'keepsUpgrades') return hasMilestone(f.keepMilestone.layer, f.keepMilestone.id);
     if ((m = /^interval>=(.*)$/.exec(p))) {
       var now = Number(player.timePlayed) || 0;
       return lastReset[f.id] === undefined || now - lastReset[f.id] >= Number(m[1]);
     }
+    if (p === 'unlocks-purchase') return resetBuysSomething(l);
     return false;
   }
+  // unlocks-purchase: the points after this reset (held + resetGain) afford the cheapest unowned unlocked upgrade of the
+  // layer, or the next level of one of its unlocked buyables — both only where costed in the layer's own points.
+  function resetBuysSomething(l) {
+    var L = layers[l], after = D(player[l].points).plus(D(tmp[l].resetGain));
+    if (L.upgrades) {
+      var ids = numIds(L.upgrades);
+      for (var i = 0; i < ids.length; i++) {
+        if (!buyableUpgrade(l, ids[i]) || !ownCurrency(L.upgrades[ids[i]])) continue;
+        if (D(tmp[l].upgrades[ids[i]].cost).lte(after)) return true;
+      }
+    }
+    if (L.buyables && tmp[l].buyables) {
+      var bs = numIds(L.buyables);
+      for (var j = 0; j < bs.length; j++) {
+        var B = tmp[l].buyables[bs[j]];
+        if (!B || !B.unlocked || B.cost === undefined || !ownCurrency(L.buyables[bs[j]])) continue;
+        try { if (D(B.cost).lte(after)) return true; } catch (e) {}
+      }
+    }
+    return false;
+  }
+
+  function savingFor(l) {
+    var L = layers[l];
+    if (!L.upgrades) return false;
+    var ids = numIds(L.upgrades), held = D(player[l].points);
+    for (var i = 0; i < ids.length; i++) {
+      if (!buyableUpgrade(l, ids[i]) || !ownCurrency(L.upgrades[ids[i]])) continue;
+      if (D(tmp[l].upgrades[ids[i]].cost).gt(held)) return true;
+    }
+    return false;
+  }
+  function buyUpgradeCounted(l, id) {
+    if (!canAffordUpgrade(l, id)) return 0;
+    var before = player[l].upgrades.length;
+    buyUpgrade(l, id);
+    return player[l].upgrades.length > before ? 1 : 0;
+  }
+  function byCost(l) { var U = tmp[l].upgrades; return function (a, b) { var c = D(U[a].cost).cmp(D(U[b].cost)); return c !== 0 ? c : a - b; }; }
 
   var EXEC = {
     reset: function (f) {
@@ -166,34 +237,37 @@
       return 1;
     },
     // cheapest-first: unlocked, unowned upgrades sorted by tmp cost (ties by id); buy each one affordable, in order.
-    // `order`: the table's explicit order[]. The game's pseudo-upgrades (a `pseudoUnl`, PTR) are never bought.
+    // order: the table's order[] only. order-then-cheapest: order[] first (each affordable one, in order), then
+    // cheapest-first over the upgrades not in order[]. Pseudo-upgrades (a `pseudoUnl`, PTR) are never bought.
     upgrades: function (f) {
-      var l = f.layer, L = layers[l], U = tmp[l] && tmp[l].upgrades;
-      if (!L.upgrades || !U || !player[l].unlocked) return 0;
-      var ids = f.policy === 'order' ? f.order.slice() : numIds(L.upgrades);
-      ids = ids.filter(function (id) {
-        return U[id] && L.upgrades[id] && L.upgrades[id].pseudoUnl === undefined && U[id].unlocked && player[l].upgrades.indexOf(id) < 0 && player[l].upgrades.indexOf(String(id)) < 0;
-      });
-      if (f.policy === 'cheapest-first') {
-        ids.sort(function (a, b) { var c = D(U[a].cost).cmp(D(U[b].cost)); return c !== 0 ? c : a - b; });
+      var l = f.layer, L = layers[l];
+      if (!L.upgrades || !(tmp[l] && tmp[l].upgrades) || !player[l].unlocked) return 0;
+      var n = 0, i;
+      if (f.policy === 'order' || f.policy === 'order-then-cheapest') {
+        var first = (f.order || []).filter(function (id) { return buyableUpgrade(l, id); });
+        for (i = 0; i < first.length; i++) n += buyUpgradeCounted(l, first[i]);
+        if (f.policy === 'order') return n;
       }
-      var n = 0;
-      for (var i = 0; i < ids.length; i++) {
-        if (!canAffordUpgrade(l, ids[i])) continue;
-        var before = player[l].upgrades.length;
-        buyUpgrade(l, ids[i]);
-        if (player[l].upgrades.length > before) n++;
-      }
+      var rest = numIds(L.upgrades).filter(function (id) { return buyableUpgrade(l, id) && !(f.policy === 'order-then-cheapest' && f.order && f.order.indexOf(id) >= 0); });
+      rest.sort(byCost(l));
+      for (i = 0; i < rest.length; i++) n += buyUpgradeCounted(l, rest[i]);
       return n;
     },
     // buyMax: each unlocked buyable (id order or order[]): the engine's buyMaxBuyable where the buyable has a buyMax,
     // else buyBuyable until the amount stops moving (bounded).
     // buy: buyBuyable until the amount stops moving (bounded) — what a click does, paying the cost — even where the
     // buyable has a buyMax (2.2.1 calls buyMaxBuyable only from autobuyers; a game's buyMax may not charge the cost).
+    // highest-first: `buy`, over the ids DESCENDING (order[] when given) — what PTR's own Space Building autobuyer does
+    // (layers.js s.update: i from the highest building down), so a shared pool is not sunk into the cheapest id.
+    // buy-unless-saving: `buy`, but nothing while the layer has an unlocked, unowned upgrade costed in the layer's own
+    // points that costs more than the points held (a reserve for it). "The same currency" is the layer's points — the
+    // one currency both an upgrade (no currencyInternalName/Location/Layer) and the reserve can be read in generically.
     buyables: function (f) {
       var l = f.layer, L = layers[l], B = tmp[l] && tmp[l].buyables;
       if (!L.buyables || !B || !player[l].unlocked) return 0;
+      if (f.policy === 'buy-unless-saving' && savingFor(l)) return 0;
       var ids = f.order ? f.order.slice() : numIds(L.buyables);
+      if (f.policy === 'highest-first' && !f.order) ids.reverse();
       var n = 0;
       for (var i = 0; i < ids.length; i++) {
         var id = ids[i];
@@ -213,6 +287,62 @@
       }
       return n;
     },
+    // on: for each milestone of the layer that declares `toggles: [[layer, field], …]` and is held, set every such
+    // player[layer][field] that is `false` to `true` — what the game's own toggle button does (toggleAuto flips it).
+    // The 2.2.1 'multi' form {layer, varName, options} cycles a string, not an on/off: skipped (counted at derivation).
+    toggles: function (f) {
+      var n = 0;
+      for (var i = 0; i < f.toggleList.length; i++) {
+        var t = f.toggleList[i];
+        if (!hasMilestone(f.layer, t.ms)) continue;
+        if (player[t.layer] && player[t.layer][t.field] === false) { player[t.layer][t.field] = true; n++; }
+      }
+      return n;
+    },
+    // sequential: the first challenge (order[] else id order) that is unlocked and below its completion limit — enter it
+    // when no challenge of the layer is active; while it is active, exit-and-complete once it can be completed. A
+    // challenge the feature did not choose (entered by hand) is left alone.
+    challenges: function (f) {
+      if (f.policy !== 'sequential') return 0;
+      var l = f.layer, C = tmp[l] && tmp[l].challenges;
+      if (!C || !player[l].unlocked) return 0;
+      var ids = f.order ? f.order.slice() : numIds(layers[l].challenges);
+      var pick = null;
+      for (var i = 0; i < ids.length; i++) {
+        var c = C[ids[i]];
+        if (!c || !c.unlocked) continue;
+        var limit = c.completionLimit === undefined ? 1 : Number(c.completionLimit);
+        if (Number(player[l].challenges[ids[i]] || 0) < limit) { pick = ids[i]; break; }
+      }
+      var cs = stats.challenges[f.id] || (stats.challenges[f.id] = { enter: 0, exit: 0 });
+      var act = player[l].activeChallenge;
+      if (act !== null && act !== undefined && act !== 0 && act !== false) {
+        if (pick === null || Number(act) !== pick) return 0;
+        if (!canCompleteChallenge(l, pick)) return 0;
+        if (typeof canExitChallenge === 'function' && !canExitChallenge(l, pick)) return 0;
+        startChallenge(l, pick);
+        cs.exit++;
+        return 1;
+      }
+      if (pick === null) return 0;
+      if (typeof canEnterChallenge === 'function' && !canEnterChallenge(l, pick)) return 0;
+      startChallenge(l, pick);
+      if (Number(player[l].activeChallenge) === pick) { cs.enter++; return 1; }
+      return 0;
+    },
+    // when: the table's {id, when} list for the layer: click when the clickable is unlocked, canClick, and `when` holds.
+    clickables: function (f) {
+      if (f.policy !== 'when') return 0;
+      var l = f.layer, C = tmp[l] && tmp[l].clickables, n = 0;
+      if (!C || !player[l].unlocked) return 0;
+      for (var i = 0; i < f.clickList.length; i++) {
+        var c = f.clickList[i], tc = C[c.id];
+        if (!tc || tc.unlocked === false || !tc.canClick || !holds(c.when)) continue;
+        clickClickable(l, c.id);
+        n++;
+      }
+      return n;
+    },
   };
 
   function runLayer(l, via) {
@@ -224,6 +354,7 @@
     for (var i = 0; i < features.length; i++) {
       var f = features[i];
       if (f.layer !== l || !active(f)) continue;
+      if (f.gate && !holds(f.gate)) continue;   // a table gate: the feature does nothing while its predicate is false
       var n = EXEC[f.kind](f);
       if (n) stats.actions[f.id] = (stats.actions[f.id] || 0) + n;
     }
@@ -231,8 +362,8 @@
 
   // Wrap the layer's automate (the original first), or add one. automate() is the one per-layer function BOTH engines
   // call exactly once per gameLoop and never from updateTemp (activeFunctions in 2.2.1's and 2.7's temp.js).
-  // autoPrestige is NOT used: both engines evaluate it into tmp inside updateTemp (a predicate, several times per tick
-  // — doReset itself calls updateTemp ×3), and gameLoop only reads the tmp value.
+  // autoPrestige is NOT used as a hook: both engines evaluate it into tmp inside updateTemp (a predicate, several times
+  // per tick — doReset itself calls updateTemp ×3), and gameLoop only reads the tmp value (reset features yield to it).
   function hookLayer(l) {
     if (hooked[l]) return;
     var L = layers[l];
@@ -256,7 +387,9 @@
     loopNo++;
   }
   T.hookStats = function () {
-    return { hooked: hookOrder.slice(), loops: stats.loops, calls: Object.assign({}, stats.calls), viaSlot: Object.assign({}, stats.viaSlot), viaFallback: Object.assign({}, stats.viaFallback), doubles: stats.doubles, actions: Object.assign({}, stats.actions) };
+    var ch = {};
+    for (var k in stats.challenges) ch[k] = { enter: stats.challenges[k].enter, exit: stats.challenges[k].exit };
+    return { hooked: hookOrder.slice(), loops: stats.loops, calls: Object.assign({}, stats.calls), viaSlot: Object.assign({}, stats.viaSlot), viaFallback: Object.assign({}, stats.viaFallback), doubles: stats.doubles, actions: Object.assign({}, stats.actions), challenges: ch };
   };
 
   function policyOk(kind, policy) { return POLICIES[kind] && POLICIES[kind].test(policy); }
@@ -264,11 +397,11 @@
   T.registerAutoFeature = function (def) {
     if (!def || typeof def.id !== 'string' || !def.id) throw new Error('registerAutoFeature: id required');
     if (byId[def.id]) throw new Error('registerAutoFeature: duplicate id "' + def.id + '"');
-    if (!POLICIES[def.kind]) throw new Error('registerAutoFeature ' + def.id + ': kind must be reset | upgrades | buyables');
+    if (!POLICIES[def.kind]) throw new Error('registerAutoFeature ' + def.id + ': kind must be one of ' + KINDS_ALL.join(' | '));
     if (!policyOk(def.kind, def.policy)) throw new Error('registerAutoFeature ' + def.id + ': policy "' + def.policy + '" is not a ' + def.kind + ' policy');
     if (def.default) throw new Error('registerAutoFeature ' + def.id + ': every feature is OFF by default (default must be false)');
     if (def.policy === 'keepsUpgrades' && !(def.keepMilestone && def.keepMilestone.layer && def.keepMilestone.id !== undefined)) throw new Error('registerAutoFeature ' + def.id + ': keepsUpgrades needs keepMilestone {layer, id}');
-    if (def.policy === 'order' && !Array.isArray(def.order)) throw new Error('registerAutoFeature ' + def.id + ': policy order needs order[]');
+    if ((def.policy === 'order' || def.policy === 'order-then-cheapest') && !Array.isArray(def.order)) throw new Error('registerAutoFeature ' + def.id + ': policy ' + def.policy + ' needs order[]');
     if (!layers[def.layer]) throw new Error('registerAutoFeature ' + def.id + ': no layer "' + def.layer + '"');
     // options['policy:<id>'] overrides the table's default policy (harness A/B lever; any valid policy of the kind)
     var ov = T.options && T.options['policy:' + def.id];
@@ -283,6 +416,12 @@
       keepMilestone: def.keepMilestone || null,
       order: def.order ? def.order.map(Number) : null,
       after: Array.isArray(def.after) ? def.after.slice() : [],
+      gateSrc: typeof def.gate === 'string' ? def.gate : null,
+      gate: typeof def.gate === 'string' ? T.predicate(def.gate) : null,
+      toggleList: def.toggleList || [],
+      multiSkipped: def.multiSkipped || 0,
+      clickList: (def.clickList || []).map(function (c) { return { id: Number(c.id), whenSrc: c.when, when: T.predicate(c.when) }; }),
+      derived: !!def.derived,
     };
     features.push(f);
     byId[f.id] = f;
@@ -290,7 +429,7 @@
     buildClickables();
     return features.length;
   };
-  // A feature's policy among its declared alternatives (runtime only, never saved) — the harness's A/B lever.
+  // A feature's policy (runtime only, never saved) — the harness's A/B lever.
   T.setPolicy = function (id, policy) {
     var f = byId[id];
     if (!f) throw new Error('no feature "' + id + '"');
@@ -368,7 +507,159 @@
   }
   buildClickables();
 
+  // ---- derivation: features from the engine's own data + the per-game DATA table ------------------------------------------
+  // tmtLoader.autoTable (games-auto/<id>.js, inserted BEFORE this file; absent = `{}`) — every key in docs/automation.md.
+  var TABLE_KEYS = ['id', 'unlockOrder', 'policies', 'alternatives', 'order', 'gates', 'off', 'keep', 'clickables', 'options', 'kindOrder'];
+  var KIND_LABEL = { toggles: 'milestone toggles', upgrades: 'upgrades', buyables: 'buyables', challenges: 'challenges', clickables: 'clickables', reset: 'reset' };
+  function hasNumIds(obj) { return !!obj && typeof obj === 'object' && numIds(obj).length > 0; }
+  function isTreeLayer(l) { var L = layers[l]; return !!L && !L.tmtLoaderLayer && L.row !== undefined && L.row !== null && L.row !== '' && !isNaN(L.row); }
+  function listOpt(name, fallback) {
+    var v = T.options && T.options[name];
+    return v === undefined ? fallback : String(v).split(',').filter(Boolean);
+  }
+
+  // The generic candidates, before the table and the kinds lever: [{id, layer, kind, …}] in layer order (row ascending,
+  // then `layers` key order) × kind order.
+  function candidates(kindOrder) {
+    var ls = [], l;
+    for (l in layers) if (isTreeLayer(l)) ls.push(l);
+    var keyIdx = {};
+    ls.forEach(function (x, i) { keyIdx[x] = i; });
+    ls.sort(function (a, b) { return Number(layers[a].row) - Number(layers[b].row) || keyIdx[a] - keyIdx[b]; });
+    var out = [];
+    for (var i = 0; i < ls.length; i++) {
+      l = ls[i];
+      var L = layers[l];
+      var has = {
+        toggles: false,
+        upgrades: hasNumIds(L.upgrades),
+        buyables: hasNumIds(L.buyables),
+        challenges: hasNumIds(L.challenges),
+        clickables: hasNumIds(L.clickables),
+        reset: L.type === 'normal' || L.type === 'static' || L.type === 'custom',
+      };
+      var toggleList = [], multi = 0;
+      if (L.milestones && typeof L.milestones === 'object') {
+        numIds(L.milestones).forEach(function (ms) {
+          var tg = L.milestones[ms] && L.milestones[ms].toggles;
+          if (!Array.isArray(tg)) return;
+          tg.forEach(function (t) {
+            if (Array.isArray(t) && typeof t[0] === 'string' && typeof t[1] === 'string') toggleList.push({ ms: ms, layer: t[0], field: t[1] });
+            else multi++;
+          });
+        });
+      }
+      has.toggles = toggleList.length + multi > 0;
+      for (var k = 0; k < kindOrder.length; k++) {
+        var kind = kindOrder[k];
+        if (!has[kind]) continue;
+        out.push({ id: kind + ':' + l, layer: l, kind: kind, toggleList: kind === 'toggles' ? toggleList : null, multiSkipped: kind === 'toggles' ? multi : 0 });
+      }
+    }
+    return out;
+  }
+
+  function derive() {
+    var table = T.autoTable === undefined || T.autoTable === null ? {} : T.autoTable;
+    if (typeof table !== 'object' || Array.isArray(table)) throw new Error('autoTable must be an object');
+    var src = 'autoTable' + (table.id ? ' "' + table.id + '"' : '');
+    for (var key in table) if (TABLE_KEYS.indexOf(key) < 0) throw new Error(src + ': unknown key "' + key + '" (known: ' + TABLE_KEYS.join(', ') + ')');
+    if (table.id !== undefined && T.id && table.id !== T.id) throw new Error(src + ': id does not match the game "' + T.id + '"');
+    T.autoOptions = Object.assign({}, table.options || {}, T.options || {});
+
+    // kind order within a layer: the table's (or ?autoOpt=kindOrder=…), else the generic one (plan §5b)
+    var kindOrder = listOpt('kindOrder', table.kindOrder || KINDS_ALL);
+    if (kindOrder.length !== KINDS_ALL.length || KINDS_ALL.some(function (k) { return kindOrder.indexOf(k) < 0; })) throw new Error(src + ': kindOrder must be a permutation of ' + KINDS_ALL.join(','));
+    var cands = candidates(kindOrder);
+    var candById = {};
+    cands.forEach(function (c) { candById[c.id] = c; });
+    var known = function (where, id) { if (!candById[id]) throw new Error(src + ': ' + where + ' names "' + id + '", which is not a derived feature of this game'); };
+    ['policies', 'alternatives', 'order', 'gates', 'off', 'keep'].forEach(function (k) {
+      if (table[k] === undefined) return;
+      if (typeof table[k] !== 'object' || Array.isArray(table[k])) throw new Error(src + ': ' + k + ' must be an object keyed by feature id');
+      for (var id in table[k]) known(k, id);
+    });
+    var clk = table.clickables || {};
+    for (var cl in clk) {
+      known('clickables', 'clickables:' + cl);
+      if (!Array.isArray(clk[cl])) throw new Error(src + ': clickables.' + cl + ' must be a list of {id, when}');
+      clk[cl].forEach(function (c) {
+        if (!c || !layers[cl].clickables[c.id]) throw new Error(src + ': clickables.' + cl + ' names clickable ' + (c && c.id) + ', which the layer does not declare');
+        if (typeof c.when !== 'string') throw new Error(src + ': clickables.' + cl + ' id ' + c.id + ' needs a `when` predicate string');
+      });
+    }
+    // unlockOrder: lists of siblings; the i-th member's reset waits until those before it are unlocked. Options
+    // unlockOrder=… / rowTwoOrder=… override the first / second list (a permutation of it).
+    var uo = (table.unlockOrder || []).map(function (list) { return list.slice(); });
+    [['unlockOrder', 0], ['rowTwoOrder', 1]].forEach(function (x) {
+      var v = listOpt(x[0], null);
+      if (v === null) return;
+      var base = uo[x[1]];
+      if (!base || v.length !== base.length || base.some(function (m) { return v.indexOf(m) < 0; })) throw new Error(src + ': option ' + x[0] + ' must be a permutation of ' + (base ? base.join(',') : '(no such unlockOrder list)'));
+      uo[x[1]] = v;
+    });
+    var after = {};
+    uo.forEach(function (list) {
+      list.forEach(function (m, i) { known('unlockOrder', 'reset:' + m); after[m] = list.slice(0, i); });
+    });
+
+    var kinds = listOpt('kinds', null);
+    if (kinds) kinds.forEach(function (k) { if (KINDS_ALL.indexOf(k) < 0) throw new Error('option kinds: unknown kind "' + k + '"'); });
+    var off = table.off || {};
+    T.autoExcluded = {};
+    T.autoDerivation = { kindOrder: kindOrder.slice(), kinds: kinds ? kinds.slice() : KINDS_ALL.slice(), candidates: cands.length, registered: 0, excluded: 0, outOfKinds: 0, multiTogglesSkipped: 0, unlockOrder: uo };
+    for (var i = 0; i < cands.length; i++) {
+      var c = cands[i], l = c.layer, id = c.id;
+      if (c.kind === 'toggles') T.autoDerivation.multiTogglesSkipped += c.multiSkipped;
+      if (kinds && kinds.indexOf(c.kind) < 0) { T.autoDerivation.outOfKinds++; continue; }
+      if (off[id] !== undefined) {
+        if (typeof off[id] !== 'string' || !off[id]) throw new Error(src + ': off.' + id + ' needs a reason string');
+        T.autoExcluded[id] = off[id];
+        T.autoDerivation.excluded++;
+        continue;
+      }
+      var order = table.order && table.order[id];
+      var policy = table.policies && table.policies[id];
+      if (policy === undefined) policy = defaultPolicy(c.kind, l, !!order, !!clk[l]);
+      var def = {
+        id: id, layer: l, kind: c.kind, policy: policy, default: false, derived: true,
+        title: titleOf(l) + ' ' + KIND_LABEL[c.kind],
+        unlocked: derivedUnlocked(c.kind, l),
+        policies: [policy].concat((table.alternatives && table.alternatives[id]) || []),
+        keepMilestone: table.keep && table.keep[id],
+        order: order,
+        after: c.kind === 'reset' ? after[l] : undefined,
+        gate: table.gates && table.gates[id],
+        toggleList: c.toggleList, multiSkipped: c.multiSkipped,
+        clickList: c.kind === 'clickables' ? clk[l] : undefined,
+      };
+      T.registerAutoFeature(def);
+      T.autoDerivation.registered++;
+    }
+  }
+  function titleOf(l) { var n = String(layers[l].name || l); return n.charAt(0).toUpperCase() + n.slice(1); }
+  // Derived unlocked(): a purchase kind needs the layer unlocked (nothing to buy before); a reset needs the layer's node
+  // visible (`tmp[l].layerShown !== false`) — the moment a human could click it, which is before it is unlocked.
+  function derivedUnlocked(kind, l) {
+    if (kind === 'reset') return function () { return !!tmp[l] && tmp[l].layerShown !== false; };
+    return function () { return !!player[l] && !!player[l].unlocked; };
+  }
+  // Table-less defaults. reset: a static layer's gain is its requirement-paced 1 per reset, so `always` (A2-3: the
+  // all-`always` control ended at the default's hash at 8035; A1's b/g ran `gain>=1`, the same thing for a static layer);
+  // normal / custom: `gain>=2x` — UNMEASURED as a default (S1 part 2 sweeps it). upgrades: cheapest-first
+  // (order-then-cheapest with an order[]); buyables: buy (§12e.1); toggles: on; challenges: sequential only with an
+  // order[]; clickables: only with a {id, when} list.
+  function defaultPolicy(kind, l, hasOrder, hasClicks) {
+    if (kind === 'reset') return layers[l].type === 'static' ? 'always' : 'gain>=2x';
+    if (kind === 'upgrades') return hasOrder ? 'order-then-cheapest' : 'cheapest-first';
+    if (kind === 'buyables') return 'buy';
+    if (kind === 'toggles') return 'on';
+    if (kind === 'challenges') return hasOrder ? 'sequential' : 'off';
+    return hasClicks ? 'when' : 'off';
+  }
+
   if (typeof addLayer === 'function' && typeof layers === 'object' && !layers[AU]) {
+    derive();
     addLayer(AU, {
       tmtLoaderLayer: true,
       startData: function () { return { unlocked: true, points: new Decimal(0), features: {}, disclosed: false }; },

@@ -77,6 +77,7 @@ async function main() {
   const res = runNode(id, a);
   const line = { id, ok: res.ok, automation: res.automation, profile: res.profile, ticks: res.ticks, gameSeconds: res.gameSeconds, diff: res.diff, hash: res.hash, summary: res.summary };
   if (res.exclude) { line.exclude = res.exclude; line.hashFull = res.hashFull; }
+  if (res.hashGame) line.hashGame = res.hashGame;
   if (res.hook && res.hook.hooked.length) line.hook = res.hook;
   if (res.marks) line.marks = res.marks;
   if (res.stall) line.stall = res.stall;
