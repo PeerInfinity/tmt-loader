@@ -567,7 +567,9 @@
     if (table.id !== undefined && T.id && table.id !== T.id) throw new Error(src + ': id does not match the game "' + T.id + '"');
     T.autoOptions = Object.assign({}, table.options || {}, T.options || {});
 
-    // kind order within a layer: the table's (or ?autoOpt=kindOrder=…), else the generic one (plan §5b)
+    // kind order within a layer: the table's (or ?autoOpt=kindOrder=…), else the generic one (plan §5b). S1-2k (diff 1):
+    // the generic order reached ptr A1-3 at 1322 / 2321 / 2893 vs reset-first 1361 / 2360 / 2936, Something Tree 301 vs
+    // 308 and 302 / 392 / 572 vs 309 / 399 / 579 — faster everywhere measured
     var kindOrder = listOpt('kindOrder', table.kindOrder || KINDS_ALL);
     if (kindOrder.length !== KINDS_ALL.length || KINDS_ALL.some(function (k) { return kindOrder.indexOf(k) < 0; })) throw new Error(src + ': kindOrder must be a permutation of ' + KINDS_ALL.join(','));
     var cands = candidates(kindOrder);
@@ -654,7 +656,9 @@
   }
   // Table-less defaults. reset: a static layer's gain is its requirement-paced 1 per reset, so `always` (A2-3: the
   // all-`always` control ended at the default's hash at 8035; A1's b/g ran `gain>=1`, the same thing for a static layer);
-  // normal / custom: `gain>=2x` — UNMEASURED as a default (S1 part 2 sweeps it). upgrades: cheapest-first
+  // normal / custom: `gain>=2x` — S1-2 sweeps (diff 1): the one policy that reached every mark on ptr reset:p (918 / 1627 /
+  // 2112 vs interval>=10's 1361 / 2360 / 2936), Something Tree reset:fundamental (496 vs interval>=5's 308) and
+  // reset:primitive (446 / 951 vs interval>=90's 399 / 579) with no constant; unmeasured on any other game. upgrades: cheapest-first
   // (order-then-cheapest with an order[]); buyables: buy (§12e.1); toggles: on; challenges: sequential only with an
   // order[]; clickables: only with a {id, when} list.
   function defaultPolicy(kind, l, hasOrder, hasClicks) {

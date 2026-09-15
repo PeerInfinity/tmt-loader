@@ -75,12 +75,19 @@ order**:
 The generic **kind order** is `toggles → upgrades → buyables → challenges → clickables → reset` (one-off purchases before
 repeatable ones; the reset last, so a tick's purchases spend the pre-reset balance). A table may give its own
 `kindOrder` (both shipped tables do: every A1/A2 number was measured with the reset first). Features of one layer run in
-that order inside the layer's `automate()`.
+that order inside the layer's `automate()`. Measured (S1-2k, diff 1): the generic order reaches the pinned marks slightly
+earlier than reset-first — ptr A1-3 1322 / 2321 / 2893 vs 1361 / 2360 / 2936; Something Tree 301 vs 308 to unlock:upg:12
+and 302 / 392 / 572 vs 309 / 399 / 579 to the primitive marks.
 
 Why those defaults: a static layer's gain is one per reset and its reset waits on its requirement, so `always` is the
 measured rule there (A2-3: the all-`always` control reached the default's state at 8035 game-s; A1's b/g ran `gain>=1`,
-the same thing for a static layer). `gain>=2x` for normal layers is **unmeasured as a default** in the derivation's
-code; S1 part 2's sweeps are its basis (`tools/harness/results/SUMMARY.md`, the S1-2 rows).
+the same thing for a static layer; `gain>=Nx` would never fire on a static layer past its first points, since the gain
+stays 1). `gain>=2x` for normal / custom layers is the one policy of the S1-2 sweeps that reached every mark on all three
+swept layers without a constant: ptr `reset:p` 918 / 1627 / 2112 game-s to A1-3's marks (the table's measured
+`interval>=10`: 1361 / 2360 / 2936); Something Tree `reset:fundamental` 496 to unlock:upg:12 (`interval>=5`: 308);
+`reset:primitive` 446 / 951 to primitive ms 1 / ms 2 (`interval>=90`: 399 / 579). `gain>=4x` also reached all of them
+(2215 at ptr (iii), 1587 on fundamental, 377 / 835 on primitive); `unlocks-purchase` walled ptr (ii) and fundamental;
+`always` walled both.
 
 Upgrades with a `pseudoUnl` (Prestige Tree's pseudo-upgrades) are never bought. Milestone toggles in the 2.2.1 `'multi'`
 form (`{layer, varName, options}`, a string it cycles) are skipped and counted (`tmtLoader.autoDerivation.multiTogglesSkipped`).

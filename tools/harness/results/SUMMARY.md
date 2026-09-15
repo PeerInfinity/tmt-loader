@@ -1117,3 +1117,11 @@ Reading this section: pinned rows compare TICKS and the game state without playe
 | G3 parity control (page +1 point, must diverge) | something | idle | 200 | 10 | 0.05 | `13a88929cfacb688` | GREEN | diverged at key "points" |
 | G4 goldens | something | — | 0 | 0 | — | — | GREEN | 329 ids, 21 layers; ms 68 / upg 175 / buy 23 / ch 11 / ach 52 (census equal=true) |
 | G4 check-manifest | something | — | 0 | 0 | — | — | GREEN | 17 scripts, 17 modFiles, vendor sha256 ok, subtree split 30a311b, games/something pristine |
+
+## 2026-09-15T19:47:25Z — S1 part 2k (`node tools/harness/gates-s1.mjs --part 2k`) — commit `245ed3b2` — 3/3 green
+
+| gate | game | leg | ticks | gameSeconds | diff | hash | result | notes |
+|---|---|---|---|---|---|---|---|---|
+| S1-2k kind order: generic (toggles,upgrades,buyables,challenges,clickables,reset) vs the table's reset-first | ptr | profile all, marks a1ptr | 2893 | 2893 | 1 | `f9524f349a6da09b` | GREEN | game-s to (i) b and g unlocked / (ii) keep-upgrade milestones b0 + g0 / (iii) b.best ≥ 15 and g.best ≥ 15: generic 1322 / 2321 / 2893 vs table order 1361 / 2360 / 2936 (SUMMARY 1361 / 2360 / 2936); generic ended all marks met; actions generic {"reset:p":290,"upgrades:p":165,"reset:g":46,"upgrades:g":4,"reset:b":51,"upgrades:b":5} |
+| S1-2k kind order: generic (toggles,upgrades,buyables,challenges,clickables,reset) vs the table's reset-first | something | profile all, marks a1st | 301 | 301 | 1 | `8a143f38d49cf891` | GREEN | game-s to (i) first fundamental reset (fundamental.total ≥ 1) / (ii) unlock:upg:12: generic 6 / 301 vs table order 6 / 308 (SUMMARY 6 / 308); generic ended all marks met; actions generic {"reset:unlock":181,"upgrades:unlock":2,"reset:fundamental":60,"upgrades:fundamental":11} |
+| S1-2k kind order: generic (toggles,upgrades,buyables,challenges,clickables,reset) vs the table's reset-first | something | profile all, marks a2st | 572 | 572 | 1 | `24863c57236d3235` | GREEN | game-s to (i) primitive reset ≥ 1 (primitive.total ≥ 1) / (ii) primitive ms 1 ("10 Numbers") / (iii) primitive ms 2 ("100,000 Numbers"): generic 302 / 392 / 572 vs table order 309 / 399 / 579 (SUMMARY 309 / 399 / 579); generic ended all marks met; actions generic {"reset:unlock":340,"upgrades:unlock":2,"reset:fundamental":114,"upgrades:fundamental":46,"reset:primitive":4,"upgrades:primitive":2} |
