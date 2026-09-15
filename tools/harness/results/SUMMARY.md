@@ -613,3 +613,14 @@ Reading this section: the subtree commits are in; manifests, index and goldens a
 | L2-3 large: #79 idle hash = census | the-periodic-table-tree | idle | 200 | 10 | 0.05 | `a9f10a5c6e66cff5` | GREEN | NONDETERMINISTIC (census deterministic=false, table false, paths ["N.id","N.word","N.alt","N.image"]): census 3a769f842ebcdf87, run 1 a9f10a5c6e66cff5, run 2 6b54b12acab4a7c0 — recorded, not failed |
 | L2-3 large: #79 goldens counts = census | the-periodic-table-tree | — | 0 | 0 | — | — | GREEN | 182 ids, 18 layers; ms 38 / upg 53 / buy 21 / ch 5 / ach 65 = census |
 | L2-3 large: #79 G1 load (plain page) | the-periodic-table-tree | — | 3 | 0.15 | 0.05 | — | **RED** | ready 1025 ms; 7 `#app .treeNode`; 80 requests, 10 non-localhost, 0 failed, 0 page errors; au nodes 0; keys `tmt-loader:the-periodic-table-tree:118`, `tmt-loader:the-periodic-table-tree:118_options`; RED: ready true error null; 7 treeNodes; blocked 10 ["https://i.postimg.cc/R0kG9kd0/slazzer-edit-image-removebg-preview.png","https://i.postimg.cc/59DXKHnn/6ce621c1-37d7-4aa1-8068-18a856d6c523.jpg","https://i.postimg.cc/x1b6Q644/c8b42708505611e88f6702e6256ec5c3-1-removebg-preview.png","https://i.postimg.cc/brn1WwgV/Studio-Project-removebg-preview.png","https://i.postimg.cc/mk54KTdq/a5219bd91f868f264f55 |
+
+## 2026-09-15T06:34:34Z — L2-3 large: #84 (`node tools/add-game.mjs CudjzikxmxR/The-Rainbow-Void-Tree`) — commit `0bf5c1f5` (tree DIRTY) — 4/4 green
+
+Reading this section: the subtree commits are in; manifests, index and goldens are uncommitted at the time of the run. idle hash = the plain page's Node twin (`--no-automation`, no exclusion) vs manifest.headless.idleHash; goldens counts vs manifest.census; G1 = `page.mjs <id> --gate load` (no flag).
+
+| gate | game | leg | ticks | gameSeconds | diff | hash | result | notes |
+|---|---|---|---|---|---|---|---|---|
+| L2-3 large: #84 check-manifest | the-rainbow-void-tree | — | 0 | 0 | — | — | GREEN | 17 scripts, 3 modFiles, subtree split 9b67544, games/the-rainbow-void-tree pristine |
+| L2-3 large: #84 idle hash = census | the-rainbow-void-tree | idle | 200 | 10 | 0.05 | `a54bc54b5c495ca1` | GREEN | census a54bc54b5c495ca1 |
+| L2-3 large: #84 goldens counts = census | the-rainbow-void-tree | — | 0 | 0 | — | — | GREEN | 147 ids, 12 layers; ms 28 / upg 79 / buy 0 / ch 0 / ach 40 = census |
+| L2-3 large: #84 G1 load (plain page) | the-rainbow-void-tree | — | 3 | 0.15 | 0.05 | — | GREEN | ready 1055 ms; 6 `#app .treeNode`; 74 requests, 0 non-localhost, 0 failed, 0 page errors; au nodes 0; keys `tmt-loader:the-rainbow-void-tree:The-Rainbow-Void-Tree-nobody`, `tmt-loader:the-rainbow-void-tree:The-Rainbow-Void-Tree-nobody_options` |
