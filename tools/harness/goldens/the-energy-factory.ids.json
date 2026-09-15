@@ -1,0 +1,137 @@
+{
+  "id": "the-energy-factory",
+  "commit": "3c2ff551f63ef2aee7e0977acaf5674062c83cb8",
+  "layers": {
+    "info-tab": {
+      "row": "otherside",
+      "type": "none"
+    },
+    "options-tab": {
+      "row": "otherside",
+      "type": "none"
+    },
+    "changelog-tab": {
+      "row": "otherside",
+      "type": "none"
+    },
+    "energy": {
+      "row": 0,
+      "type": "none"
+    },
+    "surge": {
+      "row": 1,
+      "type": "custom"
+    },
+    "energybank": {
+      "row": 1,
+      "type": "custom"
+    },
+    "ach": {
+      "row": "side",
+      "type": "none"
+    },
+    "auto": {
+      "row": "side",
+      "type": "none"
+    },
+    "blank": {
+      "row": null,
+      "type": "none"
+    },
+    "tree-tab": {
+      "row": null,
+      "type": "none"
+    }
+  },
+  "ids": [
+    "energy:upg:11",
+    "energy:upg:12",
+    "energy:upg:13",
+    "energy:upg:14",
+    "energy:upg:15",
+    "energy:upg:21",
+    "energy:upg:22",
+    "energy:upg:23",
+    "energy:upg:24",
+    "energy:upg:25",
+    "energy:upg:31",
+    "energy:upg:32",
+    "energy:upg:33",
+    "energy:buy:11",
+    "energy:buy:12",
+    "energy:buy:13",
+    "energy:buy:21",
+    "energy:buy:22",
+    "energy:buy:23",
+    "energy:buy:41",
+    "surge:ms:0",
+    "surge:ms:1",
+    "surge:ms:2",
+    "surge:ms:3",
+    "surge:ms:4",
+    "surge:ms:5",
+    "surge:ms:6",
+    "surge:ms:7",
+    "surge:ms:8",
+    "surge:ms:9",
+    "surge:upg:11",
+    "surge:upg:12",
+    "surge:upg:13",
+    "surge:upg:14",
+    "surge:upg:15",
+    "surge:upg:16",
+    "surge:upg:21",
+    "surge:upg:22",
+    "surge:upg:23",
+    "surge:upg:24",
+    "surge:upg:25",
+    "surge:upg:26",
+    "surge:buy:11",
+    "surge:buy:12",
+    "surge:buy:21",
+    "surge:buy:22",
+    "surge:ch:11",
+    "surge:ch:12",
+    "surge:ch:21",
+    "surge:ch:22",
+    "surge:ch:31",
+    "surge:ch:32",
+    "energybank:ms:1",
+    "energybank:ms:2",
+    "energybank:ms:3",
+    "energybank:ms:4",
+    "energybank:ms:5",
+    "ach:ach:11",
+    "ach:ach:12",
+    "ach:ach:13",
+    "ach:ach:14",
+    "ach:ach:15",
+    "ach:ach:16",
+    "ach:ach:21",
+    "ach:ach:22",
+    "ach:ach:23",
+    "ach:ach:24",
+    "ach:ach:25",
+    "ach:ach:26",
+    "ach:ach:31",
+    "ach:ach:32",
+    "ach:ach:33",
+    "ach:ach:34",
+    "ach:ach:35",
+    "ach:ach:36",
+    "auto:buy:11",
+    "auto:buy:12",
+    "auto:buy:13",
+    "auto:buy:14",
+    "auto:buy:15",
+    "auto:buy:16",
+    "auto:buy:24"
+  ],
+  "counts": {
+    "ms": 15,
+    "upg": 25,
+    "buy": 18,
+    "ch": 6,
+    "ach": 18
+  }
+}

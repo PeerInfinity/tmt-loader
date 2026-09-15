@@ -1,0 +1,87 @@
+{
+  "id": "yet-another-challenge-tree-adventure",
+  "commit": "9c1fff2945d8030e3a6c3d1e532a79e547c355c1",
+  "layers": {
+    "info-tab": {
+      "row": "otherside",
+      "type": "none"
+    },
+    "options-tab": {
+      "row": "otherside",
+      "type": "none"
+    },
+    "changelog-tab": {
+      "row": "otherside",
+      "type": "none"
+    },
+    "I": {
+      "row": 0,
+      "type": "normal"
+    },
+    "II": {
+      "row": 1,
+      "type": "normal"
+    },
+    "III": {
+      "row": 2,
+      "type": "static"
+    },
+    "IV": {
+      "row": 2,
+      "type": "normal"
+    },
+    "blank": {
+      "row": null,
+      "type": "none"
+    },
+    "tree-tab": {
+      "row": null,
+      "type": "none"
+    }
+  },
+  "ids": [
+    "I:ms:1",
+    "I:ms:2",
+    "I:ms:3",
+    "I:ch:11",
+    "I:ch:12",
+    "I:ch:13",
+    "I:ch:14",
+    "II:ms:1",
+    "II:ms:2",
+    "II:ms:3",
+    "II:ms:4",
+    "II:ms:5",
+    "II:ch:11",
+    "II:ch:12",
+    "II:ch:13",
+    "II:ch:14",
+    "II:ch:15",
+    "III:ms:1",
+    "III:ms:2",
+    "III:ms:3",
+    "III:ch:11",
+    "III:ch:12",
+    "III:ch:13",
+    "III:ch:14",
+    "IV:ms:1",
+    "IV:buy:11",
+    "IV:ch:11",
+    "IV:ch:12",
+    "IV:ch:21",
+    "IV:ch:22",
+    "IV:ch:31",
+    "IV:ch:32",
+    "IV:ch:41",
+    "IV:ch:42",
+    "IV:ch:51",
+    "IV:ch:52"
+  ],
+  "counts": {
+    "ms": 12,
+    "upg": 0,
+    "buy": 1,
+    "ch": 23,
+    "ach": 0
+  }
+}

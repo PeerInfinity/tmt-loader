@@ -163,5 +163,30 @@
     "id": "an-operation-tree",
     "name": "An Operation Tree",
     "repo": "am30936/The-Modding-Tree"
+  },
+  {
+    "id": "the-necromantree",
+    "name": "The NecromanTree",
+    "repo": "monkeh42/The-Modding-Tree"
+  },
+  {
+    "id": "the-challenge-tree",
+    "name": "The Challenge Tree",
+    "repo": "Seder3214/Challenge-Tree"
+  },
+  {
+    "id": "the-tree",
+    "name": "The ??? Tree",
+    "repo": "fluffydragon23/The-Modding-Tree"
+  },
+  {
+    "id": "the-energy-factory",
+    "name": "The Energy Factory",
+    "repo": "CharizUniv/The-Modding-Tree"
+  },
+  {
+    "id": "yet-another-challenge-tree-adventure",
+    "name": "Yet another Challenge Tree: Adventure",
+    "repo": "new42ur3jeans/Incremental-Adventure-Trees"
   }
 ]

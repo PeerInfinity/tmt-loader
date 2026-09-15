@@ -575,3 +575,30 @@ Reading this section: the subtree commits are in; manifests, index and goldens a
 | L2-3 batch 3 idle hash = census | an-operation-tree | idle | 200 | 10 | 0.05 | `c4de2e89b39cd023` | GREEN | census c4de2e89b39cd023 |
 | L2-3 batch 3 goldens counts = census | an-operation-tree | — | 0 | 0 | — | — | GREEN | 124 ids, 13 layers; ms 31 / upg 56 / buy 2 / ch 6 / ach 29 = census |
 | L2-3 batch 3 G1 load (plain page) | an-operation-tree | — | 3 | 0.15 | 0.05 | — | GREEN | ready 914 ms; 5 `#app .treeNode`; 68 requests, 0 non-localhost, 0 failed, 0 page errors; au nodes 0; keys `tmt-loader:an-operation-tree:An-Operation-Tree-am30936_options`, `tmt-loader:an-operation-tree:An-Operation-Tree-am30936` |
+
+## 2026-09-15T06:33:29Z — L2-3 batch 4 (`node tools/add-game.mjs monkeh42/The-Modding-Tree Seder3214/Challenge-Tree fluffydragon23/The-Modding-Tree CharizUniv/The-Modding-Tree new42ur3jeans/Incremental-Adventure-Trees`) — commit `2f5953de` (tree DIRTY) — 20/20 green
+
+Reading this section: the subtree commits are in; manifests, index and goldens are uncommitted at the time of the run. idle hash = the plain page's Node twin (`--no-automation`, no exclusion) vs manifest.headless.idleHash; goldens counts vs manifest.census; G1 = `page.mjs <id> --gate load` (no flag).
+
+| gate | game | leg | ticks | gameSeconds | diff | hash | result | notes |
+|---|---|---|---|---|---|---|---|---|
+| L2-3 batch 4 check-manifest | the-necromantree | — | 0 | 0 | — | — | GREEN | 13 scripts, 0 modFiles, subtree split 9d089aa, games/the-necromantree pristine |
+| L2-3 batch 4 idle hash = census | the-necromantree | idle | 200 | 10 | 0.05 | `3f5285cd84e6b738` | GREEN | census 3f5285cd84e6b738 |
+| L2-3 batch 4 goldens counts = census | the-necromantree | — | 0 | 0 | — | — | GREEN | 51 ids, 15 layers; ms 20 / upg 28 / buy 3 / ch 0 / ach 0 = census |
+| L2-3 batch 4 G1 load (plain page) | the-necromantree | — | 3 | 0.15 | 0.05 | — | GREEN | ready 879 ms; 7 `#app .treeNode`; 56 requests, 0 non-localhost, 0 failed, 0 page errors; au nodes 0; keys `tmt-loader:the-necromantree:eggbrahamtree` |
+| L2-3 batch 4 check-manifest | the-challenge-tree | — | 0 | 0 | — | — | GREEN | 17 scripts, 2 modFiles, subtree split 90b1677, games/the-challenge-tree pristine |
+| L2-3 batch 4 idle hash = census | the-challenge-tree | idle | 200 | 10 | 0.05 | `c201671fb6bb835d` | GREEN | census c201671fb6bb835d |
+| L2-3 batch 4 goldens counts = census | the-challenge-tree | — | 0 | 0 | — | — | GREEN | 46 ids, 13 layers; ms 1 / upg 6 / buy 0 / ch 39 / ach 0 = census |
+| L2-3 batch 4 G1 load (plain page) | the-challenge-tree | — | 3 | 0.15 | 0.05 | — | GREEN | ready 888 ms; 8 `#app .treeNode`; 68 requests, 0 non-localhost, 0 failed, 0 page errors; au nodes 0; keys `tmt-loader:the-challenge-tree:particles`, `tmt-loader:the-challenge-tree:particles_options` |
+| L2-3 batch 4 check-manifest | the-tree | — | 0 | 0 | — | — | GREEN | 17 scripts, 2 modFiles, subtree split d4d15d9, games/the-tree pristine |
+| L2-3 batch 4 idle hash = census | the-tree | idle | 200 | 10 | 0.05 | `b6f74d0c3b038390` | GREEN | census b6f74d0c3b038390 |
+| L2-3 batch 4 goldens counts = census | the-tree | — | 0 | 0 | — | — | GREEN | 28 ids, 9 layers; ms 2 / upg 21 / buy 0 / ch 1 / ach 4 = census |
+| L2-3 batch 4 G1 load (plain page) | the-tree | — | 3 | 0.15 | 0.05 | — | GREEN | ready 905 ms; 4 `#app .treeNode`; 68 requests, 0 non-localhost, 0 failed, 0 page errors; au nodes 0; keys `tmt-loader:the-tree:cookina i changed my id`, `tmt-loader:the-tree:cookina i changed my id_options` |
+| L2-3 batch 4 check-manifest | the-energy-factory | — | 0 | 0 | — | — | GREEN | 17 scripts, 6 modFiles, subtree split 3c2ff55, games/the-energy-factory pristine |
+| L2-3 batch 4 idle hash = census | the-energy-factory | idle | 200 | 10 | 0.05 | `42713edf51fd7eaa` | GREEN | census 42713edf51fd7eaa |
+| L2-3 batch 4 goldens counts = census | the-energy-factory | — | 0 | 0 | — | — | GREEN | 82 ids, 10 layers; ms 15 / upg 25 / buy 18 / ch 6 / ach 18 = census |
+| L2-3 batch 4 G1 load (plain page) | the-energy-factory | — | 3 | 0.15 | 0.05 | — | GREEN | ready 1075 ms; 4 `#app .treeNode`; 72 requests, 0 non-localhost, 0 failed, 0 page errors; au nodes 0; keys `tmt-loader:the-energy-factory:mymod`, `tmt-loader:the-energy-factory:mymod_options` |
+| L2-3 batch 4 check-manifest | yet-another-challenge-tree-adventure | — | 0 | 0 | — | — | GREEN | 17 scripts, 2 modFiles, subtree split 9c1fff2, games/yet-another-challenge-tree-adventure pristine |
+| L2-3 batch 4 idle hash = census | yet-another-challenge-tree-adventure | idle | 200 | 10 | 0.05 | `ea3de4ee424602cd` | GREEN | census ea3de4ee424602cd |
+| L2-3 batch 4 goldens counts = census | yet-another-challenge-tree-adventure | — | 0 | 0 | — | — | GREEN | 36 ids, 9 layers; ms 12 / upg 0 / buy 1 / ch 23 / ach 0 = census |
+| L2-3 batch 4 G1 load (plain page) | yet-another-challenge-tree-adventure | — | 3 | 0.15 | 0.05 | — | GREEN | ready 879 ms; 4 `#app .treeNode`; 68 requests, 0 non-localhost, 0 failed, 0 page errors; au nodes 0; keys `tmt-loader:yet-another-challenge-tree-adventure:chalmod_options`, `tmt-loader:yet-another-challenge-tree-adventure:chalmod` |
