@@ -481,3 +481,50 @@ Reading this section: the subtree commits are in; manifests, index and goldens a
 | L2-3 batch 1 idle hash = census | the-algebra-tree | idle | 200 | 10 | 0.05 | `82c47d7238db490c` | GREEN | census 82c47d7238db490c |
 | L2-3 batch 1 goldens counts = census | the-algebra-tree | — | 0 | 0 | — | — | GREEN | 110 ids, 21 layers; ms 24 / upg 57 / buy 29 / ch 0 / ach 0 = census |
 | L2-3 batch 1 G1 load (plain page) | the-algebra-tree | — | 3 | 0.15 | 0.05 | — | GREEN | ready 909 ms; 7 `#app .treeNode`; 68 requests, 0 non-localhost, 0 failed, 0 page errors; au nodes 0; keys `tmt-loader:the-algebra-tree:The-Algebra-Tree-Alvi-Deiectiones_options`, `tmt-loader:the-algebra-tree:The-Algebra-Tree-Alvi-Deiectiones` |
+
+## 2026-09-15T06:30:59Z — L2-3 batch 2 (`node tools/add-game.mjs Onesmartshark/Earth-Tree Inferno-Inc/The-Primordial-Tree freddifred/The-Modding-Tree Slicedberg/Ore-Tree great0108/The-Modding-Tree quwpsss/The-Modding-Tree XtremeRusher/The-Modding-Tree MartianCreations/The-Congratulations-Tree liam43210/The-Prestige-Tree-2 Efsoone/The-Modding-Tree`) — commit `46d5a208` (tree DIRTY) — 39/40 green
+
+Reading this section: the subtree commits are in; manifests, index and goldens are uncommitted at the time of the run. idle hash = the plain page's Node twin (`--no-automation`, no exclusion) vs manifest.headless.idleHash; goldens counts vs manifest.census; G1 = `page.mjs <id> --gate load` (no flag).
+
+| gate | game | leg | ticks | gameSeconds | diff | hash | result | notes |
+|---|---|---|---|---|---|---|---|---|
+| L2-3 batch 2 check-manifest | the-earth-tree | — | 0 | 0 | — | — | GREEN | 17 scripts, 2 modFiles, subtree split 52fb645, games/the-earth-tree pristine |
+| L2-3 batch 2 idle hash = census | the-earth-tree | idle | 200 | 10 | 0.05 | `c5ff1a1f20bd25b4` | GREEN | census c5ff1a1f20bd25b4 |
+| L2-3 batch 2 goldens counts = census | the-earth-tree | — | 0 | 0 | — | — | GREEN | 122 ids, 20 layers; ms 18 / upg 78 / buy 2 / ch 4 / ach 20 = census |
+| L2-3 batch 2 G1 load (plain page) | the-earth-tree | — | 3 | 0.15 | 0.05 | — | GREEN | ready 921 ms; 7 `#app .treeNode`; 68 requests, 0 non-localhost, 0 failed, 0 page errors; au nodes 0; keys `tmt-loader:the-earth-tree:saves1`, `tmt-loader:the-earth-tree:saves1_options` |
+| L2-3 batch 2 check-manifest | the-primordial-tree | — | 0 | 0 | — | — | GREEN | 19 scripts, 2 modFiles, subtree split 481c8bd, games/the-primordial-tree pristine |
+| L2-3 batch 2 idle hash = census | the-primordial-tree | idle | 200 | 10 | 0.05 | `44231aea805bee8c` | GREEN | census 44231aea805bee8c |
+| L2-3 batch 2 goldens counts = census | the-primordial-tree | — | 0 | 0 | — | — | GREEN | 372 ids, 21 layers; ms 144 / upg 138 / buy 13 / ch 5 / ach 72 = census |
+| L2-3 batch 2 G1 load (plain page) | the-primordial-tree | — | 3 | 0.15 | 0.05 | — | GREEN | ready 970 ms; 9 `#app .treeNode`; 70 requests, 0 non-localhost, 0 failed, 0 page errors; au nodes 0; keys `tmt-loader:the-primordial-tree:Yrahcaz7-ModTree-ThePrimordialTree_options`, `tmt-loader:the-primordial-tree:Yrahcaz7-ModTree-ThePrimordialTree` |
+| L2-3 batch 2 check-manifest | bobbit-s-tech-tree | — | 0 | 0 | — | — | GREEN | 17 scripts, 2 modFiles, subtree split 3bd5313, games/bobbit-s-tech-tree pristine |
+| L2-3 batch 2 idle hash = census | bobbit-s-tech-tree | idle | 200 | 10 | 0.05 | `d19ed73fc543d6e4` | GREEN | census d19ed73fc543d6e4 |
+| L2-3 batch 2 goldens counts = census | bobbit-s-tech-tree | — | 0 | 0 | — | — | GREEN | 22 ids, 83 layers; ms 9 / upg 13 / buy 0 / ch 0 / ach 0 = census |
+| L2-3 batch 2 G1 load (plain page) | bobbit-s-tech-tree | — | — | — | 0.05 | — | **RED** | ready 558 ms; 0 `#app .treeNode`; undefined requests, undefined non-localhost, undefined failed, undefined page errors; au nodes 0; keys ; RED: ready false error {"step":"script js/technical/temp.js","message":"js/technical/temp.js: player is not defined"}; 0 treeNodes; blocked undefined undefined; failed undefined; page errors undefined; page.evaluate: TypeError: window.tmtLoader.tick is not a function     at eval (eval at evaluate (:290:30), <anonymous>:1:30)     at UtilityScript.evaluate (<anonymous>:292:16)     at UtilityScript.<anony |
+| L2-3 batch 2 check-manifest | the-ore-tree | — | 0 | 0 | — | — | GREEN | 17 scripts, 2 modFiles, subtree split 511718c, games/the-ore-tree pristine |
+| L2-3 batch 2 idle hash = census | the-ore-tree | idle | 200 | 10 | 0.05 | `30cd55f3a16fbda7` | GREEN | census 30cd55f3a16fbda7 |
+| L2-3 batch 2 goldens counts = census | the-ore-tree | — | 0 | 0 | — | — | GREEN | 85 ids, 11 layers; ms 9 / upg 49 / buy 7 / ch 2 / ach 18 = census |
+| L2-3 batch 2 G1 load (plain page) | the-ore-tree | — | 3 | 0.15 | 0.05 | — | GREEN | ready 957 ms; 5 `#app .treeNode`; 68 requests, 0 non-localhost, 0 failed, 0 page errors; au nodes 0; keys `tmt-loader:the-ore-tree:The-Ore-Tree-Slicedberg`, `tmt-loader:the-ore-tree:The-Ore-Tree-Slicedberg_options` |
+| L2-3 batch 2 check-manifest | the-mechanic-tree | — | 0 | 0 | — | — | GREEN | 17 scripts, 5 modFiles, subtree split 8f7d901, games/the-mechanic-tree pristine |
+| L2-3 batch 2 idle hash = census | the-mechanic-tree | idle | 200 | 10 | 0.05 | `c4fc19da2982d95f` | GREEN | census c4fc19da2982d95f |
+| L2-3 batch 2 goldens counts = census | the-mechanic-tree | — | 0 | 0 | — | — | GREEN | 103 ids, 9 layers; ms 5 / upg 84 / buy 14 / ch 0 / ach 0 = census |
+| L2-3 batch 2 G1 load (plain page) | the-mechanic-tree | — | 3 | 0.15 | 0.05 | — | GREEN | ready 962 ms; 4 `#app .treeNode`; 71 requests, 0 non-localhost, 0 failed, 0 page errors; au nodes 0; keys `tmt-loader:the-mechanic-tree:mechanicTree`, `tmt-loader:the-mechanic-tree:mechanicTree_options` |
+| L2-3 batch 2 check-manifest | the-danus-tree | — | 0 | 0 | — | — | GREEN | 17 scripts, 10 modFiles, subtree split c3533ea, games/the-danus-tree pristine |
+| L2-3 batch 2 idle hash = census | the-danus-tree | idle | 200 | 10 | 0.05 | `6157da6bf3d82c26` | GREEN | census 6157da6bf3d82c26 |
+| L2-3 batch 2 goldens counts = census | the-danus-tree | — | 0 | 0 | — | — | GREEN | 148 ids, 14 layers; ms 20 / upg 120 / buy 8 / ch 0 / ach 0 = census |
+| L2-3 batch 2 G1 load (plain page) | the-danus-tree | — | 3 | 0.15 | 0.05 | — | GREEN | ready 980 ms; 6 `#app .treeNode`; 76 requests, 0 non-localhost, 0 failed, 0 page errors; au nodes 0; keys `tmt-loader:the-danus-tree:8318_options`, `tmt-loader:the-danus-tree:8318` |
+| L2-3 batch 2 check-manifest | collection-of-everything | — | 0 | 0 | — | — | GREEN | 17 scripts, 5 modFiles, subtree split f8c385f, games/collection-of-everything pristine |
+| L2-3 batch 2 idle hash = census | collection-of-everything | idle | 200 | 10 | 0.05 | `0db72462f2c3d720` | GREEN | census 0db72462f2c3d720 |
+| L2-3 batch 2 goldens counts = census | collection-of-everything | — | 0 | 0 | — | — | GREEN | 56 ids, 17 layers; ms 9 / upg 26 / buy 4 / ch 4 / ach 13 = census |
+| L2-3 batch 2 G1 load (plain page) | collection-of-everything | — | 3 | 0.15 | 0.05 | — | GREEN | ready 974 ms; 4 `#app .treeNode`; 72 requests, 0 non-localhost, 0 failed, 0 page errors; au nodes 0; keys `tmt-loader:collection-of-everything:XR2003_options`, `tmt-loader:collection-of-everything:XR2003` |
+| L2-3 batch 2 check-manifest | the-congratulations-tree | — | 0 | 0 | — | — | GREEN | 17 scripts, 8 modFiles, subtree split 0fe659e, games/the-congratulations-tree pristine |
+| L2-3 batch 2 idle hash = census | the-congratulations-tree | idle | 200 | 10 | 0.05 | `3c2ac120796dd1fa` | GREEN | census 3c2ac120796dd1fa |
+| L2-3 batch 2 goldens counts = census | the-congratulations-tree | — | 0 | 0 | — | — | GREEN | 57 ids, 12 layers; ms 0 / upg 52 / buy 0 / ch 0 / ach 5 = census |
+| L2-3 batch 2 G1 load (plain page) | the-congratulations-tree | — | 3 | 0.15 | 0.05 | — | GREEN | ready 1029 ms; 5 `#app .treeNode`; 76 requests, 0 non-localhost, 0 failed, 0 page errors; au nodes 0; keys `tmt-loader:the-congratulations-tree:The-Congratulations-Tree-Moon-Charm-Muahaha_options`, `tmt-loader:the-congratulations-tree:The-Congratulations-Tree-Moon-Charm-Muahaha` |
+| L2-3 batch 2 check-manifest | the-prestige-tree-2 | — | 0 | 0 | — | — | GREEN | 17 scripts, 2 modFiles, subtree split fcfd0d1, games/the-prestige-tree-2 pristine |
+| L2-3 batch 2 idle hash = census | the-prestige-tree-2 | idle | 200 | 10 | 0.05 | `0a00a5ad5b72f7f4` | GREEN | census 0a00a5ad5b72f7f4 |
+| L2-3 batch 2 goldens counts = census | the-prestige-tree-2 | — | 0 | 0 | — | — | GREEN | 35 ids, 10 layers; ms 3 / upg 21 / buy 0 / ch 0 / ach 11 = census |
+| L2-3 batch 2 G1 load (plain page) | the-prestige-tree-2 | — | 3 | 0.15 | 0.05 | — | GREEN | ready 873 ms; 5 `#app .treeNode`; 68 requests, 0 non-localhost, 0 failed, 0 page errors; au nodes 0; keys `tmt-loader:the-prestige-tree-2:767756845683579465_options`, `tmt-loader:the-prestige-tree-2:767756845683579465` |
+| L2-3 batch 2 check-manifest | the-reborn-incremental-tree | — | 0 | 0 | — | — | GREEN | 17 scripts, 2 modFiles, subtree split 7ccd26d, games/the-reborn-incremental-tree pristine |
+| L2-3 batch 2 idle hash = census | the-reborn-incremental-tree | idle | 200 | 10 | 0.05 | `7381a5ddd7238b6b` | GREEN | census 7381a5ddd7238b6b |
+| L2-3 batch 2 goldens counts = census | the-reborn-incremental-tree | — | 0 | 0 | — | — | GREEN | 40 ids, 10 layers; ms 15 / upg 25 / buy 0 / ch 0 / ach 0 = census |
+| L2-3 batch 2 G1 load (plain page) | the-reborn-incremental-tree | — | 3 | 0.15 | 0.05 | — | GREEN | ready 892 ms; 4 `#app .treeNode`; 68 requests, 0 non-localhost, 0 failed, 0 page errors; au nodes 0; keys `tmt-loader:the-reborn-incremental-tree:The-Reborn-Incremental-Tree-Efsoone`, `tmt-loader:the-reborn-incremental-tree:The-Reborn-Incremental-Tree-Efsoone_options` |

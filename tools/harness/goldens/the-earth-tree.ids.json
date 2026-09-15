@@ -1,0 +1,217 @@
+{
+  "id": "the-earth-tree",
+  "commit": "52fb64513a83f3fb7a67cffe845311a8ba21ef83",
+  "layers": {
+    "info-tab": {
+      "row": "otherside",
+      "type": "none"
+    },
+    "options-tab": {
+      "row": "otherside",
+      "type": "none"
+    },
+    "changelog-tab": {
+      "row": "otherside",
+      "type": "none"
+    },
+    "d": {
+      "row": 0,
+      "type": "normal"
+    },
+    "s": {
+      "row": 1,
+      "type": "normal"
+    },
+    "t": {
+      "row": 2,
+      "type": "normal"
+    },
+    "sl": {
+      "row": 2,
+      "type": "static"
+    },
+    "c": {
+      "row": 1,
+      "type": "normal"
+    },
+    "co": {
+      "row": 2,
+      "type": "normal"
+    },
+    "g": {
+      "row": 3,
+      "type": "static"
+    },
+    "i": {
+      "row": 3,
+      "type": "normal"
+    },
+    "f": {
+      "row": 3,
+      "type": "normal"
+    },
+    "cm": {
+      "row": 4,
+      "type": "normal"
+    },
+    "st": {
+      "row": 4,
+      "type": "normal"
+    },
+    "b": {
+      "row": "side",
+      "type": "static"
+    },
+    "ch": {
+      "row": "side",
+      "type": "static"
+    },
+    "te": {
+      "row": "side",
+      "type": "normal"
+    },
+    "a": {
+      "row": "side",
+      "type": "none"
+    },
+    "blank": {
+      "row": null,
+      "type": "none"
+    },
+    "tree-tab": {
+      "row": null,
+      "type": "none"
+    }
+  },
+  "ids": [
+    "d:upg:11",
+    "d:upg:12",
+    "d:upg:13",
+    "d:upg:14",
+    "d:upg:21",
+    "d:upg:22",
+    "d:upg:23",
+    "d:upg:24",
+    "d:upg:31",
+    "d:upg:32",
+    "d:upg:33",
+    "d:upg:34",
+    "d:upg:41",
+    "s:upg:11",
+    "s:upg:12",
+    "s:upg:13",
+    "s:upg:14",
+    "s:upg:21",
+    "s:upg:22",
+    "s:upg:23",
+    "s:upg:24",
+    "s:upg:31",
+    "t:upg:11",
+    "t:upg:12",
+    "sl:ms:0",
+    "sl:ms:1",
+    "sl:ms:2",
+    "sl:ms:3",
+    "sl:ms:4",
+    "sl:ms:5",
+    "sl:ms:6",
+    "sl:ms:7",
+    "sl:ms:8",
+    "sl:ms:9",
+    "sl:ms:10",
+    "sl:ms:11",
+    "sl:ms:12",
+    "sl:upg:11",
+    "sl:upg:12",
+    "sl:upg:13",
+    "sl:upg:14",
+    "sl:upg:21",
+    "c:upg:11",
+    "c:upg:12",
+    "c:upg:13",
+    "c:upg:14",
+    "c:upg:21",
+    "c:upg:22",
+    "c:upg:23",
+    "c:upg:24",
+    "co:upg:11",
+    "co:upg:12",
+    "co:upg:13",
+    "co:upg:14",
+    "g:ms:0",
+    "g:ms:1",
+    "g:ms:2",
+    "g:ms:3",
+    "g:ms:4",
+    "i:upg:11",
+    "i:upg:12",
+    "i:upg:13",
+    "i:upg:21",
+    "i:ch:11",
+    "i:ch:12",
+    "i:ch:21",
+    "i:ch:22",
+    "f:upg:11",
+    "f:upg:12",
+    "f:upg:13",
+    "f:upg:14",
+    "cm:upg:11",
+    "cm:upg:12",
+    "cm:buy:11",
+    "cm:buy:12",
+    "st:upg:11",
+    "st:upg:12",
+    "st:upg:13",
+    "st:upg:14",
+    "st:upg:21",
+    "st:upg:22",
+    "st:upg:23",
+    "st:upg:24",
+    "b:upg:11",
+    "b:upg:12",
+    "b:upg:13",
+    "b:upg:14",
+    "b:upg:21",
+    "b:upg:22",
+    "b:upg:23",
+    "b:upg:24",
+    "ch:upg:11",
+    "ch:upg:12",
+    "te:upg:11",
+    "te:upg:12",
+    "te:upg:13",
+    "te:upg:14",
+    "te:upg:21",
+    "te:upg:22",
+    "te:upg:23",
+    "te:upg:24",
+    "te:upg:25",
+    "a:ach:11",
+    "a:ach:12",
+    "a:ach:13",
+    "a:ach:14",
+    "a:ach:21",
+    "a:ach:22",
+    "a:ach:23",
+    "a:ach:24",
+    "a:ach:31",
+    "a:ach:32",
+    "a:ach:33",
+    "a:ach:34",
+    "a:ach:41",
+    "a:ach:42",
+    "a:ach:43",
+    "a:ach:44",
+    "a:ach:51",
+    "a:ach:52",
+    "a:ach:53",
+    "a:ach:54"
+  ],
+  "counts": {
+    "ms": 18,
+    "upg": 78,
+    "buy": 2,
+    "ch": 4,
+    "ach": 20
+  }
+}

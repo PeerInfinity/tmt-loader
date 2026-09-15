@@ -1,0 +1,139 @@
+{
+  "id": "collection-of-everything",
+  "commit": "f8c385fcdacc30109690a4865a906a2092477074",
+  "layers": {
+    "info-tab": {
+      "row": "otherside",
+      "type": "none"
+    },
+    "options-tab": {
+      "row": "otherside",
+      "type": "none"
+    },
+    "changelog-tab": {
+      "row": "otherside",
+      "type": "none"
+    },
+    "s": {
+      "row": 0,
+      "type": "none"
+    },
+    "blank": {
+      "row": null,
+      "type": "none"
+    },
+    "tree-tab": {
+      "row": null,
+      "type": "none"
+    },
+    "a": {
+      "row": "side",
+      "type": "none"
+    },
+    "f": {
+      "row": "side",
+      "type": "none"
+    },
+    "bam": {
+      "row": 1,
+      "type": "normal"
+    },
+    "mush": {
+      "row": 1,
+      "type": "normal"
+    },
+    "w": {
+      "row": 1,
+      "type": "normal"
+    },
+    "FoodA": {
+      "row": 1,
+      "type": "static"
+    },
+    "FoodB": {
+      "row": 1,
+      "type": "static"
+    },
+    "st": {
+      "row": 2,
+      "type": "normal"
+    },
+    "met11": {
+      "row": 3,
+      "type": "normal"
+    },
+    "auto": {
+      "row": 0,
+      "type": "normal"
+    },
+    "switch": {
+      "row": 0,
+      "type": "normal"
+    }
+  },
+  "ids": [
+    "s:upg:11",
+    "s:upg:12",
+    "s:upg:13",
+    "s:upg:14",
+    "s:upg:15",
+    "s:upg:21",
+    "s:upg:22",
+    "s:upg:23",
+    "s:upg:24",
+    "s:upg:25",
+    "s:upg:31",
+    "s:upg:32",
+    "s:upg:33",
+    "s:upg:34",
+    "s:upg:35",
+    "s:buy:11",
+    "s:buy:12",
+    "s:buy:21",
+    "s:buy:22",
+    "a:ach:11",
+    "a:ach:12",
+    "a:ach:13",
+    "a:ach:14",
+    "a:ach:15",
+    "a:ach:21",
+    "a:ach:22",
+    "a:ach:23",
+    "a:ach:24",
+    "a:ach:25",
+    "a:ach:31",
+    "a:ach:32",
+    "a:ach:33",
+    "bam:ms:0",
+    "bam:ms:1",
+    "bam:ms:2",
+    "bam:ms:3",
+    "bam:ms:4",
+    "bam:ms:5",
+    "bam:upg:11",
+    "bam:upg:12",
+    "bam:upg:13",
+    "bam:upg:14",
+    "w:upg:11",
+    "w:upg:12",
+    "w:upg:13",
+    "w:upg:14",
+    "w:upg:15",
+    "w:upg:21",
+    "w:upg:22",
+    "st:ms:0",
+    "st:ms:1",
+    "st:ms:2",
+    "st:ch:11",
+    "st:ch:12",
+    "st:ch:21",
+    "st:ch:22"
+  ],
+  "counts": {
+    "ms": 9,
+    "upg": 26,
+    "buy": 4,
+    "ch": 4,
+    "ach": 13
+  }
+}

@@ -1,0 +1,369 @@
+{
+  "id": "bobbit-s-tech-tree",
+  "commit": "3bd531382c600ae45f9de8540412c261f1d66c9e",
+  "layers": {
+    "info-tab": {
+      "row": "otherside",
+      "type": "none"
+    },
+    "options-tab": {
+      "row": "otherside",
+      "type": "none"
+    },
+    "changelog-tab": {
+      "row": "otherside",
+      "type": "none"
+    },
+    "C": {
+      "row": 0,
+      "type": "none"
+    },
+    "PS": {
+      "row": 1,
+      "type": "none"
+    },
+    "Alchemy2": {
+      "row": "side",
+      "type": "none"
+    },
+    "L": {
+      "row": 1,
+      "type": "none"
+    },
+    "Aa": {
+      "row": 2,
+      "type": "none"
+    },
+    "N": {
+      "row": 3,
+      "type": "none"
+    },
+    "Dna": {
+      "row": 2,
+      "type": "none"
+    },
+    "PC": {
+      "row": 3,
+      "type": "none"
+    },
+    "Nu": {
+      "row": 4,
+      "type": "none"
+    },
+    "EC": {
+      "row": 5,
+      "type": "none"
+    },
+    "O": {
+      "row": 6,
+      "type": "none"
+    },
+    "T": {
+      "row": 7,
+      "type": "none"
+    },
+    "Cy": {
+      "row": 7,
+      "type": "none"
+    },
+    "M": {
+      "row": 8,
+      "type": "none"
+    },
+    "BFS": {
+      "row": 9,
+      "type": "none"
+    },
+    "FF": {
+      "row": 10,
+      "type": "none"
+    },
+    "S": {
+      "row": 11,
+      "type": "none"
+    },
+    "Co": {
+      "row": 12,
+      "type": "none"
+    },
+    "BC": {
+      "row": 7,
+      "type": "none"
+    },
+    "Tx": {
+      "row": 13,
+      "type": "none"
+    },
+    "Jf": {
+      "row": 14,
+      "type": "none"
+    },
+    "Sw": {
+      "row": 15,
+      "type": "none"
+    },
+    "F": {
+      "row": 16,
+      "type": "none"
+    },
+    "Air": {
+      "row": 8,
+      "type": "none"
+    },
+    "Lu": {
+      "row": 17,
+      "type": "none"
+    },
+    "Am": {
+      "row": 18,
+      "type": "none"
+    },
+    "Ogn": {
+      "row": 8,
+      "type": "none"
+    },
+    "Bl": {
+      "row": 19,
+      "type": "none"
+    },
+    "OS": {
+      "row": 20,
+      "type": "none"
+    },
+    "CS": {
+      "row": 21,
+      "type": "none"
+    },
+    "Mu": {
+      "row": 22,
+      "type": "none"
+    },
+    "R": {
+      "row": 23,
+      "type": "none"
+    },
+    "NS": {
+      "row": 24,
+      "type": "none"
+    },
+    "Br": {
+      "row": 25,
+      "type": "none"
+    },
+    "Mlk": {
+      "row": 20,
+      "type": "none"
+    },
+    "MG": {
+      "row": 21,
+      "type": "none"
+    },
+    "Ma": {
+      "row": 22,
+      "type": "none"
+    },
+    "P": {
+      "row": 19,
+      "type": "none"
+    },
+    "W": {
+      "row": 9,
+      "type": "none"
+    },
+    "Ms": {
+      "row": 20,
+      "type": "none"
+    },
+    "Gr": {
+      "row": 21,
+      "type": "none"
+    },
+    "VP": {
+      "row": 22,
+      "type": "none"
+    },
+    "Tr": {
+      "row": 23,
+      "type": "none"
+    },
+    "Pr": {
+      "row": 24,
+      "type": "none"
+    },
+    "Arm": {
+      "row": 25,
+      "type": "none"
+    },
+    "Ha": {
+      "row": 26,
+      "type": "none"
+    },
+    "Hu": {
+      "row": 27,
+      "type": "none"
+    },
+    "Hub": {
+      "row": "side",
+      "type": "none"
+    },
+    "Life": {
+      "row": 1,
+      "type": "none"
+    },
+    "Humanity": {
+      "row": 2,
+      "type": "none"
+    },
+    "Human": {
+      "row": 1,
+      "type": "none"
+    },
+    "Life2": {
+      "row": 0,
+      "type": "none"
+    },
+    "Alchemy": {
+      "row": "side",
+      "type": "none"
+    },
+    "HuExp": {
+      "row": 2,
+      "type": "none"
+    },
+    "Sett": {
+      "row": 3,
+      "type": "none"
+    },
+    "Idea": {
+      "row": 2,
+      "type": "none"
+    },
+    "Phil": {
+      "row": 3,
+      "type": "none"
+    },
+    "Prod1": {
+      "row": 4,
+      "type": "none"
+    },
+    "Count": {
+      "row": 5,
+      "type": "none"
+    },
+    "Wood": {
+      "row": 4,
+      "type": "none"
+    },
+    "Food": {
+      "row": 4,
+      "type": "none"
+    },
+    "rawmin": {
+      "row": 4,
+      "type": "none"
+    },
+    "Agri": {
+      "row": 5,
+      "type": "none"
+    },
+    "FHuman": {
+      "row": 6,
+      "type": "none"
+    },
+    "Tools": {
+      "row": 3,
+      "type": "none"
+    },
+    "StoneAge": {
+      "row": 4,
+      "type": "none"
+    },
+    "Time": {
+      "row": 6,
+      "type": "none"
+    },
+    "dayN": {
+      "row": 7,
+      "type": "none"
+    },
+    "Astr": {
+      "row": 8,
+      "type": "none"
+    },
+    "Mine1": {
+      "row": 5,
+      "type": "none"
+    },
+    "Trade": {
+      "row": 5,
+      "type": "none"
+    },
+    "Const": {
+      "row": 5,
+      "type": "none"
+    },
+    "Metal": {
+      "row": 5,
+      "type": "none"
+    },
+    "BAge": {
+      "row": 6,
+      "type": "none"
+    },
+    "Immig": {
+      "row": 6,
+      "type": "none"
+    },
+    "Logic": {
+      "row": 6,
+      "type": "none"
+    },
+    "Math": {
+      "row": 7,
+      "type": "none"
+    },
+    "Soon": {
+      "row": 7,
+      "type": "none"
+    },
+    "blank": {
+      "row": null,
+      "type": "none"
+    },
+    "tree-tab": {
+      "row": null,
+      "type": "none"
+    }
+  },
+  "ids": [
+    "Wood:ms:0",
+    "Wood:ms:1",
+    "Wood:ms:2",
+    "Food:ms:0",
+    "Food:ms:1",
+    "Food:ms:2",
+    "rawmin:ms:0",
+    "rawmin:ms:1",
+    "rawmin:ms:2",
+    "Const:upg:11",
+    "Const:upg:12",
+    "Const:upg:13",
+    "Const:upg:14",
+    "Const:upg:15",
+    "Const:upg:16",
+    "Const:upg:17",
+    "Const:upg:18",
+    "Const:upg:19",
+    "Const:upg:20",
+    "Const:upg:21",
+    "Const:upg:22",
+    "Const:upg:23"
+  ],
+  "counts": {
+    "ms": 9,
+    "upg": 13,
+    "buy": 0,
+    "ch": 0,
+    "ach": 0
+  }
+}

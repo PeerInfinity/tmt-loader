@@ -63,5 +63,55 @@
     "id": "the-algebra-tree",
     "name": "The Algebra Tree",
     "repo": "Sersseras/The-Modding-Tree"
+  },
+  {
+    "id": "the-earth-tree",
+    "name": "The Earth Tree",
+    "repo": "Onesmartshark/Earth-Tree"
+  },
+  {
+    "id": "the-primordial-tree",
+    "name": "The Primordial Tree",
+    "repo": "Inferno-Inc/The-Primordial-Tree"
+  },
+  {
+    "id": "bobbit-s-tech-tree",
+    "name": "Bobbit's Tech Tree",
+    "repo": "freddifred/The-Modding-Tree"
+  },
+  {
+    "id": "the-ore-tree",
+    "name": "The Ore Tree",
+    "repo": "Slicedberg/Ore-Tree"
+  },
+  {
+    "id": "the-mechanic-tree",
+    "name": "The mechanic Tree",
+    "repo": "great0108/The-Modding-Tree"
+  },
+  {
+    "id": "the-danus-tree",
+    "name": "The Danus Tree",
+    "repo": "quwpsss/The-Modding-Tree"
+  },
+  {
+    "id": "collection-of-everything",
+    "name": "Collection of Everything",
+    "repo": "XtremeRusher/The-Modding-Tree"
+  },
+  {
+    "id": "the-congratulations-tree",
+    "name": "The Congratulations Tree",
+    "repo": "MartianCreations/The-Congratulations-Tree"
+  },
+  {
+    "id": "the-prestige-tree-2",
+    "name": "The Prestige Tree 2",
+    "repo": "liam43210/The-Prestige-Tree-2"
+  },
+  {
+    "id": "the-reborn-incremental-tree",
+    "name": "The Reborn Incremental Tree",
+    "repo": "Efsoone/The-Modding-Tree"
   }
 ]
