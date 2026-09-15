@@ -22,7 +22,7 @@ import path from 'node:path';
 import { execFileSync, spawnSync } from 'node:child_process';
 import { REPO, parseArgs, headCommit, treeDirty, sha256hex, writeJSON, readManifest } from './harness/lib.mjs';
 
-const a = parseArgs(process.argv.slice(2), ['dry-run', 'au-check']);
+const a = parseArgs(process.argv.slice(2), ['dry-run', 'au-check', 'summary']);
 const CENSUS = path.resolve(a.census || process.env.TMT_CENSUS || path.join(REPO, '..', 'tmt-fork-census'));
 const TAG = a.tag || 'add-game';
 if (!a._.length) { console.error('usage: node tools/add-game.mjs <owner/repo>... [--id <id>] [--sha <sha>] [--dry-run]'); process.exit(2); }

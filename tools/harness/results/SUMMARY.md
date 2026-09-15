@@ -413,3 +413,24 @@ Reading this section: GREEN = the run completed and (where a second run exists) 
 | A2-1 sweep reset:primitive gain>=1 — control | something | profile all | 20000 | 20000 | 1 | `0c865919e527e189` | GREEN | game-s to (i)/(ii)/(iii): 309 / 501 / NOT MET; primitive resets 754; actions {"reset:unlock":10797,"upgrades:unlock":2,"reset:fundamental":3847,"upgrades:fundamental":8305,"reset:primitive":754,"upgrades:primitive":2} |
 | A2-1 parity node≡page, profile all, at (ii)'s tick | something | profile all | 5963 | 298.15 | 0.05 | `5682500e1f849fb8` | GREEN | page 5682500e1f849fb8 in 144437 ms; hookStats equal true; actions {"reset:unlock":5803,"upgrades:unlock":2,"reset:fundamental":59,"upgrades:fundamental":22,"reset:primitive":2,"upgrades:primitive":1} |
 | A2-1 next stall (diff 1, 3600 game-s window, 2 min wall) | something | profile all | 3908 | 3908 | 1 | `0da3d59c9ecb9d57` | GREEN | stalled false, wall-bounded true; last progress tick 3870 (3870 s); marks ; points 1.21512526604597e28; actions {"reset:unlock":2265,"upgrades:unlock":2,"reset:fundamental":781,"upgrades:fundamental":490,"reset:primitive":40,"upgrades:primitive":3}; state: unlock{pts 42,803,354 best 0.000; upg [11,12]; ms []; canReset false nextAt 1.000; next upg 13@1.000e20 14@1.000e50 15@1.000e400 16@1.000e925 17@1.000e1550} fundamental{pts 3.889e28 best 3.889e28; upg [23,11,12,13,14,15,16,17,21,22,24,25,26]; ms []; canReset false nextAt 10.000; next upg 27@1.000e51} primitive{pts 20,700,364 best 20,700,364; upg [11,12,13]; ms [1,2]; canReset true gain 596,606 nextAt 3.889e28; next upg 14@250,000,000; next ms 3: 3: 1e11 Numbers \| 4: 4: 1e24 Numbers} |
+
+## 2026-09-15T06:27:26Z — L2-2 (`node tools/add-game.mjs Dressygithub/The-Dressy-Tree`) — commit `24e29cd` (tree DIRTY) — 5/5 green
+
+Reading this section: the subtree commits are in; manifests, index and goldens are uncommitted at the time of the run. idle hash = the plain page's Node twin (`--no-automation`, no exclusion) vs manifest.headless.idleHash; goldens counts vs manifest.census; G1 = `page.mjs <id> --gate load` (no flag).
+
+| gate | game | leg | ticks | gameSeconds | diff | hash | result | notes |
+|---|---|---|---|---|---|---|---|---|
+| L2-2 check-manifest | the-dressy-tree | — | 0 | 0 | — | — | GREEN | 17 scripts, 20 modFiles, subtree split d553021, games/the-dressy-tree pristine |
+| L2-2 idle hash = census | the-dressy-tree | idle | 200 | 10 | 0.05 | `f0e093c5b76d1d9c` | GREEN | census f0e093c5b76d1d9c |
+| L2-2 goldens counts = census | the-dressy-tree | — | 0 | 0 | — | — | GREEN | 301 ids, 25 layers; ms 17 / upg 238 / buy 12 / ch 9 / ach 25 = census |
+| L2-2 G1 load (plain page) | the-dressy-tree | — | 3 | 0.15 | 0.05 | — | GREEN | ready 1919 ms; 9 `#app .treeNode`; 86 requests, 0 non-localhost, 0 failed, 0 page errors; au nodes 0; keys `tmt-loader:the-dressy-tree:dressyapper`, `tmt-loader:the-dressy-tree:dressyapper_options` |
+| L2-2 empty au tab (?automation=1, no table) | the-dressy-tree | — | 0 | 0 | — | — | GREEN | ready true; features 0; tab au; "Automation Tools" rendered true; 1 clickables (the master toggle, disabled); `#app .smallNode.au` × 1; profile off; 0 page errors, 0 failed, 0 blocked |
+
+## 2026-09-15T06:27:40Z — L2-2 dry-run (`node tools/add-game.mjs Jacorb90/Prestige-Tree Justcubing97/JC97sSomethingTree --dry-run`) — commit `24e29cd` (tree DIRTY) — 2/2 green
+
+Reading this section: no git operation; a game already in the loader is matched by upstream.repo and its emitted manifest compared to the committed one without generated.at and the hand-written auto.
+
+| gate | game | leg | ticks | gameSeconds | diff | hash | result | notes |
+|---|---|---|---|---|---|---|---|---|
+| L2-2 dry-run reproduces manifest | ptr | — | — | — | — | — | GREEN | Jacorb90/Prestige-Tree @ cec9198c8ce9a5c6d107179871cbe84fab92ae0d; license MIT {"LICENSE":"MIT","Prestige-tree-license":"MIT"}; manifests/ptr.json equal=true |
+| L2-2 dry-run reproduces manifest | something | — | — | — | — | — | GREEN | Justcubing97/JC97sSomethingTree @ 30a311be6b91470f9c7818b6747bd7426b1b1f90; license MIT {"LICENSE":"MIT","Prestige-tree-license":"MIT"}; manifests/something.json equal=true |
