@@ -68,3 +68,11 @@ export function firstDivergence(a, b, ctx = 120) {
   const keys = [...before.matchAll(/"([^"\\]+)":/g)];
   return { index: i, key: keys.length ? keys[keys.length - 1][1] : null, a: a.slice(Math.max(0, i - ctx), i + ctx), b: b.slice(Math.max(0, i - ctx), i + ctx) };
 }
+
+/** JSON with object keys sorted at every depth (arrays keep their order) — equality up to key ORDER only. */
+export function canonicalJSON(text) {
+  const sort = (v) => Array.isArray(v) ? v.map(sort) : v && typeof v === 'object' ? Object.fromEntries(Object.keys(v).sort().map((k) => [k, sort(v[k])])) : v;
+  return JSON.stringify(sort(JSON.parse(text)));
+}
+/** Top-level key order of a JSON object text. */
+export const topKeys = (text) => Object.keys(JSON.parse(text));
