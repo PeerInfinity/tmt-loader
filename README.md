@@ -48,13 +48,15 @@ It works from any sub-path (GitHub Pages serves under `/tmt-loader/`); nothing i
 | `node tools/harness/page.mjs <id> --ticks N --diff d` / `--gate load` | the same in headless Chromium; `--gate load` = gate G1 |
 | `node tools/harness/parity.mjs <id> --ticks N --diff d` | Node ≡ page `stateJSON()` |
 | `node tools/harness/check-goldens.mjs` / `check-manifest.mjs` | frozen `tmtLoader.ids()` / manifest pin vs the live `index.html` |
-| `node tools/check-pages.mjs` | a bare `git clone` served from a sub-path loads both games |
+| `node tools/harness/upstream-export.mjs <id> --upstream <clone>` | a save exported from the upstream page imports equal |
+| `node tools/harness/gates.mjs` | gates G1–G4 for every game, rows appended to `results/SUMMARY.md` |
+| `node tools/check-pages.mjs` | gate G5: a bare `git clone` served from a sub-path loads both games |
 
 Results are recorded in `tools/harness/results/SUMMARY.md`.
 
 ## Adding a game
 
-See `docs/add-a-game.md`: `git subtree add --squash` under `games/<id>/`, emit the manifest with the
+See `docs/add-a-game.md` (and `docs/manifest.md`, `docs/contract.md`): `git subtree add --squash` under `games/<id>/`, emit the manifest with the
 [tmt-fork-census](https://github.com/PeerInfinity/tmt-fork-census) `scripts/manifest.mjs`, vendor its CDN libraries,
 run the gates.
 

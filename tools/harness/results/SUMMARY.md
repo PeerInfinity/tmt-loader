@@ -41,3 +41,23 @@ the 16-hex sha256 of `tmtLoader.stateJSON()`. Commit = the loader HEAD the run m
 | G3 parity control (page +1 point, must diverge) | something | idle | 200 | 10 | 0.05 | `215f3c3fdb5d2c05` | GREEN | diverged at key "points" |
 | G4 goldens | something | — | 0 | 0 | — | — | GREEN | 329 ids, 21 layers; ms 68 / upg 175 / buy 23 / ch 11 / ach 52 (census equal=true) |
 | G4 check-manifest | something | — | 0 | 0 | — | — | GREEN | 17 scripts, 17 modFiles, vendor sha256 ok, subtree split 30a311b, games/something pristine |
+
+## 2026-09-15 — G5 bare clone — commit `7e6dd26` — GREEN
+
+`node tools/check-pages.mjs`: `git clone --depth 1 file://…` (head `7e6dd26`) served under `http://127.0.0.1:<port>/tmt-loader/`.
+
+| gate | game | ticks | gameSeconds | diff | result | notes |
+|---|---|---|---|---|---|---|
+| G5 G1 @ subpath | ptr | 3 | 0.15 | 0.05 | GREEN | ready 698 ms; 8 `#app .treeNode`; 83 requests, 0 blocked, 0 failed, 0 page errors; key `tmt-loader:ptr:ptr` |
+| G5 G1 @ subpath | something | 3 | 0.15 | 0.05 | GREEN | ready 1258 ms; 10 `#app .treeNode`; 83 requests, 0 blocked, 0 failed, 0 page errors; 2 keys under `tmt-loader:something:` |
+| G5 picker | both | — | — | — | GREEN | lists `ptr`, `something` (name, version, repo @ short SHA, TMT version, license); links stay under `/tmt-loader/` |
+| G5 clone/repo unmodified | — | — | — | — | GREEN | `git status --porcelain --ignored` empty in the clone; repo `## main...origin/main` |
+
+## 2026-09-15 — A1 input: first stall under the census policy leg (not a gate)
+
+`node tools/harness/run.mjs <id> --leg policy --ticks 7000 --diff 1 --until "<no new unlock/upgrade/milestone/achievement/challenge/buyable for 3600 game-s>"` (coarse diff 1 s; predicate in the L1 as-built record).
+
+| game | stopped at tick | gameSeconds | diff | hash | last progress | state at the stall |
+|---|---|---|---|---|---|---|
+| ptr | 3737 | 3737 | 1 | `a173a49f8f7b0a35` | tick 137 | `p` upgrades 11/12/13, achievements 11–14, 2485 p points; the policy resets row 0 only, so `b`/`g` (row 1, static) never start — a hard wall for this policy |
+| something | 3603 | 3603 | 1 | `7e650585d14da513` | tick 3 | `unlock:upg:11` bought, `fundamental` (row 1) unlocked, 6690 unlock points vs `unlock:upg:12` cost 1e5 — a RATE stall inside the window, not shown to be a hard wall |
