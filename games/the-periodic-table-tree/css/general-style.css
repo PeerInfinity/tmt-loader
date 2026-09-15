@@ -1,0 +1,211 @@
+/* Global things */
+body {
+	color: var(--color);
+	overflow: hidden;
+	--background: #0f0f0f;
+	--color: #dfdfdf;
+	--points: #ffffff;
+	background: var(--background)
+}
+
+/* General text */
+h1, h2, h3, b, input {
+	display: inline;
+	font-family: "Lucida Console", "Courier New", monospace
+}
+
+/* These are styles for different states of components. You can make layer-specific versions with .c.locked, for example */
+.locked {
+	background-color: #bf8f8f;
+	cursor: not-allowed;
+}
+
+/* Can meens can be clicked/bought/etc */
+.can {
+	cursor: pointer;
+}
+
+.can:hover {
+	transform: scale(1.15, 1.15);
+	box-shadow: 0 0 20px var(--points)
+}
+
+.bought {
+	background-color: #77bf5f;
+	cursor: default;
+}
+
+#points {
+	color: var(--points);
+	text-shadow: 0 0 10px var(--points);
+}
+
+.glow {
+    font-size: 20px;
+    color: rgb(132, 244, 156);
+    text-align: center;
+	font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+    animation: glow 1s ease-in-out infinite alternate;
+  }
+  
+@-webkit-keyframes glow {
+	from {
+	  text-shadow: 0 0 10px #fff, 0 0 20px #fff, 0 0 30px #80B425, 0 0 40px #80B425, 0 0 50px #80B425, 0 0 60px #80B425, 0 0 70px #80B425;
+	}
+	
+	to {
+	  text-shadow: 0 0 20px #fff, 0 0 30px #9de02a, 0 0 40px #9de02a, 0 0 50px #9de02a, 0 0 60px #9de02a, 0 0 70px #9de02a, 0 0 80px #9de02a;
+	}
+  }
+
+.glow2 {
+    font-size: 20px;
+    color: #fff;
+    text-align: center;
+    animation: glow2 6s ease-in-out infinite alternate;
+  }
+  
+@-webkit-keyframes glow2 {
+	from {
+		text-shadow: 0 0 10px #fff, 0 0 20px #fff, 0 0 30px #70726a00, 0 0 40px #70726a00, 0 0 50px #70726a00, 0 0 60px #70726a00, 0 0 70px #70726a00;
+	  }
+	  
+	  to {
+		text-shadow: 0 0 40px #fff, 0 0 50px #d2d4cd, 0 0 60px #d2d4cd, 0 0 70px #d2d4cd, 0 0 80px #d2d4cd, 0 0 90px #d2d4cd, 0 0 100px #d2d4cd;
+	  }
+	}
+
+.glow3 {
+	font-size: 20px;
+	color: rgb(53, 238, 139);
+	font-family: 'Franklin Gothic Medium', 'Arial Narrow', Arial, sans-serif;
+	text-align: center;
+	animation: glow3 1s ease infinite alternate;
+}
+	  
+@-webkit-keyframes glow3 {
+	from {
+		text-shadow: 0 0 10px #fff, 0 0 20px #fff, 0 0 30px #2f1a91, 0 0 40px #2f1a91, 0 0 50px #2f1a91, 0 0 60px #2f1a91, 0 0 70px #2f1a91;
+	  }
+	  
+	  to {
+		text-shadow: 0 0 20px #fff, 0 0 10px #2ab2e0, 0 0 10px #2ab2e0, 0 0 10px #2ab2e0, 0 0 10px #2ab2e0, 0 0 10px #2ab2e0, 0 0 80px #2ab2e0;
+	  }
+	}
+
+	.glow4 {
+		font-size: 20px;
+		color:#0f0f0f;
+		text-align: center;
+		font-family: 'Trebuchet MS', 'Lucida Sans Unicode', 'Lucida Grande', 'Lucida Sans', Arial, sans-serif;
+		animation: glow4 3s ease-in-out infinite alternate;
+	}
+
+	@-webkit-keyframes glow4 {
+		from {
+			text-shadow: 0 0 20px #0f0f0f, 0 0 10px #0f0f0f, 0 0 10px #0f0f0f, 0 0 10px #0f0f0f, 0 0 10px #0f0f0f, 0 0 10px #0f0f0f, 0 0 80px #0f0f0f;
+		  }
+		to {
+			text-shadow: 0 0 10px #fff, 0 0 20px #fff, 0 0 30px #fff, 0 0 40px #fff, 0 0 50px #fff, 0 0 60px #fff, 0 0 70px #fff;
+		  }
+		  
+		
+		}
+
+	.glow5 {
+		font-size: 20px;
+		color: rgb(43, 8, 160);
+		text-align: center;
+		animation: glow5 3s linear infinite alternate-reverse;
+	}
+		  
+	@-webkit-keyframes glow5 {
+		from {
+			text-shadow: 0 0 10px #fff, 0 0 20px #fff, 0 0 30px #00ffcc, 0 0 40px #00ffcc, 0 0 50px #00ffcc, 0 0 60px #00ffcc, 0 0 70px #00ffcc;
+		  }
+		  
+		  to {
+			text-shadow: 0 0 20px #fff, 0 0 10px #2ab2e0, 0 0 10px #2ab2e0, 0 0 10px #2ab2e0, 0 0 10px #2ab2e0, 0 0 10px #2ab2e0, 0 0 80px #2ab2e0;
+		  }
+		}
+
+		.glow6 {
+			font-size: 20px;
+			color: rgb(40, 127, 220);
+			text-align: center;
+			font-family: 'Gill Sans', 'Gill Sans MT', Calibri, 'Trebuchet MS', sans-serif;
+			animation: glow6 5s ease-out infinite normal;
+		}
+			  
+		@-webkit-keyframes glow6 {
+			from {
+				text-shadow: 0 0 10px #fff, 0 0 20px #fff, 0 0 30px #e5fffa, 0 0 40px #e5fffa, 0 0 50px #e5fffa, 0 0 60px #e5fffa, 0 0 70px #e5fffa;
+			  }
+			  
+			  to {
+				text-shadow: 0 0 20px #fff, 0 0 10px #dc3131, 0 0 10px #dc3131, 0 0 10px #dc3131, 0 0 10px #dc3131, 0 0 10px #dc3131, 0 0 80px #dc3131;
+			  }
+			}
+			
+			.Rainbow{
+				background-color: rgb(255, 0, 0);
+				animation: Rainbow 5s ease infinite normal;
+			}
+				  
+			@-webkit-keyframes Rainbow {
+				0% {
+					background-color: rgb(255, 0, 0);
+				  }
+				  
+				20% {
+					background-color: rgb(238, 255, 0)
+				  }
+				40% {
+					background-color: rgb(0, 255, 0)
+				  }
+				60% {
+					background-color: rgb(0, 145, 255)
+				  }
+				80% {
+					background-color: rgb(242, 0, 255)
+				  }
+				100% {
+					background-color: rgb(255, 0, 0)
+				  }
+				}
+
+				.Rainbow2{
+					font-size: 20px;
+					text-align: center;
+					color: rgb(255, 0, 0);
+					font-family:Verdana, Geneva, Tahoma, sans-serif;
+					animation: Rainbow2 2s ease infinite normal;
+				}
+					  
+				@-webkit-keyframes Rainbow2 {
+					0% {
+						color: rgb(255, 0, 0);
+						text-shadow: 0 0 20px rgb(255, 0, 0);
+					  }
+					  
+					20% {
+						color: rgb(238, 255, 0);
+						text-shadow: 0 0 20px rgb(238, 255, 0);
+					  }
+					40% {
+						color: rgb(0, 255, 0);
+						text-shadow: 0 0 20px rgb(0, 255, 0);
+					  }
+					60% {
+						color: rgb(0, 145, 255);
+						text-shadow: 0 0 20px rgb(0, 145, 255);
+					  }
+					80% {
+						color: rgb(242, 0, 255);
+						text-shadow: 0 0 20px rgb(242, 0, 255);
+					  }
+					100% {
+						color: rgb(255, 0, 0);
+						text-shadow: 0 0 20px rgb(255, 0, 0);
+					  }
+					}

@@ -1,0 +1,20 @@
+.wrapper {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 0px;
+    grid-auto-rows: minmax(10px, auto);
+  }
+  .wrapper1 {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    gap: 1px;
+    grid-auto-rows: minmax(10px, auto);
+  }
+  
+  .div-overlay1 {background-color:#006400;}
+
+  .div-overlay2 {background-color:#4B4E53;}
+
+  .div-overlay3 {background-color:#00008b;}
+ 
+  .div-overlay4 {background-color:#BA8C63;}
