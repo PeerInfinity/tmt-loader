@@ -624,3 +624,22 @@ Reading this section: the subtree commits are in; manifests, index and goldens a
 | L2-3 large: #84 idle hash = census | the-rainbow-void-tree | idle | 200 | 10 | 0.05 | `a54bc54b5c495ca1` | GREEN | census a54bc54b5c495ca1 |
 | L2-3 large: #84 goldens counts = census | the-rainbow-void-tree | — | 0 | 0 | — | — | GREEN | 147 ids, 12 layers; ms 28 / upg 79 / buy 0 / ch 0 / ach 40 = census |
 | L2-3 large: #84 G1 load (plain page) | the-rainbow-void-tree | — | 3 | 0.15 | 0.05 | — | GREEN | ready 1055 ms; 6 `#app .treeNode`; 74 requests, 0 non-localhost, 0 failed, 0 page errors; au nodes 0; keys `tmt-loader:the-rainbow-void-tree:The-Rainbow-Void-Tree-nobody`, `tmt-loader:the-rainbow-void-tree:The-Rainbow-Void-Tree-nobody_options` |
+
+## 2026-09-15T06:36:06Z — L2-3 (`node tools/check-pages.mjs --games ptr,the-omega-tree,the-dressy-tree` + the add-game batches) — commit `747d812` — 12/12 green
+
+Reading this section: per-game gate rows are in the add-game sections above (L2-3 batch 1–4, large #79, large #84); G5 ran at 747d812 from a depth-1 clone served under /tmt-loader/.
+
+| gate | game | leg | ticks | gameSeconds | diff | hash | result | notes |
+|---|---|---|---|---|---|---|---|---|
+| L2-3 the 38 (rank ≤ 100, live_ok false) | 38 games | — | — | — | — | — | GREEN | added 38, skipped 0 (license verdict MIT for all 38); all four gates GREEN (or nondeterministic-recorded) for 35; RED: the-pro-tree (checkManifest, load); bobbit-s-tech-tree (load); the-periodic-table-tree (load) |
+| L2-3 manifests/index.json lists every added game | index | — | — | — | — | — | GREEN | 40 entries {id, name, repo} (ptr, something + 38) |
+| L2-3 G5 clone | bare clone | — | — | — | — | — | GREEN | {"head":"747d812243fb843ce571db8b6bb0e7c889e46b17"} |
+| L2-3 G5 G1 load ptr @ subpath | ptr | — | — | — | — | — | GREEN | {"readyMs":578,"layerNodes":8,"requests":95,"blocked":0,"failed":0,"pageErrors":0,"keys":["tmt-loader:ptr:ptr"]} |
+| L2-3 G5 G1 load the-omega-tree @ subpath | the-omega-tree | — | — | — | — | — | GREEN | {"readyMs":1223,"layerNodes":13,"requests":95,"blocked":0,"failed":0,"pageErrors":0,"keys":["tmt-loader:the-omega-tree:2_options","tmt-loader:the-omega-tree:2"]} |
+| L2-3 G5 G1 load the-dressy-tree @ subpath | the-dressy-tree | — | — | — | — | — | GREEN | {"readyMs":1086,"layerNodes":9,"requests":86,"blocked":0,"failed":0,"pageErrors":0,"keys":["tmt-loader:the-dressy-tree:dressyapper","tmt-loader:the-dressy-tree:dressyapper_options"]} |
+| L2-3 G5 picker entries name repo@sha, engine, license | bare clone | — | — | — | — | — | GREEN | {"count":40,"bad":[]} |
+| L2-3 G5 picker lists every game | bare clone | — | — | — | — | — | GREEN | {"blocked":0,"failed":[],"pageErrors":[]}; 40 listed |
+| L2-3 G5 picker links stay under the sub-path | bare clone | — | — | — | — | — | GREEN | {} |
+| L2-3 G5 clone unmodified | bare clone | — | — | — | — | — | GREEN | {"status":""} |
+| L2-3 G5 repo clean | bare clone | — | — | — | — | — | GREEN | {"status":"## main...origin/main [ahead 2]"} |
+| L2-3 repo size | git | — | — | — | — | — | GREEN | before (e917a5d): local size-pack 4.46 MiB + 1.16 MiB loose; bare single-branch clone of main 2.36 MiB. After (747d812): local size-pack 92.18 MiB + 5.00 MiB loose (includes the fetched <id>-upstream histories, never pushed); bare clone of main 81.45 MiB; games/ working tree 118 MB |
