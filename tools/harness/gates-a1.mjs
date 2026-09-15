@@ -151,8 +151,8 @@ async function part2Page(id) {
     check(!!target, `an unlocked feature to click (${target && target.title})`);
     if (target) {
       await page.locator('#app button.upg').filter({ hasText: target.title }).first().click();
-      // the page is paused (no game loop): one updateTemp() refreshes tmp, which both engines' tab text renders from
-      await page.evaluate(() => updateTemp());
+      // the page is paused: refresh tmp (2.2.1 tab text) and 2.7's updateTabFormats() — both run in the engines' interval, not in gameLoop
+      await page.evaluate(() => { updateTemp(); if (typeof updateTabFormats === 'function') updateTabFormats(); });
       await page.waitForTimeout(400);
       const st = await page.evaluate((k) => ({ on: player.au.features[layers.au.clickables[k].tmtFeature], disclosed: player.au.disclosed, text: document.querySelector('#app').innerText }), target.id);
       check(st.on === true, `click turned "${target.title}" on`);
