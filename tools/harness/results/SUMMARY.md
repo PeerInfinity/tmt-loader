@@ -602,3 +602,14 @@ Reading this section: the subtree commits are in; manifests, index and goldens a
 | L2-3 batch 4 idle hash = census | yet-another-challenge-tree-adventure | idle | 200 | 10 | 0.05 | `ea3de4ee424602cd` | GREEN | census ea3de4ee424602cd |
 | L2-3 batch 4 goldens counts = census | yet-another-challenge-tree-adventure | — | 0 | 0 | — | — | GREEN | 36 ids, 9 layers; ms 12 / upg 0 / buy 1 / ch 23 / ach 0 = census |
 | L2-3 batch 4 G1 load (plain page) | yet-another-challenge-tree-adventure | — | 3 | 0.15 | 0.05 | — | GREEN | ready 879 ms; 4 `#app .treeNode`; 68 requests, 0 non-localhost, 0 failed, 0 page errors; au nodes 0; keys `tmt-loader:yet-another-challenge-tree-adventure:chalmod_options`, `tmt-loader:yet-another-challenge-tree-adventure:chalmod` |
+
+## 2026-09-15T06:33:54Z — L2-3 large: #79 (`node tools/add-game.mjs qcy00hou12/The-Periodic-Table-Tree`) — commit `255b402b` (tree DIRTY) — 3/4 green
+
+Reading this section: the subtree commits are in; manifests, index and goldens are uncommitted at the time of the run. idle hash = the plain page's Node twin (`--no-automation`, no exclusion) vs manifest.headless.idleHash; goldens counts vs manifest.census; G1 = `page.mjs <id> --gate load` (no flag).
+
+| gate | game | leg | ticks | gameSeconds | diff | hash | result | notes |
+|---|---|---|---|---|---|---|---|---|
+| L2-3 large: #79 check-manifest | the-periodic-table-tree | — | 0 | 0 | — | — | GREEN | 17 scripts, 2 modFiles, subtree split 3348710, games/the-periodic-table-tree pristine |
+| L2-3 large: #79 idle hash = census | the-periodic-table-tree | idle | 200 | 10 | 0.05 | `a9f10a5c6e66cff5` | GREEN | NONDETERMINISTIC (census deterministic=false, table false, paths ["N.id","N.word","N.alt","N.image"]): census 3a769f842ebcdf87, run 1 a9f10a5c6e66cff5, run 2 6b54b12acab4a7c0 — recorded, not failed |
+| L2-3 large: #79 goldens counts = census | the-periodic-table-tree | — | 0 | 0 | — | — | GREEN | 182 ids, 18 layers; ms 38 / upg 53 / buy 21 / ch 5 / ach 65 = census |
+| L2-3 large: #79 G1 load (plain page) | the-periodic-table-tree | — | 3 | 0.15 | 0.05 | — | **RED** | ready 1025 ms; 7 `#app .treeNode`; 80 requests, 10 non-localhost, 0 failed, 0 page errors; au nodes 0; keys `tmt-loader:the-periodic-table-tree:118`, `tmt-loader:the-periodic-table-tree:118_options`; RED: ready true error null; 7 treeNodes; blocked 10 ["https://i.postimg.cc/R0kG9kd0/slazzer-edit-image-removebg-preview.png","https://i.postimg.cc/59DXKHnn/6ce621c1-37d7-4aa1-8068-18a856d6c523.jpg","https://i.postimg.cc/x1b6Q644/c8b42708505611e88f6702e6256ec5c3-1-removebg-preview.png","https://i.postimg.cc/brn1WwgV/Studio-Project-removebg-preview.png","https://i.postimg.cc/mk54KTdq/a5219bd91f868f264f55 |
