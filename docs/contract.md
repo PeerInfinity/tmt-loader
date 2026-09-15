@@ -17,10 +17,12 @@ It reads the engine's globals as **bare identifiers** inside its members, never 
 | Member | Meaning |
 |---|---|
 | `id`, `manifest` | the game id (`?mod=`) and its parsed `manifests/<id>.json` |
-| `ready`, `error`, `step` | `ready` turns true after `onload` (and the managed pause); any failure sets `error = {step, message}` and shows an overlay. Poll `ready \|\| error`, never a bare timeout. |
+| `ready`, `error`, `step` | `ready` turns true after `onload` (and the managed pause); any failure (a loader input that does not load, or a script's own top-level error — see `pageErrors`) sets `error = {step, message}` and shows an overlay. Poll `ready \|\| error`, never a bare timeout. |
 | `automation` | `?automation=1` (docs/automation.md); `false` = contract-only mode, the rows below marked *(automation)* do not exist |
 | `managed` | `?managed=1`: the loader calls `pause()` right after `onload`; the runner drives `tick()` |
-| `plan`, `loaded`, `modFiles` | the `interpret()` plan, the files executed in order, the modFiles paths |
+| `plan`, `loaded`, `modFiles` | the `interpret()` plan, the files executed in order (skipped files are not in it), the modFiles paths |
+| `skipped` | manifest-relative paths of game scripts (static or modFiles) that **failed to load and were skipped**, in order; one `console.warn` each. A browser skips a `<script src>` that 404s and keeps going, so the loader does too. The loader's own inputs — the manifest, `index.html`, `loader.js`'s source, a vendored file, `loader/tmt-auto.js`, `games-auto/<id>.js` — still fail the load. Gate G1 allows a skip only for a path in the manifest's `load.known.missingScripts` (docs/manifest.md) |
+| `pageErrors` | every uncaught error that reaches `window`, as `{when: 'before-ready' \| 'after-ready', message, filename}`, appended as they happen. **Attribution rule:** while a script is being inserted, only an error whose `ev.filename` equals that script's resolved `src` (an inline script: the document URL) is the script's own and fails the load (overlay, `error`). Errors from a game's timers, earlier scripts or Vue do not fail the load; they are recorded here. G1 allows `before-ready` entries only when `load.known.errorsBeforeReady` is declared, and `after-ready` entries never |
 | `pause()` / `resume()` | stop / restart every `setInterval` the timer recorder saw (game loop, autosave, canvas flag, component timers). Interval ids are logical and survive a pause, so a later `clearInterval(id)` still works. Timeouts and animation frames are counted, not paused. |
 | `timers` | `{paused, counts, list()}` |
 | `tick(diff, n = 1)` | `n` × (`updateTemp(); gameLoop(diff); fixNaNs?.()`) — the census/probe loop; returns `{ticks, gameSeconds}` |

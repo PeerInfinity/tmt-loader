@@ -23,7 +23,9 @@ function parseOptions(s) {
 }
 const abs = (p) => new URL(p, SELF).href;
 
-const T = (window.tmtLoader = { id: MOD, manifest: null, ready: false, error: null, managed: MANAGED, automation: AUTOMATION, options: OPTIONS, step: 'init', loaded: [] });
+const T = (window.tmtLoader = { id: MOD, manifest: null, ready: false, error: null, managed: MANAGED, automation: AUTOMATION, options: OPTIONS, step: 'init', loaded: [], skipped: [], pageErrors: [] });
+// every uncaught error that reaches window, before and after ready (the harness reads it; none of them fails a load)
+window.addEventListener('error', (ev) => { T.pageErrors.push({ when: T.ready ? 'after-ready' : 'before-ready', message: String(ev.message), filename: ev.filename || null }); });
 
 function overlay(title, detail) {
   const d = document.createElement('div');
@@ -39,23 +41,37 @@ async function fetchText(url, what) {
   return r.text();
 }
 
-function insertScript(attrs, file) {
+// A browser skips a <script src> that fails to load and keeps going; so does the loader for the game's own scripts
+// (`skippable`: static game scripts and modFiles). The loader's own inputs (vendored files, tmt-auto.js, the per-game
+// automation table) still fail the load. Only an error raised BY the inserted script (`ev.filename` = its resolved src;
+// an inline script: the document URL) is attributed to it; errors from a game's timers, earlier scripts or Vue reach
+// `window` and are recorded in tmtLoader.pageErrors, but do not fail the load.
+function insertScript(attrs, file, { skippable = false } = {}) {
   return new Promise((resolve, reject) => {
     const s = document.createElement('script');
     s.async = false; // the IDL property: insertion order is execution order
     let execError = null;
-    const onErr = (ev) => { if (!execError) execError = ev.error || new Error(ev.message); };
+    let own = null; // the URL the script's own errors carry in ev.filename
+    const onErr = (ev) => { if (!execError && own != null && ev.filename === own) execError = ev.error || new Error(ev.message); };
     window.addEventListener('error', onErr);
     const done = (err) => { window.removeEventListener('error', onErr); err ? reject(err) : resolve(); };
+    const fail = () => execError && Object.assign(new Error(`${file}: ${execError.message}`), { cause: execError });
     if (attrs.inline != null) {
+      own = location.href;
       s.text = attrs.inline;
       document.head.appendChild(s); // inline scripts execute synchronously on insertion
-      done(execError && Object.assign(new Error(`${file}: ${execError.message}`), { cause: execError }));
+      done(fail());
       return;
     }
-    s.addEventListener('load', () => done(execError && Object.assign(new Error(`${file}: ${execError.message}`), { cause: execError })));
-    s.addEventListener('error', () => done(new Error(`${file}: failed to load ${s.src}`)));
+    s.addEventListener('load', () => done(fail()));
+    s.addEventListener('error', () => {
+      if (!skippable) return done(new Error(`${file}: failed to load ${s.src}`));
+      T.skipped.push(file);
+      console.warn(`tmt-loader: skipped ${file} (failed to load ${s.src}), as a browser skips a failed <script src>`);
+      done();
+    });
     s.src = attrs.src;
+    own = s.src; // resolved against <base>
     document.head.appendChild(s);
   });
 }
@@ -107,14 +123,14 @@ async function boot(id) {
   for (const s of statics) {
     const file = s.vendor ? s.vendor.path : s.inline != null ? s.name : s.src;
     step(`script ${file}`);
-    await insertScript(s.vendor ? { src: abs(s.vendor.path) } : s.inline != null ? { inline: s.inline } : { src: s.src }, file);
-    T.loaded.push(file);
+    await insertScript(s.vendor ? { src: abs(s.vendor.path) } : s.inline != null ? { inline: s.inline } : { src: s.src }, file, { skippable: !s.vendor });
+    if (!T.skipped.includes(file)) T.loaded.push(file);
   }
   if (slot) {
     // `modInfo` may be a global `let` (not a window property): read it through the global lexical scope
     const files = modFilePaths(slot, new Function('return typeof modInfo !== "undefined" && modInfo.modFiles || []')());
     T.modFiles = files;
-    for (const f of files) { step(`modFile ${f}`); await insertScript({ src: f }, f); T.loaded.push(f); }
+    for (const f of files) { step(`modFile ${f}`); await insertScript({ src: f }, f, { skippable: true }); if (!T.skipped.includes(f)) T.loaded.push(f); }
   }
   step('script loader/tmt-auto.js');
   await insertScript({ src: abs('loader/tmt-auto.js') }, 'loader/tmt-auto.js');
