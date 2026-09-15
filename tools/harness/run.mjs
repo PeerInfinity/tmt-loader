@@ -38,6 +38,7 @@ export function runNode(id, o = {}) {
   if (o['auto-opt']) args.push('--auto-opt', String(o['auto-opt']));
   if (o['no-auto']) args.push('--no-auto');
   if (o.marks) args.push('--marks', path.resolve(String(o.marks)));
+  if (o['marks-continue']) args.push('--marks-continue');
   if (o.stall) args.push('--stall', String(o.stall));
   if (o['wall-ms']) args.push('--wall-ms', String(o['wall-ms']));
   if (o.until != null) args.push('--until', String(o.until));
@@ -57,13 +58,14 @@ export function runNode(id, o = {}) {
     storage = st;
   }
   if (storage) args.push('--storage', path.resolve(storage));
-  const res = bootChild(id, args);
+  // the child's own --wall-ms bounds the tick loop; the spawn timeout must outlast it (boot + result write)
+  const res = bootChild(id, args, { timeoutMs: Math.max(600e3, Number(o['wall-ms'] || 0) + 120e3) });
   if (steps.length) res.steps = steps;
   return res;
 }
 
 async function main() {
-  const a = parseArgs(process.argv.slice(2), ['save', 'no-auto']);
+  const a = parseArgs(process.argv.slice(2), ['save', 'no-auto', 'marks-continue']);
   const id = a._[0];
   if (!id) { console.error('usage: node run.mjs <id> [--ticks N] [--diff d] [--until "<js>"] [--json out] …'); process.exit(2); }
   const res = runNode(id, a);

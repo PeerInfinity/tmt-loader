@@ -16,7 +16,7 @@ export const CENSUS_POLICY_SRC = `function censusPolicy() {
  * WALL_MS: also stop after this much wall-clock time (walled: true).
  * check() returns true when the run should stop (every mark met, the stall window elapsed, or the wall bound).
  */
-export const MONITOR_SRC = `(function(MARKS, STALL, WALL_MS){
+export const MONITOR_SRC = `(function(MARKS, STALL, WALL_MS, CONTINUE){
   const t0 = Date.now(); let walled = false;
   const sig = () => { const o = []; for (const l in layers) { const P = player[l]; if (!P || layers[l].tmtLoaderLayer) continue;
     o.push(l, P.unlocked ? 1 : 0, (P.upgrades || []).length, (P.milestones || []).length, (P.achievements || []).length,
@@ -27,7 +27,7 @@ export const MONITOR_SRC = `(function(MARKS, STALL, WALL_MS){
       for (const [name, fn] of MARKS) if (!hits[name]) { let v = false; try { v = !!fn(); } catch (e) {} if (v) hits[name] = { ticks: tmtLoader.ticks, gameSeconds: tmtLoader.gameSeconds, json: tmtLoader.stateJSON() }; }
       if (STALL) { const s = sig(); if (s !== last) { last = s; lastTick = tmtLoader.ticks; lastGs = tmtLoader.gameSeconds; } else if (tmtLoader.gameSeconds - lastGs >= STALL) { stalled = true; return true; } }
       if (WALL_MS && Date.now() - t0 >= WALL_MS) { walled = true; return true; }
-      return MARKS.length > 0 && MARKS.every(([n]) => hits[n]);
+      return !CONTINUE && MARKS.length > 0 && MARKS.every(([n]) => hits[n]);
     },
     result() { return { hits, stalled, walled, lastProgress: { ticks: lastTick, gameSeconds: lastGs } }; },
   };

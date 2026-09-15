@@ -5,7 +5,7 @@
 //                      [--storage in.json] [--import player.json] [--save] [--save-storage out.json]
 //                      [--state-out f] [--player-out f] [--ids-out f] [--census]
 //                      [--profile off|all|saved] [--exclude k1,k2] [--auto-opt "k=v;k2=v2"] [--no-auto]
-//                      [--marks marks.json ([[name, "<js>"], …])] [--stall <game-seconds>] [--wall-ms <ms>]
+//                      [--marks marks.json ([[name, "<js>"], …])] [--marks-continue] [--stall <game-seconds>] [--wall-ms <ms>]
 // Prints one line "BOOTRESULT {json}" on stdout. Scripts run via vm.runInThisContext (Node's own global — never
 // host intrinsics into a sandbox: TMT's `x.constructor === Object` test fails cross-realm). The plan comes from
 // loader/interpret.mjs + manifests/<id>.json, the same code path as the page; render-only files and vendored Vue are
@@ -28,7 +28,7 @@ const A = { _: [] };
 for (let i = 0; i < argv.length; i++) {
   const a = argv[i];
   if (!a.startsWith('--')) A._.push(a);
-  else if (['save', 'census', 'no-auto'].includes(a.slice(2))) A[a.slice(2)] = true;
+  else if (['save', 'census', 'no-auto', 'marks-continue'].includes(a.slice(2))) A[a.slice(2)] = true;
   else A[a.slice(2)] = argv[++i];
 }
 const ID = A._[0];
@@ -216,7 +216,7 @@ try {
   const t1 = Date.now();
   const MARKS = A.marks ? JSON.parse(fs.readFileSync(A.marks, 'utf8')) : [];
   const monitored = MARKS.length || A.stall || A['wall-ms'];
-  if (monitored) run(`globalThis.__tmtMonitor = ${MONITOR_SRC}([${MARKS.map(([n, e]) => `[${JSON.stringify(n)}, function(){ return (${e}); }]`).join(',')}], ${Number(A.stall || 0)}, ${Number(A['wall-ms'] || 0)})`, 'monitor');
+  if (monitored) run(`globalThis.__tmtMonitor = ${MONITOR_SRC}([${MARKS.map(([n, e]) => `[${JSON.stringify(n)}, function(){ return (${e}); }]`).join(',')}], ${Number(A.stall || 0)}, ${Number(A['wall-ms'] || 0)}, ${A['marks-continue'] ? 'true' : 'false'})`, 'monitor');
   const untilSrc = monitored ? `function(){ ${A.until ? `if (${A.until}) return true;` : ''} return __tmtMonitor.check(); }` : A.until ? `function(){ return (${A.until}); }` : 'null';
   const r = run(`${DRIVE_SRC}(${ticks}, ${diff}, ${LEG === 'policy'}, ${untilSrc})`, 'ticks-' + LEG);
   if (monitored) {
