@@ -1,0 +1,40 @@
+royalPurple {
+    color: #6225d1;
+    text-shadow: 0 0 2px #6225d1
+}
+
+rainbow {
+    animation: colorChange 4s infinite;
+    text-shadow: 0 0 2px
+}
+
+@keyframes darkColor {
+    0% { color: #e70ce7; }
+    25% { color: #ee46ee; }
+    50% { color: #9b0fc9; }
+	75% { color:#ee46ee; }
+    90% { color:#bf4be2; }
+	100% { color: #e70ce7; }
+}
+
+@keyframes rainbowBG {
+    0% { background-color: red; }
+    8.33% { background-color: orange; }
+    16.67% { background-color: yellow; }
+	25% { background-color:#4BFF32; }
+    33.33% { background-color: blue; }
+	41.67% { background-color: blueviolet; }
+	50% { background-color: #FF50C8; }
+	58.33% { background-color: blueviolet; }
+	66.67% { background-color: blue; }
+	75% { background-color:#4BFF32; }
+	83.33% { background-color: yellow; }
+	91.67% { background-color: orange; }
+	100% { background-color: red; }
+}
+
+pinkDark {
+    color: #e70ce7;
+    animation: darkColor 3s infinite;
+    text-shadow: 0 0 7px
+}

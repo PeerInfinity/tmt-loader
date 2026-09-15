@@ -1,0 +1,82 @@
+/* Global things */
+body {
+	color: var(--color);
+	overflow: hidden;
+	--background: #0f0f0f;
+	--color: #dfdfdf;
+	--points: #ffffff;
+	background: var(--background)
+}
+
+@keyframes colorChange {
+    0% { color: red; }
+    8.33% { color: orange; }
+    16.67% { color: yellow; }
+	25% { color:#4BFF32; }
+    33.33% { color: blue; }
+	41.67% { color: blueviolet; }
+	50% { color: #FF50C8; }
+	58.33% { color: blueviolet; }
+	66.67% { color: blue; }
+	75% { color:#4BFF32; }
+	83.33% { color: yellow; }
+	91.67% { color: orange; }
+	100% { color: red; }
+}
+
+@keyframes boughtColor {
+    0% {background-color: #77bf5f; }
+	25% {background-color: #8bd772; }
+	50% {background-color: #77bf5f; }
+	75% {background-color: #b7eca6; }
+	100% {background-color: #77bf5f; }
+}
+
+@keyframes upgradeBuy {
+	50% {
+		filter: brightness(127%);
+	}
+}
+
+/* General text */
+h1, h2, h3, b, input {
+	display: inline;
+	font-family: "Lucida Console", "Courier New", monospace
+}
+
+/* These are styles for different states of components. You can make layer-specific versions with .c.locked, for example */
+.locked {
+	background-color: #cf8989;
+	cursor: not-allowed;
+}
+
+/* Can meens can be clicked/bought/etc */
+.can {
+	cursor: pointer;
+}
+
+.can:hover {
+	transform: scale(1.1, 1.1);
+	box-shadow: 0 0 20px var(--points)
+}
+
+.bought {
+	background-color: #6bcf4d;
+	cursor: default;
+}
+
+.a.locked {
+	background-color: #a7acd2;
+	cursor: not-allowed;
+}
+
+.a.bought {
+	background-color: #F7B100;
+	cursor: default;
+}
+
+#points {
+	color: var(--points);
+	animation: colorChange 4s infinite;
+	text-shadow: 0 0 10px;
+}
