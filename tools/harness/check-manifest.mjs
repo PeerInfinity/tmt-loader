@@ -70,6 +70,11 @@ export function checkManifest(id, { boot = true } = {}) {
   const dirty = execFileSync('git', ['-C', REPO, 'status', '--porcelain', '--', `games/${id}`], { encoding: 'utf8' }).trim();
   if (dirty) problems.push({ field: 'games pristine (working tree)', dirty });
   if ((m.patches || []).length) problems.push({ field: 'patches', note: 'L1 expects none', live: m.patches });
+  // auto (A1): optional per-game automation table, a classic script OUTSIDE the subtree prefix (games-auto/<id>.js)
+  if (m.auto !== undefined) {
+    if (typeof m.auto !== 'string' || !/^games-auto\/[\w.-]+\.js$/.test(m.auto)) problems.push({ field: 'auto', error: 'must be "games-auto/<file>.js"', live: m.auto });
+    else if (!fs.existsSync(path.join(REPO, m.auto))) problems.push({ field: 'auto', error: 'file missing', live: m.auto });
+  }
 
   return { id, ok: problems.length === 0, scripts: live.length, modFiles: modFiles && modFiles.length, external: liveExternal, vendor, subtreeSplit: split, tree: treeNow, problems };
 }

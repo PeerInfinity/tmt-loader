@@ -26,6 +26,7 @@ on drift — after a `git subtree pull`, re-emit the manifest.
 | `license` | `githubSpdx` and the verdict of the license files' TEXT |
 | `census` | the census row's content counts; gate G4 compares `ids()` counts to them |
 | `patches` | local commits under `games/<id>/` (L1: none) |
+| `auto` | optional (A1): the per-game automation table, `games-auto/<id>.js` — a classic script loaded right after `loader/tmt-auto.js` by the page and the Node boot (docs/automation.md). **Hand-written: the census emitter does not write it**; keep it when re-emitting a manifest. `check-manifest` checks the path shape and that the file exists |
 | `generated` | the emitter and its commit |
 
 ## Emitting
