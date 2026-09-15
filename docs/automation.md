@@ -95,6 +95,10 @@ tmtLoader.registerAutoFeature({
   `policy:<featureId>=<policy>` overrides a default, e.g. `policy:reset:p=always`), `--no-auto` (skip the table).
 - `--marks marks.json` (`[[name, "<js predicate>"], …]`): the first tick each predicate holds, with gameSeconds and the
   state hash at that tick; the run stops when all are met.
+- `--marks-continue`: record the marks without stopping when all are met (a stall run with marks).
+- `--stall-seen`: the stall detector counts only something new EVER held in the run (an unlock, upgrade, milestone,
+  achievement or challenge completion not held before, a buyable above its run maximum); without it, re-buying what a
+  reset removed counts as progress, so a reset-and-rebuy loop never stalls.
 - `--stall <game-s>` / `--wall-ms <ms>`: stop after that many game-seconds without a new unlock / upgrade / milestone /
   achievement / challenge completion / buyable, or that much wall time; the result has `stall.lastProgress` and a
   per-layer `detail` (points, upgrades, next upgrades with costs, next milestones, `canReset`, `nextAt`).

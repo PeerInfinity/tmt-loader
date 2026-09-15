@@ -16,16 +16,27 @@ export const CENSUS_POLICY_SRC = `function censusPolicy() {
  * WALL_MS: also stop after this much wall-clock time (walled: true).
  * check() returns true when the run should stop (every mark met, the stall window elapsed, or the wall bound).
  */
-export const MONITOR_SRC = `(function(MARKS, STALL, WALL_MS, CONTINUE){
+export const MONITOR_SRC = `(function(MARKS, STALL, WALL_MS, CONTINUE, SEEN){
   const t0 = Date.now(); let walled = false;
+  // SEEN (--stall-seen): progress = something NEW EVER — an unlock, upgrade, milestone, achievement or challenge id not
+  // held before in this run, or a buyable above its run maximum. Re-buying what a reset took away is not progress
+  // (the L1 signature counts it, so a reset-and-rebuy loop never stalls).
+  const seen = new Set(), bmax = {};
+  const grow = () => { let g = false; const add = (k) => { if (!seen.has(k)) { seen.add(k); g = true; } };
+    for (const l in layers) { const P = player[l]; if (!P || layers[l].tmtLoaderLayer) continue;
+      if (P.unlocked) add(l + ':u');
+      for (const [kind, arr] of [['upg', P.upgrades], ['ms', P.milestones], ['ach', P.achievements]]) for (const id of (arr || [])) add(l + ':' + kind + ':' + id);
+      for (const id in (P.challenges || {})) if (Number(P.challenges[id]) > 0) add(l + ':ch:' + id + ':' + P.challenges[id]);
+      for (const id in (P.buyables || {})) { const k = l + ':' + id, v = Number(P.buyables[id]); if (v > (bmax[k] ?? 0)) { bmax[k] = v; g = true; } } }
+    return g; };
   const sig = () => { const o = []; for (const l in layers) { const P = player[l]; if (!P || layers[l].tmtLoaderLayer) continue;
     o.push(l, P.unlocked ? 1 : 0, (P.upgrades || []).length, (P.milestones || []).length, (P.achievements || []).length,
       JSON.stringify(P.challenges || {}), JSON.stringify(P.buyables || {})); } return o.join('|'); };
-  const hits = {}; let last = sig(), lastTick = tmtLoader.ticks, lastGs = tmtLoader.gameSeconds, stalled = false;
+  const hits = {}; if (SEEN) grow(); let last = sig(), lastTick = tmtLoader.ticks, lastGs = tmtLoader.gameSeconds, stalled = false;
   return {
     check() {
       for (const [name, fn] of MARKS) if (!hits[name]) { let v = false; try { v = !!fn(); } catch (e) {} if (v) hits[name] = { ticks: tmtLoader.ticks, gameSeconds: tmtLoader.gameSeconds, json: tmtLoader.stateJSON() }; }
-      if (STALL) { const s = sig(); if (s !== last) { last = s; lastTick = tmtLoader.ticks; lastGs = tmtLoader.gameSeconds; } else if (tmtLoader.gameSeconds - lastGs >= STALL) { stalled = true; return true; } }
+      if (STALL) { const moved = SEEN ? grow() : (() => { const s = sig(); const m = s !== last; last = s; return m; })(); if (moved) { lastTick = tmtLoader.ticks; lastGs = tmtLoader.gameSeconds; } else if (tmtLoader.gameSeconds - lastGs >= STALL) { stalled = true; return true; } }
       if (WALL_MS && Date.now() - t0 >= WALL_MS) { walled = true; return true; }
       return !CONTINUE && MARKS.length > 0 && MARKS.every(([n]) => hits[n]);
     },

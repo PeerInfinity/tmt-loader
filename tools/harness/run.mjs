@@ -40,6 +40,7 @@ export function runNode(id, o = {}) {
   if (o.marks) args.push('--marks', path.resolve(String(o.marks)));
   if (o['marks-continue']) args.push('--marks-continue');
   if (o.stall) args.push('--stall', String(o.stall));
+  if (o['stall-seen']) args.push('--stall-seen');
   if (o['wall-ms']) args.push('--wall-ms', String(o['wall-ms']));
   if (o.until != null) args.push('--until', String(o.until));
   // the child runs with cwd = os.tmpdir(): every file argument is made absolute here
@@ -65,7 +66,7 @@ export function runNode(id, o = {}) {
 }
 
 async function main() {
-  const a = parseArgs(process.argv.slice(2), ['save', 'no-auto', 'marks-continue']);
+  const a = parseArgs(process.argv.slice(2), ['save', 'no-auto', 'marks-continue', 'stall-seen']);
   const id = a._[0];
   if (!id) { console.error('usage: node run.mjs <id> [--ticks N] [--diff d] [--until "<js>"] [--json out] …'); process.exit(2); }
   const res = runNode(id, a);

@@ -1,5 +1,5 @@
 // The A2 gates (row 2 in both games). Appends one section to results/SUMMARY.md.
-//   node gates-a2.mjs --part 1|2|3 [--no-summary]
+//   node gates-a2.mjs --part 1|1b|2|3 [--no-summary]
 // Part 1 (A2-1, something): the off anchors (au excluded) and goldens unchanged; the rung under profile all — primitive
 // reset ≥ 1, primitive ms 1, primitive ms 2 — at diff 0.05 twice equal and at diff 1; the reset:primitive interval sweep
 // with `always` / `gain>=1` as control rows (diff 1); parity node ≡ page under profile all at (ii)'s tick; the next stall
@@ -36,6 +36,8 @@ const date = new Date().toISOString().slice(0, 19) + 'Z';
 const rows = [];
 const row = (r) => { rows.push(r); console.log(`${r.ok ? 'GREEN' : 'RED  '} ${r.gate} ${r.id} ticks=${r.ticks ?? '-'} gs=${r.gameSeconds ?? '-'} diff=${r.diff ?? '-'} hash=${r.hash ?? '-'} ${String(r.notes || '').slice(0, 300)}`); };
 const HEADERS = {
+  '1b': 'Reading this section: the detector counts only something new ever held (see policy.mjs MONITOR_SRC, SEEN); marks are recorded without stopping the run.',
+  2: 'Reading this section: the PTR table is A1\'s (no row-2 feature). A mark is the first tick its predicate held; the run does not stop on marks (--marks-continue), only on the stall window or the wall.',
   1: 'Reading this section: GREEN = the run completed and (where a second run exists) was equal; a predicate\'s own verdict is in its notes (MET / NOT MET). The sweep rows are ordered by policy; the default is the fastest to (ii), ties broken by (iii).',
 };
 
@@ -143,11 +145,48 @@ async function part1() {
   stallRow('A2-1 next stall (diff 1, 3600 game-s window, 2 min wall)', id, await stall, 1, 'a2-1-something-stall.json');
 }
 
+// Part 1b: the same next-stall question with the monotone detector (--stall-seen): at 71da72e the L1 signature never
+// stalled Something Tree (a primitive reset every 90 s wipes and re-buys fundamental's upgrades — "progress" to it).
+async function part1b() {
+  const id = 'something';
+  const r = await job(id, { profile: 'all', diff: 1, ticks: 200000, stall: 3600, 'stall-seen': true, 'wall-ms': 120000, marks: marksFile(MARKS[id]), 'marks-continue': true });
+  stallRow('A2-1 next stall, monotone detector (--stall-seen; diff 1, 3600 game-s window, 2 min wall)', id, r, 1, 'a2-1b-something-stall.json');
+}
+
+// ---- Part 2 ----------------------------------------------------------------------------------------------------------
+// PTR under the A1 table (no row-2 feature): where the row-1 → row-2 wall is. The detector at a 10-min wall, twice, marks
+// recorded without stopping the run.
+MARKS.ptrWall = [
+  ['points ≥ 1e120 (t/e/s requirement)', "player.points.gte('1e120')"],
+  ['t, e and s canReset', 'tmp.t.canReset === true && tmp.e.canReset === true && tmp.s.canReset === true'],
+  ['b ms 1 ("15 Boosters")', "hasMilestone('b', 1)"],
+  ['g ms 1 ("10 Generators")', "hasMilestone('g', 1)"],
+  ['g ms 2 ("15 Generators")', "hasMilestone('g', 2)"],
+  ['p upg 31–33 owned', 'hasUpgrade("p", 31) && hasUpgrade("p", 32) && hasUpgrade("p", 33)'],
+  ['points ≥ 1e300 (a second row-2 unlock\'s requirement)', "player.points.gte('1e300')"],
+];
+async function part2() {
+  const id = 'ptr';
+  const M = MARKS.ptrWall, mf = marksFile(M);
+  const o = { profile: 'all', diff: 1, ticks: 2000000, stall: 3600, 'wall-ms': 600000, marks: mf, 'marks-continue': true };
+  const w1 = job(id, o), w2 = job(id, o);
+  await offAnchors('A2-2', id);
+  const [r1, r2] = await Promise.all([w1, w2]);
+  stallRow('A2-2 row-2 wall: detector (diff 1, 3600 game-s window, 10 min wall), A1 table', id, r1, 1, 'a2-2-ptr-stall.json');
+  const same = r1.hash === r2.hash && r1.ticks === r2.ticks && JSON.stringify(r1.marks) === JSON.stringify(r2.marks) && JSON.stringify(r1.stall?.lastProgress) === JSON.stringify(r2.stall?.lastProgress);
+  row({ gate: 'A2-2 detector second run equal', id, leg: 'profile all', ok: !!r1.ok && !!r2.ok && same && r1.stall?.stalled === true && r1.stall?.walled === false, ticks: r2.ticks, gameSeconds: r2.gameSeconds, diff: 1, hash: r2.hash,
+    notes: `stalled ${r2.stall?.stalled} (not wall-bounded: ${!r2.stall?.walled}), last progress tick ${r2.stall?.lastProgress?.ticks}; ticks/hash/marks/lastProgress equal ${same}; wall ${r1.ticks_ms} / ${r2.ticks_ms} ms` });
+  const t = r1.marks?.[M[0][0]];
+  if (t) await parityRow('A2-2 parity node≡page, profile all, at "points ≥ 1e120"', id, t.ticks, 1);
+}
+
 const browser = await chromium.launch();
 const server = await startServer(REPO);
 const base = server.url;
 try {
   if (PART === '1') await part1();
+  else if (PART === '1b') await part1b();
+  else if (PART === '2') await part2();
   else throw new Error(`no part ${PART}`);
 } finally {
   await browser.close();
