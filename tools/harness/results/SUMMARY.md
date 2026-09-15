@@ -1254,3 +1254,171 @@ Reading this section: per mark: game-seconds and the % against diff 1 run 1 (✗
 |---|---|---|---|---|---|---|---|---|
 | H1-3 ladder-diff run (×1 → M09) | ptr | profile all, kinds=reset,upgrades,buyables | — | — | per mark | — | GREEN | M01 ×1 1s vs ×1 1s · M02 ×1 1361s vs ×1 1361s · M03 ×1 2360s vs ×1 2360s · M04 ×1 2629s vs ×1 2629s · M05 ×1 2936s vs ×1 2936s · M06 ×1 3540s vs ×1 3540s · M07 ×1 3550s vs ×1 3550s · M08 ×1 6037s vs ×1 6037s · M09 ×1 8035s vs ×1 8035s; segments 1; ticks_ms total 163007 |
 | H1-3 ladder-diff run (×1 → S05) | something | profile all, kinds=reset,upgrades,buyables | — | — | per mark | — | GREEN | S01 ×1 6s vs ×1 6s · S02 ×1 308s vs ×1 308s · S03 ×1 309s vs ×1 309s · S04 ×1 399s vs ×1 399s · S05 ×1 579s vs ×1 579s; segments 1; ticks_ms total 4968 |
+
+## 2026-09-15T20:33:50Z — S1 part 1 (`node tools/harness/gates-s1.mjs --part 1`) — commit `b08274a0` — 52/52 green
+
+Reading this section: pinned rows compare TICKS and the game state without player.au (`hashGame`); the full hash includes player.au.clickables (one key per au button), which moves with the number of registered features. Each baseline row re-runs the commit that recorded the SUMMARY row (throwaway worktree, `hashGame` patch only) and must reproduce its tick and FULL hash.
+
+| gate | game | leg | ticks | gameSeconds | diff | hash | result | notes |
+|---|---|---|---|---|---|---|---|---|
+| S1-1 anchor (automation, exclude au, profile off) | ptr | idle | 200 | 10 | 0.05 | `d9c5ace6665833d0` | GREEN | L1 anchor d9c5ace6665833d0; features registered 77 |
+| S1-1 anchor (--no-automation, contract only) | ptr | idle | 200 | 10 | 0.05 | `d9c5ace6665833d0` | GREEN | L1 anchor d9c5ace6665833d0; automation false; features 0 |
+| S1-1 anchor (automation, exclude au, profile off) | ptr | idle | 1000 | 50 | 0.05 | `86067be644ce481c` | GREEN | L1 anchor 86067be644ce481c; features registered 77 |
+| S1-1 anchor (--no-automation, contract only) | ptr | idle | 1000 | 50 | 0.05 | `86067be644ce481c` | GREEN | L1 anchor 86067be644ce481c; automation false; features 0 |
+| S1-1 anchor (automation, exclude au, profile off) | ptr | policy | 1000 | 50 | 0.05 | `5ce24001caa4f31f` | GREEN | L1 anchor 5ce24001caa4f31f; features registered 77 |
+| S1-1 anchor (--no-automation, contract only) | ptr | policy | 1000 | 50 | 0.05 | `5ce24001caa4f31f` | GREEN | L1 anchor 5ce24001caa4f31f; automation false; features 0 |
+| S1-1 check-goldens unchanged | ptr | — | 0 | 0 | — | — | GREEN | 398 ids, 35 layers |
+| S1-1 check-manifest | ptr | — | 0 | 0 | — | — | GREEN | 13 scripts, 0 modFiles, games/ptr pristine, auto games-auto/ptr.js |
+| S1-1 anchor (automation, exclude au, profile off) | something | idle | 200 | 10 | 0.05 | `46bb8c5b1a96f03a` | GREEN | L1 anchor 46bb8c5b1a96f03a; features registered 38 |
+| S1-1 anchor (--no-automation, contract only) | something | idle | 200 | 10 | 0.05 | `46bb8c5b1a96f03a` | GREEN | L1 anchor 46bb8c5b1a96f03a; automation false; features 0 |
+| S1-1 anchor (automation, exclude au, profile off) | something | idle | 1000 | 50 | 0.05 | `5739997ed0e70447` | GREEN | L1 anchor 5739997ed0e70447; features registered 38 |
+| S1-1 anchor (--no-automation, contract only) | something | idle | 1000 | 50 | 0.05 | `5739997ed0e70447` | GREEN | L1 anchor 5739997ed0e70447; automation false; features 0 |
+| S1-1 anchor (automation, exclude au, profile off) | something | policy | 1000 | 50 | 0.05 | `52ffa8d3c5eaba03` | GREEN | L1 anchor 52ffa8d3c5eaba03; features registered 38 |
+| S1-1 anchor (--no-automation, contract only) | something | policy | 1000 | 50 | 0.05 | `52ffa8d3c5eaba03` | GREEN | L1 anchor 52ffa8d3c5eaba03; automation false; features 0 |
+| S1-1 check-goldens unchanged | something | — | 0 | 0 | — | — | GREEN | 329 ids, 21 layers |
+| S1-1 check-manifest | something | — | 0 | 0 | — | — | GREEN | 17 scripts, 17 modFiles, games/something pristine, auto games-auto/something.js |
+| S1-1 baseline A1-3 ptr (i) b and g unlocked @ 3bc12bf | ptr | profile all | 1361 | 1361 | 1 | `d76c70bf74ede9ba` | GREEN | SUMMARY 1361 ticks / d76c70bf74ede9ba; baseline 1361 ticks / 1361 s / d76c70bf74ede9ba (game 7b9f1114d17a0166) |
+| S1-1 pinned A1-3 ptr (i) b and g unlocked (kinds=reset,upgrades,buyables) | ptr | profile all | 1361 | 1361 | 1 | `ef20e24e4750c3e0` | GREEN | game state 7b9f1114d17a0166 vs baseline 7b9f1114d17a0166 — equal true; ticks 1361 vs SUMMARY 1361; features 54; actions {"reset:p":294,"upgrades:p":166,"reset:g":46,"upgrades:g":5,"reset:b":52,"upgrades:b":5} |
+| S1-1 baseline A1-3 ptr (ii) keep-upgrade milestones b0 + g0 @ 3bc12bf | ptr | profile all | 2360 | 2360 | 1 | `f8a1534d326a4840` | GREEN | SUMMARY 2360 ticks / f8a1534d326a4840; baseline 2360 ticks / 2360 s / f8a1534d326a4840 (game 25f914a09d1019b1) |
+| S1-1 pinned A1-3 ptr (ii) keep-upgrade milestones b0 + g0 (kinds=reset,upgrades,buyables) | ptr | profile all | 2360 | 2360 | 1 | `2173284c854d1465` | GREEN | game state 25f914a09d1019b1 vs baseline 25f914a09d1019b1 — equal true; ticks 2360 vs SUMMARY 2360; features 54; actions {"reset:p":294,"upgrades:p":166,"reset:g":46,"upgrades:g":5,"reset:b":52,"upgrades:b":5} |
+| S1-1 baseline A1-3 ptr (iii) b.best ≥ 15 and g.best ≥ 15 @ 3bc12bf | ptr | profile all | 2936 | 2936 | 1 | `dc00ee1692610100` | GREEN | SUMMARY 2936 ticks / dc00ee1692610100; baseline 2936 ticks / 2936 s / dc00ee1692610100 (game 3e5f28bd379c52e0) |
+| S1-1 pinned A1-3 ptr (iii) b.best ≥ 15 and g.best ≥ 15 (kinds=reset,upgrades,buyables) | ptr | profile all | 2936 | 2936 | 1 | `85fa0992924410a7` | GREEN | game state 3e5f28bd379c52e0 vs baseline 3e5f28bd379c52e0 — equal true; ticks 2936 vs SUMMARY 2936; features 54; actions {"reset:p":294,"upgrades:p":166,"reset:g":46,"upgrades:g":5,"reset:b":52,"upgrades:b":5} |
+| S1-1 baseline A2-3 ptr (i) one of t/e/s unlocked @ 17260e03 | ptr | profile all | 3550 | 3550 | 1 | `0513ad9b24806ecc` | GREEN | SUMMARY 3550 ticks / 0513ad9b24806ecc; baseline 3550 ticks / 3550 s / 0513ad9b24806ecc (game ff624de18438f176) |
+| S1-1 pinned A2-3 ptr (i) one of t/e/s unlocked (kinds=reset,upgrades,buyables) | ptr | profile all | 3550 | 3550 | 1 | `48533bdf076e98d2` | GREEN | game state ff624de18438f176 vs baseline ff624de18438f176 — equal true; ticks 3550 vs SUMMARY 3550; features 54; actions {"reset:p":804,"upgrades:p":475,"reset:g":450,"upgrades:g":90,"reset:b":547,"upgrades:b":120,"reset:s":16,"buyables:s":27,"upgrades:s":5,"reset:t":8,"upgrades:t":1,"reset:e":1,"buyables:e":1} |
+| S1-1 baseline A2-3 ptr (ii) t ms 3 or s ms 3 (b.auto / g.auto available) @ 17260e03 | ptr | profile all | 6037 | 6037 | 1 | `f226c34064109dcb` | GREEN | SUMMARY 6037 ticks / f226c34064109dcb; baseline 6037 ticks / 6037 s / f226c34064109dcb (game b6fc0204a69bc54a) |
+| S1-1 pinned A2-3 ptr (ii) t ms 3 or s ms 3 (b.auto / g.auto available) (kinds=reset,upgrades,buyables) | ptr | profile all | 6037 | 6037 | 1 | `7958e65c8b1dec44` | GREEN | game state b6fc0204a69bc54a vs baseline b6fc0204a69bc54a — equal true; ticks 6037 vs SUMMARY 6037; features 54; actions {"reset:p":804,"upgrades:p":475,"reset:g":450,"upgrades:g":90,"reset:b":547,"upgrades:b":120,"reset:s":16,"buyables:s":27,"upgrades:s":5,"reset:t":8,"upgrades:t":1,"reset:e":1,"buyables:e":1} |
+| S1-1 baseline A2-3 ptr (iii) t, e and s unlocked @ 17260e03 | ptr | profile all | 8035 | 8035 | 1 | `67743dd40de0b570` | GREEN | SUMMARY 8035 ticks / 67743dd40de0b570; baseline 8035 ticks / 8035 s / 67743dd40de0b570 (game 6511fcca2c6ae896) |
+| S1-1 pinned A2-3 ptr (iii) t, e and s unlocked (kinds=reset,upgrades,buyables) | ptr | profile all | 8035 | 8035 | 1 | `25b42867417882c9` | GREEN | game state 6511fcca2c6ae896 vs baseline 6511fcca2c6ae896 — equal true; ticks 8035 vs SUMMARY 8035; features 54; actions {"reset:p":804,"upgrades:p":475,"reset:g":450,"upgrades:g":90,"reset:b":547,"upgrades:b":120,"reset:s":16,"buyables:s":27,"upgrades:s":5,"reset:t":8,"upgrades:t":1,"reset:e":1,"buyables:e":1} |
+| S1-1 baseline A1-3 something (i) first fundamental reset (fundamental.total ≥ 1) @ 3bc12bf | something | profile all | 102 | 5.1 | 0.05 | `bf6f8809a163efd8` | GREEN | SUMMARY 102 ticks / bf6f8809a163efd8; baseline 102 ticks / 5.1 s / bf6f8809a163efd8 (game 5a03f1523ebc337d) |
+| S1-1 pinned A1-3 something (i) first fundamental reset (fundamental.total ≥ 1) (kinds=reset,upgrades,buyables) | something | profile all | 102 | 5.1 | 0.05 | `a82bc6d47e787d3f` | GREEN | game state 5a03f1523ebc337d vs baseline 5a03f1523ebc337d — equal true; ticks 102 vs SUMMARY 102; features 29; actions {"reset:unlock":3622,"upgrades:unlock":2,"reset:fundamental":37,"upgrades:fundamental":11} |
+| S1-1 baseline A1-3 something (ii) unlock:upg:12 @ 3bc12bf | something | profile all | 3733 | 186.65 | 0.05 | `0253605cd2e69318` | GREEN | SUMMARY 3733 ticks / 0253605cd2e69318; baseline 3733 ticks / 186.65 s / 0253605cd2e69318 (game 646cfcd97455704b) |
+| S1-1 pinned A1-3 something (ii) unlock:upg:12 (kinds=reset,upgrades,buyables) | something | profile all | 3733 | 186.65 | 0.05 | `6ec17d5d188a4f9e` | GREEN | game state 646cfcd97455704b vs baseline 646cfcd97455704b — equal true; ticks 3733 vs SUMMARY 3733; features 29; actions {"reset:unlock":3622,"upgrades:unlock":2,"reset:fundamental":37,"upgrades:fundamental":11} |
+| S1-1 baseline A1-3 something diff 1 (i) first fundamental reset (fundamental.total ≥ 1) @ 3bc12bf | something | profile all | 6 | 6 | 1 | `c3444d05fd80bba0` | GREEN | SUMMARY 6 ticks / c3444d05fd80bba0; baseline 6 ticks / 6 s / c3444d05fd80bba0 (game 2fc43f3274a79fb0) |
+| S1-1 pinned A1-3 something diff 1 (i) first fundamental reset (fundamental.total ≥ 1) (kinds=reset,upgrades,buyables) | something | profile all | 6 | 6 | 1 | `eef240376f85b2ae` | GREEN | game state 2fc43f3274a79fb0 vs baseline 2fc43f3274a79fb0 — equal true; ticks 6 vs SUMMARY 6; features 29; actions {"reset:unlock":185,"upgrades:unlock":2,"reset:fundamental":61,"upgrades:fundamental":11} |
+| S1-1 baseline A1-3 something diff 1 (ii) unlock:upg:12 @ 3bc12bf | something | profile all | 308 | 308 | 1 | `86da1eaa518021ad` | GREEN | SUMMARY 308 ticks / 86da1eaa518021ad; baseline 308 ticks / 308 s / 86da1eaa518021ad (game 72bbc89f083b4d50) |
+| S1-1 pinned A1-3 something diff 1 (ii) unlock:upg:12 (kinds=reset,upgrades,buyables) | something | profile all | 308 | 308 | 1 | `5f1b9c97fa2bbff0` | GREEN | game state 72bbc89f083b4d50 vs baseline 72bbc89f083b4d50 — equal true; ticks 308 vs SUMMARY 308; features 29; actions {"reset:unlock":185,"upgrades:unlock":2,"reset:fundamental":61,"upgrades:fundamental":11} |
+| S1-1 baseline A2-1 something diff 1 (i) primitive reset ≥ 1 (primitive.total ≥ 1) @ 71da72e | something | profile all | 309 | 309 | 1 | `6da92645ec93a9ab` | GREEN | SUMMARY 309 ticks / 6da92645ec93a9ab; baseline 309 ticks / 309 s / 6da92645ec93a9ab (game 5de8903ce94ad67b) |
+| S1-1 pinned A2-1 something diff 1 (i) primitive reset ≥ 1 (primitive.total ≥ 1) (kinds=reset,upgrades,buyables) | something | profile all | 309 | 309 | 1 | `9382d0aac426449e` | GREEN | game state 5de8903ce94ad67b vs baseline 5de8903ce94ad67b — equal true; ticks 309 vs SUMMARY 309; features 29; actions {"reset:unlock":341,"upgrades:unlock":2,"reset:fundamental":115,"upgrades:fundamental":46,"reset:primitive":4,"upgrades:primitive":2} |
+| S1-1 baseline A2-1 something diff 1 (ii) primitive ms 1 ("10 Numbers") @ 71da72e | something | profile all | 399 | 399 | 1 | `53240faafd36f329` | GREEN | SUMMARY 399 ticks / 53240faafd36f329; baseline 399 ticks / 399 s / 53240faafd36f329 (game 070dc67eca5ac00f) |
+| S1-1 pinned A2-1 something diff 1 (ii) primitive ms 1 ("10 Numbers") (kinds=reset,upgrades,buyables) | something | profile all | 399 | 399 | 1 | `b55c27b5c4046f57` | GREEN | game state 070dc67eca5ac00f vs baseline 070dc67eca5ac00f — equal true; ticks 399 vs SUMMARY 399; features 29; actions {"reset:unlock":341,"upgrades:unlock":2,"reset:fundamental":115,"upgrades:fundamental":46,"reset:primitive":4,"upgrades:primitive":2} |
+| S1-1 baseline A2-1 something diff 1 (iii) primitive ms 2 ("100,000 Numbers") @ 71da72e | something | profile all | 579 | 579 | 1 | `30d121d791768aa4` | GREEN | SUMMARY 579 ticks / 30d121d791768aa4; baseline 579 ticks / 579 s / 30d121d791768aa4 (game 524822d719ceea18) |
+| S1-1 pinned A2-1 something diff 1 (iii) primitive ms 2 ("100,000 Numbers") (kinds=reset,upgrades,buyables) | something | profile all | 579 | 579 | 1 | `25009e64d98bc47e` | GREEN | game state 524822d719ceea18 vs baseline 524822d719ceea18 — equal true; ticks 579 vs SUMMARY 579; features 29; actions {"reset:unlock":341,"upgrades:unlock":2,"reset:fundamental":115,"upgrades:fundamental":46,"reset:primitive":4,"upgrades:primitive":2} |
+| S1-1 baseline A2-1 something (i) primitive reset ≥ 1 (primitive.total ≥ 1) @ 17260e03 | something | profile all | 4163 | 208.15 | 0.05 | `0c88dcd6b5a9e1cb` | GREEN | SUMMARY 4163 ticks / 0c88dcd6b5a9e1cb; baseline 4163 ticks / 208.15 s / 0c88dcd6b5a9e1cb (game 32c54b4e207fe18e) |
+| S1-1 pinned A2-1 something (i) primitive reset ≥ 1 (primitive.total ≥ 1) (kinds=reset,upgrades,buyables) | something | profile all | 4163 | 208.15 | 0.05 | `9244e328e7c29b7b` | GREEN | game state 32c54b4e207fe18e vs baseline 32c54b4e207fe18e — equal true; ticks 4163 vs SUMMARY 4163; features 29; actions {"reset:unlock":9327,"upgrades:unlock":2,"reset:fundamental":95,"upgrades:fundamental":46,"reset:primitive":4,"upgrades:primitive":3} |
+| S1-1 baseline A2-1 something (ii) primitive ms 1 ("10 Numbers") @ 17260e03 | something | profile all | 5963 | 298.15 | 0.05 | `5682500e1f849fb8` | GREEN | SUMMARY 5963 ticks / 5682500e1f849fb8; baseline 5963 ticks / 298.15 s / 5682500e1f849fb8 (game 713f792e30d60f5d) |
+| S1-1 pinned A2-1 something (ii) primitive ms 1 ("10 Numbers") (kinds=reset,upgrades,buyables) | something | profile all | 5963 | 298.15 | 0.05 | `24374f1c534d1d67` | GREEN | game state 713f792e30d60f5d vs baseline 713f792e30d60f5d — equal true; ticks 5963 vs SUMMARY 5963; features 29; actions {"reset:unlock":9327,"upgrades:unlock":2,"reset:fundamental":95,"upgrades:fundamental":46,"reset:primitive":4,"upgrades:primitive":3} |
+| S1-1 baseline A2-1 something (iii) primitive ms 2 ("100,000 Numbers") @ 17260e03 | something | profile all | 9563 | 478.15 | 0.05 | `449775de97d4af2d` | GREEN | SUMMARY 9563 ticks / 449775de97d4af2d; baseline 9563 ticks / 478.15 s / 449775de97d4af2d (game f77c6ac6dfd7bf1a) |
+| S1-1 pinned A2-1 something (iii) primitive ms 2 ("100,000 Numbers") (kinds=reset,upgrades,buyables) | something | profile all | 9563 | 478.15 | 0.05 | `b160ef1582be13d1` | GREEN | game state f77c6ac6dfd7bf1a vs baseline f77c6ac6dfd7bf1a — equal true; ticks 9563 vs SUMMARY 9563; features 29; actions {"reset:unlock":9327,"upgrades:unlock":2,"reset:fundamental":95,"upgrades:fundamental":46,"reset:primitive":4,"upgrades:primitive":3} |
+| S1-1 fresh boot: Locked/Off per feature, 17260e03 table vs derived | ptr | — | 0 | 0 | — | `d6f4178d974ab555` | GREEN | 14/14 old features same unlocked + policy; 63 derived features added: unlocked —; locked 63; excluded {"buyables:t":"Extra Time Capsules are paid in Boosters, which would lower the booster effect (A2 §12e.1)"}; derivation {"kindOrder":["toggles","reset","upgrades","buyables","challenges","clickables"],"kinds":["toggles","upgrades","buyables","challenges","clickables","reset"],"candidates":78,"registered":77,"excluded":1,"outOfKinds":0,"multiTogglesSkipped":1,"unlockOrder":[["g","b"],["s","t","e"]]} |
+| S1-1 fresh boot: Locked/Off per feature, 17260e03 table vs derived | something | — | 0 | 0 | — | `87a27eed58b62fee` | GREEN | 7/7 old features same unlocked + policy; 31 derived features added: unlocked —; locked 31; excluded {}; derivation {"kindOrder":["toggles","reset","upgrades","buyables","challenges","clickables"],"kinds":["toggles","upgrades","buyables","challenges","clickables","reset"],"candidates":38,"registered":38,"excluded":0,"outOfKinds":0,"multiTogglesSkipped":0,"unlockOrder":[]} |
+| S1-1 predicate compiler ≡ --until (node and page) | ptr | profile all | 300 | 300 | 1 | `ff9cdab8849d6017` | GREEN | "player.p.points.gte(5) && hasUpgrade('p', 11)": disagreement met — node false (errors 0), page false, over 300 / 300 ticks; the value turned true at 102 ticks / 102 s / f47a81cd426a06fe (game bb74cf65e2d441d1); page at that tick f47a81cd426a06fe |
+| S1-1 no table: the-omega-tree derived defaults (informative) | the-omega-tree | profile all | 3000 | 3000 | 1 | `2b964b5c3c6ae7b3` | GREEN | auto none; features 59 ({"kindOrder":["toggles","upgrades","buyables","challenges","clickables","reset"],"kinds":["toggles","upgrades","buyables","challenges","clickables","reset"],"candidates":59,"registered":59,"excluded":0,"outOfKinds":0,"multiTogglesSkipped":0,"unlockOrder":[]}); stalled false walled false last progress 2173 s; actions {"reset:p":519,"upgrades:p":697,"reset:sp":43,"upgrades:sp":19,"reset:up":2,"upgrades:up":1,"reset:pb":8,"upgrades:pb":2}; unlocked ["info-tab","options-tab","changelog-tab","p","blank","tree-tab","sp","up","pb","a","stat","cp","pa","cp2","se","au"]; state: p{pts 4.15 best 4.15; upg [11]; ms []; canReset false nextAt 10.00; next upg 12@2.00} sp{pts 1.00 best 2.00; upg [11]; ms []; canReset false nextAt 10,000,000; next upg 12@3.00} up{pts 3.00 best 3.00; upg [11]; ms []; canReset false nextAt 25,000,000; next upg 12@4.00} pb{pts 3.00 best 3.00; upg [11]; ms []; canReset false nextAt 134,217,728} cp{pts 0.00 best 0.00; upg []; ms []; canReset false nextAt 1.00e42; next upg 11@100.00} cp2{pts 0.00 best 0.00; upg []; ms []; canReset false nextAt 1.00e30; next ms 1: [1] 1e30 Rebirth Points \| 2: [2] 1 Super Charge Power} se{pts 0.00 best 0.00; upg []; ms []; canReset false nextAt 1.80e308; next upg 11@10.00} |
+
+## 2026-09-15T20:38:56Z — S1 part 3 (`node tools/harness/gates-s1.mjs --part 3`) — commit `b08274a0` (tree DIRTY) — 3/3 green
+
+| gate | game | leg | ticks | gameSeconds | diff | hash | result | notes |
+|---|---|---|---|---|---|---|---|---|
+| S1-3 parity node≡page, profile all, derived table | ptr | idle, profile all | 3550 | 3550 | 1 | `90c720a0ba338624` | GREEN | page 90c720a0ba338624 in 91894 ms; hookStats equal true; hooked 28; actions {"reset:p":355,"upgrades:p":169,"reset:g":76,"upgrades:g":10,"reset:b":74,"upgrades:b":6,"reset:s":1,"buyables:s":1} |
+| S1-3 parity node≡page, profile all, derived table | something | idle, profile all | 5963 | 298.15 | 0.05 | `9cc1647b4cb4728e` | GREEN | page 9cc1647b4cb4728e in 74231 ms; hookStats equal true; hooked 14; actions {"reset:unlock":5803,"upgrades:unlock":2,"reset:fundamental":59,"upgrades:fundamental":22,"reset:primitive":2,"upgrades:primitive":1} |
+| S1-3 parity node≡page, profile off, derived table | something | idle, profile off | 1000 | 50 | 0.05 | `0c459f705233fbf2` | GREEN | page 0c459f705233fbf2 in 7503 ms; hookStats equal true; hooked 14; actions {} |
+
+## 2026-09-15T20:43:36Z — gates.mjs, automation ON — commit `b08274a0` (tree DIRTY) — 17/17 green
+
+| gate | game | leg | ticks | gameSeconds | diff | hash | result | notes |
+|---|---|---|---|---|---|---|---|---|
+| G1 load | something | — | 3 | 0.15 | 0.05 | — | GREEN | ready 1140 ms; 11 `#app .treeNode`; 85 requests, 0 blocked, 0 failed, 0 page errors; keys `tmt-loader:something:Justcubing97's-Something-Tree-Justcubing97_options`, `tmt-loader:something:Justcubing97's-Something-Tree-Justcubing97`; other game ptr: 1 keys in its own prefix, first untouched=true |
+| G2a determinism (node ×2) | something | idle | 1000 | 50 | 0.05 | `0c459f705233fbf2` | GREEN | run2 1000 ticks 0c459f705233fbf2 |
+| G2b save→fresh boot on storage (node) | something | idle | 1000 | 50 | 0.05 | `0c459f705233fbf2` | GREEN | 500 (27592fa52478f182) + 500 after reload vs 1000 straight 0c459f705233fbf2; saved keys 2 |
+| G2b save→loadFrom (node) | something | idle | 1000 | 50 | 0.05 | `0c459f705233fbf2` | GREEN | importSave requested reload=true; vs 1000 straight 0c459f705233fbf2 |
+| G2b save→loadFrom (page, reload) | something | idle | 1000 | 50 | 0.05 | `0c459f705233fbf2` | GREEN | page 500 27592fa52478f182 (node 500 27592fa52478f182); vs node 1000 straight 0c459f705233fbf2 |
+| G2a determinism (node ×2) | something | policy | 1000 | 50 | 0.05 | `4c7752a8a6579092` | GREEN | run2 1000 ticks 4c7752a8a6579092 |
+| G2b save→fresh boot on storage (node) | something | policy | 1000 | 50 | 0.05 | `4c7752a8a6579092` | GREEN | 500 (cfaa42bf35262ba3) + 500 after reload vs 1000 straight 4c7752a8a6579092; saved keys 2 |
+| G2b save→loadFrom (node) | something | policy | 1000 | 50 | 0.05 | `4c7752a8a6579092` | GREEN | importSave requested reload=true; vs 1000 straight 4c7752a8a6579092 |
+| G2b save→loadFrom (page, reload) | something | policy | 1000 | 50 | 0.05 | `4c7752a8a6579092` | GREEN | page 500 cfaa42bf35262ba3 (node 500 cfaa42bf35262ba3); vs node 1000 straight 4c7752a8a6579092 |
+| G2c upstream export → loadFrom | something | idle | 200 | 10 | 0.05 | `a92ec5c00256c724` | GREEN | upstream 5b84043f40846f14; equalRaw=false equalCanonical=true (raw differs in KEY ORDER only: the upstream page's async modFiles race); exported 11228 b64 chars |
+| G3 idle hash = census | something | idle | 200 | 10 | 0.05 | `46bb8c5b1a96f03a` | GREEN | census 46bb8c5b1a96f03a @ 200×0.05; automation true (au excluded) |
+| G3 parity node≡page | something | idle | 1000 | 50 | 0.05 | `0c459f705233fbf2` | GREEN | page 0c459f705233fbf2 in 7713 ms |
+| G3 parity node≡page | something | idle | 200 | 200 | 1 | `4af6b069ff28d997` | GREEN | page 4af6b069ff28d997 in 1579 ms |
+| G3 parity node≡page | something | policy | 1000 | 50 | 0.05 | `4c7752a8a6579092` | GREEN | page 4c7752a8a6579092 in 8201 ms |
+| G3 parity control (page +1 point, must diverge) | something | idle | 200 | 10 | 0.05 | `13a88929cfacb688` | GREEN | diverged at key "points" |
+| G4 goldens | something | — | 0 | 0 | — | — | GREEN | 329 ids, 21 layers; ms 68 / upg 175 / buy 23 / ch 11 / ach 52 (census equal=true) |
+| G4 check-manifest | something | — | 0 | 0 | — | — | GREEN | 17 scripts, 17 modFiles, vendor sha256 ok, subtree split 30a311b, games/something pristine |
+
+## 2026-09-15T20:45:11Z — S1 part 1s (`node tools/harness/gates-s1.mjs --part 1s`) — commit `b08274a0` (tree DIRTY) — 2/2 green
+
+| gate | game | leg | ticks | gameSeconds | diff | hash | result | notes |
+|---|---|---|---|---|---|---|---|---|
+| S1-1 baseline §12d stall ptr @ 17260e03 | ptr | profile all | 14131 | 14131 | 1 | `46df73d4545bb4e2` | GREEN | SUMMARY stalled 14131 / 46df73d4545bb4e2 / last progress 10531; baseline stalled true walled false last progress 10531; game f53368c9f575c56f |
+| S1-1 pinned §12d stall ptr (kinds=reset,upgrades,buyables) | ptr | profile all | 14131 | 14131 | 1 | `291c24f627ecf2d4` | GREEN | stalled true walled false; last progress 10531; game state f53368c9f575c56f vs baseline f53368c9f575c56f — equal true; marks (i) one of t/e/s unlocked: 3550/ff624de18438f176 · (ii) t ms 3 or s ms 3 (b.auto / g.auto available): 6037/b6fc0204a69bc54a · (iii) t, e and s unlocked: 8035/6511fcca2c6ae896; actions {"reset:p":1413,"upgrades:p":628,"reset:g":932,"upgrades:g":90,"reset:b":998,"upgrades:b":120,"reset:s":16,"buyables:s":27,"upgrades:s":6,"reset:t":8,"upgrades:t":1,"reset:e":27,"buyables:e":3}; state: p{pts 4.84e131 best 4.84e131; upg [11,12,21,13,22,23,31,32,33]; ms []; canReset true gain 4.84e131 nextAt 7.07e173} b{pts 49.00 best 49.00; upg [11,12,13,21,22,23]; ms [0,1]; canReset false nextAt 2.33e276} g{pts 38.00 best 38.00; upg [11,12,13,14,15,21,22,23,24,25]; ms [0,1,2]; canReset false nextAt 9.32e210} t{pts 6.00 best 6.00; upg [11]; ms [0,1,2,3]; canReset false nextAt 5.43e712; next upg 12@200,000 21@12 22@9.00 24@2.00e17 25@3.00e19; next ms 4: 8 Time Capsules} e{pts 17.00 best 17.00; upg []; ms [0,1]; buy {"11":"3.00"}; canReset false nextAt 1.00e600; next upg 11@25.00 14@3.00e23 23@2.00e20 24@2.50e28; next ms 2: 25 Enhance Points} s{pts 7.00 best 7.00; upg [11,12,13,14,15,23]; ms [0,1,2,3]; buy {"11":"14.00","12":"6.00","13":"3.00","14":"4.00"}; canReset false nextAt 8.65e668; next upg 21@13.00 22@2.50e207 24@1.00e177 25@1.00e244; next ms 4: 8 Space Energy} sb{LOCKED pts 0 best 0; upg []; ms []; canReset false nextAt 100.00} q{LOCKED pts 0 best 0; upg []; ms []; canReset false nextAt 1.00e512; next ms 0: 2 Total Quirks \| 1: 3 Total Quirks} |
+
+## 2026-09-15T20:50:48Z — the ladder as reached (`node tools/harness/ladder-summary.mjs --ladder tools/harness/ladder/ptr.json`) — commit `b08274a0` (tree DIRTY) — 53 marks, snapshots: all 10, pinned 9
+
+Reading this section: `diff` = the coarsest calibrated diff within 2 % of diff 1's game-seconds (null = not calibrated yet); a snapshot column is the committed fixture at the first tick the mark held in that configuration (tools/harness/snapshots/ptr/<set>/<mark>.json).
+
+| mark | name | predicate | diff | all (all, every kind): ticks / game-s / hashGame @ commit | pinned (all, kinds=reset,upgrades,buyables): ticks / game-s / hashGame @ commit |
+|---|---|---|---|---|---|
+| M01 | p unlocked | `player.p.unlocked` | 1 | 1 / 1 / `4422c0570ad19300` @ fb46f48b ×1 | 1 / 1 / `4422c0570ad19300` @ fb46f48b ×1 |
+| M02 | b and g unlocked | `player.b.unlocked && player.g.unlocked` | 1 | 1361 / 1361 / `7b9f1114d17a0166` @ fb46f48b ×1 | 1361 / 1361 / `7b9f1114d17a0166` @ fb46f48b ×1 |
+| M03 | keep-upgrade milestones | `hasMilestone('b',0) && hasMilestone('g',0)` | 1 | 2360 / 2360 / `25f914a09d1019b1` @ fb46f48b ×1 | 2360 / 2360 / `25f914a09d1019b1` @ fb46f48b ×1 |
+| M04 | passive PP | `hasMilestone('g',1)` | 1 | 2629 / 2629 / `f6877f3437d5a9a5` @ fb46f48b ×1 | 2629 / 2629 / `f6877f3437d5a9a5` @ fb46f48b ×1 |
+| M05 | buy-max b/g | `hasMilestone('b',1) && hasMilestone('g',2)` | 1 | 2936 / 2936 / `3e5f28bd379c52e0` @ fb46f48b ×1 | 2936 / 2936 / `3e5f28bd379c52e0` @ fb46f48b ×1 |
+| M06 | row-2 threshold | `player.points.gte('1e120')` | 1 | 3540 / 3540 / `269f7a1f881afc96` @ fb46f48b ×1 | 3540 / 3540 / `269f7a1f881afc96` @ fb46f48b ×1 |
+| M07 | first row-2 layer | `player.s.unlocked` | 1 | 3550 / 3550 / `ff624de18438f176` @ fb46f48b ×1 | 3550 / 3550 / `ff624de18438f176` @ fb46f48b ×1 |
+| M08 | auto-generators available | `hasMilestone('s',3)` | 1 | 6037 / 6037 / `b6fc0204a69bc54a` @ fb46f48b ×1 | 6037 / 6037 / `b6fc0204a69bc54a` @ fb46f48b ×1 |
+| M09 | all three (a33) | `hasAchievement('a',33)` | 1 | 8035 / 8035 / `208197f46f08ed88` @ fb46f48b ×1 | 8035 / 8035 / `6511fcca2c6ae896` @ fb46f48b ×1 |
+| M10 | native toggles adopted | `player.b.auto === true && player.g.auto === true` | — | 7323 / 7323 / `4c4862471f38549b` @ fb46f48b ×1 | — |
+| M11 | e11 before Enhancers | `hasUpgrade('e',11)` | — | — | — |
+| M12 | tax refunded | `hasUpgrade('t',23) && hasUpgrade('e',22)` | — | — | — |
+| M13 | Space pool used right | `hasUpgrade('s',13) && hasUpgrade('s',15)` | — | — | — |
+| M14 | keep b/g upgrades; resets-nothing | `hasMilestone('e',2) && hasMilestone('t',4) && hasMilestone('s',4)` | — | — | — |
+| M15 | Super Boosters | `player.sb.unlocked` | — | — | — |
+| M16 | row-2 push | `player.sb.best.gte(5) && player.t.best.gte(17) && player.s.best.gte(17)` | — | — | — |
+| M17 | Quirks | `player.q.unlocked` | — | — | — |
+| M18 | q ms 0–1 | `hasMilestone('q',1)` | — | — | — |
+| M19 | q ms 3 | `hasMilestone('q',3) && player.t.auto && player.s.auto` | — | — | — |
+| M20 | Hindrances visible | `hasMilestone('q',4)` | — | — | — |
+| M21 | h unlocked | `player.h.unlocked` | — | — | — |
+| M22 | q ms 5 | `hasMilestone('q',5)` | — | — | — |
+| M23 | H11 Upgrade Desert | `hasChallenge('h',11)` | — | — | — |
+| M24 | q11–q13 | `hasUpgrade('q',13)` | — | — | — |
+| M25 | H12 Speed Demon | `hasChallenge('h',12)` | — | — | — |
+| M26 | q14, q21, q22 | `hasUpgrade('q',22)` | — | — | — |
+| M27 | H21 Out of Room | `hasChallenge('h',21)` | — | — | — |
+| M28 | q24, q31, q32 | `hasUpgrade('q',32)` | — | — | — |
+| M29 | H22 Descension | `hasChallenge('h',22)` | — | — | — |
+| M30 | Super Generators | `hasUpgrade('q',33) && player.sg.unlocked` | — | — | — |
+| M31 | q ms 6–7 | `hasMilestone('q',7) && player.s.autoBld` | — | — | — |
+| M32 | Quirk Improvements | `hasUpgrade('q',44)` | — | — | — |
+| M33 | Timeless ×10 (a64) | `challengeCompletions('h',31) >= 10` | — | — | — |
+| M34 | Solarity and Subspace (a62) | `player.o.unlocked && player.ss.unlocked` | — | — | — |
+| M35 | first row-4 reset (a71) | `player.m.unlocked \|\| player.ba.unlocked` | — | — | — |
+| M36 | both; Time Warp; m ms 1; ba ms 1–3 | `player.m.unlocked && player.ba.unlocked && hasMilestone('m',1) && hasMilestone('ba',3)` | — | — | — |
+| M37 | Phantom Souls, first Wraith | `getBuyableAmount('ps',11).gte(1)` | — | — | — |
+| M38 | H32 Option D | `challengeCompletions('h',32) >= 1` | — | — | — |
+| M39 | H41, H42 | `hasChallenge('h',41) && hasChallenge('h',42)` | — | — | — |
+| M40 | a74 | `hasAchievement('a',74)` | — | — | — |
+| M41 | Honour | `player.hn.unlocked` | — | — | — |
+| M42 | hn ms 2, 4, 5, 7 | `hasMilestone('hn',7)` | — | — | — |
+| M43 | Begin Again | `hasUpgrade('hn',11)` | — | — | — |
+| M44 | Nebula and Hyperspace (a92) | `player.n.unlocked && player.hs.unlocked` | — | — | — |
+| M45 | Imperium | `player.i.unlocked` | — | — | — |
+| M46 | Mastery | `player.ma.unlocked` | — | — | — |
+| M47 | ma ms 0, 4, 5 | `hasMilestone('ma',5)` | — | — | — |
+| M48 | Machines; Energy & Neurons visible | `player.mc.unlocked` | — | — | — |
+| M49 | Gears, ge ms 3 | `hasMilestone('ge',3)` | — | — | — |
+| M50 | Energy, Neurons (The Brain), Ideas | `player.en.unlocked && player.ne.unlocked && player.id.unlocked` | — | — | — |
+| M51 | Robots, AI, Civilizations | `player.r.unlocked && player.ai.unlocked && player.c.unlocked` | — | — | — |
+| M52 | the furthest guide | `player.points.gte('1e1000000000000000')` | — | — | — |
+| M53 | **endgame** | `player.points.gte(new Decimal('e3.14e16'))` | — | — | — |
+
+## 2026-09-15T20:50:48Z — the ladder as reached (`node tools/harness/ladder-summary.mjs --ladder tools/harness/ladder/something.json`) — commit `b08274a0` (tree DIRTY) — 5 marks, snapshots: 
+
+Reading this section: `diff` = the coarsest calibrated diff within 2 % of diff 1's game-seconds (null = not calibrated yet); a snapshot column is the committed fixture at the first tick the mark held in that configuration (tools/harness/snapshots/something/<set>/<mark>.json).
+
+| mark | name | predicate | diff |
+|---|---|---|---|
+| S01 | first fundamental reset (fundamental.total ≥ 1) | `player.fundamental.total.gte(1)` | 1 |
+| S02 | unlock:upg:12 | `hasUpgrade('unlock', 12)` | 1 |
+| S03 | primitive reset ≥ 1 (primitive.total ≥ 1) | `player.primitive.total.gte(1)` | 1 |
+| S04 | primitive ms 1 ("10 Numbers") | `hasMilestone('primitive', 1)` | 1 |
+| S05 | primitive ms 2 ("100,000 Numbers") | `hasMilestone('primitive', 2)` | 1 |
