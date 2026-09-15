@@ -99,7 +99,7 @@
   var POLICIES = {
     reset: /^(always|gain>=\d+(\.\d+)?|keepsUpgrades|interval>=\d+(\.\d+)?)$/,
     upgrades: /^(cheapest-first|order)$/,
-    buyables: /^(buyMax)$/,
+    buyables: /^(buyMax|buy)$/,
   };
   var features = [];
   var byId = {};
@@ -173,6 +173,8 @@
     },
     // buyMax: each unlocked buyable (id order or order[]): the engine's buyMaxBuyable where the buyable has a buyMax,
     // else buyBuyable until the amount stops moving (bounded).
+    // buy: buyBuyable until the amount stops moving (bounded) — what a click does, paying the cost — even where the
+    // buyable has a buyMax (2.2.1 calls buyMaxBuyable only from autobuyers; a game's buyMax may not charge the cost).
     buyables: function (f) {
       var l = f.layer, L = layers[l], B = tmp[l] && tmp[l].buyables;
       if (!L.buyables || !B || !player[l].unlocked) return 0;
@@ -181,7 +183,7 @@
       for (var i = 0; i < ids.length; i++) {
         var id = ids[i];
         if (!B[id] || !B[id].unlocked) continue;
-        if (L.buyables[id].buyMax && typeof buyMaxBuyable === 'function') {
+        if (f.policy === 'buyMax' && L.buyables[id].buyMax && typeof buyMaxBuyable === 'function') {
           var b0 = String(player[l].buyables[id]);
           buyMaxBuyable(l, id);
           if (String(player[l].buyables[id]) !== b0) n++;

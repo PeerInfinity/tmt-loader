@@ -1,4 +1,4 @@
-# Automation tools (`loader/tmt-auto.js`, A1)
+# Automation tools (`loader/tmt-auto.js`, A1–A2)
 
 The loader can play parts of a game for you: resets, upgrade purchases, buyable purchases. **Every feature is off by
 default.** Nothing in a game changes: no formula is edited, and a feature only calls the engine's own functions
@@ -42,7 +42,7 @@ show what the save says. `tmtLoader.profile(name)` switches at runtime.
 |---|---|---|
 | `reset` | `doReset(layer)` when `tmp[layer].canReset` and the policy agrees | `always` · `gain>=N` (`tmp[layer].resetGain ≥ N`) · `keepsUpgrades` (only while `hasMilestone(keepMilestone.layer, keepMilestone.id)` holds — a post-milestone policy: from a fresh game it never starts the layer on its own) · `interval>=T` (at least T of `player.timePlayed` since this feature's last reset; runtime memory, not saved) |
 | `upgrades` | buys unlocked, unowned upgrades the player can afford | `cheapest-first` (sorted by `tmp` cost, ties by id; each affordable one is bought in that order) · `order` (the table's `order[]`) |
-| `buyables` | buys each unlocked buyable (id order or `order[]`) | `buyMax` — the engine's `buyMaxBuyable` where the buyable defines `buyMax`, else `buyBuyable` until the amount stops moving |
+| `buyables` | buys each unlocked buyable (id order or `order[]`) | `buyMax` — the engine's `buyMaxBuyable` where the buyable defines `buyMax`, else `buyBuyable` until the amount stops moving · `buy` — `buyBuyable` until the amount stops moving, even where a `buyMax` exists (what a click does; see below) |
 
 Upgrades with a `pseudoUnl` (Prestige Tree's pseudo-upgrades) are never bought by `upgrades` features.
 
@@ -89,6 +89,21 @@ tmtLoader.registerAutoFeature({
 | something | `reset:fundamental` | `interval>=5` | `gain>=1` resets fundamental about every tick, keeping points near 0 and starving unlock gain (`points^0.1`): `unlock:upg:12` never came |
 | something | `upgrades:fundamental`, `buyables:fundamental` | `cheapest-first`, `buyMax` | buyables 11–22 have no `buyMax`: bought one at a time up to their `purchaseLimit` |
 
+**`buy` vs `buyMax`.** TMT 2.2.1 calls `buyMaxBuyable` only from autobuyers — no component calls it — and Prestige
+Tree's `buyMax()` bodies raise the amount to the affordable target **without subtracting the cost** (they are the
+game's own milestone-gated autobuyers, `e.auto` / `s.autoBld`). A feature that stands in for clicks uses `buy`.
+
+## Row 2 (A2, measured defaults)
+
+| Game | Feature | Default policy | Why (A2, `tools/harness/results/SUMMARY.md`) |
+|---|---|---|---|
+| something | `reset:primitive` | `interval>=90` | sweep at diff 1, game-s to primitive ms 1 / ms 2: 5 = 10 = `always` = `gain>=1` → 501 / not in 20000 s (a reset every time Fundamentality reaches 1e12, so Numbers never pile up); 30 → 501 / —; 60 → 429 / 17109; **90 → 399 / 579**; 120 → 429 / 669; 180 → 489 / 849; 240 → 549 / 789; 300 → 609 / 909. No `keepsUpgrades` alternative: nothing early keeps fundamental's upgrades on a primitive reset (fundamental has no milestones; primitive ms 2 keeps upg 23 only; primitive *upgrade* 15 keeps 11–27) |
+| something | `upgrades:primitive` | `cheapest-first` | primitive defines no buyables |
+| ptr | `reset:t`, `reset:e`, `reset:s` | `interval>=5` (alt. `always`, `gain>=1`) | the requirement paces a row-2 reset: s at 5–30 and t at 5–60 tie exactly with both controls (s 60 +10 game-s, 120 +270; t 120 +70); e unlocks last, so its interval moves nothing up to (iii). Shortest of the ties |
+| ptr | option `rowTwoOrder` | **`s,t,e`** | game-s to one unlocked / t or s ms 3 / all three: s,t,e 3550 / 6037 / 8035; s,e,t 3550 / 6037 / —; t,e,s 3550 / — / —; e,t,s 3550 / — / — (each unlock raises the other two's requirement ×1e180^(unlockOrder^1.415), and it stays raised after their unlock) |
+| ptr | `upgrades:t`, `upgrades:e`, `upgrades:s` | `cheapest-first` | |
+| ptr | `buyables:e`, `buyables:s` | `buy` | Enhancers; Space Buildings 11–20 (Generator Power, bounded by space). t's Extra Time Capsules cost Boosters: not registered |
+
 ## Harness levers
 
 - `--profile off|all|saved`, `--exclude au` (hash without the `au` layer), `--auto-opt "k=v;k2=v2"` (table options;
@@ -102,4 +117,7 @@ tmtLoader.registerAutoFeature({
 - `--stall <game-s>` / `--wall-ms <ms>`: stop after that many game-seconds without a new unlock / upgrade / milestone /
   achievement / challenge completion / buyable, or that much wall time; the result has `stall.lastProgress` and a
   per-layer `detail` (points, upgrades, next upgrades with costs, next milestones, `canReset`, `nextAt`).
-- `node tools/harness/gates-a1.mjs --part 1|2|3` runs the A1 gates and appends to `results/SUMMARY.md`.
+- `node tools/harness/gates-a1.mjs --part 1|2|3` runs the A1 gates and appends to `results/SUMMARY.md`;
+  `node tools/harness/gates-a2.mjs --part 1|1b|2|3|3o|3s-t|3s-e|3s-s` the A2 gates.
+- `node tools/harness/sweep.mjs <id> --vary "policy:reset:e=interval>=5|always" [--opt "k=v"] <run.mjs flags>`: one run
+  per value (a pool of 8), one line per value with the game-seconds to each mark.
