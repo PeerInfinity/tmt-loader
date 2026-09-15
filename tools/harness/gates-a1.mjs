@@ -26,6 +26,12 @@ const ANCHORS = {
   ptr: { idle1000: '86067be644ce481c', policy1000: '5ce24001caa4f31f' },
   something: { idle1000: '5739997ed0e70447', policy1000: '52ffa8d3c5eaba03' },
 };
+const MARKS = {
+  ptr: [['(i) b and g unlocked', 'player.b.unlocked && player.g.unlocked'], ['(ii) keep-upgrade milestones b0 + g0', "hasMilestone('b',0) && hasMilestone('g',0)"], ['(iii) b.best ≥ 15 and g.best ≥ 15', 'player.b.best.gte(15) && player.g.best.gte(15)']],
+  // fundamental.js has no milestones: (iii) is the next milestone in the tree, primitive ms 1 ("10 Numbers") — a row-2
+  // layer no A1 feature resets, so it is expected unmet (a finding, and A2's input)
+  something: [['(i) first fundamental reset (fundamental.total ≥ 1)', 'player.fundamental.total.gte(1)'], ['(ii) unlock:upg:12', "hasUpgrade('unlock', 12)"], ['(iii) primitive ms 1 (next milestone in the tree)', "hasMilestone('primitive', 1)"]],
+};
 export const AU_NODE_SELECTOR = '#app .smallNode.au';
 
 const a = parseArgs(process.argv.slice(2), ['no-summary']);
@@ -181,12 +187,6 @@ async function part2Page(id) {
 }
 
 // ---- Part 3 --------------------------------------------------------------------------------------------------------
-const MARKS = {
-  ptr: [['(i) b and g unlocked', 'player.b.unlocked && player.g.unlocked'], ['(ii) keep-upgrade milestones b0 + g0', "hasMilestone('b',0) && hasMilestone('g',0)"], ['(iii) b.best ≥ 15 and g.best ≥ 15', 'player.b.best.gte(15) && player.g.best.gte(15)']],
-  // fundamental.js has no milestones: (iii) is the next milestone in the tree, primitive ms 1 ("10 Numbers") — a row-2
-  // layer no A1 feature resets, so it is expected unmet (a finding, and A2's input)
-  something: [['(i) first fundamental reset (fundamental.total ≥ 1)', 'player.fundamental.total.gte(1)'], ['(ii) unlock:upg:12', "hasUpgrade('unlock', 12)"], ['(iii) primitive ms 1 (next milestone in the tree)', "hasMilestone('primitive', 1)"]],
-};
 function runAsync(id, o) {
   const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'tmt-loader-a1-3-'));
   const out = path.join(tmp, 'r.json');
@@ -204,7 +204,7 @@ function marksFile(id) {
   fs.writeFileSync(f, JSON.stringify(MARKS[id]));
   return f;
 }
-const fmtMark = (m) => (m ? `${m.ticks} ticks / ${m.gameSeconds} s / ${m.hash}` : 'NOT MET');
+function fmtMark(m) { return m ? `${m.ticks} ticks / ${m.gameSeconds} s / ${m.hash}` : 'NOT MET'; }
 async function part3() {
   const want = (id) => ids.includes(id);
   const jobs = {};

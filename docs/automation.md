@@ -77,3 +77,25 @@ tmtLoader.registerAutoFeature({
 
 `tmtLoader.options` (page `?autoOpt=k=v;k2=v2`, harness `--auto-opt "k=v;k2=v2"`) passes table options such as
 `unlockOrder=g,b`.
+
+## The two tables (A1, measured defaults)
+
+| Game | Feature | Default policy | Why (A1 part 3, `tools/harness/results/SUMMARY.md`) |
+|---|---|---|---|
+| ptr | `reset:p` | `interval>=10` | `always` resets p the moment points reach 10, so points never reach the 200 the b/g pair needs (a hard wall at diff 0.05 and 1); `gain>=N`, N > 1, never fires from a fresh game. 10 s reached the row-1 predicates fastest of 5/10/30/60/120 s |
+| ptr | `upgrades:p`, `upgrades:b`, `upgrades:g` | `cheapest-first` | |
+| ptr | `reset:b`, `reset:g` | `gain>=1` (alt. `keepsUpgrades`, milestone 0 of each: "Keep Prestige Upgrades on reset") | the pair's second member waits for the first to unlock; option `unlockOrder`, default **`g,b`** (faster than `b,g` at every predicate and every p interval tried) |
+| something | `reset:unlock`, `upgrades:unlock` | `always`, `cheapest-first` | |
+| something | `reset:fundamental` | `interval>=5` | `gain>=1` resets fundamental about every tick, keeping points near 0 and starving unlock gain (`points^0.1`): `unlock:upg:12` never came |
+| something | `upgrades:fundamental`, `buyables:fundamental` | `cheapest-first`, `buyMax` | buyables 11–22 have no `buyMax`: bought one at a time up to their `purchaseLimit` |
+
+## Harness levers
+
+- `--profile off|all|saved`, `--exclude au` (hash without the `au` layer), `--auto-opt "k=v;k2=v2"` (table options;
+  `policy:<featureId>=<policy>` overrides a default, e.g. `policy:reset:p=always`), `--no-auto` (skip the table).
+- `--marks marks.json` (`[[name, "<js predicate>"], …]`): the first tick each predicate holds, with gameSeconds and the
+  state hash at that tick; the run stops when all are met.
+- `--stall <game-s>` / `--wall-ms <ms>`: stop after that many game-seconds without a new unlock / upgrade / milestone /
+  achievement / challenge completion / buyable, or that much wall time; the result has `stall.lastProgress` and a
+  per-layer `detail` (points, upgrades, next upgrades with costs, next milestones, `canReset`, `nextAt`).
+- `node tools/harness/gates-a1.mjs --part 1|2|3` runs the A1 gates and appends to `results/SUMMARY.md`.
