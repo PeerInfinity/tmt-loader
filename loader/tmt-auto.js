@@ -392,6 +392,25 @@
     return { hooked: hookOrder.slice(), loops: stats.loops, calls: Object.assign({}, stats.calls), viaSlot: Object.assign({}, stats.viaSlot), viaFallback: Object.assign({}, stats.viaFallback), doubles: stats.doubles, actions: Object.assign({}, stats.actions), challenges: ch };
   };
 
+  // The registry's memory OUTSIDE `player` (H1 snapshots, docs/harness.md): an interval reset's lastReset (compared with
+  // player.timePlayed — undefined after a re-boot, so the policy would fire at once), the loop counter and per-layer
+  // ran-at marks the double-call check reads, and the hook statistics (action counts continue across a resume).
+  // Plain JSON; restoreRuntime(runtimeState()) is the identity.
+  T.runtimeState = function () {
+    return { lastReset: Object.assign({}, lastReset), loopNo: loopNo, ranAt: Object.assign({}, ranAt), stats: JSON.parse(JSON.stringify(stats)) };
+  };
+  T.restoreRuntime = function (rt) {
+    if (!rt || typeof rt !== 'object') throw new Error('restoreRuntime: an object from runtimeState() is required');
+    var k;
+    for (k in lastReset) delete lastReset[k];
+    for (k in rt.lastReset || {}) lastReset[k] = rt.lastReset[k];
+    for (k in ranAt) delete ranAt[k];
+    for (k in rt.ranAt || {}) ranAt[k] = rt.ranAt[k];
+    loopNo = Number(rt.loopNo) || 0;
+    if (rt.stats) for (k in stats) if (rt.stats[k] !== undefined) stats[k] = JSON.parse(JSON.stringify(rt.stats[k]));
+    return true;
+  };
+
   function policyOk(kind, policy) { return POLICIES[kind] && POLICIES[kind].test(policy); }
 
   T.registerAutoFeature = function (def) {

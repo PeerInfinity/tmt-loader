@@ -6,6 +6,12 @@
 //                      [--state-out f] [--player-out f] [--ids-out f] [--census]
 //                      [--profile off|all|saved] [--exclude k1,k2] [--auto-opt "k=v;k2=v2"] [--no-auto] [--no-automation]
 //                      [--marks marks.json ([[name, "<js>"], …])] [--marks-continue] [--stall <game-seconds> [--stall-seen]] [--wall-ms <ms>]
+//                      [--stop-mark <name>] [--snapshots] [--runtime runtime.json] [--predicates list.json] [--eval "<js>"]
+//   --stop-mark: stop after the first tick that mark holds (the ladder's --to). --snapshots: each mark's first tick also
+//   records the unmasked player and the memory outside it (tmtLoader.runtimeState() + the detector's). --runtime: a
+//   snapshot's `runtime` restored after load() — tick/game-second counters, the registry's memory, the detector's.
+//   --predicates [[name, "<js>"], …]: each string compiled with tmtLoader.predicate (new Function, global scope) and
+//   evaluated once after load(). --eval: an expression evaluated at the stop (R.eval, JSON).
 // Prints one line "BOOTRESULT {json}" on stdout. Scripts run via vm.runInThisContext (Node's own global — never
 // host intrinsics into a sandbox: TMT's `x.constructor === Object` test fails cross-realm). The plan comes from
 // loader/interpret.mjs + manifests/<id>.json, the same code path as the page; render-only files and vendored Vue are
@@ -28,7 +34,7 @@ const A = { _: [] };
 for (let i = 0; i < argv.length; i++) {
   const a = argv[i];
   if (!a.startsWith('--')) A._.push(a);
-  else if (['save', 'census', 'no-auto', 'no-automation', 'marks-continue', 'stall-seen'].includes(a.slice(2))) A[a.slice(2)] = true;
+  else if (['save', 'census', 'no-auto', 'no-automation', 'marks-continue', 'stall-seen', 'snapshots'].includes(a.slice(2))) A[a.slice(2)] = true;
   else A[a.slice(2)] = argv[++i];
 }
 const ID = A._[0];
@@ -184,6 +190,28 @@ catch (e) {
   fail('load()', e);
 }
 
+// ---- a resumed run (--runtime): counters and memory outside player, as the snapshot recorded them ----------------------
+const RUNTIME = A.runtime ? JSON.parse(fs.readFileSync(A.runtime, 'utf8')) : null;
+if (RUNTIME) {
+  try {
+    run(`tmtLoader.ticks = ${Number(RUNTIME.ticks) || 0}; tmtLoader.gameSeconds = ${Number(RUNTIME.gameSeconds) || 0}`, 'runtime');
+    if (RUNTIME.auto) {
+      if (run('typeof tmtLoader.restoreRuntime', 'x') !== 'function') throw new Error('this core has no restoreRuntime (automation off?)');
+      run(`tmtLoader.restoreRuntime(${JSON.stringify(RUNTIME.auto)})`, 'runtime');
+    }
+    R.resumed = { ticks: Number(RUNTIME.ticks) || 0, gameSeconds: Number(RUNTIME.gameSeconds) || 0, auto: !!RUNTIME.auto, monitor: !!RUNTIME.monitor };
+  } catch (e) { fail('runtime', e); }
+}
+if (A.predicates) {
+  const list = JSON.parse(fs.readFileSync(A.predicates, 'utf8'));
+  R.predicates = list.map(([name, src]) => {
+    const o = { name, compiles: false, evaluates: false };
+    try { globalThis.__tmtPredSrc = src; run('globalThis.__tmtPred = tmtLoader.predicate(globalThis.__tmtPredSrc)', 'predicate'); o.compiles = true; } catch (e) { o.error = errText(e); return o; }
+    try { o.value = !!run('globalThis.__tmtPred()', 'predicate'); o.evaluates = true; } catch (e) { o.error = errText(e); }
+    return o;
+  });
+}
+
 // ---- import (tmtLoader.loadFrom): the game's own importSave writes storage; the page would reload here -------
 if (A.import) {
   try {
@@ -219,7 +247,7 @@ try {
   const t1 = Date.now();
   const MARKS = A.marks ? JSON.parse(fs.readFileSync(A.marks, 'utf8')) : [];
   const monitored = MARKS.length || A.stall || A['wall-ms'];
-  if (monitored) run(`globalThis.__tmtMonitor = ${MONITOR_SRC}([${MARKS.map(([n, e]) => `[${JSON.stringify(n)}, function(){ return (${e}); }]`).join(',')}], ${Number(A.stall || 0)}, ${Number(A['wall-ms'] || 0)}, ${A['marks-continue'] ? 'true' : 'false'}, ${A['stall-seen'] ? 'true' : 'false'})`, 'monitor');
+  if (monitored) run(`globalThis.__tmtMonitor = ${MONITOR_SRC}([${MARKS.map(([n, e]) => `[${JSON.stringify(n)}, function(){ return (${e}); }]`).join(',')}], ${Number(A.stall || 0)}, ${Number(A['wall-ms'] || 0)}, ${A['marks-continue'] ? 'true' : 'false'}, ${A['stall-seen'] ? 'true' : 'false'}, ${A['stop-mark'] ? JSON.stringify(A['stop-mark']) : 'null'}, ${A.snapshots ? 'true' : 'false'}, ${RUNTIME && RUNTIME.monitor && RUNTIME.monitor.seen && RUNTIME.monitor.seen.length ? JSON.stringify(RUNTIME.monitor) : 'null'})`, 'monitor');
   const untilSrc = monitored ? `function(){ ${A.until ? `if (${A.until}) return true;` : ''} return __tmtMonitor.check(); }` : A.until ? `function(){ return (${A.until}); }` : 'null';
   const r = run(`${DRIVE_SRC}(${ticks}, ${diff}, ${LEG === 'policy'}, ${untilSrc})`, 'ticks-' + LEG);
   if (monitored) {
@@ -229,6 +257,7 @@ try {
     // with the NUMBER of registered features, so a table change moves `hash` without any game state moving
     const exAu = (j) => { const o = JSON.parse(j); delete o.au; return JSON.stringify(o); };
     for (const [n] of MARKS) R.marks[n] = m.hits[n] ? { ticks: m.hits[n].ticks, gameSeconds: m.hits[n].gameSeconds, hash: sha256hex(m.hits[n].json).slice(0, 16), hashGame: sha256hex(exAu(m.hits[n].json)).slice(0, 16), actions: m.hits[n].actions } : null;
+    if (A.snapshots) { R.snapshots = {}; for (const [n] of MARKS) if (m.hits[n] && m.hits[n].snapshot) R.snapshots[n] = m.hits[n].snapshot; }
     if (A.stall || A['wall-ms']) R.stall = { window: Number(A.stall || 0), seen: !!A['stall-seen'], stalled: m.stalled, walled: m.walled, wallMs: Number(A['wall-ms'] || 0), lastProgress: m.lastProgress };
   }
   R.ticks_ms = Date.now() - t1;
@@ -266,6 +295,7 @@ try {
       if (L.milestones) o.nextMilestones = Object.keys(L.milestones).filter(id => !isNaN(id) && !(P.milestones || []).map(String).includes(String(id))).slice(0, 2).map(id => id + ': ' + (L.milestones[id].requirementDescription || ''));
       out[l] = o; }
     return out; })()`, 'detail');
+  if (A.eval) { try { R.eval = run(`JSON.parse(JSON.stringify(${A.eval}))`, 'eval'); } catch (e) { R.eval = { error: errText(e) }; } }
   if (A['state-out']) writeOut(A['state-out'], json);
   if (A['player-out']) writeOut(A['player-out'], run('JSON.stringify(player)', 'player'));
   if (A.save) { run('tmtLoader.save()', 'save'); const s = storageShim.list(lsStore); R.storage_keys = Object.keys(s); if (A['save-storage']) writeOut(A['save-storage'], JSON.stringify(s, null, 1)); }

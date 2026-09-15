@@ -1,0 +1,15 @@
+{
+  "game": "something",
+  "format": "docs/harness.md#the-ladder-file",
+  "plan": "NewDocs/plans/tmt/tmt-automation-plan.md §7 (the generality control) and §10a.2 item 3; predicates = gates-s1.mjs MARKS.a1st / a2st verbatim",
+  "digest": null,
+  "diffRule": "a mark's diff = the coarsest calibration diff whose game-seconds at the mark are within 2 % of diff 1's (H1-3); null = not calibrated",
+  "helpers": {},
+  "marks": [
+    {"id":"S01","name":"first fundamental reset (fundamental.total ≥ 1)","predicate":"player.fundamental.total.gte(1)","wall":"A1-3 (i)","source":{"plan":"§7 A1-3 (i)","reached":"A1-3 @3bc12bf, S1-1 @777eceeb (kinds=reset,upgrades,buyables): 102 ticks ×0.05 (hashGame 5a03f1523ebc337d); 6 ticks ×1 (hashGame 2fc43f3274a79fb0)"},"diff":null},
+    {"id":"S02","name":"unlock:upg:12","predicate":"hasUpgrade('unlock', 12)","wall":"A1-3 (ii)","source":{"plan":"§7 A1-3 (ii)","reached":"A1-3 @3bc12bf, S1-1: 3733 ×0.05 (646cfcd97455704b); 308 ×1 (72bbc89f083b4d50)"},"diff":null},
+    {"id":"S03","name":"primitive reset ≥ 1 (primitive.total ≥ 1)","predicate":"player.primitive.total.gte(1)","wall":"A2-1 (i)","source":{"plan":"§7 A2-1 (i)","reached":"A2-1 @71da72e / 17260e03, S1-1: 4163 ×0.05 (32c54b4e207fe18e); 309 ×1 (5de8903ce94ad67b)"},"diff":null},
+    {"id":"S04","name":"primitive ms 1 (\"10 Numbers\")","predicate":"hasMilestone('primitive', 1)","wall":"A2-1 (ii)","source":{"plan":"§7 A2-1 (ii)","reached":"A2-1, S1-1: 5963 ×0.05 (713f792e30d60f5d); 399 ×1 (070dc67eca5ac00f)"},"diff":null},
+    {"id":"S05","name":"primitive ms 2 (\"100,000 Numbers\")","predicate":"hasMilestone('primitive', 2)","wall":"A2-1 (iii)","source":{"plan":"§7 A2-1 (iii)","reached":"A2-1, S1-1: 9563 ×0.05 (f77c6ac6dfd7bf1a); 579 ×1 (524822d719ceea18)"},"diff":null}
+  ]
+}

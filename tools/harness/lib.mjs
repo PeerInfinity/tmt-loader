@@ -76,3 +76,16 @@ export function canonicalJSON(text) {
 }
 /** Top-level key order of a JSON object text. */
 export const topKeys = (text) => Object.keys(JSON.parse(text));
+
+/** A ladder file (docs/harness.md): header keys + `marks` [{id, name, predicate, wall, source, diff, …}]. */
+export const readLadder = (file) => JSON.parse(fs.readFileSync(path.resolve(REPO, file), 'utf8'));
+/** Writes a ladder in its checked-in shape: one header key per line, one mark per line. */
+export function writeLadder(file, L) {
+  const head = Object.entries(L).filter(([k]) => k !== 'marks').map(([k, v]) => `  ${JSON.stringify(k)}: ${JSON.stringify(v)},`);
+  const marks = L.marks.map((m, i) => `    ${JSON.stringify(m)}${i < L.marks.length - 1 ? ',' : ''}`);
+  fs.writeFileSync(path.resolve(REPO, file), ['{', ...head, '  "marks": [', ...marks, '  ]', '}'].join('\n') + '\n');
+}
+/** player JSON text with the state mask applied (`time`, `offTime` at every depth) — for divergence reports. */
+export function maskedPlayer(text, mask = ['time', 'offTime']) {
+  return JSON.stringify(JSON.parse(text), function (k, v) { return mask.includes(k) ? undefined : v; });
+}
