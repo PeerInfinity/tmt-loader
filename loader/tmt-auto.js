@@ -299,7 +299,7 @@
     player[AU].features[f.id] = !player[AU].features[f.id];
     player[AU].disclosed = true;
   }
-  function onColor(f) { return active(f) ? '#4f9a6a' : '#666666'; }
+  function onColor(f) { return active(f) ? '#4f9a6a' : featureUnlocked(f) ? '#3d6f91' : '#666666'; }
 
   function buildClickables() {
     for (var k in clickables) if (!isNaN(k)) delete clickables[k];

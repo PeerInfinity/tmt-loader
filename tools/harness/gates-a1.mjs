@@ -150,7 +150,7 @@ async function part2Page(id) {
     const target = b.find((x) => /^Off/.test(x.display));
     check(!!target, `an unlocked feature to click (${target && target.title})`);
     if (target) {
-      await page.locator('#app button.clickable, #app .clickable').filter({ hasText: target.title }).first().click();
+      await page.locator('#app button.upg').filter({ hasText: target.title }).first().click();
       await page.waitForTimeout(400);
       const st = await page.evaluate((k) => ({ on: player.au.features[layers.au.clickables[k].tmtFeature], disclosed: player.au.disclosed, text: document.querySelector('#app').innerText }), target.id);
       check(st.on === true, `click turned "${target.title}" on`);
