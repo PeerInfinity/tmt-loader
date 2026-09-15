@@ -21,8 +21,9 @@ const step = (name, ok, detail = {}) => { result.steps.push({ name, ok, ...detai
 const parent = fs.mkdtempSync(path.join(os.tmpdir(), 'tmt-loader-pages-'));
 const clone = path.join(parent, 'tmt-loader');
 execFileSync('git', ['clone', '-q', '--depth', '1', `file://${REPO}`, clone]);
-result.cloneHead = git(clone, 'rev-parse', '--short', 'HEAD');
-step('clone', result.cloneHead === result.commit, { clone, head: result.cloneHead });
+// full SHAs: the short form's length grows with the object count and differs between the repo and a depth-1 clone
+result.cloneHead = git(clone, 'rev-parse', 'HEAD');
+step('clone', result.cloneHead === git(REPO, 'rev-parse', 'HEAD'), { clone, head: result.cloneHead });
 
 const server = await startServer(parent);
 const base = `${server.url}tmt-loader/`;
