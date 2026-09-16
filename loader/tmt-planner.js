@@ -1345,7 +1345,10 @@
   // not satisfy comes back as ~1.797e308 — the representation's limit, not a number the game ever names. Measured: the
   // fresh-game fallback chased `ach:a:42` at 1.79769313522374e308 for ten rounds. Such a goal is not targetable.
   var LOG10_MAX = Math.log10(Number.MAX_VALUE);
-  function saturated(threshold) { if (threshold == null) return false; var l = lg(threshold); return isFinite(l) && l >= LOG10_MAX - 1e-6; }
+  // ⚠ AT the ceiling, not ABOVE it. `>= LOG10_MAX` also catches every legitimate Decimal threshold above 1.8e308 — at
+  // the PTR frontier the e reset's own requirement is 1.0004e600, and reading that as "the probe's limit" told the
+  // round that M11 and M14 were unreachable for a reason that is not true (measured in the campaign's first leg).
+  function saturated(threshold) { if (threshold == null) return false; var l = lg(threshold); return isFinite(l) && Math.abs(l - LOG10_MAX) <= 1e-6; }
   function shortfallOf(t) {
     if (t.threshold == null || t.held == null) return Infinity;
     var a = lg(t.threshold), b = lg(t.held);
