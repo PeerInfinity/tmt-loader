@@ -1411,14 +1411,28 @@
    * the goals below it", §4a). The estimate is measured, not assumed: one epoch's projected log-gain from the wait rate
    * plus any producing reset, against the log-distance still to cover.
    */
+  /**
+   * What the dimension IS, read as P1a 12a.5 requires: the larger of the value at this instant and the MAX the wait
+   * window just saw. A dimension a reset empties and regrows reads near zero right after a reset, and every log-ratio
+   * taken from that instant is wrong by the whole amplitude — measured at the frontier: `player.points` read 3.47 one
+   * round after reading 1.19e220, and the reachability estimate then said a 1e600 threshold was 1.7 epochs away.
+   */
+  function observed(dim, held, K) {
+    var w = K && K.producers && K.producers.wait.rates[dim];
+    var a = held == null ? null : D(held), b = w ? D(w.max) : null;
+    if (a === null) return b === null ? null : dstr(b);
+    if (b === null) return dstr(a);
+    return dstr(b.gt(a) ? b : a);
+  }
   function reachable(t, K) {
     if (t.threshold == null || t.held == null) return { ok: true, why: 'no threshold to be far from' };
-    var hi = lg(t.threshold), lo = lg(t.held);
+    var seen = observed(t.dimension, t.held, K);
+    var hi = lg(t.threshold), lo = lg(seen);
     if (!isFinite(hi)) return { ok: true, why: 'the threshold is not a finite log' };
     if (!isFinite(lo)) lo = 0;
     var dist = hi - lo;
     if (dist <= 0) return { ok: true, dist: dist };
-    var sc = screenCandidate({ config: currentConfig() }, K, t, O('k'));
+    var sc = screenCandidate({ config: currentConfig() }, K, { dimension: t.dimension, threshold: t.threshold, held: seen }, O('k'));
     var gain = sc.projectedLog10 - lo;
     if (!isFinite(gain) || gain <= 0) return { ok: false, dist: dist, perEpoch: 0, why: 'the measured configuration does not move this dimension over an epoch' };
     var rounds = dist / gain;
@@ -1518,8 +1532,9 @@
       var t = targetForChains(entries[i].chains, K);
       if (!t.blocked) { active = { source: 'sticky', mark: entries[i].mark, name: entries[i].name, predicate: entries[i].predicate, entry: entries[i] }; target = t; break; }
       skipped.push({ mark: entries[i].mark, dimension: t.dimension, why: t.why });
-      var c = clockFor(entries[i].mark, t.dimension, t.held, true);
-      accrue(c, t.held, true);
+      var seenB = observed(t.dimension, t.held, K);
+      var c = clockFor(entries[i].mark, t.dimension, seenB, true);
+      accrue(c, seenB, true);
       if (c.armed && c.stall >= O('goalStallK')) S.abandoned[entries[i].mark] = { round: S.round, why: 'blocked and stalled ' + c.stall + ' rounds on ' + t.dimension };
     }
     // the fallback (omsi's heuristic mode): the best DISCOVERED goal when the sticky list is empty or all-blocked
@@ -1561,8 +1576,9 @@
     S.goal = active.mark;
 
     // --- the clock of the active goal, and the anti-fixation escalation ---
-    var clock = clockFor(active.mark, target.dimension, target.held, false);
-    accrue(clock, target.held, false);
+    var seenNow = observed(target.dimension, target.held, K);      // the window max, not the instant (P1a 12a.5)
+    var clock = clockFor(active.mark, target.dimension, seenNow, false);
+    accrue(clock, seenNow, false);
     rec.clock = { dimension: clock.dimension, stall: clock.stall, armed: clock.armed, rose: !!clock.rose, rounds: clock.rounds, best: clock.best };
     if (clock.stall >= O('goalStallK')) {
       S.abandoned[active.mark] = { round: S.round, why: 'the target ' + target.dimension + ' did not rise for ' + clock.stall + ' rounds' };

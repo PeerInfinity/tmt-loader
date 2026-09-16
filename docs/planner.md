@@ -225,7 +225,13 @@ one, because a round plays candidates on a copy.
    ⚠ "Possible" is asked over the epoch, not over the knowledge walk's 10-second wait window: `canReset` is an instant
    (P1a 12a.5), so a reset whose requirement regrows in 40 game-seconds reads *impossible* to a 10-second window while
    the epoch being planned is 300 seconds long. A `canReset is false` hop counts as possible when the producing layer's
-   measured cycle (`resetAt / regrowth`) fits inside `k`. A goal whose
+   measured cycle (`resetAt / regrowth`) fits inside `k`.
+   ⚠ **Possible is not REACHABLE.** A dimension that moves every tick can still be 380 orders of magnitude short of what
+   the hop above it needs (the PTR frontier: `player.points` against the e reset's 1.0004e600). `reachable()` prices the
+   distance with the same measured model the screen uses — one epoch's projected log-gain against the log-distance left
+   — and a target that needs more than `reachRounds` epochs is skipped like a blocked one, with the estimate in its
+   reason. Without it the first ladder entry is pursued forever and every entry below it starves (omsi §4a's "a dead top
+   goal shadows the goals below it"); with it the frontier's active goal is M15, boosters 49 of 100. A goal whose
    chain has no possible hop is **blocked**; the round moves to the next sticky entry (goal-LIST-scoped setup rounds) and
    the blocked one keeps its own clock. Where a mark resolves to several goals (a conjunction), the round works on the
    nearest open one — the smallest log10 shortfall, ties by chain order.
@@ -313,6 +319,7 @@ a sweep have one behind them. The rest are hand-chosen starting points, and the 
 | `gainX` | `2,4` | the `gain>=Nx` candidates | S1's measured reset policies |
 | `intervals` | *(empty)* | `interval>=T` seeds — none by default | ⚖ the no-arbitrary-waiting ruling |
 | `minRise` | 1e-9 | the log10 rise that counts as a rise for the clocks | — |
+| `reachRounds` | 100 | epochs at the measured rate beyond which a goal's target counts as out of reach and the goal yields | hand-chosen: two orders of magnitude of slack over the ~4 epochs M15 needs at the frontier |
 | `maxRounds` | 0 | 0 = unbounded; a bound for a probe | — |
 
 ### Reading a round log (`--rounds-out`, `planner.rounds[]`)
