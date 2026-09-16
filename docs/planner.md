@@ -35,6 +35,8 @@ loads it lands on the same tick and the same hash as one that does not (gate P1a
 - `--planner-script <file>` → the file's source runs in the game's global scope, wrapped in a function, **before** the
   tick loop; its JSON return lands in the result's `plannerScript`. This is how a gate drives an excursion.
 - `--knowledge-out` / `--goals-out` → the dumps below, written at the stop (after the ticks).
+- `--planner-k <n>` → the wait window the producers are measured over, in game-seconds (default **10**, for cost). ⚠ It
+  is a knob, not a constant: see the window measurement under *Producers*.
 
 ## Part 1 — snapshot / restore / excursion / measure
 
@@ -135,7 +137,11 @@ Every perturbed value is saved and restored, and the whole walk runs inside one 
   moved path carries the net `rate`, plus `min` / `max` over the window. ⚠ A net rate alone lies here: a dimension a
   reset empties and regrows can return to exactly its starting value (measured on PTR at M09: `player.points`
   oscillates 10 → 0 → 5.5e9 → 10 across ten ticks, net 0). "Nothing moves this" therefore means **max === min**, not
-  rate === 0.
+  rate === 0. ⚠ The rate is **window-dependent**. Measured at the PTR frontier on `player.b.points`: **0.300/s at
+  k=10, 0.167 at k=30, 0.117 at k=60, 0.080 at k=150, 0.030 at k=300** (min 0, max 62 — a higher-row reset wipes it
+  mid-window). A window shorter than the producing layer's reset cycle reads only its rising phase, so `k` belongs to
+  the caller (`--planner-k`), and a chain that says "reachable" on a short window is saying something about that
+  window. The gate prices it (`gates-p1a --part 2`).
 - **`reset:<l>`**: `doReset(l)` on the copy, the full delta of every numeric leaf, the measured gain, and the regrowth
   rate over `k` further ticks (the seed of P1b's capacity probe). A reset the game will not allow right now is measured
   with its requirement **injected** (omsi's injected-resource measurement, §3.3): the base dimension is raised to
