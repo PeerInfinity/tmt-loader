@@ -50,6 +50,7 @@ export const MONITOR_SRC = `(function(MARKS, STALL, WALL_MS, CONTINUE, SEEN, STO
       return !CONTINUE && MARKS.length > 0 && MARKS.every(([n]) => hits[n]);
     },
     result() { return { hits, stalled, walled, lastProgress: { ticks: lastTick, gameSeconds: lastGs } }; },
+    state,                     // the detector's own memory, for a snapshot taken at the STOP (--stop-snapshot)
   };
 })`;
 

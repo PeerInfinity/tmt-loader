@@ -7,6 +7,13 @@
 //                      [--profile off|all|saved] [--exclude k1,k2] [--auto-opt "k=v;k2=v2"] [--no-auto] [--no-automation]
 //                      [--marks marks.json ([[name, "<js>"], …])] [--marks-continue] [--stall <game-seconds> [--stall-seen]] [--wall-ms <ms>]
 //                      [--stop-mark <name>] [--snapshots] [--runtime runtime.json] [--predicates list.json] [--eval "<js>"]
+//                      [--planner] [--planner-ladder ladder.json] [--planner-script f.js] [--knowledge-out f] [--goals-out f]
+//                      [--stop-snapshot]
+//   --planner: loader/tmt-planner.js is run AFTER tmt-auto.js (the advanced system's foundation, P1a — harness only; the
+//   page never fetches it). --planner-ladder: its JSON becomes tmtLoader.plannerLadder (the sticky goal source).
+//   --planner-script: the file's source runs in the game's global scope, wrapped in a function, BEFORE the tick loop —
+//   an excursion / measurement drive; its JSON return lands in R.plannerScript. --knowledge-out / --goals-out: the
+//   planner's dump written AT THE STOP (after the ticks).
 //   --stop-mark: stop after the first tick that mark holds (the ladder's --to). --snapshots: each mark's first tick also
 //   records the unmasked player and the memory outside it (tmtLoader.runtimeState() + the detector's). --runtime: a
 //   snapshot's `runtime` restored after load() — tick/game-second counters, the registry's memory, the detector's.
@@ -34,7 +41,7 @@ const A = { _: [] };
 for (let i = 0; i < argv.length; i++) {
   const a = argv[i];
   if (!a.startsWith('--')) A._.push(a);
-  else if (['save', 'census', 'no-auto', 'no-automation', 'marks-continue', 'stall-seen', 'snapshots'].includes(a.slice(2))) A[a.slice(2)] = true;
+  else if (['save', 'census', 'no-auto', 'no-automation', 'marks-continue', 'stall-seen', 'snapshots', 'planner', 'stop-snapshot'].includes(a.slice(2))) A[a.slice(2)] = true;
   else A[a.slice(2)] = argv[++i];
 }
 const ID = A._[0];
@@ -178,6 +185,13 @@ if (AUTOMATION && manifest.auto && !A['no-auto']) {
 }
 try { run(fs.readFileSync(path.join(REPO, 'loader/tmt-auto.js'), 'utf8'), 'loader/tmt-auto.js'); }
 catch (e) { R.file_errors.push({ file: 'loader/tmt-auto.js', error: String(e.message).slice(0, 200) }); }
+// loader/tmt-planner.js — the advanced system's foundation (docs/planner.md). Harness-only in P1a: it is loaded ONLY
+// with --planner, adds nothing to `player` and runs nothing on its own (gate P1a-1 (e) measures that).
+if (A.planner) {
+  if (A['planner-ladder']) globalThis.tmtLoader.plannerLadder = JSON.parse(fs.readFileSync(A['planner-ladder'], 'utf8'));
+  try { run(fs.readFileSync(path.join(REPO, 'loader/tmt-planner.js'), 'utf8'), 'loader/tmt-planner.js'); R.planner = { loaded: true }; }
+  catch (e) { R.file_errors.push({ file: 'loader/tmt-planner.js', error: String(e.message).slice(0, 200) }); R.planner = { loaded: false }; }
+}
 R.load_ms = Date.now() - t0;
 const errText = (e) => { const st = String(e && e.stack || ''); const at = (st.match(/^\s+at .*$/m) || [''])[0].trim(); return `${e && e.name || 'Error'}: ${String(e && e.message || e).slice(0, 300)}${at ? ' @ ' + at.slice(0, 160) : ''}`; };
 const fail = (stage, e) => { R.ok = false; R.failed_at = stage; R.error = errText(e); out(R); proc.exit(0); };
@@ -211,6 +225,15 @@ if (A.predicates) {
     return o;
   });
 }
+
+// ---- the planner drive (--planner-script): excursions and measurements BEFORE the tick loop ------------------------
+if (A['planner-script']) {
+  const src = fs.readFileSync(A['planner-script'], 'utf8');
+  try {
+    R.plannerScript = run(`JSON.parse(JSON.stringify((function(){\n${src}\n})()))`, path.basename(A['planner-script']));
+  } catch (e) { R.plannerScript = { error: errText(e) }; R.ok = false; R.failed_at = 'planner-script'; out(R); proc.exit(0); }
+}
+if (A.planner && R.planner) { try { R.planner.engine = run('tmtLoader.planner.engine()', 'x'); R.planner.available = run('!!tmtLoader.planner.available', 'x'); } catch (e) { R.planner.error = errText(e); } }
 
 // ---- import (tmtLoader.loadFrom): the game's own importSave writes storage; the page would reload here -------
 if (A.import) {
@@ -296,6 +319,23 @@ try {
       out[l] = o; }
     return out; })()`, 'detail');
   if (A.eval) { try { R.eval = run(`JSON.parse(JSON.stringify(${A.eval}))`, 'eval'); } catch (e) { R.eval = { error: errText(e) }; } }
+  if (A['knowledge-out'] || A['goals-out']) {
+    const t2 = Date.now();
+    const KOPTS = JSON.stringify({ ...(A['planner-k'] ? { k: Number(A['planner-k']) } : {}) });
+    const K = run(`tmtLoader.planner.knowledge(${KOPTS})`, 'knowledge');
+    R.knowledge_ms = Date.now() - t2;
+    if (A['knowledge-out']) writeOut(A['knowledge-out'], JSON.stringify(K, null, 1) + '\n');
+    if (A['goals-out']) {
+      const t3 = Date.now();
+      globalThis.__tmtK = K;
+      writeOut(A['goals-out'], JSON.stringify(run('tmtLoader.planner.goals({ knowledge: globalThis.__tmtK })', 'goals'), null, 1) + '\n');
+      R.goals_ms = Date.now() - t3;
+    }
+    R.knowledge_counts = K.counts;
+  }
+  // --stop-snapshot: the same record a mark's snapshot carries, taken at the STOP (a stall, a wall, --ticks) — the
+  // fixture a run that ends nowhere near a ladder mark leaves behind (docs/harness.md).
+  if (A['stop-snapshot']) R.stopSnapshot = run(`({ player: JSON.stringify(player), runtime: { auto: tmtLoader.runtimeState ? tmtLoader.runtimeState() : null, monitor: (typeof __tmtMonitor !== 'undefined' && __tmtMonitor.state) ? __tmtMonitor.state() : null } })`, 'stop-snapshot');
   if (A['state-out']) writeOut(A['state-out'], json);
   if (A['player-out']) writeOut(A['player-out'], run('JSON.stringify(player)', 'player'));
   if (A.save) { run('tmtLoader.save()', 'save'); const s = storageShim.list(lsStore); R.storage_keys = Object.keys(s); if (A['save-storage']) writeOut(A['save-storage'], JSON.stringify(s, null, 1)); }

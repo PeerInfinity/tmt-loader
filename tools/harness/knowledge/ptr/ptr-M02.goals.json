@@ -1,0 +1,5007 @@
+{
+ "contract": 1,
+ "game": "ptr",
+ "ticks": 1361,
+ "gameSeconds": 1361,
+ "ladder": {
+  "game": "ptr",
+  "marks": 53
+ },
+ "sticky": [
+  {
+   "mark": "M03",
+   "name": "keep-upgrade milestones",
+   "predicate": "hasMilestone('b',0) && hasMilestone('g',0)",
+   "predicateError": null,
+   "resolved": [
+    {
+     "id": "ms:b:0",
+     "offered": true,
+     "dimension": "player.b.best",
+     "threshold": "8",
+     "held": "1"
+    },
+    {
+     "id": "ms:g:0",
+     "offered": true,
+     "dimension": "player.g.best",
+     "threshold": "8",
+     "held": "4"
+    }
+   ],
+   "values": [],
+   "unresolved": [],
+   "chains": [
+    {
+     "goal": "ms:b:0",
+     "hidden": false,
+     "hops": [
+      {
+       "dimension": "player.b.best",
+       "held": "1",
+       "threshold": "8",
+       "producers": [
+        "reset:b"
+       ],
+       "impossible": {
+        "why": "canReset is false: the requirement is above the base amount",
+        "layer": "b",
+        "resetAt": "1000",
+        "requires": "200",
+        "nextAt": "1000",
+        "baseAmount": "10",
+        "requiresDimension": "player.points",
+        "windowMax": "135.9239896366956"
+       }
+      },
+      {
+       "dimension": "player.points",
+       "held": "10",
+       "threshold": "1000",
+       "producers": [
+        "wait"
+       ],
+       "rate": "12.592398963669561",
+       "windowMin": "0",
+       "windowMax": "135.9239896366956"
+      }
+     ],
+     "firstImpossible": {
+      "at": 0,
+      "dimension": "player.b.best",
+      "impossible": {
+       "why": "canReset is false: the requirement is above the base amount",
+       "layer": "b",
+       "resetAt": "1000",
+       "requires": "200",
+       "nextAt": "1000",
+       "baseAmount": "10",
+       "requiresDimension": "player.points",
+       "windowMax": "135.9239896366956"
+      }
+     },
+     "depth": 2
+    },
+    {
+     "goal": "ms:g:0",
+     "hidden": false,
+     "hops": [
+      {
+       "dimension": "player.g.best",
+       "held": "4",
+       "threshold": "8",
+       "producers": [
+        "reset:g"
+       ],
+       "impossible": {
+        "why": "canReset is false: the requirement is above the base amount",
+        "layer": "g",
+        "resetAt": "1798876.8588190603",
+        "requires": "200",
+        "nextAt": "1798876.8588190603",
+        "baseAmount": "10",
+        "requiresDimension": "player.points",
+        "windowMax": "135.9239896366956"
+       }
+      },
+      {
+       "dimension": "player.points",
+       "held": "10",
+       "threshold": "1798876.8588190603",
+       "producers": [
+        "wait"
+       ],
+       "rate": "12.592398963669561",
+       "windowMin": "0",
+       "windowMax": "135.9239896366956"
+      }
+     ],
+     "firstImpossible": {
+      "at": 0,
+      "dimension": "player.g.best",
+      "impossible": {
+       "why": "canReset is false: the requirement is above the base amount",
+       "layer": "g",
+       "resetAt": "1798876.8588190603",
+       "requires": "200",
+       "nextAt": "1798876.8588190603",
+       "baseAmount": "10",
+       "requiresDimension": "player.points",
+       "windowMax": "135.9239896366956"
+      }
+     },
+     "depth": 2
+    }
+   ]
+  },
+  {
+   "mark": "M04",
+   "name": "passive PP",
+   "predicate": "hasMilestone('g',1)",
+   "predicateError": null,
+   "resolved": [
+    {
+     "id": "ms:g:1",
+     "offered": true,
+     "dimension": "player.g.best",
+     "threshold": "10",
+     "held": "4"
+    }
+   ],
+   "values": [],
+   "unresolved": [],
+   "chains": [
+    {
+     "goal": "ms:g:1",
+     "hidden": false,
+     "hops": [
+      {
+       "dimension": "player.g.best",
+       "held": "4",
+       "threshold": "10",
+       "producers": [
+        "reset:g"
+       ],
+       "impossible": {
+        "why": "canReset is false: the requirement is above the base amount",
+        "layer": "g",
+        "resetAt": "1798876.8588190603",
+        "requires": "200",
+        "nextAt": "1798876.8588190603",
+        "baseAmount": "10",
+        "requiresDimension": "player.points",
+        "windowMax": "135.9239896366956"
+       }
+      },
+      {
+       "dimension": "player.points",
+       "held": "10",
+       "threshold": "1798876.8588190603",
+       "producers": [
+        "wait"
+       ],
+       "rate": "12.592398963669561",
+       "windowMin": "0",
+       "windowMax": "135.9239896366956"
+      }
+     ],
+     "firstImpossible": {
+      "at": 0,
+      "dimension": "player.g.best",
+      "impossible": {
+       "why": "canReset is false: the requirement is above the base amount",
+       "layer": "g",
+       "resetAt": "1798876.8588190603",
+       "requires": "200",
+       "nextAt": "1798876.8588190603",
+       "baseAmount": "10",
+       "requiresDimension": "player.points",
+       "windowMax": "135.9239896366956"
+      }
+     },
+     "depth": 2
+    }
+   ]
+  },
+  {
+   "mark": "M05",
+   "name": "buy-max b/g",
+   "predicate": "hasMilestone('b',1) && hasMilestone('g',2)",
+   "predicateError": null,
+   "resolved": [
+    {
+     "id": "ms:b:1",
+     "offered": true,
+     "dimension": "player.b.best",
+     "threshold": "15",
+     "held": "1"
+    },
+    {
+     "id": "ms:g:2",
+     "offered": true,
+     "dimension": "player.g.best",
+     "threshold": "15",
+     "held": "4"
+    }
+   ],
+   "values": [],
+   "unresolved": [],
+   "chains": [
+    {
+     "goal": "ms:b:1",
+     "hidden": false,
+     "hops": [
+      {
+       "dimension": "player.b.best",
+       "held": "1",
+       "threshold": "15",
+       "producers": [
+        "reset:b"
+       ],
+       "impossible": {
+        "why": "canReset is false: the requirement is above the base amount",
+        "layer": "b",
+        "resetAt": "1000",
+        "requires": "200",
+        "nextAt": "1000",
+        "baseAmount": "10",
+        "requiresDimension": "player.points",
+        "windowMax": "135.9239896366956"
+       }
+      },
+      {
+       "dimension": "player.points",
+       "held": "10",
+       "threshold": "1000",
+       "producers": [
+        "wait"
+       ],
+       "rate": "12.592398963669561",
+       "windowMin": "0",
+       "windowMax": "135.9239896366956"
+      }
+     ],
+     "firstImpossible": {
+      "at": 0,
+      "dimension": "player.b.best",
+      "impossible": {
+       "why": "canReset is false: the requirement is above the base amount",
+       "layer": "b",
+       "resetAt": "1000",
+       "requires": "200",
+       "nextAt": "1000",
+       "baseAmount": "10",
+       "requiresDimension": "player.points",
+       "windowMax": "135.9239896366956"
+      }
+     },
+     "depth": 2
+    },
+    {
+     "goal": "ms:g:2",
+     "hidden": false,
+     "hops": [
+      {
+       "dimension": "player.g.best",
+       "held": "4",
+       "threshold": "15",
+       "producers": [
+        "reset:g"
+       ],
+       "impossible": {
+        "why": "canReset is false: the requirement is above the base amount",
+        "layer": "g",
+        "resetAt": "1798876.8588190603",
+        "requires": "200",
+        "nextAt": "1798876.8588190603",
+        "baseAmount": "10",
+        "requiresDimension": "player.points",
+        "windowMax": "135.9239896366956"
+       }
+      },
+      {
+       "dimension": "player.points",
+       "held": "10",
+       "threshold": "1798876.8588190603",
+       "producers": [
+        "wait"
+       ],
+       "rate": "12.592398963669561",
+       "windowMin": "0",
+       "windowMax": "135.9239896366956"
+      }
+     ],
+     "firstImpossible": {
+      "at": 0,
+      "dimension": "player.g.best",
+      "impossible": {
+       "why": "canReset is false: the requirement is above the base amount",
+       "layer": "g",
+       "resetAt": "1798876.8588190603",
+       "requires": "200",
+       "nextAt": "1798876.8588190603",
+       "baseAmount": "10",
+       "requiresDimension": "player.points",
+       "windowMax": "135.9239896366956"
+      }
+     },
+     "depth": 2
+    }
+   ]
+  },
+  {
+   "mark": "M06",
+   "name": "row-2 threshold",
+   "predicate": "player.points.gte('1e120')",
+   "predicateError": null,
+   "resolved": [],
+   "values": [
+    {
+     "id": "value:player.points>=1e120",
+     "dimension": "player.points",
+     "threshold": "1e120",
+     "held": "10"
+    }
+   ],
+   "unresolved": [],
+   "chains": [
+    {
+     "goal": "value:player.points>=1e120",
+     "hidden": false,
+     "hops": [
+      {
+       "dimension": "player.points",
+       "held": "10",
+       "threshold": "1e120",
+       "producers": [
+        "wait"
+       ],
+       "rate": "12.592398963669561",
+       "windowMin": "0",
+       "windowMax": "135.9239896366956"
+      }
+     ],
+     "firstImpossible": null,
+     "depth": 1
+    }
+   ]
+  },
+  {
+   "mark": "M07",
+   "name": "first row-2 layer",
+   "predicate": "player.s.unlocked",
+   "predicateError": null,
+   "resolved": [
+    {
+     "id": "unlock:s",
+     "offered": true,
+     "dimension": "player.points",
+     "threshold": "1e120",
+     "held": "10"
+    }
+   ],
+   "values": [],
+   "unresolved": [],
+   "chains": [
+    {
+     "goal": "unlock:s",
+     "hidden": false,
+     "hops": [
+      {
+       "dimension": "player.points",
+       "held": "10",
+       "threshold": "1e120",
+       "producers": [
+        "wait"
+       ],
+       "rate": "12.592398963669561",
+       "windowMin": "0",
+       "windowMax": "135.9239896366956"
+      }
+     ],
+     "firstImpossible": null,
+     "depth": 1
+    }
+   ]
+  },
+  {
+   "mark": "M08",
+   "name": "auto-generators available",
+   "predicate": "hasMilestone('s',3)",
+   "predicateError": null,
+   "resolved": [
+    {
+     "id": "ms:s:3",
+     "offered": true,
+     "dimension": "player.s.best",
+     "threshold": "5",
+     "held": "0"
+    }
+   ],
+   "values": [],
+   "unresolved": [],
+   "chains": [
+    {
+     "goal": "ms:s:3",
+     "hidden": false,
+     "hops": [
+      {
+       "dimension": "player.s.best",
+       "held": "0",
+       "threshold": "5",
+       "producers": [
+        "reset:s"
+       ],
+       "impossible": {
+        "why": "canReset is false: the requirement is above the base amount",
+        "layer": "s",
+        "resetAt": "1e120",
+        "requires": "1e120",
+        "nextAt": "1e120",
+        "baseAmount": "10",
+        "requiresDimension": "player.points",
+        "windowMax": "135.9239896366956"
+       }
+      },
+      {
+       "dimension": "player.points",
+       "held": "10",
+       "threshold": "1e120",
+       "producers": [
+        "wait"
+       ],
+       "rate": "12.592398963669561",
+       "windowMin": "0",
+       "windowMax": "135.9239896366956"
+      }
+     ],
+     "firstImpossible": {
+      "at": 0,
+      "dimension": "player.s.best",
+      "impossible": {
+       "why": "canReset is false: the requirement is above the base amount",
+       "layer": "s",
+       "resetAt": "1e120",
+       "requires": "1e120",
+       "nextAt": "1e120",
+       "baseAmount": "10",
+       "requiresDimension": "player.points",
+       "windowMax": "135.9239896366956"
+      }
+     },
+     "depth": 2
+    }
+   ]
+  },
+  {
+   "mark": "M09",
+   "name": "all three (a33)",
+   "predicate": "hasAchievement('a',33)",
+   "predicateError": null,
+   "resolved": [
+    {
+     "id": "ach:a:33",
+     "offered": true,
+     "dimension": null,
+     "threshold": null,
+     "held": null
+    }
+   ],
+   "values": [],
+   "unresolved": [],
+   "chains": [
+    {
+     "goal": "ach:a:33",
+     "hidden": false,
+     "hops": [],
+     "firstImpossible": null,
+     "depth": 0
+    }
+   ]
+  },
+  {
+   "mark": "M10",
+   "name": "native toggles adopted",
+   "predicate": "player.b.auto === true && player.g.auto === true",
+   "predicateError": null,
+   "resolved": [],
+   "values": [],
+   "unresolved": [
+    "player.b.auto === true",
+    "player.g.auto === true"
+   ],
+   "chains": [],
+   "kind": "predicate-only"
+  },
+  {
+   "mark": "M11",
+   "name": "e11 before Enhancers",
+   "predicate": "hasUpgrade('e',11)",
+   "predicateError": null,
+   "resolved": [
+    {
+     "id": "upg:e:11",
+     "offered": false,
+     "dimension": null,
+     "threshold": null,
+     "held": null
+    }
+   ],
+   "values": [],
+   "unresolved": [],
+   "chains": [
+    {
+     "goal": "upg:e:11",
+     "hidden": true,
+     "hops": [
+      {
+       "gate": "upg:e:11",
+       "needs": [
+        "unlock:e"
+       ]
+      },
+      {
+       "dimension": "player.points",
+       "held": "10",
+       "threshold": "1e120",
+       "producers": [
+        "wait"
+       ],
+       "rate": "12.592398963669561",
+       "windowMin": "0",
+       "windowMax": "135.9239896366956"
+      }
+     ],
+     "firstImpossible": null,
+     "depth": 2
+    }
+   ]
+  },
+  {
+   "mark": "M12",
+   "name": "tax refunded",
+   "predicate": "hasUpgrade('t',23) && hasUpgrade('e',22)",
+   "predicateError": null,
+   "resolved": [
+    {
+     "id": "upg:t:23",
+     "offered": false,
+     "dimension": null,
+     "threshold": null,
+     "held": null
+    },
+    {
+     "id": "upg:e:22",
+     "offered": false,
+     "dimension": null,
+     "threshold": null,
+     "held": null
+    }
+   ],
+   "values": [],
+   "unresolved": [],
+   "chains": [
+    {
+     "goal": "upg:t:23",
+     "hidden": true,
+     "hops": [
+      {
+       "gate": "upg:t:23",
+       "needs": [
+        "unlock:t"
+       ]
+      },
+      {
+       "dimension": "player.points",
+       "held": "10",
+       "threshold": "1e120",
+       "producers": [
+        "wait"
+       ],
+       "rate": "12.592398963669561",
+       "windowMin": "0",
+       "windowMax": "135.9239896366956"
+      }
+     ],
+     "firstImpossible": null,
+     "depth": 2
+    },
+    {
+     "goal": "upg:e:22",
+     "hidden": true,
+     "hops": [
+      {
+       "gate": "upg:e:22",
+       "needs": [
+        "unlock:e"
+       ]
+      },
+      {
+       "dimension": "player.points",
+       "held": "10",
+       "threshold": "1e120",
+       "producers": [
+        "wait"
+       ],
+       "rate": "12.592398963669561",
+       "windowMin": "0",
+       "windowMax": "135.9239896366956"
+      }
+     ],
+     "firstImpossible": null,
+     "depth": 2
+    }
+   ]
+  },
+  {
+   "mark": "M13",
+   "name": "Space pool used right",
+   "predicate": "hasUpgrade('s',13) && hasUpgrade('s',15)",
+   "predicateError": null,
+   "resolved": [
+    {
+     "id": "upg:s:13",
+     "offered": false,
+     "dimension": null,
+     "threshold": null,
+     "held": null
+    },
+    {
+     "id": "upg:s:15",
+     "offered": false,
+     "dimension": null,
+     "threshold": null,
+     "held": null
+    }
+   ],
+   "values": [],
+   "unresolved": [],
+   "chains": [
+    {
+     "goal": "upg:s:13",
+     "hidden": true,
+     "hops": [
+      {
+       "gate": "upg:s:13",
+       "needs": [
+        "unlock:s"
+       ]
+      },
+      {
+       "dimension": "player.points",
+       "held": "10",
+       "threshold": "1e120",
+       "producers": [
+        "wait"
+       ],
+       "rate": "12.592398963669561",
+       "windowMin": "0",
+       "windowMax": "135.9239896366956"
+      }
+     ],
+     "firstImpossible": null,
+     "depth": 2
+    },
+    {
+     "goal": "upg:s:15",
+     "hidden": true,
+     "hops": [
+      {
+       "gate": "upg:s:15",
+       "needs": [
+        "unlock:s"
+       ]
+      },
+      {
+       "dimension": "player.points",
+       "held": "10",
+       "threshold": "1e120",
+       "producers": [
+        "wait"
+       ],
+       "rate": "12.592398963669561",
+       "windowMin": "0",
+       "windowMax": "135.9239896366956"
+      }
+     ],
+     "firstImpossible": null,
+     "depth": 2
+    }
+   ]
+  },
+  {
+   "mark": "M14",
+   "name": "keep b/g upgrades; resets-nothing",
+   "predicate": "hasMilestone('e',2) && hasMilestone('t',4) && hasMilestone('s',4)",
+   "predicateError": null,
+   "resolved": [
+    {
+     "id": "ms:e:2",
+     "offered": true,
+     "dimension": "player.e.best",
+     "threshold": "25",
+     "held": "0"
+    },
+    {
+     "id": "ms:t:4",
+     "offered": true,
+     "dimension": "player.t.best",
+     "threshold": "8",
+     "held": "0"
+    },
+    {
+     "id": "ms:s:4",
+     "offered": true,
+     "dimension": "player.s.best",
+     "threshold": "8",
+     "held": "0"
+    }
+   ],
+   "values": [],
+   "unresolved": [],
+   "chains": [
+    {
+     "goal": "ms:e:2",
+     "hidden": false,
+     "hops": [
+      {
+       "dimension": "player.e.best",
+       "held": "0",
+       "threshold": "25",
+       "producers": [
+        "reset:e"
+       ],
+       "impossible": {
+        "why": "canReset is false: the requirement is above the base amount",
+        "layer": "e",
+        "resetAt": "1e120",
+        "requires": "1e120",
+        "nextAt": "1e120",
+        "baseAmount": "10",
+        "requiresDimension": "player.points",
+        "windowMax": "135.9239896366956"
+       }
+      },
+      {
+       "dimension": "player.points",
+       "held": "10",
+       "threshold": "1e120",
+       "producers": [
+        "wait"
+       ],
+       "rate": "12.592398963669561",
+       "windowMin": "0",
+       "windowMax": "135.9239896366956"
+      }
+     ],
+     "firstImpossible": {
+      "at": 0,
+      "dimension": "player.e.best",
+      "impossible": {
+       "why": "canReset is false: the requirement is above the base amount",
+       "layer": "e",
+       "resetAt": "1e120",
+       "requires": "1e120",
+       "nextAt": "1e120",
+       "baseAmount": "10",
+       "requiresDimension": "player.points",
+       "windowMax": "135.9239896366956"
+      }
+     },
+     "depth": 2
+    },
+    {
+     "goal": "ms:t:4",
+     "hidden": false,
+     "hops": [
+      {
+       "dimension": "player.t.best",
+       "held": "0",
+       "threshold": "8",
+       "producers": [
+        "reset:t"
+       ],
+       "impossible": {
+        "why": "canReset is false: the requirement is above the base amount",
+        "layer": "t",
+        "resetAt": "1e120",
+        "requires": "1e120",
+        "nextAt": "1e120",
+        "baseAmount": "10",
+        "requiresDimension": "player.points",
+        "windowMax": "135.9239896366956"
+       }
+      },
+      {
+       "dimension": "player.points",
+       "held": "10",
+       "threshold": "1e120",
+       "producers": [
+        "wait"
+       ],
+       "rate": "12.592398963669561",
+       "windowMin": "0",
+       "windowMax": "135.9239896366956"
+      }
+     ],
+     "firstImpossible": {
+      "at": 0,
+      "dimension": "player.t.best",
+      "impossible": {
+       "why": "canReset is false: the requirement is above the base amount",
+       "layer": "t",
+       "resetAt": "1e120",
+       "requires": "1e120",
+       "nextAt": "1e120",
+       "baseAmount": "10",
+       "requiresDimension": "player.points",
+       "windowMax": "135.9239896366956"
+      }
+     },
+     "depth": 2
+    },
+    {
+     "goal": "ms:s:4",
+     "hidden": false,
+     "hops": [
+      {
+       "dimension": "player.s.best",
+       "held": "0",
+       "threshold": "8",
+       "producers": [
+        "reset:s"
+       ],
+       "impossible": {
+        "why": "canReset is false: the requirement is above the base amount",
+        "layer": "s",
+        "resetAt": "1e120",
+        "requires": "1e120",
+        "nextAt": "1e120",
+        "baseAmount": "10",
+        "requiresDimension": "player.points",
+        "windowMax": "135.9239896366956"
+       }
+      },
+      {
+       "dimension": "player.points",
+       "held": "10",
+       "threshold": "1e120",
+       "producers": [
+        "wait"
+       ],
+       "rate": "12.592398963669561",
+       "windowMin": "0",
+       "windowMax": "135.9239896366956"
+      }
+     ],
+     "firstImpossible": {
+      "at": 0,
+      "dimension": "player.s.best",
+      "impossible": {
+       "why": "canReset is false: the requirement is above the base amount",
+       "layer": "s",
+       "resetAt": "1e120",
+       "requires": "1e120",
+       "nextAt": "1e120",
+       "baseAmount": "10",
+       "requiresDimension": "player.points",
+       "windowMax": "135.9239896366956"
+      }
+     },
+     "depth": 2
+    }
+   ]
+  },
+  {
+   "mark": "M15",
+   "name": "Super Boosters",
+   "predicate": "player.sb.unlocked",
+   "predicateError": null,
+   "resolved": [
+    {
+     "id": "unlock:sb",
+     "offered": false,
+     "dimension": null,
+     "threshold": null,
+     "held": null
+    }
+   ],
+   "values": [],
+   "unresolved": [],
+   "chains": []
+  },
+  {
+   "mark": "M16",
+   "name": "row-2 push",
+   "predicate": "player.sb.best.gte(5) && player.t.best.gte(17) && player.s.best.gte(17)",
+   "predicateError": null,
+   "resolved": [],
+   "values": [
+    {
+     "id": "value:player.sb.best>=5",
+     "dimension": "player.sb.best",
+     "threshold": "5",
+     "held": "0"
+    },
+    {
+     "id": "value:player.t.best>=17",
+     "dimension": "player.t.best",
+     "threshold": "17",
+     "held": "0"
+    },
+    {
+     "id": "value:player.s.best>=17",
+     "dimension": "player.s.best",
+     "threshold": "17",
+     "held": "0"
+    }
+   ],
+   "unresolved": [],
+   "chains": [
+    {
+     "goal": "value:player.sb.best>=5",
+     "hidden": false,
+     "hops": [
+      {
+       "dimension": "player.sb.best",
+       "held": "0",
+       "threshold": "5",
+       "producers": [],
+       "impossible": {
+        "why": "no measured producer moves this dimension: it did not move at all over the 10-game-second wait (capped or inert)",
+        "window": 10
+       }
+      }
+     ],
+     "firstImpossible": {
+      "at": 0,
+      "dimension": "player.sb.best",
+      "impossible": {
+       "why": "no measured producer moves this dimension: it did not move at all over the 10-game-second wait (capped or inert)",
+       "window": 10
+      }
+     },
+     "depth": 1
+    },
+    {
+     "goal": "value:player.t.best>=17",
+     "hidden": false,
+     "hops": [
+      {
+       "dimension": "player.t.best",
+       "held": "0",
+       "threshold": "17",
+       "producers": [
+        "reset:t"
+       ],
+       "impossible": {
+        "why": "canReset is false: the requirement is above the base amount",
+        "layer": "t",
+        "resetAt": "1e120",
+        "requires": "1e120",
+        "nextAt": "1e120",
+        "baseAmount": "10",
+        "requiresDimension": "player.points",
+        "windowMax": "135.9239896366956"
+       }
+      },
+      {
+       "dimension": "player.points",
+       "held": "10",
+       "threshold": "1e120",
+       "producers": [
+        "wait"
+       ],
+       "rate": "12.592398963669561",
+       "windowMin": "0",
+       "windowMax": "135.9239896366956"
+      }
+     ],
+     "firstImpossible": {
+      "at": 0,
+      "dimension": "player.t.best",
+      "impossible": {
+       "why": "canReset is false: the requirement is above the base amount",
+       "layer": "t",
+       "resetAt": "1e120",
+       "requires": "1e120",
+       "nextAt": "1e120",
+       "baseAmount": "10",
+       "requiresDimension": "player.points",
+       "windowMax": "135.9239896366956"
+      }
+     },
+     "depth": 2
+    },
+    {
+     "goal": "value:player.s.best>=17",
+     "hidden": false,
+     "hops": [
+      {
+       "dimension": "player.s.best",
+       "held": "0",
+       "threshold": "17",
+       "producers": [
+        "reset:s"
+       ],
+       "impossible": {
+        "why": "canReset is false: the requirement is above the base amount",
+        "layer": "s",
+        "resetAt": "1e120",
+        "requires": "1e120",
+        "nextAt": "1e120",
+        "baseAmount": "10",
+        "requiresDimension": "player.points",
+        "windowMax": "135.9239896366956"
+       }
+      },
+      {
+       "dimension": "player.points",
+       "held": "10",
+       "threshold": "1e120",
+       "producers": [
+        "wait"
+       ],
+       "rate": "12.592398963669561",
+       "windowMin": "0",
+       "windowMax": "135.9239896366956"
+      }
+     ],
+     "firstImpossible": {
+      "at": 0,
+      "dimension": "player.s.best",
+      "impossible": {
+       "why": "canReset is false: the requirement is above the base amount",
+       "layer": "s",
+       "resetAt": "1e120",
+       "requires": "1e120",
+       "nextAt": "1e120",
+       "baseAmount": "10",
+       "requiresDimension": "player.points",
+       "windowMax": "135.9239896366956"
+      }
+     },
+     "depth": 2
+    }
+   ]
+  },
+  {
+   "mark": "M17",
+   "name": "Quirks",
+   "predicate": "player.q.unlocked",
+   "predicateError": null,
+   "resolved": [
+    {
+     "id": "unlock:q",
+     "offered": false,
+     "dimension": null,
+     "threshold": null,
+     "held": null
+    }
+   ],
+   "values": [],
+   "unresolved": [],
+   "chains": []
+  },
+  {
+   "mark": "M18",
+   "name": "q ms 0–1",
+   "predicate": "hasMilestone('q',1)",
+   "predicateError": null,
+   "resolved": [
+    {
+     "id": "ms:q:1",
+     "offered": true,
+     "dimension": "player.q.total",
+     "threshold": "3",
+     "held": "0"
+    }
+   ],
+   "values": [],
+   "unresolved": [],
+   "chains": [
+    {
+     "goal": "ms:q:1",
+     "hidden": false,
+     "hops": [
+      {
+       "dimension": "player.q.total",
+       "held": "0",
+       "threshold": "3",
+       "producers": [],
+       "impossible": {
+        "why": "no measured producer moves this dimension: it did not move at all over the 10-game-second wait (capped or inert)",
+        "window": 10
+       }
+      }
+     ],
+     "firstImpossible": {
+      "at": 0,
+      "dimension": "player.q.total",
+      "impossible": {
+       "why": "no measured producer moves this dimension: it did not move at all over the 10-game-second wait (capped or inert)",
+       "window": 10
+      }
+     },
+     "depth": 1
+    }
+   ]
+  },
+  {
+   "mark": "M19",
+   "name": "q ms 3",
+   "predicate": "hasMilestone('q',3) && player.t.auto && player.s.auto",
+   "predicateError": null,
+   "resolved": [
+    {
+     "id": "ms:q:3",
+     "offered": true,
+     "dimension": "player.q.total",
+     "threshold": "6",
+     "held": "0"
+    }
+   ],
+   "values": [],
+   "unresolved": [],
+   "chains": [
+    {
+     "goal": "ms:q:3",
+     "hidden": false,
+     "hops": [
+      {
+       "dimension": "player.q.total",
+       "held": "0",
+       "threshold": "6",
+       "producers": [],
+       "impossible": {
+        "why": "no measured producer moves this dimension: it did not move at all over the 10-game-second wait (capped or inert)",
+        "window": 10
+       }
+      }
+     ],
+     "firstImpossible": {
+      "at": 0,
+      "dimension": "player.q.total",
+      "impossible": {
+       "why": "no measured producer moves this dimension: it did not move at all over the 10-game-second wait (capped or inert)",
+       "window": 10
+      }
+     },
+     "depth": 1
+    }
+   ]
+  },
+  {
+   "mark": "M20",
+   "name": "Hindrances visible",
+   "predicate": "hasMilestone('q',4)",
+   "predicateError": null,
+   "resolved": [
+    {
+     "id": "ms:q:4",
+     "offered": true,
+     "dimension": "player.q.total",
+     "threshold": "10",
+     "held": "0"
+    }
+   ],
+   "values": [],
+   "unresolved": [],
+   "chains": [
+    {
+     "goal": "ms:q:4",
+     "hidden": false,
+     "hops": [
+      {
+       "dimension": "player.q.total",
+       "held": "0",
+       "threshold": "10",
+       "producers": [],
+       "impossible": {
+        "why": "no measured producer moves this dimension: it did not move at all over the 10-game-second wait (capped or inert)",
+        "window": 10
+       }
+      }
+     ],
+     "firstImpossible": {
+      "at": 0,
+      "dimension": "player.q.total",
+      "impossible": {
+       "why": "no measured producer moves this dimension: it did not move at all over the 10-game-second wait (capped or inert)",
+       "window": 10
+      }
+     },
+     "depth": 1
+    }
+   ]
+  },
+  {
+   "mark": "M21",
+   "name": "h unlocked",
+   "predicate": "player.h.unlocked",
+   "predicateError": null,
+   "resolved": [
+    {
+     "id": "unlock:h",
+     "offered": false,
+     "dimension": null,
+     "threshold": null,
+     "held": null
+    }
+   ],
+   "values": [],
+   "unresolved": [],
+   "chains": []
+  },
+  {
+   "mark": "M22",
+   "name": "q ms 5",
+   "predicate": "hasMilestone('q',5)",
+   "predicateError": null,
+   "resolved": [
+    {
+     "id": "ms:q:5",
+     "offered": true,
+     "dimension": "player.q.total",
+     "threshold": "25",
+     "held": "0"
+    }
+   ],
+   "values": [],
+   "unresolved": [],
+   "chains": [
+    {
+     "goal": "ms:q:5",
+     "hidden": false,
+     "hops": [
+      {
+       "dimension": "player.q.total",
+       "held": "0",
+       "threshold": "25",
+       "producers": [],
+       "impossible": {
+        "why": "no measured producer moves this dimension: it did not move at all over the 10-game-second wait (capped or inert)",
+        "window": 10
+       }
+      }
+     ],
+     "firstImpossible": {
+      "at": 0,
+      "dimension": "player.q.total",
+      "impossible": {
+       "why": "no measured producer moves this dimension: it did not move at all over the 10-game-second wait (capped or inert)",
+       "window": 10
+      }
+     },
+     "depth": 1
+    }
+   ]
+  },
+  {
+   "mark": "M23",
+   "name": "H11 Upgrade Desert",
+   "predicate": "hasChallenge('h',11)",
+   "predicateError": null,
+   "resolved": [
+    {
+     "id": "ch:h:11",
+     "offered": false,
+     "dimension": null,
+     "threshold": null,
+     "held": null
+    }
+   ],
+   "values": [],
+   "unresolved": [],
+   "chains": []
+  },
+  {
+   "mark": "M24",
+   "name": "q11–q13",
+   "predicate": "hasUpgrade('q',13)",
+   "predicateError": null,
+   "resolved": [
+    {
+     "id": "upg:q:13",
+     "offered": false,
+     "dimension": null,
+     "threshold": null,
+     "held": null
+    }
+   ],
+   "values": [],
+   "unresolved": [],
+   "chains": [
+    {
+     "goal": "upg:q:13",
+     "hidden": true,
+     "hops": [
+      {
+       "gate": "upg:q:13",
+       "needs": [
+        "unlock:q"
+       ],
+       "unresolved": "unlock:q"
+      }
+     ],
+     "firstImpossible": null,
+     "depth": 1
+    }
+   ]
+  },
+  {
+   "mark": "M25",
+   "name": "H12 Speed Demon",
+   "predicate": "hasChallenge('h',12)",
+   "predicateError": null,
+   "resolved": [
+    {
+     "id": "ch:h:12",
+     "offered": false,
+     "dimension": null,
+     "threshold": null,
+     "held": null
+    }
+   ],
+   "values": [],
+   "unresolved": [],
+   "chains": []
+  },
+  {
+   "mark": "M26",
+   "name": "q14, q21, q22",
+   "predicate": "hasUpgrade('q',22)",
+   "predicateError": null,
+   "resolved": [
+    {
+     "id": "upg:q:22",
+     "offered": false,
+     "dimension": null,
+     "threshold": null,
+     "held": null
+    }
+   ],
+   "values": [],
+   "unresolved": [],
+   "chains": [
+    {
+     "goal": "upg:q:22",
+     "hidden": true,
+     "hops": [
+      {
+       "gate": "upg:q:22",
+       "needs": [
+        "unlock:q"
+       ],
+       "unresolved": "unlock:q"
+      }
+     ],
+     "firstImpossible": null,
+     "depth": 1
+    }
+   ]
+  },
+  {
+   "mark": "M27",
+   "name": "H21 Out of Room",
+   "predicate": "hasChallenge('h',21)",
+   "predicateError": null,
+   "resolved": [
+    {
+     "id": "ch:h:21",
+     "offered": false,
+     "dimension": null,
+     "threshold": null,
+     "held": null
+    }
+   ],
+   "values": [],
+   "unresolved": [],
+   "chains": []
+  },
+  {
+   "mark": "M28",
+   "name": "q24, q31, q32",
+   "predicate": "hasUpgrade('q',32)",
+   "predicateError": null,
+   "resolved": [
+    {
+     "id": "upg:q:32",
+     "offered": false,
+     "dimension": null,
+     "threshold": null,
+     "held": null
+    }
+   ],
+   "values": [],
+   "unresolved": [],
+   "chains": [
+    {
+     "goal": "upg:q:32",
+     "hidden": true,
+     "hops": [
+      {
+       "gate": "upg:q:32",
+       "needs": [
+        "unlock:q"
+       ],
+       "unresolved": "unlock:q"
+      }
+     ],
+     "firstImpossible": null,
+     "depth": 1
+    }
+   ]
+  },
+  {
+   "mark": "M29",
+   "name": "H22 Descension",
+   "predicate": "hasChallenge('h',22)",
+   "predicateError": null,
+   "resolved": [
+    {
+     "id": "ch:h:22",
+     "offered": false,
+     "dimension": null,
+     "threshold": null,
+     "held": null
+    }
+   ],
+   "values": [],
+   "unresolved": [],
+   "chains": []
+  },
+  {
+   "mark": "M30",
+   "name": "Super Generators",
+   "predicate": "hasUpgrade('q',33) && player.sg.unlocked",
+   "predicateError": null,
+   "resolved": [
+    {
+     "id": "upg:q:33",
+     "offered": false,
+     "dimension": null,
+     "threshold": null,
+     "held": null
+    },
+    {
+     "id": "unlock:sg",
+     "offered": false,
+     "dimension": null,
+     "threshold": null,
+     "held": null
+    }
+   ],
+   "values": [],
+   "unresolved": [],
+   "chains": [
+    {
+     "goal": "upg:q:33",
+     "hidden": true,
+     "hops": [
+      {
+       "gate": "upg:q:33",
+       "needs": [
+        "unlock:q"
+       ],
+       "unresolved": "unlock:q"
+      }
+     ],
+     "firstImpossible": null,
+     "depth": 1
+    }
+   ]
+  },
+  {
+   "mark": "M31",
+   "name": "q ms 6–7",
+   "predicate": "hasMilestone('q',7) && player.s.autoBld",
+   "predicateError": null,
+   "resolved": [
+    {
+     "id": "ms:q:7",
+     "offered": true,
+     "dimension": "player.q.total",
+     "threshold": "1e60",
+     "held": "0"
+    }
+   ],
+   "values": [],
+   "unresolved": [],
+   "chains": [
+    {
+     "goal": "ms:q:7",
+     "hidden": false,
+     "hops": [
+      {
+       "dimension": "player.q.total",
+       "held": "0",
+       "threshold": "1e60",
+       "producers": [],
+       "impossible": {
+        "why": "no measured producer moves this dimension: it did not move at all over the 10-game-second wait (capped or inert)",
+        "window": 10
+       }
+      }
+     ],
+     "firstImpossible": {
+      "at": 0,
+      "dimension": "player.q.total",
+      "impossible": {
+       "why": "no measured producer moves this dimension: it did not move at all over the 10-game-second wait (capped or inert)",
+       "window": 10
+      }
+     },
+     "depth": 1
+    }
+   ]
+  },
+  {
+   "mark": "M32",
+   "name": "Quirk Improvements",
+   "predicate": "hasUpgrade('q',44)",
+   "predicateError": null,
+   "resolved": [
+    {
+     "id": "upg:q:44",
+     "offered": false,
+     "dimension": null,
+     "threshold": null,
+     "held": null
+    }
+   ],
+   "values": [],
+   "unresolved": [],
+   "chains": [
+    {
+     "goal": "upg:q:44",
+     "hidden": true,
+     "hops": [
+      {
+       "gate": "upg:q:44",
+       "needs": [
+        "unlock:q"
+       ],
+       "unresolved": "unlock:q"
+      }
+     ],
+     "firstImpossible": null,
+     "depth": 1
+    }
+   ]
+  },
+  {
+   "mark": "M33",
+   "name": "Timeless ×10 (a64)",
+   "predicate": "challengeCompletions('h',31) >= 10",
+   "predicateError": null,
+   "resolved": [
+    {
+     "id": "ch:h:31",
+     "offered": false,
+     "dimension": null,
+     "threshold": null,
+     "held": null
+    }
+   ],
+   "values": [],
+   "unresolved": [],
+   "chains": []
+  },
+  {
+   "mark": "M34",
+   "name": "Solarity and Subspace (a62)",
+   "predicate": "player.o.unlocked && player.ss.unlocked",
+   "predicateError": null,
+   "resolved": [
+    {
+     "id": "unlock:o",
+     "offered": false,
+     "dimension": null,
+     "threshold": null,
+     "held": null
+    },
+    {
+     "id": "unlock:ss",
+     "offered": false,
+     "dimension": null,
+     "threshold": null,
+     "held": null
+    }
+   ],
+   "values": [],
+   "unresolved": [],
+   "chains": []
+  },
+  {
+   "mark": "M35",
+   "name": "first row-4 reset (a71)",
+   "predicate": "player.m.unlocked || player.ba.unlocked",
+   "predicateError": null,
+   "resolved": [],
+   "values": [],
+   "unresolved": [
+    "player.m.unlocked || player.ba.unlocked"
+   ],
+   "chains": [],
+   "kind": "predicate-only"
+  },
+  {
+   "mark": "M36",
+   "name": "both; Time Warp; m ms 1; ba ms 1–3",
+   "predicate": "player.m.unlocked && player.ba.unlocked && hasMilestone('m',1) && hasMilestone('ba',3)",
+   "predicateError": null,
+   "resolved": [
+    {
+     "id": "unlock:m",
+     "offered": false,
+     "dimension": null,
+     "threshold": null,
+     "held": null
+    },
+    {
+     "id": "unlock:ba",
+     "offered": false,
+     "dimension": null,
+     "threshold": null,
+     "held": null
+    },
+    {
+     "id": "ms:m:1",
+     "offered": true,
+     "dimension": "player.m.total",
+     "threshold": "3",
+     "held": "0"
+    },
+    {
+     "id": "ms:ba:3",
+     "offered": true,
+     "dimension": "player.ba.total",
+     "threshold": "200000.00000087696",
+     "held": "0"
+    }
+   ],
+   "values": [],
+   "unresolved": [],
+   "chains": [
+    {
+     "goal": "ms:m:1",
+     "hidden": false,
+     "hops": [
+      {
+       "dimension": "player.m.total",
+       "held": "0",
+       "threshold": "3",
+       "producers": [],
+       "impossible": {
+        "why": "no measured producer moves this dimension: it did not move at all over the 10-game-second wait (capped or inert)",
+        "window": 10
+       }
+      }
+     ],
+     "firstImpossible": {
+      "at": 0,
+      "dimension": "player.m.total",
+      "impossible": {
+       "why": "no measured producer moves this dimension: it did not move at all over the 10-game-second wait (capped or inert)",
+       "window": 10
+      }
+     },
+     "depth": 1
+    },
+    {
+     "goal": "ms:ba:3",
+     "hidden": false,
+     "hops": [
+      {
+       "dimension": "player.ba.total",
+       "held": "0",
+       "threshold": "200000.00000087696",
+       "producers": [],
+       "impossible": {
+        "why": "no measured producer moves this dimension: it did not move at all over the 10-game-second wait (capped or inert)",
+        "window": 10
+       }
+      }
+     ],
+     "firstImpossible": {
+      "at": 0,
+      "dimension": "player.ba.total",
+      "impossible": {
+       "why": "no measured producer moves this dimension: it did not move at all over the 10-game-second wait (capped or inert)",
+       "window": 10
+      }
+     },
+     "depth": 1
+    }
+   ]
+  },
+  {
+   "mark": "M37",
+   "name": "Phantom Souls, first Wraith",
+   "predicate": "getBuyableAmount('ps',11).gte(1)",
+   "predicateError": "getBuyableAmount(...).gte is not a function",
+   "resolved": [
+    {
+     "id": "buy:ps:11",
+     "offered": false,
+     "dimension": null,
+     "threshold": null,
+     "held": null
+    }
+   ],
+   "values": [],
+   "unresolved": [],
+   "chains": []
+  },
+  {
+   "mark": "M38",
+   "name": "H32 Option D",
+   "predicate": "challengeCompletions('h',32) >= 1",
+   "predicateError": null,
+   "resolved": [
+    {
+     "id": "ch:h:32",
+     "offered": false,
+     "dimension": null,
+     "threshold": null,
+     "held": null
+    }
+   ],
+   "values": [],
+   "unresolved": [],
+   "chains": []
+  },
+  {
+   "mark": "M39",
+   "name": "H41, H42",
+   "predicate": "hasChallenge('h',41) && hasChallenge('h',42)",
+   "predicateError": null,
+   "resolved": [
+    {
+     "id": "ch:h:41",
+     "offered": false,
+     "dimension": null,
+     "threshold": null,
+     "held": null
+    },
+    {
+     "id": "ch:h:42",
+     "offered": false,
+     "dimension": null,
+     "threshold": null,
+     "held": null
+    }
+   ],
+   "values": [],
+   "unresolved": [],
+   "chains": []
+  },
+  {
+   "mark": "M40",
+   "name": "a74",
+   "predicate": "hasAchievement('a',74)",
+   "predicateError": null,
+   "resolved": [
+    {
+     "id": "ach:a:74",
+     "offered": true,
+     "dimension": "player.ba.points",
+     "threshold": "1e100",
+     "held": "0"
+    }
+   ],
+   "values": [],
+   "unresolved": [],
+   "chains": [
+    {
+     "goal": "ach:a:74",
+     "hidden": false,
+     "hops": [
+      {
+       "dimension": "player.ba.points",
+       "held": "0",
+       "threshold": "1e100",
+       "producers": [],
+       "impossible": {
+        "why": "no measured producer moves this dimension: it did not move at all over the 10-game-second wait (capped or inert)",
+        "window": 10
+       }
+      }
+     ],
+     "firstImpossible": {
+      "at": 0,
+      "dimension": "player.ba.points",
+      "impossible": {
+       "why": "no measured producer moves this dimension: it did not move at all over the 10-game-second wait (capped or inert)",
+       "window": 10
+      }
+     },
+     "depth": 1
+    }
+   ]
+  },
+  {
+   "mark": "M41",
+   "name": "Honour",
+   "predicate": "player.hn.unlocked",
+   "predicateError": null,
+   "resolved": [
+    {
+     "id": "unlock:hn",
+     "offered": false,
+     "dimension": null,
+     "threshold": null,
+     "held": null
+    }
+   ],
+   "values": [],
+   "unresolved": [],
+   "chains": []
+  },
+  {
+   "mark": "M42",
+   "name": "hn ms 2, 4, 5, 7",
+   "predicate": "hasMilestone('hn',7)",
+   "predicateError": null,
+   "resolved": [
+    {
+     "id": "ms:hn:7",
+     "offered": true,
+     "dimension": null,
+     "threshold": null,
+     "held": null
+    }
+   ],
+   "values": [],
+   "unresolved": [],
+   "chains": [
+    {
+     "goal": "ms:hn:7",
+     "hidden": false,
+     "hops": [],
+     "firstImpossible": null,
+     "depth": 0
+    }
+   ]
+  },
+  {
+   "mark": "M43",
+   "name": "Begin Again",
+   "predicate": "hasUpgrade('hn',11)",
+   "predicateError": null,
+   "resolved": [
+    {
+     "id": "upg:hn:11",
+     "offered": false,
+     "dimension": null,
+     "threshold": null,
+     "held": null
+    }
+   ],
+   "values": [],
+   "unresolved": [],
+   "chains": [
+    {
+     "goal": "upg:hn:11",
+     "hidden": true,
+     "hops": [
+      {
+       "gate": "upg:hn:11",
+       "needs": [
+        "unlock:hn"
+       ],
+       "unresolved": "unlock:hn"
+      }
+     ],
+     "firstImpossible": null,
+     "depth": 1
+    }
+   ]
+  },
+  {
+   "mark": "M44",
+   "name": "Nebula and Hyperspace (a92)",
+   "predicate": "player.n.unlocked && player.hs.unlocked",
+   "predicateError": null,
+   "resolved": [
+    {
+     "id": "unlock:n",
+     "offered": false,
+     "dimension": null,
+     "threshold": null,
+     "held": null
+    },
+    {
+     "id": "unlock:hs",
+     "offered": false,
+     "dimension": null,
+     "threshold": null,
+     "held": null
+    }
+   ],
+   "values": [],
+   "unresolved": [],
+   "chains": []
+  },
+  {
+   "mark": "M45",
+   "name": "Imperium",
+   "predicate": "player.i.unlocked",
+   "predicateError": null,
+   "resolved": [
+    {
+     "id": "unlock:i",
+     "offered": false,
+     "dimension": null,
+     "threshold": null,
+     "held": null
+    }
+   ],
+   "values": [],
+   "unresolved": [],
+   "chains": []
+  },
+  {
+   "mark": "M46",
+   "name": "Mastery",
+   "predicate": "player.ma.unlocked",
+   "predicateError": null,
+   "resolved": [
+    {
+     "id": "unlock:ma",
+     "offered": false,
+     "dimension": null,
+     "threshold": null,
+     "held": null
+    }
+   ],
+   "values": [],
+   "unresolved": [],
+   "chains": []
+  },
+  {
+   "mark": "M47",
+   "name": "ma ms 0, 4, 5",
+   "predicate": "hasMilestone('ma',5)",
+   "predicateError": null,
+   "resolved": [
+    {
+     "id": "ms:ma:5",
+     "offered": true,
+     "dimension": "player.ma.best",
+     "threshold": "16",
+     "held": "0"
+    }
+   ],
+   "values": [],
+   "unresolved": [],
+   "chains": [
+    {
+     "goal": "ms:ma:5",
+     "hidden": false,
+     "hops": [
+      {
+       "dimension": "player.ma.best",
+       "held": "0",
+       "threshold": "16",
+       "producers": [],
+       "impossible": {
+        "why": "no measured producer moves this dimension: it did not move at all over the 10-game-second wait (capped or inert)",
+        "window": 10
+       }
+      }
+     ],
+     "firstImpossible": {
+      "at": 0,
+      "dimension": "player.ma.best",
+      "impossible": {
+       "why": "no measured producer moves this dimension: it did not move at all over the 10-game-second wait (capped or inert)",
+       "window": 10
+      }
+     },
+     "depth": 1
+    }
+   ]
+  },
+  {
+   "mark": "M48",
+   "name": "Machines; Energy & Neurons visible",
+   "predicate": "player.mc.unlocked",
+   "predicateError": null,
+   "resolved": [
+    {
+     "id": "unlock:mc",
+     "offered": false,
+     "dimension": null,
+     "threshold": null,
+     "held": null
+    }
+   ],
+   "values": [],
+   "unresolved": [],
+   "chains": []
+  },
+  {
+   "mark": "M49",
+   "name": "Gears, ge ms 3",
+   "predicate": "hasMilestone('ge',3)",
+   "predicateError": null,
+   "resolved": [
+    {
+     "id": "ms:ge:3",
+     "offered": true,
+     "dimension": null,
+     "threshold": null,
+     "held": null
+    }
+   ],
+   "values": [],
+   "unresolved": [],
+   "chains": [
+    {
+     "goal": "ms:ge:3",
+     "hidden": false,
+     "hops": [],
+     "firstImpossible": null,
+     "depth": 0
+    }
+   ]
+  },
+  {
+   "mark": "M50",
+   "name": "Energy, Neurons (The Brain), Ideas",
+   "predicate": "player.en.unlocked && player.ne.unlocked && player.id.unlocked",
+   "predicateError": null,
+   "resolved": [
+    {
+     "id": "unlock:en",
+     "offered": false,
+     "dimension": null,
+     "threshold": null,
+     "held": null
+    },
+    {
+     "id": "unlock:ne",
+     "offered": false,
+     "dimension": null,
+     "threshold": null,
+     "held": null
+    },
+    {
+     "id": "unlock:id",
+     "offered": false,
+     "dimension": null,
+     "threshold": null,
+     "held": null
+    }
+   ],
+   "values": [],
+   "unresolved": [],
+   "chains": []
+  },
+  {
+   "mark": "M51",
+   "name": "Robots, AI, Civilizations",
+   "predicate": "player.r.unlocked && player.ai.unlocked && player.c.unlocked",
+   "predicateError": null,
+   "resolved": [
+    {
+     "id": "unlock:r",
+     "offered": false,
+     "dimension": null,
+     "threshold": null,
+     "held": null
+    },
+    {
+     "id": "unlock:ai",
+     "offered": false,
+     "dimension": null,
+     "threshold": null,
+     "held": null
+    },
+    {
+     "id": "unlock:c",
+     "offered": false,
+     "dimension": null,
+     "threshold": null,
+     "held": null
+    }
+   ],
+   "values": [],
+   "unresolved": [],
+   "chains": []
+  },
+  {
+   "mark": "M52",
+   "name": "the furthest guide",
+   "predicate": "player.points.gte('1e1000000000000000')",
+   "predicateError": null,
+   "resolved": [],
+   "values": [
+    {
+     "id": "value:player.points>=1e1000000000000000",
+     "dimension": "player.points",
+     "threshold": "1e1000000000000000",
+     "held": "10"
+    }
+   ],
+   "unresolved": [],
+   "chains": [
+    {
+     "goal": "value:player.points>=1e1000000000000000",
+     "hidden": false,
+     "hops": [
+      {
+       "dimension": "player.points",
+       "held": "10",
+       "threshold": "1e1000000000000000",
+       "producers": [
+        "wait"
+       ],
+       "rate": "12.592398963669561",
+       "windowMin": "0",
+       "windowMax": "135.9239896366956"
+      }
+     ],
+     "firstImpossible": null,
+     "depth": 1
+    }
+   ]
+  },
+  {
+   "mark": "M53",
+   "name": "**endgame**",
+   "predicate": "player.points.gte(new Decimal('e3.14e16'))",
+   "predicateError": null,
+   "resolved": [],
+   "values": [
+    {
+     "id": "value:player.points>=ee16.496929648073216",
+     "dimension": "player.points",
+     "threshold": "ee16.496929648073216",
+     "held": "10"
+    }
+   ],
+   "unresolved": [],
+   "chains": [
+    {
+     "goal": "value:player.points>=ee16.496929648073216",
+     "hidden": false,
+     "hops": [
+      {
+       "dimension": "player.points",
+       "held": "10",
+       "threshold": "ee16.496929648073216",
+       "producers": [
+        "wait"
+       ],
+       "rate": "12.592398963669561",
+       "windowMin": "0",
+       "windowMax": "135.9239896366956"
+      }
+     ],
+     "firstImpossible": null,
+     "depth": 1
+    }
+   ]
+  }
+ ],
+ "discovered": [
+  {
+   "id": "layer-next:p",
+   "kind": "layer-next",
+   "layer": "p",
+   "dimension": "player.points",
+   "threshold": "14.69237832874196",
+   "held": "10",
+   "rate": "12.592398963669561",
+   "distanceLog10": -0.18687024583196532,
+   "why": null,
+   "firstImpossible": null
+  },
+  {
+   "id": "upg:g:12",
+   "kind": "upg",
+   "layer": "g",
+   "dimension": "player.g.points",
+   "threshold": "7",
+   "held": "4",
+   "rate": "0",
+   "distanceLog10": 0.24303804868629442,
+   "why": null,
+   "firstImpossible": {
+    "at": 0,
+    "dimension": "player.g.points",
+    "impossible": {
+     "why": "canReset is false: the requirement is above the base amount",
+     "layer": "g",
+     "resetAt": "1798876.8588190603",
+     "requires": "200",
+     "nextAt": "1798876.8588190603",
+     "baseAmount": "10",
+     "requiresDimension": "player.points",
+     "windowMax": "135.9239896366956"
+    }
+   }
+  },
+  {
+   "id": "ms:g:0",
+   "kind": "ms",
+   "layer": "g",
+   "dimension": "player.g.best",
+   "threshold": "8",
+   "held": "4",
+   "rate": "0",
+   "distanceLog10": 0.30102999566398114,
+   "why": null,
+   "firstImpossible": {
+    "at": 0,
+    "dimension": "player.g.best",
+    "impossible": {
+     "why": "canReset is false: the requirement is above the base amount",
+     "layer": "g",
+     "resetAt": "1798876.8588190603",
+     "requires": "200",
+     "nextAt": "1798876.8588190603",
+     "baseAmount": "10",
+     "requiresDimension": "player.points",
+     "windowMax": "135.9239896366956"
+    }
+   }
+  },
+  {
+   "id": "ms:g:1",
+   "kind": "ms",
+   "layer": "g",
+   "dimension": "player.g.best",
+   "threshold": "10",
+   "held": "4",
+   "rate": "0",
+   "distanceLog10": 0.3979400086720376,
+   "why": null,
+   "firstImpossible": {
+    "at": 0,
+    "dimension": "player.g.best",
+    "impossible": {
+     "why": "canReset is false: the requirement is above the base amount",
+     "layer": "g",
+     "resetAt": "1798876.8588190603",
+     "requires": "200",
+     "nextAt": "1798876.8588190603",
+     "baseAmount": "10",
+     "requiresDimension": "player.points",
+     "windowMax": "135.9239896366956"
+    }
+   }
+  },
+  {
+   "id": "upg:b:11",
+   "kind": "upg",
+   "layer": "b",
+   "dimension": "player.b.points",
+   "threshold": "3",
+   "held": "1",
+   "rate": "0",
+   "distanceLog10": 0.47712125471966244,
+   "why": null,
+   "firstImpossible": {
+    "at": 0,
+    "dimension": "player.b.points",
+    "impossible": {
+     "why": "canReset is false: the requirement is above the base amount",
+     "layer": "b",
+     "resetAt": "1000",
+     "requires": "200",
+     "nextAt": "1000",
+     "baseAmount": "10",
+     "requiresDimension": "player.points",
+     "windowMax": "135.9239896366956"
+    }
+   }
+  },
+  {
+   "id": "ms:g:2",
+   "kind": "ms",
+   "layer": "g",
+   "dimension": "player.g.best",
+   "threshold": "15",
+   "held": "4",
+   "rate": "0",
+   "distanceLog10": 0.574031267727719,
+   "why": null,
+   "firstImpossible": {
+    "at": 0,
+    "dimension": "player.g.best",
+    "impossible": {
+     "why": "canReset is false: the requirement is above the base amount",
+     "layer": "g",
+     "resetAt": "1798876.8588190603",
+     "requires": "200",
+     "nextAt": "1798876.8588190603",
+     "baseAmount": "10",
+     "requiresDimension": "player.points",
+     "windowMax": "135.9239896366956"
+    }
+   }
+  },
+  {
+   "id": "upg:b:12",
+   "kind": "upg",
+   "layer": "b",
+   "dimension": "player.b.points",
+   "threshold": "7",
+   "held": "1",
+   "rate": "0",
+   "distanceLog10": 0.8450980400142568,
+   "why": null,
+   "firstImpossible": {
+    "at": 0,
+    "dimension": "player.b.points",
+    "impossible": {
+     "why": "canReset is false: the requirement is above the base amount",
+     "layer": "b",
+     "resetAt": "1000",
+     "requires": "200",
+     "nextAt": "1000",
+     "baseAmount": "10",
+     "requiresDimension": "player.points",
+     "windowMax": "135.9239896366956"
+    }
+   }
+  },
+  {
+   "id": "ms:b:0",
+   "kind": "ms",
+   "layer": "b",
+   "dimension": "player.b.best",
+   "threshold": "8",
+   "held": "1",
+   "rate": "0",
+   "distanceLog10": 0.9030899869919435,
+   "why": null,
+   "firstImpossible": {
+    "at": 0,
+    "dimension": "player.b.best",
+    "impossible": {
+     "why": "canReset is false: the requirement is above the base amount",
+     "layer": "b",
+     "resetAt": "1000",
+     "requires": "200",
+     "nextAt": "1000",
+     "baseAmount": "10",
+     "requiresDimension": "player.points",
+     "windowMax": "135.9239896366956"
+    }
+   }
+  },
+  {
+   "id": "upg:p:11",
+   "kind": "upg",
+   "layer": "p",
+   "dimension": "player.p.points",
+   "threshold": "1",
+   "held": "0",
+   "rate": "0.1",
+   "distanceLog10": 1,
+   "why": null,
+   "firstImpossible": null
+  },
+  {
+   "id": "ms:b:1",
+   "kind": "ms",
+   "layer": "b",
+   "dimension": "player.b.best",
+   "threshold": "15",
+   "held": "1",
+   "rate": "0",
+   "distanceLog10": 1.1760912590556813,
+   "why": null,
+   "firstImpossible": {
+    "at": 0,
+    "dimension": "player.b.best",
+    "impossible": {
+     "why": "canReset is false: the requirement is above the base amount",
+     "layer": "b",
+     "resetAt": "1000",
+     "requires": "200",
+     "nextAt": "1000",
+     "baseAmount": "10",
+     "requiresDimension": "player.points",
+     "windowMax": "135.9239896366956"
+    }
+   }
+  },
+  {
+   "id": "layer-next:b",
+   "kind": "layer-next",
+   "layer": "b",
+   "dimension": "player.points",
+   "threshold": "1000",
+   "held": "10",
+   "rate": "12.592398963669561",
+   "distanceLog10": 1.646037651267885,
+   "why": null,
+   "firstImpossible": null
+  },
+  {
+   "id": "ach:a:72",
+   "kind": "ach",
+   "layer": "a",
+   "dimension": "player.g.best",
+   "threshold": "1225.0000000026857",
+   "held": "4",
+   "rate": "0",
+   "distanceLog10": 2.486076097373541,
+   "why": null,
+   "firstImpossible": {
+    "at": 0,
+    "dimension": "player.g.best",
+    "impossible": {
+     "why": "canReset is false: the requirement is above the base amount",
+     "layer": "g",
+     "resetAt": "1798876.8588190603",
+     "requires": "200",
+     "nextAt": "1798876.8588190603",
+     "baseAmount": "10",
+     "requiresDimension": "player.points",
+     "windowMax": "135.9239896366956"
+    }
+   }
+  },
+  {
+   "id": "layer-next:g",
+   "kind": "layer-next",
+   "layer": "g",
+   "dimension": "player.points",
+   "threshold": "1798876.8588190603",
+   "held": "10",
+   "rate": "12.592398963669561",
+   "distanceLog10": 4.901039086227781,
+   "why": null,
+   "firstImpossible": null
+  },
+  {
+   "id": "ach:a:23",
+   "kind": "ach",
+   "layer": "a",
+   "dimension": "player.p.points",
+   "threshold": "1e45",
+   "held": "0",
+   "rate": "0.1",
+   "distanceLog10": 46,
+   "why": null,
+   "firstImpossible": null
+  },
+  {
+   "id": "ach:a:24",
+   "kind": "ach",
+   "layer": "a",
+   "dimension": "player.points",
+   "threshold": "1e100",
+   "held": "10",
+   "rate": "12.592398963669561",
+   "distanceLog10": 98.64603765126789,
+   "why": null,
+   "firstImpossible": null
+  },
+  {
+   "id": "unlock:e",
+   "kind": "unlock",
+   "layer": "e",
+   "dimension": "player.points",
+   "threshold": "1e120",
+   "held": "10",
+   "rate": "12.592398963669561",
+   "distanceLog10": 118.64603765126789,
+   "why": null,
+   "firstImpossible": null
+  },
+  {
+   "id": "unlock:s",
+   "kind": "unlock",
+   "layer": "s",
+   "dimension": "player.points",
+   "threshold": "1e120",
+   "held": "10",
+   "rate": "12.592398963669561",
+   "distanceLog10": 118.64603765126789,
+   "why": null,
+   "firstImpossible": null
+  },
+  {
+   "id": "unlock:t",
+   "kind": "unlock",
+   "layer": "t",
+   "dimension": "player.points",
+   "threshold": "1e120",
+   "held": "10",
+   "rate": "12.592398963669561",
+   "distanceLog10": 118.64603765126789,
+   "why": null,
+   "firstImpossible": null
+  },
+  {
+   "id": "ach:a:32",
+   "kind": "ach",
+   "layer": "a",
+   "dimension": "player.points",
+   "threshold": "1.79769313522374e308",
+   "held": "10",
+   "rate": "12.592398963669561",
+   "distanceLog10": 306.90075321127193,
+   "why": null,
+   "firstImpossible": null
+  },
+  {
+   "id": "ach:a:42",
+   "kind": "ach",
+   "layer": "a",
+   "dimension": "player.g.power",
+   "threshold": "1.79769313522374e308",
+   "held": "0",
+   "rate": "15",
+   "distanceLog10": 307.0786243009484,
+   "why": null,
+   "firstImpossible": null
+  },
+  {
+   "id": "ach:a:44",
+   "kind": "ach",
+   "layer": "a",
+   "dimension": "player.g.power",
+   "threshold": "1e370",
+   "held": "0",
+   "rate": "15",
+   "distanceLog10": 368.8239087409443,
+   "why": null,
+   "firstImpossible": null
+  },
+  {
+   "id": "ach:a:54",
+   "kind": "ach",
+   "layer": "a",
+   "dimension": "player.points",
+   "threshold": "1.0000000000293185e15500",
+   "held": "10",
+   "rate": "12.592398963669561",
+   "distanceLog10": 15498.64603765128,
+   "why": null,
+   "firstImpossible": null
+  },
+  {
+   "id": "ms:ba:0",
+   "kind": "ms",
+   "layer": "ba",
+   "dimension": "player.ba.total",
+   "threshold": "2",
+   "held": "0",
+   "rate": "0",
+   "distanceLog10": null,
+   "why": "nothing held and no measured rate",
+   "firstImpossible": {
+    "at": 0,
+    "dimension": "player.ba.total",
+    "impossible": {
+     "why": "no measured producer moves this dimension: it did not move at all over the 10-game-second wait (capped or inert)",
+     "window": 10
+    }
+   }
+  },
+  {
+   "id": "ms:ba:1",
+   "kind": "ms",
+   "layer": "ba",
+   "dimension": "player.ba.total",
+   "threshold": "3",
+   "held": "0",
+   "rate": "0",
+   "distanceLog10": null,
+   "why": "nothing held and no measured rate",
+   "firstImpossible": {
+    "at": 0,
+    "dimension": "player.ba.total",
+    "impossible": {
+     "why": "no measured producer moves this dimension: it did not move at all over the 10-game-second wait (capped or inert)",
+     "window": 10
+    }
+   }
+  },
+  {
+   "id": "ms:ba:2",
+   "kind": "ms",
+   "layer": "ba",
+   "dimension": "player.ba.total",
+   "threshold": "10",
+   "held": "0",
+   "rate": "0",
+   "distanceLog10": null,
+   "why": "nothing held and no measured rate",
+   "firstImpossible": {
+    "at": 0,
+    "dimension": "player.ba.total",
+    "impossible": {
+     "why": "no measured producer moves this dimension: it did not move at all over the 10-game-second wait (capped or inert)",
+     "window": 10
+    }
+   }
+  },
+  {
+   "id": "ms:ba:3",
+   "kind": "ms",
+   "layer": "ba",
+   "dimension": "player.ba.total",
+   "threshold": "200000.00000087696",
+   "held": "0",
+   "rate": "0",
+   "distanceLog10": null,
+   "why": "nothing held and no measured rate",
+   "firstImpossible": {
+    "at": 0,
+    "dimension": "player.ba.total",
+    "impossible": {
+     "why": "no measured producer moves this dimension: it did not move at all over the 10-game-second wait (capped or inert)",
+     "window": 10
+    }
+   }
+  },
+  {
+   "id": "ms:ba:4",
+   "kind": "ms",
+   "layer": "ba",
+   "dimension": "player.ba.total",
+   "threshold": "1000000000000",
+   "held": "0",
+   "rate": "0",
+   "distanceLog10": null,
+   "why": "nothing held and no measured rate",
+   "firstImpossible": {
+    "at": 0,
+    "dimension": "player.ba.total",
+    "impossible": {
+     "why": "no measured producer moves this dimension: it did not move at all over the 10-game-second wait (capped or inert)",
+     "window": 10
+    }
+   }
+  },
+  {
+   "id": "ms:e:0",
+   "kind": "ms",
+   "layer": "e",
+   "dimension": "player.e.best",
+   "threshold": "2",
+   "held": "0",
+   "rate": "0",
+   "distanceLog10": null,
+   "why": "nothing held and no measured rate",
+   "firstImpossible": {
+    "at": 0,
+    "dimension": "player.e.best",
+    "impossible": {
+     "why": "canReset is false: the requirement is above the base amount",
+     "layer": "e",
+     "resetAt": "1e120",
+     "requires": "1e120",
+     "nextAt": "1e120",
+     "baseAmount": "10",
+     "requiresDimension": "player.points",
+     "windowMax": "135.9239896366956"
+    }
+   }
+  },
+  {
+   "id": "ms:e:1",
+   "kind": "ms",
+   "layer": "e",
+   "dimension": "player.e.best",
+   "threshold": "5",
+   "held": "0",
+   "rate": "0",
+   "distanceLog10": null,
+   "why": "nothing held and no measured rate",
+   "firstImpossible": {
+    "at": 0,
+    "dimension": "player.e.best",
+    "impossible": {
+     "why": "canReset is false: the requirement is above the base amount",
+     "layer": "e",
+     "resetAt": "1e120",
+     "requires": "1e120",
+     "nextAt": "1e120",
+     "baseAmount": "10",
+     "requiresDimension": "player.points",
+     "windowMax": "135.9239896366956"
+    }
+   }
+  },
+  {
+   "id": "ms:e:2",
+   "kind": "ms",
+   "layer": "e",
+   "dimension": "player.e.best",
+   "threshold": "25",
+   "held": "0",
+   "rate": "0",
+   "distanceLog10": null,
+   "why": "nothing held and no measured rate",
+   "firstImpossible": {
+    "at": 0,
+    "dimension": "player.e.best",
+    "impossible": {
+     "why": "canReset is false: the requirement is above the base amount",
+     "layer": "e",
+     "resetAt": "1e120",
+     "requires": "1e120",
+     "nextAt": "1e120",
+     "baseAmount": "10",
+     "requiresDimension": "player.points",
+     "windowMax": "135.9239896366956"
+    }
+   }
+  },
+  {
+   "id": "ms:en:0",
+   "kind": "ms",
+   "layer": "en",
+   "dimension": "player.en.bestOnReset",
+   "threshold": "8750.000000061127",
+   "held": "0",
+   "rate": "0",
+   "distanceLog10": null,
+   "why": "nothing held and no measured rate",
+   "firstImpossible": {
+    "at": 0,
+    "dimension": "player.en.bestOnReset",
+    "impossible": {
+     "why": "no measured producer moves this dimension: it did not move at all over the 10-game-second wait (capped or inert)",
+     "window": 10
+    }
+   }
+  },
+  {
+   "id": "ms:en:1",
+   "kind": "ms",
+   "layer": "en",
+   "dimension": "player.en.bestOnReset",
+   "threshold": "22500.00000005302",
+   "held": "0",
+   "rate": "0",
+   "distanceLog10": null,
+   "why": "nothing held and no measured rate",
+   "firstImpossible": {
+    "at": 0,
+    "dimension": "player.en.bestOnReset",
+    "impossible": {
+     "why": "no measured producer moves this dimension: it did not move at all over the 10-game-second wait (capped or inert)",
+     "window": 10
+    }
+   }
+  },
+  {
+   "id": "ms:en:2",
+   "kind": "ms",
+   "layer": "en",
+   "dimension": "player.en.bestOnReset",
+   "threshold": "335000.0000025133",
+   "held": "0",
+   "rate": "0",
+   "distanceLog10": null,
+   "why": "nothing held and no measured rate",
+   "firstImpossible": {
+    "at": 0,
+    "dimension": "player.en.bestOnReset",
+    "impossible": {
+     "why": "no measured producer moves this dimension: it did not move at all over the 10-game-second wait (capped or inert)",
+     "window": 10
+    }
+   }
+  },
+  {
+   "id": "ms:en:3",
+   "kind": "ms",
+   "layer": "en",
+   "dimension": null,
+   "threshold": null,
+   "held": null,
+   "rate": null,
+   "distanceLog10": null,
+   "why": "no threshold or no held value",
+   "firstImpossible": null
+  },
+  {
+   "id": "ms:en:4",
+   "kind": "ms",
+   "layer": "en",
+   "dimension": "player.en.bestOnReset",
+   "threshold": "10000000",
+   "held": "0",
+   "rate": "0",
+   "distanceLog10": null,
+   "why": "nothing held and no measured rate",
+   "firstImpossible": {
+    "at": 0,
+    "dimension": "player.en.bestOnReset",
+    "impossible": {
+     "why": "no measured producer moves this dimension: it did not move at all over the 10-game-second wait (capped or inert)",
+     "window": 10
+    }
+   }
+  },
+  {
+   "id": "ms:ge:0",
+   "kind": "ms",
+   "layer": "ge",
+   "dimension": "player.ge.best",
+   "threshold": "1000000",
+   "held": "0",
+   "rate": "0",
+   "distanceLog10": null,
+   "why": "nothing held and no measured rate",
+   "firstImpossible": {
+    "at": 0,
+    "dimension": "player.ge.best",
+    "impossible": {
+     "why": "no measured producer moves this dimension: it did not move at all over the 10-game-second wait (capped or inert)",
+     "window": 10
+    }
+   }
+  },
+  {
+   "id": "ms:ge:1",
+   "kind": "ms",
+   "layer": "ge",
+   "dimension": "player.ge.best",
+   "threshold": "2.00000000000877e22",
+   "held": "0",
+   "rate": "0",
+   "distanceLog10": null,
+   "why": "nothing held and no measured rate",
+   "firstImpossible": {
+    "at": 0,
+    "dimension": "player.ge.best",
+    "impossible": {
+     "why": "no measured producer moves this dimension: it did not move at all over the 10-game-second wait (capped or inert)",
+     "window": 10
+    }
+   }
+  },
+  {
+   "id": "ms:ge:2",
+   "kind": "ms",
+   "layer": "ge",
+   "dimension": null,
+   "threshold": null,
+   "held": null,
+   "rate": null,
+   "distanceLog10": null,
+   "why": "no threshold or no held value",
+   "firstImpossible": null
+  },
+  {
+   "id": "ms:ge:3",
+   "kind": "ms",
+   "layer": "ge",
+   "dimension": null,
+   "threshold": null,
+   "held": null,
+   "rate": null,
+   "distanceLog10": null,
+   "why": "no threshold or no held value",
+   "firstImpossible": null
+  },
+  {
+   "id": "ms:h:0",
+   "kind": "ms",
+   "layer": "h",
+   "dimension": null,
+   "threshold": null,
+   "held": null,
+   "rate": null,
+   "distanceLog10": null,
+   "why": "no threshold or no held value",
+   "firstImpossible": null
+  },
+  {
+   "id": "ms:hn:0",
+   "kind": "ms",
+   "layer": "hn",
+   "dimension": "player.hn.total",
+   "threshold": "1",
+   "held": "0",
+   "rate": "0",
+   "distanceLog10": null,
+   "why": "nothing held and no measured rate",
+   "firstImpossible": {
+    "at": 0,
+    "dimension": "player.hn.total",
+    "impossible": {
+     "why": "no measured producer moves this dimension: it did not move at all over the 10-game-second wait (capped or inert)",
+     "window": 10
+    }
+   }
+  },
+  {
+   "id": "ms:hn:1",
+   "kind": "ms",
+   "layer": "hn",
+   "dimension": "player.hn.total",
+   "threshold": "2",
+   "held": "0",
+   "rate": "0",
+   "distanceLog10": null,
+   "why": "nothing held and no measured rate",
+   "firstImpossible": {
+    "at": 0,
+    "dimension": "player.hn.total",
+    "impossible": {
+     "why": "no measured producer moves this dimension: it did not move at all over the 10-game-second wait (capped or inert)",
+     "window": 10
+    }
+   }
+  },
+  {
+   "id": "ms:hn:2",
+   "kind": "ms",
+   "layer": "hn",
+   "dimension": "player.hn.total",
+   "threshold": "3",
+   "held": "0",
+   "rate": "0",
+   "distanceLog10": null,
+   "why": "nothing held and no measured rate",
+   "firstImpossible": {
+    "at": 0,
+    "dimension": "player.hn.total",
+    "impossible": {
+     "why": "no measured producer moves this dimension: it did not move at all over the 10-game-second wait (capped or inert)",
+     "window": 10
+    }
+   }
+  },
+  {
+   "id": "ms:hn:3",
+   "kind": "ms",
+   "layer": "hn",
+   "dimension": "player.hn.total",
+   "threshold": "4",
+   "held": "0",
+   "rate": "0",
+   "distanceLog10": null,
+   "why": "nothing held and no measured rate",
+   "firstImpossible": {
+    "at": 0,
+    "dimension": "player.hn.total",
+    "impossible": {
+     "why": "no measured producer moves this dimension: it did not move at all over the 10-game-second wait (capped or inert)",
+     "window": 10
+    }
+   }
+  },
+  {
+   "id": "ms:hn:4",
+   "kind": "ms",
+   "layer": "hn",
+   "dimension": "player.hn.total",
+   "threshold": "5",
+   "held": "0",
+   "rate": "0",
+   "distanceLog10": null,
+   "why": "nothing held and no measured rate",
+   "firstImpossible": {
+    "at": 0,
+    "dimension": "player.hn.total",
+    "impossible": {
+     "why": "no measured producer moves this dimension: it did not move at all over the 10-game-second wait (capped or inert)",
+     "window": 10
+    }
+   }
+  },
+  {
+   "id": "ms:hn:5",
+   "kind": "ms",
+   "layer": "hn",
+   "dimension": "player.hn.total",
+   "threshold": "6",
+   "held": "0",
+   "rate": "0",
+   "distanceLog10": null,
+   "why": "nothing held and no measured rate",
+   "firstImpossible": {
+    "at": 0,
+    "dimension": "player.hn.total",
+    "impossible": {
+     "why": "no measured producer moves this dimension: it did not move at all over the 10-game-second wait (capped or inert)",
+     "window": 10
+    }
+   }
+  },
+  {
+   "id": "ms:hn:6",
+   "kind": "ms",
+   "layer": "hn",
+   "dimension": "player.hn.total",
+   "threshold": "10",
+   "held": "0",
+   "rate": "0",
+   "distanceLog10": null,
+   "why": "nothing held and no measured rate",
+   "firstImpossible": {
+    "at": 0,
+    "dimension": "player.hn.total",
+    "impossible": {
+     "why": "no measured producer moves this dimension: it did not move at all over the 10-game-second wait (capped or inert)",
+     "window": 10
+    }
+   }
+  },
+  {
+   "id": "ms:hn:7",
+   "kind": "ms",
+   "layer": "hn",
+   "dimension": null,
+   "threshold": null,
+   "held": null,
+   "rate": null,
+   "distanceLog10": null,
+   "why": "no threshold or no held value",
+   "firstImpossible": null
+  },
+  {
+   "id": "ms:hn:8",
+   "kind": "ms",
+   "layer": "hn",
+   "dimension": "player.hn.total",
+   "threshold": "1e30",
+   "held": "0",
+   "rate": "0",
+   "distanceLog10": null,
+   "why": "nothing held and no measured rate",
+   "firstImpossible": {
+    "at": 0,
+    "dimension": "player.hn.total",
+    "impossible": {
+     "why": "no measured producer moves this dimension: it did not move at all over the 10-game-second wait (capped or inert)",
+     "window": 10
+    }
+   }
+  },
+  {
+   "id": "ms:hn:9",
+   "kind": "ms",
+   "layer": "hn",
+   "dimension": "player.hn.total",
+   "threshold": "1e300",
+   "held": "0",
+   "rate": "0",
+   "distanceLog10": null,
+   "why": "nothing held and no measured rate",
+   "firstImpossible": {
+    "at": 0,
+    "dimension": "player.hn.total",
+    "impossible": {
+     "why": "no measured producer moves this dimension: it did not move at all over the 10-game-second wait (capped or inert)",
+     "window": 10
+    }
+   }
+  },
+  {
+   "id": "ms:id:0",
+   "kind": "ms",
+   "layer": "id",
+   "dimension": null,
+   "threshold": null,
+   "held": null,
+   "rate": null,
+   "distanceLog10": null,
+   "why": "no threshold or no held value",
+   "firstImpossible": null
+  },
+  {
+   "id": "ms:id:1",
+   "kind": "ms",
+   "layer": "id",
+   "dimension": null,
+   "threshold": null,
+   "held": null,
+   "rate": null,
+   "distanceLog10": null,
+   "why": "no threshold or no held value",
+   "firstImpossible": null
+  },
+  {
+   "id": "ms:id:2",
+   "kind": "ms",
+   "layer": "id",
+   "dimension": null,
+   "threshold": null,
+   "held": null,
+   "rate": null,
+   "distanceLog10": null,
+   "why": "no threshold or no held value",
+   "firstImpossible": null
+  },
+  {
+   "id": "ms:id:3",
+   "kind": "ms",
+   "layer": "id",
+   "dimension": null,
+   "threshold": null,
+   "held": null,
+   "rate": null,
+   "distanceLog10": null,
+   "why": "no threshold or no held value",
+   "firstImpossible": null
+  },
+  {
+   "id": "ms:id:4",
+   "kind": "ms",
+   "layer": "id",
+   "dimension": null,
+   "threshold": null,
+   "held": null,
+   "rate": null,
+   "distanceLog10": null,
+   "why": "no threshold or no held value",
+   "firstImpossible": {
+    "at": 1,
+    "dimension": "player.c.buyables.11",
+    "impossible": {
+     "why": "no measured producer moves this dimension: it did not move at all over the 10-game-second wait (capped or inert)",
+     "window": 10
+    }
+   }
+  },
+  {
+   "id": "ms:id:5",
+   "kind": "ms",
+   "layer": "id",
+   "dimension": null,
+   "threshold": null,
+   "held": null,
+   "rate": null,
+   "distanceLog10": null,
+   "why": "no threshold or no held value",
+   "firstImpossible": null
+  },
+  {
+   "id": "ms:m:0",
+   "kind": "ms",
+   "layer": "m",
+   "dimension": "player.m.total",
+   "threshold": "2",
+   "held": "0",
+   "rate": "0",
+   "distanceLog10": null,
+   "why": "nothing held and no measured rate",
+   "firstImpossible": {
+    "at": 0,
+    "dimension": "player.m.total",
+    "impossible": {
+     "why": "no measured producer moves this dimension: it did not move at all over the 10-game-second wait (capped or inert)",
+     "window": 10
+    }
+   }
+  },
+  {
+   "id": "ms:m:1",
+   "kind": "ms",
+   "layer": "m",
+   "dimension": "player.m.total",
+   "threshold": "3",
+   "held": "0",
+   "rate": "0",
+   "distanceLog10": null,
+   "why": "nothing held and no measured rate",
+   "firstImpossible": {
+    "at": 0,
+    "dimension": "player.m.total",
+    "impossible": {
+     "why": "no measured producer moves this dimension: it did not move at all over the 10-game-second wait (capped or inert)",
+     "window": 10
+    }
+   }
+  },
+  {
+   "id": "ms:m:2",
+   "kind": "ms",
+   "layer": "m",
+   "dimension": "player.m.total",
+   "threshold": "10",
+   "held": "0",
+   "rate": "0",
+   "distanceLog10": null,
+   "why": "nothing held and no measured rate",
+   "firstImpossible": {
+    "at": 0,
+    "dimension": "player.m.total",
+    "impossible": {
+     "why": "no measured producer moves this dimension: it did not move at all over the 10-game-second wait (capped or inert)",
+     "window": 10
+    }
+   }
+  },
+  {
+   "id": "ms:m:3",
+   "kind": "ms",
+   "layer": "m",
+   "dimension": "player.m.total",
+   "threshold": "5000.00000001996",
+   "held": "0",
+   "rate": "0",
+   "distanceLog10": null,
+   "why": "nothing held and no measured rate",
+   "firstImpossible": {
+    "at": 0,
+    "dimension": "player.m.total",
+    "impossible": {
+     "why": "no measured producer moves this dimension: it did not move at all over the 10-game-second wait (capped or inert)",
+     "window": 10
+    }
+   }
+  },
+  {
+   "id": "ms:m:4",
+   "kind": "ms",
+   "layer": "m",
+   "dimension": "player.m.total",
+   "threshold": "10000000000",
+   "held": "0",
+   "rate": "0",
+   "distanceLog10": null,
+   "why": "nothing held and no measured rate",
+   "firstImpossible": {
+    "at": 0,
+    "dimension": "player.m.total",
+    "impossible": {
+     "why": "no measured producer moves this dimension: it did not move at all over the 10-game-second wait (capped or inert)",
+     "window": 10
+    }
+   }
+  },
+  {
+   "id": "ms:ma:0",
+   "kind": "ms",
+   "layer": "ma",
+   "dimension": "player.ma.best",
+   "threshold": "1",
+   "held": "0",
+   "rate": "0",
+   "distanceLog10": null,
+   "why": "nothing held and no measured rate",
+   "firstImpossible": {
+    "at": 0,
+    "dimension": "player.ma.best",
+    "impossible": {
+     "why": "no measured producer moves this dimension: it did not move at all over the 10-game-second wait (capped or inert)",
+     "window": 10
+    }
+   }
+  },
+  {
+   "id": "ms:ma:1",
+   "kind": "ms",
+   "layer": "ma",
+   "dimension": "player.ma.best",
+   "threshold": "2",
+   "held": "0",
+   "rate": "0",
+   "distanceLog10": null,
+   "why": "nothing held and no measured rate",
+   "firstImpossible": {
+    "at": 0,
+    "dimension": "player.ma.best",
+    "impossible": {
+     "why": "no measured producer moves this dimension: it did not move at all over the 10-game-second wait (capped or inert)",
+     "window": 10
+    }
+   }
+  },
+  {
+   "id": "ms:ma:2",
+   "kind": "ms",
+   "layer": "ma",
+   "dimension": "player.ma.best",
+   "threshold": "3",
+   "held": "0",
+   "rate": "0",
+   "distanceLog10": null,
+   "why": "nothing held and no measured rate",
+   "firstImpossible": {
+    "at": 0,
+    "dimension": "player.ma.best",
+    "impossible": {
+     "why": "no measured producer moves this dimension: it did not move at all over the 10-game-second wait (capped or inert)",
+     "window": 10
+    }
+   }
+  },
+  {
+   "id": "ms:ma:3",
+   "kind": "ms",
+   "layer": "ma",
+   "dimension": "player.ma.best",
+   "threshold": "4",
+   "held": "0",
+   "rate": "0",
+   "distanceLog10": null,
+   "why": "nothing held and no measured rate",
+   "firstImpossible": {
+    "at": 0,
+    "dimension": "player.ma.best",
+    "impossible": {
+     "why": "no measured producer moves this dimension: it did not move at all over the 10-game-second wait (capped or inert)",
+     "window": 10
+    }
+   }
+  },
+  {
+   "id": "ms:ma:4",
+   "kind": "ms",
+   "layer": "ma",
+   "dimension": "player.ma.best",
+   "threshold": "5",
+   "held": "0",
+   "rate": "0",
+   "distanceLog10": null,
+   "why": "nothing held and no measured rate",
+   "firstImpossible": {
+    "at": 0,
+    "dimension": "player.ma.best",
+    "impossible": {
+     "why": "no measured producer moves this dimension: it did not move at all over the 10-game-second wait (capped or inert)",
+     "window": 10
+    }
+   }
+  },
+  {
+   "id": "ms:ma:5",
+   "kind": "ms",
+   "layer": "ma",
+   "dimension": "player.ma.best",
+   "threshold": "16",
+   "held": "0",
+   "rate": "0",
+   "distanceLog10": null,
+   "why": "nothing held and no measured rate",
+   "firstImpossible": {
+    "at": 0,
+    "dimension": "player.ma.best",
+    "impossible": {
+     "why": "no measured producer moves this dimension: it did not move at all over the 10-game-second wait (capped or inert)",
+     "window": 10
+    }
+   }
+  },
+  {
+   "id": "ms:mc:0",
+   "kind": "ms",
+   "layer": "mc",
+   "dimension": null,
+   "threshold": null,
+   "held": null,
+   "rate": null,
+   "distanceLog10": null,
+   "why": "no threshold or no held value",
+   "firstImpossible": null
+  },
+  {
+   "id": "ms:mc:1",
+   "kind": "ms",
+   "layer": "mc",
+   "dimension": null,
+   "threshold": null,
+   "held": null,
+   "rate": null,
+   "distanceLog10": null,
+   "why": "no threshold or no held value",
+   "firstImpossible": null
+  },
+  {
+   "id": "ms:ne:0",
+   "kind": "ms",
+   "layer": "ne",
+   "dimension": "player.ne.signals",
+   "threshold": "2750.0000000084824",
+   "held": "0",
+   "rate": "0",
+   "distanceLog10": null,
+   "why": "nothing held and no measured rate",
+   "firstImpossible": {
+    "at": 0,
+    "dimension": "player.ne.signals",
+    "impossible": {
+     "why": "no measured producer moves this dimension: it did not move at all over the 10-game-second wait (capped or inert)",
+     "window": 10
+    }
+   }
+  },
+  {
+   "id": "ms:ne:1",
+   "kind": "ms",
+   "layer": "ne",
+   "dimension": "player.ne.signals",
+   "threshold": "50000.000000199594",
+   "held": "0",
+   "rate": "0",
+   "distanceLog10": null,
+   "why": "nothing held and no measured rate",
+   "firstImpossible": {
+    "at": 0,
+    "dimension": "player.ne.signals",
+    "impossible": {
+     "why": "no measured producer moves this dimension: it did not move at all over the 10-game-second wait (capped or inert)",
+     "window": 10
+    }
+   }
+  },
+  {
+   "id": "ms:ne:2",
+   "kind": "ms",
+   "layer": "ne",
+   "dimension": "player.ne.signals",
+   "threshold": "3000000.000004124",
+   "held": "0",
+   "rate": "0",
+   "distanceLog10": null,
+   "why": "nothing held and no measured rate",
+   "firstImpossible": {
+    "at": 0,
+    "dimension": "player.ne.signals",
+    "impossible": {
+     "why": "no measured producer moves this dimension: it did not move at all over the 10-game-second wait (capped or inert)",
+     "window": 10
+    }
+   }
+  },
+  {
+   "id": "ms:ne:3",
+   "kind": "ms",
+   "layer": "ne",
+   "dimension": "player.ne.signals",
+   "threshold": "150000000.00206152",
+   "held": "0",
+   "rate": "0",
+   "distanceLog10": null,
+   "why": "nothing held and no measured rate",
+   "firstImpossible": {
+    "at": 0,
+    "dimension": "player.ne.signals",
+    "impossible": {
+     "why": "no measured producer moves this dimension: it did not move at all over the 10-game-second wait (capped or inert)",
+     "window": 10
+    }
+   }
+  },
+  {
+   "id": "ms:ne:4",
+   "kind": "ms",
+   "layer": "ne",
+   "dimension": "player.ne.signals",
+   "threshold": "2500000000.0199594",
+   "held": "0",
+   "rate": "0",
+   "distanceLog10": null,
+   "why": "nothing held and no measured rate",
+   "firstImpossible": {
+    "at": 0,
+    "dimension": "player.ne.signals",
+    "impossible": {
+     "why": "no measured producer moves this dimension: it did not move at all over the 10-game-second wait (capped or inert)",
+     "window": 10
+    }
+   }
+  },
+  {
+   "id": "ms:ne:5",
+   "kind": "ms",
+   "layer": "ne",
+   "dimension": null,
+   "threshold": null,
+   "held": null,
+   "rate": null,
+   "distanceLog10": null,
+   "why": "no threshold or no held value",
+   "firstImpossible": null
+  },
+  {
+   "id": "ms:ne:6",
+   "kind": "ms",
+   "layer": "ne",
+   "dimension": "player.ne.signals",
+   "threshold": "1e21",
+   "held": "0",
+   "rate": "0",
+   "distanceLog10": null,
+   "why": "nothing held and no measured rate",
+   "firstImpossible": {
+    "at": 0,
+    "dimension": "player.ne.signals",
+    "impossible": {
+     "why": "no measured producer moves this dimension: it did not move at all over the 10-game-second wait (capped or inert)",
+     "window": 10
+    }
+   }
+  },
+  {
+   "id": "ms:ne:7",
+   "kind": "ms",
+   "layer": "ne",
+   "dimension": null,
+   "threshold": null,
+   "held": null,
+   "rate": null,
+   "distanceLog10": null,
+   "why": "no threshold or no held value",
+   "firstImpossible": null
+  },
+  {
+   "id": "ms:o:0",
+   "kind": "ms",
+   "layer": "o",
+   "dimension": "player.o.total",
+   "threshold": "50000.000000199594",
+   "held": "0",
+   "rate": "0",
+   "distanceLog10": null,
+   "why": "nothing held and no measured rate",
+   "firstImpossible": {
+    "at": 0,
+    "dimension": "player.o.total",
+    "impossible": {
+     "why": "no measured producer moves this dimension: it did not move at all over the 10-game-second wait (capped or inert)",
+     "window": 10
+    }
+   }
+  },
+  {
+   "id": "ms:q:0",
+   "kind": "ms",
+   "layer": "q",
+   "dimension": "player.q.total",
+   "threshold": "2",
+   "held": "0",
+   "rate": "0",
+   "distanceLog10": null,
+   "why": "nothing held and no measured rate",
+   "firstImpossible": {
+    "at": 0,
+    "dimension": "player.q.total",
+    "impossible": {
+     "why": "no measured producer moves this dimension: it did not move at all over the 10-game-second wait (capped or inert)",
+     "window": 10
+    }
+   }
+  },
+  {
+   "id": "ms:q:1",
+   "kind": "ms",
+   "layer": "q",
+   "dimension": "player.q.total",
+   "threshold": "3",
+   "held": "0",
+   "rate": "0",
+   "distanceLog10": null,
+   "why": "nothing held and no measured rate",
+   "firstImpossible": {
+    "at": 0,
+    "dimension": "player.q.total",
+    "impossible": {
+     "why": "no measured producer moves this dimension: it did not move at all over the 10-game-second wait (capped or inert)",
+     "window": 10
+    }
+   }
+  },
+  {
+   "id": "ms:q:2",
+   "kind": "ms",
+   "layer": "q",
+   "dimension": "player.q.total",
+   "threshold": "4",
+   "held": "0",
+   "rate": "0",
+   "distanceLog10": null,
+   "why": "nothing held and no measured rate",
+   "firstImpossible": {
+    "at": 0,
+    "dimension": "player.q.total",
+    "impossible": {
+     "why": "no measured producer moves this dimension: it did not move at all over the 10-game-second wait (capped or inert)",
+     "window": 10
+    }
+   }
+  },
+  {
+   "id": "ms:q:3",
+   "kind": "ms",
+   "layer": "q",
+   "dimension": "player.q.total",
+   "threshold": "6",
+   "held": "0",
+   "rate": "0",
+   "distanceLog10": null,
+   "why": "nothing held and no measured rate",
+   "firstImpossible": {
+    "at": 0,
+    "dimension": "player.q.total",
+    "impossible": {
+     "why": "no measured producer moves this dimension: it did not move at all over the 10-game-second wait (capped or inert)",
+     "window": 10
+    }
+   }
+  },
+  {
+   "id": "ms:q:4",
+   "kind": "ms",
+   "layer": "q",
+   "dimension": "player.q.total",
+   "threshold": "10",
+   "held": "0",
+   "rate": "0",
+   "distanceLog10": null,
+   "why": "nothing held and no measured rate",
+   "firstImpossible": {
+    "at": 0,
+    "dimension": "player.q.total",
+    "impossible": {
+     "why": "no measured producer moves this dimension: it did not move at all over the 10-game-second wait (capped or inert)",
+     "window": 10
+    }
+   }
+  },
+  {
+   "id": "ms:q:5",
+   "kind": "ms",
+   "layer": "q",
+   "dimension": "player.q.total",
+   "threshold": "25",
+   "held": "0",
+   "rate": "0",
+   "distanceLog10": null,
+   "why": "nothing held and no measured rate",
+   "firstImpossible": {
+    "at": 0,
+    "dimension": "player.q.total",
+    "impossible": {
+     "why": "no measured producer moves this dimension: it did not move at all over the 10-game-second wait (capped or inert)",
+     "window": 10
+    }
+   }
+  },
+  {
+   "id": "ms:q:6",
+   "kind": "ms",
+   "layer": "q",
+   "dimension": "player.q.total",
+   "threshold": "1e22",
+   "held": "0",
+   "rate": "0",
+   "distanceLog10": null,
+   "why": "nothing held and no measured rate",
+   "firstImpossible": {
+    "at": 0,
+    "dimension": "player.q.total",
+    "impossible": {
+     "why": "no measured producer moves this dimension: it did not move at all over the 10-game-second wait (capped or inert)",
+     "window": 10
+    }
+   }
+  },
+  {
+   "id": "ms:q:7",
+   "kind": "ms",
+   "layer": "q",
+   "dimension": "player.q.total",
+   "threshold": "1e60",
+   "held": "0",
+   "rate": "0",
+   "distanceLog10": null,
+   "why": "nothing held and no measured rate",
+   "firstImpossible": {
+    "at": 0,
+    "dimension": "player.q.total",
+    "impossible": {
+     "why": "no measured producer moves this dimension: it did not move at all over the 10-game-second wait (capped or inert)",
+     "window": 10
+    }
+   }
+  },
+  {
+   "id": "ms:r:0",
+   "kind": "ms",
+   "layer": "r",
+   "dimension": "player.r.total",
+   "threshold": "50",
+   "held": "0",
+   "rate": "0",
+   "distanceLog10": null,
+   "why": "nothing held and no measured rate",
+   "firstImpossible": {
+    "at": 0,
+    "dimension": "player.r.total",
+    "impossible": {
+     "why": "no measured producer moves this dimension: it did not move at all over the 10-game-second wait (capped or inert)",
+     "window": 10
+    }
+   }
+  },
+  {
+   "id": "ms:r:1",
+   "kind": "ms",
+   "layer": "r",
+   "dimension": "player.r.total",
+   "threshold": "100",
+   "held": "0",
+   "rate": "0",
+   "distanceLog10": null,
+   "why": "nothing held and no measured rate",
+   "firstImpossible": {
+    "at": 0,
+    "dimension": "player.r.total",
+    "impossible": {
+     "why": "no measured producer moves this dimension: it did not move at all over the 10-game-second wait (capped or inert)",
+     "window": 10
+    }
+   }
+  },
+  {
+   "id": "ms:r:2",
+   "kind": "ms",
+   "layer": "r",
+   "dimension": "player.r.total",
+   "threshold": "360.00000000113124",
+   "held": "0",
+   "rate": "0",
+   "distanceLog10": null,
+   "why": "nothing held and no measured rate",
+   "firstImpossible": {
+    "at": 0,
+    "dimension": "player.r.total",
+    "impossible": {
+     "why": "no measured producer moves this dimension: it did not move at all over the 10-game-second wait (capped or inert)",
+     "window": 10
+    }
+   }
+  },
+  {
+   "id": "ms:r:3",
+   "kind": "ms",
+   "layer": "r",
+   "dimension": "player.r.total",
+   "threshold": "500.00000000199594",
+   "held": "0",
+   "rate": "0",
+   "distanceLog10": null,
+   "why": "nothing held and no measured rate",
+   "firstImpossible": {
+    "at": 0,
+    "dimension": "player.r.total",
+    "impossible": {
+     "why": "no measured producer moves this dimension: it did not move at all over the 10-game-second wait (capped or inert)",
+     "window": 10
+    }
+   }
+  },
+  {
+   "id": "ms:r:4",
+   "kind": "ms",
+   "layer": "r",
+   "dimension": "player.r.total",
+   "threshold": "2000",
+   "held": "0",
+   "rate": "0",
+   "distanceLog10": null,
+   "why": "nothing held and no measured rate",
+   "firstImpossible": {
+    "at": 0,
+    "dimension": "player.r.total",
+    "impossible": {
+     "why": "no measured producer moves this dimension: it did not move at all over the 10-game-second wait (capped or inert)",
+     "window": 10
+    }
+   }
+  },
+  {
+   "id": "ms:r:5",
+   "kind": "ms",
+   "layer": "r",
+   "dimension": null,
+   "threshold": null,
+   "held": null,
+   "rate": null,
+   "distanceLog10": null,
+   "why": "no threshold or no held value",
+   "firstImpossible": null
+  },
+  {
+   "id": "ms:s:0",
+   "kind": "ms",
+   "layer": "s",
+   "dimension": "player.s.best",
+   "threshold": "2",
+   "held": "0",
+   "rate": "0",
+   "distanceLog10": null,
+   "why": "nothing held and no measured rate",
+   "firstImpossible": {
+    "at": 0,
+    "dimension": "player.s.best",
+    "impossible": {
+     "why": "canReset is false: the requirement is above the base amount",
+     "layer": "s",
+     "resetAt": "1e120",
+     "requires": "1e120",
+     "nextAt": "1e120",
+     "baseAmount": "10",
+     "requiresDimension": "player.points",
+     "windowMax": "135.9239896366956"
+    }
+   }
+  },
+  {
+   "id": "ms:s:1",
+   "kind": "ms",
+   "layer": "s",
+   "dimension": "player.s.best",
+   "threshold": "3",
+   "held": "0",
+   "rate": "0",
+   "distanceLog10": null,
+   "why": "nothing held and no measured rate",
+   "firstImpossible": {
+    "at": 0,
+    "dimension": "player.s.best",
+    "impossible": {
+     "why": "canReset is false: the requirement is above the base amount",
+     "layer": "s",
+     "resetAt": "1e120",
+     "requires": "1e120",
+     "nextAt": "1e120",
+     "baseAmount": "10",
+     "requiresDimension": "player.points",
+     "windowMax": "135.9239896366956"
+    }
+   }
+  },
+  {
+   "id": "ms:s:2",
+   "kind": "ms",
+   "layer": "s",
+   "dimension": "player.s.best",
+   "threshold": "4",
+   "held": "0",
+   "rate": "0",
+   "distanceLog10": null,
+   "why": "nothing held and no measured rate",
+   "firstImpossible": {
+    "at": 0,
+    "dimension": "player.s.best",
+    "impossible": {
+     "why": "canReset is false: the requirement is above the base amount",
+     "layer": "s",
+     "resetAt": "1e120",
+     "requires": "1e120",
+     "nextAt": "1e120",
+     "baseAmount": "10",
+     "requiresDimension": "player.points",
+     "windowMax": "135.9239896366956"
+    }
+   }
+  },
+  {
+   "id": "ms:s:3",
+   "kind": "ms",
+   "layer": "s",
+   "dimension": "player.s.best",
+   "threshold": "5",
+   "held": "0",
+   "rate": "0",
+   "distanceLog10": null,
+   "why": "nothing held and no measured rate",
+   "firstImpossible": {
+    "at": 0,
+    "dimension": "player.s.best",
+    "impossible": {
+     "why": "canReset is false: the requirement is above the base amount",
+     "layer": "s",
+     "resetAt": "1e120",
+     "requires": "1e120",
+     "nextAt": "1e120",
+     "baseAmount": "10",
+     "requiresDimension": "player.points",
+     "windowMax": "135.9239896366956"
+    }
+   }
+  },
+  {
+   "id": "ms:s:4",
+   "kind": "ms",
+   "layer": "s",
+   "dimension": "player.s.best",
+   "threshold": "8",
+   "held": "0",
+   "rate": "0",
+   "distanceLog10": null,
+   "why": "nothing held and no measured rate",
+   "firstImpossible": {
+    "at": 0,
+    "dimension": "player.s.best",
+    "impossible": {
+     "why": "canReset is false: the requirement is above the base amount",
+     "layer": "s",
+     "resetAt": "1e120",
+     "requires": "1e120",
+     "nextAt": "1e120",
+     "baseAmount": "10",
+     "requiresDimension": "player.points",
+     "windowMax": "135.9239896366956"
+    }
+   }
+  },
+  {
+   "id": "ms:t:0",
+   "kind": "ms",
+   "layer": "t",
+   "dimension": "player.t.best",
+   "threshold": "2",
+   "held": "0",
+   "rate": "0",
+   "distanceLog10": null,
+   "why": "nothing held and no measured rate",
+   "firstImpossible": {
+    "at": 0,
+    "dimension": "player.t.best",
+    "impossible": {
+     "why": "canReset is false: the requirement is above the base amount",
+     "layer": "t",
+     "resetAt": "1e120",
+     "requires": "1e120",
+     "nextAt": "1e120",
+     "baseAmount": "10",
+     "requiresDimension": "player.points",
+     "windowMax": "135.9239896366956"
+    }
+   }
+  },
+  {
+   "id": "ms:t:1",
+   "kind": "ms",
+   "layer": "t",
+   "dimension": "player.t.best",
+   "threshold": "3",
+   "held": "0",
+   "rate": "0",
+   "distanceLog10": null,
+   "why": "nothing held and no measured rate",
+   "firstImpossible": {
+    "at": 0,
+    "dimension": "player.t.best",
+    "impossible": {
+     "why": "canReset is false: the requirement is above the base amount",
+     "layer": "t",
+     "resetAt": "1e120",
+     "requires": "1e120",
+     "nextAt": "1e120",
+     "baseAmount": "10",
+     "requiresDimension": "player.points",
+     "windowMax": "135.9239896366956"
+    }
+   }
+  },
+  {
+   "id": "ms:t:2",
+   "kind": "ms",
+   "layer": "t",
+   "dimension": "player.t.best",
+   "threshold": "4",
+   "held": "0",
+   "rate": "0",
+   "distanceLog10": null,
+   "why": "nothing held and no measured rate",
+   "firstImpossible": {
+    "at": 0,
+    "dimension": "player.t.best",
+    "impossible": {
+     "why": "canReset is false: the requirement is above the base amount",
+     "layer": "t",
+     "resetAt": "1e120",
+     "requires": "1e120",
+     "nextAt": "1e120",
+     "baseAmount": "10",
+     "requiresDimension": "player.points",
+     "windowMax": "135.9239896366956"
+    }
+   }
+  },
+  {
+   "id": "ms:t:3",
+   "kind": "ms",
+   "layer": "t",
+   "dimension": "player.t.best",
+   "threshold": "5",
+   "held": "0",
+   "rate": "0",
+   "distanceLog10": null,
+   "why": "nothing held and no measured rate",
+   "firstImpossible": {
+    "at": 0,
+    "dimension": "player.t.best",
+    "impossible": {
+     "why": "canReset is false: the requirement is above the base amount",
+     "layer": "t",
+     "resetAt": "1e120",
+     "requires": "1e120",
+     "nextAt": "1e120",
+     "baseAmount": "10",
+     "requiresDimension": "player.points",
+     "windowMax": "135.9239896366956"
+    }
+   }
+  },
+  {
+   "id": "ms:t:4",
+   "kind": "ms",
+   "layer": "t",
+   "dimension": "player.t.best",
+   "threshold": "8",
+   "held": "0",
+   "rate": "0",
+   "distanceLog10": null,
+   "why": "nothing held and no measured rate",
+   "firstImpossible": {
+    "at": 0,
+    "dimension": "player.t.best",
+    "impossible": {
+     "why": "canReset is false: the requirement is above the base amount",
+     "layer": "t",
+     "resetAt": "1e120",
+     "requires": "1e120",
+     "nextAt": "1e120",
+     "baseAmount": "10",
+     "requiresDimension": "player.points",
+     "windowMax": "135.9239896366956"
+    }
+   }
+  },
+  {
+   "id": "ach:a:101",
+   "kind": "ach",
+   "layer": "a",
+   "dimension": "player.q.points",
+   "threshold": "1e1000000",
+   "held": "0",
+   "rate": "0",
+   "distanceLog10": null,
+   "why": "nothing held and no measured rate",
+   "firstImpossible": {
+    "at": 0,
+    "dimension": "player.q.points",
+    "impossible": {
+     "why": "no measured producer moves this dimension: it did not move at all over the 10-game-second wait (capped or inert)",
+     "window": 10
+    }
+   }
+  },
+  {
+   "id": "ach:a:102",
+   "kind": "ach",
+   "layer": "a",
+   "dimension": null,
+   "threshold": null,
+   "held": null,
+   "rate": null,
+   "distanceLog10": null,
+   "why": "no threshold or no held value",
+   "firstImpossible": null
+  },
+  {
+   "id": "ach:a:103",
+   "kind": "ach",
+   "layer": "a",
+   "dimension": null,
+   "threshold": null,
+   "held": null,
+   "rate": null,
+   "distanceLog10": null,
+   "why": "no threshold or no held value",
+   "firstImpossible": null
+  },
+  {
+   "id": "ach:a:104",
+   "kind": "ach",
+   "layer": "a",
+   "dimension": "player.n.buyables.11",
+   "threshold": "5",
+   "held": "0",
+   "rate": "0",
+   "distanceLog10": null,
+   "why": "nothing held and no measured rate",
+   "firstImpossible": {
+    "at": 0,
+    "dimension": "player.n.buyables.11",
+    "impossible": {
+     "why": "no measured producer moves this dimension: it did not move at all over the 10-game-second wait (capped or inert)",
+     "window": 10
+    }
+   }
+  },
+  {
+   "id": "ach:a:105",
+   "kind": "ach",
+   "layer": "a",
+   "dimension": null,
+   "threshold": null,
+   "held": null,
+   "rate": null,
+   "distanceLog10": null,
+   "why": "no threshold or no held value",
+   "firstImpossible": null
+  },
+  {
+   "id": "ach:a:111",
+   "kind": "ach",
+   "layer": "a",
+   "dimension": null,
+   "threshold": null,
+   "held": null,
+   "rate": null,
+   "distanceLog10": null,
+   "why": "no threshold or no held value",
+   "firstImpossible": null
+  },
+  {
+   "id": "ach:a:112",
+   "kind": "ach",
+   "layer": "a",
+   "dimension": "player.ma.points",
+   "threshold": "10",
+   "held": "0",
+   "rate": "0",
+   "distanceLog10": null,
+   "why": "nothing held and no measured rate",
+   "firstImpossible": {
+    "at": 0,
+    "dimension": "player.ma.points",
+    "impossible": {
+     "why": "no measured producer moves this dimension: it did not move at all over the 10-game-second wait (capped or inert)",
+     "window": 10
+    }
+   }
+  },
+  {
+   "id": "ach:a:113",
+   "kind": "ach",
+   "layer": "a",
+   "dimension": null,
+   "threshold": null,
+   "held": null,
+   "rate": null,
+   "distanceLog10": null,
+   "why": "no threshold or no held value",
+   "firstImpossible": null
+  },
+  {
+   "id": "ach:a:114",
+   "kind": "ach",
+   "layer": "a",
+   "dimension": "player.h.challenges.32",
+   "threshold": "900.0000000024744",
+   "held": "0",
+   "rate": "0",
+   "distanceLog10": null,
+   "why": "nothing held and no measured rate",
+   "firstImpossible": {
+    "at": 0,
+    "dimension": "player.h.challenges.32",
+    "impossible": {
+     "why": "no measured producer moves this dimension: it did not move at all over the 10-game-second wait (capped or inert)",
+     "window": 10
+    }
+   }
+  },
+  {
+   "id": "ach:a:115",
+   "kind": "ach",
+   "layer": "a",
+   "dimension": "player.ps.points",
+   "threshold": "1350.0000000053024",
+   "held": "0",
+   "rate": "0",
+   "distanceLog10": null,
+   "why": "nothing held and no measured rate",
+   "firstImpossible": {
+    "at": 0,
+    "dimension": "player.ps.points",
+    "impossible": {
+     "why": "no measured producer moves this dimension: it did not move at all over the 10-game-second wait (capped or inert)",
+     "window": 10
+    }
+   }
+  },
+  {
+   "id": "ach:a:121",
+   "kind": "ach",
+   "layer": "a",
+   "dimension": null,
+   "threshold": null,
+   "held": null,
+   "rate": null,
+   "distanceLog10": null,
+   "why": "no threshold or no held value",
+   "firstImpossible": null
+  },
+  {
+   "id": "ach:a:122",
+   "kind": "ach",
+   "layer": "a",
+   "dimension": null,
+   "threshold": null,
+   "held": null,
+   "rate": null,
+   "distanceLog10": null,
+   "why": "no threshold or no held value",
+   "firstImpossible": null
+  },
+  {
+   "id": "ach:a:123",
+   "kind": "ach",
+   "layer": "a",
+   "dimension": "player.ge.energy",
+   "threshold": "1.2000000000121733e34",
+   "held": "0",
+   "rate": "0",
+   "distanceLog10": null,
+   "why": "nothing held and no measured rate",
+   "firstImpossible": {
+    "at": 0,
+    "dimension": "player.ge.energy",
+    "impossible": {
+     "why": "no measured producer moves this dimension: it did not move at all over the 10-game-second wait (capped or inert)",
+     "window": 10
+    }
+   }
+  },
+  {
+   "id": "ach:a:124",
+   "kind": "ach",
+   "layer": "a",
+   "dimension": "player.hn.points",
+   "threshold": "1e1000000",
+   "held": "0",
+   "rate": "0",
+   "distanceLog10": null,
+   "why": "nothing held and no measured rate",
+   "firstImpossible": {
+    "at": 0,
+    "dimension": "player.hn.points",
+    "impossible": {
+     "why": "no measured producer moves this dimension: it did not move at all over the 10-game-second wait (capped or inert)",
+     "window": 10
+    }
+   }
+  },
+  {
+   "id": "ach:a:125",
+   "kind": "ach",
+   "layer": "a",
+   "dimension": null,
+   "threshold": null,
+   "held": null,
+   "rate": null,
+   "distanceLog10": null,
+   "why": "no threshold or no held value",
+   "firstImpossible": null
+  },
+  {
+   "id": "ach:a:131",
+   "kind": "ach",
+   "layer": "a",
+   "dimension": null,
+   "threshold": null,
+   "held": null,
+   "rate": null,
+   "distanceLog10": null,
+   "why": "no threshold or no held value",
+   "firstImpossible": null
+  },
+  {
+   "id": "ach:a:132",
+   "kind": "ach",
+   "layer": "a",
+   "dimension": "player.mc.buyables.11",
+   "threshold": "200",
+   "held": "0",
+   "rate": "0",
+   "distanceLog10": null,
+   "why": "nothing held and no measured rate",
+   "firstImpossible": {
+    "at": 0,
+    "dimension": "player.mc.buyables.11",
+    "impossible": {
+     "why": "no measured producer moves this dimension: it did not move at all over the 10-game-second wait (capped or inert)",
+     "window": 10
+    }
+   }
+  },
+  {
+   "id": "ach:a:133",
+   "kind": "ach",
+   "layer": "a",
+   "dimension": "player.mc.mechEn",
+   "threshold": "1e375",
+   "held": "0",
+   "rate": "0",
+   "distanceLog10": null,
+   "why": "nothing held and no measured rate",
+   "firstImpossible": {
+    "at": 0,
+    "dimension": "player.mc.mechEn",
+    "impossible": {
+     "why": "no measured producer moves this dimension: it did not move at all over the 10-game-second wait (capped or inert)",
+     "window": 10
+    }
+   }
+  },
+  {
+   "id": "ach:a:134",
+   "kind": "ach",
+   "layer": "a",
+   "dimension": null,
+   "threshold": null,
+   "held": null,
+   "rate": null,
+   "distanceLog10": null,
+   "why": "no threshold or no held value",
+   "firstImpossible": null
+  },
+  {
+   "id": "ach:a:135",
+   "kind": "ach",
+   "layer": "a",
+   "dimension": null,
+   "threshold": null,
+   "held": null,
+   "rate": null,
+   "distanceLog10": null,
+   "why": "no threshold or no held value",
+   "firstImpossible": null
+  },
+  {
+   "id": "ach:a:141",
+   "kind": "ach",
+   "layer": "a",
+   "dimension": null,
+   "threshold": null,
+   "held": null,
+   "rate": null,
+   "distanceLog10": null,
+   "why": "no threshold or no held value",
+   "firstImpossible": null
+  },
+  {
+   "id": "ach:a:142",
+   "kind": "ach",
+   "layer": "a",
+   "dimension": "player.en.sw",
+   "threshold": "104",
+   "held": "0",
+   "rate": "0",
+   "distanceLog10": null,
+   "why": "nothing held and no measured rate",
+   "firstImpossible": {
+    "at": 0,
+    "dimension": "player.en.sw",
+    "impossible": {
+     "why": "no measured producer moves this dimension: it did not move at all over the 10-game-second wait (capped or inert)",
+     "window": 10
+    }
+   }
+  },
+  {
+   "id": "ach:a:143",
+   "kind": "ach",
+   "layer": "a",
+   "dimension": null,
+   "threshold": null,
+   "held": null,
+   "rate": null,
+   "distanceLog10": null,
+   "why": "no threshold or no held value",
+   "firstImpossible": null
+  },
+  {
+   "id": "ach:a:144",
+   "kind": "ach",
+   "layer": "a",
+   "dimension": "player.mc.points",
+   "threshold": "100000000000",
+   "held": "0",
+   "rate": "0",
+   "distanceLog10": null,
+   "why": "nothing held and no measured rate",
+   "firstImpossible": {
+    "at": 0,
+    "dimension": "player.mc.points",
+    "impossible": {
+     "why": "no measured producer moves this dimension: it did not move at all over the 10-game-second wait (capped or inert)",
+     "window": 10
+    }
+   }
+  },
+  {
+   "id": "ach:a:145",
+   "kind": "ach",
+   "layer": "a",
+   "dimension": "player.ge.rotations",
+   "threshold": "2.5000000000618434e19",
+   "held": "0",
+   "rate": "0",
+   "distanceLog10": null,
+   "why": "nothing held and no measured rate",
+   "firstImpossible": {
+    "at": 0,
+    "dimension": "player.ge.rotations",
+    "impossible": {
+     "why": "no measured producer moves this dimension: it did not move at all over the 10-game-second wait (capped or inert)",
+     "window": 10
+    }
+   }
+  },
+  {
+   "id": "ach:a:15",
+   "kind": "ach",
+   "layer": "a",
+   "dimension": null,
+   "threshold": null,
+   "held": null,
+   "rate": null,
+   "distanceLog10": null,
+   "why": "no threshold or no held value",
+   "firstImpossible": null
+  },
+  {
+   "id": "ach:a:151",
+   "kind": "ach",
+   "layer": "a",
+   "dimension": null,
+   "threshold": null,
+   "held": null,
+   "rate": null,
+   "distanceLog10": null,
+   "why": "no threshold or no held value",
+   "firstImpossible": null
+  },
+  {
+   "id": "ach:a:152",
+   "kind": "ach",
+   "layer": "a",
+   "dimension": null,
+   "threshold": null,
+   "held": null,
+   "rate": null,
+   "distanceLog10": null,
+   "why": "no threshold or no held value",
+   "firstImpossible": null
+  },
+  {
+   "id": "ach:a:153",
+   "kind": "ach",
+   "layer": "a",
+   "dimension": null,
+   "threshold": null,
+   "held": null,
+   "rate": null,
+   "distanceLog10": null,
+   "why": "no threshold or no held value",
+   "firstImpossible": null
+  },
+  {
+   "id": "ach:a:154",
+   "kind": "ach",
+   "layer": "a",
+   "dimension": null,
+   "threshold": null,
+   "held": null,
+   "rate": null,
+   "distanceLog10": null,
+   "why": "no threshold or no held value",
+   "firstImpossible": null
+  },
+  {
+   "id": "ach:a:155",
+   "kind": "ach",
+   "layer": "a",
+   "dimension": "player.ne.thoughts",
+   "threshold": "1000",
+   "held": "0",
+   "rate": "0",
+   "distanceLog10": null,
+   "why": "nothing held and no measured rate",
+   "firstImpossible": {
+    "at": 0,
+    "dimension": "player.ne.thoughts",
+    "impossible": {
+     "why": "no measured producer moves this dimension: it did not move at all over the 10-game-second wait (capped or inert)",
+     "window": 10
+    }
+   }
+  },
+  {
+   "id": "ach:a:161",
+   "kind": "ach",
+   "layer": "a",
+   "dimension": null,
+   "threshold": null,
+   "held": null,
+   "rate": null,
+   "distanceLog10": null,
+   "why": "no threshold or no held value",
+   "firstImpossible": null
+  },
+  {
+   "id": "ach:a:162",
+   "kind": "ach",
+   "layer": "a",
+   "dimension": null,
+   "threshold": null,
+   "held": null,
+   "rate": null,
+   "distanceLog10": null,
+   "why": "no threshold or no held value",
+   "firstImpossible": null
+  },
+  {
+   "id": "ach:a:163",
+   "kind": "ach",
+   "layer": "a",
+   "dimension": null,
+   "threshold": null,
+   "held": null,
+   "rate": null,
+   "distanceLog10": null,
+   "why": "no threshold or no held value",
+   "firstImpossible": null
+  },
+  {
+   "id": "ach:a:164",
+   "kind": "ach",
+   "layer": "a",
+   "dimension": "player.c.buyables.11",
+   "threshold": "1",
+   "held": "0",
+   "rate": "0",
+   "distanceLog10": null,
+   "why": "nothing held and no measured rate",
+   "firstImpossible": {
+    "at": 0,
+    "dimension": "player.c.buyables.11",
+    "impossible": {
+     "why": "no measured producer moves this dimension: it did not move at all over the 10-game-second wait (capped or inert)",
+     "window": 10
+    }
+   }
+  },
+  {
+   "id": "ach:a:165",
+   "kind": "ach",
+   "layer": "a",
+   "dimension": "player.h.challenges.32",
+   "threshold": "1000000",
+   "held": "0",
+   "rate": "0",
+   "distanceLog10": null,
+   "why": "nothing held and no measured rate",
+   "firstImpossible": {
+    "at": 0,
+    "dimension": "player.h.challenges.32",
+    "impossible": {
+     "why": "no measured producer moves this dimension: it did not move at all over the 10-game-second wait (capped or inert)",
+     "window": 10
+    }
+   }
+  },
+  {
+   "id": "ach:a:25",
+   "kind": "ach",
+   "layer": "a",
+   "dimension": null,
+   "threshold": null,
+   "held": null,
+   "rate": null,
+   "distanceLog10": null,
+   "why": "no threshold or no held value",
+   "firstImpossible": null
+  },
+  {
+   "id": "ach:a:31",
+   "kind": "ach",
+   "layer": "a",
+   "dimension": null,
+   "threshold": null,
+   "held": null,
+   "rate": null,
+   "distanceLog10": null,
+   "why": "no threshold or no held value",
+   "firstImpossible": null
+  },
+  {
+   "id": "ach:a:33",
+   "kind": "ach",
+   "layer": "a",
+   "dimension": null,
+   "threshold": null,
+   "held": null,
+   "rate": null,
+   "distanceLog10": null,
+   "why": "no threshold or no held value",
+   "firstImpossible": null
+  },
+  {
+   "id": "ach:a:34",
+   "kind": "ach",
+   "layer": "a",
+   "dimension": null,
+   "threshold": null,
+   "held": null,
+   "rate": null,
+   "distanceLog10": null,
+   "why": "no threshold or no held value",
+   "firstImpossible": null
+  },
+  {
+   "id": "ach:a:35",
+   "kind": "ach",
+   "layer": "a",
+   "dimension": null,
+   "threshold": null,
+   "held": null,
+   "rate": null,
+   "distanceLog10": null,
+   "why": "no threshold or no held value",
+   "firstImpossible": null
+  },
+  {
+   "id": "ach:a:41",
+   "kind": "ach",
+   "layer": "a",
+   "dimension": null,
+   "threshold": null,
+   "held": null,
+   "rate": null,
+   "distanceLog10": null,
+   "why": "no threshold or no held value",
+   "firstImpossible": null
+  },
+  {
+   "id": "ach:a:43",
+   "kind": "ach",
+   "layer": "a",
+   "dimension": "player.e.points",
+   "threshold": "1e100",
+   "held": "0",
+   "rate": "0",
+   "distanceLog10": null,
+   "why": "nothing held and no measured rate",
+   "firstImpossible": {
+    "at": 0,
+    "dimension": "player.e.points",
+    "impossible": {
+     "why": "canReset is false: the requirement is above the base amount",
+     "layer": "e",
+     "resetAt": "1e120",
+     "requires": "1e120",
+     "nextAt": "1e120",
+     "baseAmount": "10",
+     "requiresDimension": "player.points",
+     "windowMax": "135.9239896366956"
+    }
+   }
+  },
+  {
+   "id": "ach:a:45",
+   "kind": "ach",
+   "layer": "a",
+   "dimension": null,
+   "threshold": null,
+   "held": null,
+   "rate": null,
+   "distanceLog10": null,
+   "why": "no threshold or no held value",
+   "firstImpossible": null
+  },
+  {
+   "id": "ach:a:51",
+   "kind": "ach",
+   "layer": "a",
+   "dimension": null,
+   "threshold": null,
+   "held": null,
+   "rate": null,
+   "distanceLog10": null,
+   "why": "no threshold or no held value",
+   "firstImpossible": null
+  },
+  {
+   "id": "ach:a:52",
+   "kind": "ach",
+   "layer": "a",
+   "dimension": null,
+   "threshold": null,
+   "held": null,
+   "rate": null,
+   "distanceLog10": null,
+   "why": "no threshold or no held value",
+   "firstImpossible": null
+  },
+  {
+   "id": "ach:a:53",
+   "kind": "ach",
+   "layer": "a",
+   "dimension": null,
+   "threshold": null,
+   "held": null,
+   "rate": null,
+   "distanceLog10": null,
+   "why": "no threshold or no held value",
+   "firstImpossible": null
+  },
+  {
+   "id": "ach:a:55",
+   "kind": "ach",
+   "layer": "a",
+   "dimension": null,
+   "threshold": null,
+   "held": null,
+   "rate": null,
+   "distanceLog10": null,
+   "why": "no threshold or no held value",
+   "firstImpossible": null
+  },
+  {
+   "id": "ach:a:61",
+   "kind": "ach",
+   "layer": "a",
+   "dimension": null,
+   "threshold": null,
+   "held": null,
+   "rate": null,
+   "distanceLog10": null,
+   "why": "no threshold or no held value",
+   "firstImpossible": null
+  },
+  {
+   "id": "ach:a:62",
+   "kind": "ach",
+   "layer": "a",
+   "dimension": null,
+   "threshold": null,
+   "held": null,
+   "rate": null,
+   "distanceLog10": null,
+   "why": "no threshold or no held value",
+   "firstImpossible": null
+  },
+  {
+   "id": "ach:a:63",
+   "kind": "ach",
+   "layer": "a",
+   "dimension": null,
+   "threshold": null,
+   "held": null,
+   "rate": null,
+   "distanceLog10": null,
+   "why": "no threshold or no held value",
+   "firstImpossible": null
+  },
+  {
+   "id": "ach:a:64",
+   "kind": "ach",
+   "layer": "a",
+   "dimension": "player.h.challenges.31",
+   "threshold": "10",
+   "held": "0",
+   "rate": "0",
+   "distanceLog10": null,
+   "why": "nothing held and no measured rate",
+   "firstImpossible": {
+    "at": 0,
+    "dimension": "player.h.challenges.31",
+    "impossible": {
+     "why": "no measured producer moves this dimension: it did not move at all over the 10-game-second wait (capped or inert)",
+     "window": 10
+    }
+   }
+  },
+  {
+   "id": "ach:a:65",
+   "kind": "ach",
+   "layer": "a",
+   "dimension": null,
+   "threshold": null,
+   "held": null,
+   "rate": null,
+   "distanceLog10": null,
+   "why": "no threshold or no held value",
+   "firstImpossible": null
+  },
+  {
+   "id": "ach:a:71",
+   "kind": "ach",
+   "layer": "a",
+   "dimension": null,
+   "threshold": null,
+   "held": null,
+   "rate": null,
+   "distanceLog10": null,
+   "why": "no threshold or no held value",
+   "firstImpossible": null
+  },
+  {
+   "id": "ach:a:73",
+   "kind": "ach",
+   "layer": "a",
+   "dimension": null,
+   "threshold": null,
+   "held": null,
+   "rate": null,
+   "distanceLog10": null,
+   "why": "no threshold or no held value",
+   "firstImpossible": null
+  },
+  {
+   "id": "ach:a:74",
+   "kind": "ach",
+   "layer": "a",
+   "dimension": "player.ba.points",
+   "threshold": "1e100",
+   "held": "0",
+   "rate": "0",
+   "distanceLog10": null,
+   "why": "nothing held and no measured rate",
+   "firstImpossible": {
+    "at": 0,
+    "dimension": "player.ba.points",
+    "impossible": {
+     "why": "no measured producer moves this dimension: it did not move at all over the 10-game-second wait (capped or inert)",
+     "window": 10
+    }
+   }
+  },
+  {
+   "id": "ach:a:75",
+   "kind": "ach",
+   "layer": "a",
+   "dimension": null,
+   "threshold": null,
+   "held": null,
+   "rate": null,
+   "distanceLog10": null,
+   "why": "no threshold or no held value",
+   "firstImpossible": null
+  },
+  {
+   "id": "ach:a:81",
+   "kind": "ach",
+   "layer": "a",
+   "dimension": null,
+   "threshold": null,
+   "held": null,
+   "rate": null,
+   "distanceLog10": null,
+   "why": "no threshold or no held value",
+   "firstImpossible": null
+  },
+  {
+   "id": "ach:a:82",
+   "kind": "ach",
+   "layer": "a",
+   "dimension": null,
+   "threshold": null,
+   "held": null,
+   "rate": null,
+   "distanceLog10": null,
+   "why": "no threshold or no held value",
+   "firstImpossible": null
+  },
+  {
+   "id": "ach:a:83",
+   "kind": "ach",
+   "layer": "a",
+   "dimension": null,
+   "threshold": null,
+   "held": null,
+   "rate": null,
+   "distanceLog10": null,
+   "why": "no threshold or no held value",
+   "firstImpossible": null
+  },
+  {
+   "id": "ach:a:84",
+   "kind": "ach",
+   "layer": "a",
+   "dimension": null,
+   "threshold": null,
+   "held": null,
+   "rate": null,
+   "distanceLog10": null,
+   "why": "no threshold or no held value",
+   "firstImpossible": null
+  },
+  {
+   "id": "ach:a:85",
+   "kind": "ach",
+   "layer": "a",
+   "dimension": null,
+   "threshold": null,
+   "held": null,
+   "rate": null,
+   "distanceLog10": null,
+   "why": "no threshold or no held value",
+   "firstImpossible": null
+  },
+  {
+   "id": "ach:a:91",
+   "kind": "ach",
+   "layer": "a",
+   "dimension": null,
+   "threshold": null,
+   "held": null,
+   "rate": null,
+   "distanceLog10": null,
+   "why": "no threshold or no held value",
+   "firstImpossible": null
+  },
+  {
+   "id": "ach:a:92",
+   "kind": "ach",
+   "layer": "a",
+   "dimension": null,
+   "threshold": null,
+   "held": null,
+   "rate": null,
+   "distanceLog10": null,
+   "why": "no threshold or no held value",
+   "firstImpossible": null
+  },
+  {
+   "id": "ach:a:93",
+   "kind": "ach",
+   "layer": "a",
+   "dimension": null,
+   "threshold": null,
+   "held": null,
+   "rate": null,
+   "distanceLog10": null,
+   "why": "no threshold or no held value",
+   "firstImpossible": null
+  },
+  {
+   "id": "ach:a:94",
+   "kind": "ach",
+   "layer": "a",
+   "dimension": null,
+   "threshold": null,
+   "held": null,
+   "rate": null,
+   "distanceLog10": null,
+   "why": "no threshold or no held value",
+   "firstImpossible": null
+  },
+  {
+   "id": "ach:a:95",
+   "kind": "ach",
+   "layer": "a",
+   "dimension": null,
+   "threshold": null,
+   "held": null,
+   "rate": null,
+   "distanceLog10": null,
+   "why": "no threshold or no held value",
+   "firstImpossible": null
+  }
+ ],
+ "counts": {
+  "sticky": 51,
+  "discovered": 169,
+  "predicateOnly": 2
+ }
+}

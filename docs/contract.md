@@ -43,6 +43,8 @@ It reads the engine's globals as **bare identifiers** inside its members, never 
 | `runtimeState()`, `restoreRuntime(rt)` | *(automation)* the registry's memory outside `player` as plain JSON — each interval reset's `lastReset`, the loop counter and ran-at marks, the hook statistics — and its restore (`restoreRuntime(runtimeState())` is the identity); the harness's snapshots carry it (`docs/harness.md`) |
 | `options` | *(automation)* `?autoOpt=k=v;k2=v2` in the page, `--auto-opt` in the harness: `policy:<id>=…`, `kinds=…`, `kindOrder=…`, `unlockOrder=…`, `rowTwoOrder=…`, `hookAll=1`, free keys |
 | `storage` | `{prefix, raw, list(), clear()}` — the save namespace (`tmt-loader:<id>:`) and the raw `Storage` methods |
+| `planner` | *(automation, HARNESS-ONLY in P1a)* the ADVANCED automation's foundation — `snapshot()` / `restore()` / `excursion()` / `measure()`, `knowledge()`, `goals()` (docs/planner.md). It exists only when `loader/tmt-planner.js` has been loaded, which **only `tools/harness/boot.mjs --planner` does**: the page does not fetch the file at all until P2. Loading it is inert — no layer, no DOM, nothing in `player`, and a run that loads it lands on the same tick and hash as one that does not. Without `tmtLoader.automation` the file defines `planner = {available: false, why}` and stops |
+| `plannerLadder` | *(harness)* the parsed `ladder/<game>.json` the planner reads as its sticky goal source (`--planner-ladder`) |
 
 ## Per-engine notes (measured in L1)
 

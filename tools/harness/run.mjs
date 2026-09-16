@@ -7,6 +7,11 @@
 //                     [--state-out f] [--player-out f] [--ids-out f]
 //                     [--ladder ladder.json [--from <mark>] [--to <mark>]] [--snapshots <dir>] [--from-snapshot <file>]
 //                     [--predicates list.json] [--eval "<js>"]
+//                     [--planner] [--planner-ladder ladder.json] [--planner-script f.js] [--knowledge-out f] [--goals-out f]
+//                     [--stop-snapshot <dir> [--stop-snapshot-name <name>]]  — a snapshot of the STOP (stall / wall /
+//                     --ticks), in the same shape as a mark's, for a run that ends nowhere near a ladder mark
+//   --planner loads loader/tmt-planner.js after tmt-auto.js (docs/planner.md); --planner-script drives it before the
+//   ticks; --knowledge-out / --goals-out write the planner's dumps at the stop.
 //   the ladder (docs/harness.md): marks = the ladder's entries after --from (exclusive) through --to (inclusive, default
 //   the last), recorded without stopping (--marks-continue) until --to holds, a stall or the wall; the result gains
 //   `ladder: {from, to, reached: [{id, ticks, gameSeconds, hash, hashGame}], stoppedAt}`. --snapshots <dir>: at the first
@@ -86,6 +91,18 @@ export function runNode(id, o = {}) {
     const why = (o['until-all'] ? ladder.ids.every((m) => res.marks[m]) : res.marks[ladder.to]) ? 'to' : res.stall?.stalled ? 'stalled' : res.stall?.walled ? 'walled' : res.ok ? 'ticks' : 'error';
     res.ladder = { file: ladder.file, from: ladder.from, to: ladder.to, reached, stoppedAt: { ticks: res.ticks, gameSeconds: res.gameSeconds, why } };
   }
+  if (res.stopSnapshot && o['stop-snapshot']) {
+    const dir = path.resolve(String(o['stop-snapshot']));
+    fs.mkdirSync(dir, { recursive: true });
+    const name = String(o['stop-snapshot-name'] || 'STOP');
+    const file = path.join(dir, `${name}.json`);
+    const body = { mark: name, commit: headCommit(), dirty: snapshotTreeDirty(), ticks: res.ticks, gameSeconds: res.gameSeconds, diff: Number(o.diff ?? 0.05),
+      hash: res.hash, hashGame: res.hashGame, config: { profile: o.profile || 'off', 'auto-opt': o['auto-opt'] || null, from: snap ? res.fromSnapshot.file : null, why: res.stall?.stalled ? 'stalled' : res.stall?.walled ? 'walled' : 'ticks' },
+      player: res.stopSnapshot.player, runtime: res.stopSnapshot.runtime };
+    fs.writeFileSync(file, JSON.stringify(body, null, 1) + '\n');
+    res.stopSnapshotWritten = { mark: name, file: path.relative(REPO, file), bytes: fs.statSync(file).size };
+    delete res.stopSnapshot;
+  }
   if (res.snapshots) {
     const written = [];
     if (o.snapshots) {
@@ -131,8 +148,12 @@ function runNodeRaw(id, o) {
   if (o.predicates) args.push('--predicates', path.resolve(String(o.predicates)));
   if (o.eval != null) args.push('--eval', String(o.eval));
   if (o.until != null) args.push('--until', String(o.until));
+  if (o.planner) args.push('--planner');
+  if (o['stop-snapshot']) args.push('--stop-snapshot');
+  for (const k of ['planner-ladder', 'planner-script']) if (o[k] != null) args.push(`--${k}`, path.resolve(String(o[k])));
+  if (o['planner-k'] != null) args.push('--planner-k', String(o['planner-k']));
   // the child runs with cwd = os.tmpdir(): every file argument is made absolute here
-  for (const k of ['state-out', 'player-out', 'ids-out', 'save-storage']) if (o[k] != null) args.push(`--${k}`, path.resolve(String(o[k])));
+  for (const k of ['state-out', 'player-out', 'ids-out', 'save-storage', 'knowledge-out', 'goals-out']) if (o[k] != null) args.push(`--${k}`, path.resolve(String(o[k])));
   if (o.save) args.push('--save');
   let storage = o.storage;
   const steps = [];
@@ -160,7 +181,7 @@ function runNodeRaw(id, o) {
 }
 
 async function main() {
-  const a = parseArgs(process.argv.slice(2), ['save', 'no-auto', 'no-automation', 'marks-continue', 'stall-seen', 'no-runtime', 'until-all']);
+  const a = parseArgs(process.argv.slice(2), ['save', 'no-auto', 'no-automation', 'marks-continue', 'stall-seen', 'no-runtime', 'until-all', 'planner']);
   const id = a._[0];
   if (!id) { console.error('usage: node run.mjs <id> [--ticks N] [--diff d] [--until "<js>"] [--json out] …'); process.exit(2); }
   const res = runNode(id, a);
@@ -175,7 +196,11 @@ async function main() {
   if (res.ladder) line.ladder = res.ladder;
   if (res.fromSnapshot) line.fromSnapshot = res.fromSnapshot;
   if (res.snapshotsWritten) line.snapshotsWritten = res.snapshotsWritten;
+  if (res.stopSnapshotWritten) line.stopSnapshotWritten = res.stopSnapshotWritten;
   if (res.eval !== undefined) line.eval = res.eval;
+  if (res.planner) line.planner = res.planner;
+  if (res.plannerScript !== undefined) line.plannerScript = res.plannerScript;
+  if (res.knowledge_counts) { line.knowledge_counts = res.knowledge_counts; line.knowledge_ms = res.knowledge_ms; line.goals_ms = res.goals_ms; }
   if (!res.ok) Object.assign(line, { failed_at: res.failed_at, error: res.error });
   if (res.steps) line.steps = res.steps;
   console.log(JSON.stringify(line));

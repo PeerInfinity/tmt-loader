@@ -75,10 +75,23 @@ importing child registers the same features as the run (same `--auto-opt`), so e
 `player.au.clickables`, one key per au button) round-trips. Marks compare **`hashGame`** (the state without `player.au`)
 across any change to the feature set.
 
+**A snapshot of the STOP.** `run.mjs --stop-snapshot <dir> [--stop-snapshot-name <name>]` writes the same record at the
+run's stop (a stall, the wall, `--ticks`) instead of at a mark — the fixture a run that ends nowhere near a ladder mark
+leaves behind. `tools/harness/snapshots/ptr/frontier/STALL.json` is the S1 frontier stall taken that way (gate
+`gates-p1a --part 0` writes it and requires it to reproduce §10a.4: 14131 ticks, hash `63f28e099536a119`).
+
+⚠ **A resume is byte-faithful in `player`, not necessarily in `tmp`.** `tmp` is not a pure function of `player`:
+2.2.1's `getNextAt` reads `tmp[layer].nextAt` and `tmp[layer].baseAmount` (game.js:36-52), so it is self-referential
+and has more than one fixed point. Measured at the frontier: `tmp.b.nextAt` is `2.33e276` in the uninterrupted run and
+`9.85e167` after a resume at a byte-identical `player`. H1-2's resume fidelity (M02 / M07 → M09 land on the same tick
+and `hashGame`) is a measurement of those states, not a general guarantee; a rung that resumes deep in a run should
+re-measure the stretch it depends on. See `docs/planner.md`.
+
 **Fixtures.** Snapshots of the marks the tables reach are committed under `tools/harness/snapshots/<game>/<set>/`:
 for PTR, `pinned/` (`--auto-opt kinds=reset,upgrades,buyables`, the A1/A2 configuration every pinned number was measured
-in) and `all/` (every derived kind, the S1 frontier configuration rungs continue from). A PTR `player` is ~11 KB, a
-snapshot ~15–18 KB. Measured fidelity (H1-2): a resume lands on every later mark at the same tick, game-second and
+in), `all/` (every derived kind, the S1 frontier configuration rungs continue from) and `frontier/` (the stall itself);
+for Something Tree, `all/` (S01–S05, profile all, every kind — each lands on the A2-1 tick and `hashGame`). A PTR
+`player` is ~11 KB, a snapshot ~15–18 KB. Measured fidelity (H1-2): a resume lands on every later mark at the same tick, game-second and
 `hashGame` as the fresh run, and reproduces the frontier stall's tick and full hash; without `runtime` (the control) it
 lands one tick early where an interval reset was mid-interval.
 
