@@ -7,10 +7,14 @@
 //                      [--profile off|all|saved] [--exclude k1,k2] [--auto-opt "k=v;k2=v2"] [--no-auto] [--no-automation]
 //                      [--marks marks.json ([[name, "<js>"], …])] [--marks-continue] [--stall <game-seconds> [--stall-seen]] [--wall-ms <ms>]
 //                      [--stop-mark <name>] [--snapshots] [--runtime runtime.json] [--predicates list.json] [--eval "<js>"]
-//                      [--planner] [--planner-ladder ladder.json] [--planner-script f.js] [--knowledge-out f] [--goals-out f]
+//                      [--planner | --planner=auto|suggest] [--planner-mode auto|suggest|off] [--planner-opt "k=v;k2=v2"]
+//                      [--planner-ladder ladder.json] [--planner-script f.js] [--knowledge-out f] [--goals-out f] [--rounds-out f]
 //                      [--stop-snapshot]
-//   --planner: loader/tmt-planner.js is run AFTER tmt-auto.js (the advanced system's foundation, P1a — harness only; the
-//   page never fetches it). --planner-ladder: its JSON becomes tmtLoader.plannerLadder (the sticky goal source).
+//   --planner: loader/tmt-planner.js is run AFTER tmt-auto.js (the advanced system, P1a/P1b — harness only; the page
+//   never fetches it). --planner=auto (or --planner-mode auto) DRIVES it: tmtLoader.planner.beforeTick() runs between
+//   ticks and commits one configuration of the simple system per epoch (P1b, docs/planner.md); `suggest` plans and logs
+//   without committing. --planner-opt: the planner's options (k, screenK, weights, …). --rounds-out: the round log.
+//   --planner-ladder: its JSON becomes tmtLoader.plannerLadder (the sticky goal source).
 //   --planner-script: the file's source runs in the game's global scope, wrapped in a function, BEFORE the tick loop —
 //   an excursion / measurement drive; its JSON return lands in R.plannerScript. --knowledge-out / --goals-out: the
 //   planner's dump written AT THE STOP (after the ticks).
@@ -41,6 +45,7 @@ const A = { _: [] };
 for (let i = 0; i < argv.length; i++) {
   const a = argv[i];
   if (!a.startsWith('--')) A._.push(a);
+  else if (a.indexOf('=') > 2) A[a.slice(2, a.indexOf('='))] = a.slice(a.indexOf('=') + 1);   // --planner=auto
   else if (['save', 'census', 'no-auto', 'no-automation', 'marks-continue', 'stall-seen', 'snapshots', 'planner', 'stop-snapshot'].includes(a.slice(2))) A[a.slice(2)] = true;
   else A[a.slice(2)] = argv[++i];
 }
@@ -187,10 +192,23 @@ try { run(fs.readFileSync(path.join(REPO, 'loader/tmt-auto.js'), 'utf8'), 'loade
 catch (e) { R.file_errors.push({ file: 'loader/tmt-auto.js', error: String(e.message).slice(0, 200) }); }
 // loader/tmt-planner.js — the advanced system's foundation (docs/planner.md). Harness-only in P1a: it is loaded ONLY
 // with --planner, adds nothing to `player` and runs nothing on its own (gate P1a-1 (e) measures that).
+// --planner (bare) loads it inert (P1a); --planner=auto|suggest, or --planner-mode, also DRIVES it (P1b).
+const PLANNER_MODE = (() => {
+  const v = String(A['planner-mode'] ?? (A.planner === true ? 'off' : A.planner ?? 'off'));
+  if (!['off', 'auto', 'suggest'].includes(v)) { console.error(`--planner mode "${v}" is not off | auto | suggest`); proc.exit(2); }
+  return v;
+})();
 if (A.planner) {
   if (A['planner-ladder']) globalThis.tmtLoader.plannerLadder = JSON.parse(fs.readFileSync(A['planner-ladder'], 'utf8'));
-  try { run(fs.readFileSync(path.join(REPO, 'loader/tmt-planner.js'), 'utf8'), 'loader/tmt-planner.js'); R.planner = { loaded: true }; }
-  catch (e) { R.file_errors.push({ file: 'loader/tmt-planner.js', error: String(e.message).slice(0, 200) }); R.planner = { loaded: false }; }
+  try {
+    run(fs.readFileSync(path.join(REPO, 'loader/tmt-planner.js'), 'utf8'), 'loader/tmt-planner.js');
+    R.planner = { loaded: true, mode: PLANNER_MODE };
+    const OPTS = {};
+    for (const part of String(A['planner-opt'] || '').split(';')) { if (!part) continue; const i = part.indexOf('='); if (i < 0) OPTS[part] = '1'; else OPTS[part.slice(0, i)] = part.slice(i + 1); }
+    if (Object.keys(OPTS).length) { globalThis.__tmtPlannerOpt = OPTS; run('tmtLoader.planner.setOptions(globalThis.__tmtPlannerOpt)', 'planner-opt'); R.planner.options = OPTS; }
+    run(`tmtLoader.planner.mode = ${JSON.stringify(PLANNER_MODE)}`, 'planner-mode');
+  }
+  catch (e) { R.file_errors.push({ file: 'loader/tmt-planner.js', error: String(e.message).slice(0, 200) }); R.planner = { loaded: false, error: String(e.message).slice(0, 300) }; }
 }
 R.load_ms = Date.now() - t0;
 const errText = (e) => { const st = String(e && e.stack || ''); const at = (st.match(/^\s+at .*$/m) || [''])[0].trim(); return `${e && e.name || 'Error'}: ${String(e && e.message || e).slice(0, 300)}${at ? ' @ ' + at.slice(0, 160) : ''}`; };
@@ -272,7 +290,10 @@ try {
   const monitored = MARKS.length || A.stall || A['wall-ms'];
   if (monitored) run(`globalThis.__tmtMonitor = ${MONITOR_SRC}([${MARKS.map(([n, e]) => `[${JSON.stringify(n)}, function(){ return (${e}); }]`).join(',')}], ${Number(A.stall || 0)}, ${Number(A['wall-ms'] || 0)}, ${A['marks-continue'] ? 'true' : 'false'}, ${A['stall-seen'] ? 'true' : 'false'}, ${A['stop-mark'] ? JSON.stringify(A['stop-mark']) : 'null'}, ${A.snapshots ? 'true' : 'false'}, ${RUNTIME && RUNTIME.monitor && RUNTIME.monitor.seen && RUNTIME.monitor.seen.length ? JSON.stringify(RUNTIME.monitor) : 'null'})`, 'monitor');
   const untilSrc = monitored ? `function(){ ${A.until ? `if (${A.until}) return true;` : ''} return __tmtMonitor.check(); }` : A.until ? `function(){ return (${A.until}); }` : 'null';
-  const r = run(`${DRIVE_SRC}(${ticks}, ${diff}, ${LEG === 'policy'}, ${untilSrc})`, 'ticks-' + LEG);
+  // the planner runs BETWEEN ticks (never inside gameLoop): beforeTick() re-plans at an epoch's end or on an event
+  const planSrc = A.planner && PLANNER_MODE !== 'off' ? 'function(){ return tmtLoader.planner.beforeTick(); }' : 'null';
+  const r = run(`${DRIVE_SRC}(${ticks}, ${diff}, ${LEG === 'policy'}, ${untilSrc}, ${planSrc})`, 'ticks-' + LEG);
+  if (planSrc !== 'null') { R.planner = Object.assign(R.planner || {}, { rounds: r.planCalls, error: r.planError }); if (r.planError) { R.ok = false; R.failed_at = 'planner'; R.error = r.planError; out(R); proc.exit(0); } }
   if (monitored) {
     const m = run('__tmtMonitor.result()', 'monitor');
     R.marks = {};
@@ -319,6 +340,13 @@ try {
       out[l] = o; }
     return out; })()`, 'detail');
   if (A.eval) { try { R.eval = run(`JSON.parse(JSON.stringify(${A.eval}))`, 'eval'); } catch (e) { R.eval = { error: errText(e) }; } }
+  if (A.planner && PLANNER_MODE !== 'off') {
+    const rep = run('tmtLoader.planner.report()', 'planner-report');
+    if (A['rounds-out']) writeOut(A['rounds-out'], JSON.stringify(rep, null, 1) + '\n');
+    R.planner = Object.assign(R.planner || {}, { mode: rep.mode, rounds: rep.rounds, commits: rep.commits, divergences: rep.divergences,
+      reached: Object.fromEntries(Object.entries(rep.reached).map(([k, v]) => [k, v.gameSeconds])), abandoned: Object.keys(rep.abandoned),
+      options: rep.options, wallMs: rep.log.reduce((t, x) => t + (x.cost?.wallMs || 0), 0), measuredGameSeconds: rep.log.reduce((t, x) => t + (x.cost?.measuredGameSeconds || 0), 0) });
+  }
   if (A['knowledge-out'] || A['goals-out']) {
     const t2 = Date.now();
     const KOPTS = JSON.stringify({ ...(A['planner-k'] ? { k: Number(A['planner-k']) } : {}) });

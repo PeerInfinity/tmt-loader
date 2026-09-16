@@ -85,7 +85,7 @@ export async function waitReady(page, t0 = Date.now(), timeout = 30000) {
 export const pageTick = (page, diff, n) => page.evaluate(([d, k]) => window.tmtLoader.tick(d, k), [diff, n]);
 /** The same drive loop as boot.mjs (policy.mjs): N ticks, optional census policy, optional --until predicate. */
 export const pageDrive = (page, { ticks, diff, leg = 'idle', until = null }) =>
-  page.evaluate(`${DRIVE_SRC}(${Number(ticks)}, ${Number(diff)}, ${leg === 'policy'}, ${until ? `function(){ return (${until}); }` : 'null'})`);
+  page.evaluate(`${DRIVE_SRC}(${Number(ticks)}, ${Number(diff)}, ${leg === 'policy'}, ${until ? `function(){ return (${until}); }` : 'null'}, null)`);
 /** tmtLoader.loadFrom(json): the game's importSave reloads the page; resolves once the reloaded loader is ready. */
 export async function pageLoadFrom(page, json) {
   const nav = page.waitForNavigation({ waitUntil: 'load', timeout: 30000 });

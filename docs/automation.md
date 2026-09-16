@@ -97,7 +97,7 @@ form (`{layer, varName, options}`, a string it cycles) are skipped and counted (
 | Kind | Policy | What it does each tick |
 |---|---|---|
 | `reset` | `always` | `doReset(l)` whenever `tmp[l].canReset` |
-| | `gain>=N` | … when `tmp[l].resetGain ≥ N` |
+| | `gain>=N` | … when `tmp[l].resetGain ≥ N` (N is a quantity, not a count: the advanced planner derives it from the target it is resetting FOR, so it spans the Decimal range) |
 | | `gain>=Nx` | … when `tmp[l].resetGain ≥ N × player[l].points` (dimensionless: "the reset at least doubles/quadruples what I hold") |
 | | `interval>=T` | … when at least T of `player.timePlayed` passed since this feature's last reset (runtime memory, not saved) |
 | | `keepsUpgrades` | … only while `hasMilestone(keep.layer, keep.id)` holds (a post-milestone policy: it never starts the layer) |
@@ -109,6 +109,7 @@ form (`{layer, varName, options}`, a string it cycles) are skipped and counted (
 | | `buyMax` | the engine's `buyMaxBuyable` where the buyable defines `buyMax`, else as `buy` |
 | | `highest-first` | as `buy`, over the ids descending (PTR's own Space Building autobuyer order), unless `order[]` is given |
 | | `buy-unless-saving` | as `buy`, but nothing while the layer has an unlocked, unowned upgrade costed in its own points that costs more than the points held |
+| | `reserve>=N` | as `buy`, but nothing while the layer holds no more than **N** of its own points — an explicit reserve where `buy-unless-saving` derives one. The layer's points is the one currency a generic reserve can read, so a buyable costed in another layer's currency is still gated on this layer's points. Added for the advanced planner, which sets N to the threshold it is protecting (`docs/planner.md`); no table uses it |
 | `toggles` | `on` | for each held milestone (`hasMilestone(l, id)`) that declares `toggles`, sets every `player[layer][field]` that is `false` to `true` — what the game's toggle button does. The milestone only UNLOCKS the button; the field stays false until clicked |
 | `challenges` | `sequential` | the first challenge in `order[]` (else id order) that is unlocked with completions below `completionLimit` (default 1): enter it with `startChallenge` when none of the layer's challenges is active; while it is active, exit-and-complete with `startChallenge` once `canCompleteChallenge` holds (and `canExitChallenge` where the engine has it). A challenge the player entered by hand is left alone. Enters / exits are counted in `hookStats().challenges` |
 | | `off` | nothing |
@@ -205,6 +206,18 @@ Everything else in both games is derived.
   result has `stall.lastProgress` and a per-layer `detail`.
 - Results carry `features`, `featureStates` (`[id, unlocked, policy]`), `derivation` (`tmtLoader.autoDerivation`) and
   `excluded` (`tmtLoader.autoExcluded`).
+
+**Runtime levers (never saved).** `tmtLoader.setPolicy(id, policy)` changes a feature's policy and
+`tmtLoader.setFeatureEnabled(id, true|false|null)` overrides whether it runs at all under the current profile (`null`
+clears the override; profile `off` still wins). Both are memory OUTSIDE `player` and both ride in
+`tmtLoader.runtimeState()`, so an excursion rolls them back and a resumed process keeps them — that is how the advanced
+planner commits a configuration for an epoch without writing a planner decision into the player's save
+(`docs/planner.md`). `tmtLoader.policyTemplates` is the enumerable alphabet of each kind, with the parameterised
+policies named by their template (`gain>=Nx`, `interval>=T`, `reserve>=N`) — the numbers belong to whoever chooses them.
+`tmtLoader.registerRuntime(name, get, set)` adds another layer's memory to the same record.
 - `node tools/harness/gates-s1.mjs --part 1|1s|2|2s-p|2s-f|2s-q|3` the S1 gates; `gates-a1.mjs`, `gates-a2.mjs` the A1/A2 ones.
 - `node tools/harness/sweep.mjs <id> --vary "policy:reset:e=interval>=5|always" [--opt "k=v"] <run.mjs flags>`: one run
-  per value (a pool of 8), one line per value with the game-seconds to each mark.
+  per value (a pool of 8), one line per value with the game-seconds to each mark. A `planner:<option>` key sweeps the
+  ADVANCED planner's options instead (`--vary "planner:k=60|300|900" --planner=auto --planner-ladder …`), and every line
+  then carries the round count, the planning wall time and, when the run did not reach `--stop-mark`, `dnf` with a cause
+  read off the round log (`fixation` / `economy` / `blocked` / `wall`).

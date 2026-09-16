@@ -1005,6 +1005,684 @@
       counts: { sticky: sticky.length, discovered: discovered.length, predicateOnly: sticky.filter(function (s) { return s.kind === 'predicate-only'; }).length } };
   };
 
+
+  // ---- Part 4: the ROUND — the planner chooses the simple system's CONFIGURATION for an EPOCH ----------------------
+  // tmt-automation-plan §11f. The planner does not act per tick: per EPOCH it picks which derived features run, with
+  // which policy, by generate-and-test on the rolled-back copy, and commits the winner to the live game. This is omsi's
+  // "plan the next loop's queue" with the loop replaced by an epoch and the queue by a reflex configuration.
+  //   * the reflexes are engine-generic and already right at the tick level (they read tmp at the moment of acting);
+  //     what they cannot do is choose BETWEEN configurations or WAIT.
+  //   * a configuration played on the copy for the epoch IS the live outcome (same state, same deterministic engine),
+  //     so the winner's measured trajectory is the prediction and any live-vs-copy inequality is a DEFECT, not noise.
+  //   * candidates are templates over feature KINDS and POLICY families (T.policyTemplates), never over layer names.
+  // Every constant is an OPTION with a default whose provenance is a sweep row (docs/planner.md).
+  var OPT_DEFAULTS = {
+    k: 300,               // the epoch horizon, in game-seconds: how long each candidate is measured and the winner then runs
+    screenK: 4,           // how many screened candidates reach engine confirmation
+    maxCandidates: 24,    // the generated set, cut to this ROUND-ROBIN over the features (the incumbent always survives)
+    goalStallK: 6,        // rounds without a rise in the target before the active goal is abandoned
+    fixK: 3,              // identical winners in a row with no rise before the anti-fixation escalation arms
+    wReach: 1000,         // score weight: the active goal reached inside the window (dominant)
+    wProgress: 100,       // score weight: log-progress of the target's MAX toward its threshold
+    wGoal: 200,           // score weight: the same for the GOAL's own dimension when the target is a setup leaf below it
+    wCapacity: 10,        // score weight: is the trajectory still accelerating (last quarter vs first quarter)
+    wFrontier: 1,         // score weight: discovered goals that got closer
+    knowledgeK: 10,       // the producer wait window of the knowledge walk (P1a's --planner-k)
+    depth: 6,             // chain depth of the knowledge walk
+    gainX: '2,4',         // the gain>=Nx candidates a reset feature is offered
+    intervals: '',        // ⚖ user ruling 2026-09-15 (no arbitrary waiting): EMPTY — no interval candidate is generated
+    minRise: 1e-9,        // the log10 rise that counts as a rise for the stall clocks
+    maxRounds: 0,         // 0 = unbounded; a bound for a probe
+  };
+  P.optionDefaults = OPT_DEFAULTS;
+  P.options = {};
+  for (var od in OPT_DEFAULTS) P.options[od] = OPT_DEFAULTS[od];
+  /** --planner-opt k=v;… — every weight and window is a knob, never a literal in a decision. */
+  P.setOptions = function (o) {
+    for (var k in o || {}) {
+      if (!(k in OPT_DEFAULTS)) throw new Error('tmtLoader.planner: unknown option "' + k + '" (known: ' + Object.keys(OPT_DEFAULTS).sort().join(', ') + ')');
+      var v = o[k];
+      P.options[k] = typeof OPT_DEFAULTS[k] === 'number' ? Number(v) : String(v);
+      if (typeof OPT_DEFAULTS[k] === 'number' && !isFinite(P.options[k])) throw new Error('tmtLoader.planner: option "' + k + '" must be a number');
+    }
+    return P.options;
+  };
+  var O = function (k) { return P.options[k]; };
+  var numList = function (s) { return String(s).split(',').map(function (x) { return Number(x); }).filter(function (x) { return isFinite(x) && x > 0; }); };
+  // COST ONLY. No decision anywhere below reads a clock; the wall numbers live in the round log's `cost` block, which
+  // the determinism gate strips before comparing two runs' logs.
+  var wallMs = function () { try { return Date.now(); } catch (e) { return 0; } };
+
+  P.mode = 'off';                                   // off | suggest | auto  (--planner=auto, docs/harness.md)
+  P.rounds = [];                                    // the round log (also --rounds-out); NOT runtime state — a log
+  // The planner's memory outside `player`: what it must not forget across a snapshot, an excursion or a resumed
+  // 9-minute process. Registered with the simple system's runtimeState so ONE record carries everything (tmt-auto.js).
+  var S = null;
+  function freshState() {
+    return { round: 0, reached: {}, abandoned: {}, clocks: {}, epoch: null, lastWinner: null, sameWinner: 0, escalate: false,
+      escalateN: 0, unlocks: null, divergences: [], commits: 0, goal: null };
+  }
+  S = freshState();
+  P.state = function () { return S; };
+  if (typeof T.registerRuntime === 'function') T.registerRuntime('planner', function () { return JSON.parse(JSON.stringify(S)); }, function (v) { S = v ? JSON.parse(JSON.stringify(v)) : freshState(); });
+
+  // ---- the configuration of the simple system ---------------------------------------------------------------------
+  // A CONFIGURATION is {enabled: {featureId: bool}, policies: {featureId: policy}} over every registered feature, in
+  // the registry's own order. `enabled` goes through the runtime override (never player.au.features: a planner decision
+  // is not the player's saved toggle), `policies` through setPolicy. Both are runtime state, so an excursion rolls them
+  // back with everything else.
+  function featureList() { var o = [], fs = T.features || []; for (var i = 0; i < fs.length; i++) o.push(T.featureState(fs[i].id)); return o; }
+  function enabledOf(st) { return st.override !== null ? st.override : (T.profileName === 'all' ? true : !!st.saved); }
+  function currentConfig() {
+    var cfg = { enabled: {}, policies: {} }, fs = featureList();
+    for (var i = 0; i < fs.length; i++) { cfg.enabled[fs[i].id] = enabledOf(fs[i]); cfg.policies[fs[i].id] = fs[i].policy; }
+    return cfg;
+  }
+  P.configuration = currentConfig;
+  function applyConfig(cfg) {
+    var id;
+    for (id in cfg.policies) T.setPolicy(id, cfg.policies[id]);
+    for (id in cfg.enabled) T.setFeatureEnabled(id, cfg.enabled[id]);
+    return cfg;
+  }
+  P.applyConfig = applyConfig;
+  function cloneConfig(c) { return { enabled: Object.assign({}, c.enabled), policies: Object.assign({}, c.policies) }; }
+  /** What a candidate CHANGES against the incumbent — the only part worth logging (and what the page will show). */
+  function configDelta(base, cfg) {
+    var d = [], id;
+    for (id in cfg.policies) if (cfg.policies[id] !== base.policies[id]) d.push({ feature: id, policy: cfg.policies[id], was: base.policies[id] });
+    for (id in cfg.enabled) if (cfg.enabled[id] !== base.enabled[id]) d.push({ feature: id, enabled: cfg.enabled[id], was: base.enabled[id] });
+    d.sort(function (a, b) { return a.feature < b.feature ? -1 : a.feature > b.feature ? 1 : 0; });
+    return d;
+  }
+
+  // ---- candidates: templates over feature KINDS and POLICY families ------------------------------------------------
+  // The incumbent is always a candidate (omsi's "repeat", cheap insurance). Every other candidate differs from it in
+  // exactly ONE feature — a one-step neighbourhood, so the set stays small and each confirmation answers one question.
+  var PURCHASE_KINDS = { upgrades: 1, buyables: 1 };
+  /**
+   * ⚖ USER RULING (2026-09-15, relayed by the planner; plan §13d): **no arbitrary waiting.** "A reset whose purpose is
+   * N of its resource fires the moment the gain reaches N; do not wait some arbitrary amount of time." So the candidate
+   * templates are TARGET-DRIVEN — `gain>=N` with N derived from what the round is resetting FOR, `gain>=Nx`,
+   * `unlocks-purchase`, `reserve>=N` — and no `interval>=T` candidate is generated at all. An incumbent that carries an
+   * interval (both shipped tables do) stays as the control row, and a sweep that leaves one as a default owes the record
+   * a sentence about what the interval is a PROXY for. The `off` candidate is not a clock either: it holds a reset for
+   * the epoch the round is deciding, which is the decision's own horizon.
+   */
+  function instantiate(template, st, target) {
+    // A parameterised template gets its numbers from the TARGET or from the OPTIONS, never from a literal here.
+    var out = [], i, v;
+    if (template === 'gain>=Nx') { v = numList(O('gainX')); for (i = 0; i < v.length; i++) out.push('gain>=' + v[i] + 'x'); return out; }
+    if (template === 'interval>=T') {
+      // ⚖ no arbitrary waiting: the `intervals` option is EMPTY by default, so no interval candidate is generated. It
+      // stays a knob so a sweep can put the ruling itself under measurement (`--planner-opt "intervals=5,30"`).
+      v = numList(O('intervals'));
+      for (i = 0; i < v.length; i++) out.push('interval>=' + v[i]);
+      return out;
+    }
+    if (template === 'gain>=N') {
+      // N = what this round still needs, when the reset's gain is measured in the dimension the round is chasing:
+      // "fire the moment the gain reaches what I am resetting FOR". The layer's own points is the dimension a reset
+      // gain lands in, so the template only applies where the target (or the goal above it) IS that dimension.
+      var own = 'player.' + st.layer + '.points';
+      var pairs = [[target && target.dimension, target && target.threshold, target && target.held],
+                   [target && target.goalDimension, target && target.goalThreshold, target && target.goalHeld]];
+      for (i = 0; i < pairs.length; i++) {
+        if (pairs[i][0] !== own || pairs[i][1] == null) continue;
+        var thr = D(pairs[i][1]), have = pairs[i][2] == null ? D(0) : D(pairs[i][2]);
+        var need = thr.sub(have);
+        if (need.lte(0)) need = thr;
+        var n = dstr(need);
+        if (n && /^\d+(\.\d+)?([eE][+-]?\d+)?$/.test(n)) out.push('gain>=' + n);
+      }
+      return out;
+    }
+    if (template === 'keepsUpgrades') return st.keep ? ['keepsUpgrades'] : [];
+    if (template === 'order' || template === 'order-then-cheapest') return st.order && st.order.length ? [template] : [];
+    if (template === 'reserve>=N') {
+      // a reserve only means something when what the planner is protecting IS this feature's own currency
+      if (!target || !target.dimension || target.dimension !== 'player.' + st.layer + '.points' || target.threshold == null) return [];
+      if (!/^\d+(\.\d+)?([eE][+-]?\d+)?$/.test(String(target.threshold))) return [];      // a reserve must be a plain quantity
+      return ['reserve>=' + target.threshold];
+    }
+    return [template];
+  }
+  function policyCandidates(st, target) {
+    var tpl = (T.policyTemplates && T.policyTemplates[st.kind]) || [], out = [], i, j, seen = {};
+    var add = function (p) { if (p && p !== st.policy && !seen[p]) { seen[p] = 1; out.push(p); } };
+    for (i = 0; i < st.policies.length; i++) add(st.policies[i]);              // the table's registered alternatives
+    for (i = 0; i < tpl.length; i++) { var v = instantiate(tpl[i], st, target); for (j = 0; j < v.length; j++) add(v[j]); }
+    return out;
+  }
+  function generateCandidates(base, target) {
+    var list = [{ id: 'incumbent', config: cloneConfig(base), kind: 'incumbent', feature: null }];
+    var fs = featureList(), i, j;
+    for (i = 0; i < fs.length; i++) {
+      var st = fs[i];
+      if (!st.unlocked) continue;                                  // a locked feature cannot run, so nothing to decide
+      var isReset = st.kind === 'reset', isBuy = !!PURCHASE_KINDS[st.kind];
+      if (!isReset && !isBuy) continue;                            // toggles / challenges / clickables run as they are
+      if (isReset || isBuy) {
+        var pols = policyCandidates(st, target);
+        for (j = 0; j < pols.length; j++) {
+          var c = cloneConfig(base); c.policies[st.id] = pols[j]; c.enabled[st.id] = true;
+          list.push({ id: 'policy:' + st.id + '=' + pols[j], config: c, kind: st.kind, feature: st.id, policy: pols[j] });
+        }
+      }
+      if (base.enabled[st.id]) {                                   // the WAIT candidate for this layer: hold it back
+        var c2 = cloneConfig(base); c2.enabled[st.id] = false;
+        list.push({ id: 'off:' + st.id, config: c2, kind: st.kind, feature: st.id, policy: 'off' });
+      }
+    }
+    return list;
+  }
+
+  /**
+   * The screened pool, cut to `maxCandidates` ROUND-ROBIN over the features — every unlocked feature contributes its
+   * best-ranked candidate before any feature contributes a second. ⚠ A flat `slice(0, maxCandidates)` cuts by the
+   * screen's ranking, and the screen cannot discriminate at all when the target dimension is frozen: the tie-break is
+   * then the candidate id, so whole layers fall off the end alphabetically. Measured on the fresh-game opening: the
+   * planner had turned the row-0 reset off, `player.points` stopped moving, and for 20 rounds not one candidate that
+   * could turn it back on was inside the pool — the escalation had nothing to escalate to.
+   */
+  function selectPool(order, maxN) {
+    var groups = {}, keys = [], i, key;
+    for (i = 0; i < order.length; i++) {
+      key = order[i].id === 'incumbent' ? '' : (order[i].feature || order[i].id);
+      if (!groups[key]) { groups[key] = []; keys.push(key); }
+      groups[key].push(order[i]);
+    }
+    var out = [], round = 0, added = true;
+    while (out.length < maxN && added) {
+      added = false;
+      for (i = 0; i < keys.length && out.length < maxN; i++) if (groups[keys[i]].length > round) { out.push(groups[keys[i]][round]); added = true; }
+      round++;
+    }
+    return out;
+  }
+
+  // ---- the screen: a rate extrapolation from P1a's measured producers ----------------------------------------------
+  // The cheap model (omsi §3.6). It ranks; the ENGINE decides. Its ranking against the confirmed one is logged every
+  // round (the divergence log): a screen that never disagrees is measuring nothing, one that always disagrees is
+  // wasting the budget. It is deliberately crude — a reset's expected count over the epoch from its MEASURED cycle.
+  function resetProducersOf(K, dim) {
+    var list = (K.producers.byDimension[dim] || []), out = [], i;
+    for (i = 0; i < list.length; i++) if (list[i].producer.indexOf('reset:') === 0) out.push(list[i]);
+    return out;
+  }
+  function resetRowOf(K, layer) { for (var i = 0; i < K.producers.resets.length; i++) if (K.producers.resets[i].layer === layer) return K.producers.resets[i]; return null; }
+  /** The measured cycle of a reset, in game-seconds: how long its base dimension needs to climb back to its requirement. */
+  function cycleOf(K, layer) {
+    var R = resetRowOf(K, layer);
+    if (!R || !R.requiresDimension || R.resetAt == null) return null;
+    var re = R.regrowth && R.regrowth[R.requiresDimension];
+    if (re == null) { var w = K.producers.wait.rates[R.requiresDimension]; re = w ? w.rate : null; }
+    if (re == null) return null;
+    var rate = D(re);
+    if (rate.lte(0)) return null;
+    var need = D(R.resetAt);
+    try { return Math.max(1, Number(need.div(rate))); } catch (e) { return null; }
+  }
+  /**
+   * How often this reset can fire in k game-seconds. TWO bounds, and the smaller wins: the POLICY's own cadence, and
+   * the game's — a reset waits for `canReset`, so it cannot fire faster than its requirement regrows (the measured
+   * cycle). Without the second bound the screen prices a locked row-2 layer whose requirement is 1e120 as if it reset
+   * every interval, and every candidate then projects the same number (measured at M02 before this was here).
+   */
+  function expectedResets(K, st, policy, enabled, k) {
+    if (!enabled || !st.unlocked) return 0;
+    var cyc = cycleOf(K, st.layer);
+    var nCycle = cyc === null ? 0 : Math.floor(k / cyc);
+    var m = /^interval>=(.*)$/.exec(policy);
+    var nPolicy = m ? Math.floor(k / Math.max(1e-9, Number(m[1]))) : nCycle;
+    var g = /^gain>=(.*)x$/.exec(policy);
+    if (g) nPolicy = Math.floor(nCycle / Math.max(1, Number(g[1])));   // "wait until the gain is N× what I hold" ≈ N cycles
+    return Math.max(0, Math.min(nCycle, nPolicy));
+  }
+  /**
+   * The projected PEAK of the target dimension after the epoch under this configuration. The model is a sawtooth: the
+   * dimension climbs at the measured wait rate and is emptied by whichever enabled reset consumes it most often, so the
+   * peak is one period's climb — the whole window when nothing consumes it. A reset that PRODUCES the target adds its
+   * measured gain per expected reset. The wait rate is measured WITH the incumbent running (P1a's producer walk), so
+   * the incumbent's own projection is nearly a measurement and every other candidate is that baseline adjusted.
+   */
+  function screenCandidate(cand, K, target, k) {
+    var dim = target.dimension;
+    var held = D(target.held == null ? 0 : target.held);
+    var w = K.producers.wait.rates[dim];
+    var rate = w ? D(w.rate).max(0) : D(0);
+    var fs = featureList(), byLayer = {}, i;
+    for (i = 0; i < fs.length; i++) if (fs[i].kind === 'reset') byLayer[fs[i].layer] = fs[i];
+    var period = k, consumer = null, produced = D(0), producers = [];
+    var resets = K.producers.resets;
+    for (i = 0; i < resets.length; i++) {
+      var R = resets[i], st = byLayer[R.layer];
+      if (!st || !R.delta || R.delta[dim] === undefined) continue;
+      var n = expectedResets(K, st, cand.config.policies[st.id], cand.config.enabled[st.id], k);
+      if (!n) continue;
+      var d = D(R.delta[dim]);
+      if (d.lt(0)) { var per = k / n; if (per < period) { period = per; consumer = { layer: R.layer, resets: n, period: per }; } }
+      else if (d.gt(0)) { produced = produced.plus(d.times(n)); producers.push({ layer: R.layer, resets: n, gain: R.delta[dim] }); }
+    }
+    var proj = held.plus(rate.times(Math.min(k, period))).plus(produced);
+    return { projected: dstr(proj), projectedLog10: lg(proj), rate: w ? w.rate : null, period: period, consumer: consumer, producers: producers };
+  }
+
+  // ---- confirmation: the engine plays the candidate on the copy ----------------------------------------------------
+  /**
+   * measureConfig: an EXCURSION that applies the configuration and ticks k game-seconds at diff 1, sampling the target
+   * dimension every tick. Returns the target's MAX over the window (never the net rate — P1a 12a.5), its end value, the
+   * capacity term (last quarter's peak against the first quarter's), the marks newly held, and the copy's hashGame —
+   * which is what the live game must land on at the epoch's end.
+   */
+  function measureConfig(cfg, k, target, activePred, marks, frontier) {
+    var dim = target.dimension, gdim = target.goalDimension || null;
+    return P.excursion(function () {
+      applyConfig(cfg);
+      var i, v, vals = [], v0 = D(getPath(dim) == null ? 0 : getPath(dim));
+      var gmax = gdim ? D(getPath(gdim) == null ? 0 : getPath(gdim)) : null, g0 = gmax;
+      var reachedAt = null;
+      for (i = 0; i < k; i++) {
+        T.tick(1, 1);
+        v = getPath(dim); vals.push(v === null || v === undefined ? D(0) : D(v));
+        if (gdim) { var gv = getPath(gdim); if (gv !== null && gv !== undefined && D(gv).gt(gmax)) gmax = D(gv); }
+        if (reachedAt === null && activePred) { var ok = false; try { ok = !!activePred(); } catch (e) { ok = false; } if (ok) reachedAt = i + 1; }
+      }
+      var max = v0, end = vals.length ? vals[vals.length - 1] : v0;
+      for (i = 0; i < vals.length; i++) if (vals[i].gt(max)) max = vals[i];
+      // capacity (omsi's probeCapacity, transplanted): is the trajectory still ACCELERATING — what this epoch buys for
+      // the NEXT one. The peak of the window's last quarter against the peak of its first.
+      var q = Math.max(1, Math.floor(vals.length / 4)), qa = vals.length ? vals[0] : v0, qb = vals.length ? vals[vals.length - 1] : v0;
+      for (i = 0; i < q && i < vals.length; i++) if (vals[i].gt(qa)) qa = vals[i];
+      for (i = Math.max(0, vals.length - q); i < vals.length; i++) if (vals[i].gt(qb)) qb = vals[i];
+      var capacity = lg(qb) - lg(qa);
+      var held = {}, n;
+      for (n = 0; n < (marks || []).length; n++) { var ok2 = false; try { ok2 = !!marks[n].fn(); } catch (e) { ok2 = false; } if (ok2) held[marks[n].id] = true; }
+      var closer = 0;
+      for (n = 0; n < (frontier || []).length; n++) {
+        var f = frontier[n], now = getPath(f.dimension);
+        if (now === null || now === undefined) continue;
+        try { if (D(now).gt(D(f.held))) closer++; } catch (e) {}
+      }
+      var h = P.hashes();
+      return { ticks: k, max: dstr(max), maxLog10: lg(max), end: dstr(end), endLog10: lg(end), start: dstr(v0), startLog10: lg(v0),
+        goalDimension: gdim, goalMax: gdim ? dstr(gmax) : null, goalStart: gdim ? dstr(g0) : null,
+        capacity: isFinite(capacity) ? capacity : 0, reachedAt: reachedAt, marksHeld: Object.keys(held).sort(), frontierCloser: closer,
+        hash: h.hash, hashGame: h.hashGame, gameSeconds: T.gameSeconds };
+    });
+  }
+  P.measureConfig = measureConfig;
+
+  /** score = weighted sum; the goal reached inside the window dominates, earliest tick first. Ties: candidate order. */
+  /** log-progress of a quantity's measured max from where it started toward its threshold, clipped to [-1, 1]. */
+  function logProgress(startLog, maxLog, threshold) {
+    var gain = maxLog - startLog;
+    if (!isFinite(gain)) gain = 0;
+    var hi = threshold == null ? null : lg(threshold);
+    var span = hi === null || !isFinite(hi) || !isFinite(startLog) ? null : hi - startLog;
+    return span !== null && span > 0 ? Math.max(-1, Math.min(1, gain / span)) : Math.max(-1, Math.min(1, gain / 100));
+  }
+  function scoreOutcome(c, target, k) {
+    var terms = {};
+    terms.reach = c.reachedAt === null ? 0 : O('wReach') * (1 + (k - c.reachedAt) / Math.max(1, k));
+    terms.progress = O('wProgress') * logProgress(c.startLog10, c.maxLog10, target.threshold);
+    // the GOAL's own dimension, when the round is spent on a setup leaf below it: a candidate that grows the leaf by
+    // starving the goal is not progress. Flat for every candidate when the goal's dimension genuinely cannot move —
+    // which is exactly when the setup leaf is the right thing to optimise.
+    terms.goal = c.goalDimension ? O('wGoal') * logProgress(lg(c.goalStart), lg(c.goalMax), target.goalThreshold) : 0;
+    terms.capacity = O('wCapacity') * (isFinite(c.capacity) ? Math.max(-10, Math.min(10, c.capacity)) : 0);
+    terms.frontier = O('wFrontier') * c.frontierCloser;
+    var total = terms.reach + terms.progress + terms.goal + terms.capacity + terms.frontier;
+    return { total: total, terms: terms };
+  }
+
+  // ---- targeting: the goal's chain, and the deepest hop that is currently POSSIBLE ---------------------------------
+  // omsi's setup leaf (§4a): when the goal's own dimension has no possible producer, the round is spent on the first
+  // hop down the chain that does. A goal with no possible hop at all is BLOCKED and the round moves to the next entry
+  // of the goal LIST (goal-list-scoped setup rounds), the blocked one keeping its own clock.
+  // ⚠ A PROBED threshold can saturate. P1a's probe raises a field until done() flips and binary-searches the minimum;
+  // where the field is a plain JS number the largest value it can hold is the double ceiling, so a gate the probe could
+  // not satisfy comes back as ~1.797e308 — the representation's limit, not a number the game ever names. Measured: the
+  // fresh-game fallback chased `ach:a:42` at 1.79769313522374e308 for ten rounds. Such a goal is not targetable.
+  var LOG10_MAX = Math.log10(Number.MAX_VALUE);
+  function saturated(threshold) { if (threshold == null) return false; var l = lg(threshold); return isFinite(l) && l >= LOG10_MAX - 1e-6; }
+  function shortfallOf(t) {
+    if (t.threshold == null || t.held == null) return Infinity;
+    var a = lg(t.threshold), b = lg(t.held);
+    return isFinite(a) && isFinite(b) ? a - b : Infinity;
+  }
+  /**
+   * Is this hop possible WITHIN THE EPOCH? P1a's chain answers a different question: it classifies a hop against the
+   * knowledge walk's wait window (`knowledgeK`, 10 game-seconds by default), and `canReset` is an INSTANT (P1a 12a.5).
+   * A reset whose requirement regrows in 40 game-seconds therefore reads "impossible: the requirement is above the base
+   * amount" while the epoch it is being planned for is 300 game-seconds long — and the round walks past the goal's own
+   * dimension down to the root currency, where a candidate is rewarded for HOARDING the very currency the reset must
+   * spend. Measured on the fresh-game opening: 20 rounds chasing `player.points` against a receding static requirement
+   * while `b.best` / `g.best` (what M03 actually asks for) crawled. So the horizon of the question is the epoch: a
+   * `canReset is false` hop is possible when the producing layer's MEASURED cycle (`resetAt / regrowth`, the same
+   * number the screen prices) fits inside k.
+   */
+  function hopPossible(h, K, k) {
+    if (!h.impossible) return true;
+    var imp = h.impossible;
+    if (!imp.layer || String(imp.why || '').indexOf('canReset is false') !== 0) return false;
+    var cyc = cycleOf(K, imp.layer);
+    return cyc !== null && cyc <= k;
+  }
+  function targetFromChain(ch, idx, K) {
+    if (!ch || !ch.hops || !ch.hops.length) return null;
+    var i, h;
+    for (i = 0; i < ch.hops.length; i++) {
+      h = ch.hops[i];
+      if (!h.dimension || h.cut) continue;
+      if (!hopPossible(h, K, O('k'))) continue;
+      if (saturated(h.threshold)) return { blocked: true, dimension: h.dimension, threshold: h.threshold, held: h.held, goal: ch.goal, chainIndex: idx, why: 'the probed threshold saturated the double ceiling: it is the probe\'s limit, not a number the game names' };
+      // The GOAL's own dimension (the chain's first hop) travels with the target. A round spent on a setup leaf is
+      // still a round spent ON THE GOAL, and the score prices both: measured, a candidate that grows the leaf by
+      // turning OFF the very reset that converts it into the goal's dimension wins every epoch and undoes the goal
+      // (`off:reset:b` maximises `player.points` precisely because a b reset spends points — and b.best is what the
+      // mark asks for).
+      var g0 = null;
+      for (var j = 0; j < ch.hops.length; j++) if (ch.hops[j].dimension) { g0 = ch.hops[j]; break; }
+      return { dimension: h.dimension, threshold: h.threshold === undefined ? null : h.threshold, held: h.held, hop: i, goal: ch.goal, chainIndex: idx, blocked: false,
+        goalDimension: g0 && g0.dimension !== h.dimension ? g0.dimension : null,
+        goalThreshold: g0 && g0.dimension !== h.dimension ? (g0.threshold === undefined ? null : g0.threshold) : null,
+        goalHeld: g0 && g0.dimension !== h.dimension ? g0.held : null,
+        withinEpoch: h.impossible ? { layer: h.impossible.layer, cycle: cycleOf(K, h.impossible.layer) } : null };
+    }
+    var fi = ch.firstImpossible;
+    var dimHop = null;
+    for (i = 0; i < ch.hops.length; i++) if (ch.hops[i].dimension) { dimHop = ch.hops[i]; break; }
+    var use = fi ? { dimension: fi.dimension, why: fi.impossible && fi.impossible.why } : dimHop ? { dimension: dimHop.dimension, why: 'no hop of this chain has a possible producer' } : null;
+    if (!use) return { blocked: true, dimension: null, threshold: null, held: null, goal: ch.goal, chainIndex: idx, why: 'this goal resolved to no dimension' };
+    var src = null;
+    for (i = 0; i < ch.hops.length; i++) if (ch.hops[i].dimension === use.dimension) { src = ch.hops[i]; break; }
+    return { blocked: true, dimension: use.dimension, threshold: src && src.threshold !== undefined ? src.threshold : null, held: src ? src.held : null, goal: ch.goal, chainIndex: idx, why: use.why };
+  }
+  function targetForChains(chains, K) {
+    var open = [], blocked = [], i, t;
+    for (i = 0; i < (chains || []).length; i++) { t = targetFromChain(chains[i], i, K); if (!t) continue; (t.blocked ? blocked : open).push(t); }
+    if (open.length) {
+      // the mark needs every clause, so the round works on the NEAREST open one (smallest log10 shortfall); ties by chain
+      open.sort(function (a, b) { var d = shortfallOf(a) - shortfallOf(b); return d !== 0 ? d : a.chainIndex - b.chainIndex; });
+      return open[0];
+    }
+    return blocked.length ? blocked[0] : { blocked: true, dimension: null, threshold: null, held: null, why: 'this goal has no chain at all' };
+  }
+
+  // ---- the stall clocks (omsi §4a, both kinds) ---------------------------------------------------------------------
+  // For an ACTIVE goal the clock runs on the target dimension: a round whose target did not rise accrues, a rising one
+  // resets, and goalStallK accrued rounds abandon the goal (list hygiene: it stays in the list, marked, with the round).
+  // For a BLOCKED goal the clock runs on the blocked hop's dimension and stays FROZEN until that dimension first moves
+  // during the goal's tenure — on a wall like the PTR frontier's 1e600 points requirement, a flat-window accrual would
+  // abandon every entry on the first pass.
+  // ⚠ Every number the clock keeps must be JSON-SAFE: the planner's state round-trips through JSON.stringify on every
+  // restore (it rides in runtimeState), and JSON turns ±Infinity and NaN into `null`. A dimension sitting at 0 has
+  // log10 −Infinity, so a clock that stored it read `best: null` again after the very next excursion — "no best yet",
+  // which reads as a RISE — and no goal could ever stall. Measured: 5 rounds at `player.p.points` 0 with rose: true.
+  var lgOr = function (x) { if (x === null || x === undefined) return null; var l = lg(x); return isFinite(l) ? l : null; };
+  function clockFor(key, dim, held, blocked) {
+    var c = S.clocks[key];
+    if (!c || c.dimension !== dim) { c = S.clocks[key] = { dimension: dim, best: lgOr(held), first: lgOr(held), stall: 0, armed: !blocked, moved: false, rounds: 0 }; return c; }
+    return c;
+  }
+  function accrue(c, held, blocked) {
+    c.rounds++;
+    var v = lgOr(held);
+    if (v !== null && c.first !== null && Math.abs(v - c.first) > O('minRise')) c.moved = true;
+    if (v !== null && c.first === null) { c.moved = true; c.first = v; }     // it left the floor (0 → something)
+    if (blocked && !c.armed) { if (c.moved) c.armed = true; return c; }      // frozen until the blocked dimension first moves
+    c.armed = true;
+    if (v !== null && (c.best === null || v > c.best + O('minRise'))) { c.best = v; c.stall = 0; c.rose = true; }
+    else { c.stall++; c.rose = false; }
+    return c;
+  }
+
+  // ---- one round ---------------------------------------------------------------------------------------------------
+  // The ladder resolved to {id, name, predicate, fn} once per ladder object — beforeTick() asks for it on EVERY live
+  // tick, and rebuilding 53 records per tick for a 6-game-hour campaign is 1.1 M allocations for one predicate call.
+  var MARKS_CACHE = null, MARKS_FOR = null;
+  function ladderMarks() {
+    var L = T.plannerLadder || null;
+    if (MARKS_FOR === L && MARKS_CACHE) return MARKS_CACHE;
+    var out = [], marks = L ? (Array.isArray(L) ? L : L.marks || []) : [];
+    for (var i = 0; i < marks.length; i++) out.push({ id: marks[i].id, name: marks[i].name || null, predicate: marks[i].predicate, fn: T.predicate(marks[i].predicate) });
+    MARKS_FOR = L; MARKS_CACHE = out;
+    return out;
+  }
+  function holdsNow(m) { try { return !!m.fn(); } catch (e) { return false; } }
+
+  /**
+   * round(): one planning round. Reads the knowledge walk, picks the active goal and the target dimension, generates
+   * candidate configurations, screens them, confirms the survivors on the copy, scores, and (mode `auto`) commits the
+   * winner to the live simple system for the epoch. Returns the round record (docs/planner.md, "the round log").
+   */
+  P.round = function (opts) {
+    opts = opts || {};
+    var t0 = wallMs(), reason = opts.reason || 'epoch-end';
+    // The planning instant is NORMALISED first: restore(snapshot()) settles tmp the way every excursion's restore will.
+    // Without it candidate 1 is measured at the live tick's tmp and candidate 2 at a restored tmp — tmp is not a pure
+    // function of player (P1a 12a.2 item 1), so the two are different instants and the winner's trajectory would not be
+    // the live one. This is the one place the planner touches the live state, and it is byte-faithful in `player`.
+    P.restore(P.snapshot());
+    var marks = ladderMarks(), i, j;
+    for (i = 0; i < marks.length; i++) if (holdsNow(marks[i]) && !S.reached[marks[i].id]) S.reached[marks[i].id] = { round: S.round, ticks: T.ticks, gameSeconds: T.gameSeconds };
+    var tk = wallMs();
+    var K = P.knowledge({ k: O('knowledgeK'), depth: O('depth') });
+    var G = P.goals({ knowledge: K });
+    var knowledgeMs = wallMs() - tk;
+
+    // --- the active goal: the first sticky entry not yet reached and not abandoned whose chain has a possible hop ---
+    var entries = [], skipped = [];
+    for (i = 0; i < G.sticky.length; i++) {
+      var e = G.sticky[i];
+      if (S.reached[e.mark] || S.abandoned[e.mark]) continue;
+      entries.push(e);
+    }
+    var active = null, target = null;
+    for (i = 0; i < entries.length; i++) {
+      var t = targetForChains(entries[i].chains, K);
+      if (!t.blocked) { active = { source: 'sticky', mark: entries[i].mark, name: entries[i].name, predicate: entries[i].predicate, entry: entries[i] }; target = t; break; }
+      skipped.push({ mark: entries[i].mark, dimension: t.dimension, why: t.why });
+      var c = clockFor(entries[i].mark, t.dimension, t.held, true);
+      accrue(c, t.held, true);
+      if (c.armed && c.stall >= O('goalStallK')) S.abandoned[entries[i].mark] = { round: S.round, why: 'blocked and stalled ' + c.stall + ' rounds on ' + t.dimension };
+    }
+    // the fallback (omsi's heuristic mode): the best DISCOVERED goal when the sticky list is empty or all-blocked
+    if (!active) {
+      var chainById = {};
+      for (i = 0; i < K.chains.length; i++) chainById[K.chains[i].goal] = K.chains[i];
+      for (i = 0; i < G.discovered.length; i++) {
+        var g = G.discovered[i], ch = chainById[g.id];
+        if (!ch) continue;
+        if (saturated(g.threshold)) continue;
+        var td = targetForChains([ch], K);
+        if (td.blocked) continue;
+        active = { source: 'discovered', mark: g.id, name: g.kind, predicate: null, goal: g };
+        target = td;
+        break;
+      }
+    }
+    // The LAST RESORT: the game's own root dimension, with no threshold — just grow it. `player.points` is the TMT
+    // contract (every fork has it; P1a's walk already treats it as a dimension), not game knowledge. It matters because
+    // a configuration the planner itself committed can FREEZE the economy — measured on the fresh-game opening: after an
+    // epoch that won by holding points back, nothing moved any dimension, every sticky chain read "no measured producer
+    // moves this" and the round had nothing to optimise, so the incumbent won every tie and the run never recovered.
+    if (!active) {
+      active = { source: 'root', mark: 'root:player.points', name: 'the game\'s own points', predicate: null };
+      target = { dimension: 'player.points', threshold: null, held: dstr(getPath('player.points')), hop: 0, goal: 'root', chainIndex: 0, blocked: false, why: 'every goal is blocked: grow the root dimension' };
+    }
+    var rec = { round: S.round, ticks: T.ticks, gameSeconds: T.gameSeconds, mode: P.mode, reason: reason,
+      goal: active ? { source: active.source, id: active.mark, name: active.name, predicate: active.predicate, chain: active.entry ? active.entry.chains.map(function (c2) { return { goal: c2.goal, firstImpossible: c2.firstImpossible ? c2.firstImpossible.dimension : null }; }) : null } : null,
+      skipped: skipped, target: target || null, candidates: [], winner: null, epoch: null,
+      reached: Object.keys(S.reached).sort(), abandoned: Object.keys(S.abandoned).sort(),
+      cost: { knowledgeMs: knowledgeMs } };
+    if (!active || !target || !target.dimension) {   // only when the game has no `player.points` at all
+      rec.why = 'no goal with a possible hop: nothing to plan this round';
+      rec.cost.wallMs = wallMs() - t0;
+      S.round++; P.rounds.push(rec);
+      S.epoch = { startTick: T.ticks, endsAtTick: T.ticks + O('k'), expected: null, config: null, goal: null };
+      return rec;
+    }
+    S.goal = active.mark;
+
+    // --- the clock of the active goal, and the anti-fixation escalation ---
+    var clock = clockFor(active.mark, target.dimension, target.held, false);
+    accrue(clock, target.held, false);
+    rec.clock = { dimension: clock.dimension, stall: clock.stall, armed: clock.armed, rose: !!clock.rose, rounds: clock.rounds, best: clock.best };
+    if (clock.stall >= O('goalStallK')) {
+      S.abandoned[active.mark] = { round: S.round, why: 'the target ' + target.dimension + ' did not rise for ' + clock.stall + ' rounds' };
+      rec.abandonedNow = active.mark;
+    }
+    var escalate = S.escalate || (S.sameWinner >= O('fixK') && !clock.rose);
+    rec.escalate = !!escalate;
+
+    // --- candidates, screen, confirmation, score ---
+    var base = currentConfig();
+    var cands = generateCandidates(base, target);
+    var ts = wallMs();
+    for (i = 0; i < cands.length; i++) cands[i].screen = screenCandidate(cands[i], K, target, O('k'));
+    var order = cands.slice();
+    // The tie-break when the model cannot tell (a frozen target projects the same number for everything): prefer a
+    // candidate that turns a feature ON over one that turns a feature off, and only then the id. A configuration that
+    // produces nothing is the one being escaped, so "switch something on" is the right coin-flip — and it is
+    // deterministic, which a random one would not be.
+    var turnsOn = function (c) { for (var q in c.config.enabled) if (c.config.enabled[q] && !base.enabled[q]) return 1; return 0; };
+    order.sort(function (a, b) {
+      if (a.id === 'incumbent') return -1;
+      if (b.id === 'incumbent') return 1;
+      var d = (b.screen.projectedLog10 || -Infinity) - (a.screen.projectedLog10 || -Infinity);
+      if (d !== 0 && isFinite(d)) return d;
+      var t = turnsOn(b) - turnsOn(a);
+      if (t !== 0) return t;
+      return a.id < b.id ? -1 : a.id > b.id ? 1 : 0;
+    });
+    for (i = 0; i < order.length; i++) order[i].screenRank = i;
+    var pool = selectPool(order, Math.max(1, O('maxCandidates')));
+    var screened = pool.slice(0, Math.max(1, O('screenK')));
+    // the escalation (omsi's updateStagnation): at least one candidate that differs in a RESET policy must be confirmed
+    // ⚠ "differs in a reset policy" must mean the POLICY, not merely the feature: `off:reset:<l>` names a reset feature
+    // and changes nothing about how it resets, so an escalation satisfied by one is no escalation at all.
+    var isResetPolicy = function (c) { return c.kind === 'reset' && c.id.indexOf('policy:') === 0; };
+    if (escalate) {
+      var hasReset = false, alt = [];
+      for (i = 0; i < screened.length; i++) if (isResetPolicy(screened[i])) hasReset = true;
+      for (i = 0; i < pool.length; i++) if (isResetPolicy(pool[i]) && screened.indexOf(pool[i]) < 0) alt.push(pool[i]);
+      // ⚠ The escalation ROTATES. Escalating to the same candidate every round is not an escape: measured on the frozen
+      // opening, the escalation offered the same reset-policy candidate for twenty rounds while the one that could
+      // restart the economy sat at rank 9 and was never confirmed. The index is part of the state, so it is
+      // deterministic and it walks the whole list.
+      if (!hasReset && alt.length) {
+        var pick = alt[(S.escalateN || 0) % alt.length];
+        S.escalateN = (S.escalateN || 0) + 1;
+        screened.push(pick);
+        rec.escalated = pick.id;
+      }
+    }
+    var screenMs = wallMs() - ts;
+    var frontier = [];
+    for (i = 0; i < G.discovered.length; i++) { var dg = G.discovered[i]; if (dg.dimension && dg.held != null) frontier.push({ id: dg.id, dimension: dg.dimension, held: dg.held }); }
+    var activeFn = active.source === 'sticky' ? T.predicate(active.predicate) : null;
+    var tc = wallMs(), measured = 0;
+    for (i = 0; i < screened.length; i++) {
+      screened[i].confirm = measureConfig(screened[i].config, O('k'), target, activeFn, marks, frontier);
+      screened[i].score = scoreOutcome(screened[i].confirm, target, O('k'));
+      measured += O('k');
+    }
+    var confirmMs = wallMs() - tc;
+    // the winner: the goal reached inside the window wins outright (earliest tick first), then the score, then order
+    var winner = null;
+    for (i = 0; i < screened.length; i++) {
+      var c3 = screened[i];
+      if (!winner) { winner = c3; continue; }
+      var a = winner.confirm, b = c3.confirm;
+      if ((a.reachedAt === null) !== (b.reachedAt === null)) { if (b.reachedAt !== null) winner = c3; continue; }
+      if (a.reachedAt !== null && b.reachedAt !== null && a.reachedAt !== b.reachedAt) { if (b.reachedAt < a.reachedAt) winner = c3; continue; }
+      if (c3.score.total > winner.score.total) winner = c3;
+    }
+    // the confirmed ranking against the screen's (omsi's divergence log)
+    var confirmedOrder = screened.slice().sort(function (a2, b2) { return b2.score.total - a2.score.total; });
+    rec.screenDivergence = { screened: screened.map(function (c4) { return c4.id; }), confirmedBest: confirmedOrder.length ? confirmedOrder[0].id : null,
+      screenBest: screened.length ? screened[0].id : null, agree: screened.length ? (confirmedOrder[0].id === screened[0].id) : null,
+      displacement: confirmedOrder.map(function (c5) { return screened.indexOf(c5); }).map(function (v, ix) { return Math.abs(v - ix); }).reduce(function (x, y) { return x + y; }, 0) };
+    rec.candidates = pool.map(function (c6) {
+      return { id: c6.id, kind: c6.kind, feature: c6.feature, policy: c6.policy || null, delta: configDelta(base, c6.config),
+        screen: { projected: c6.screen.projected, log10: c6.screen.projectedLog10, rank: c6.screenRank, rate: c6.screen.rate, period: c6.screen.period, consumer: c6.screen.consumer, producers: c6.screen.producers },
+        confirm: c6.confirm ? { max: c6.confirm.max, maxLog10: c6.confirm.maxLog10, end: c6.confirm.end, capacity: c6.confirm.capacity, reachedAt: c6.confirm.reachedAt, marksHeld: c6.confirm.marksHeld, frontierCloser: c6.confirm.frontierCloser, goalMax: c6.confirm.goalMax, hashGame: c6.confirm.hashGame } : null,
+        score: c6.score || null };
+    });
+    rec.winner = winner ? { id: winner.id, delta: configDelta(base, winner.config), score: winner.score, confirm: { max: winner.confirm.max, reachedAt: winner.confirm.reachedAt, hashGame: winner.confirm.hashGame, marksHeld: winner.confirm.marksHeld } } : null;
+    rec.cost = { knowledgeMs: knowledgeMs, screenMs: screenMs, confirmMs: confirmMs, measuredGameSeconds: measured, wallMs: wallMs() - t0 };
+
+    // --- commit ---
+    if (winner) {
+      S.sameWinner = winner.id === S.lastWinner ? S.sameWinner + 1 : 0;
+      S.lastWinner = winner.id;
+      S.escalate = escalate && winner.id === 'incumbent';
+      if (P.mode === 'auto') {
+        applyConfig(winner.config);
+        S.commits++;
+        S.epoch = { startTick: T.ticks, endsAtTick: T.ticks + O('k'), expected: winner.confirm.hashGame, expectedGameSeconds: winner.confirm.gameSeconds,
+          candidate: winner.id, goal: active.mark, target: target.dimension, round: S.round };
+      } else {
+        S.epoch = { startTick: T.ticks, endsAtTick: T.ticks + O('k'), expected: null, candidate: winner.id, goal: active.mark, target: target.dimension, round: S.round, suggestOnly: true };
+      }
+      rec.epoch = { ticks: O('k'), endsAtTick: S.epoch.endsAtTick, expected: S.epoch.expected, committed: P.mode === 'auto' };
+    }
+    rec.unlocks = unlockSignature();
+    S.unlocks = rec.unlocks;
+    S.round++;
+    P.rounds.push(rec);
+    return rec;
+  };
+
+  // A layer's unlocked state is an EVENT: a configuration chosen while a layer was locked has nothing to say about the
+  // game the tick after it unlocks. The signature is the ordered list of unlocked layers (no layer id is written here).
+  function unlockSignature() { var ls = allLayers(), o = []; for (var i = 0; i < ls.length; i++) if (player[ls[i]] && player[ls[i]].unlocked) o.push(ls[i]); return o.join(','); }
+
+  /**
+   * beforeTick(): the hook the harness's drive (and P2's page loop) calls BETWEEN ticks. It re-plans at the epoch's end
+   * or earlier on an EVENT — the active goal reached, a configured feature's layer changing unlocked state, or the live
+   * trajectory diverging from the winner's measured one. The divergence must be impossible by construction, so it is
+   * recorded as a DEFECT rather than papered over.
+   */
+  P.beforeTick = function () {
+    if (P.mode !== 'auto' && P.mode !== 'suggest') return null;
+    if (O('maxRounds') && S.round >= O('maxRounds')) return null;
+    if (!S.epoch) return P.round({ reason: 'first-round' });
+    if (S.goal && S.reached[S.goal] === undefined) {
+      var m = null, ms = ladderMarks();
+      for (var i = 0; i < ms.length; i++) if (ms[i].id === S.goal) { m = ms[i]; break; }
+      if (m && holdsNow(m)) {
+        S.reached[S.goal] = { round: S.round, ticks: T.ticks, gameSeconds: T.gameSeconds };
+        return P.round({ reason: 'goal-reached' });
+      }
+    }
+    var sig = unlockSignature();
+    if (S.unlocks !== null && sig !== S.unlocks) { S.unlocks = sig; return P.round({ reason: 'unlock-changed' }); }
+    if (T.ticks >= S.epoch.endsAtTick) {
+      var why = 'epoch-end';
+      if (S.epoch.expected) {
+        var live = P.hashes().hashGame;
+        if (live !== S.epoch.expected) {
+          // the copy played exactly this configuration from exactly this state: an inequality is a DEFECT
+          S.divergences.push({ round: S.epoch.round, ticks: T.ticks, gameSeconds: T.gameSeconds, expected: S.epoch.expected, live: live, candidate: S.epoch.candidate });
+          why = 'divergence';
+        }
+      }
+      return P.round({ reason: why });
+    }
+    return null;
+  };
+
+  /** The run's planner record: the mode, the options, the state and the round log (--rounds-out). */
+  P.report = function () {
+    return { contract: P.contract, game: T.id || null, mode: P.mode, options: Object.assign({}, P.options),
+      ticks: T.ticks, gameSeconds: T.gameSeconds, rounds: P.rounds.length, commits: S.commits,
+      reached: S.reached, abandoned: S.abandoned, divergences: S.divergences,
+      clocks: S.clocks, epoch: S.epoch, configuration: currentConfig(), log: P.rounds };
+  };
+
   /** What the harness dumps at the end of a run (or at a mark). */
   P.dump = function (opts) {
     var K = P.knowledge(opts);

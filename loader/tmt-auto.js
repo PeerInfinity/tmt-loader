@@ -114,13 +114,29 @@
   // file), shaped by the per-game DATA table `tmtLoader.autoTable` (games-auto/<id>.js, inserted BEFORE this file).
   var AU = 'au';
   var NUM = '\\d+(\\.\\d+)?';
+  // a RESERVE is a quantity of the game's own currency, so it spans the whole Decimal range (1e600 is a real threshold
+  // at the PTR frontier) — unlike gain>=N / interval>=T, which are small counts and seconds.
+  var DEC = '\\d+(\\.\\d+)?([eE][+-]?\\d+)?';
   var POLICIES = {
-    reset: new RegExp('^(always|gain>=' + NUM + 'x?|keepsUpgrades|interval>=' + NUM + '|unlocks-purchase)$'),
+    // a gain threshold is a quantity of the game's own currency (the planner derives it from a target's threshold, which
+    // spans the whole Decimal range), so it takes the same DEC pattern as a reserve; an interval is seconds.
+    reset: new RegExp('^(always|gain>=' + DEC + 'x?|keepsUpgrades|interval>=' + NUM + '|unlocks-purchase)$'),
     upgrades: /^(cheapest-first|order|order-then-cheapest)$/,
-    buyables: /^(buyMax|buy|highest-first|buy-unless-saving)$/,
+    buyables: new RegExp('^(buyMax|buy|highest-first|buy-unless-saving|reserve>=' + DEC + ')$'),
     toggles: /^on$/,
     challenges: /^(sequential|off)$/,
     clickables: /^(when|off)$/,
+  };
+  // The ENUMERABLE alphabet of each kind — the regexes above are the validator, this is the list a chooser can walk
+  // (the advanced planner's candidate templates, docs/planner.md). A parameterised policy appears as its TEMPLATE
+  // (`gain>=Nx`, `interval>=T`, `reserve>=N`): the number belongs to whoever chooses it, never to this file.
+  T.policyTemplates = {
+    reset: ['always', 'gain>=N', 'gain>=Nx', 'interval>=T', 'unlocks-purchase', 'keepsUpgrades'],
+    upgrades: ['cheapest-first', 'order', 'order-then-cheapest'],
+    buyables: ['buy', 'buyMax', 'highest-first', 'buy-unless-saving', 'reserve>=N'],
+    toggles: ['on'],
+    challenges: ['sequential', 'off'],
+    clickables: ['when', 'off'],
   };
   var KINDS_ALL = ['toggles', 'upgrades', 'buyables', 'challenges', 'clickables', 'reset'];
   var features = [];
@@ -146,16 +162,31 @@
 
   function isOnSaved(f) { return !!(player[AU] && player[AU].features && player[AU].features[f.id]); }
   function featureUnlocked(f) { try { return !!f.unlocked(); } catch (e) { return false; } }
+  // A RUNTIME enable override (never saved, never a default): the advanced planner commits a configuration for an epoch
+  // by switching individual features on and off under whatever profile is running — `off` is not a policy of every
+  // kind, and writing player.au.features would put a planner decision into the player's save. Part of runtimeState(),
+  // so it survives a snapshot / restore and a resumed run. `null` clears the override (back to the profile's answer).
+  var enableOverride = {};
+  T.setFeatureEnabled = function (id, on) {
+    if (!byId[id]) throw new Error('no feature "' + id + '"');
+    if (on === null || on === undefined) delete enableOverride[id]; else enableOverride[id] = !!on;
+    return on === null || on === undefined ? null : !!on;
+  };
+  T.featureOverrides = function () { return Object.assign({}, enableOverride); };
+  T.clearFeatureOverrides = function () { var n = 0; for (var k in enableOverride) { delete enableOverride[k]; n++; } return n; };
   // Whether a feature runs this tick under the current profile.
   function active(f) {
     if (T.profileName === 'off') return false;
+    if (enableOverride[f.id] !== undefined) return enableOverride[f.id] && featureUnlocked(f);
     if (T.profileName === 'all') return featureUnlocked(f);
     return isOnSaved(f) && featureUnlocked(f);
   }
   T.featureState = function (id) {
     var f = byId[id];
     if (!f) throw new Error('no feature "' + id + '"');
-    return { id: id, layer: f.layer, kind: f.kind, policy: f.policy, saved: isOnSaved(f), unlocked: featureUnlocked(f), active: active(f), gate: f.gateSrc, gateHolds: f.gate ? holds(f.gate) : null, after: f.after.slice(), order: f.order ? f.order.slice() : null, multiSkipped: f.multiSkipped || 0 };
+    return { id: id, layer: f.layer, kind: f.kind, policy: f.policy, policies: f.policies.slice(), saved: isOnSaved(f), unlocked: featureUnlocked(f), active: active(f),
+      override: enableOverride[id] === undefined ? null : enableOverride[id], gate: f.gateSrc, gateHolds: f.gate ? holds(f.gate) : null,
+      after: f.after.slice(), order: f.order ? f.order.slice() : null, keep: f.keepMilestone ? { layer: f.keepMilestone.layer, id: f.keepMilestone.id } : null, multiSkipped: f.multiSkipped || 0 };
   };
 
   function D(x) { return x instanceof Decimal ? x : new Decimal(x === undefined || x === null ? 0 : x); }
@@ -180,7 +211,7 @@
     if (p === 'always') return true;
     // gain>=Nx: the gain is at least N × the points held (dimensionless); gain>=N: the gain is at least N
     if ((m = /^gain>=(.*)x$/.exec(p))) return D(tmp[l].resetGain).gte(D(player[l].points).times(Number(m[1])));
-    if ((m = /^gain>=(.*)$/.exec(p))) return D(tmp[l].resetGain).gte(Number(m[1]));
+    if ((m = /^gain>=(.*)$/.exec(p))) return D(tmp[l].resetGain).gte(D(m[1]));   // Decimal: the threshold may be 1e276
     if (p === 'keepsUpgrades') return hasMilestone(f.keepMilestone.layer, f.keepMilestone.id);
     if ((m = /^interval>=(.*)$/.exec(p))) {
       var now = Number(player.timePlayed) || 0;
@@ -266,6 +297,12 @@
       var l = f.layer, L = layers[l], B = tmp[l] && tmp[l].buyables;
       if (!L.buyables || !B || !player[l].unlocked) return 0;
       if (f.policy === 'buy-unless-saving' && savingFor(l)) return 0;
+      // reserve>=N: hold N of the LAYER'S OWN points back — nothing is bought while the layer holds no more than N.
+      // The layer's points is the one currency a generic reserve can read (the same reasoning as buy-unless-saving);
+      // a buyable costed in another layer's currency is still gated on THIS layer's points, so the chooser only picks
+      // this policy when the quantity it wants to protect IS player[l].points (docs/planner.md, the candidate table).
+      var rsv = /^reserve>=(.*)$/.exec(f.policy);
+      if (rsv && D(player[l].points).lte(D(rsv[1]))) return 0;
       var ids = f.order ? f.order.slice() : numIds(L.buyables);
       if (f.policy === 'highest-first' && !f.order) ids.reverse();
       var n = 0;
@@ -396,8 +433,30 @@
   // player.timePlayed — undefined after a re-boot, so the policy would fire at once), the loop counter and per-layer
   // ran-at marks the double-call check reads, and the hook statistics (action counts continue across a resume).
   // Plain JSON; restoreRuntime(runtimeState()) is the identity.
+  // A later layer (loader/tmt-planner.js) keeps memory outside `player` too — its once-reached marks, its stall clocks
+  // and the epoch it committed. It registers a getter/setter pair here so ONE runtimeState() carries everything a
+  // snapshot, an excursion and a resumed run must restore. Nothing registers by default, so a run without the planner
+  // writes exactly the record it wrote before (every committed snapshot stays valid).
+  var runtimeHooks = [];
+  T.registerRuntime = function (name, get, set) {
+    if (!name || typeof get !== 'function' || typeof set !== 'function') throw new Error('registerRuntime(name, get, set)');
+    for (var i = 0; i < runtimeHooks.length; i++) if (runtimeHooks[i].name === name) { runtimeHooks[i] = { name: name, get: get, set: set }; return name; }
+    runtimeHooks.push({ name: name, get: get, set: set });
+    runtimeHooks.sort(function (a, b) { return a.name < b.name ? -1 : a.name > b.name ? 1 : 0; });
+    return name;
+  };
   T.runtimeState = function () {
-    return { lastReset: Object.assign({}, lastReset), loopNo: loopNo, ranAt: Object.assign({}, ranAt), stats: JSON.parse(JSON.stringify(stats)) };
+    var o = { lastReset: Object.assign({}, lastReset), loopNo: loopNo, ranAt: Object.assign({}, ranAt), stats: JSON.parse(JSON.stringify(stats)) };
+    if (Object.keys(enableOverride).length) o.enabled = Object.assign({}, enableOverride);
+    // a policy set at RUNTIME (setPolicy — the harness's A/B lever, the planner's committed configuration) is memory
+    // outside `player` like lastReset: without it an excursion's setPolicy would leak past the restore, and a resumed
+    // 9-minute process would drop the configuration the planner committed. Only the DIFFS against registration are
+    // recorded, so a run that never calls setPolicy writes exactly the record it wrote before.
+    var pol = {}, np = 0;
+    for (var pi = 0; pi < features.length; pi++) if (features[pi].policy !== features[pi].policy0) { pol[features[pi].id] = features[pi].policy; np++; }
+    if (np) o.policies = pol;
+    if (runtimeHooks.length) { o.extra = {}; for (var i = 0; i < runtimeHooks.length; i++) o.extra[runtimeHooks[i].name] = runtimeHooks[i].get(); }
+    return o;
   };
   T.restoreRuntime = function (rt) {
     if (!rt || typeof rt !== 'object') throw new Error('restoreRuntime: an object from runtimeState() is required');
@@ -408,6 +467,11 @@
     for (k in rt.ranAt || {}) ranAt[k] = rt.ranAt[k];
     loopNo = Number(rt.loopNo) || 0;
     if (rt.stats) for (k in stats) if (rt.stats[k] !== undefined) stats[k] = JSON.parse(JSON.stringify(rt.stats[k]));
+    for (k in enableOverride) delete enableOverride[k];
+    for (k in rt.enabled || {}) enableOverride[k] = !!rt.enabled[k];
+    for (var pj = 0; pj < features.length; pj++) features[pj].policy = features[pj].policy0;
+    for (k in rt.policies || {}) if (byId[k]) { if (!policyOk(byId[k].kind, rt.policies[k])) throw new Error('restoreRuntime: policy "' + rt.policies[k] + '" is not a ' + byId[k].kind + ' policy'); byId[k].policy = rt.policies[k]; }
+    for (var i = 0; i < runtimeHooks.length; i++) runtimeHooks[i].set((rt.extra || {})[runtimeHooks[i].name]);
     return true;
   };
 
@@ -428,7 +492,7 @@
       if (!policyOk(def.kind, ov)) throw new Error('registerAutoFeature ' + def.id + ': option policy "' + ov + '" is not a ' + def.kind + ' policy');
     }
     var f = {
-      id: def.id, layer: def.layer, kind: def.kind, policy: ov !== undefined ? ov : def.policy, title: def.title || def.id,
+      id: def.id, layer: def.layer, kind: def.kind, policy: ov !== undefined ? ov : def.policy, policy0: ov !== undefined ? ov : def.policy, title: def.title || def.id,
       unlocked: typeof def.unlocked === 'function' ? def.unlocked : function () { return true; },
       default: false,
       policies: Array.isArray(def.policies) ? def.policies.slice() : [def.policy],

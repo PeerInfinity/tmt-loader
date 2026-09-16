@@ -46,6 +46,18 @@ behaviour are unchanged (the core only gained `tmtLoader.runtimeState()` / `rest
 | `--no-runtime` | (a control) restore the snapshot's counters but not the memory outside `player` |
 | `--predicates <list.json>` | `[[name, "<js>"], …]` compiled and evaluated once after load (`R.predicates`) |
 | `--eval "<js>"` | an expression evaluated at the stop, returned as JSON (`R.eval`) |
+| `--planner` | load `loader/tmt-planner.js` after `tmt-auto.js` and run nothing (P1a; the page never fetches it) |
+| `--planner=auto` \| `--planner=suggest` | also DRIVE it: `planner.beforeTick()` runs **between** ticks and plans one epoch at a time (P1b). `auto` commits the winning configuration of the simple system to the live game; `suggest` plans and logs and commits nothing — the page's Suggest mode, headless. `--planner-mode <m>` is the same switch spelled apart |
+| `--planner-opt "k=v;k2=v2"` | the planner's options (`k`, `screenK`, the score weights, the clocks — `docs/planner.md`); an unknown key throws |
+| `--planner-ladder <file>` | the ladder JSON becomes `tmtLoader.plannerLadder`, the sticky goal source |
+| `--planner-k <n>` / `--knowledge-out` / `--goals-out` | P1a: the producer window, and the dumps written at the stop |
+| `--rounds-out <file>` | the planner's report at the stop: mode, options, reached / abandoned marks, clocks, divergences and the full round log (`docs/planner.md`, "reading a round log") |
+
+A driven run's one-line result gains `planner: {mode, rounds, commits, divergences, reached, options, wallMs,
+measuredGameSeconds}`. A planning round that THROWS stops the run (`failed_at: 'planner'`): a live game left running a
+configuration nobody chose is worse than a red row. The planner's own memory — the once-reached marks, the stall clocks,
+the committed epoch — rides in `tmtLoader.runtimeState()` with the registry's, so a snapshot carries it and a chained
+`--from-snapshot` leg continues the campaign instead of restarting it.
 
 The result (and the one-line summary) gains `ladder: {from, to, reached: [{id, ticks, gameSeconds, hash, hashGame}],
 stoppedAt: {ticks, gameSeconds, why}}` with `why` = `to` | `stalled` | `walled` | `ticks`. Long runs keep using
@@ -64,7 +76,11 @@ A snapshot is
 taken **after** the mark's tick (the same state the mark's `hashGame` hashes). `runtime.auto` is the automation core's
 memory outside `player`: each interval reset's `lastReset` (compared with `player.timePlayed`; undefined after a re-boot,
 so the policy would fire at once), the loop counter and per-layer ran-at marks of the double-call check, and the hook
-statistics (action counts continue). `runtime.monitor` is the stall detector's seen-set, buyable maxima and last-progress
+statistics (action counts continue). Since P1b it also carries, **only when they are not empty**, the runtime
+`policies` set with `setPolicy` (otherwise an excursion's policy change would leak past the restore, and a chained
+process would drop the configuration the planner committed), the runtime `enabled` overrides, and `extra.planner` —
+whatever a later layer registered with `tmtLoader.registerRuntime`. A run that uses none of them writes exactly the
+record it wrote before, so every committed snapshot stays valid. `runtime.monitor` is the stall detector's seen-set, buyable maxima and last-progress
 point, so a resumed run stalls where the uninterrupted one does. `dirty` ignores `tools/harness/snapshots` and
 `tools/harness/results`.
 

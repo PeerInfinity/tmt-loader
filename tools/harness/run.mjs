@@ -7,7 +7,8 @@
 //                     [--state-out f] [--player-out f] [--ids-out f]
 //                     [--ladder ladder.json [--from <mark>] [--to <mark>]] [--snapshots <dir>] [--from-snapshot <file>]
 //                     [--predicates list.json] [--eval "<js>"]
-//                     [--planner] [--planner-ladder ladder.json] [--planner-script f.js] [--knowledge-out f] [--goals-out f]
+//                     [--planner | --planner=auto|suggest] [--planner-mode m] [--planner-opt "k=v"] [--planner-ladder ladder.json]
+//                     [--planner-script f.js] [--knowledge-out f] [--goals-out f] [--rounds-out f]
 //                     [--stop-snapshot <dir> [--stop-snapshot-name <name>]]  — a snapshot of the STOP (stall / wall /
 //                     --ticks), in the same shape as a mark's, for a run that ends nowhere near a ladder mark
 //   --planner loads loader/tmt-planner.js after tmt-auto.js (docs/planner.md); --planner-script drives it before the
@@ -148,12 +149,13 @@ function runNodeRaw(id, o) {
   if (o.predicates) args.push('--predicates', path.resolve(String(o.predicates)));
   if (o.eval != null) args.push('--eval', String(o.eval));
   if (o.until != null) args.push('--until', String(o.until));
-  if (o.planner) args.push('--planner');
+  if (o.planner) args.push(o.planner === true ? '--planner' : `--planner=${o.planner}`);
+  for (const k of ['planner-mode', 'planner-opt']) if (o[k] != null) args.push(`--${k}`, String(o[k]));
   if (o['stop-snapshot']) args.push('--stop-snapshot');
   for (const k of ['planner-ladder', 'planner-script']) if (o[k] != null) args.push(`--${k}`, path.resolve(String(o[k])));
   if (o['planner-k'] != null) args.push('--planner-k', String(o['planner-k']));
   // the child runs with cwd = os.tmpdir(): every file argument is made absolute here
-  for (const k of ['state-out', 'player-out', 'ids-out', 'save-storage', 'knowledge-out', 'goals-out']) if (o[k] != null) args.push(`--${k}`, path.resolve(String(o[k])));
+  for (const k of ['state-out', 'player-out', 'ids-out', 'save-storage', 'knowledge-out', 'goals-out', 'rounds-out']) if (o[k] != null) args.push(`--${k}`, path.resolve(String(o[k])));
   if (o.save) args.push('--save');
   let storage = o.storage;
   const steps = [];

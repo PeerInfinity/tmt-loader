@@ -54,14 +54,21 @@ export const MONITOR_SRC = `(function(MARKS, STALL, WALL_MS, CONTINUE, SEEN, STO
   };
 })`;
 
-/** Source of a function (N, DIFF, POLICY, UNTIL) → {policyErrors, met, untilErrors}, evaluated in the game's global scope. */
-export const DRIVE_SRC = `(function(N, DIFF, POLICY, UNTIL){
+/**
+ * Source of a function (N, DIFF, POLICY, UNTIL, PLAN) → {policyErrors, met, untilErrors, planCalls, planErrors},
+ * evaluated in the game's global scope.
+ * PLAN (the advanced planner, docs/planner.md) runs BETWEEN ticks — never inside one: the round plays candidates on a
+ * rolled-back copy, so it must not sit inside a gameLoop. A PLAN that throws stops the run: a planning round that
+ * failed silently would leave the live game running a configuration nobody chose.
+ */
+export const DRIVE_SRC = `(function(N, DIFF, POLICY, UNTIL, PLAN){
   const censusPolicy = (${CENSUS_POLICY_SRC});
-  let policyErrors = 0, met = false, untilErrors = 0;
+  let policyErrors = 0, met = false, untilErrors = 0, planCalls = 0, planError = null;
   for (let i = 0; i < N; i++) {
+    if (PLAN) { try { if (PLAN()) planCalls++; } catch (e) { planError = String(e && e.stack || e).slice(0, 400); break; } }
     if (POLICY) try { censusPolicy(); } catch (e) { policyErrors++ }
     tmtLoader.tick(DIFF);
     if (UNTIL) { try { if (UNTIL()) { met = true; break; } } catch (e) { untilErrors++ } }
   }
-  return { policyErrors, met, untilErrors };
+  return { policyErrors, met, untilErrors, planCalls, planError };
 })`;
