@@ -646,8 +646,9 @@
    *               probe seed). Its own requirement is the next hop of a chain.
    * One excursion for the wait, one per reset layer. `k` is on the record; nothing here reads a clock.
    */
-  function producerWalk(dims, k, heads) {
+  function producerWalk(dims, k, heads, regrowthK) {
     k = Number(k || 10);
+    regrowthK = Number(regrowthK || k);
     // The WAIT producer. A net rate alone lies here: with the simple system running, a dimension that a reset empties
     // and regrows can come back to EXACTLY its starting value over the window and read as inert (measured on PTR at
     // M09: player.points oscillates 10 → 0 → 5.5e9 → 10 across 10 ticks, net 0). So the window is sampled EVERY tick
@@ -677,7 +678,7 @@
       return { kind: 'wait', ticks: k, diff: 1, profile: T.profileName, rates: rates, moved: moved.sort() };
     });
     var resets = [];
-    for (var i = 0; i < heads.length; i++) resets.push(measureReset(heads[i], k));
+    for (var i = 0; i < heads.length; i++) resets.push(measureReset(heads[i], regrowthK));
     var byDim = {}, all = {}, q;
     for (q = 0; q < dims.length; q++) if (dims[q]) all[dims[q]] = 1;
     for (q in wait.rates) all[q] = 1;
@@ -839,6 +840,10 @@
   /** knowledge(): goals, producers and chains — one deterministic walk, everything measured on a copy. */
   P.knowledge = function (opts) {
     opts = opts || {};
+    // k = the WAIT window (how long "what moves this?" is asked over); regrowthK = the window each reset's post-reset
+    // regrowth is measured over, which needs no more than a few ticks. They were one number in P1a; they are two here
+    // because the wait window must match the EPOCH while the regrowth window must stay cheap. Omitting regrowthK keeps
+    // P1a's behaviour exactly (both = k), so the committed knowledge goldens are unchanged.
     var k = Number(opts.k || 10), maxDepth = Number(opts.depth || 6);
     var h0 = P.hashes();
     // Every probe runs on a COPY: one excursion around the whole goal walk, so a perturbed field can never survive.
@@ -855,7 +860,7 @@
     for (i = 0; i < walked.goals.length; i++) if (walked.goals[i].dimension) dims[walked.goals[i].dimension] = 1;
     dims['player.points'] = 1;
     var dimList = Object.keys(dims).sort();
-    var prod = producerWalk(dimList, k, heads);
+    var prod = producerWalk(dimList, k, heads, opts.regrowthK);
     var index = {};
     for (i = 0; i < walked.goals.length; i++) index[walked.goals[i].id] = walked.goals[i];
     for (i = 0; i < walked.hidden.length; i++) if (!index[walked.hidden[i].id]) index[walked.hidden[i].id] = walked.hidden[i];
@@ -1027,7 +1032,8 @@
     wGoal: 200,           // score weight: the same for the GOAL's own dimension when the target is a setup leaf below it
     wCapacity: 10,        // score weight: is the trajectory still accelerating (last quarter vs first quarter)
     wFrontier: 1,         // score weight: discovered goals that got closer
-    knowledgeK: 10,       // the producer wait window of the knowledge walk (P1a's --planner-k)
+    knowledgeK: 0,        // the knowledge walk's WAIT window in game-seconds; 0 = the epoch `k` (see below)
+    regrowthK: 10,        // the window each reset's post-reset regrowth is measured over (cheap; it is a rate, not a reach)
     depth: 6,             // chain depth of the knowledge walk
     gainX: '2,4',         // the gain>=Nx candidates a reset feature is offered
     intervals: '',        // ⚖ user ruling 2026-09-15 (no arbitrary waiting): EMPTY — no interval candidate is generated
@@ -1516,7 +1522,14 @@
     var marks = ladderMarks(), i, j;
     for (i = 0; i < marks.length; i++) if (holdsNow(marks[i]) && !S.reached[marks[i].id]) S.reached[marks[i].id] = { round: S.round, ticks: T.ticks, gameSeconds: T.gameSeconds };
     var tk = wallMs();
-    var K = P.knowledge({ k: O('knowledgeK'), depth: O('depth') });
+    // ⚠ THE WALK'S WINDOW IS THE EPOCH. P1a's default is 10 game-seconds, chosen for the cost of a dump; a planner that
+    // commits a 300-second epoch and asks "what moves this?" over 10 seconds is asking about a different question.
+    // Measured at the S1 stall (`--planner-script`, four windows): `player.e.points` does not move at k=10, 30 or 100
+    // and moves 17 → 18 at k=300; `player.points` reaches 2.56e609 inside 300 seconds — ABOVE the e reset's
+    // 1.0004e600 requirement, which is what turns that hop from `impossible` into `pending`. With the 10-second window
+    // the planner never saw M11's own dimension move, pursued M15 instead, and reached NO new mark in two game-hours
+    // while the simple system reached M11 at 15782 (P1b-2 control (i)).
+    var K = P.knowledge({ k: O('knowledgeK') || O('k'), regrowthK: O('regrowthK'), depth: O('depth') });
     var G = P.goals({ knowledge: K });
     var knowledgeMs = wallMs() - tk;
 
