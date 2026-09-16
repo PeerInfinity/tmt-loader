@@ -36,7 +36,9 @@ loads it lands on the same tick and the same hash as one that does not (gate P1a
   tick loop; its JSON return lands in the result's `plannerScript`. This is how a gate drives an excursion.
 - `--knowledge-out` / `--goals-out` → the dumps below, written at the stop (after the ticks).
 - `--planner-k <n>` → the wait window the producers are measured over, in game-seconds (default **10**, for cost). ⚠ It
-  is a knob, not a constant: see the window measurement under *Producers*.
+  is a knob, not a constant: see the window measurement under *Producers*. `knowledge({k, regrowthK})` splits it — `k` is
+  the wait window, `regrowthK` the (cheap) window each reset's post-reset regrowth is measured over; omitting
+  `regrowthK` keeps both at `k`, which is P1a's behaviour and what the committed goldens hold.
 
 ## Part 1 — snapshot / restore / excursion / measure
 
@@ -222,7 +224,7 @@ one, because a round plays candidates on a copy.
    `discovered` goal (omsi's heuristic mode).
    The **target dimension** is the deepest hop of the goal's chain that is possible **within the epoch** (omsi's *setup
    leaf*): the goal's own dimension if a producer can move it, else the first hop down the chain whose producer can.
-   ⚠ "Possible" is asked over the epoch, not over the knowledge walk's 10-second wait window: `canReset` is an instant
+   ⚠ "Possible" is asked over the epoch, and so is the WALK that answers it (`knowledgeK` follows `k`): `canReset` is an instant
    (P1a 12a.5), so a reset whose requirement regrows in 40 game-seconds reads *impossible* to a 10-second window while
    the epoch being planned is 300 seconds long. A `canReset is false` hop counts as possible when the producing layer's
    measured cycle (`resetAt / regrowth`) fits inside `k`.
@@ -246,7 +248,10 @@ one, because a round plays candidates on a copy.
    | `buyables:<l>` | `off`; `highest-first`; `buy-unless-saving`; `reserve>=<the target's threshold>` when the target dimension IS that feature's layer's points |
    | `toggles` / `challenges` / `clickables` | as they are — the planner decides nothing there in P1b |
 
-   The set is cut to `maxCandidates` by the screen's ranking (the incumbent always survives).
+   The set is cut to `maxCandidates` **round-robin over the features** — every unlocked feature contributes its
+   best-ranked candidate before any feature contributes a second (the incumbent always survives). A flat cut by the
+   screen's ranking drops whole layers whenever the screen cannot discriminate, which is exactly when the target is
+   frozen and the candidate that could unfreeze it is the one being dropped.
    ⚖ **USER RULING (2026-09-15, plan §13d): no arbitrary waiting.** *"A reset whose purpose is N of its resource fires
    the moment the gain reaches N; do not wait some arbitrary amount of time."* So the templates are target-driven —
    `gain>=N`, `gain>=Nx`, `unlocks-purchase`, `reserve>=N` — and **no `interval>=T` candidate is generated**: the
@@ -314,7 +319,8 @@ a sweep have one behind them. The rest are hand-chosen starting points, and the 
 | `goalStallK` | 6 | rounds without a rise before the active goal is abandoned | hand-chosen; P1b-2 sweeps 3 / 6 / 12 |
 | `fixK` | 3 | identical winners in a row with no rise before the escalation arms | hand-chosen |
 | `wReach` / `wProgress` / `wGoal` / `wCapacity` / `wFrontier` | 1000 / 100 / 200 / 10 / 1 | the score's weights | hand-chosen so that reaching the goal dominates and the goal's own dimension outranks its setup leaf; P1b-2 sweeps `wCapacity` |
-| `knowledgeK` | 10 | the wait window of the knowledge walk (P1a's `--planner-k`) | P1a-2 |
+| `knowledgeK` | 0 = the epoch | the knowledge walk's WAIT window, in game-seconds — "what moves this, and how far, over the epoch I am about to commit". ⚠ P1a's own default is 10 s, chosen for the cost of a dump, and it is the wrong question for a planner: measured at the S1 stall, `player.e.points` (what M11 asks for) does not move at 10 / 30 / 100 s and moves at 300 s, and `player.points` reaches 2.56e609 inside 300 s — above the e reset's 1.0004e600 requirement, which is what turns that hop from `impossible` into `pending` | measured, P1b-2 control (i) |
+| `regrowthK` | 10 | the window each reset's post-reset regrowth is measured over — a rate, not a reach, so it stays cheap | P1a-2 |
 | `depth` | 6 | chain depth | P1a |
 | `gainX` | `2,4` | the `gain>=Nx` candidates | S1's measured reset policies |
 | `intervals` | *(empty)* | `interval>=T` seeds — none by default | ⚖ the no-arbitrary-waiting ruling |

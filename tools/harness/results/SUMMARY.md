@@ -1601,3 +1601,56 @@ Reading this section: every row is one run.mjs battery; the planner runs BETWEEN
 | P1b-1 (c) Something Tree (2.7) under the planner: fresh game → S05 — the generality control | something | k=300 screenK=4, 1 legs | 579 | 579 | 1 | `524822d719ceea18` | GREEN | planner/simple: S01 6/6 · S02 308/308 · S03 309/309 · S04 399/399 · S05 579/579 — none later by more than one epoch; 7 rounds, stopped mark |
 | P1b-1 (d) live vs copy: every full epoch ends on the hashGame its winner measured | ptr+something | every run of part 1 | — | — | 1 | — | GREEN | 69 epochs ran to their full length across (a) (b) (c); divergences 0 — the copy IS the prediction |
 | P1b-1 (e) cost: the round, the epoch, and the opening against the simple system | ptr | k=300 screenK=4 | 8035 | 8035 | 1 | `208197f46f08ed88` | GREEN | per round: 49180 ms (knowledge 3879 · screen 13 · confirm 45220 · 1244 measured game-s); 68 rounds over 18607 game-s = 274 game-s per epoch; opening wall 4041 s in 8 legs (planning 3344 s, 84600 measured game-s) vs the SIMPLE control 291 s to M09 at 8035 game-s (hashGame 208197f46f08ed88); load 0.56, 1.04, 1.58 → 10.01, 6.44, 5.40 |
+
+## 2026-09-16T04:18:33Z — P1b-2 — the planner's round (epochs × configurations of the simple system) — commit `a678bbe3` — 6/6 green
+
+**This is the campaign that FALSIFIED the slice's hypothesis** (plan §12b.4): over two game-hours from the S1 stall
+the planner reached NO new mark while control (i), the simple system unchanged, reached **M11 at 15782** and control
+(iii) reached it at 15582. The cause was the knowledge walk's 10-game-second window (P1a's default) against a
+300-second epoch; the fix is `c05e1752` and the same battery re-run with it is the last section of this file.
+
+Reading this section: every row is one run.mjs battery; the planner runs BETWEEN ticks and commits one configuration of the simple system per epoch (docs/planner.md)
+
+| gate | game | leg | ticks | gameSeconds | diff | hash | result | notes |
+|---|---|---|---|---|---|---|---|---|
+| P1b-2 (1) the frontier campaign: 2 game-hours from the S1 stall under the planner, TWICE | ptr | k=300 screenK=4, 8 legs | 21331 | 21331 | 1 | `29586ed6049138e2` | GREEN | twice equal: true (hashGame 29586ed6049138e2 vs 29586ed6049138e2, 24 vs 24 rounds); marks newly reached: NONE; curve 15031s pts 8.34322521 b 56/56 t 6 e 21 s 7 \| 15931s pts 7.58394669 b 68/68 t 7 e 22 s 8 \| 16831s pts 2.92677542 b 68/68 t 7 e 22 s 8 \| 17731s pts 3.07830780 b 68/68 t 7 e 22 s 8 \| 18631s pts 5.17958942 b 68/68 t 7 e 22 s 8 \| 19531s pts 3.95633418 b 68/68 t 7 e 22 s 8 \| 20431s pts 1.94070152 b 68/68 t 7 e 22 s 8 \| 21331s pts 7.16659814 b 68/68 t 7 e 22 s 8;  |
+| P1b-2 (2) control (i) the simple system unchanged (S1 frontier config) | ptr | 2 game-hours from the same snapshot — measures the S1 stall itself: the detector's seen-set stall, not a frozen game | 21331 | 21331 | 1 | `1284d82a7eea3b39` | GREEN | marks newly reached: M11@15782; curve 17731s pts 1.21742005 b 60/60 t 6 e 9 s 7 \| 21331s pts 1.21742005 b 60/60 t 6 e 27 s 7;  |
+| P1b-2 (2) control (ii) everything OFF | ptr | 2 game-hours from the same snapshot — measures what moves with no automation at all | 21331 | 21331 | 1 | `2638802be8b6c52f` | GREEN | marks newly reached: NONE; curve 17731s pts 1.95289703 b 66/66 t 6 e 17 s 7 \| 21331s pts 2.84278380 b 66/66 t 6 e 17 s 7;  |
+| P1b-2 (2) control (iii) the simple system with reset:p gain>=2x | ptr | 2 game-hours from the same snapshot — measures whether the stall is the p cadence (S1's sweep winner) | 21331 | 21331 | 1 | `ab70274f21c89e1a` | GREEN | marks newly reached: M11@15582; curve 17731s pts 6.68822773 b 60/60 t 6 e 13 s 7 \| 21331s pts 0 b 56/56 t 6 e 0 s 7;  |
+| P1b-2 (3) Something Tree (2.7) from S03, 3000 game-seconds: the planner against the simple system | something | k=300 screenK=4 | 3309 | 3309 | 1 | `e7d1dbddb03ed4f0` | GREEN | planner: S01@312 S02@310 S03@310 S04@399 S05@579 (13 rounds, hashGame e7d1dbddb03ed4f0) · simple: S01@312 S02@310 S03@310 S04@399 S05@579 (hashGame 88dd8c60fa166f6d); A2-1's own numbers are 309 / 399 / 579 from a FRESH game |
+| P1b-2 (4) the stall clocks: what accrued, what was abandoned, and in which round | ptr | read off the campaign's round log | 21331 | 21331 | 1 | — | GREEN | clocks with accrual: M12 6/12 on player.t.energy · layer-next:p 1/1 on player.points; abandoned: M12@round 12 (blocked and stalled 6 rounds on player.t.energy); goalStallK=6 fixK=3 |
+
+## 2026-09-16T05:09:39Z — P1b-1 — the planner's round (epochs × configurations of the simple system) — commit `c05e1752` (tree DIRTY) — 4/5 green
+
+The P1b-1 battery RE-RUN after the three targeting fixes (`4cac52e7`, `1b1d0407`, `a678bbe3`) and the walk-window fix
+(`c05e1752`); it supersedes the 03:2xZ section. The opening is still RED — M08 and M09 are later than the table by more
+than an epoch — but M02 → M07 are now FASTER than the simple table (918 / 1627 / 1850 / 2112 / 2575 / 2576 against
+1361 / 2360 / 2629 / 2936 / 3540 / 3550), where the first battery was 2.9× slower. The dirty tree is the docs edit that
+followed the fix.
+
+Reading this section: every row is one run.mjs battery; the planner runs BETWEEN ticks and commits one configuration of the simple system per epoch (docs/planner.md)
+
+| gate | game | leg | ticks | gameSeconds | diff | hash | result | notes |
+|---|---|---|---|---|---|---|---|---|
+| P1b-1 (a) determinism: two --planner=auto runs from all/M02, 1500 game-s | ptr | k=300 screenK=4 | 2861 | 2861 | 1 | `b0f93ad3711d1909` | GREEN | hashGame 5044e333a238b7e1 vs 5044e333a238b7e1; 5 rounds vs 5, round logs identical (cost stripped): true; commits 5/5; divergences 0/0; wall 183307 / 182126 ms |
+| P1b-1 (b) the opening under the planner: fresh game → M09, chained ≤ 8-minute processes | ptr | k=300 screenK=4, 4 legs | 12421 | 12421 | 1 | `b6f2455d31a49d89` | **RED** | planner/simple game-seconds: M01 1/1 · M02 918/1361 · M03 1627/2360 · M04 1850/2629 · M05 2112/2936 · M06 2575/3540 · M07 2576/3550 · M08 10534/6037 · M09 12421/8035 — LATER by more than one epoch (300): M08 10534 > 6037+300, M09 12421 > 8035+300; 47 rounds, stopped mark |
+| P1b-1 (c) Something Tree (2.7) under the planner: fresh game → S05 — the generality control | something | k=300 screenK=4, 1 legs | 579 | 579 | 1 | `524822d719ceea18` | GREEN | planner/simple: S01 6/6 · S02 308/308 · S03 309/309 · S04 399/399 · S05 579/579 — none later by more than one epoch; 7 rounds, stopped mark |
+| P1b-1 (d) live vs copy: every full epoch ends on the hashGame its winner measured | ptr+something | every run of part 1 | — | — | 1 | — | GREEN | 46 epochs ran to their full length across (a) (b) (c); divergences 0 — the copy IS the prediction |
+| P1b-1 (e) cost: the round, the epoch, and the opening against the simple system | ptr | k=300 screenK=4 | 8035 | 8035 | 1 | `208197f46f08ed88` | GREEN | per round: 36398 ms (knowledge 9831 · screen 10 · confirm 26502 · 1270 measured game-s); 47 rounds over 12421 game-s = 264 game-s per epoch; opening wall 1998 s in 4 legs (planning 1711 s, 59700 measured game-s) vs the SIMPLE control 188 s to M09 at 8035 game-s (hashGame 208197f46f08ed88); load 2.29, 2.80, 3.25 → 2.43, 2.70, 2.77 |
+
+## 2026-09-16T05:19:35Z — P1b-2 — the planner's round (epochs × configurations of the simple system) — commit `c05e1752` (tree DIRTY) — 6/6 green
+
+The campaign RE-RUN with the walk window at the epoch: the planner now reaches **M11 at 15782 — the same game-second as
+the simple system's control (i)** — twice equal (`2d4a9ec0b29814f0`, 24 rounds each). The controls are unchanged from the
+04:18Z section (they do not use the planner).
+
+Reading this section: every row is one run.mjs battery; the planner runs BETWEEN ticks and commits one configuration of the simple system per epoch (docs/planner.md)
+
+| gate | game | leg | ticks | gameSeconds | diff | hash | result | notes |
+|---|---|---|---|---|---|---|---|---|
+| P1b-2 (1) the frontier campaign: 2 game-hours from the S1 stall under the planner, TWICE | ptr | k=300 screenK=4, 8 legs | 21331 | 21331 | 1 | `2d4a9ec0b29814f0` | GREEN | twice equal: true (hashGame 2d4a9ec0b29814f0 vs 2d4a9ec0b29814f0, 24 vs 24 rounds); marks newly reached: M11@15782; curve 15031s pts 8.34322521 b 56/56 t 6 e 21 s 7 \| 15931s pts 1.21742005 b 60/60 t 6 e 0 s 7 \| 16831s pts 2.33676467 b 58/58 t 6 e 5 s 7 \| 17731s pts 10 b 0/0 t 6 e 10 s 7 \| 18631s pts 1.43902019 b 55/55 t 6 e 13 s 7 \| 19531s pts 1.43902019 b 55/55 t 6 e 15 s 7 \| 20431s pts 1.43902019 b 55/55 t 6 e 17 s 7 \| 21331s pts 1.43902019 b 55/55 t 6 e 19 s 7;  |
+| P1b-2 (2) control (i) the simple system unchanged (S1 frontier config) | ptr | 2 game-hours from the same snapshot — measures the S1 stall itself: the detector's seen-set stall, not a frozen game | 21331 | 21331 | 1 | `1284d82a7eea3b39` | GREEN | marks newly reached: M11@15782; curve 17731s pts 1.21742005 b 60/60 t 6 e 9 s 7 \| 21331s pts 1.21742005 b 60/60 t 6 e 27 s 7;  |
+| P1b-2 (2) control (ii) everything OFF | ptr | 2 game-hours from the same snapshot — measures what moves with no automation at all | 21331 | 21331 | 1 | `2638802be8b6c52f` | GREEN | marks newly reached: NONE; curve 17731s pts 1.95289703 b 66/66 t 6 e 17 s 7 \| 21331s pts 2.84278380 b 66/66 t 6 e 17 s 7;  |
+| P1b-2 (2) control (iii) the simple system with reset:p gain>=2x | ptr | 2 game-hours from the same snapshot — measures whether the stall is the p cadence (S1's sweep winner) | 21331 | 21331 | 1 | `ab70274f21c89e1a` | GREEN | marks newly reached: M11@15582; curve 17731s pts 6.68822773 b 60/60 t 6 e 13 s 7 \| 21331s pts 0 b 56/56 t 6 e 0 s 7;  |
+| P1b-2 (3) Something Tree (2.7) from S03, 3000 game-seconds: the planner against the simple system | something | k=300 screenK=4 | 3309 | 3309 | 1 | `e7d1dbddb03ed4f0` | GREEN | planner: S01@312 S02@310 S03@310 S04@399 S05@579 (13 rounds, hashGame e7d1dbddb03ed4f0) · simple: S01@312 S02@310 S03@310 S04@399 S05@579 (hashGame 88dd8c60fa166f6d); A2-1's own numbers are 309 / 399 / 579 from a FRESH game |
+| P1b-2 (4) the stall clocks: what accrued, what was abandoned, and in which round | ptr | read off the campaign's round log | 21331 | 21331 | 1 | — | GREEN | clocks with accrual: M11 1/6 on player.e.points · M14 4/7 on player.points · M15 6/7 on player.b.points · M52 1/4 on player.points · M53 1/4 on player.points · layer-next:p 2/4 on player.points; abandoned: M15@round 23 (blocked and stalled 6 rounds on player.b.points); goalStallK=6 fixK=3 |
