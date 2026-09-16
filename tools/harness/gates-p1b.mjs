@@ -208,15 +208,19 @@ async function part1() {
 // a wall-cut leg is shorter than the requested slice and the next leg continues from its snapshot.
 const READOUT = "(function(){var o={points:String(player.points),layers:{}};for(var l in layers){if(!player[l]||layers[l].tmtLoaderLayer||isNaN(layers[l].row))continue;if(!player[l].unlocked)continue;o.layers[l]=[String(player[l].points),String(player[l].best)];}return o;})()";
 
+// ⚠ The campaign's legs are bounded by TICKS, not by the wall. A wall-cut leg boundary depends on how loaded the box
+// is, and a resume re-settles `tmp` (three passes, P1a 12a.2 item 1) — so two runs whose legs split at different
+// game-seconds are not the same run, and "twice equal" would measure the box instead of the planner. LEG game-seconds
+// is small enough that the wall never binds at the frontier (~2.5 min a leg there against an 8-minute wall).
 async function part2() {
-  const HOURS = Number(a.hours || 6), HOUR = 3600;
+  const HOURS = Number(a.hours || 6), HOUR = 3600, LEG = Number(a.legTicks || 900);
   const ptrMarks = marksFile(PTR_LADDER), stMarks = marksFile(ST_LADDER);
-  const campaignOpts = (tag) => ({ from: FRONTIER, marks: ptrMarks, ladder: PTR_LADDER, targetGs: HOURS * HOUR, legTicks: HOUR,
-    legs: Number(a.legs || 24), evalExpr: READOUT, tag });
+  const campaignOpts = (tag) => ({ from: FRONTIER, marks: ptrMarks, ladder: PTR_LADDER, targetGs: HOURS * HOUR, legTicks: LEG,
+    legs: Number(a.legs || 40), evalExpr: READOUT, tag });
   // the two campaign runs and the three controls; the pool bounds how many processes are live at once
   const campA = await chained('ptr', campaignOpts('campA'));
   const campB = await chained('ptr', campaignOpts('campB'));
-  const ctlOpts = (tag, opt) => ({ from: FRONTIER, marks: ptrMarks, targetGs: HOURS * HOUR, legTicks: HOUR, legs: Number(a.legs || 24),
+  const ctlOpts = (tag, opt) => ({ from: FRONTIER, marks: ptrMarks, targetGs: HOURS * HOUR, legTicks: HOUR, legs: Number(a.legs || 40),
     evalExpr: READOUT, planner: false, tag, opt });
   const [ctl1, ctl2, ctl3] = await Promise.all([
     chained('ptr', ctlOpts('ctl-simple', {})),
