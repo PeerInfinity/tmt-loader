@@ -1032,6 +1032,7 @@
     gainX: '2,4',         // the gain>=Nx candidates a reset feature is offered
     intervals: '',        // ⚖ user ruling 2026-09-15 (no arbitrary waiting): EMPTY — no interval candidate is generated
     minRise: 1e-9,        // the log10 rise that counts as a rise for the stall clocks
+    reachRounds: 100,     // a goal whose target needs more than this many epochs at the MEASURED rate yields to the next
     maxRounds: 0,         // 0 = unbounded; a bound for a probe
   };
   P.optionDefaults = OPT_DEFAULTS;
@@ -1402,9 +1403,39 @@
     for (i = 0; i < ch.hops.length; i++) if (ch.hops[i].dimension === use.dimension) { src = ch.hops[i]; break; }
     return { blocked: true, dimension: use.dimension, threshold: src && src.threshold !== undefined ? src.threshold : null, held: src ? src.held : null, goal: ch.goal, chainIndex: idx, why: use.why };
   }
+  /**
+   * Is the target REACHABLE from here, at the rate the walk just measured? "Possible" (a producer moves the dimension)
+   * is not the same as "reachable": at the PTR frontier `player.points` moves every tick and the hop it is a setup leaf
+   * for wants 1.0004e600 against 1.19e220 — 380 orders of magnitude, which no epoch closes. Without this the round
+   * pursues the first ladder entry forever and the entries below it never get a round (omsi's "a dead top goal shadows
+   * the goals below it", §4a). The estimate is measured, not assumed: one epoch's projected log-gain from the wait rate
+   * plus any producing reset, against the log-distance still to cover.
+   */
+  function reachable(t, K) {
+    if (t.threshold == null || t.held == null) return { ok: true, why: 'no threshold to be far from' };
+    var hi = lg(t.threshold), lo = lg(t.held);
+    if (!isFinite(hi)) return { ok: true, why: 'the threshold is not a finite log' };
+    if (!isFinite(lo)) lo = 0;
+    var dist = hi - lo;
+    if (dist <= 0) return { ok: true, dist: dist };
+    var sc = screenCandidate({ config: currentConfig() }, K, t, O('k'));
+    var gain = sc.projectedLog10 - lo;
+    if (!isFinite(gain) || gain <= 0) return { ok: false, dist: dist, perEpoch: 0, why: 'the measured configuration does not move this dimension over an epoch' };
+    var rounds = dist / gain;
+    return { ok: rounds <= O('reachRounds'), dist: dist, perEpoch: gain, rounds: rounds };
+  }
   function targetForChains(chains, K) {
     var open = [], blocked = [], i, t;
-    for (i = 0; i < (chains || []).length; i++) { t = targetFromChain(chains[i], i, K); if (!t) continue; (t.blocked ? blocked : open).push(t); }
+    for (i = 0; i < (chains || []).length; i++) {
+      t = targetFromChain(chains[i], i, K);
+      if (!t) continue;
+      if (!t.blocked) {
+        var r = reachable(t, K);
+        t.reach = r;
+        if (!r.ok) { t.blocked = true; t.why = 'out of reach at the measured rate: ' + (r.why || (Math.round(r.rounds) + ' epochs of ' + O('k') + ' game-seconds to cover ' + r.dist.toFixed(1) + ' orders of magnitude')); }
+      }
+      (t.blocked ? blocked : open).push(t);
+    }
     if (open.length) {
       // the mark needs every clause, so the round works on the NEAREST open one (smallest log10 shortfall); ties by chain
       open.sort(function (a, b) { var d = shortfallOf(a) - shortfallOf(b); return d !== 0 ? d : a.chainIndex - b.chainIndex; });
