@@ -26,8 +26,8 @@ Games live under `games/<id>/` as **git subtrees**, pristine at the upstream com
 
 The roster is **[docs/games.md](docs/games.md)** — every game, with a `play` and a `mobile` link, its upstream
 repo and pinned commit, its engine version and its license. It is generated from `manifests/` by
-`node tools/games-table.mjs`, and gate G6 holds it to `manifests/index.json`, so it cannot drift from what the
-loader actually hosts. Each game keeps its own license files and credits inside its subtree.
+`node tools/games-table.mjs` — which `tools/add-game.mjs` runs itself — and gate G6 holds it to
+`manifests/index.json`, so it cannot drift from what the loader actually hosts. Each game keeps its own license files and credits inside its subtree.
 
 ## Documents
 

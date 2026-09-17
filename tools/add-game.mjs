@@ -11,7 +11,8 @@
 //      whole run before any git operation), `patches: []`. --dry-run prints and stops here.
 //   2. subtrees: remote `<id>-upstream` (push URL no-push), `git subtree add --prefix=games/<id> <sha> --squash`, then
 //      `diff -r -x .git games/<id> <clone>` must be empty (else abort and report — never patch).
-//   3. manifests/<id>.json + manifests/index.json, then the gates per game (a red gate keeps the subtree): check-manifest;
+//   3. manifests/<id>.json + manifests/index.json, then docs/games.md regenerated (gate G6 holds it to the index, so a
+//      game added without it is a red gate), then the gates per game (a red gate keeps the subtree): check-manifest;
 //      Node idle hash (plain page, no automation) = manifest.headless.idleHash; goldens written, counts = manifest.census;
 //      page.mjs --gate load (the plain page). Rows appended to results/SUMMARY.md.
 // The census checkout is a DEV-TIME dependency of this tool only (its license classifier and manifest emitter); the page
@@ -201,7 +202,8 @@ for (const r of results) {
   }
 }
 
-// ---- phase 3: manifests, index, gates ------------------------------------------------------------------------------------
+// ---- phase 3: manifests, index, the roster doc, gates ----------------------------------------------------------------
+let rosterRow = null;
 const added = results.filter((r) => r.added);
 const indexFile = path.join(manifestsDir, 'index.json');
 const index = JSON.parse(fs.readFileSync(indexFile, 'utf8'));
@@ -217,6 +219,19 @@ for (const r of added) {
   if (!index.some((e) => e.id === r.id)) index.push({ id: r.id, name: r.manifest.name, repo: r.manifest.upstream.repo });
 }
 fs.writeFileSync(indexFile, JSON.stringify(index, null, 2) + '\n');
+
+// The roster doc is derived from what we just wrote, so regenerate it here rather than leaving it to whoever
+// remembers: gate G6 holds docs/games.md to manifests/index.json, and a game added without it is a red gate.
+// Unconditional and idempotent — it also repairs a doc an earlier run left behind.
+{
+  const { rosterFromManifests, render, checkGamesTable, OUT } = await import('./games-table.mjs');
+  fs.writeFileSync(path.join(REPO, OUT), render(rosterFromManifests()));
+  const g = checkGamesTable();
+  log(`${OUT}: ${g.games} games${g.ok ? '' : ' — ' + g.problems.join('; ')}`);
+  rosterRow = { gate: 'G6 games doc', id: null, ok: g.ok, ticks: 0, gameSeconds: 0, diff: null, hash: null,
+    notes: g.ok ? `${OUT} regenerated: ${g.games} games in manifests/index.json, ${g.listed} listed in that order`
+      : g.problems.join('; ').slice(0, 400) };
+}
 
 const rows = [];
 for (const r of results) if (r.skipped || r.error) rows.push({ gate: `${TAG} ${r.skipped ? 'skipped: ' + r.skipped : 'error'}`, id: r.id || r.repo, ok: false, notes: `${r.repo}: ${JSON.stringify(r.detail ?? r.error ?? '').slice(0, 400)}` });
@@ -293,6 +308,7 @@ if (added.length) {
     }
   }
 }
+if (rosterRow) rows.push(rosterRow);
 if (rows.length && results.some((r) => r.added || r.skipped !== 'present')) {
   const { appendSection } = await import('./harness/summary.mjs');
   const commit = headCommit();

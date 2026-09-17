@@ -53,10 +53,10 @@ It prints one JSON line per game: `{id, repo, rank, sha, license, added, gates: 
      hotlinks images: re-run `check-manifest <id>` with `"known": {}` in `load`, copy the drift it reports into the block
      (plus an `errorsBeforeReady` reason if needed), and re-run the gates. `add-game.mjs` keeps an existing `known`.
 
-5. **The roster doc**: `node tools/games-table.mjs` regenerates [games.md](games.md) from `manifests/`. This is not
-   optional — **gate G6 goes red** until it is run, because the doc must list every game in `manifests/index.json`,
-   once, in that order (`node tools/games-table.mjs --check`, or `gates.mjs --only G6`). `add-game.mjs` does not do
-   it for you.
+5. **The roster doc**: [games.md](games.md), regenerated from `manifests/` — `add-game.mjs` does this itself, at the
+   end of phase 3, and records a G6 row for it. Doing it by hand is `node tools/games-table.mjs`. Gate G6 holds the
+   doc to `manifests/index.json` (every game, once, in that order), so a game added without it is a red gate:
+   `node tools/games-table.mjs --check`, or `gates.mjs --only G6`.
 
 Commit what the tool leaves uncommitted (`manifests/`, `tools/harness/goldens/`, `docs/games.md`, `SUMMARY.md`) on top
 of its subtree commits, then run `node tools/check-pages.mjs` (G5) on the committed HEAD. For several games, pass them in one call:
