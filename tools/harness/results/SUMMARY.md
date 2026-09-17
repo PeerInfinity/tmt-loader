@@ -1703,3 +1703,9 @@ Viewport 390x844, touch emulated, `?mobile=1`. Legs per game: inertness (no flag
 | M1 mobile | the-rainbow-void-tree | 1 | 200 | 0.05 | `a54bc54b5c495ca1` | `a54bc54b5c495ca1` | `a54bc54b5c495ca1` | GREEN | 1 views (fresh-tree); nav [tree, info, options]; no snapshot — tree only; 0 escaping, 0 under 44px, scrollWidth 390; inert ok; load ok |
 
 State leg: **39 equal, 0 moved, 1 abstained** (the-periodic-table-tree). For `ptr` and `something` the hash both pages reach is the census idle anchor (`d9c5ace6665833d0`, `46bb8c5b1a96f03a`). Mutant control (the layout rules removed from `loader/mobile.css`, `ptr`): RED, 11 of 18 views — `.back` 38x50 and option buttons at x=403 — with `docScrollWidth` 390 throughout, because the engines' `body { overflow: hidden }` CLIPS what escapes instead of scrolling to it. That is why the carrying check is escaping elements, not `scrollWidth`.
+
+## 2026-09-17T21:26:38Z — gates.mjs, automation ON — commit `e6b21dc2` — 1/1 green
+
+| gate | game | leg | ticks | gameSeconds | diff | hash | result | notes |
+|---|---|---|---|---|---|---|---|---|
+| G6 games doc | — | — | 0 | 0 | — | — | GREEN | docs/games.md: 40 games in manifests/index.json, generator built 40, 40 listed in that order, file byte-equal to the generator's output |
