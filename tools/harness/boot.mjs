@@ -119,7 +119,15 @@ const shims = {
   HTMLElement: function () {}, Element: function () {},
 };
 const CONSOLE_KEEP = console;
-Object.assign(globalThis, shims);
+// NOT Object.assign: newer Node defines some of these globals as GETTER-ONLY accessors, and assigning to one
+// throws in strict mode (a module is strict). Measured on Node 23.11: `navigator` (added in 21), `crypto` (19)
+// and `performance` are all accessor properties, so `Object.assign(globalThis, shims)` died on the first of them
+// — `TypeError: Cannot set property navigator of #<Object> which has only a getter` — and took every Node-boot
+// gate with it, for every game. They are all `configurable`, so defineProperty replaces them outright.
+for (const [k, v] of Object.entries(shims)) {
+  try { globalThis[k] = v; }
+  catch { Object.defineProperty(globalThis, k, { value: v, writable: true, enumerable: true, configurable: true }); }
+}
 globalThis.console = new Proxy(CONSOLE_KEEP, { get: (t, k) => (typeof t[k] === 'function' ? () => { R.console_lines++; } : t[k]) });
 const sha256hex = (s) => crypto.createHash('sha256').update(s).digest('hex');
 for (const k of ['process', 'require', 'module', 'exports', 'fetch', 'Buffer', 'global', 'WebAssembly']) { try { delete globalThis[k]; } catch {} }
