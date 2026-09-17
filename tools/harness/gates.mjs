@@ -1,5 +1,8 @@
-// Runs the L1 gates G1–G4 for every game and appends one row per gate per game to results/SUMMARY.md.
-//   node gates.mjs [<id>...] [--only G1,G2,G3,G4] [--no-automation]
+// Runs the L1 gates G1–G4 for every game, then the repo-wide G6, and appends one row per gate to results/SUMMARY.md.
+//   node gates.mjs [<id>...] [--only G1,G2,G3,G4,G6] [--no-automation]
+// G5 is not here: it needs a bare `git clone` served from a sub-path, so it lives in tools/check-pages.mjs. M1
+// (the mobile layout) likewise lives in page.mjs --gate mobile, which drives its own phone-sized touch context.
+// G6 is repo-wide rather than per-game, so it runs once, after the loop, with no id of its own.
 // Automation (?automation=1) is ON by default: G1 loads with the flag, G3's census hash and G2c exclude `au`.
 // Every row carries the commit, ticks, gameSeconds, diff and hash of the state it claims.
 import fs from 'node:fs';
@@ -13,6 +16,7 @@ import { parity } from './parity.mjs';
 import { upstreamExport } from './upstream-export.mjs';
 import { checkManifest } from './check-manifest.mjs';
 import { nodeIds, compareIds } from './check-goldens.mjs';
+import { checkGamesTable, OUT as GAMES_DOC } from '../games-table.mjs';
 import { execFileSync } from 'node:child_process';
 
 const UPSTREAM = { ptr: path.join(os.homedir(), 'CC/Prestige-Tree'), something: path.join(os.homedir(), 'CC/tmt-fork-census/clones/Justcubing97__JC97sSomethingTree') };
@@ -26,7 +30,7 @@ const commit = headCommit(), dirty = treeDirty();
 const date = new Date().toISOString().slice(0, 19) + 'Z';
 const rows = [];
 const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'tmt-loader-gates-'));
-const row = (r) => { rows.push(r); console.log(`${r.ok ? 'GREEN' : 'RED  '} ${r.gate} ${r.id} ${r.leg || ''} ticks=${r.ticks ?? '-'} gs=${r.gameSeconds ?? '-'} diff=${r.diff ?? '-'} hash=${r.hash ?? '-'} ${r.notes || ''}`); };
+const row = (r) => { rows.push(r); console.log(`${r.ok ? 'GREEN' : 'RED  '} ${r.gate} ${r.id ?? '—'} ${r.leg || ''} ticks=${r.ticks ?? '-'} gs=${r.gameSeconds ?? '-'} diff=${r.diff ?? '-'} hash=${r.hash ?? '-'} ${r.notes || ''}`); };
 
 const browser = await chromium.launch();
 const server = await startServer(REPO);
@@ -85,16 +89,32 @@ try {
       row({ gate: 'G4 check-manifest', id, ok: cm.ok, ticks: 0, gameSeconds: 0, diff: null, hash: null, notes: cm.ok ? `${cm.scripts} scripts, ${cm.modFiles} modFiles, vendor sha256 ok, subtree split ${cm.subtreeSplit.slice(0, 7)}, games/${id} pristine` : JSON.stringify(cm.problems).slice(0, 300) });
     }
   }
+  // G6 — repo-wide, and only meaningful over the WHOLE roster, so it does not run for a subset of ids.
+  if (want('G6') && !a._.length) {
+    const g = checkGamesTable();
+    row({ gate: 'G6 games doc', id: null, ok: g.ok, ticks: 0, gameSeconds: 0, diff: null, hash: null,
+      notes: g.ok ? `${GAMES_DOC}: ${g.games} games in manifests/index.json, generator built ${g.built}, ${g.listed} listed in that order, file byte-equal to the generator's output`
+        : g.problems.join('; ').slice(0, 400) });
+  } else if (want('G6')) {
+    console.log(`(G6 skipped: it checks ${GAMES_DOC} against the whole roster, and this run named ${a._.length} game(s))`);
+  }
 } finally {
   await browser.close();
   server.stop();
+}
+
+// A run that measured nothing is not a green run, and must not leave an empty section behind claiming "0/0 green".
+// Easy to hit now that a gate can decline to run (G6 under a named subset), and `[].every()` is true.
+if (rows.length === 0) {
+  console.error(`gates: NO GATE RAN${only ? ` (--only ${a.only})` : ''}${a._.length ? ` for ${a._.join(', ')}` : ''} — nothing measured, nothing recorded`);
+  process.exit(1);
 }
 
 const SUMMARY = path.join(REPO, 'tools/harness/results/SUMMARY.md');
 if (!fs.existsSync(SUMMARY)) fs.writeFileSync(SUMMARY, `# Gate results\n\nOne section per \`node tools/harness/gates.mjs\` run (newest last). Every state claim carries ticks, gameSeconds, diff and\nthe 16-hex sha256 of \`tmtLoader.stateJSON()\`. Commit = the loader HEAD the run measured.\n`);
 const cell = (v) => (v === null || v === undefined ? '—' : String(v).replace(/\|/g, '\\|'));
 let md = `\n## ${date} — gates.mjs, automation ${automation ? 'ON' : 'OFF'} — commit \`${commit}\`${dirty ? ' (tree DIRTY)' : ''} — ${rows.filter((r) => r.ok).length}/${rows.length} green\n\n| gate | game | leg | ticks | gameSeconds | diff | hash | result | notes |\n|---|---|---|---|---|---|---|---|---|\n`;
-for (const r of rows) md += `| ${cell(r.gate)} | ${r.id} | ${cell(r.leg)} | ${cell(r.ticks)} | ${cell(r.gameSeconds)} | ${cell(r.diff)} | ${r.hash ? '`' + r.hash + '`' : '—'} | ${r.ok ? 'GREEN' : '**RED**'} | ${cell(r.notes)} |\n`;
+for (const r of rows) md += `| ${cell(r.gate)} | ${cell(r.id)} | ${cell(r.leg)} | ${cell(r.ticks)} | ${cell(r.gameSeconds)} | ${cell(r.diff)} | ${r.hash ? '`' + r.hash + '`' : '—'} | ${r.ok ? 'GREEN' : '**RED**'} | ${cell(r.notes)} |\n`;
 fs.appendFileSync(SUMMARY, md);
 writeJSON(path.join(REPO, 'tools/harness/results/tmp/gates-last.json'), { date, commit, dirty, rows });
 console.log(`gates: ${rows.filter((r) => r.ok).length}/${rows.length} green → ${path.relative(REPO, SUMMARY)}`);

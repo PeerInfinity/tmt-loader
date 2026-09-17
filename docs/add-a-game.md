@@ -53,8 +53,13 @@ It prints one JSON line per game: `{id, repo, rank, sha, license, added, gates: 
      hotlinks images: re-run `check-manifest <id>` with `"known": {}` in `load`, copy the drift it reports into the block
      (plus an `errorsBeforeReady` reason if needed), and re-run the gates. `add-game.mjs` keeps an existing `known`.
 
-Commit what the tool leaves uncommitted (`manifests/`, `tools/harness/goldens/`, `SUMMARY.md`) on top of its subtree
-commits, then run `node tools/check-pages.mjs` (G5) on the committed HEAD. For several games, pass them in one call:
+5. **The roster doc**: `node tools/games-table.mjs` regenerates [games.md](games.md) from `manifests/`. This is not
+   optional — **gate G6 goes red** until it is run, because the doc must list every game in `manifests/index.json`,
+   once, in that order (`node tools/games-table.mjs --check`, or `gates.mjs --only G6`). `add-game.mjs` does not do
+   it for you.
+
+Commit what the tool leaves uncommitted (`manifests/`, `tools/harness/goldens/`, `docs/games.md`, `SUMMARY.md`) on top
+of its subtree commits, then run `node tools/check-pages.mjs` (G5) on the committed HEAD. For several games, pass them in one call:
 all subtrees go in first, then the manifests and gates, so one commit covers the batch.
 
 ## By hand, when the tool cannot

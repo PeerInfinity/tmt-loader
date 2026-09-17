@@ -26,8 +26,8 @@ Games live under `games/<id>/` as **git subtrees**, pristine at the upstream com
 
 The roster is **[docs/games.md](docs/games.md)** — every game, with a `play` and a `mobile` link, its upstream
 repo and pinned commit, its engine version and its license. It is generated from `manifests/` by
-`node tools/games-table.mjs` (`--check` fails when it is out of date), so it cannot drift from what the loader
-actually hosts. Each game keeps its own license files and credits inside its subtree.
+`node tools/games-table.mjs`, and gate G6 holds it to `manifests/index.json`, so it cannot drift from what the
+loader actually hosts. Each game keeps its own license files and credits inside its subtree.
 
 ## Documents
 
@@ -66,11 +66,11 @@ It works from any sub-path (GitHub Pages serves under `/tmt-loader/`); nothing i
 | `node tools/harness/parity.mjs <id> --ticks N --diff d` | Node ≡ page `stateJSON()` |
 | `node tools/harness/check-goldens.mjs` / `check-manifest.mjs` | frozen `tmtLoader.ids()` / manifest pin vs the live `index.html` |
 | `node tools/harness/upstream-export.mjs <id> --upstream <clone>` | a save exported from the upstream page imports equal |
-| `node tools/harness/gates.mjs` | gates G1–G4 for every game, rows appended to `results/SUMMARY.md` |
+| `node tools/harness/gates.mjs` | gates G1–G4 for every game and the repo-wide G6, rows appended to [`results/SUMMARY.md`](tools/harness/results/SUMMARY.md) |
 | `node tools/harness/run.mjs <id> --ladder <file> --to <mark> [--from-snapshot <file>] [--snapshots <dir>]` | a stretch of a game's ladder, from a committed snapshot; [docs/harness.md](docs/harness.md) |
 | `node tools/harness/ladder-summary.mjs` | the ladder as reached (marks, calibrated diffs, snapshot fixtures) |
 | `node tools/check-pages.mjs` | gate G5: a bare `git clone` served from a sub-path loads both games |
-| `node tools/games-table.mjs --check` | [docs/games.md](docs/games.md) still matches `manifests/` |
+| `node tools/games-table.mjs --check` | gate G6: [docs/games.md](docs/games.md) lists every hosted game, once, in `manifests/index.json` order, and matches the generator |
 
 Results are recorded in [`tools/harness/results/SUMMARY.md`](tools/harness/results/SUMMARY.md).
 
