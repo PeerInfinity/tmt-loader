@@ -1,0 +1,238 @@
+/* tmt-loader — mobile mode (docs/mobile.md). Opt-in: `?mobile=1` puts `tmt-mobile` on <html> and links this file
+ * after the game's own stylesheets. Without the flag nothing here is fetched and the page is byte-for-byte the
+ * page it was before.
+ *
+ * Every rule is scoped under `html.tmt-mobile`, so it outranks the game's own class rules by specificity and needs
+ * !important only where it is overriding an INLINE style (Vue `v-bind:style`) or a rule the engine itself marked.
+ *
+ * Tier 1 (this file, always on with the flag): one column, master-detail, tap targets, no horizontal overflow.
+ * Tier 2 (mobile.js adds `tmt-mobile-nav` to <html>): the bottom nav bar and tap-to-open tooltips.
+ *
+ * ENGINE-GENERIC. The class vocabulary below (.col/.left/.right/.fullWidth/.vl/.back/.treeOverlay/
+ * .overlayThing/.sideLayers) is present in every TMT engine the loader hosts — 2.2.1 through 2.7 — because the
+ * markup that carries it lives in the engine, not in the mod. Measured over all games in games/ before writing.
+ */
+
+html.tmt-mobile {
+  --tmt-mobile-gutter: 8px;
+  --tmt-mobile-tap: 44px;   /* the minimum comfortable touch target */
+  --tmt-mobile-nav-h: 0px;  /* mobile.js raises this when it installs the nav bar */
+}
+
+/* ---------------------------------------------------------------- 1. one column, page-level scrolling
+ * The engine sets `body { overflow: hidden }` and `html, body { height: 100% }`, then scrolls INSIDE each
+ * absolutely-positioned column. On a phone that nests a scroller in a 193px box; let the page scroll instead. */
+html.tmt-mobile,
+html.tmt-mobile body {
+  height: auto;
+  min-height: 100%;
+  overflow-x: hidden;
+  overflow-y: auto;
+}
+
+html.tmt-mobile #app {
+  column-count: 1;
+  column-width: auto;
+  min-height: 100%;
+}
+
+/* `.col` is `min/max/width: 49.5%; position: absolute; height: 100%` in every engine. */
+html.tmt-mobile .col {
+  position: static;
+  width: 100%;
+  min-width: 100%;
+  max-width: 100%;
+  height: auto;
+  min-height: 0;
+  overflow: visible;
+}
+
+/* the divider between the two columns has nothing to divide */
+html.tmt-mobile .vl { display: none; }
+
+/* ---------------------------------------------------------------- 2. master-detail
+ * The engine gives an element `col left` exactly while a layer tab is open, and `fullWidth` while it is not. So
+ * "hide `.col.left`" IS "show the tree until a layer is opened, then give the layer the screen" — and the engine's
+ * own `.back` button (`showTab('none')`) is already the back affordance. No JS, no per-game knowledge. */
+html.tmt-mobile .col.left { display: none; }
+
+/* `position: relative`, not `static`: these columns contain absolutely-positioned children that rely on the column
+ * being their containing block — `.back` at `left: 0` and the engine's full-bleed `.bg` at `width: 100%`. Left
+ * static they anchor to the viewport instead and land outside it (measured: `.back` at x=-2).
+ * NO HORIZONTAL PADDING, deliberately: padding moves the STATIC POSITION of those same children, so an 8px gutter
+ * pushed `.bg` to x=8 while it stayed 100% wide — an 8px horizontal overflow that `resizeCanvas()` then baked into
+ * the canvas (window.innerWidth 398). The air around content comes from the max-width caps in §5 instead. */
+html.tmt-mobile .col.right,
+html.tmt-mobile .fullWidth {
+  position: relative;
+  width: 100%;
+  min-width: 100%;
+  height: auto;
+  min-height: 0;
+  overflow: visible;
+  box-sizing: border-box;
+  padding: 0 0 calc(var(--tmt-mobile-nav-h) + 16px);
+}
+
+/* The tab body clears the back button instead of starting underneath it. `.back` is `position: absolute; top/left: 0`
+ * inside a column that is now in flow, so it anchors to the tab itself. */
+html.tmt-mobile .col.right { padding-top: var(--tmt-mobile-tap); }
+
+/* ---------------------------------------------------------------- 3. the tree view's furniture
+ * `.treeOverlay` floats over the tree at z-index 200000 with the points readout, the corner buttons and the side
+ * layers pinned at absolute offsets. At 390px those land on top of the tree nodes. Put the header in flow above
+ * the tree; keep every control reachable. */
+html.tmt-mobile #treeOverlay.fullWidth {
+  position: relative;
+  height: auto;
+  overflow: visible;
+  padding-bottom: 0;
+}
+
+html.tmt-mobile #treeOverlay .overlayThing[style] { width: auto !important; }
+
+/* With the header in flow, the space the tree reserved for it is counted twice: the engines clear the absolute
+ * overlay with leading <br>s and a `visibility: hidden` copy of the header (#fakeHead). Drop both on mobile. */
+html.tmt-mobile #treeTab > br { display: none; }
+html.tmt-mobile #fakeHead { display: none; }
+
+/* the corner buttons: in flow, as a wrapping strip, until mobile.js moves them into the nav bar */
+html.tmt-mobile #optionWheel,
+html.tmt-mobile #info,
+html.tmt-mobile #help,
+html.tmt-mobile #discord,
+html.tmt-mobile #version {
+  position: static;
+  display: inline-block;
+  vertical-align: middle;
+  margin: 4px 6px;
+}
+html.tmt-mobile #optionWheel,
+html.tmt-mobile #info,
+html.tmt-mobile #help { min-width: var(--tmt-mobile-tap); min-height: var(--tmt-mobile-tap); }
+
+/* the discord fly-out is parked at left: -244px and opens on hover — off-screen and unreachable by touch */
+html.tmt-mobile #discord-links { display: none; }
+
+/* the side layers (a real part of the tree) join the flow under the header instead of floating at right: 55px */
+html.tmt-mobile .sideLayers {
+  position: static;
+  display: flex;
+  flex-flow: row wrap;
+  justify-content: center;
+  gap: 8px;
+  margin: 8px auto;
+}
+html.tmt-mobile .sideLayers br { display: none; }
+
+/* ---------------------------------------------------------------- 4. tap targets */
+html.tmt-mobile .back,
+html.tmt-mobile .other-back {
+  min-width: var(--tmt-mobile-tap);
+  min-height: var(--tmt-mobile-tap);
+  line-height: 1;
+  z-index: 5;
+}
+html.tmt-mobile button,
+html.tmt-mobile .tabButton { min-height: var(--tmt-mobile-tap); }
+/* the interactive classes the engines size below the tap minimum in BOTH dimensions (measured across games/):
+ * .smallUpg 40x40 (2.2.1 and 2.6/2.7), .remove 24x24 (the save-slot delete). `.mark` is 30x30 in 2.6/2.7 but is a
+ * decoration on a tree node, not a control, so it is deliberately left alone. */
+html.tmt-mobile .smallUpg,
+html.tmt-mobile .remove { min-width: var(--tmt-mobile-tap); min-height: var(--tmt-mobile-tap); }
+/* an engine hides spacer buttons with a class, not with display — do not give them a height */
+html.tmt-mobile button.hidden,
+html.tmt-mobile .ghost { min-height: 0; }
+
+/* ---------------------------------------------------------------- 5. nothing wider than the screen
+ * Fixed-width components (.upg 120px, milestone <td> 210px, reset buttons 180px) are laid out in rows that wrap by
+ * flex; at 390px a row still overflows because the items themselves are wider than the column. Cap them and stack. */
+/* The engine already lays these rows out `row wrap`; at 49.5% of a phone they could not wrap because the ITEMS
+ * were wider than the column. With the column full width the engine's own wrapping is correct, so the fix is to
+ * cap the items, not to restack the rows — three 90px achievements or three 120px upgrades still fit at 390px. */
+/* The layout wrappers between a tab and its tiles must be clamped to the tab, or a row cannot know it has to wrap.
+ * Measured on the 2.7 engine's `unlock` tab: the outer `.upgTable` is a COLUMN-WRAP flex container, which lets its
+ * item grow past it; `.upgCol` carries no CSS rule in any of the games (it is a bare markup hook), so it shrink-
+ * wrapped to 404px inside a 390px tab and the `max-width: 100%` on the row below it resolved against 404 — three
+ * 120px upgrades stayed on one row and the third was clipped off-screen. `min-width: 0` undoes flex's `auto`
+ * minimum, without which an item still refuses to shrink below its content. */
+html.tmt-mobile .upgTable,
+html.tmt-mobile .upgCol,
+html.tmt-mobile .upgRow,
+html.tmt-mobile .upgAlign { max-width: 100%; min-width: 0; }
+
+html.tmt-mobile .upg,
+html.tmt-mobile .achievement,
+html.tmt-mobile .challenge,
+html.tmt-mobile .hChallenge,
+html.tmt-mobile button,
+html.tmt-mobile td,
+html.tmt-mobile table,
+html.tmt-mobile img {
+  max-width: calc(100vw - 2 * var(--tmt-mobile-gutter));
+  box-sizing: border-box;
+}
+
+/* ---------------------------------------------------------------- 6. touch behaviour */
+html.tmt-mobile * { -webkit-tap-highlight-color: transparent; }
+/* hover transforms fire on tap on touch devices and stick; they are decoration */
+@media (hover: none) {
+  html.tmt-mobile .can:hover,
+  html.tmt-mobile .treeNode.can:hover,
+  html.tmt-mobile .back:hover,
+  html.tmt-mobile #version:hover,
+  html.tmt-mobile #info:hover,
+  html.tmt-mobile #help:hover,
+  html.tmt-mobile #optionWheel:hover { transform: none; }
+}
+
+/* ================================================================ TIER 2 — mobile.js
+ * These rules only ever match once loader/mobile.js has installed the nav bar (it puts `tmt-mobile-nav` on <html>)
+ * or opened a tooltip. Tier 1 above is complete without them. */
+
+/* the game's corner controls are now duplicated in the nav bar; leave them in the DOM (the nav forwards clicks to
+ * them, and their presence is what tells the nav which tab is open) but take them out of the layout */
+html.tmt-mobile-nav #optionWheel,
+html.tmt-mobile-nav #info,
+html.tmt-mobile-nav #help,
+html.tmt-mobile-nav #discord { display: none; }
+
+html.tmt-mobile #tmt-mobile-nav {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 2147483000; /* over .treeOverlay's z-index: 200000, under the loader's own error overlay */
+  display: flex;
+  justify-content: space-around;
+  align-items: stretch;
+  background: var(--background, #111);
+  border-top: 1px solid rgba(127, 127, 127, .45);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+html.tmt-mobile .tmt-mobile-navbtn {
+  flex: 1 1 0;
+  min-height: 56px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  padding: 6px 2px;
+  background: transparent;
+  border: 0;
+  color: var(--color, #ddd);
+  opacity: .62;
+  cursor: pointer;
+  transition-duration: 0s;
+}
+html.tmt-mobile .tmt-mobile-navbtn[hidden] { display: none; }
+html.tmt-mobile .tmt-mobile-navbtn.active { opacity: 1; }
+html.tmt-mobile .tmt-mobile-glyph { font-size: 20px; line-height: 1; }
+html.tmt-mobile .tmt-mobile-label { font-size: 11px; line-height: 1; font-weight: normal; }
+
+/* tap-to-open tooltips, both engine shapes (2.2.1 `[tooltip]:before/:after`, 2.6/2.7 `.tooltipBox > .tooltip`) */
+html.tmt-mobile .tmt-mobile-tip[tooltip]:before,
+html.tmt-mobile .tmt-mobile-tip[tooltip]:after { visibility: visible; opacity: 1; }
+html.tmt-mobile .tmt-mobile-tip .tooltip { opacity: 1; }

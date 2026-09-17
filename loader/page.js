@@ -11,6 +11,10 @@ const MANAGED = params.get('managed') === '1';
 // ?automation=1 opts in to the automation tools (the registry, the `au` side layer, games-auto/<id>.js). Without it the
 // page is the game plus the contract (docs/contract.md): no layer, no DOM, nothing in the save.
 const AUTOMATION = params.get('automation') === '1';
+// ?mobile=1 opts in to the mobile layout (docs/mobile.md): loader/mobile.css, then loader/mobile.js after tmt-auto.js.
+// EXPLICIT ONLY — no viewport or pointer sniffing, so a page without the flag renders exactly as it did before the
+// mode existed, and a page with it renders the same way at every width (which is what makes it gateable).
+const MOBILE = params.get('mobile') === '1';
 for (const p of ['profile', 'autoOpt']) if (!AUTOMATION && params.has(p)) console.warn(`tmt-loader: ?${p}= is ignored without ?automation=1`);
 // ?profile=off|all|saved (automation profile, applied after onload, never saved); default: off when managed, else saved.
 const PROFILE = !AUTOMATION ? 'off' : params.get('profile') || (MANAGED ? 'off' : 'saved');
@@ -23,7 +27,9 @@ function parseOptions(s) {
 }
 const abs = (p) => new URL(p, SELF).href;
 
-const T = (window.tmtLoader = { id: MOD, manifest: null, ready: false, error: null, managed: MANAGED, automation: AUTOMATION, options: OPTIONS, step: 'init', loaded: [], skipped: [], pageErrors: [] });
+const T = (window.tmtLoader = { id: MOD, manifest: null, ready: false, error: null, managed: MANAGED, automation: AUTOMATION, mobile: MOBILE, options: OPTIONS, step: 'init', loaded: [], skipped: [], pageErrors: [] });
+// the class the mobile stylesheet is scoped under, set before the game's markup so there is no unstyled flash
+if (MOBILE) document.documentElement.classList.add('tmt-mobile');
 // every uncaught error that reaches window, before and after ready (the harness reads it; none of them fails a load)
 window.addEventListener('error', (ev) => { T.pageErrors.push({ when: T.ready ? 'after-ready' : 'before-ready', message: String(ev.message), filename: ev.filename || null }); });
 
@@ -114,6 +120,13 @@ async function boot(id) {
     link.href = l.external ? abs(l.path) : l.href; // local hrefs resolve against <base>
     document.head.appendChild(link);
   }
+  if (MOBILE) {
+    const st = document.createElement('link');
+    st.rel = 'stylesheet';
+    st.id = 'tmt-loader-mobile-css';
+    st.href = abs('loader/mobile.css'); // after the fork's own sheets: equal specificity is broken by source order
+    document.head.appendChild(st);
+  }
   if (plan.title) document.title = plan.title;
   document.body.removeAttribute('class');
   document.body.innerHTML = plan.body.html;
@@ -142,6 +155,12 @@ async function boot(id) {
   step('script loader/tmt-auto.js');
   await insertScript({ src: abs('loader/tmt-auto.js') }, 'loader/tmt-auto.js');
   T.loaded.push('loader/tmt-auto.js');
+  if (MOBILE) {
+    step('script loader/mobile.js');
+    await insertScript({ src: abs('loader/mobile.js') }, 'loader/mobile.js');
+    T.loaded.push('loader/mobile.js');
+    document.documentElement.classList.add('tmt-mobile-nav'); // tier 2 is installed; mobile.css moves the corner controls
+  }
 
   // body attributes (onmousemove, …) once the functions they name exist; onload is run explicitly below
   for (const [k, v] of Object.entries(plan.body.attrs)) document.body.setAttribute(k, v);

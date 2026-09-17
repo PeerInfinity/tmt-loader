@@ -17,6 +17,8 @@ URL the game uses resolves without rewriting. `window.tmtLoader` (`loader/tmt-au
 the one interface a runner talks to. Without `?mod=` the page shows a picker. `?managed=1` pauses the game after
 `onload` so a runner drives `tmtLoader.tick(diff)`. `?automation=1` opts in to the automation tools
 (`docs/automation.md`); without it the loader adds nothing to the game — no layer, no UI, nothing in the save.
+`?mobile=1` opts in to the mobile layout (`docs/mobile.md`): one column, master-detail and a bottom nav bar, for
+engines that ship no `@media` query at all — likewise inert without the flag.
 
 Games live under `games/<id>/` as **git subtrees**, pristine at the upstream commit their manifest records.
 

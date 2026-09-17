@@ -3,6 +3,7 @@
 //                 [--state-out f] [--player-out f] [--json out]                                → one JSON line, like run.mjs
 //                 [--profile off|all|saved] [--exclude au] [--auto-opt "k=v;k2=v2"] [--no-automation]
 //   node page.mjs [<id>...] --gate load [--base URL] [--automation]                    → gate G1 (every game by default)
+//   node page.mjs [<id>...] --gate mobile [--base URL]                                 → gate M1, the mobile mode
 // Automation (?automation=1): runs default ON (the harness); `--gate load` defaults to the PLAIN page (no flag), where it
 // also asserts 0 × #app .smallNode.au, no player.au and no games-auto/ request.
 import fs from 'node:fs';
@@ -17,8 +18,8 @@ export const AU_NODE_SELECTOR = '#app .smallNode.au';
 
 /** Opens a browser context with the non-localhost block and the request/error counters. `stats.of(page)` holds the same
  * lists for one page (the G1 row checks its game's page against that game's `load.known`). */
-export async function openContext(browser, { allowExternal = false } = {}) {
-  const context = await browser.newContext();
+export async function openContext(browser, { allowExternal = false, contextOptions = null } = {}) {
+  const context = await browser.newContext(contextOptions || undefined);
   const fresh = () => ({ blocked: [], failed: [], pageErrors: [] });
   const stats = { blocked: [], failed: [], pageErrors: [], consoleErrors: [], consoleWarnings: [], requests: 0, urls: [] };
   const perPage = new Map();
@@ -152,6 +153,151 @@ async function gateLoad(browser, base, ids, { automation = false } = {}) {
   return rows;
 }
 
+// ---------------------------------------------------------------- gate M1: the mobile mode (docs/mobile.md)
+export const PHONE = { width: 390, height: 844 };  // a 2020s phone in portrait, CSS pixels
+// The gate must emulate TOUCH, not just a narrow window. Without `hasTouch`/`isMobile` the page reports `hover:
+// hover`, so the engines' `:hover` transforms apply — and Playwright parks the mouse at (0, 0), which is exactly
+// where `.back` sits. Measured: `.back` read 47px wide at x=-2 (its 44px box under `scale(1.1)`), a hover state no
+// phone can produce, reported as an element escaping the viewport. mobile.css neutralises those transforms under
+// `@media (hover: none)`, which only matches when touch is emulated.
+export const PHONE_CONTEXT = { viewport: PHONE, hasTouch: true, isMobile: true };
+export const MOBILE_TICKS = 200, MOBILE_DIFF = 0.05; // the state leg: enough ticks for a divergence to show in the hash
+export const TAP_MIN = 44;                          // the tap-target minimum mobile.css promises
+
+/** The deepest recorded snapshot for a game, or null. The fresh save of most games shows ONE tree node and no open
+ * tab, so a gate that only ever looks at a fresh page cannot see the layout this mode exists to fix: the split
+ * column, the milestone rows and the achievement grid all appear only once a layer tab is open. */
+function deepestSnapshot(id) {
+  const dir = path.join(REPO, 'tools/harness/snapshots', id);
+  const files = ['frontier', 'all', 'pinned'].flatMap((sub) => {
+    const d = path.join(dir, sub);
+    return fs.existsSync(d) ? fs.readdirSync(d).filter((f) => f.endsWith('.json')).map((f) => path.join(d, f)) : [];
+  });
+  if (!files.length) return null;
+  const best = files.map((f) => ({ f, d: JSON.parse(fs.readFileSync(f, 'utf8')) })).sort((a, b) => (a.d.ticks || 0) - (b.d.ticks || 0)).pop();
+  return { file: path.relative(REPO, best.f), player: best.d.player, ticks: best.d.ticks };
+}
+
+/** Everything the mobile layout promises, measured in the page. Geometry only — it asserts nothing about the game. */
+const MOBILE_PROBE = `(${function () {
+  const vw = document.documentElement.clientWidth;
+  const vis = (el) => { const cs = getComputedStyle(el); return cs.display !== 'none' && cs.visibility !== 'hidden' && Number(cs.opacity) !== 0; };
+  const desc = (el) => `${el.tagName}.${String(el.className || '').slice(0, 34)}`;
+  // controls a finger has to hit: the engines' interactive classes plus anything that is a button
+  const controls = [...document.querySelectorAll('#app button, #app .upg, #app .smallUpg, #app .tabButton, #app .remove, #tmt-mobile-nav button')]
+    .filter((el) => !el.hidden && !el.classList.contains('hidden') && !el.classList.contains('ghost') && vis(el))
+    .map((el) => ({ el, r: el.getBoundingClientRect() })).filter(({ r }) => r.width > 0 && r.height > 0);
+  return {
+    vw,
+    docScrollWidth: document.documentElement.scrollWidth,
+    // anything interactive whose box leaves the viewport sideways: unreachable, and the reason the split column fails
+    escaping: controls.filter(({ r }) => r.right > vw + 1 || r.left < -1).map(({ el, r }) => `${desc(el)} x=${Math.round(r.x)} w=${Math.round(r.width)}`),
+    tooSmall: controls.filter(({ r }) => r.width < 44 || r.height < 44).map(({ el, r }) => `${desc(el)} ${Math.round(r.width)}x${Math.round(r.height)}`),
+    controls: controls.length,
+    navButtons: [...document.querySelectorAll('#tmt-mobile-nav button')].filter((b) => !b.hidden).map((b) => b.dataset.key),
+    navH: parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--tmt-mobile-nav-h')) || 0,
+    htmlClass: document.documentElement.className,
+    hasMobileCss: !!document.getElementById('tmt-loader-mobile-css'),
+    tab: (typeof player !== 'undefined' && player) ? player.tab : null,
+  };
+}})()`;
+
+async function gateMobile(browser, base, ids) {
+  const rows = [];
+  for (const id of ids) {
+    const row = { gate: 'M1', id, ok: false, views: [] };
+    const { context, stats } = await openContext(browser, { contextOptions: PHONE_CONTEXT });
+    try {
+      // --- leg 1: INERTNESS. Without ?mobile=1 nothing of the mode may exist, at the same phone viewport.
+      const plain = await context.newPage();
+      const rp = await openGame(plain, base, id, { managed: true, automation: false });
+      row.plain = await plain.evaluate(() => ({
+        ready: tmtLoader.ready, mobile: tmtLoader.mobile, mobileUI: !!tmtLoader.mobileUI,
+        htmlClass: document.documentElement.className, css: !!document.getElementById('tmt-loader-mobile-css'),
+        nav: !!document.getElementById('tmt-mobile-nav'), loadedMobile: tmtLoader.loaded.filter((f) => /mobile/.test(f)),
+      }));
+      row.inertOk = !!(rp.ready && row.plain.mobile === false && !row.plain.mobileUI && !row.plain.css && !row.plain.nav
+        && row.plain.loadedMobile.length === 0 && !/tmt-mobile/.test(row.plain.htmlClass));
+      // the state the plain page reaches in MOBILE_TICKS, to compare against the mobile page's below
+      const plainState = await pageTick(plain, MOBILE_DIFF, MOBILE_TICKS).then(() => pageState(plain));
+      await plain.close();
+      // THE CONTROL. A hash that differs between the plain and the mobile page only means the mode moved the game
+      // if the game reaches the same hash twice on its own. Measured, because some do not: `the-periodic-table-tree`
+      // gave three different hashes over three plain runs, so its mobile/plain difference says nothing about the
+      // mode. Nothing in the manifests declares this, so the gate establishes it per run.
+      const plain2 = await context.newPage();
+      const rp2 = await openGame(plain2, base, id, { managed: true, automation: false });
+      const plainState2 = rp2.ready ? await pageTick(plain2, MOBILE_DIFF, MOBILE_TICKS).then(() => pageState(plain2)) : null;
+      await plain2.close();
+
+      // --- leg 2: the mode is a LAYOUT. Same ticks from the same fresh save, on the mobile page: the flag may not
+      // move the game by one bit. Measured rather than asserted, and it is what lets the mode be an opt-in the
+      // automation ladder's anchors can ignore.
+      const fresh = await context.newPage();
+      await fresh.goto(new URL(`index.html?mod=${encodeURIComponent(id)}&managed=1&mobile=1`, base).href, { waitUntil: 'load' });
+      const rf = await waitReady(fresh);
+      const mobileState = rf.ready ? await pageTick(fresh, MOBILE_DIFF, MOBILE_TICKS).then(() => pageState(fresh)) : null;
+      await fresh.close();
+      const deterministic = !!(plainState2 && plainState2.hash === plainState.hash);
+      row.state = { ticks: MOBILE_TICKS, diff: MOBILE_DIFF, plain: plainState.hash, plainControl: plainState2 && plainState2.hash,
+        mobile: mobileState && mobileState.hash, deterministic, points: plainState.points };
+      // an abstention, not a pass: the leg cannot discriminate on a game that does not repeat its own hash
+      row.stateVerdict = !deterministic ? 'nondeterministic (control differs: the leg abstains)'
+        : (mobileState && mobileState.hash === plainState.hash && mobileState.ticks === plainState.ticks) ? 'equal' : 'MOVED';
+      row.stateOk = row.stateVerdict !== 'MOVED';
+
+      // --- leg 3: the mobile page, at the fresh save and then at the deepest snapshot, one row per view
+      // Runs LAST because its loadFrom writes the deep snapshot into this context's localStorage; a fresh-save leg
+      // after it would boot on that save instead of a new game.
+      const page = await context.newPage();
+      const url = new URL(`index.html?mod=${encodeURIComponent(id)}&managed=1&mobile=1`, base).href;
+      await page.goto(url, { waitUntil: 'load' });
+      const rm = await waitReady(page);
+      row.ready = rm.ready; row.error = rm.error;
+
+      const snapshot = deepestSnapshot(id);
+      row.snapshot = snapshot ? { file: snapshot.file, ticks: snapshot.ticks } : null;
+      const look = async (view) => { const m = await page.evaluate(MOBILE_PROBE); row.views.push({ view, ...m }); return m; };
+      await look('fresh-tree');
+      if (snapshot) {
+        const r2 = await pageLoadFrom(page, snapshot.player);
+        if (!r2.ready) throw new Error(`not ready after loadFrom: ${JSON.stringify(r2.error)}`);
+        // every tab the save can open: the tree, each unlocked layer, and the system tabs the engine offers
+        const tabs = await page.evaluate(() => {
+          const out = ['none'];
+          try { for (const l of LAYERS) if (layerunlocked ? layerunlocked(l) : player[l] && player[l].unlocked) out.push(l); } catch (e) { /* engines differ; the tree alone still measures */ }
+          for (const sel of ['#info', '#optionWheel', '#help']) { const el = document.querySelector(sel); if (el) out.push({ click: sel }); }
+          return out;
+        });
+        for (const t of tabs) {
+          if (typeof t === 'string') await page.evaluate((n) => showTab(n), t);
+          else await page.evaluate((sel) => { const el = document.querySelector(sel); if (el) el.click(); }, t.click);
+          await page.waitForTimeout(250);
+          await look(typeof t === 'string' ? `tab:${t}` : `open:${t.click}`);
+        }
+      }
+      const shot = path.join(REPO, `tools/harness/results/${id}-mobile.png`);
+      await page.screenshot({ path: shot, fullPage: false });
+      row.screenshot = path.relative(REPO, shot);
+
+      const bad = row.views.filter((v) => v.escaping.length || v.tooSmall.length || v.docScrollWidth > v.vw + 1);
+      row.geometryOk = bad.length === 0;
+      row.worst = bad.slice(0, 3).map((v) => ({ view: v.view, escaping: v.escaping.slice(0, 4), tooSmall: v.tooSmall.slice(0, 4), docScrollWidth: v.docScrollWidth }));
+      // tier 2 must have installed itself: the nav bar is present, has at least the tree button, and has a height
+      row.navOk = row.views.every((v) => v.navButtons.length >= 1 && v.navH > 0 && /tmt-mobile-nav/.test(v.htmlClass) && v.hasMobileCss);
+      // the mobile page must load as cleanly as the plain one: judged against the SAME manifest allowances as G1
+      const j = judgeLoad(readManifest(id), base, structuredClone({ ...stats.of(page) }), await page.evaluate(() => ({ skipped: tmtLoader.skipped, pageErrors: tmtLoader.pageErrors })));
+      row.loadVerdict = { ok: j.ok, failedNotDeclared: j.failedBad, blockedNotDeclared: j.blockedBad, errorsAfterReady: j.errorsAfterReady, errorsAfterReadySample: j.errorsAfterReadySample };
+      row.ok = !!(row.ready && !row.error && row.inertOk && row.stateOk && row.geometryOk && row.navOk && j.ok);
+    } catch (e) {
+      row.exception = String((e && e.stack) || e).slice(0, 600);
+    } finally { await context.close(); }
+    rows.push(row);
+    console.log(JSON.stringify({ ...row, views: row.views.map((v) => ({ view: v.view, controls: v.controls, escaping: v.escaping.length, tooSmall: v.tooSmall.length, docScrollWidth: v.docScrollWidth, nav: v.navButtons })) }));
+  }
+  return rows;
+}
+
 export async function runPage(browser, base, id, { ticks, diff, leg = 'idle', until = null, stateOut, loadFrom = null, playerOut = null, mutant = false, profile = null, exclude = [], autoOpt = null, automation = true }) {
   const { context, stats } = await openContext(browser);
   try {
@@ -190,6 +336,14 @@ async function main() {
       if (a.json) writeJSON(a.json, { commit: headCommit(), base, rows });
       code = rows.every((r) => r.ok) ? 0 : 1;
       console.log(`G1 load: ${rows.map((r) => `${r.id}=${r.ok ? 'GREEN' : 'RED'}${r.allowed ? ` allowed: ${JSON.stringify(r.allowed)}` : ''}`).join(' ')}`);
+    } else if (a.gate === 'mobile') {
+      const rows = await gateMobile(browser, base, ids);
+      if (a.json) writeJSON(a.json, { commit: headCommit(), base, viewport: PHONE, touch: true, tapMin: TAP_MIN, rows });
+      code = rows.every((r) => r.ok) ? 0 : 1;
+      const abstained = rows.filter((r) => r.state && !r.state.deterministic).map((r) => r.id);
+      console.log(`M1 mobile: ${rows.map((r) => `${r.id}=${r.ok ? 'GREEN' : 'RED'}`).join(' ')}`);
+      console.log(`M1 state leg: ${rows.filter((r) => r.stateVerdict === 'equal').length} equal, ${rows.filter((r) => r.stateVerdict === 'MOVED').length} moved, ${abstained.length} abstained${abstained.length ? ` (not deterministic on their own: ${abstained.join(', ')})` : ''}`);
+      for (const r of rows.filter((x) => !x.ok)) console.log(`  ${r.id}: inert=${r.inertOk} state=${r.stateVerdict}${r.state ? ` (plain ${r.state.plain} / control ${r.state.plainControl} / mobile ${r.state.mobile})` : ''} geometry=${r.geometryOk} nav=${r.navOk} load=${r.loadVerdict && r.loadVerdict.ok}${r.worst && r.worst.length ? ` worst=${JSON.stringify(r.worst)}` : ''}${r.exception ? ` exception=${r.exception}` : ''}`);
     } else {
       const out = await runPage(browser, base, ids[0], { ticks: Number(a.ticks ?? 200), diff: Number(a.diff ?? 0.05), leg: a.leg || 'idle', until: a.until || null, stateOut: a['state-out'], playerOut: a['player-out'], loadFrom: a['load-from'] ? fs.readFileSync(a['load-from'], 'utf8') : null, profile: a.profile || null, exclude: a.exclude ? a.exclude.split(',') : [], autoOpt: a['auto-opt'] || null, automation: !a['no-automation'] });
       delete out.json; delete out.player;
