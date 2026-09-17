@@ -41,6 +41,22 @@ const log = (...m) => console.error('[add-game]', ...m);
 export const slug = (s) => String(s || '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
 const ID_RE = /^[a-z0-9-]+$/;
 
+/**
+ * The id a game gets, and where it came from. `slug()` keeps only [a-z0-9], so a mod name written in a non-Latin
+ * script slugs to the empty string — 墙树 and 层级树 in the census top 100 both did, and both stopped the run asking
+ * for a hand-picked --id. The fall-backs need no transliteration table and no per-game knowledge: a GitHub
+ * repository name is always ASCII (alphanumerics, -, _, .), and so is an owner, so one of them always slugs.
+ * Every candidate is data we already hold, which is why this is a rule and not a special case.
+ */
+export function deriveId(modName, repo) {
+  const [owner, name] = String(repo || '').split('/');
+  for (const [from, value] of [['mod name', modName], ['repo name', name], ['owner', owner]]) {
+    const id = slug(value);
+    if (ID_RE.test(id)) return { id, from };
+  }
+  return { id: '', from: null };
+}
+
 // ---- the census data -------------------------------------------------------------------------------------------------
 const table = JSON.parse(fs.readFileSync(path.join(CENSUS, 'results/table.json'), 'utf8')).rows;
 const boots = latestBy(readJsonl(path.join(CENSUS, 'data/boot.jsonl')));
@@ -120,12 +136,13 @@ for (const repoArg of a._) {
   if (present) res.id = present.id;
   else if (a.id) res.id = a.id;
   else {
-    const base = slug(L.row?.mod_name ?? L.bootRow.mod_name);
-    let id = base;
-    if (taken.has(id)) { id = `${base}-${L.repo.split('/')[0].toLowerCase()}`; res.idCollision = { with: base, resolved: id }; }
+    const d = deriveId(L.row?.mod_name ?? L.bootRow.mod_name, L.repo);
+    let id = d.id;
+    if (d.from && d.from !== 'mod name') res.idFrom = { from: d.from, modName: L.row?.mod_name ?? L.bootRow.mod_name, id };
+    if (taken.has(id)) { id = `${d.id}-${L.repo.split('/')[0].toLowerCase()}`; res.idCollision = { with: d.id, resolved: id }; }
     res.id = id;
   }
-  if (!ID_RE.test(res.id || '')) { bail('id', `id "${res.id}" is not ^[a-z0-9-]+$ (mod_name ${JSON.stringify(L.row?.mod_name)}); pass --id`); continue; }
+  if (!ID_RE.test(res.id || '')) { bail('id', `no id could be derived from the mod name ${JSON.stringify(L.row?.mod_name)}, the repo name or the owner (${L.repo}); pass --id`); continue; }
   if (!present) taken.add(res.id);
   // SHA: the census boot head resolved in the clone
   const full = gitIn(L.clone, 'rev-parse', 'HEAD');
@@ -155,7 +172,7 @@ for (const repoArg of a._) {
 const printLines = () => {
   for (const r of results) {
     const line = { id: r.id, repo: r.repo, rank: r.rank, sha: r.sha, license: r.license && { verdict: r.license.verdict, files: r.license.files }, added: r.added, gates: r.gates };
-    for (const k of ['skipped', 'detail', 'idCollision', 'present', 'reproduces', 'error']) if (r[k] !== undefined) line[k] = r[k];
+    for (const k of ['skipped', 'detail', 'idFrom', 'idCollision', 'present', 'reproduces', 'error']) if (r[k] !== undefined) line[k] = r[k];
     if (a['dry-run'] && r.manifest) line.manifest = r.manifest;
     console.log(JSON.stringify(line));
   }
@@ -167,7 +184,7 @@ if (a['dry-run']) {
     const { appendSection } = await import('./harness/summary.mjs');
     appendSection({ title: `${TAG} dry-run (\`node tools/add-game.mjs ${a._.join(' ')} --dry-run\`)`, commit: headCommit(), dirty: treeDirty(), slug: `add-game-dry-${TAG.replace(/[^\w-]+/g, '_')}`,
       reading: 'no git operation; a game already in the loader is matched by upstream.repo and its emitted manifest compared to the committed one without generated.at, the hand-written auto and the hand-kept load.known.',
-      rows: results.map((r) => ({ gate: `${TAG} dry-run${r.present ? ' reproduces manifest' : ''}`, id: r.id || r.repo, ok: !r.skipped && (!r.present || r.reproduces.equal), notes: `${r.repo} @ ${r.sha}; license ${r.license?.verdict} ${JSON.stringify(r.license?.files || {})}${r.skipped ? '; SKIPPED ' + r.skipped + ' ' + JSON.stringify(r.detail) : ''}${r.idCollision ? `; id collision with ${r.idCollision.with} → ${r.idCollision.resolved}` : ''}${r.present ? `; manifests/${r.id}.json equal=${r.reproduces.equal}${r.reproduces.diff.length ? ' diff ' + r.reproduces.diff.join('; ') : ''}` : ''}` })) });
+      rows: results.map((r) => ({ gate: `${TAG} dry-run${r.present ? ' reproduces manifest' : ''}`, id: r.id || r.repo, ok: !r.skipped && (!r.present || r.reproduces.equal), notes: `${r.repo} @ ${r.sha}; license ${r.license?.verdict} ${JSON.stringify(r.license?.files || {})}${r.skipped ? '; SKIPPED ' + r.skipped + ' ' + JSON.stringify(r.detail) : ''}${r.idFrom ? `; id from the ${r.idFrom.from} (mod name ${JSON.stringify(r.idFrom.modName)} has no [a-z0-9])` : ''}${r.idCollision ? `; id collision with ${r.idCollision.with} → ${r.idCollision.resolved}` : ''}${r.present ? `; manifests/${r.id}.json equal=${r.reproduces.equal}${r.reproduces.diff.length ? ' diff ' + r.reproduces.diff.join('; ') : ''}` : ''}` })) });
   }
   printLines();
   process.exit(0);

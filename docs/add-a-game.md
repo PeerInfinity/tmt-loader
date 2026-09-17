@@ -18,15 +18,17 @@ It prints one JSON line per game: `{id, repo, rank, sha, license, added, gates: 
 ## What it does
 
 1. **Preflight** (every target first; no git operation):
-   - **id** = the census row's `mod_name` lower-cased, every run of non-alphanumerics → `-`, trimmed. It collides with an
-     existing `manifests/<id>.json`, the same slug of an existing manifest's `name`, or an id produced earlier in the
-     run → append `-<owner lower-cased>` (e.g. `prestige-tree-rewritten-unsoftcapped4` beside `ptr`). An id that is not
-     `^[a-z0-9-]+$` is refused (pass `--id`). A repo already in the loader (matched on `upstream.repo`) keeps its id and
-     is not added again; `--dry-run` then reports whether the emitted manifest reproduces the committed one.
-   - **SHA** = the census boot row's `head`, resolved to the full SHA in the census clone.
-   - **License**: every license-like file at the clone's root is read by the census's `classifyLicenseText`. **Every
-     file must classify `MIT`**; otherwise the game is recorded `skipped: license` with the verdicts and nothing is
-     fetched.
+   - **id** = the census row's `mod_name` lower-cased, every run of non-alphanumerics → `-`, trimmed. A mod name
+     written in a non-Latin script slugs to the empty string (墙树, 层级树 — both in the census top 100), so the id
+     falls back to the **repository name**, then the **owner**: a GitHub repo name and owner are always ASCII, so
+     one of them always slugs, and every candidate is data the census already holds — no transliteration table and
+     no per-game knowledge. The run reports `idFrom` whenever the id did not come from the mod name. It collides
+     with an existing `manifests/<id>.json`, the same slug of an existing manifest's `name`, or an id produced
+     earlier in the same run → `-<owner>` is appended (`idCollision` reports it; this is per RUN, so a batch must
+     go in as ONE invocation or two candidates can claim the same id; e.g. `prestige-tree-rewritten-unsoftcapped4`
+     beside `ptr`). An id that still fails `^[a-z0-9-]+$` is refused (pass `--id`). A repo already in the loader
+     (matched on `upstream.repo`) keeps its id and is not added again; `--dry-run` then reports whether the emitted
+     manifest reproduces the committed one.
    - **Manifest**: `scripts/manifest.mjs <owner/repo> --id <id>` from the census, into a temp file; `load.vendor` is
      filled from the vendored files the existing manifests already pin (sha256 re-checked against `vendor/`); a `vendor`
      URL no manifest pins **stops the run** before any git operation (vendor it by hand: fetch into
