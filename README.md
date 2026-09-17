@@ -4,6 +4,8 @@ One static page that loads games built on [The Modding Tree](https://github.com/
 (TMT) **on each game's own engine version**, with no CDN and no build step, plus a Node harness that boots the same
 games headless and is proven equal to the page.
 
+**▶ Play the games: <https://peerinfinity.github.io/tmt-loader/>**
+
 **AI disclosure.** The code, the documentation and the harness in this repository were AI-generated (Claude Code sessions directed by PeerInfinity, who set the questions and reviewed the output). Every gate number is produced by the harness in `tools/` and can be regenerated.
 
 ## What it does
@@ -13,61 +15,33 @@ games headless and is proven equal to the page.
 `vendor/`, fonts dropped), the `modFiles` a TMT 2.5+ `loader.js` would insert, the body markup and its `onload`.
 Before any game script runs it installs a `localStorage` prefix shim (every key becomes `tmt-loader:<id>:<key>`, so
 games on one origin never share a save) and a timer recorder, then sets `<base href="games/<id>/">` so every relative
-URL the game uses resolves without rewriting. `window.tmtLoader` (`loader/tmt-auto.js`, see `docs/contract.md`) is
+URL the game uses resolves without rewriting. `window.tmtLoader` (`loader/tmt-auto.js`, see [docs/contract.md](docs/contract.md)) is
 the one interface a runner talks to. Without `?mod=` the page shows a picker. `?managed=1` pauses the game after
 `onload` so a runner drives `tmtLoader.tick(diff)`. `?automation=1` opts in to the automation tools
-(`docs/automation.md`); without it the loader adds nothing to the game — no layer, no UI, nothing in the save.
-`?mobile=1` opts in to the mobile layout (`docs/mobile.md`): one column, master-detail and a bottom nav bar, for
+([docs/automation.md](docs/automation.md)); without it the loader adds nothing to the game — no layer, no UI, nothing in the save.
+`?mobile=1` opts in to the mobile layout ([docs/mobile.md](docs/mobile.md)): one column, master-detail and a bottom nav bar, for
 engines that ship no `@media` query at all — likewise inert without the flag.
 
 Games live under `games/<id>/` as **git subtrees**, pristine at the upstream commit their manifest records.
 
-40 games, in the order they were added (`manifests/index.json`; the picker lists the same). The first two were added by hand in L1; the rest by `tools/add-game.mjs` from the tmt-fork-census top 100 (games with no working play page).
+The roster is **[docs/games.md](docs/games.md)** — every game, with a `play` and a `mobile` link, its upstream
+repo and pinned commit, its engine version and its license. It is generated from `manifests/` by
+`node tools/games-table.mjs` (`--check` fails when it is out of date), so it cannot drift from what the loader
+actually hosts. Each game keeps its own license files and credits inside its subtree.
 
-| id | game | upstream | engine | license |
-|---|---|---|---|---|
-| `ptr` | Prestige Tree Rewritten | `Jacorb90/Prestige-Tree` @ `cec9198` | TMT 2.2.1 | MIT |
-| `something` | Justcubing97's Something Tree | `Justcubing97/JC97sSomethingTree` @ `30a311b` | TMT 2.7 | MIT |
-| `the-dressy-tree` | The Dressy Tree | `Dressygithub/The-Dressy-Tree` @ `d553021` | TMT 2.7 | MIT |
-| `the-pro-tree` | The Pro Tree | `CrazyHighNumbers69/The-Modding-Tree` @ `06ca343` | TMT 2.6.0.1 | MIT |
-| `the-extended-tree` | The Extended Tree | `skylafalls/Extended-Tree` @ `d2e17b8` | TMT 2.2.1 | MIT |
-| `the-omega-tree` | The Omega Tree | `Omega-pgg/The-Modding-Tree` @ `f7899c0` | TMT 2.6.6.2 | MIT |
-| `the-alphabetree` | The Alphabetree | `FlareZ0000/The-Modding-Tree` @ `df0edf2` | TMT 2.6.6.2 | MIT |
-| `ultimate-prestige-tree` | Ultimate Prestige Tree | `KremboMC/Ultimate-Prestige-Tree` @ `ddddb46` | TMT 2.7 | MIT |
-| `the-number-tree` | The Number Tree | `liamhmn/The-Modding-Tree` @ `7a7e26d` | TMT 2.6.6.2 | MIT |
-| `prestige-tree-rewritten-unsoftcapped4` | Prestige Tree Rewritten | `unsoftcapped4/Prestige-Tree-Rewritten` @ `797ba44` | TMT 2.2.1 | MIT |
-| `arc-tree` | Arc Tree | `peacefulwar/Arc-Tree` @ `eb5125d` | TMT 2.7 | MIT |
-| `a-tree-for-sure` | A Tree For Sure | `MsliAghtlyD/A-Tree-For-Sure` @ `bb2018f` | TMT 2.6.6.2 | MIT |
-| `the-algebra-tree` | The Algebra Tree | `Sersseras/The-Modding-Tree` @ `9868edc` | TMT 2.7 | MIT |
-| `the-earth-tree` | The Earth Tree | `Onesmartshark/Earth-Tree` @ `52fb645` | TMT 2.6.6.2 | MIT |
-| `the-primordial-tree` | The Primordial Tree | `Inferno-Inc/The-Primordial-Tree` @ `481c8bd` | TMT 2.6.6.2 | MIT |
-| `bobbit-s-tech-tree` | Bobbit's Tech Tree | `freddifred/The-Modding-Tree` @ `3bd5313` | TMT 2.6.6.2 | MIT |
-| `the-ore-tree` | The Ore Tree | `Slicedberg/Ore-Tree` @ `511718c` | TMT 2.7 | MIT |
-| `the-mechanic-tree` | The mechanic Tree | `great0108/The-Modding-Tree` @ `8f7d901` | TMT 2.7 | MIT |
-| `the-danus-tree` | The Danus Tree | `quwpsss/The-Modding-Tree` @ `c3533ea` | TMT 2.6.6.2 | MIT |
-| `collection-of-everything` | Collection of Everything | `XtremeRusher/The-Modding-Tree` @ `f8c385f` | TMT 2.6.6.2 | MIT |
-| `the-congratulations-tree` | The Congratulations Tree | `MartianCreations/The-Congratulations-Tree` @ `0fe659e` | TMT 2.7 | MIT |
-| `the-prestige-tree-2` | The Prestige Tree 2 | `liam43210/The-Prestige-Tree-2` @ `fcfd0d1` | TMT 2.7 | MIT |
-| `the-reborn-incremental-tree` | The Reborn Incremental Tree | `Efsoone/The-Modding-Tree` @ `7ccd26d` | TMT 2.7 | MIT |
-| `the-weight-tree` | The Weight Tree | `difficultcomplexity/The-Modding-Tree` @ `a0fbf45` | TMT 2.6.6.2 | MIT |
-| `the-upgradeverse-tree` | The Upgradeverse Tree | `liamthecatguy/The-Upgradeverse-Tree` @ `34014a5` | TMT 2.7 | MIT |
-| `the-jax-tree` | The Jax Tree | `rainbowice975/The-Jax-Tree` @ `1a26f5b` | TMT 2.7 | MIT |
-| `the-douyuan-tree` | The Douyuan Tree | `temptempa/The-Modding-Tree` @ `56fedd1` | TMT 2.7 | MIT |
-| `a-tree-about-layers` | A Tree About Layers | `The-Alternate-Tree/A-Tree-About-Layers` @ `485e62f` | TMT 2.7 | MIT |
-| `the-unbalanced-tree` | The Unbalanced Tree | `weyrhvwvrwuvureurw/The-Modding-Tree` @ `5a0ca10` | TMT 2.6.6.2 | MIT |
-| `the-layered-tree` | The Layered Tree | `TheIcyIcicle/The-Modding-Tree` @ `a795bb0` | TMT 2.6.6.2 | MIT |
-| `sheep-incremental` | Sheep Incremental? | `notadragon/counting-sheep-tree` @ `d2b4372` | TMT 2.7 | MIT |
-| `the-ultimate-prestige-tree` | The Ultimate Prestige Tree | `RaceproxateDev/The-Ultimate-Prestige-Tree` @ `0ec9480` | TMT 2.7 | MIT |
-| `an-operation-tree` | An Operation Tree | `am30936/The-Modding-Tree` @ `7305b35` | TMT 2.7 | MIT |
-| `the-necromantree` | The NecromanTree | `monkeh42/The-Modding-Tree` @ `9d089aa` | TMT 2.3.4 | MIT |
-| `the-challenge-tree` | The Challenge Tree | `Seder3214/Challenge-Tree` @ `90b1677` | TMT 2.6.6.2 | MIT |
-| `the-tree` | The ??? Tree | `fluffydragon23/The-Modding-Tree` @ `d4d15d9` | TMT 2.6.6.2 | MIT |
-| `the-energy-factory` | The Energy Factory | `CharizUniv/The-Modding-Tree` @ `3c2ff55` | TMT 2.6.6.2 | MIT |
-| `yet-another-challenge-tree-adventure` | Yet another Challenge Tree: Adventure | `new42ur3jeans/Incremental-Adventure-Trees` @ `9c1fff2` | TMT 2.6.6.2 | MIT |
-| `the-periodic-table-tree` | The Periodic Table Tree | `qcy00hou12/The-Periodic-Table-Tree` @ `3348710` | TMT 2.6.6.2 | MIT |
-| `the-rainbow-void-tree` | The Rainbow Void Tree | `CudjzikxmxR/The-Rainbow-Void-Tree` @ `9b67544` | TMT 2.7 | MIT |
+## Documents
 
-Each game keeps its own license files and credits inside its subtree.
+| document | what is in it |
+|---|---|
+| [docs/games.md](docs/games.md) | the roster — every game, with play and mobile links |
+| [docs/contract.md](docs/contract.md) | `window.tmtLoader`, the one interface a runner talks to, and the per-engine differences behind it |
+| [docs/manifest.md](docs/manifest.md) | what a `manifests/<id>.json` declares, and which parts are pins the gates check |
+| [docs/add-a-game.md](docs/add-a-game.md) | adding a game: subtree, manifest, vendoring, gates |
+| [docs/harness.md](docs/harness.md) | the Node harness and the page runner, ladders and snapshots |
+| [docs/automation.md](docs/automation.md) | `?automation=1` — the feature registry, policies and the per-game tables |
+| [docs/planner.md](docs/planner.md) | the planner built on top of the automation registry |
+| [docs/mobile.md](docs/mobile.md) | `?mobile=1` — the mobile layout and its gate |
+| [`tools/harness/results/SUMMARY.md`](tools/harness/results/SUMMARY.md) | every gate run, with the state hashes it measured |
 
 ## Running it
 
@@ -88,22 +62,40 @@ It works from any sub-path (GitHub Pages serves under `/tmt-loader/`); nothing i
 |---|---|
 | `node --test loader/` | `interpret()` on both games' `index.html` |
 | `node tools/harness/run.mjs <id> --ticks N --diff d [--until "<js>"]` | Node boot (one game per process), prints `{ticks, gameSeconds, diff, hash}` |
-| `node tools/harness/page.mjs <id> --ticks N --diff d` / `--gate load` | the same in headless Chromium; `--gate load` = gate G1 |
+| `node tools/harness/page.mjs <id> --ticks N --diff d` / `--gate load` / `--gate mobile` | the same in headless Chromium; `--gate load` = gate G1, `--gate mobile` = gate M1 ([docs/mobile.md](docs/mobile.md)) |
 | `node tools/harness/parity.mjs <id> --ticks N --diff d` | Node ≡ page `stateJSON()` |
 | `node tools/harness/check-goldens.mjs` / `check-manifest.mjs` | frozen `tmtLoader.ids()` / manifest pin vs the live `index.html` |
 | `node tools/harness/upstream-export.mjs <id> --upstream <clone>` | a save exported from the upstream page imports equal |
 | `node tools/harness/gates.mjs` | gates G1–G4 for every game, rows appended to `results/SUMMARY.md` |
-| `node tools/harness/run.mjs <id> --ladder <file> --to <mark> [--from-snapshot <file>] [--snapshots <dir>]` | a stretch of a game's ladder, from a committed snapshot; `docs/harness.md` |
+| `node tools/harness/run.mjs <id> --ladder <file> --to <mark> [--from-snapshot <file>] [--snapshots <dir>]` | a stretch of a game's ladder, from a committed snapshot; [docs/harness.md](docs/harness.md) |
 | `node tools/harness/ladder-summary.mjs` | the ladder as reached (marks, calibrated diffs, snapshot fixtures) |
 | `node tools/check-pages.mjs` | gate G5: a bare `git clone` served from a sub-path loads both games |
+| `node tools/games-table.mjs --check` | [docs/games.md](docs/games.md) still matches `manifests/` |
 
-Results are recorded in `tools/harness/results/SUMMARY.md`.
+Results are recorded in [`tools/harness/results/SUMMARY.md`](tools/harness/results/SUMMARY.md).
 
 ## Adding a game
 
-See `docs/add-a-game.md` (and `docs/manifest.md`, `docs/contract.md`): `git subtree add --squash` under `games/<id>/`, emit the manifest with the
+See [docs/add-a-game.md](docs/add-a-game.md) (and [docs/manifest.md](docs/manifest.md), [docs/contract.md](docs/contract.md)): `git subtree add --squash` under `games/<id>/`, emit the manifest with the
 [tmt-fork-census](https://github.com/PeerInfinity/tmt-fork-census) `scripts/manifest.mjs`, vendor its CDN libraries,
 run the gates.
+
+## tmt-fork-census
+
+The games here come from **[tmt-fork-census](https://github.com/PeerInfinity/tmt-fork-census)** ([live results](https://peerinfinity.github.io/tmt-fork-census/)) — a survey of the ~1,900 GitHub
+forks of The Modding Tree and Prestige Tree, which ranks them by how branching the tree is, how much content it
+has and whether it still boots. The loader hosts the ranked games whose own play page no longer works, and the
+census links back: every row it ranks that the loader hosts carries a `loader` and a `mobile` link beside the
+author's own.
+
+The two repositories meet at one file format. A game's `manifests/<id>.json` here is emitted by the census's
+`scripts/manifest.mjs` — a pin of what the census observed at the recorded commit — and `check-manifest.mjs`
+holds the live `index.html` to it.
+
+| | repository | live |
+|---|---|---|
+| loader (this repo) | [PeerInfinity/tmt-loader](https://github.com/PeerInfinity/tmt-loader) | https://peerinfinity.github.io/tmt-loader/ |
+| census | [PeerInfinity/tmt-fork-census](https://github.com/PeerInfinity/tmt-fork-census) | https://peerinfinity.github.io/tmt-fork-census/ |
 
 ## License
 
