@@ -1,0 +1,680 @@
+var player;
+var needCanvasUpdate = true;
+
+// Don't change this
+const TMT_VERSION = {
+	tmtNum: "2.7",
+	tmtName: "Δ"
+}
+
+function getResetGain(layer, useType = null) {
+	let type = useType
+	if (!useType){ 
+		type = tmp[layer].type
+		if (layers[layer].getResetGain !== undefined)
+			return layers[layer].getResetGain()
+	} 
+	if(tmp[layer].type == "none")
+		return new Decimal (0)
+	if (tmp[layer].gainExp.eq(0)) return decimalZero
+	if (type=="static") {
+		if ((!tmp[layer].canBuyMax) || tmp[layer].baseAmount.lt(tmp[layer].requires)) return decimalOne
+		let gain = tmp[layer].baseAmount.div(tmp[layer].requires).div(tmp[layer].gainMult).max(1).log(tmp[layer].base).times(tmp[layer].gainExp).pow(Decimal.pow(tmp[layer].exponent, -1))
+		gain = gain.times(tmp[layer].directMult)
+		return gain.floor().sub(player[layer].points).add(1).max(1);
+	} else if (type=="normal"){
+		if (tmp[layer].baseAmount.lt(tmp[layer].requires)) return decimalZero
+		let gain = tmp[layer].baseAmount.div(tmp[layer].requires).pow(tmp[layer].exponent).times(tmp[layer].gainMult).pow(tmp[layer].gainExp)
+		if (gain.gte(tmp[layer].softcap)) gain = gain.pow(tmp[layer].softcapPower).times(tmp[layer].softcap.pow(decimalOne.sub(tmp[layer].softcapPower)))
+		gain = gain.times(tmp[layer].directMult)
+		return gain.floor().max(0);
+	} else if (type=="custom"){
+		return layers[layer].getResetGain()
+	} else {
+		return decimalZero
+	}
+}
+
+function getNextAt(layer, canMax=false, useType = null) {
+	let type = useType
+	if (!useType) {
+		type = tmp[layer].type
+		if (layers[layer].getNextAt !== undefined)
+			return layers[layer].getNextAt(canMax)
+
+		}
+	if(tmp[layer].type == "none")
+		return new Decimal (Infinity)
+
+	if (tmp[layer].gainMult.lte(0)) return new Decimal(Infinity)
+	if (tmp[layer].gainExp.lte(0)) return new Decimal(Infinity)
+
+	if (type=="static") 
+	{
+		if (!tmp[layer].canBuyMax) canMax = false
+		let amt = player[layer].points.plus((canMax&&tmp[layer].baseAmount.gte(tmp[layer].nextAt))?tmp[layer].resetGain:0).div(tmp[layer].directMult)
+		let extraCost = Decimal.pow(tmp[layer].base, amt.pow(tmp[layer].exponent).div(tmp[layer].gainExp)).times(tmp[layer].gainMult)
+		let cost = extraCost.times(tmp[layer].requires).max(tmp[layer].requires)
+		if (tmp[layer].roundUpCost) cost = cost.ceil()
+		return cost;
+	} else if (type=="normal"){
+		let next = tmp[layer].resetGain.add(1).div(tmp[layer].directMult)
+		if (next.gte(tmp[layer].softcap)) next = next.div(tmp[layer].softcap.pow(decimalOne.sub(tmp[layer].softcapPower))).pow(decimalOne.div(tmp[layer].softcapPower))
+		next = next.root(tmp[layer].gainExp).div(tmp[layer].gainMult).root(tmp[layer].exponent).times(tmp[layer].requires).max(tmp[layer].requires)
+		if (tmp[layer].roundUpCost) next = next.ceil()
+		return next;
+	} else if (type=="custom"){
+		return layers[layer].getNextAt(canMax)
+	} else {
+		return decimalZero
+	}}
+
+function softcap(value, cap, power = 0.5) {
+	if (value.lte(cap)) return value
+	else
+		return value.pow(power).times(cap.pow(decimalOne.sub(power)))
+}
+
+// Return true if the layer should be highlighted. By default checks for upgrades only.
+function shouldNotify(layer){
+	for (id in tmp[layer].upgrades){
+		if (isPlainObject(layers[layer].upgrades[id])){
+			if (canAffordUpgrade(layer, id) && !hasUpgrade(layer, id) && tmp[layer].upgrades[id].unlocked){
+				return true
+			}
+		}
+	}
+	if (player[layer].activeChallenge && canCompleteChallenge(layer, player[layer].activeChallenge)) {
+		return true
+	}
+
+	if (tmp[layer].shouldNotify)
+		return true
+
+	if (isPlainObject(tmp[layer].tabFormat)) {
+		for (subtab in tmp[layer].tabFormat){
+			if (subtabShouldNotify(layer, 'mainTabs', subtab)) {
+				tmp[layer].trueGlowColor = tmp[layer].tabFormat[subtab].glowColor || defaultGlow
+
+				return true
+			}
+		}
+	}
+
+	for (family in tmp[layer].microtabs) {
+		for (subtab in tmp[layer].microtabs[family]){
+			if (subtabShouldNotify(layer, family, subtab)) {
+				tmp[layer].trueGlowColor = tmp[layer].microtabs[family][subtab].glowColor
+				return true
+			}
+		}
+	}
+	 
+	return false
+	
+}
+
+function canReset(layer)
+{	
+	if (layers[layer].canReset!== undefined)
+		return run(layers[layer].canReset, layers[layer])
+	else if(tmp[layer].type == "normal")
+		return tmp[layer].baseAmount.gte(tmp[layer].requires)
+	else if(tmp[layer].type== "static")
+		return tmp[layer].baseAmount.gte(tmp[layer].nextAt) 
+	else 
+		return false
+}
+
+function rowReset(row, layer, challengeReset) {
+	for (lr in ROW_LAYERS[row]){
+		// stupid ass hack to make this work
+		if(layers[lr].doReset) {
+			if (challengeReset) {
+				if (player[lr].activeChallenge != null) {
+					if (!layers[lr].challenges[player[lr].activeChallenge].ignoreHigherLayers) {
+						if (!isNaN(row)) Vue.set(player[lr], "activeChallenge", null) // Exit challenges on any row reset on an equal or higher row
+					}
+				} else {
+					if (!isNaN(row)) {
+						Vue.set(player[lr], "activeChallenge", null)
+					}
+				}
+			}
+			run(layers[lr].doReset, layers[lr], layer)
+			
+			if (challengeReset) {
+				player[lr].activeChallenge = null
+			}
+		} else {
+			if (tmp[layer].row > tmp[lr].row && !isNaN(row)) { layerDataReset(lr) }
+		}
+	}
+}
+
+function layerDataReset(layer, keep = []) {
+	let storedData = {unlocked: player[layer].unlocked, forceTooltip: player[layer].forceTooltip, noRespecConfirm: player[layer].noRespecConfirm, prevTab:player[layer].prevTab} // Always keep these
+
+	for (thing in keep) {
+		if (player[layer][keep[thing]] !== undefined)
+			storedData[keep[thing]] = player[layer][keep[thing]]
+	}
+
+	Vue.set(player[layer], "buyables", getStartBuyables(layer))
+	Vue.set(player[layer], "clickables", getStartClickables(layer))
+	Vue.set(player[layer], "challenges", getStartChallenges(layer))
+	Vue.set(player[layer], "grid", getStartGrid(layer))
+
+	layOver(player[layer], getStartLayerData(layer))
+	player[layer].upgrades = []
+	player[layer].milestones = []
+	player[layer].achievements = []
+
+	for (thing in storedData) {
+		player[layer][thing] =storedData[thing]
+	}
+}
+
+function addPoints(layer, gain) {
+	player[layer].points = player[layer].points.add(gain).max(0)
+	if (player[layer].best) player[layer].best = player[layer].best.max(player[layer].points)
+	if (player[layer].total) player[layer].total = player[layer].total.add(gain)
+}
+
+function generatePoints(layer, diff) {
+	addPoints(layer, tmp[layer].resetGain.times(diff))
+}
+
+function doReset(layer, force=false, challengeReset = true) {
+	if (tmp[layer].type == "none") return
+	let row = tmp[layer].row
+	if (!force) {
+		
+		if (tmp[layer].canReset === false) return;
+		
+		if (tmp[layer].baseAmount.lt(tmp[layer].requires)) return;
+		let gain = tmp[layer].resetGain
+		if (tmp[layer].type=="static") {
+			if (tmp[layer].baseAmount.lt(tmp[layer].nextAt)) return;
+			gain =(tmp[layer].canBuyMax ? gain : 1)
+		}
+		
+		if (layers[layer].onPrestige){
+			updateMilestones(layer)
+			run(layers[layer].onPrestige, layers[layer], gain)
+		}
+		
+		addPoints(layer, gain)
+		updateMilestones(layer)
+		updateAchievements(layer)
+		
+		if (!player[layer].unlocked) {
+			player[layer].unlocked = true;
+			needCanvasUpdate = true;
+			
+			if (tmp[layer].increaseUnlockOrder){
+				lrs = tmp[layer].increaseUnlockOrder
+				for (lr in lrs)
+					if (!player[lrs[lr]].unlocked) player[lrs[lr]].unlockOrder++
+			}
+		}
+		
+	}
+	
+	if (run(layers[layer].resetsNothing, layers[layer])) return
+	tmp[layer].baseAmount = decimalZero // quick fix
+	
+	
+	for (layerResetting in layers) {
+		if (row >= layers[layerResetting].row && (!force || layerResetting != layer)) {
+			// activeChallenge null check because Q reset causes error (tested during challenge Q13)
+			if (player[layerResetting].activeChallenge != null) {
+				if (challengeReset || !layers[layerResetting].challenges[player[layerResetting].activeChallenge].ignoreHigherLayers) {
+					completeChallenge(layerResetting)
+				}
+			}
+		}
+	}
+	
+	player.points = (row == 0 ? decimalZero : getStartPoints())
+	
+	for (let x = row; x >= 0; x--) {
+		rowReset(x, layer, challengeReset)
+	}
+	for (r in OTHER_LAYERS){
+		rowReset(r, layer, challengeReset)
+	}
+	
+	player[layer].resetTime = 0
+	
+	updateTemp()
+	updateTemp()
+}
+
+function resetRow(row) {
+	if (prompt('Are you sure you want to reset this row? It is highly recommended that you wait until the end of your current run before doing this! Type "I WANT TO RESET THIS" to confirm')!="I WANT TO RESET THIS") return
+	let pre_layers = ROW_LAYERS[row-1]
+	let layers = ROW_LAYERS[row]
+	let post_layers = ROW_LAYERS[row+1]
+	rowReset(row+1, post_layers[0])
+	doReset(pre_layers[0], true)
+	for (let layer in layers) {
+		player[layer].unlocked = false
+		if (player[layer].unlockOrder) player[layer].unlockOrder = 0
+	}
+	player.points = getStartPoints()
+	updateTemp();
+	resizeCanvas();
+}
+
+function startChallenge(layer, x) {
+	let enter = false
+	if (!player[layer].unlocked || !tmp[layer].challenges[x].unlocked || !canEnterChallenge(layer, x)) return
+
+	if (player[layer].activeChallenge == x) {
+		// This needs to be embedded due to how 'enter' works
+		if(canExitChallenge(layer, x)){
+			completeChallenge(layer, x)
+			Vue.set(player[layer], "activeChallenge", null)
+		}
+	}
+	else {
+		enter = true
+	}
+	if(enter || canExitChallenge(layer, x)) doReset(layer, true)
+	if(enter) {
+		Vue.set(player[layer], "activeChallenge", x)
+		run(layers[layer].challenges[x].onEnter, layers[layer].challenges[x])
+	}
+	updateChallengeTemp(layer)
+}
+
+function canCompleteChallenge(layer, x)
+{
+	if (x != player[layer].activeChallenge) return
+	let challenge = tmp[layer].challenges[x]
+	if (challenge.canComplete !== undefined) return challenge.canComplete
+
+	if (challenge.currencyInternalName){
+		let name = challenge.currencyInternalName
+		if (challenge.currencyLocation){
+			return !(challenge.currencyLocation[name].lt(challenge.goal)) 
+		}
+		else if (challenge.currencyLayer){
+			let lr = challenge.currencyLayer
+			return !(player[lr][name].lt(challenge.goal)) 
+		}
+		else {
+			return !(player[name].lt(challenge.goal))
+		}
+	}
+	else {
+		return !(player.points.lt(challenge.goal))
+	}
+
+}
+
+function completeChallenge(layer, x) {
+	var x = player[layer].activeChallenge
+	if (!x) return
+	
+	let completions = canCompleteChallenge(layer, x)
+	if (!completions){
+		Vue.set(player[layer], "activeChallenge", null)
+		run(layers[layer].challenges[x].onExit, layers[layer].challenges[x])
+		return
+	}
+	if (player[layer].challenges[x].lt(tmp[layer].challenges[x].completionLimit)) {
+		needCanvasUpdate = true
+		player[layer].challenges[x] = player[layer].challenges[x].add(completions ? 1 : 0)
+		player[layer].challenges[x] = Decimal.min(player[layer].challenges[x], tmp[layer].challenges[x].completionLimit)
+		if (layers[layer].challenges[x].onComplete) run(layers[layer].challenges[x].onComplete, layers[layer].challenges[x])
+	}
+	Vue.set(player[layer], "activeChallenge", null)
+	run(layers[layer].challenges[x].onExit, layers[layer].challenges[x])
+	updateChallengeTemp(layer)
+}
+
+VERSION.withoutName = "v" + VERSION.num + (VERSION.pre ? " Pre-Release " + VERSION.pre : VERSION.pre ? " Beta " + VERSION.beta : "")
+VERSION.withName = VERSION.withoutName + (VERSION.name ? ": " + VERSION.name : "")
+
+
+function autobuyUpgrades(layer){
+	if (!tmp[layer].upgrades) return
+	for (id in tmp[layer].upgrades)
+		if (isPlainObject(tmp[layer].upgrades[id]) && (layers[layer].upgrades[id].canAfford === undefined || layers[layer].upgrades[id].canAfford() === true))
+			buyUpg(layer, id) 
+}
+
+function pointGradualSoftcap(type, num, start, pow, inv) {
+	switch (type) {
+		case 3:
+			if (inv) {
+				return num.log(start).sub(1).mul(pow).add(1).root(pow).pow_base(start)
+			} else {
+				return num.log(start).pow(pow).sub(1).div(pow).add(1).pow_base(start)
+			}
+			break;
+		// case 2 is reserved for prestige essence
+		case 2:
+			if (inv) {
+				return num.log10().root(pow).pow10().root(start)
+			} else {
+				return num.pow(start).log10().pow(pow).pow10()
+			}
+			break;
+		case 1:
+			if (inv) {
+				return num.log10().root(pow).pow10()
+			} else {
+				return num.log10().pow(pow).pow10()
+			}
+			break;
+		case 0:
+			if (inv) {
+				return num.div(start).sub(1).mul(pow).add(1).root(pow).mul(start)
+			} else {
+				return num.div(start).pow(pow).sub(1).div(pow).add(1).mul(start)
+			}
+			break;
+		default:
+			throw new Error(`invalid type ${type} for pointGradualSoftcap`)
+	}
+}
+
+function gameLoop(diff) {
+	if (isEndgame() || tmp.gameEnded){
+		tmp.gameEnded = true
+		clearParticles()
+	}
+
+	if (isNaN(diff) || diff < 0) diff = 0
+	if (tmp.gameEnded && !player.keepGoing) {
+		diff = 0
+		//player.tab = "tmp.gameEnded"
+		clearParticles()
+	}
+
+	if (maxTickLength) {
+		let limit = maxTickLength()
+		if(diff > limit)
+			diff = limit
+	}
+	addTime(diff)
+
+    player.timeSpeed = D(1)
+    player.globalTS = Decimal.mul(player.timeSpeed, player.setTimeSpeed)
+
+	if (tmp.reductionFactors) {
+		tmp.reductionFactors.dilate.exp = D(1.25)
+		tmp.reductionFactors.sc1.exp = D(2)
+		tmp.reductionFactors.sc1.start = D(1e10)
+		tmp.reductionFactors.sc2.exp = D(3)
+		tmp.reductionFactors.sc2.start = D(1e33)
+	} else {
+		tmp.reductionFactors = {
+			dilate: {exp: D(1.25), eff: D(1)},
+			sc1:    {exp: D(2),    start: D(1e10), eff: D(1)},
+			sc2:    {exp: D(3),    start: D(1e33), eff: D(1)},
+			sc3:    {exp: D(2.5),  start: D('ee100'), eff: D(1)}
+		}
+	}
+
+    
+    if (inChallenge('p', 11)) {
+		tmp.reductionFactors.dilate.exp = tmp.reductionFactors.dilate.exp.mul(Decimal.pow(25/24, tmp.p.challenges[11].getDepths));
+    }
+
+	if (hasMilestone('p', 0)) {
+		tmp.reductionFactors.dilate.exp = tmp.reductionFactors.dilate.exp.div(
+			1.25/(
+				inChallenge('q', 11)
+					? 1.2
+					: 1.24)
+		)
+	}
+	
+	if (hasMilestone('p', 100)) {
+		tmp.reductionFactors.dilate.exp = tmp.reductionFactors.dilate.exp.div(1.25/(
+			inChallenge('q', 11)
+				? 1.225
+				: 1.245
+		))
+	}
+	
+	if (challengeCompletions('p', 14).gte(1) && !(inChallenge('p', 11) || inChallenge('p', 12) || inChallenge('p', 14))) {
+		tmp.reductionFactors.sc1.start = tmp.reductionFactors.sc1.start.mul(tmp.p.challenges[14].rewardEffect)
+	}
+	
+	tmp.reductionFactors.sc1.exp = tmp.reductionFactors.sc1.exp.root(tmp.p.buyables[32].effect.pts)
+
+    if (challengeCompletions('p', 11).gte(1)) {
+        tmp.reductionFactors.sc1.exp = tmp.reductionFactors.sc1.exp.pow(0.5);
+    }
+	
+	if (hasUpgrade('p', 261)) {
+		tmp.reductionFactors.sc1.exp = tmp.reductionFactors.sc1.exp.pow(0.9);
+	}
+	
+	if (hasUpgrade('p', 44)) {
+		tmp.reductionFactors.sc2.start = tmp.reductionFactors.sc2.start.mul(upgradeEffect('p', 44))
+	}
+	
+    if (inChallenge('p', 14) || inChallenge('q', 13)) {
+		tmp.reductionFactors.sc1.start = tmp.reductionFactors.sc1.start.root(tmp.p.challenges[14].getDepths.add(1).mul(2))
+        tmp.reductionFactors.sc2.start = tmp.reductionFactors.sc2.start.root(tmp.p.challenges[14].getDepths.add(1).mul(2))
+    }
+	
+	if (hasMilestone('p', 7)) {
+		tmp.reductionFactors.sc2.exp = tmp.reductionFactors.sc2.exp.root(player.p.buyables[51].sub(7).pow_base(1/(inChallenge('q', 11) ? 0.96 : 0.98)));
+	}
+
+	if (challengeCompletions('p', 12).gte(18)) {
+		tmp.reductionFactors.sc2.start = D(Infinity)
+		tmp.reductionFactors.sc1.start = D(Infinity)
+		tmp.reductionFactors.sc2.exp = D(1)
+		tmp.reductionFactors.sc1.exp = D(1)
+	}
+
+	tmp.reductionFactors.sc3.start = D(inChallenge('q', 13) ? 'ee6' : 'eeee300')
+
+	// cap lesser tier softcaps before higher tier softcaps
+	tmp.reductionFactors.sc2.start = tmp.reductionFactors.sc2.start.min(tmp.reductionFactors.sc3.start)
+	tmp.reductionFactors.sc1.start = tmp.reductionFactors.sc1.start.min(tmp.reductionFactors.sc2.start)
+	// end
+
+    let finalPointGen = tmp.pointGen.mul(player.globalTS)
+
+	if (inChallenge('p', 23)) {
+		player.points = D(0)
+	}
+
+    let previous = player.points
+
+    if (player.points.gte(tmp.reductionFactors.sc3.start)) {
+		tmp.reductionFactors.sc3.eff = pointGradualSoftcap(3, player.points, tmp.reductionFactors.sc3.start, tmp.reductionFactors.sc3.exp, false)
+		tmp.reductionFactors.sc3.eff = tmp.reductionFactors.sc3.eff.log(player.points)
+
+        player.points = pointGradualSoftcap(3, player.points, tmp.reductionFactors.sc3.start, tmp.reductionFactors.sc3.exp, false)
+    } else {
+		tmp.reductionFactors.sc3.eff = D(1)
+	}
+
+    if (player.points.gte(tmp.reductionFactors.sc2.start)) {
+		tmp.reductionFactors.sc2.eff = pointGradualSoftcap(0, player.points, tmp.reductionFactors.sc2.start, tmp.reductionFactors.sc2.exp, false)
+		tmp.reductionFactors.sc2.eff = pointGradualSoftcap(0, tmp.reductionFactors.sc2.eff, tmp.reductionFactors.sc1.start, tmp.reductionFactors.sc1.exp, false)
+		let r = tmp.reductionFactors.sc2.eff
+		tmp.reductionFactors.sc2.eff = pointGradualSoftcap(1, tmp.reductionFactors.sc2.eff, D(10), tmp.reductionFactors.dilate.exp, false)
+		if (Decimal.eq_tolerance(tmp.reductionFactors.sc2.eff, tmp.reductionFactors.sc2.eff.add(finalPointGen))) {
+			tmp.reductionFactors.sc2.eff = tmp.reductionFactors.sc2.eff.div(r)
+		} else {
+			tmp.reductionFactors.sc2.eff = pointGradualSoftcap(1, tmp.reductionFactors.sc2.eff.add(finalPointGen), D(10), tmp.reductionFactors.dilate.exp, true)
+			tmp.reductionFactors.sc2.eff = pointGradualSoftcap(0, tmp.reductionFactors.sc2.eff, tmp.reductionFactors.sc1.start, tmp.reductionFactors.sc1.exp, true)
+			tmp.reductionFactors.sc2.eff = pointGradualSoftcap(0, tmp.reductionFactors.sc2.eff, tmp.reductionFactors.sc2.start, tmp.reductionFactors.sc2.exp, true)
+			tmp.reductionFactors.sc2.eff = tmp.reductionFactors.sc2.eff.sub(player.points).div(finalPointGen).recip()
+			tmp.reductionFactors.sc2.eff = tmp.reductionFactors.sc2.eff.div(tmp.reductionFactors.dilate.eff)
+			tmp.reductionFactors.sc2.eff = tmp.reductionFactors.sc2.eff.div(tmp.reductionFactors.sc1.eff)
+		}
+
+        player.points = pointGradualSoftcap(0, player.points, tmp.reductionFactors.sc2.start, tmp.reductionFactors.sc2.exp, false)
+    } else {
+		tmp.reductionFactors.sc2.eff = D(1)
+	}
+
+    if (player.points.gte(tmp.reductionFactors.sc1.start)) {
+		tmp.reductionFactors.sc1.eff = pointGradualSoftcap(0, player.points, tmp.reductionFactors.sc1.start, tmp.reductionFactors.sc1.exp, false)
+		let r = tmp.reductionFactors.sc1.eff
+		tmp.reductionFactors.sc1.eff = pointGradualSoftcap(1, tmp.reductionFactors.sc1.eff, D(10), tmp.reductionFactors.dilate.exp, false)
+		if (Decimal.eq_tolerance(tmp.reductionFactors.sc1.eff, tmp.reductionFactors.sc1.eff.add(finalPointGen))) {
+			tmp.reductionFactors.sc1.eff = tmp.reductionFactors.sc1.eff.div(r)
+		} else {
+			tmp.reductionFactors.sc1.eff = pointGradualSoftcap(1, tmp.reductionFactors.sc1.eff.add(finalPointGen), D(10), tmp.reductionFactors.dilate.exp, true)
+			tmp.reductionFactors.sc1.eff = pointGradualSoftcap(0, tmp.reductionFactors.sc1.eff, tmp.reductionFactors.sc1.start, tmp.reductionFactors.sc1.exp, true)
+			tmp.reductionFactors.sc1.eff = tmp.reductionFactors.sc1.eff.sub(player.points).div(finalPointGen).recip()
+			tmp.reductionFactors.sc1.eff = tmp.reductionFactors.sc1.eff.div(tmp.reductionFactors.dilate.eff)
+		}
+
+		player.points = pointGradualSoftcap(0, player.points, tmp.reductionFactors.sc1.start, tmp.reductionFactors.sc1.exp, false)
+    } else {
+		tmp.reductionFactors.sc1.eff = D(1)
+	}
+
+    if (player.points.gte(10)) {
+		tmp.reductionFactors.dilate.eff = pointGradualSoftcap(1, player.points, D(10), tmp.reductionFactors.dilate.exp, false)
+		if (Decimal.eq_tolerance(tmp.reductionFactors.dilate.eff, tmp.reductionFactors.dilate.eff.add(finalPointGen))) {
+			tmp.reductionFactors.dilate.eff = tmp.reductionFactors.dilate.eff.div(player.points)
+		} else {
+			tmp.reductionFactors.dilate.eff = pointGradualSoftcap(1, tmp.reductionFactors.dilate.eff.add(finalPointGen), D(10), tmp.reductionFactors.dilate.exp, true)
+			tmp.reductionFactors.dilate.eff = tmp.reductionFactors.dilate.eff.sub(player.points).div(finalPointGen).recip()
+		}
+
+		player.points = pointGradualSoftcap(1, player.points, D(10), tmp.reductionFactors.dilate.exp, false)
+    } else {
+		tmp.reductionFactors.dilate.eff = D(1)
+	}
+
+    player.points = player.points.add(finalPointGen.mul(inChallenge('p', 23) ? 1 : diff))
+
+    if (player.points.gte(10)) {
+        player.points = pointGradualSoftcap(1, player.points, D(10), tmp.reductionFactors.dilate.exp, true)
+    }
+    if (player.points.gte(tmp.reductionFactors.sc1.start)) {
+        player.points = pointGradualSoftcap(0, player.points, tmp.reductionFactors.sc1.start, tmp.reductionFactors.sc1.exp, true)
+    }
+    if (player.points.gte(tmp.reductionFactors.sc2.start)) {
+        player.points = pointGradualSoftcap(0, player.points, tmp.reductionFactors.sc2.start, tmp.reductionFactors.sc2.exp, true)
+    }
+    if (player.points.gte(tmp.reductionFactors.sc3.start)) {
+        player.points = pointGradualSoftcap(3, player.points, tmp.reductionFactors.sc3.start, tmp.reductionFactors.sc3.exp, true)
+    }
+
+	if (inChallenge('q', 14)) {
+		player.points = player.points.min('ee8')
+	}
+
+	player.calcPointGen = diff != 0 ? player.points.sub(previous).div(inChallenge('p', 23) ? 1 : diff) : D(0)
+
+    player.bestPoints = Decimal.max(player.bestPoints, player.points)
+
+	for (let x = 0; x <= maxRow; x++){
+		for (item in TREE_LAYERS[x]) {
+			let layer = TREE_LAYERS[x][item]
+			player[layer].resetTime += diff
+			if (tmp[layer].passiveGeneration) generatePoints(layer, diff*tmp[layer].passiveGeneration);
+			if (layers[layer].update) layers[layer].update(diff);
+		}
+	}
+
+	for (row in OTHER_LAYERS){
+		for (item in OTHER_LAYERS[row]) {
+			let layer = OTHER_LAYERS[row][item]
+			player[layer].resetTime += diff
+			if (tmp[layer].passiveGeneration) generatePoints(layer, diff*tmp[layer].passiveGeneration);
+			if (layers[layer].update) layers[layer].update(diff);
+		}
+	}	
+
+	for (let x = maxRow; x >= 0; x--){
+		for (item in TREE_LAYERS[x]) {
+			let layer = TREE_LAYERS[x][item]
+			if (tmp[layer].autoPrestige && tmp[layer].canReset) doReset(layer);
+			if (layers[layer].automate) layers[layer].automate();
+			if (tmp[layer].autoUpgrade) autobuyUpgrades(layer)
+		}
+	}
+
+	for (row in OTHER_LAYERS){
+		for (item in OTHER_LAYERS[row]) {
+			let layer = OTHER_LAYERS[row][item]
+			if (tmp[layer].autoPrestige && tmp[layer].canReset) doReset(layer);
+			if (layers[layer].automate) layers[layer].automate();
+				player[layer].best = player[layer].best.max(player[layer].points)
+			if (tmp[layer].autoUpgrade) autobuyUpgrades(layer)
+		}
+	}
+
+	for (layer in layers){
+		if (layers[layer].milestones) updateMilestones(layer);
+		if (layers[layer].achievements) updateAchievements(layer)
+	}
+
+}
+
+function hardReset(resetOptions) {
+	if (!confirm("Are you sure you want to do this? You will lose all your progress!")) return
+	player = null
+	if(resetOptions) options = null
+	save(true);
+	window.location.reload();
+}
+
+var ticking = false
+
+var interval = setInterval(function() {
+	if (player===undefined||tmp===undefined) return;
+	if (ticking) return;
+	if (tmp.gameEnded&&!player.keepGoing) return;
+	ticking = true
+	let now = Date.now()
+	let diff = (now - player.time) / 1e3
+	if (diff < 0) {
+		console.warn(`diff between frames is less than 0 (${diff}), setting to 0...`)
+		diff = 0
+	}
+
+	if (PAUSE_EVERYTHING > 0) {
+		diff = 0
+		PAUSE_EVERYTHING -= 1
+	}
+
+	let trueDiff = diff
+	if (PAUSE_EVERYTHING === 0) {
+		if (player.offTime !== undefined) {
+			if (player.offTime.remain > modInfo.offlineLimit * 3600) player.offTime.remain = modInfo.offlineLimit * 3600
+			if (player.offTime.remain > 0) {
+				let offlineDiff = Math.max(player.offTime.remain / 10, diff)
+				player.offTime.remain -= offlineDiff
+				diff += offlineDiff
+			}
+			if (!options.offlineProd || player.offTime.remain <= 0) player.offTime = undefined
+		}
+	}
+
+	if (player.devSpeed) diff *= player.devSpeed
+	player.time = now
+	if (needCanvasUpdate){ resizeCanvas();
+		needCanvasUpdate = false;
+	}
+	tmp.scrolled = document.getElementById('treeTab') && document.getElementById('treeTab').scrollTop > 30
+	updateTemp();
+	updateOomps(diff);
+	updateWidth()
+	updateTabFormats()
+	gameLoop(diff)
+	fixNaNs()
+	adjustPopupTime(trueDiff)
+	updateParticles(trueDiff)
+	ticking = false
+}, 50)
+
+setInterval(function() {needCanvasUpdate = true}, 500)
