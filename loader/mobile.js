@@ -87,6 +87,12 @@
     });
     var h = nav.offsetHeight;
     if (h) document.documentElement.style.setProperty('--tmt-mobile-nav-h', h + 'px');
+    // The loader's OWN automation tab gets a hook, because its clickables are laid out in fixed rows of four and a
+    // row narrower than four wraps ragged (measured 3+1 at 412–536 px). mobile.css flattens them there. Scoped to
+    // this one tab on purpose: a game's own grids are its design, and we do not restyle those.
+    var onAu = false;
+    try { onAu = typeof player !== 'undefined' && player && player.tab === 'au'; } catch (e) { onAu = false; }
+    document.documentElement.classList.toggle('tmt-mobile-au', onAu);
   }
 
   // ---- tooltips on touch. Two engine shapes: 2.2.1 `[tooltip]` (shown by :hover:before/:after) and 2.6/2.7

@@ -298,14 +298,27 @@ async function gateMobile(browser, base, ids) {
           await both.evaluate(() => { try { showTab('au'); } catch (e) { /* engines differ; the geometry below still measures */ } });
           await both.waitForTimeout(400);
           auTab = await both.evaluate(MOBILE_PROBE);
+          // The automation grid is FLATTENED. The registry lays its clickables out in fixed rows of four and the
+          // engine renders one box per row, each wrapping alone, so any width fitting fewer than four left an
+          // orphan (measured 3+1 at 412–536 px — a Pixel and an iPhone Pro Max both land there). mobile.css gives
+          // those boxes `display: contents` so the buttons pack in one container instead.
+          // Asserted as the MECHANISM, not as a row-count: counting buttons per visual row needs a tolerance to
+          // group them, and that grouping — not the layout — is what goes wrong first. `display: contents` is the
+          // thing that was fixed, it is exact, and the geometry checks above already catch anything overflowing.
+          auTab.flattened = await both.evaluate(() => {
+            const rows = [...document.querySelectorAll('.col.right .upgRow')].filter((e) => e.querySelector('button.upg'));
+            return { rows: rows.length, contents: rows.filter((e) => getComputedStyle(e).display === 'contents').length };
+          });
         }
         await both.close();
         const fits = (m) => m && m.escaping.length === 0 && m.tooSmall.length === 0 && m.docScrollWidth <= m.vw + 1;
+        const fl = (auTab && auTab.flattened) || { rows: 0, contents: 0 };
+        const evenRows = fl.rows > 0 && fl.contents === fl.rows;   // every clickable row box flattened
         row.both = tree && { auNodes: tree.auNodes, features: tree.features, navOnTree: tree.navButtons.length,
-          treeFits: fits(tree), auTabFits: fits(auTab), auTab: auTab && auTab.tab,
+          treeFits: fits(tree), auTabFits: fits(auTab), auTab: auTab && auTab.tab, flattened: fl, evenRows,
           worst: [...(tree.escaping || []).slice(0, 2), ...((auTab && auTab.escaping) || []).slice(0, 2)] };
         row.bothOk = !!(rb.ready && tree && tree.auNodes === 1 && tree.features > 0 && tree.navButtons.length >= 1
-          && fits(tree) && fits(auTab));
+          && fits(tree) && fits(auTab) && evenRows);
       } else { row.both = null; row.bothOk = true; }
 
       const shot = path.join(REPO, `tools/harness/results/${id}-mobile.png`);
