@@ -319,17 +319,25 @@
       // reserve>=next-upgrade: the reserve is not a number in the table but the cost of the layer's cheapest unowned
       // unlocked own-currency upgrade, read live (R1′: PTR's Enhancers cost 2^(x^1.5) EP and would eat the EP that e11 /
       // e12 / e22 need — the reserve is whichever of those is next, not a literal). No such upgrade = no reserve.
+      // ⚠ The reserve is checked before EVERY purchase, not once per tick. The first cut (P1b) checked it only on the
+      // way in, so a tick that crossed N could spend straight back through it — with an Enhancer at 37 EP and a 400 EP
+      // reserve, 401 EP buys ten of them and leaves 30. R1′: bounded in PTR only because the table's kindOrder runs
+      // `upgrades` before `buyables` and EP moves in `reset` (first), so the upgrade takes the surplus first; the
+      // policy is named `reserve`, so it holds.
       var rsv = /^reserve>=(.*)$/.exec(f.policy);
+      var lim = null;
       if (rsv) {
-        var lim = rsv[1] === 'next-upgrade' ? cheapestOwnUpgradeCost(l) : D(rsv[1]);
+        lim = rsv[1] === 'next-upgrade' ? cheapestOwnUpgradeCost(l) : D(rsv[1]);
         if (lim !== null && D(player[l].points).lte(lim)) return 0;
       }
+      var reserved = function () { return lim !== null && D(player[l].points).lte(lim); };
       var ids = f.order ? f.order.slice() : numIds(L.buyables);
       if (f.policy === 'highest-first' && !f.order) ids.reverse();
       var n = 0;
       for (var i = 0; i < ids.length; i++) {
         var id = ids[i];
         if (!B[id] || !B[id].unlocked) continue;
+        if (reserved()) break;
         if (f.policy === 'buyMax' && L.buyables[id].buyMax && typeof buyMaxBuyable === 'function') {
           var b0 = String(player[l].buyables[id]);
           buyMaxBuyable(l, id);
@@ -341,6 +349,7 @@
           buyBuyable(l, id);
           if (String(player[l].buyables[id]) === before) break;
           n++;
+          if (reserved()) break;
         }
       }
       return n;
