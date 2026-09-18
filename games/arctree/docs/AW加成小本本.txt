@@ -1,0 +1,64 @@
+L层：
+effectbase: 1.5->2
+显示效果
+Upg11（Optimistic Thoughts）：效果重做：Conclusion由45~5变成45~100
+Upg12（Wandering For Beauty）：光eff影响 ^0.5->0.75
+Upg13（Experiencing Happiness）：光eff影响 ^0.15->0.2
+Upg14（After That Butterfly）：^0.5->^1
+Upg21（Seeking Delight.）：效果重做：milestone.length增强L点数获取
+Upg23（Fragment Sympathy）：效果重做：Directly Transfer效果现在也加成Frag
+Upg33（Prepare To Travel）：加成效果最大值从+0.3变成+0.5
+增加四个新升级（棒读）
+
+D层：
+effectbase: 1.5->5
+显示效果
+Upg11（Overclock）：效果重做：在生成速度低于当前Frag值时，乘三倍
+Upg12（Seeking For Other Sides）：暗eff影响 ^0.5->0.75
+Upg13（Crack Everything）：暗eff影响 ^0.5->0.6
+Upg14（Wrath In Calm）：^0.5->^1
+Upg21（Power Override）：效果重做：mem softcap后推由50x变为log10(Mem+1)x
+Upg32（Moments of Anger）：暗点数 x0.5->x1
+增加四个新升级（棒读）
+
+R层：
+effect：x0.1->x0.5
+第三里程碑更改
+显示挑战加成
+challenge11（Broken Toyhouse）：^0.5->^1
+challenge31（The Balance of Conflict）：x0.5->x2
+新添“曲终人散”页面挑战
+
+F层：
+effect：^2->^3.25
+第三里程碑更改
+显示灯塔加成
+Guiding Scythes base effect before Uprising Tower challenge: 2->2.5
+Guiding Scythes base effect after Uprising Tower challenge: 4->5
+Upg42（Forgotten Memories）公式加成：加成再乘mem的二次对数
+Upg22（Delightful Memories）: x0.5->x2
+Upg44（Dark Memories）：x0.05->x1
+Upg11（White Beacon）：x0.5->x1
+Upg51（Yellow Beacon）：^0.5->^0.75
+Upg55（Black Beacon）：x0.25->x1
+Upg21（Delightful-Yellow Synergy）：x0.5->x2
+Upg41（Forgotten-White Synergy）：x0.5->x2
+Upg52（Forgotten-Black Synergy）：x0.5->x2
+Upg12（Delightful-Red Synergy）：x0.5->x2
+Upg14（Joyful-White Synergy）：x0.5->x2
+Upg15（Red Beacon）：^0.5->^0.75
+Upg23（Monument of Light）：÷1.5->÷1
+Upg24（Joyful Memories）：x0.01->x1
+Upg25（Joyful-Black Synergy）：x0.5->x2
+Upg45（Dark-Red Synergy）：x0.5->x2
+解锁超镰刀
+
+LC:
+获取指数 ：1.5 -> 1.4
+玫瑰加效果
+解锁创世层
+
+FL:
+获取指数 ：1.5 -> 1.4
+解锁方向协同器
+解锁忍耐层
