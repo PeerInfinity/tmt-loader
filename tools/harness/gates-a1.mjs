@@ -11,7 +11,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { chromium } from 'playwright';
-import { REPO, GAMES, parseArgs, startServer, readManifest, headCommit, treeDirty, writeJSON } from './lib.mjs';
+import { REPO, GAMES, parseArgs, startServer, readManifest, headCommit, treeDirty, writeJSON, entryOnly } from './lib.mjs';
 import { runNode } from './run.mjs';
 import { openContext, openGame, pageTick } from './page.mjs';
 import { parity } from './parity.mjs';
@@ -19,6 +19,7 @@ import { checkManifest } from './check-manifest.mjs';
 import { nodeIds, compareIds } from './check-goldens.mjs';
 import os from 'node:os';
 import { spawn } from 'node:child_process';
+entryOnly(import.meta.url);  // a battery, not a library — see lib.mjs
 
 // L1's off-profile anchors (results/SUMMARY.md, L1 section at 56c5e34): idle 1000×0.05 and census policy 1000×0.05.
 // The 200×0.05 idle anchor is the census's, read from manifest.headless.idleHash.

@@ -1,6 +1,7 @@
 // Shared harness helpers: args, the static server (by PID), sha256, the repo root.
 import fs from 'node:fs';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import crypto from 'node:crypto';
 import { spawn, execFileSync } from 'node:child_process';
 
@@ -88,4 +89,22 @@ export function writeLadder(file, L) {
 /** player JSON text with the state mask applied (`time`, `offTime` at every depth) — for divergence reports. */
 export function maskedPlayer(text, mask = ['time', 'offTime']) {
   return JSON.stringify(JSON.parse(text), function (k, v) { return mask.includes(k) ? undefined : v; });
+}
+
+/**
+ * Refuse to be imported. A `gates-*.mjs` file is a BATTERY, not a library: its body runs at top level, spawning
+ * boot children and — for gates-h1 and gates-p1a — REWRITING committed snapshots. Importing one to read a constant
+ * once started a second battery alongside the first: 12 boot children on 8 cores and 4 orphaned processes when the
+ * importer was killed. Nothing imports these today, so refusing turns a silent, expensive mistake into an immediate
+ * one that says what to do instead.
+ *
+ * `gates-r1.mjs` solves the same problem by wrapping its body in `if (ENTRY)`; these nine run top-level, where a
+ * wrap would mean re-indenting hundreds of lines, so they bail at the top instead.
+ */
+export function entryOnly(metaUrl) {
+  const self = path.resolve(fileURLToPath(metaUrl));
+  const argv = process.argv[1] ? path.resolve(process.argv[1]) : null;
+  if (argv !== self) {
+    throw new Error(`${path.basename(self)} is a battery, not a library — importing it RUNS it (boot children, and for some gates a rewrite of committed snapshots). Execute it as the entry point instead.`);
+  }
 }

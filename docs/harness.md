@@ -1,5 +1,10 @@
 # The harness path for long games: ladder, snapshots, diff calibration
 
+> ⛔ **A  file is a battery, not a library.** Its body runs at top level, so importing one — to read a
+> constant, say — RUNS it: boot children, and for  and  a rewrite of the committed snapshots
+> under . They call  (lib.mjs) and refuse to be imported, saying so.
+>  does the same by wrapping its body in . Run them; do not import them.
+
 A full game of a Modding Tree fork is days of game time; at diff 1 one Prestige Tree Rewritten game-day is tens of
 minutes of wall time in Node. The harness therefore measures a game as a **ladder** of machine-checkable marks, keeps a
 **snapshot** at every mark it reaches, and runs each new stretch **from the previous mark's snapshot** at the coarsest

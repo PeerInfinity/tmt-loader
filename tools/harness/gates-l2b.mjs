@@ -12,10 +12,11 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { chromium } from 'playwright';
-import { REPO, GAMES, parseArgs, startServer, readManifest, headCommit, treeDirty } from './lib.mjs';
+import { REPO, GAMES, parseArgs, startServer, readManifest, headCommit, treeDirty, entryOnly } from './lib.mjs';
 import { checkManifest } from './check-manifest.mjs';
 import { parity } from './parity.mjs';
 import { appendSection } from './summary.mjs';
+entryOnly(import.meta.url);  // a battery, not a library — see lib.mjs
 
 const a = parseArgs(process.argv.slice(2));
 const PART = String(a.part || '1');

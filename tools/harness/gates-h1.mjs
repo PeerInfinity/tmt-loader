@@ -15,9 +15,10 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { spawn, execFileSync } from 'node:child_process';
-import { REPO, parseArgs, headCommit, treeDirty, writeJSON, readLadder, writeLadder, firstDivergence, maskedPlayer } from './lib.mjs';
+import { REPO, parseArgs, headCommit, treeDirty, writeJSON, readLadder, writeLadder, firstDivergence, maskedPlayer, entryOnly } from './lib.mjs';
 import { appendSection } from './summary.mjs';
 import { ladderSlice } from './run.mjs';
+entryOnly(import.meta.url);  // a battery, not a library — see lib.mjs
 
 const a = parseArgs(process.argv.slice(2), ['no-summary', 'rerender']);
 const PART = String(a.part || '1');

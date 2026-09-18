@@ -11,10 +11,11 @@ import os from 'node:os';
 import path from 'node:path';
 import { spawn } from 'node:child_process';
 import { chromium } from 'playwright';
-import { REPO, parseArgs, startServer, readManifest, headCommit, treeDirty, writeJSON } from './lib.mjs';
+import { REPO, parseArgs, startServer, readManifest, headCommit, treeDirty, writeJSON, entryOnly } from './lib.mjs';
 import { runNode } from './run.mjs';
 import { parity } from './parity.mjs';
 import { nodeIds, compareIds } from './check-goldens.mjs';
+entryOnly(import.meta.url);  // a battery, not a library — see lib.mjs
 
 // L1's off-profile anchors (results/SUMMARY.md, L1 section at 56c5e34); the 200×0.05 idle anchor is manifest.headless.idleHash.
 const ANCHORS = {

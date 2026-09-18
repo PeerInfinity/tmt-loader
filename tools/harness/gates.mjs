@@ -10,7 +10,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { chromium } from 'playwright';
-import { REPO, GAMES, parseArgs, startServer, readManifest, headCommit, treeDirty, writeJSON, firstDivergence } from './lib.mjs';
+import { REPO, GAMES, parseArgs, startServer, readManifest, headCommit, treeDirty, writeJSON, firstDivergence, entryOnly } from './lib.mjs';
 import { runNode } from './run.mjs';
 import { runPage } from './page.mjs';
 import { parity } from './parity.mjs';
@@ -19,6 +19,7 @@ import { checkManifest } from './check-manifest.mjs';
 import { nodeIds, compareIds } from './check-goldens.mjs';
 import { checkGamesTable, checkDeclined, OUT as GAMES_DOC, DECLINED } from '../games-table.mjs';
 import { execFileSync } from 'node:child_process';
+entryOnly(import.meta.url);  // a battery, not a library — see lib.mjs
 
 const UPSTREAM = { ptr: path.join(os.homedir(), 'CC/Prestige-Tree'), something: path.join(os.homedir(), 'CC/tmt-fork-census/clones/Justcubing97__JC97sSomethingTree') };
 const a = parseArgs(process.argv.slice(2), ['no-automation']);

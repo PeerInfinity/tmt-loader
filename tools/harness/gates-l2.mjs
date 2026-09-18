@@ -8,10 +8,11 @@
 import path from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { chromium } from 'playwright';
-import { REPO, GAMES, parseArgs, startServer, readManifest, headCommit, treeDirty } from './lib.mjs';
+import { REPO, GAMES, parseArgs, startServer, readManifest, headCommit, treeDirty, entryOnly } from './lib.mjs';
 import { runNode } from './run.mjs';
 import { runPage, openContext, openGame, AU_NODE_SELECTOR, LAYER_NODE_SELECTOR } from './page.mjs';
 import { appendSection } from './summary.mjs';
+entryOnly(import.meta.url);  // a battery, not a library — see lib.mjs
 
 // L1's G1 layer-node counts (SUMMARY, L1 section; plan §10a) — A1 made something's 11 with the au node
 const L1_TREE_NODES = { ptr: 8, something: 10 };
