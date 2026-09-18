@@ -1,0 +1,70 @@
+{
+  "id": "the-tube-tree",
+  "commit": "7efcaf31cef99888d371af7d8260fec750428cb1",
+  "layers": {
+    "info-tab": {
+      "row": "otherside",
+      "type": "none"
+    },
+    "options-tab": {
+      "row": "otherside",
+      "type": "none"
+    },
+    "changelog-tab": {
+      "row": "otherside",
+      "type": "none"
+    },
+    "f": {
+      "row": 0,
+      "type": "custom"
+    },
+    "fire": {
+      "row": 1,
+      "type": "none"
+    },
+    "l": {
+      "row": 1,
+      "type": "normal"
+    },
+    "a": {
+      "row": 1,
+      "type": "normal"
+    },
+    "ach": {
+      "row": "side",
+      "type": "none"
+    },
+    "blank": {
+      "row": null,
+      "type": "none"
+    },
+    "tree-tab": {
+      "row": null,
+      "type": "none"
+    }
+  },
+  "ids": [
+    "f:upg:11",
+    "f:upg:12",
+    "f:upg:13",
+    "f:upg:14",
+    "f:upg:15",
+    "f:upg:16",
+    "f:upg:17",
+    "f:buy:11",
+    "f:buy:12",
+    "fire:upg:11",
+    "fire:upg:12",
+    "fire:upg:13",
+    "ach:ach:11",
+    "ach:ach:12",
+    "ach:ach:13"
+  ],
+  "counts": {
+    "ms": 0,
+    "upg": 10,
+    "buy": 2,
+    "ch": 0,
+    "ach": 3
+  }
+}

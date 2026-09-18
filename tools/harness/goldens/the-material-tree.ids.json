@@ -1,0 +1,66 @@
+{
+  "id": "the-material-tree",
+  "commit": "4022ce4e02e9f9a9d80c7e36282346dfbd36b194",
+  "layers": {
+    "info-tab": {
+      "row": "otherside",
+      "type": "none"
+    },
+    "options-tab": {
+      "row": "otherside",
+      "type": "none"
+    },
+    "changelog-tab": {
+      "row": "otherside",
+      "type": "none"
+    },
+    "blank": {
+      "row": null,
+      "type": "none"
+    },
+    "tree-tab": {
+      "row": null,
+      "type": "none"
+    },
+    "st": {
+      "row": 1,
+      "type": "normal"
+    },
+    "m": {
+      "row": 10,
+      "type": "static"
+    },
+    "s": {
+      "row": 2,
+      "type": "normal"
+    }
+  },
+  "ids": [
+    "st:upg:11",
+    "st:upg:12",
+    "st:upg:13",
+    "st:upg:14",
+    "st:upg:15",
+    "st:upg:21",
+    "st:upg:22",
+    "st:upg:23",
+    "st:upg:24",
+    "st:upg:25",
+    "st:upg:31",
+    "st:upg:32",
+    "st:upg:33",
+    "st:upg:34",
+    "st:upg:35",
+    "m:ms:1",
+    "m:ms:2",
+    "s:upg:11",
+    "s:upg:12"
+  ],
+  "counts": {
+    "ms": 2,
+    "upg": 17,
+    "buy": 0,
+    "ch": 0,
+    "ach": 0
+  }
+}

@@ -1,0 +1,130 @@
+{
+  "schema": 1,
+  "id": "zavrsni-rad",
+  "name": "Zavrsni rad",
+  "version": "1.0",
+  "author": "Hrvoje Dragic",
+  "upstream": {
+    "repo": "TZR-byte/Inkrementalka",
+    "url": "https://github.com/TZR-byte/Inkrementalka.git",
+    "branch": "master",
+    "commit": "41343d9729e7ce8f35526a91ff06f674b7d742e0",
+    "pushed_at": "2025-06-26T00:23:02Z"
+  },
+  "engine": {
+    "tmtNum": "2.7",
+    "stock_commit": "4d8a86c",
+    "moved": false,
+    "deviation": {
+      "added": 11,
+      "removed": 8
+    }
+  },
+  "entry": "index.html",
+  "load": {
+    "onload": "load()",
+    "scripts": [
+      "js/technical/break_eternity.js",
+      "js/technical/layerSupport.js",
+      "js/mod.js",
+      "js/technical/loader.js",
+      "js/technical/temp.js",
+      "js/technical/displays.js",
+      "js/game.js",
+      "js/utils.js",
+      "js/utils/easyAccess.js",
+      "js/technical/systemComponents.js",
+      "js/components.js",
+      "js/technical/canvas.js",
+      "js/technical/particleSystem.js",
+      "js/utils/NumberFormating.js",
+      "js/utils/options.js",
+      "js/utils/save.js",
+      "js/utils/themes.js"
+    ],
+    "renderOnly": [
+      "js/technical/systemComponents.js",
+      "js/components.js",
+      "js/technical/canvas.js",
+      "js/technical/particleSystem.js"
+    ],
+    "modFilesPrefix": "js/",
+    "modFiles": [
+      "layers.js",
+      "tree.js"
+    ],
+    "external": {
+      "https://unpkg.com/vue@2.7.16/dist/vue.min.js": "vendor",
+      "https://fonts.googleapis.com/css?family=Inconsolata": "drop"
+    },
+    "vendor": {
+      "https://unpkg.com/vue@2.7.16/dist/vue.min.js": {
+        "path": "vendor/vue-2.7.16.min.js",
+        "sha256": "3c1d4b0c549e8de9d4a9bafb12ab70b6a1ac747d07293b98c5b25b6632999afd"
+      }
+    }
+  },
+  "save": {
+    "keyRule": "getModID (modInfo.id ?? name-author)",
+    "key": "Zavrsni-rad-Hrvoje-Dragic"
+  },
+  "headless": {
+    "prestubs": [],
+    "renderStubs": [
+      "loadVue",
+      "resizeCanvas",
+      "retrieveCanvasData",
+      "drawTree",
+      "drawComponentBranches",
+      "drawTreeBranch",
+      "makeParticles",
+      "makeShinies",
+      "updateParticles",
+      "setDir",
+      "setSpeed",
+      "updateMouse",
+      "getOpacity",
+      "constructParticleStyle",
+      "clearParticles",
+      "sin",
+      "cos",
+      "tan",
+      "asin",
+      "acos",
+      "atan"
+    ],
+    "idleHash": {
+      "ticks": 200,
+      "diff": 0.05,
+      "hash": "86f77aa58abac84b"
+    },
+    "deterministic": true
+  },
+  "license": {
+    "githubSpdx": "NOASSERTION",
+    "files": {
+      "LICENSE": "MIT",
+      "Prestige-tree-license": "MIT"
+    },
+    "verdict": "MIT"
+  },
+  "census": {
+    "full_name": "TZR-byte/Inkrementalka",
+    "head": "41343d9",
+    "score": 41.6,
+    "layers": 13,
+    "rows": 6,
+    "milestones": 4,
+    "upgrades": 43,
+    "buyables": 1,
+    "challenges": 0,
+    "achievements": 0,
+    "trace_fields": 1
+  },
+  "patches": [],
+  "generated": {
+    "by": "tmt-fork-census scripts/manifest.mjs",
+    "commit": "b510bb6",
+    "at": "2026-09-18T02:19:39.899Z"
+  }
+}

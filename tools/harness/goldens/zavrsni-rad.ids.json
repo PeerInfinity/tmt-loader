@@ -1,0 +1,135 @@
+{
+  "id": "zavrsni-rad",
+  "commit": "41343d9729e7ce8f35526a91ff06f674b7d742e0",
+  "layers": {
+    "info-tab": {
+      "row": "otherside",
+      "type": "none"
+    },
+    "options-tab": {
+      "row": "otherside",
+      "type": "none"
+    },
+    "changelog-tab": {
+      "row": "otherside",
+      "type": "none"
+    },
+    "px": {
+      "row": 0,
+      "type": "normal"
+    },
+    "kpx": {
+      "row": 1,
+      "type": "normal"
+    },
+    "mpx": {
+      "row": 2,
+      "type": "normal"
+    },
+    "Screen": {
+      "row": 0,
+      "type": "normal"
+    },
+    "kib": {
+      "row": 1,
+      "type": "normal"
+    },
+    "kb": {
+      "row": 1,
+      "type": "normal"
+    },
+    "mib": {
+      "row": 2,
+      "type": "normal"
+    },
+    "mb": {
+      "row": 2,
+      "type": "normal"
+    },
+    "gib": {
+      "row": 3,
+      "type": "normal"
+    },
+    "gb": {
+      "row": 3,
+      "type": "normal"
+    },
+    "tb": {
+      "row": 4,
+      "type": "normal"
+    },
+    "tib": {
+      "row": 4,
+      "type": "normal"
+    },
+    "computingPower": {
+      "row": 5,
+      "type": "normal"
+    },
+    "blank": {
+      "row": null,
+      "type": "none"
+    },
+    "tree-tab": {
+      "row": null,
+      "type": "none"
+    }
+  },
+  "ids": [
+    "px:upg:11",
+    "px:upg:12",
+    "px:upg:13",
+    "px:upg:14",
+    "px:upg:15",
+    "px:upg:21",
+    "px:upg:22",
+    "px:upg:23",
+    "px:upg:24",
+    "px:upg:25",
+    "kpx:upg:11",
+    "kpx:upg:12",
+    "kpx:upg:13",
+    "kpx:upg:14",
+    "kpx:upg:15",
+    "kpx:upg:21",
+    "kpx:upg:22",
+    "kpx:upg:23",
+    "kpx:upg:24",
+    "kpx:upg:25",
+    "kpx:upg:31",
+    "mpx:upg:55",
+    "Screen:ms:0",
+    "Screen:ms:1",
+    "Screen:ms:2",
+    "Screen:ms:3",
+    "Screen:upg:11",
+    "Screen:upg:12",
+    "Screen:upg:13",
+    "Screen:upg:14",
+    "Screen:upg:21",
+    "Screen:upg:22",
+    "Screen:buy:11",
+    "kib:upg:11",
+    "kib:upg:12",
+    "kib:upg:21",
+    "kb:upg:11",
+    "kb:upg:12",
+    "kb:upg:21",
+    "mib:upg:11",
+    "mib:upg:12",
+    "mib:upg:21",
+    "mb:upg:11",
+    "mb:upg:12",
+    "mb:upg:21",
+    "tb:upg:11",
+    "tib:upg:11",
+    "computingPower:upg:11"
+  ],
+  "counts": {
+    "ms": 4,
+    "upg": 43,
+    "buy": 1,
+    "ch": 0,
+    "ach": 0
+  }
+}

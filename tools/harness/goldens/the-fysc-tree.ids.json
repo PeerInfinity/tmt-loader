@@ -1,0 +1,68 @@
+{
+  "id": "the-fysc-tree",
+  "commit": "298048c992cff48dd4b268ef2a19c0d99ba996bc",
+  "layers": {
+    "info-tab": {
+      "row": "otherside",
+      "type": "none"
+    },
+    "options-tab": {
+      "row": "otherside",
+      "type": "none"
+    },
+    "changelog-tab": {
+      "row": "otherside",
+      "type": "none"
+    },
+    "subs": {
+      "row": 0,
+      "type": "normal"
+    },
+    "hexzd": {
+      "row": 1,
+      "type": "normal"
+    },
+    "ct": {
+      "row": 1,
+      "type": "static"
+    },
+    "blank": {
+      "row": null,
+      "type": "none"
+    },
+    "tree-tab": {
+      "row": null,
+      "type": "none"
+    }
+  },
+  "ids": [
+    "subs:upg:11",
+    "subs:upg:12",
+    "subs:upg:13",
+    "subs:upg:21",
+    "subs:upg:22",
+    "subs:upg:23",
+    "subs:upg:31",
+    "hexzd:upg:11",
+    "hexzd:upg:12",
+    "hexzd:upg:13",
+    "hexzd:upg:14",
+    "hexzd:upg:15",
+    "hexzd:upg:21",
+    "hexzd:upg:22",
+    "hexzd:upg:23",
+    "hexzd:upg:24",
+    "hexzd:upg:25",
+    "hexzd:buy:11",
+    "hexzd:ch:11",
+    "ct:ms:0",
+    "ct:ms:1"
+  ],
+  "counts": {
+    "ms": 2,
+    "upg": 17,
+    "buy": 1,
+    "ch": 1,
+    "ach": 0
+  }
+}

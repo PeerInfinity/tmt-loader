@@ -1,0 +1,86 @@
+{
+  "id": "the-upgrade-tree",
+  "commit": "33323e4e493b8f69de82ef0de28ea6a41bdae4a9",
+  "layers": {
+    "info-tab": {
+      "row": "otherside",
+      "type": "none"
+    },
+    "options-tab": {
+      "row": "otherside",
+      "type": "none"
+    },
+    "changelog-tab": {
+      "row": "otherside",
+      "type": "none"
+    },
+    "r": {
+      "row": 0,
+      "type": "normal"
+    },
+    "p": {
+      "row": 2,
+      "type": "normal"
+    },
+    "m": {
+      "row": 3,
+      "type": "normal"
+    },
+    "ur": {
+      "row": 4,
+      "type": "static"
+    },
+    "up": {
+      "row": 4,
+      "type": "static"
+    },
+    "pp": {
+      "row": 5,
+      "type": "normal"
+    },
+    "blank": {
+      "row": null,
+      "type": "none"
+    },
+    "tree-tab": {
+      "row": null,
+      "type": "none"
+    }
+  },
+  "ids": [
+    "r:ms:0",
+    "r:ms:1",
+    "r:ms:2",
+    "r:upg:11",
+    "r:upg:12",
+    "r:upg:13",
+    "r:upg:14",
+    "r:upg:21",
+    "r:upg:22",
+    "r:upg:23",
+    "r:upg:24",
+    "r:upg:31",
+    "r:upg:32",
+    "r:buy:11",
+    "p:ms:0",
+    "p:ms:1",
+    "p:ms:2",
+    "p:upg:11",
+    "p:upg:12",
+    "p:upg:13",
+    "p:upg:21",
+    "p:upg:22",
+    "m:upg:11",
+    "m:upg:12",
+    "m:upg:101",
+    "m:upg:102",
+    "m:upg:103"
+  ],
+  "counts": {
+    "ms": 6,
+    "upg": 20,
+    "buy": 1,
+    "ch": 0,
+    "ach": 0
+  }
+}

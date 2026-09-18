@@ -1,0 +1,61 @@
+{
+  "id": "function-of-time",
+  "commit": "45d54cc52bc8517546a6cddd189557c7953f86ea",
+  "layers": {
+    "info-tab": {
+      "row": "otherside",
+      "type": "none"
+    },
+    "options-tab": {
+      "row": "otherside",
+      "type": "none"
+    },
+    "changelog-tab": {
+      "row": "otherside",
+      "type": "none"
+    },
+    "f": {
+      "row": 0,
+      "type": "normal"
+    },
+    "u": {
+      "row": 0,
+      "type": "normal"
+    },
+    "res": {
+      "row": 0,
+      "type": "normal"
+    },
+    "blank": {
+      "row": 0,
+      "type": "none"
+    },
+    "tree-tab": {
+      "row": null,
+      "type": "none"
+    }
+  },
+  "ids": [
+    "f:buy:11",
+    "f:buy:21",
+    "u:upg:11",
+    "u:upg:12",
+    "u:upg:13",
+    "u:upg:14",
+    "u:upg:15",
+    "res:upg:105",
+    "res:buy:11",
+    "res:buy:21",
+    "res:buy:101",
+    "res:buy:102",
+    "res:buy:103",
+    "res:buy:104"
+  ],
+  "counts": {
+    "ms": 0,
+    "upg": 6,
+    "buy": 8,
+    "ch": 0,
+    "ach": 0
+  }
+}

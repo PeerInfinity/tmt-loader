@@ -1,0 +1,105 @@
+{
+  "id": "the-dotree",
+  "commit": "f4ff3ec7d0584bccf96916722a880b4a00d64d3b",
+  "layers": {
+    "info-tab": {
+      "row": "otherside",
+      "type": "none"
+    },
+    "options-tab": {
+      "row": "otherside",
+      "type": "none"
+    },
+    "changelog-tab": {
+      "row": "otherside",
+      "type": "none"
+    },
+    "d": {
+      "row": 0,
+      "type": "normal"
+    },
+    "c": {
+      "row": 1,
+      "type": "normal"
+    },
+    "l": {
+      "row": 1,
+      "type": "static"
+    },
+    "a": {
+      "row": 3,
+      "type": "normal"
+    },
+    "v": {
+      "row": 3,
+      "type": "static"
+    },
+    "p": {
+      "row": 2,
+      "type": "static"
+    },
+    "cb": {
+      "row": 3,
+      "type": "static"
+    },
+    "blank": {
+      "row": null,
+      "type": "none"
+    },
+    "tree-tab": {
+      "row": null,
+      "type": "none"
+    }
+  },
+  "ids": [
+    "d:upg:11",
+    "d:upg:12",
+    "d:upg:13",
+    "d:upg:14",
+    "d:upg:15",
+    "d:upg:16",
+    "d:upg:17",
+    "d:upg:51",
+    "d:upg:52",
+    "d:upg:53",
+    "c:upg:11",
+    "c:upg:12",
+    "c:buy:11",
+    "c:buy:21",
+    "c:buy:22",
+    "c:buy:23",
+    "c:buy:24",
+    "l:ms:0",
+    "l:ms:1",
+    "l:upg:11",
+    "l:upg:12",
+    "l:upg:13",
+    "l:upg:14",
+    "a:ms:0",
+    "a:ms:1",
+    "a:ms:2",
+    "a:upg:11",
+    "a:upg:12",
+    "a:upg:13",
+    "v:ms:0",
+    "v:ms:1",
+    "v:ms:2",
+    "v:buy:11",
+    "v:buy:12",
+    "v:buy:13",
+    "v:buy:51",
+    "v:buy:52",
+    "v:buy:53",
+    "p:ms:0",
+    "p:upg:11",
+    "cb:buy:11",
+    "cb:buy:31"
+  ],
+  "counts": {
+    "ms": 9,
+    "upg": 20,
+    "buy": 13,
+    "ch": 0,
+    "ach": 0
+  }
+}
