@@ -1,0 +1,46 @@
+text {} /** Intentionally left blank **/
+
+lightGlow {
+    color: #ffffa7;
+    text-shadow: 0 0 5px #ffffa7
+}
+
+lightGlow- {
+    color: #ffffa7;
+    text-shadow: 0 0 18px #ffffa7
+}
+
+novamono {
+    font-family: "Nova Mono"
+}
+
+rubik {
+    font-family: "Rubik"
+}
+
+jersey25 {
+    font-family: "Jersey 25"
+}
+
+goop {
+    font-family: "Rubik Wet Paint"
+}
+
+nerfRed {
+    color: #671414;
+    text-shadow: 0 0 3px #893737;
+}
+
+buffGreen {
+    color: #447744;
+    text-shadow: 0 0 3px #336633;
+}
+
+angerRed {
+    color: #aa2323;
+    text-shadow: 0 0 10px #692222;
+}
+
+gray {
+    color: dimgray
+}
