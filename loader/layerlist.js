@@ -1,6 +1,7 @@
 // tmt-loader — the LAYER LIST (docs/mobile.md). A CLASSIC script, inserted after loader/navbar.js and only when
 // `?navbar=1` (which `?mobile=1` implies), so it runs in the global lexical scope and can read the engine's `player`
-// / `tmp` / `LAYERS` and call `showTab` / `doReset` / `buyUpgrade` / `buyBuyable` / `startChallenge` as bare
+// / `tmp` / `LAYERS` and call `showTab` / `doReset` / `buyUpgrade` / `buyBuyable` / `startChallenge` / `unlockUpg`
+// and the engines' own predicates `pseudoUnl` / `milestoneShown` / `hasMilestone` / `maxedChallenge` as bare
 // identifiers (they may be global `let`s / function declarations, not window properties — see docs/contract.md).
 //
 // A SELECTABLE ALTERNATE VIEW OF THE TREE, never a replacement for it (⚖ user, 2026-09-17): the Layers button sits
@@ -12,6 +13,11 @@
 // `player`, registers no timer and adds no clickable id, so it cannot move an automation anchor (gate M1's layers
 // leg and gates-s1 --part 1 measure both claims). ⚠ Assigning nothing is NOT the same as the state holding still:
 // see `withoutRaisingNaN` below, and the note on `act()` about `updateTemp()`.
+//
+// SINCE U2b, THE CHIPS MIRROR THE GAME'S OWN TAB (⚖ user, 2026-09-18). The list does not arrange them: it walks
+// the layer's `tabFormat` — or the engine's default layout where a layer declares none — and takes exactly the
+// components that layout draws, in the order it draws them, with a divider wherever the category changes. State is
+// a chip's APPEARANCE, never its position.
 //
 // ENGINE-GENERIC BY CONSTRUCTION. It knows no layer, no upgrade and no game: every value comes from `tmp[l]` /
 // `player[l]` / `layers[l]`, and anything that evaluates game code is wrapped — a throw costs one card, never the
@@ -124,59 +130,240 @@
     });
   }
 
-  // Sources, in order. Milestones are deliberately absent: their text is a REQUIREMENT string
-  // (`requirementDescription`, "2 Time Capsules"), they are passive, and they inflate the chip count.
-  // `display()` is prose, not a short name — PTR's `ab` clickables all render the bare text "1", which is why
-  // clickables are not a source either.
-  var SOURCES = [
-    { kind: 'upgrades', field: 'title', act: 'upgrade' },
-    { kind: 'buyables', field: 'title', act: 'buyable' },
-    { kind: 'challenges', field: 'name', act: 'challenge' }
-  ];
+  // ---------------------------------------------------------------- WHERE THE ORDER AND THE MEMBERSHIP COME FROM
+  // ⚖ A chip should look, and sit, like the thing it stands for in the game's own tab (user, 2026-09-18). So the
+  // list does not arrange the chips at all: it WALKS THE LAYER'S TAB LAYOUT and takes what that layout draws, in
+  // the order it draws it. One walker answers all four of the requests — membership, order, the category
+  // boundaries the dividers sit on, and where the milestones go.
+  //
+  // ⚠ This REPLACES U2's state ordering (`open → done → locked`). State is a chip's APPEARANCE now, never its
+  // position: a chip that moves when you complete something is a chip that moves under your finger.
+  //
+  // The categories a chip can come from. `act: null` means the component is passive — pressing its chip opens the
+  // tab, because there is nothing for the engine to do.
+  var KINDS = {
+    upgrades:   { field: 'title',                  act: 'upgrade' },
+    buyables:   { field: 'title',                  act: 'buyable' },
+    challenges: { field: 'name',                   act: 'challenge' },
+    // ⚖ MILESTONES GET CHIPS (user, 2026-09-18), reversing U2's exclusion with the reasons on the table: their
+    // text is a requirement string, they are passive, and they roughly double the chip count. Abbreviated by the
+    // same rule as every other chip, and one that yields no tokens gets no chip.
+    milestones: { field: 'requirementDescription', act: null }
+  };
+  // component name → the category it draws. Anything else the layout names draws no chip and is simply walked
+  // past — `clickables` and `achievements` among them, deliberately (docs/mobile.md: a clickable's `display()` is
+  // prose, not a short name, and an achievement is not something you press).
+  var PLURAL = { upgrades: 'upgrades', buyables: 'buyables', challenges: 'challenges', milestones: 'milestones' };
+  var SINGLE = { upgrade: 'upgrades', buyable: 'buyables', challenge: 'challenges', milestone: 'milestones' };
+  var TREE = { 'upgrade-tree': 'upgrades', 'buyable-tree': 'buyables' }; // data = rows of ids, in reading order
+  // The engine's own default when a layer declares NO `tabFormat` — read out of `layer-tab` in
+  // `js/technical/systemComponents.js`, where BOTH reference engines (2.2.1 and 2.7) write the same family.
+  // Note what it says: MILESTONES FIRST and UPGRADES FOURTH, nearly the reverse of the source order U2 used.
+  var DEFAULT_FORMAT = ['infoboxes', 'main-display', 'prestige-button', 'resource-display', 'milestones',
+    '@midsection', 'clickables', 'buyables', 'upgrades', 'challenges', 'achievements'];
+  var MAX_DEPTH = 8;
 
-  /** One chip per component of a layer that HAS a usable short name — a component with none gets no chip rather
-   * than a meaningless one. State is read from `player` alone (no game code runs here). */
-  function chipsOf(l) {
-    var items = [];
-    SOURCES.forEach(function (src) {
-      var decl = safe(function () { return layers[l][src.kind]; }, null);
-      if (!decl || typeof decl !== 'object') return;
-      for (var id in decl) {
-        if (isNaN(id)) continue; // the census's numeric-id rule: `rows`, `respec` and friends are not components
-        var obj = safe(function () { return decl[id]; }, null);
-        if (!obj) continue;
-        var title = textOf(obj, safe(function () { return tmp[l][src.kind][id]; }, null), src.field);
-        var tokens = chipTokens(title);
-        if (!tokens.length) continue; // no usable title → no chip
-        // ⚠ the id is a NUMBER, not the object key's string. The engines push whatever `buyUpgrade` is handed
-        // straight into `player[l].upgrades`, and `hasUpgrade` tests it with `.includes(11)` — a `"11"` in the
-        // save is an upgrade that is bought, paid for, and does nothing. MEASURED on ptr: the chip wrote
-        // `["11"]` where the game's own button writes `[11]`.
-        items.push({ layer: l, kind: src.kind, act: src.act, id: Number(id), title: stripTags(title).trim(), tokens: tokens, state: chipState(l, src, id) });
-      }
-    });
-    nameChips(items);
-    // ORDER: what you can act on, then what is done, then what is locked — by state, never by affordability, which
-    // moves every tick and would make the chips hop about. Ties keep the source order above, then the numeric id.
-    var rank = { open: 0, active: 0, done: 1, locked: 2 };
-    return items.map(function (it, i) { return { it: it, i: i }; })
-      .sort(function (a, b) { return (rank[a.it.state] - rank[b.it.state]) || (a.i - b.i); })
-      .map(function (x) { return x.it; });
+  function declOf(kind, l, id) { return safe(function () { return layers[l][kind][id]; }, null); }
+  function tmpOf(kind, l, id) { return safe(function () { return tmp[l][kind][id]; }, null); }
+
+  /** The component ids of one category, in the order the engine draws them.
+   *  · the grid categories (`upgrades` / `buyables` / `challenges`) render `v-for row` then `v-for col` at
+   *    `row*10+col`, so the numeric id IS the row/column position and ascending numeric id is reading order;
+   *  · `milestones` renders `v-for id in Object.keys(tmp[l].milestones)`, so declaration order is the order.
+   *  ⚠ The grid is BOUNDED by `rows` / `cols`. TMT 2.7 derives them to cover every numeric id (`setRowCol`), so
+   *  there the bound is vacuous — but 2.2.1 does NOT derive them, so an id outside a declared grid is simply never
+   *  drawn, and a chip for it would be a chip for something the tab does not show. */
+  function idsOf(kind, l) {
+    var src = safe(function () { return layers[l][kind]; }, null) || safe(function () { return tmp[l][kind]; }, null);
+    if (!src || typeof src !== 'object') return [];
+    var ids = [];
+    for (var k in src) {
+      if (!safe(function () { var v = src[k]; return !!v && typeof v === 'object'; }, false)) continue;
+      if (kind === 'milestones') { ids.push(k); continue; }
+      if (isNaN(k)) continue; // the census's numeric-id rule: `rows`, `cols`, `respec` are not components
+      ids.push(k);
+    }
+    if (kind === 'milestones') return ids;
+    ids.sort(function (a, b) { return Number(a) - Number(b); });
+    var rows = safe(function () { return tmp[l][kind].rows; }, undefined);
+    var cols = safe(function () { return tmp[l][kind].cols; }, undefined);
+    if (typeof rows === 'number' && typeof cols === 'number' && rows > 0 && cols > 0) {
+      ids = ids.filter(function (id) {
+        var n = Number(id);
+        return Math.floor(n / 10) >= 1 && Math.floor(n / 10) <= rows && n % 10 >= 1 && n % 10 <= cols;
+      });
+    }
+    return ids;
   }
 
-  function chipState(l, src, id) {
-    var unlocked = safe(function () { var u = tmp[l][src.kind][id].unlocked; return u === undefined ? true : !!u; }, true);
-    if (!unlocked) return 'locked';
-    if (src.kind === 'upgrades') {
-      var owned = safe(function () { var a = player[l].upgrades || []; return a.indexOf(Number(id)) >= 0 || a.indexOf(String(id)) >= 0; }, false);
-      return owned ? 'done' : 'open';
+  /** The layer's tab layout, flattened to the components it draws. `out` collects `{layer, kind, id}` in order.
+   *  ⚠ `tabFormat` HAS TWO SHAPES and both are common across the roster:
+   *   · an ARRAY — the component list, in display order;
+   *   · a plain OBJECT — subtabs, of which only `player.subtabs[l].mainTabs` is on screen. The components in the
+   *     other subtabs are genuinely hidden, which is the whole of visibility rule 3.
+   *  Read from `tmp`, never from `layers`: a `tabFormat()` declared as a FUNCTION (PTR has one) is evaluated into
+   *  `tmp` by the engine's own `updateTemp`, and its result is what the tab actually renders. */
+  function layoutOf(l, out, depth, seen) {
+    if (depth > MAX_DEPTH || seen[l]) return;
+    seen[l] = true;
+    var fmt = safe(function () { return tmp[l].tabFormat; }, undefined);
+    if (fmt && typeof fmt === 'object' && !Array.isArray(fmt)) {
+      var key = safe(function () { return player.subtabs[l].mainTabs; }, undefined);
+      var sub = safe(function () { return fmt[key] !== undefined ? fmt[key] : fmt[Object.keys(fmt)[0]]; }, null);
+      if (!sub) return;
+      var emb = safe(function () { return sub.embedLayer; }, null);
+      if (emb) return layoutOf(emb, out, depth + 1, seen);
+      return walkList(safe(function () { return sub.content; }, null), l, out, depth + 1, seen);
     }
-    if (src.kind === 'challenges') {
-      if (safe(function () { return String(player[l].activeChallenge) === String(id); }, false)) return 'active';
+    walkList(Array.isArray(fmt) ? fmt : DEFAULT_FORMAT, l, out, depth + 1, seen);
+  }
+
+  /** One `column` / `row` data array. The engines' own `column` component accepts exactly three item shapes — a
+   *  bare component name, `[name, data]` and `[name, data, style]` — and renders NOTHING for anything else, which
+   *  is why an empty `[]` (a game's own `(cond ? [...] : [])`) costs nothing here either. */
+  function walkList(list, l, out, depth, seen) {
+    if (!Array.isArray(list) || depth > MAX_DEPTH) return;
+    list.forEach(function (item) {
+      if (typeof item === 'string') return emitComp(item, undefined, l, out, depth, seen);
+      if (Array.isArray(item) && (item.length === 2 || item.length === 3)) return emitComp(item[0], item[1], l, out, depth, seen);
+    });
+  }
+
+  function emitComp(name, data, l, out, depth, seen) {
+    if (name === 'column' || name === 'row') return walkList(data, l, out, depth + 1, seen);
+    // `["layer-proxy", [otherLayer, content]]` draws ANOTHER layer's components on this tab. The chip then acts on
+    // that layer, which is why a chip carries its own `layer` rather than the card's.
+    if (name === 'layer-proxy') {
+      var ol = safe(function () { return data[0]; }, null);
+      if (ol) walkList(safe(function () { return data[1]; }, null), ol, out, depth + 1, seen);
+      return;
+    }
+    // nested subtabs: again, only the ACTIVE one is on screen
+    if (name === 'microtabs') {
+      var mt = safe(function () { return tmp[l].microtabs[data][player.subtabs[l][data]]; }, null);
+      if (!mt) return;
+      var emb = safe(function () { return mt.embedLayer; }, null);
+      if (emb) return layoutOf(emb, out, depth + 1, seen);
+      return walkList(safe(function () { return mt.content; }, null), l, out, depth + 1, seen);
+    }
+    if (name === '@midsection') return walkList(safe(function () { return tmp[l].midsection; }, null), l, out, depth + 1, seen);
+    if (TREE[name]) { // data = an array of rows, each an array of ids, drawn in that order
+      var kindT = TREE[name];
+      if (!Array.isArray(data)) return;
+      data.forEach(function (rw) { if (Array.isArray(rw)) rw.forEach(function (id) { out.push({ layer: l, kind: kindT, id: String(id) }); }); });
+      return;
+    }
+    if (SINGLE[name]) { if (data !== undefined && data !== null) out.push({ layer: l, kind: SINGLE[name], id: String(data) }); return; }
+    if (!PLURAL[name]) return;
+    var kind = PLURAL[name], ids = idsOf(kind, l);
+    // ⚠ A plural component can carry a RESTRICTION: TMT 2.7 renders `v-for row in (data === undefined ?
+    // tmp[l][kind].rows : data)` — rows for the grid categories, ids for milestones. TMT 2.2.1's same-named
+    // components take no such prop, and the one that DOES take `data` reads it as a px SIZE ("100px"). So the
+    // signal is that the data is an ARRAY, which a size never is.
+    if (Array.isArray(data) && data.length) {
+      var pick = Object.create(null);
+      data.forEach(function (x) { pick[String(x)] = true; });
+      ids = ids.filter(function (id) { return kind === 'milestones' ? !!pick[String(id)] : !!pick[String(Math.floor(Number(id) / 10))]; });
+    }
+    ids.forEach(function (id) { out.push({ layer: l, kind: kind, id: String(id) }); });
+  }
+
+  // ---------------------------------------------------------------- VISIBILITY — three rules, not one
+  // A component earns a chip when the engine's own render condition would draw it. `chipState` returns the state a
+  // DRAWN component is in, or `null` for one the tab does not show — so one function answers both questions and
+  // they cannot drift apart. Rule 3 (its category is reachable in the CURRENT tab layout) is not here at all: it is
+  // the walker above, which never emits what the layout does not reach.
+  function chipState(kind, l, id) {
+    var t = tmpOf(kind, l, id);
+    if (!t) return null;
+    var unlocked = safe(function () { var u = t.unlocked; return u === undefined ? true : !!u; }, true);
+    if (kind === 'upgrades') {
+      if (!unlocked) {
+        // ⚠ `unlocked === false` does NOT mean hidden. PTR renders a SECOND button for a pseudo-unlocked upgrade
+        // — `v-if="pseudoUnl(layer, data) && !(tmp[layer].upgrades[data].unlocked)"` — a visible teaser you press
+        // to unlock it. The game's own function is the only one that knows; a throw means "not pseudo".
+        return safe(function () { return typeof pseudoUnl === 'function' && !!pseudoUnl(l, Number(id)); }, false) ? 'pseudo' : null;
+      }
+      return safe(function () { var a = player[l].upgrades || []; return a.indexOf(Number(id)) >= 0 || a.indexOf(String(id)) >= 0; }, false) ? 'done' : 'open';
+    }
+    if (!unlocked) return null;
+    if (kind === 'milestones') {
+      // the engines' second condition, and it is the PLAYER's setting: `milestoneShown` reads `msDisplay`, so
+      // "never" hides every milestone and "incomplete" hides the done ones — on the tab and therefore here too.
+      if (!safe(function () { return typeof milestoneShown === 'function' ? !!milestoneShown(l, id) : true; }, true)) return null;
+      return safe(function () { return typeof hasMilestone === 'function' && !!hasMilestone(l, id); }, false) ? 'done' : 'open';
+    }
+    if (kind === 'challenges') {
+      var active = safe(function () { return String(player[l].activeChallenge) === String(id); }, false);
+      var maxed = safe(function () {
+        if (typeof maxedChallenge === 'function') return !!maxedChallenge(l, Number(id));
+        if (typeof hasChallenge === 'function') return !!hasChallenge(l, Number(id));
+        var c = player[l].challenges || {}; return Number(c[id]) > 0;
+      }, false);
+      // both engines hide a finished challenge behind the player's own "hide completed" option (2.2.1 puts the
+      // flag on `player`, 2.7 on `options`) — a fourth render condition, and it belongs to the player
+      var hiding = safe(function () { return !!player.hideChallenges; }, false) || safe(function () { return !!options.hideChallenges; }, false);
+      if (hiding && maxed && !active) return null;
+      if (active) return 'active';
       var done = safe(function () { var c = player[l].challenges || {}; return Number(c[id]) > 0; }, false);
-      return done ? 'done' : 'open';
+      return (maxed || done) ? 'done' : 'open';
     }
-    return 'open';
+    return 'open'; // buyables: `unlocked` is the whole of the engine's condition
+  }
+
+  /** The layer's drawn components, in the tab layout's order, with each one's state. Cheap enough to recompute on
+   *  every refresh — it is what tells the list that the arrangement itself has changed. */
+  function visibleSeq(l) {
+    var seq = [];
+    layoutOf(l, seq, 0, Object.create(null));
+    var out = [], seen = Object.create(null);
+    seq.forEach(function (e) {
+      var key = e.layer + '/' + e.kind + '/' + e.id;
+      if (seen[key]) return;                 // a layout may name the same component twice; it gets ONE chip, the first
+      var st = chipState(e.kind, e.layer, e.id);
+      if (st === null) return;               // the tab does not draw it
+      seen[key] = true;
+      out.push({ layer: e.layer, kind: e.kind, id: e.id, key: key, state: st });
+    });
+    return out;
+  }
+
+  /** One chip per DRAWN component that has a usable short name — one with none gets no chip rather than a
+   *  meaningless one, the rule a milestone with no readable `requirementDescription` inherits. */
+  function chipsOf(l) {
+    var items = [];
+    visibleSeq(l).forEach(function (e) {
+      var K = KINDS[e.kind];
+      if (!K) return;
+      var title = textOf(declOf(e.kind, e.layer, e.id), tmpOf(e.kind, e.layer, e.id), K.field);
+      var tokens = chipTokens(title);
+      if (!tokens.length) return; // no usable title → no chip
+      // ⚠ the id is a NUMBER, not the object key's string. The engines push whatever `buyUpgrade` is handed
+      // straight into `player[l].upgrades`, and `hasUpgrade` tests it with `.includes(11)` — a `"11"` in the
+      // save is an upgrade that is bought, paid for, and does nothing. MEASURED on ptr: the chip wrote
+      // `["11"]` where the game's own button writes `[11]`. A milestone id is a plain key and stays one.
+      items.push({ layer: e.layer, kind: e.kind, act: K.act, id: e.kind === 'milestones' ? e.id : Number(e.id),
+        key: e.key, title: stripTags(title).trim(), tokens: tokens, state: e.state });
+    });
+    nameChips(items);
+    return items; // ⚠ NO sort. The order IS the tab layout's, which is the whole of U2b.
+  }
+
+  /** WHICH CHIPS THE COLLAPSED CARD SHOWS — a parallel array of booleans, one per chip.
+   *
+   * ⚠ This is U2's rule, DELIBERATELY UNCHANGED by U2b: the first `CHIP_CAP`, then the `+N` expander. It is one
+   * function rather than an inline `i >= CHIP_CAP` only so that the next slice has one place to change.
+   *
+   * The question it raises is real and is NOT answered here. The layout order groups a card by category with the
+   * MILESTONES first, so a flat "the first six" can show nothing but milestones — the passive category — while
+   * every upgrade and buyable hides behind the expander. MEASURED on the two reference games alone: 3 of their 7
+   * multi-category cards come out that way (`ptr`'s `t` shows five milestones and one buyable and hides all
+   * fifteen upgrades; its `q` shows six milestones and hides its only buyable). The gate reports that count at
+   * every run rather than asserting it, because ⚖ the user has since redesigned the collapsed card outright
+   * (2026-09-18: a per-category `x/y` counter plus a few buy buttons), which retires the question rather than
+   * answering it. U2b is the EXPANDED view. */
+  function capVisible(chips, cap) {
+    return chips.map(function (c, i) { return i < cap; });
   }
 
   // ---------------------------------------------------------------- the card's own readouts
@@ -284,27 +471,40 @@
     if (chips.length) {
       chipBox = document.createElement('div');
       chipBox.className = 'tmt-layerlist-chips';
+      var vis = capVisible(chips, CHIP_CAP), hidden = 0;
       chips.forEach(function (c, i) {
+        // ⚖ DIVIDERS BETWEEN THE CATEGORIES (user, 2026-09-18). A divider is emitted BEFORE the chip whose
+        // category it introduces and takes that chip's visibility, which is what keeps one off both ends in
+        // BOTH views: there is none before the first chip, and the `+N` cut can never leave one trailing.
+        if (i > 0 && chips[i - 1].kind !== c.kind) {
+          var d = document.createElement('span');
+          d.className = 'tmt-layerlist-divider';
+          d.setAttribute('aria-hidden', 'true');
+          d.dataset.between = chips[i - 1].kind + '|' + c.kind;
+          if (!vis[i]) d.classList.add('tmt-layerlist-overflow');
+          chipBox.appendChild(d);
+        }
         var b = document.createElement('button');
         b.type = 'button';
         b.className = 'tmt-layerlist-chip';
         b.dataset.state = c.state;
-        b.dataset.kind = c.kind;
+        b.dataset.kind = c.kind;       // also what gives a MILESTONE chip its square corners, in CSS
         b.dataset.cid = c.id;
+        b.dataset.layer = c.layer;     // a `layer-proxy` chip acts on ANOTHER layer than the card it sits on
         b.textContent = c.chip;
         b.title = c.title;
-        if (i >= CHIP_CAP) b.classList.add('tmt-layerlist-overflow');
-        b.addEventListener('click', function () { chipPressed(l, c); });
+        if (!vis[i]) { b.classList.add('tmt-layerlist-overflow'); hidden++; }
+        b.addEventListener('click', function () { chipPressed(c); });
         chipBox.appendChild(b);
       });
-      if (chips.length > CHIP_CAP) {
+      if (hidden > 0) {
         more = document.createElement('button');
         more.type = 'button';
         more.className = 'tmt-layerlist-more';
-        more.textContent = '+' + (chips.length - CHIP_CAP);
+        more.textContent = '+' + hidden;
         more.addEventListener('click', function () {
           var all = el.classList.toggle('tmt-layerlist-expanded');
-          more.textContent = all ? '−' : '+' + (chips.length - CHIP_CAP);
+          more.textContent = all ? '−' : '+' + hidden;
         });
         chipBox.appendChild(more);
       }
@@ -336,12 +536,20 @@
     sig = signature(gs);
   }
 
+  /** What a REBUILD is keyed on: the rows and their layers, and — since U2b — each card's drawn components in the
+   * tab layout's order. A chip's STATE is deliberately absent: state is appearance, and rebuilding on it would put
+   * the chips back to hopping under a finger. What is present is MEMBERSHIP and ORDER, because the list mirrors
+   * the normal view and the normal view does change when an upgrade unlocks or a subtab is switched. */
   function signature(gs) {
-    return gs.map(function (g) { return g.key + ':' + g.layers.join(','); }).join('|');
+    return gs.map(function (g) {
+      return g.key + ':' + g.layers.map(function (l) {
+        return l + '[' + visibleSeq(l).map(function (e) { return e.key; }).join(' ') + ']';
+      }).join(',');
+    }).join('|');
   }
 
-  /** The live values: the amount, the prestige text, and each control's state. Never rebuilds — the chips keep the
-   * order they were given, so nothing moves under a finger. */
+  /** The live values: the amount, the prestige text, and each control's state. Never REORDERS — a rebuild is what
+   * handles an arrangement that really changed (see `signature`), so nothing moves under a finger. */
   function refresh() {
     if (!panel || !open) return;
     return withoutRaisingNaN(refreshInner);
@@ -370,7 +578,10 @@
       var badge = c.el.querySelector('.tmt-layerlist-badge');
       if (badge) badge.style.backgroundColor = safe(function () { return str(tmp[l].color); }, '');
       c.chips.forEach(function (chip, i) {
-        var st = chipState(l, { kind: chip.kind }, chip.id);
+        // a chip that went away entirely is a MEMBERSHIP change, which the signature above has already rebuilt
+        // for; here `null` can only be a race inside one frame, so the chip keeps the state it had.
+        var st = chipState(chip.kind, chip.layer, chip.id);
+        if (st === null) return;
         chip.state = st;
         if (c.chipEls[i]) c.chipEls[i].dataset.state = st;
       });
@@ -396,15 +607,19 @@
     try { showTab(l); } catch (e) { /* a game without showTab keeps the card inert rather than throwing */ }
   }
 
-  // A chip in the `open` (or `active`) state ACTS; one that is done or locked OPENS THE TAB instead. An action the
-  // engine will not take today (an upgrade you cannot afford) is a no-op here exactly as it is on the game's own
-  // button — this file adds no affordability rule of its own.
-  function chipPressed(l, c) {
-    if (c.state === 'done' || c.state === 'locked') return openTab(l);
+  // A chip in the `open` (or `active`) state ACTS; one that is `done`, or one whose category has no action at all
+  // (a milestone is passive), OPENS THE TAB instead. An action the engine will not take today (an upgrade you
+  // cannot afford) is a no-op here exactly as it is on the game's own button — this file adds no affordability
+  // rule of its own. It acts on the CHIP's layer, which a `layer-proxy` chip makes different from the card's.
+  function chipPressed(c) {
+    if (c.act === null || c.state === 'done') return openTab(c.layer);
     act(function () {
-      if (c.act === 'upgrade') buyUpgrade(l, c.id);
-      else if (c.act === 'buyable') buyBuyable(l, c.id);
-      else if (c.act === 'challenge') startChallenge(l, c.id);
+      // a `pseudo` chip stands for the engine's SECOND button — the teaser that unlocks the upgrade rather than
+      // buying it — so it makes that button's call, not the buy
+      if (c.state === 'pseudo') { if (typeof unlockUpg === 'function') unlockUpg(c.layer, c.id); return; }
+      if (c.act === 'upgrade') buyUpgrade(c.layer, c.id);
+      else if (c.act === 'buyable') buyBuyable(c.layer, c.id);
+      else if (c.act === 'challenge') startChallenge(c.layer, c.id);
     });
   }
 
@@ -443,6 +658,7 @@
       refresh: refresh,
       groups: groups,
       chipsOf: chipsOf,
+      visibleSeq: visibleSeq,
       cards: function () { return Object.keys(cards); }
     };
     if (T.navbarUI && T.navbarUI.refresh) T.navbarUI.refresh(); // the Layers button appears once this object exists

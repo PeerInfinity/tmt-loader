@@ -181,9 +181,34 @@
   transition-duration: 0s;
 }
 #tmt-layerlist .tmt-layerlist-chip[data-state="done"] { opacity: .45; }
-#tmt-layerlist .tmt-layerlist-chip[data-state="locked"] { opacity: .3; }
 #tmt-layerlist .tmt-layerlist-chip[data-state="active"] { border-color: currentColor; border-width: 2px; }
+/* the engines' SECOND upgrade button — the teaser you press to unlock an upgrade rather than to buy it. It is a
+ * real control on the tab, so it is a real chip here, and it says so. (There is no `locked` state any more: since
+ * U2b a component the tab does not draw gets no chip at all, rather than a greyed one.) */
+#tmt-layerlist .tmt-layerlist-chip[data-state="pseudo"] { opacity: .6; border-style: dashed; }
+
+/* ⚖ MILESTONES GET SQUARE CORNERS (user, 2026-09-18) — the one thing that tells a passive milestone chip apart
+ * from an upgrade you can press, at a glance and without colour. Round stays for every other category. */
+#tmt-layerlist .tmt-layerlist-chip[data-kind="milestones"] { border-radius: 0; }
+
+/* ⚖ A DIVIDER BETWEEN THE CATEGORIES (user, 2026-09-18). A flex item like the chips, emitted before the chip whose
+ * category it introduces, so it can never land at either end. `aria-hidden`, because it is a rule, not a control.
+ * A divider takes the visibility of the chip that follows it, so the collapsed card and the expanded one are both
+ * divided correctly by one element per position — which holds because the collapsed card shows a PREFIX of the
+ * chips (see `capVisible`, and the question it records). */
+#tmt-layerlist .tmt-layerlist-divider {
+  display: block;
+  flex: 0 0 auto;
+  align-self: stretch;
+  width: 1px;
+  min-height: 28px;
+  margin: 0 3px;
+  background: currentColor;
+  opacity: .34;
+}
+
 /* the overflow chips exist in the DOM from the start and the "+N" button reveals them; `display: none` keeps them
  * out of the geometry probes exactly as a control the page does not show should be */
-#tmt-layerlist .tmt-layerlist-chip.tmt-layerlist-overflow { display: none; }
+#tmt-layerlist .tmt-layerlist-overflow { display: none; }
 #tmt-layerlist .tmt-layerlist-card.tmt-layerlist-expanded .tmt-layerlist-chip.tmt-layerlist-overflow { display: inline-block; }
+#tmt-layerlist .tmt-layerlist-card.tmt-layerlist-expanded .tmt-layerlist-divider.tmt-layerlist-overflow { display: block; }

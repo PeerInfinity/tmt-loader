@@ -145,17 +145,20 @@ here that evaluates game code is wrapped: a throw costs one card, never the list
   and otherside nodes its tree draws. By the same rule the loader's own `au` layer gets a card under
   `?automation=1` (measured on ptr: cards `p`, `a`, `au`, no chips on it, no page error) — it is a side node on the
   tree, so the view of the tree shows it. The M1 combined leg does not yet assert that; it was measured by hand.
-- **How many chips, and which win.** Six, then a `+N` button that expands the card. The order is by STATE — what
-  you can act on, then what is done, then what is locked — with the source order (upgrades, buyables, challenges)
-  and the numeric id breaking ties. Deliberately **not** by affordability or by cost: those move every tick, and
-  chips that reorder under a finger are worse than chips in a stale order. Within one refresh the order never
-  changes at all; only the states do.
+- **How many chips, and which win.** Six, then a `+N` button that expands the card — still true.
+  ⚠ The ORDER half of this answer was **superseded by U2b** ("The chips mirror the normal view", below): the
+  chips are no longer ordered by state at all. What survives is the reason it was not affordability — those move
+  every tick, and chips that reorder under a finger are worse than chips in a stale order — and U2b keeps it, by
+  making state a chip's appearance rather than its position.
 - **What a chip does on tap.** It **acts**: `buyUpgrade` / `buyBuyable` / `startChallenge`, the engine's own
   function with the engine's own guards, which is the more useful and the more dangerous of the two choices the
-  brief named. Three things make it defensible: a chip acts only in the `open` state (a `done` or `locked` chip
-  opens the tab instead, which is the useful thing to do with it); the call is the same single click the game's
-  own button makes, so the list adds no capability the game does not have; and an action the engine will not take
-  today is a no-op here exactly as it is there. It adds no affordability rule of its own.
+  brief named. Three things make it defensible: a chip acts only in the `open` state (a `done` chip opens the tab
+  instead, which is the useful thing to do with it); the call is the same single click the game's own button
+  makes, so the list adds no capability the game does not have; and an action the engine will not take today is a
+  no-op here exactly as it is there. It adds no affordability rule of its own.
+  ⚠ U2b added two cases: a **milestone** chip is passive and always opens the tab, and a **pseudo-unlocked**
+  upgrade chip calls `unlockUpg` — which is what the engine's own second button on that upgrade calls — rather
+  than `buyUpgrade`. There is no `locked` chip any more: a component the tab does not draw gets no chip at all.
 
 ### The chips — the rule
 
@@ -174,13 +177,15 @@ and `"N2"` + 8 are the same string. MEASURED on `falling-mountain-s-alterprestig
 58 components and a crowd of one-token "Nano…" titles: a blind counter put `Nanoagain` and `Nanofinale 2` both on
 `N28`, and no number of further passes separated them, because each pass recomputed the same string.
 
-Sources, in order: each layer's **`upgrades` and `buyables` by `title`**, and its **`challenges` by `name`**.
+Sources: each layer's **`upgrades` and `buyables` by `title`**, its **`challenges` by `name`**, and — since U2b —
+its **`milestones` by `requirementDescription`**. They are no longer taken "in order": the order is the tab
+layout's (next section).
 
 - `title` is a SHORT NAME and is the field wanted. `display()` is prose and is not — PTR's `ab` clickables all
-  render the bare text `"1"`, which is why clickables are not a source at all.
-- **Milestones stay out**: their text is a requirement string (`requirementDescription`, "2 Time Capsules"), they
-  are passive, and they inflate the chip count.
-- A component with no usable `title` gets **no chip** rather than a meaningless one, and a title's HTML is stripped
+  render the bare text `"1"`, which is why clickables are not a source at all, and neither are achievements.
+- **Milestones came in with U2b** (⚖ user, 2026-09-18), reversing U2's exclusion — see below for the reasons the
+  user was given and overrode.
+- A component with no usable name gets **no chip** rather than a meaningless one, and a name's HTML is stripped
   before it is tokenised (a tag name is not a word).
 
 PTR's Points layer comes out `B` ← Begin, `PB` ← Prestige Boost, `SS` ← Self-Synergy, `PI` ← Prestigious
@@ -198,6 +203,146 @@ differ only for a MULTI-DIGIT token**, and PTR has none inside the first three t
 The brief's own example of the difference — "10 Generators" and "15 Generators" both beginning with `1` — is not a
 PTR title. The rule is implemented as stated, because it is right for the games that DO carry such a title; what
 should not be repeated is the 7/39 as a PTR measurement.
+
+### The chips mirror the normal view
+
+⚖ **A chip should look, and sit, like the thing it stands for in the game's own tab** (user, 2026-09-18). Four
+requests arrived separately — chips only for what the normal view shows, chips in the same order as the normal
+view, dividers between the categories, and milestones given chips of their own — and they are one request: the
+list must stop inventing an arrangement and read the layer's own tab layout instead. One walker answers all four.
+
+⚠ **This replaced U2's state ordering** (`open → done → locked`). State is a chip's **appearance** now, never its
+position: a chip that moves when you finish something is a chip that moves under your finger.
+
+#### Where the order comes from
+
+**Within a category: ascending numeric id.** The engines render `v-for row` then `v-for col` at `row*10+col`
+(`games/ptr/js/components.js:147`, `games/something/js/components.js:162`), so the numeric id *is* the row and
+column position and sorting by it reproduces reading order. Milestones are the exception and are simpler: both
+engines render `v-for id in Object.keys(tmp[layer].milestones)`, so declaration order is the order.
+
+**Between categories: the layer's `tabFormat`, and the engine's default when it declares none.** The default is
+written out in `layer-tab` in `js/technical/systemComponents.js`, and both reference engines (2.2.1 and 2.7) write
+the same family:
+
+```
+infoboxes → main-display → prestige-button → resource-display → MILESTONES → midsection
+          → CLICKABLES → BUYABLES → UPGRADES → CHALLENGES → achievements
+```
+
+Note what that says: **milestones come FIRST and upgrades FOURTH** — nearly the reverse of the source order U2
+used (every upgrade, then every buyable, then every challenge). A chip sequence that still looks like U2's is
+evidence the source order is being read, not the tab layout.
+
+#### `tabFormat` has two shapes, and both are common
+
+- **Array form** — the component list, in display order. An item is a bare component name (`"upgrades"`), a pair
+  (`["display-text", "…"]`) or a triple with a style (`["upgrades", [1, 3], {…}]`); the engines' own `column`
+  renders **nothing** for anything else, which is why a game's own `(cond ? [...] : [])` costs nothing here.
+  Nesting happens through `["column", [...]]` and `["row", [...]]`, not through a bare nested array.
+- **Object form** — subtabs. Only `tmp[layer].tabFormat[player.subtabs[layer].mainTabs].content` is on screen;
+  the components in the other subtabs are genuinely hidden, which is the whole of visibility rule 3 below.
+  `microtabs` is the same thing one level down, and `embedLayer` hands the tab over to another layer entirely.
+
+The walker also follows `["layer-proxy", [otherLayer, content]]`, which draws **another layer's** components on
+this tab — so a chip carries its own layer rather than the card's, and acts on that one.
+
+Measured over the roster at the gate's own states, counting the layers that get a card: **420 array-form, 271
+object/subtab-form and 283 declaring no `tabFormat` at all**. (The brief carried 1069 / 621 "in 170 of 171 games",
+which is a count of DECLARATIONS in the sources rather than of shown layers — a static scan does corroborate that
+170 of the 171 games declare a `tabFormat` somewhere.)
+
+⚠ **Read `tabFormat` from `tmp`, never from `layers`.** A layer may declare `tabFormat()` as a function (PTR has
+one); the engine's own `updateTemp` evaluates it into `tmp`, and that result is what the tab renders.
+
+⚠ **A plural component can carry a restriction, and the two engines disagree about what it means.** TMT 2.7's
+`upgrades` / `buyables` / `challenges` render `v-for row in (data === undefined ? tmp[l][kind].rows : data)` — a
+row restriction — and its `milestones` takes a list of ids. TMT 2.2.1's `upgrades` and `challenges` take no `data`
+prop at all, and its `buyables` reads `data` as a **px size** (`"100px"`). So the signal is that the data is an
+**array**, which a size never is.
+
+#### Visibility — three rules, not one
+
+A chip exists when the engine's own render condition would draw the component:
+
+1. **`tmp[l][kind][id].unlocked`** — confirmed in both engines
+   (2.7 `v-if="… && tmp[layer].upgrades[data].unlocked"`, 2.2.1 the same through its `upgrades` grid).
+2. **…or `pseudoUnl(l, id)`.** ⚠ `unlocked === false` does **not** mean hidden: PTR renders a *second* button for
+   a pseudo-unlocked upgrade — `v-if="pseudoUnl(layer, data) && !(tmp[layer].upgrades[data].unlocked)"` — a
+   visible teaser you press to unlock it. Four games define the global (`ptr`, `prestige-tree-ng`,
+   `prestige-tree-rewritten-unsoftcapped4`, `the-extended-tree`); a fifth, `arctree`, declares `pseudoUnl` on
+   components but has no such global and therefore no such button. The game's own function is called in a
+   try/catch, and a throw means "not pseudo". Such a chip acts through **`unlockUpg`**, which is what that second
+   button calls — not through `buyUpgrade`.
+3. **Its category is reachable in the current tab layout** — it appears in the array form, or in the *active*
+   subtab of the object form. This rule is not a test at all: it is the walker, which never emits what the layout
+   does not reach.
+
+Two conditions the brief did not name, both measured in the engines' own templates and both honoured:
+
+- **The grid is bounded by `rows` / `cols`.** TMT 2.7 derives them to cover every numeric id (`setRowCol` in
+  `js/technical/layerSupport.js`), so there the bound is vacuous — but **2.2.1 does not derive them**, so an id
+  outside a declared grid is simply never drawn. Not a theoretical rule: the mutant that removes it is RED on
+  `ptr`, where the `s` layer at the desktop state gains a chip for a buyable its own grid does not reach.
+- **Milestones have more than `unlocked`.** The brief said they have none; both engines in fact test
+  `tmp[l].milestones[id].unlocked` **and** `milestoneShown(layer, id)`, which reads the player's own `msDisplay`
+  setting — so "never" hides every milestone and "incomplete" hides the finished ones, on the tab and therefore
+  here too. And a finished **challenge** is hidden behind the player's "hide completed" option (2.2.1 puts the
+  flag on `player`, 2.7 on `options`), which is a fourth render condition and also the player's.
+
+A layer whose chips all vanish still gets a **card**: the card is the layer, and on a layer that is shown but not
+yet unlocked its reset button *is* the unlock.
+
+#### Milestones, and why they are back
+
+⚖ Requests (4) reverses U2's deliberate exclusion. The user was given the reasons — a milestone's text is a
+requirement string (`requirementDescription`, "2 Time Capsules"), milestones are passive, and they roughly double
+the chip count — and chose to include them anyway. They are abbreviated by exactly the same rule as every other
+chip, and one that yields no tokens gets no chip, which is the rule a titleless upgrade already had.
+
+They are drawn with **square corners** where every other category is round — the one thing that tells a passive
+milestone chip from an upgrade you can press, at a glance and without colour — and pressing one **opens the tab**,
+because there is nothing for the engine to do.
+
+⚠ A wart, left as it is and named rather than fixed: the rule is faithful to the game's own text, and some games
+put an INDEX in that text. `something`'s `primitive` milestone 2 is written `"2: 100,000 Numbers"`, which
+abbreviates to `2100000` — unique, correct by the rule, and unreadable. Changing it would change every other chip
+on the roster too, so it is a decision for whoever revisits the abbreviation, not a side effect of this one.
+
+#### Dividers
+
+⚖ A **divider** sits at every category change and at neither end. It is emitted before the chip whose category it
+introduces and takes that chip's visibility, which is what keeps it off both ends by construction: there is none
+before the first chip, and the `+N` cut can never leave one trailing.
+
+The gate measures the rendered sequence in **both** states — collapsed and expanded — reading each element's
+computed `display` rather than the classes the list wrote. That also closes the gap U2 named: "the leg never
+presses the `+N` button, so the expanded chip row is not measured". It toggles the card's own class rather than
+clicking, because a click is not a neutral probe and the `+N` handler does nothing else.
+
+#### What the collapsed card shows — measured, and deliberately left alone
+
+The cap belongs to the card, but the layout order groups a card by category with the **milestones first**, so a
+flat "the first six" can show nothing but milestones — the passive category — while every upgrade and buyable
+hides behind the expander.
+
+MEASURED rather than argued, over the whole roster: **8 of the 47 multi-category cards** come out that way —
+`ptr`'s `t` and `s` hide their upgrades (`t` shows five milestones and one buyable and hides all fifteen), `ptr`'s
+`q` hides its only buyable, `the-unbalanced-tree`'s `inf`, `e` and `r` and `a-game-about-rocks`'s `s` hide their
+challenges, and `the-melge-tree`'s `i` hides its milestones.
+
+**U2b does not change it.** The collapsed card's selection rule is U2's — the first six, then `+N` — and ⚖ the
+user has since redesigned that card outright (2026-09-18: a per-category `x/y` counter, square-cornered for
+milestones and rounded for the rest, with a few buy buttons under it), which retires the question rather than
+answering it. **U2b is the expanded view.** The count is reported by the gate at every run, and asserted by
+nothing, so the slice that builds the new card starts from a measurement rather than from this paragraph.
+
+⚠ One thing worth carrying into that slice: U2 deliberately did **not** order or select chips by affordability,
+because chips that reorder under a finger are worse than chips in a stale order. The new collapsed design brings
+affordability back as a *selection* rule. How fast those states move, measured here: a chip's state is recomputed
+on every refresh, which is driven by the game's own re-renders and coalesced to one per animation frame — up to
+60/s while the panel is open — and affordability itself moves with the engine's tick, 20/s in play. Order is not
+recomputed there at all; only a change of **membership** rebuilds, which is what the rebuild signature is keyed on.
 
 ### Reading a card can make the ENGINE write `player`
 
@@ -318,6 +463,15 @@ Run at **both** widths — on the phone page, over the deep snapshot the geometr
   itself would assert nothing;
 - **grouped by row**: every card sits in the section its layer's `tmp[l].row` names;
 - **distinct chips on each card** — the disambiguation pass is what makes a three-letter chip mean one thing;
+- **(U2b) the chip sequence equals the order the layer's tab layout implies** — rebuilt inside the probe out of
+  `tmp[l].tabFormat`, with the same three visibility rules, and never asked of the list: a list compared against
+  its own `chipsOf` would assert nothing;
+- **(U2b) a divider at every category change and at neither end**, measured on what the browser RENDERS in BOTH
+  states — collapsed and expanded — by reading each element's computed `display` rather than the classes the list
+  wrote. The card's expanded class is toggled directly rather than clicked, because a click is not a neutral probe
+  and the `+N` handler does nothing else;
+- **(U2b) a milestone chip's computed `border-radius` is not an upgrade chip's**, where the page has both
+  (abstained where it has only one kind);
 - **nothing escapes the viewport**, on each width's own terms: the phone demands zero escaping controls, zero under
   44 px and no document wider than the screen; the desktop is judged against the **plain desktop page in the same
   state** (its last view), because at 1280 px the plain page is the layout the game's author shipped. MEASURED: the
@@ -341,9 +495,34 @@ save) leaves them in, so the leg ticks up to 2000 × 0.05 looking for a layer th
 `resetGain` above 0, and **abstains** — naming the game in the summary — rather than passing vacuously. It runs
 LAST of everything on that page, because it is the one leg that moves the game.
 
-One gap, named rather than left implicit: the leg never presses a card's **`+N`** button, so the EXPANDED chip row
-is not measured. The overflow chips carry the same class and the same 44 px minimum as the six that are measured,
-and they wrap in a flex row rather than overflowing it, so the risk is low — but it is not asserted.
+⚠ **The two discriminators (U2b).** A visibility filter that removes nothing and a sort that changes nothing both
+sail through an assertion built the same way as the thing it tests, so the leg also holds the two reference games
+to a RECORDED baseline (`U2_CHIPS` in `page.mjs`):
+
+- the chip count must have **fallen** against U2's — `ptr` 120 → **83**, `something` 70 → **30** — and it falls
+  even though U2b *adds* the milestones (24 of `ptr`'s 83 and 5 of `something`'s 30 are milestone chips), which is
+  the stronger statement;
+- at least one card's sequence must **differ from source order** — 6 of `ptr`'s 7 chip-bearing cards do, and 1 of
+  `something`'s 3.
+
+Both are measured on the phone page, over the deepest recorded snapshot. Across the whole roster the leg also
+reports the `tabFormat` shape split, the milestone and divider counts, and how many cards are off source order.
+
+U2's named gap — "the leg never presses a card's `+N` button, so the EXPANDED chip row is not measured" — is
+**closed**: both states are now rendered and read.
+
+⚠ **One rule the leg cannot exercise, said out loud: visibility rule 2.** No game on the roster has a
+pseudo-unlocked upgrade *drawn* at any recorded snapshot state — four games define the global (`ptr`,
+`prestige-tree-ng`, `prestige-tree-rewritten-unsoftcapped4`, `the-extended-tree`) and every one of their
+`pseudoUnl` conditions needs progress no snapshot reaches (`ptr`'s want `hasUpgrade("hn", 11)` or
+`player.i.buyables[12].gte(1)`). So the sweep prints the count of pseudo chips it saw — **0 over 171 games** — and
+says the rule is unexercised, rather than passing in silence.
+
+So the leg **constructs** both conditions instead, on the phone page, after the reset press, and re-runs the
+probe's own expectation under each: `msDisplay` set to `'never'` (on `player` AND on `options`), and the engine's
+`pseudoUnl` replaced with one that always says yes. Measured over the roster: the milestones vanished on the **55**
+games that have a milestone chip and the leg abstained on the other 116; pseudo chips appeared on exactly the **4**
+games whose engine defines the global, and the leg abstained on 167. Every game restored its own state.
 
 **Seven mutants** were run against this leg (each RED, each restored, with the control GREEN before and after), on
 the game that can see each one: the Layers button moved to the right of Tree (`buttonLeftOfTree` false, `ptr`); the
@@ -356,6 +535,29 @@ MOVED, `the-periodic-table-tree`).
 
 ⚠ **Four of the seven are GREEN on `ptr`** and need a specific game to see at all. A battery run only on the
 reference game would have called this leg proven while it was blind to every defect it in fact found.
+
+**Eight more mutants for U2b**, each RED, each restored, with the control GREEN either side:
+
+| # | the mutant | seen on | how it reds |
+|---|---|---|---|
+| A | the engine default used even where a `tabFormat` exists | `the-elemental-tree`, `the-point-tree` | chip sequence ≠ the derived order |
+| B | the object form's inactive subtabs treated as visible | `the-point-tree` | a milestone from an inactive subtab appears (`a/milestones/1` against an empty expectation) |
+| C | `pseudoUnl` ignored | `ptr` | the constructed rule probe: `SEQUENCE DISAGREES` |
+| D | milestones given round corners | `ptr` | `radiusOk` false — `6px` both |
+| E | a divider at each end as well | `ptr` | `dividerOk` false, in both rendered states |
+| F | the `rows`/`cols` grid bound removed | `ptr` | a chip for a buyable outside `s`'s own grid, at the desktop state |
+| G | the engines' `unlocked` render condition ignored | `ptr` | 145 chips against U2's 120 — the count **did not fall** — plus sequence and both rules |
+| H | `milestoneShown` ignored | `ptr` | the constructed rule probe: `SEQUENCE DISAGREES` |
+
+⚠ **A is GREEN on `ptr`, on `something`, on `the-algebra-tree` and on `the-game-tree`.** The reference games'
+`tabFormat`s happen to name their categories in the engine default's own order, and `the-algebra-tree` reorders
+them but draws no milestone at its snapshot state — so on all four, "use the default" and "read the tabFormat"
+produce the same chips. Finding a game that could see it took a roster scan, not a guess.
+
+⚠ **One mutant hid itself before it was fixed.** C's first version of the rule probe asserted "the chips moved
+when `pseudoUnl` was forced true"; the mutant that removes the rule made the chips not move, which the probe read
+as an **abstention** and passed. The probe now re-runs the independent expectation under the constructed
+condition, so a list that stops asking the engine does not merely stop changing — it DISAGREES.
 
 One property the leg does NOT discriminate, said out loud: **phase 1 of the chip rule**. Removing the token
 extension leaves phase 2 to number the collisions (`INM`, `INM2`, `INM3` instead of `INM`, `INMI`, `INMII`), which

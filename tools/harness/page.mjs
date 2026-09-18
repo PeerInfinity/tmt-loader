@@ -186,6 +186,19 @@ export const MOBILE_TICKS = 200, MOBILE_DIFF = 0.05; // the state leg: enough ti
 export const STATE_CONFIRMATIONS = 4;
 export const TAP_MIN = 44;                          // the tap-target minimum mobile.css promises
 
+/**
+ * ⚠ THE DISCRIMINATORS for U2b, on the two reference games only. A visibility filter that removes nothing and a
+ * sort that changes nothing both sail through an assertion that only compares the list against a rule computed
+ * the same way. So the leg also holds the two games to a RECORDED baseline:
+ *  · the chip count must have FALLEN against U2's (SUMMARY.md 2026-09-18, the M1 layers leg at these same
+ *    snapshot states: `ptr` 120 chips, `something` 70) — and it must fall even though U2b ADDS the milestones,
+ *    which is the stronger statement;
+ *  · at least one card's sequence must differ from U2's source order (every upgrade, then every buyable, then
+ *    every challenge, by id) — otherwise the layout walk produced the arrangement it replaced.
+ * Both are measured on the phone page, whose snapshot is the deepest recorded one.
+ */
+export const U2_CHIPS = { ptr: 120, something: 70 };
+
 /** The deepest recorded snapshot for a game, or null. The fresh save of most games shows ONE tree node and no open
  * tab, so a gate that only ever looks at a fresh page cannot see the layout this mode exists to fix: the split
  * column, the milestone rows and the achievement grid all appear only once a layer tab is open. */
@@ -268,6 +281,175 @@ const LAYERLIST_PROBE = `(${function () {
   const chipsOf = (c) => [...c.querySelectorAll('.tmt-layerlist-chip')].map((x) => x.textContent);
   const expMap = Object.create(null);
   expect.forEach((e) => { expMap[e.layer] = e.row; });
+  // ---- U2b: the ORDER and the MEMBERSHIP the tab layout implies, rebuilt HERE ------------------------------
+  // ⚠ Written out a second time on purpose. The claim is "a chip sits where the game's own tab puts it", and a
+  // list compared against its own `chipsOf` would assert nothing at all. This walks `tmp[l].tabFormat` from
+  // scratch, applies the same three visibility rules, and the mutant battery is what says the two are not one
+  // implementation wearing two hats.
+  const KFIELD = { upgrades: 'title', buyables: 'title', challenges: 'name', milestones: 'requirementDescription' };
+  const PL = { upgrades: 'upgrades', buyables: 'buyables', challenges: 'challenges', milestones: 'milestones' };
+  const SG = { upgrade: 'upgrades', buyable: 'buyables', challenge: 'challenges', milestone: 'milestones' };
+  const TR = { 'upgrade-tree': 'upgrades', 'buyable-tree': 'buyables' };
+  // the engine's own default, out of `layer-tab` in js/technical/systemComponents.js (2.2.1 and 2.7 agree)
+  const DEF = ['infoboxes', 'main-display', 'prestige-button', 'resource-display', 'milestones', '@mid',
+    'clickables', 'buyables', 'upgrades', 'challenges', 'achievements'];
+  const S = (f, d) => { try { const v = f(); return v === undefined ? d : v; } catch (e) { return d; } };
+  const ids = (kind, l) => {
+    const src = S(() => layers[l][kind], null) || S(() => tmp[l][kind], null);
+    if (!src || typeof src !== 'object') return [];
+    let out = [];
+    for (const k in src) {
+      if (!S(() => !!src[k] && typeof src[k] === 'object', false)) continue;
+      if (kind !== 'milestones' && isNaN(k)) continue;
+      out.push(k);
+    }
+    if (kind === 'milestones') return out;
+    out.sort((a, b) => Number(a) - Number(b));          // row*10+col IS reading order
+    const R = S(() => tmp[l][kind].rows, undefined), C = S(() => tmp[l][kind].cols, undefined);
+    if (typeof R === 'number' && typeof C === 'number' && R > 0 && C > 0) {
+      out = out.filter((k) => Math.floor(k / 10) >= 1 && Math.floor(k / 10) <= R && k % 10 >= 1 && k % 10 <= C);
+    }
+    return out;
+  };
+  const drawn = (kind, l, id) => {            // the three visibility rules, in the engine's own terms
+    const t = S(() => tmp[l][kind][id], null);
+    if (!t) return false;
+    const unl = S(() => t.unlocked === undefined ? true : !!t.unlocked, true);
+    if (kind === 'upgrades' && !unl) return S(() => typeof pseudoUnl === 'function' && !!pseudoUnl(l, Number(id)), false);
+    if (!unl) return false;
+    if (kind === 'milestones') return S(() => typeof milestoneShown === 'function' ? !!milestoneShown(l, id) : true, true);
+    if (kind === 'challenges') {
+      const hiding = S(() => !!player.hideChallenges, false) || S(() => !!options.hideChallenges, false);
+      if (!hiding) return true;
+      const active = S(() => String(player[l].activeChallenge) === String(id), false);
+      const maxed = S(() => typeof maxedChallenge === 'function' ? !!maxedChallenge(l, Number(id))
+        : typeof hasChallenge === 'function' ? !!hasChallenge(l, Number(id)) : Number((player[l].challenges || {})[id]) > 0, false);
+      return !(maxed && !active);
+    }
+    return true;
+  };
+  const named = (kind, l, id) => {            // "no usable short name → no chip" — the same rule as a titleless upgrade
+    const o = S(() => layers[l][kind][id], null), tt = S(() => tmp[l][kind][id], null), f = KFIELD[kind];
+    let v = S(() => tt ? tt[f] : undefined, undefined);
+    if (typeof v !== 'string') v = S(() => { const x = o[f]; return typeof x === 'function' ? x.call(o) : x; }, '');
+    return /[A-Za-z0-9]/.test(String(v == null ? '' : v).replace(/<[^>]*>/g, ' '));
+  };
+  const shapes = { none: 0, array: 0, object: 0 };
+  const seqOf = (l0) => {
+    const out = [], seenL = Object.create(null);
+    const push = (kind, l, id) => out.push(`${l}/${kind}/${id}`);
+    const cat = (kind, l, data) => {
+      let list = ids(kind, l);
+      if (Array.isArray(data) && data.length) {
+        const pick = Object.create(null);
+        data.forEach((x) => { pick[String(x)] = true; });
+        list = list.filter((id) => kind === 'milestones' ? !!pick[String(id)] : !!pick[String(Math.floor(Number(id) / 10))]);
+      }
+      list.forEach((id) => push(kind, l, id));
+    };
+    const comp = (name, data, l, d) => {
+      if (d > 8) return;
+      if (name === 'column' || name === 'row') return walk(data, l, d + 1);
+      if (name === 'layer-proxy') { const ol = S(() => data[0], null); if (ol) walk(S(() => data[1], null), ol, d + 1); return; }
+      if (name === 'microtabs') {
+        const mt = S(() => tmp[l].microtabs[data][player.subtabs[l][data]], null);
+        if (!mt) return;
+        const e = S(() => mt.embedLayer, null);
+        return e ? fmt(e, d + 1) : walk(S(() => mt.content, null), l, d + 1);
+      }
+      if (name === '@mid') return walk(S(() => tmp[l].midsection, null), l, d + 1);
+      if (TR[name]) { if (Array.isArray(data)) data.forEach((r) => Array.isArray(r) && r.forEach((id) => push(TR[name], l, String(id)))); return; }
+      if (SG[name]) { if (data !== undefined && data !== null) push(SG[name], l, String(data)); return; }
+      if (PL[name]) return cat(PL[name], l, data);
+    };
+    const walk = (list, l, d) => {
+      if (!Array.isArray(list) || d > 8) return;
+      list.forEach((it) => {
+        if (typeof it === 'string') return comp(it, undefined, l, d);
+        if (Array.isArray(it) && (it.length === 2 || it.length === 3)) return comp(it[0], it[1], l, d);
+      });
+    };
+    const fmt = (l, d) => {
+      if (d > 8 || seenL[l]) return;
+      seenL[l] = true;
+      const f = S(() => tmp[l].tabFormat, undefined);
+      if (d === 0) shapes[f === undefined || f === null ? 'none' : Array.isArray(f) ? 'array' : 'object']++;
+      if (f && typeof f === 'object' && !Array.isArray(f)) {
+        const k = S(() => player.subtabs[l].mainTabs, undefined);
+        const sub = S(() => f[k] !== undefined ? f[k] : f[Object.keys(f)[0]], null);
+        if (!sub) return;
+        const e = S(() => sub.embedLayer, null);
+        return e ? fmt(e, d + 1) : walk(S(() => sub.content, null), l, d + 1);
+      }
+      walk(Array.isArray(f) ? f : DEF, l, d + 1);
+    };
+    fmt(l0, 0);
+    const seen = Object.create(null), keep = [];
+    for (const k of out) {
+      if (seen[k]) continue;
+      const [l, kind, id] = k.split('/');
+      if (!drawn(kind, l, id) || !named(kind, l, id)) continue;
+      seen[k] = true;
+      keep.push(k);
+    }
+    return keep;
+  };
+  // SOURCE ORDER — what U2 produced: every upgrade, then every buyable, then every challenge, by id. The chips
+  // differing from it is the discriminator that says the layout walk is doing something.
+  const sourceOrder = (l) => ['upgrades', 'buyables', 'challenges', 'milestones']
+    .flatMap((kind) => ids(kind, l).map((id) => `${l}/${kind}/${id}`))
+    .filter((k) => { const [ll, kind, id] = k.split('/'); return drawn(kind, ll, id) && named(kind, ll, id); });
+
+  const chipKey = (e) => `${e.dataset.layer}/${e.dataset.kind}/${e.dataset.cid}`;
+  // a divider at every category change and at NEITHER END, over one RENDERED sequence of marks
+  const divProblems = (marks) => {
+    const bad = [];
+    if (marks.length && (marks[0] === '|' || marks[marks.length - 1] === '|')) bad.push('divider at an end');
+    let prev = null;
+    for (let i = 0; i < marks.length; i++) {
+      if (marks[i] === '|') { if (marks[i + 1] === '|') bad.push(`double divider at ${i}`); continue; }
+      if (prev !== null) {
+        const hadDiv = marks[i - 1] === '|';
+        if ((prev !== marks[i]) !== hadDiv) bad.push(`${prev}->${marks[i]} at ${i}: divider ${hadDiv}`);
+      }
+      prev = marks[i];
+    }
+    return bad;
+  };
+  const perCard = cards.map((c) => {
+    const l = c.dataset.layer;
+    const box = c.querySelector('.tmt-layerlist-chips');
+    const want = seqOf(l);
+    // ⚠ Measured on what the browser RENDERS, in BOTH states, not on the classes the list happened to write —
+    // and the expanded one at all, which U2's leg named as a gap ("the leg never presses the +N button"). The
+    // class is toggled directly rather than clicked: a click is not a neutral probe (docs/mobile.md), and the
+    // `+N` handler does nothing else. The card's own state is restored either way.
+    const was = c.classList.contains('tmt-layerlist-expanded');
+    const render = () => [...(box ? box.children : [])]
+      .filter((e) => !e.classList.contains('tmt-layerlist-more') && getComputedStyle(e).display !== 'none')
+      .map((e) => e.classList.contains('tmt-layerlist-divider') ? '|' : e.dataset.kind);
+    c.classList.remove('tmt-layerlist-expanded');
+    const collapsed = render();
+    c.classList.add('tmt-layerlist-expanded');
+    const expanded = render();
+    if (!was) c.classList.remove('tmt-layerlist-expanded');
+    const got = box ? [...box.querySelectorAll('.tmt-layerlist-chip')].map(chipKey) : [];
+    const divBad = [...divProblems(collapsed).map((x) => `collapsed: ${x}`), ...divProblems(expanded).map((x) => `expanded: ${x}`)];
+    const src = sourceOrder(l);
+    // ⚠ WHAT THE COLLAPSED CARD SHOWS. The cap is on the card, and the layout order groups it by category with
+    // the MILESTONES first — so a flat "first six" can show nothing but milestones while every upgrade hides
+    // behind the `+N`. The property: every category the card HAS is represented among the chips it SHOWS.
+    const kAll = [...new Set(expanded.filter((x) => x !== '|'))];
+    const kCap = [...new Set(collapsed.filter((x) => x !== '|'))];
+    return { layer: l, got, want, ok: got.length === want.length && got.every((x, i) => x === want[i]),
+      divBad, fromSource: !(src.length === want.length && src.every((x, i) => x === want[i])),
+      collapsed, expanded, kindsAll: kAll.length, kindsShown: kCap.length, starved: kCap.length < kAll.length,
+      starvedOf: kAll.filter((k) => kCap.indexOf(k) < 0) };
+  });
+  const seqBad = perCard.filter((x) => !x.ok).map((x) => ({ layer: x.layer, got: x.got.slice(0, 12), want: x.want.slice(0, 12) }));
+  const divBad = perCard.filter((x) => x.divBad.length).map((x) => ({ layer: x.layer, why: x.divBad.slice(0, 3) }));
+  const rad = (sel) => { const e = panel ? panel.querySelector(sel) : null; return e ? getComputedStyle(e).borderRadius : null; };
+  const msRad = rad('.tmt-layerlist-chip[data-kind="milestones"]'), upRad = rad('.tmt-layerlist-chip[data-kind="upgrades"], .tmt-layerlist-chip[data-kind="buyables"], .tmt-layerlist-chip[data-kind="challenges"]');
   return {
     present: !!panel,
     open: !!(panel && !panel.hidden),
@@ -286,6 +468,32 @@ const LAYERLIST_PROBE = `(${function () {
     chips: cards.reduce((n, c) => n + chipsOf(c).length, 0),
     resets: cards.filter((c) => c.querySelector('.tmt-layerlist-reset')).length,
     sample: cards.slice(0, 3).map((c) => ({ layer: c.dataset.layer, chips: chipsOf(c).slice(0, 8) })),
+    // --- U2b ---------------------------------------------------------------------------------------------
+    // the chip sequence equals the order the tab layout implies, rebuilt above out of `tmp[l].tabFormat`
+    seqOk: seqBad.length === 0,
+    seqBad: seqBad.slice(0, 3),
+    // a divider at every category change and none at either end
+    dividerOk: divBad.length === 0,
+    dividerBad: divBad.slice(0, 3),
+    dividers: cards.reduce((n, c) => n + c.querySelectorAll('.tmt-layerlist-divider').length, 0),
+    // milestones get chips, and SQUARE corners where the rest are round. Abstains where the page has only one kind.
+    milestoneChips: cards.reduce((n, c) => n + c.querySelectorAll('.tmt-layerlist-chip[data-kind="milestones"]').length, 0),
+    // ⚠ visibility rule 2 — the engines' SECOND upgrade button. Counted rather than asserted, because it is
+    // reachable in no recorded snapshot state on the roster: the gate must SAY it saw none, not pass in silence.
+    pseudoChips: cards.reduce((n, c) => n + c.querySelectorAll('.tmt-layerlist-chip[data-state="pseudo"]').length, 0),
+    radius: { milestone: msRad, other: upRad },
+    radiusOk: !(msRad && upRad) || msRad !== upRad,
+    // ⚠ THE DISCRIMINATORS. A sort that changes nothing is untested: `orderFromSource` counts the cards whose
+    // sequence differs from U2's source order (every upgrade, then buyable, then challenge, by id).
+    orderFromSource: perCard.filter((x) => x.fromSource).length,
+    cardsWithChips: perCard.filter((x) => x.want.length).length,
+    tabFormatShapes: shapes,
+    // ⚠ REPORTED, NOT ASSERTED. Which categories the COLLAPSED card leaves entirely behind the `+N` is a real
+    // question the layout order raises, and U2b deliberately does not answer it: the collapsed card's selection
+    // rule is U2's, and ⚖ the user has since redesigned that card outright (docs/mobile.md). The number is
+    // carried at every run so the next slice starts from a measurement rather than from this note.
+    capStarved: perCard.filter((x) => x.starved).map((x) => ({ layer: x.layer, missing: x.starvedOf })),
+    capCards: perCard.filter((x) => x.kindsAll > 1).length,
   };
 }})()`;
 
@@ -563,6 +771,53 @@ async function gateMobile(browser, base, ids) {
       });
       row.resetVerdict = !row.reset.candidate ? 'no candidate (the leg abstains)'
         : row.reset.after !== row.reset.before ? 'moved' : 'NOT MOVED';
+      // --- and the two VISIBILITY RULES the roster's recorded states cannot exercise on their own.
+      // Rules 1 and 3 are measured by the sequence check on every game. Rule 2 (`pseudoUnl`) and the milestones'
+      // second condition (`milestoneShown`, which reads the player's own `msDisplay`) are not: no game on the
+      // roster DRAWS a pseudo-unlocked upgrade at any recorded snapshot, and every game's `msDisplay` is `always`.
+      // So the leg CONSTRUCTS each condition here — the last thing done on this page, after the reset press — and
+      // re-runs LAYERLIST_PROBE, whose expectation is computed independently and applies the same rules. That is
+      // what makes it non-vacuous: a list that stopped asking the engine would not merely stop changing, it would
+      // DISAGREE with the probe. (Measured: the first version asserted "the chips moved", and the mutant that
+      // removes `pseudoUnl` made it ABSTAIN instead of fail — a green that hid the defect.)
+      // ⚠ TMT 2.2.1 keeps `msDisplay` on `player`, TMT 2.7 on `options` (`js/utils/options.js:61`), and `options`
+      // is not part of `player` there at all — so both are set, and both restored.
+      const probe = () => page.evaluate(LAYERLIST_PROBE);
+      await page.evaluate(() => { const ui = window.tmtLoader.layerListUI; if (ui) ui.open(); });
+      const rBase = await probe();
+      await page.evaluate(() => {
+        window.__tmtMs = {};
+        try { window.__tmtMs.p = player.msDisplay; player.msDisplay = 'never'; } catch (e) { /* not this engine's */ }
+        try { window.__tmtMs.o = options.msDisplay; options.msDisplay = 'never'; } catch (e) { /* nor this one's */ }
+        const ui = window.tmtLoader.layerListUI; if (ui) ui.refresh();
+      });
+      const rMs = await probe();
+      await page.evaluate(() => {
+        try { if ('p' in window.__tmtMs) player.msDisplay = window.__tmtMs.p; } catch (e) {}
+        try { if ('o' in window.__tmtMs) options.msDisplay = window.__tmtMs.o; } catch (e) {}
+        delete window.__tmtMs; const ui = window.tmtLoader.layerListUI; if (ui) ui.refresh();
+      });
+      const hasPseudo = await page.evaluate(() => typeof window.pseudoUnl === 'function');
+      let rPs = null;
+      if (hasPseudo) {
+        // the engine's own predicate replaced with one that always says yes — which is what proves the list ASKS it
+        await page.evaluate(() => { window.__tmtPu = window.pseudoUnl; window.pseudoUnl = () => true; const ui = window.tmtLoader.layerListUI; if (ui) ui.refresh(); });
+        rPs = await probe();
+        await page.evaluate(() => { window.pseudoUnl = window.__tmtPu; delete window.__tmtPu; const ui = window.tmtLoader.layerListUI; if (ui) ui.refresh(); });
+      }
+      const rBack = await probe();
+      row.rules = {
+        base: rBase.chips, milestones: rBase.milestoneChips,
+        ms: { seqOk: rMs.seqOk, chips: rMs.chips, milestoneChips: rMs.milestoneChips,
+          verdict: rBase.milestoneChips === 0 ? 'abstains (no milestone chip to hide)'
+            : !rMs.seqOk ? 'SEQUENCE DISAGREES' : rMs.milestoneChips === 0 ? 'hidden' : 'STILL SHOWN' },
+        pseudo: !hasPseudo ? { verdict: 'abstains (the engine has no pseudoUnl)' }
+          : { seqOk: rPs.seqOk, chips: rPs.chips, pseudoChips: rPs.pseudoChips,
+            verdict: !rPs.seqOk ? 'SEQUENCE DISAGREES' : rPs.chips === rBase.chips ? 'abstains (no locked upgrade in reach)'
+              : rPs.pseudoChips > 0 ? 'appeared' : 'NOT MARKED pseudo' },
+        restored: rBack.chips === rBase.chips && !!rBack.seqOk && rBack.milestoneChips === rBase.milestoneChips,
+      };
+      row.rulesOk = !!(row.rules.restored && !/DISAGREES|STILL SHOWN|NOT MARKED/.test(`${row.rules.ms.verdict} ${row.rules.pseudo.verdict}`));
       await page.evaluate(() => { const ui = window.tmtLoader.layerListUI; if (ui) ui.close(); });
       const llDesk = nb.layerList;
       // one card per shown layer, in the row the engine names, with distinct chips on each card and the button in
@@ -570,8 +825,12 @@ async function gateMobile(browser, base, ids) {
       // the SET, not the sequence: the list groups by row and sorts by the engine's `position` inside a row, which is
       // deliberately not `LAYERS` declaration order — `misrowed` is what asserts the grouping itself.
       const sameSet = (a, b) => a.length === b.length && [...a].sort().every((x, i) => x === [...b].sort()[i]);
+      // U2b: and the chips MIRROR THE NORMAL VIEW — the sequence equals the order the layer's own `tabFormat`
+      // implies (rebuilt in the probe, never asked of the list), a divider sits at every category change and at
+      // neither end, and a milestone chip's corners are not an upgrade chip's.
       const listOk = (L) => !!(L && L.present && L.open && L.hasCss && L.hasUI && L.buttonLeftOfTree
-        && sameSet(L.cards, L.expect) && L.misrowed.length === 0 && L.dupeChips.length === 0);
+        && sameSet(L.cards, L.expect) && L.misrowed.length === 0 && L.dupeChips.length === 0
+        && L.seqOk && L.dividerOk && L.radiusOk);
       // GEOMETRY, at each width on that width's own terms: the phone demands nothing escapes and nothing is under
       // 44 px (the same bar the other phone views are held to); the desktop is judged against the PLAIN desktop
       // page, which is the layout this game's author shipped (leg 5's rule).
@@ -591,7 +850,12 @@ async function gateMobile(browser, base, ids) {
         desktop: llDesk && { ...llDesk, geometry: { escaping: llDesk.geometry.escaping.slice(0, 3), controlEscaping: ctlLast ? ctlLast.escaping.slice(0, 3) : null, tooSmall: llDesk.geometry.tooSmall.slice(0, 3), controlTooSmall: ctlLast ? ctlLast.tooSmall.slice(0, 3) : null, docScrollWidth: llDesk.geometry.docScrollWidth, vw: llDesk.geometry.vw } },
         phoneOk: listOk(llPhone) && phoneGeomOk, desktopOk: listOk(llDesk) && deskGeomOk,
       };
-      row.layersOk = !!(row.layers.phoneOk && row.layers.desktopOk && row.layersInert.ok && row.resetVerdict !== 'NOT MOVED');
+      const u2 = U2_CHIPS[id];
+      row.chipBaseline = u2 === undefined ? null
+        : { u2, now: llPhone.chips, milestones: llPhone.milestoneChips, fell: llPhone.chips < u2,
+            cardsOffSourceOrder: llPhone.orderFromSource, orderMoved: llPhone.orderFromSource > 0 };
+      row.layersOk = !!(row.layers.phoneOk && row.layers.desktopOk && row.layersInert.ok && row.resetVerdict !== 'NOT MOVED'
+        && row.rulesOk && (!row.chipBaseline || (row.chipBaseline.fell && row.chipBaseline.orderMoved)));
       row.layersScreenshot = path.relative(REPO, llShot);
 
       const shot = path.join(REPO, `tools/harness/results/${id}-mobile.png`);
@@ -666,11 +930,31 @@ async function main() {
       const cards = rows.reduce((n, r) => n + ((r.layers && r.layers.phone && r.layers.phone.cards.length) || 0), 0);
       const chips = rows.reduce((n, r) => n + ((r.layers && r.layers.phone && r.layers.phone.chips) || 0), 0);
       console.log(`M1 layers leg: ${rows.filter((r) => r.layersOk).length}/${rows.length} green over ${cards} card(s) and ${chips} chip(s), at ${PHONE.width}px with touch and at ${DESKTOP.width}px without`);
+      // U2b: the chips MIRROR THE NORMAL VIEW — the sequence, the dividers, the milestone corners, and the two
+      // discriminators (a count that fell, an order that moved) on the reference games.
+      const ll = (r) => (r.layers && r.layers.phone) || null;
+      const shp = rows.reduce((o, r) => { const t = ll(r) && ll(r).tabFormatShapes; if (t) { o.none += t.none; o.array += t.array; o.object += t.object; } return o; }, { none: 0, array: 0, object: 0 });
+      const ms = rows.reduce((n, r) => n + ((ll(r) && ll(r).milestoneChips) || 0), 0);
+      const dv = rows.reduce((n, r) => n + ((ll(r) && ll(r).dividers) || 0), 0);
+      const offSrc = rows.reduce((n, r) => n + ((ll(r) && ll(r).orderFromSource) || 0), 0);
+      const withChips = rows.reduce((n, r) => n + ((ll(r) && ll(r).cardsWithChips) || 0), 0);
+      const seqRed = rows.filter((r) => ll(r) && !ll(r).seqOk).map((r) => r.id);
+      const divRed = rows.filter((r) => ll(r) && !ll(r).dividerOk).map((r) => r.id);
+      const radRed = rows.filter((r) => ll(r) && !ll(r).radiusOk).map((r) => r.id);
+      console.log(`M1 layers order: chip sequence equals the tabFormat-derived order in ${rows.length - seqRed.length}/${rows.length}${seqRed.length ? ` (RED: ${seqRed.join(', ')})` : ''}; dividers correct in ${rows.length - divRed.length}/${rows.length}${divRed.length ? ` (RED: ${divRed.join(', ')})` : ''}; milestone corners differ in ${rows.length - radRed.length}/${rows.length}${radRed.length ? ` (RED: ${radRed.join(', ')})` : ''}`);
+      const ps = rows.reduce((n, r) => n + ((ll(r) && ll(r).pseudoChips) || 0), 0);
+      const starved = rows.flatMap((r) => ((ll(r) && ll(r).capStarved) || []).map((x) => `${r.id}/${x.layer} missing ${x.missing.join('+')}`));
+      const multiCat = rows.reduce((n, r) => n + ((ll(r) && ll(r).capCards) || 0), 0);
+      console.log(`M1 layers cap (REPORTED, not asserted — the collapsed card is U2's and is being redesigned): ${starved.length} of ${multiCat} multi-category card(s) leave a whole category behind the +N${starved.length ? `: ${starved.slice(0, 10).join(', ')}${starved.length > 10 ? `, …(${starved.length})` : ''}` : ''}`);
+      console.log(`M1 layers shape: tabFormat ${shp.array} array-form, ${shp.object} object/subtab-form, ${shp.none} none (engine default) over ${rows.length} games; ${ms} milestone chip(s), ${dv} divider(s); ${offSrc}/${withChips} card(s) with chips are NOT in source order; ${ps} pseudo-unlocked chip(s)${ps === 0 ? ' — visibility rule 2 is UNEXERCISED at these states (see docs/mobile.md)' : ''}`);
+      console.log(`M1 layers discriminators: ${rows.filter((r) => r.chipBaseline).map((r) => `${r.id} ${r.chipBaseline.now} chips vs U2's ${r.chipBaseline.u2} (${r.chipBaseline.fell ? 'FELL' : 'DID NOT FALL'}, ${r.chipBaseline.milestones} of them milestones), ${r.chipBaseline.cardsOffSourceOrder} card(s) off source order (${r.chipBaseline.orderMoved ? 'MOVED' : 'UNMOVED'})`).join('; ') || 'no reference game in this run'}`);
+      const vr = (f) => rows.reduce((o, r) => { const v = r.rules && r.rules[f] && r.rules[f].verdict; if (v) o[v] = (o[v] || 0) + 1; return o; }, {});
+      console.log(`M1 layers visibility rules (constructed, judged against the probe's own expectation): msDisplay='never' → ${JSON.stringify(vr('ms'))}; pseudoUnl forced true → ${JSON.stringify(vr('pseudo'))}; ${rows.filter((r) => r.rules && r.rules.restored === false).length} game(s) did not restore`);
       const llAbst = rows.filter((r) => r.layersInert && !r.layersInert.stable).map((r) => r.id);
       console.log(`M1 layers inertness: ${rows.filter((r) => r.layersInert && r.layersInert.verdict === 'unchanged').length} unchanged state hash across opening the list, ${rows.filter((r) => r.layersInert && r.layersInert.verdict === 'MOVED').length} moved, ${llAbst.length} abstained${llAbst.length ? ` (the page does not repeat its own hash: ${llAbst.join(', ')})` : ''}`);
       const noCand = rows.filter((r) => r.resetVerdict && r.resetVerdict.startsWith('no candidate')).map((r) => r.id);
       console.log(`M1 layers reset press: ${rows.filter((r) => r.resetVerdict === 'moved').length} moved player[l].points, ${rows.filter((r) => r.resetVerdict === 'NOT MOVED').length} did not, ${noCand.length} abstained${noCand.length ? ` (nothing could reset: ${noCand.join(', ')})` : ''}`);
-      for (const r of rows.filter((x) => !x.ok)) console.log(`  ${r.id}: layers=${r.layersOk}${r.layers && !r.layersOk ? ' ' + JSON.stringify(r.layers) : ''}${r.resetVerdict && r.resetVerdict !== 'moved' ? ` reset=${r.resetVerdict} ${JSON.stringify(r.reset)}` : ''} inert=${r.inertOk} both=${r.bothOk}${r.both ? ' ' + JSON.stringify(r.both) : ''} navbarOnly=${r.navbarOnlyOk}${r.navbarOnly && !r.navbarOnlyOk ? ' ' + JSON.stringify(r.navbarOnly) : ''} state=${r.stateVerdict}${r.state ? ` (plain ${r.state.plain} / control ${r.state.plainControl} / mobile ${r.state.mobile})` : ''} geometry=${r.geometryOk} nav=${r.navOk} load=${r.loadVerdict && r.loadVerdict.ok}${r.worst && r.worst.length ? ` worst=${JSON.stringify(r.worst)}` : ''}${r.exception ? ` exception=${r.exception}` : ''}`);
+      for (const r of rows.filter((x) => !x.ok)) console.log(`  ${r.id}: layers=${r.layersOk}${r.chipBaseline && !(r.chipBaseline.fell && r.chipBaseline.orderMoved) ? ` chipBaseline=${JSON.stringify(r.chipBaseline)}` : ''}${r.layers && !r.layersOk ? ' ' + JSON.stringify(r.layers) : ''}${r.resetVerdict && r.resetVerdict !== 'moved' ? ` reset=${r.resetVerdict} ${JSON.stringify(r.reset)}` : ''} inert=${r.inertOk} both=${r.bothOk}${r.both ? ' ' + JSON.stringify(r.both) : ''} navbarOnly=${r.navbarOnlyOk}${r.navbarOnly && !r.navbarOnlyOk ? ' ' + JSON.stringify(r.navbarOnly) : ''} state=${r.stateVerdict}${r.state ? ` (plain ${r.state.plain} / control ${r.state.plainControl} / mobile ${r.state.mobile})` : ''} geometry=${r.geometryOk} nav=${r.navOk} load=${r.loadVerdict && r.loadVerdict.ok}${r.worst && r.worst.length ? ` worst=${JSON.stringify(r.worst)}` : ''}${r.exception ? ` exception=${r.exception}` : ''}`);
     } else {
       const out = await runPage(browser, base, ids[0], { ticks: Number(a.ticks ?? 200), diff: Number(a.diff ?? 0.05), leg: a.leg || 'idle', until: a.until || null, stateOut: a['state-out'], playerOut: a['player-out'], loadFrom: a['load-from'] ? fs.readFileSync(a['load-from'], 'utf8') : null, profile: a.profile || null, exclude: a.exclude ? a.exclude.split(',') : [], autoOpt: a['auto-opt'] || null, automation: !a['no-automation'] });
       delete out.json; delete out.player;
