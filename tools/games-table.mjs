@@ -116,6 +116,9 @@ export function checkDeclined() {
     const r = e && typeof e.repo === 'string' ? e.repo : null;
     if (!r) { problems.push(`an entry has no repo: ${JSON.stringify(e).slice(0, 80)}`); continue; }
     if (!e.reason || !String(e.reason).trim()) problems.push(`${r}: no reason`);
+    // `short` is what the census table prints; `reason` is the full account, kept for its tooltip and for us
+    if (!e.short || !String(e.short).trim()) problems.push(`${r}: no short label`);
+    else if (String(e.short).length > 24) problems.push(`${r}: short label is ${String(e.short).length} chars, over 24 — it has to fit a table cell`);
     if (seen.has(r.toLowerCase())) problems.push(`${r}: listed twice`);
     seen.add(r.toLowerCase());
     if (hosted.has(r.toLowerCase())) problems.push(`${r}: declined AND hosted as \`${hosted.get(r.toLowerCase())}\` — remove the entry`);
