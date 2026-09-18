@@ -1,0 +1,116 @@
+{
+  "id": "the-hyperdimensions-tree",
+  "commit": "3ea5c8a58b9a1007ce16111a6aee2857b9dcf607",
+  "layers": {
+    "info-tab": {
+      "row": "otherside",
+      "type": "none"
+    },
+    "options-tab": {
+      "row": "otherside",
+      "type": "none"
+    },
+    "changelog-tab": {
+      "row": "otherside",
+      "type": "none"
+    },
+    "l": {
+      "row": 0,
+      "type": "normal"
+    },
+    "s": {
+      "row": 1,
+      "type": "normal"
+    },
+    "tri": {
+      "row": 1,
+      "type": "normal"
+    },
+    "c": {
+      "row": 2,
+      "type": "custom"
+    },
+    "t": {
+      "row": 3,
+      "type": "custom"
+    },
+    "mini1": {
+      "row": "side",
+      "type": "none"
+    },
+    "d": {
+      "row": 10,
+      "type": "custom"
+    },
+    "blank": {
+      "row": null,
+      "type": "none"
+    },
+    "tree-tab": {
+      "row": null,
+      "type": "none"
+    }
+  },
+  "ids": [
+    "l:upg:11",
+    "l:upg:12",
+    "l:upg:13",
+    "l:upg:14",
+    "l:upg:15",
+    "l:upg:21",
+    "l:upg:22",
+    "l:upg:23",
+    "s:ms:1",
+    "s:ms:2",
+    "s:ms:3",
+    "s:ms:5",
+    "s:upg:11",
+    "s:upg:12",
+    "s:upg:13",
+    "s:upg:14",
+    "s:upg:15",
+    "s:upg:21",
+    "s:upg:22",
+    "s:upg:23",
+    "s:upg:24",
+    "s:upg:25",
+    "s:upg:31",
+    "s:upg:32",
+    "s:upg:33",
+    "s:upg:34",
+    "s:upg:35",
+    "s:buy:11",
+    "s:buy:12",
+    "tri:upg:35",
+    "c:ms:0",
+    "c:ms:1",
+    "c:ms:2",
+    "c:ms:3",
+    "c:ms:4",
+    "c:ms:5",
+    "c:upg:11",
+    "c:upg:12",
+    "c:upg:13",
+    "c:upg:14",
+    "c:upg:15",
+    "t:ms:0",
+    "mini1:upg:11",
+    "mini1:upg:21",
+    "mini1:upg:22",
+    "mini1:upg:31",
+    "mini1:upg:32",
+    "mini1:upg:33",
+    "d:ms:0",
+    "d:ms:1",
+    "d:ms:2",
+    "d:ms:3",
+    "d:ms:4"
+  ],
+  "counts": {
+    "ms": 16,
+    "upg": 35,
+    "buy": 2,
+    "ch": 0,
+    "ach": 0
+  }
+}

@@ -1,0 +1,130 @@
+{
+  "schema": 1,
+  "id": "the-loop-tree-2",
+  "name": "The Loop Tree 2",
+  "version": "1.0",
+  "author": "liam",
+  "upstream": {
+    "repo": "Idontknow73647/The-Loop-Tree-2",
+    "url": "https://github.com/Idontknow73647/The-Loop-Tree-2.git",
+    "branch": "master",
+    "commit": "575eb7cfa79586b069c9104a52b2ed5f915cab1e",
+    "pushed_at": "2026-07-28T15:30:44Z"
+  },
+  "engine": {
+    "tmtNum": "2.7",
+    "stock_commit": "4d8a86c",
+    "moved": false,
+    "deviation": {
+      "added": 2,
+      "removed": 2
+    }
+  },
+  "entry": "index.html",
+  "load": {
+    "onload": "load()",
+    "scripts": [
+      "js/technical/break_eternity.js",
+      "js/technical/layerSupport.js",
+      "js/mod.js",
+      "js/technical/loader.js",
+      "js/technical/temp.js",
+      "js/technical/displays.js",
+      "js/game.js",
+      "js/utils.js",
+      "js/utils/easyAccess.js",
+      "js/technical/systemComponents.js",
+      "js/components.js",
+      "js/technical/canvas.js",
+      "js/technical/particleSystem.js",
+      "js/utils/NumberFormating.js",
+      "js/utils/options.js",
+      "js/utils/save.js",
+      "js/utils/themes.js"
+    ],
+    "renderOnly": [
+      "js/technical/systemComponents.js",
+      "js/components.js",
+      "js/technical/canvas.js",
+      "js/technical/particleSystem.js"
+    ],
+    "modFilesPrefix": "js/",
+    "modFiles": [
+      "layers.js",
+      "tree.js"
+    ],
+    "external": {
+      "https://unpkg.com/vue@2.7.16/dist/vue.min.js": "vendor",
+      "https://fonts.googleapis.com/css?family=Inconsolata": "drop"
+    },
+    "vendor": {
+      "https://unpkg.com/vue@2.7.16/dist/vue.min.js": {
+        "path": "vendor/vue-2.7.16.min.js",
+        "sha256": "3c1d4b0c549e8de9d4a9bafb12ab70b6a1ac747d07293b98c5b25b6632999afd"
+      }
+    }
+  },
+  "save": {
+    "keyRule": "modInfo.id",
+    "key": "thelooptree2"
+  },
+  "headless": {
+    "prestubs": [],
+    "renderStubs": [
+      "loadVue",
+      "resizeCanvas",
+      "retrieveCanvasData",
+      "drawTree",
+      "drawComponentBranches",
+      "drawTreeBranch",
+      "makeParticles",
+      "makeShinies",
+      "updateParticles",
+      "setDir",
+      "setSpeed",
+      "updateMouse",
+      "getOpacity",
+      "constructParticleStyle",
+      "clearParticles",
+      "sin",
+      "cos",
+      "tan",
+      "asin",
+      "acos",
+      "atan"
+    ],
+    "idleHash": {
+      "ticks": 200,
+      "diff": 0.05,
+      "hash": "5bee74bd90e12723"
+    },
+    "deterministic": true
+  },
+  "license": {
+    "githubSpdx": "NOASSERTION",
+    "files": {
+      "LICENSE": "MIT",
+      "Prestige-tree-license": "MIT"
+    },
+    "verdict": "MIT"
+  },
+  "census": {
+    "full_name": "Idontknow73647/The-Loop-Tree-2",
+    "head": "575eb7c",
+    "score": 38.52,
+    "layers": 4,
+    "rows": 3,
+    "milestones": 5,
+    "upgrades": 12,
+    "buyables": 0,
+    "challenges": 0,
+    "achievements": 13,
+    "trace_fields": 2
+  },
+  "patches": [],
+  "generated": {
+    "by": "tmt-fork-census scripts/manifest.mjs",
+    "commit": "b510bb6",
+    "at": "2026-09-18T02:21:58.098Z"
+  }
+}

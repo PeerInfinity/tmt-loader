@@ -1,0 +1,69 @@
+{
+  "id": "the-rocket-tree",
+  "commit": "e604d74f873e2936919872459b7243d6f680d885",
+  "layers": {
+    "info-tab": {
+      "row": "otherside",
+      "type": "none"
+    },
+    "options-tab": {
+      "row": "otherside",
+      "type": "none"
+    },
+    "changelog-tab": {
+      "row": "otherside",
+      "type": "none"
+    },
+    "r": {
+      "row": 0,
+      "type": "normal"
+    },
+    "a": {
+      "row": "side",
+      "type": "none"
+    },
+    "y": {
+      "row": 1,
+      "type": "normal"
+    },
+    "s": {
+      "row": 2,
+      "type": "normal"
+    },
+    "blank": {
+      "row": null,
+      "type": "none"
+    },
+    "tree-tab": {
+      "row": null,
+      "type": "none"
+    }
+  },
+  "ids": [
+    "r:upg:11",
+    "r:upg:12",
+    "r:upg:13",
+    "r:upg:14",
+    "a:ach:11",
+    "a:ach:12",
+    "a:ach:13",
+    "a:ach:14",
+    "a:ach:21",
+    "a:ach:22",
+    "a:ach:23",
+    "a:ach:24",
+    "a:ach:31",
+    "a:ach:32",
+    "a:ach:33",
+    "a:ach:34",
+    "y:upg:11",
+    "y:upg:12"
+  ],
+  "counts": {
+    "ms": 0,
+    "upg": 6,
+    "buy": 0,
+    "ch": 0,
+    "ach": 12
+  }
+}

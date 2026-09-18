@@ -1,0 +1,90 @@
+{
+  "id": "a-game-about-rocks",
+  "commit": "f98c14642b2ca6d37628a874eecbdced43d22708",
+  "layers": {
+    "info-tab": {
+      "row": "otherside",
+      "type": "none"
+    },
+    "options-tab": {
+      "row": "otherside",
+      "type": "none"
+    },
+    "changelog-tab": {
+      "row": "otherside",
+      "type": "none"
+    },
+    "s": {
+      "row": 1,
+      "type": "normal"
+    },
+    "m": {
+      "row": 0,
+      "type": "normal"
+    },
+    "c": {
+      "row": 2,
+      "type": "normal"
+    },
+    "I": {
+      "row": 3,
+      "type": "normal"
+    },
+    "blank": {
+      "row": null,
+      "type": "none"
+    },
+    "tree-tab": {
+      "row": null,
+      "type": "none"
+    }
+  },
+  "ids": [
+    "s:upg:11",
+    "s:upg:12",
+    "s:upg:13",
+    "s:upg:14",
+    "s:upg:21",
+    "s:upg:22",
+    "s:upg:23",
+    "s:upg:24",
+    "s:upg:31",
+    "s:upg:32",
+    "s:upg:33",
+    "s:upg:41",
+    "s:upg:42",
+    "s:upg:43",
+    "s:upg:44",
+    "s:upg:51",
+    "s:upg:52",
+    "s:upg:53",
+    "s:ch:11",
+    "s:ch:12",
+    "s:ch:21",
+    "s:ch:22",
+    "m:ms:1",
+    "m:ms:2",
+    "m:ms:3",
+    "m:ms:4",
+    "m:ms:5",
+    "m:ms:6",
+    "m:ms:7",
+    "c:upg:11",
+    "c:upg:12",
+    "c:upg:13",
+    "c:upg:21",
+    "c:upg:22",
+    "c:upg:23",
+    "I:upg:11",
+    "I:upg:12",
+    "I:upg:13",
+    "I:upg:14"
+  ],
+  "counts": {
+    "ms": 7,
+    "upg": 28,
+    "buy": 0,
+    "ch": 4,
+    "ach": 0
+  }
+}

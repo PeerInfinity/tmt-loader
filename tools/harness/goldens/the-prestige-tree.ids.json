@@ -1,0 +1,121 @@
+{
+  "id": "the-prestige-tree",
+  "commit": "292db019f813ebf179fb50d2adfbca14d1bdeb3f",
+  "layers": {
+    "info-tab": {
+      "row": "otherside",
+      "type": "none"
+    },
+    "options-tab": {
+      "row": "otherside",
+      "type": "none"
+    },
+    "changelog-tab": {
+      "row": "otherside",
+      "type": "none"
+    },
+    "blank": {
+      "row": null,
+      "type": "none"
+    },
+    "tree-tab": {
+      "row": null,
+      "type": "none"
+    },
+    "statistics": {
+      "row": null,
+      "type": "none"
+    },
+    "achievements": {
+      "row": null,
+      "type": "none"
+    },
+    "layer1#": {
+      "row": null,
+      "type": "none"
+    },
+    "layer1": {
+      "row": 0,
+      "type": "normal"
+    },
+    "layer2": {
+      "row": 1,
+      "type": "normal"
+    },
+    "layer3a": {
+      "row": 2,
+      "type": "normal"
+    },
+    "layer3b": {
+      "row": 2,
+      "type": "normal"
+    },
+    "layer4a": {
+      "row": 3,
+      "type": "normal"
+    },
+    "layer4b": {
+      "row": 3,
+      "type": "normal"
+    }
+  },
+  "ids": [
+    "achievements:ach:11",
+    "achievements:ach:12",
+    "achievements:ach:13",
+    "achievements:ach:14",
+    "achievements:ach:15",
+    "achievements:ach:21",
+    "achievements:ach:22",
+    "achievements:ach:23",
+    "achievements:ach:24",
+    "achievements:ach:25",
+    "achievements:ach:31",
+    "achievements:ach:32",
+    "achievements:ach:33",
+    "achievements:ach:34",
+    "achievements:ach:35",
+    "achievements:ach:41",
+    "achievements:ach:42",
+    "achievements:ach:43",
+    "achievements:ach:44",
+    "achievements:ach:45",
+    "layer1:upg:11",
+    "layer1:upg:12",
+    "layer1:upg:13",
+    "layer1:upg:21",
+    "layer1:upg:22",
+    "layer1:upg:23",
+    "layer2:ms:0",
+    "layer2:ms:1",
+    "layer2:upg:11",
+    "layer2:upg:12",
+    "layer2:upg:13",
+    "layer2:upg:21",
+    "layer2:upg:22",
+    "layer2:upg:23",
+    "layer3a:ms:0",
+    "layer3a:upg:11",
+    "layer3a:upg:12",
+    "layer3a:upg:13",
+    "layer3a:upg:21",
+    "layer3b:ms:0",
+    "layer3b:upg:11",
+    "layer3b:upg:12",
+    "layer3b:upg:13",
+    "layer4a:ms:0",
+    "layer4a:ms:1",
+    "layer4a:ms:2",
+    "layer4a:upg:11",
+    "layer4a:upg:12",
+    "layer4a:upg:13",
+    "layer4b:upg:11"
+  ],
+  "counts": {
+    "ms": 7,
+    "upg": 23,
+    "buy": 0,
+    "ch": 0,
+    "ach": 20
+  }
+}

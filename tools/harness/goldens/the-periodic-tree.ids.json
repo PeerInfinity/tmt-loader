@@ -1,0 +1,92 @@
+{
+  "id": "the-periodic-tree",
+  "commit": "d6d8a026407919ebe452a8d34721db8ab1e833ec",
+  "layers": {
+    "info-tab": {
+      "row": "otherside",
+      "type": "none"
+    },
+    "options-tab": {
+      "row": "otherside",
+      "type": "none"
+    },
+    "changelog-tab": {
+      "row": "otherside",
+      "type": "none"
+    },
+    "a": {
+      "row": "side",
+      "type": "none"
+    },
+    "cr": {
+      "row": 0,
+      "type": "static"
+    },
+    "h": {
+      "row": 3,
+      "type": "normal"
+    },
+    "he": {
+      "row": 4,
+      "type": "static"
+    },
+    "l": {
+      "row": 5,
+      "type": "static"
+    },
+    "blank": {
+      "row": null,
+      "type": "none"
+    },
+    "tree-tab": {
+      "row": null,
+      "type": "none"
+    }
+  },
+  "ids": [
+    "a:ach:11",
+    "a:ach:12",
+    "a:ach:13",
+    "a:ach:14",
+    "a:ach:15",
+    "cr:upg:11",
+    "cr:upg:12",
+    "cr:upg:13",
+    "cr:upg:14",
+    "cr:upg:21",
+    "cr:upg:22",
+    "cr:upg:31",
+    "h:upg:11",
+    "h:upg:12",
+    "h:upg:13",
+    "h:upg:21",
+    "h:upg:22",
+    "h:upg:23",
+    "h:upg:31",
+    "h:upg:32",
+    "he:ms:0",
+    "he:ms:1",
+    "he:ms:2",
+    "he:upg:11",
+    "he:upg:12",
+    "he:upg:13",
+    "he:upg:21",
+    "he:upg:22",
+    "l:ms:0",
+    "l:ms:1",
+    "l:upg:11",
+    "l:upg:12",
+    "l:upg:13",
+    "l:upg:21",
+    "l:upg:22",
+    "l:upg:23",
+    "l:upg:31"
+  ],
+  "counts": {
+    "ms": 5,
+    "upg": 27,
+    "buy": 0,
+    "ch": 0,
+    "ach": 5
+  }
+}

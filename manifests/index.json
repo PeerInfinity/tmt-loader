@@ -568,5 +568,115 @@
     "id": "zavrsni-rad",
     "name": "Zavrsni rad",
     "repo": "TZR-byte/Inkrementalka"
+  },
+  {
+    "id": "the-rocket-tree",
+    "name": "The Rocket Tree",
+    "repo": "Glennreble/The-Modding-Tree"
+  },
+  {
+    "id": "the-prestige-tree",
+    "name": "The Prestige Tree",
+    "repo": "Redmountain0/The-Prestige-Tree"
+  },
+  {
+    "id": "the-gci-tree",
+    "name": "The GCI Tree",
+    "repo": "ryan27367/The-Modding-Tree"
+  },
+  {
+    "id": "small-layers-tree",
+    "name": "small layers tree",
+    "repo": "Kenjie3870/The-Modding-Tree-v1"
+  },
+  {
+    "id": "the-yes-tree",
+    "name": "The Yes Tree",
+    "repo": "boknoy21/The-Modding-Tree"
+  },
+  {
+    "id": "the-genesis-tree",
+    "name": "The Genesis Tree",
+    "repo": "lingluo3/The-Genesis-Tree"
+  },
+  {
+    "id": "my-first-tree",
+    "name": "MY FIRST Tree",
+    "repo": "bunkeris/myfirsttree"
+  },
+  {
+    "id": "the-christmas-tree",
+    "name": "The Christmas Tree",
+    "repo": "IAmYhvr/The-Modding-Tree"
+  },
+  {
+    "id": "the-stardust-tree",
+    "name": "The Stardust Tree",
+    "repo": "okamii17/Prestige-Tree-Stardust"
+  },
+  {
+    "id": "the-hyperdimensions-tree",
+    "name": "The Hyperdimensions Tree",
+    "repo": "3k5m/The-Modding-Tree"
+  },
+  {
+    "id": "distance-incremental",
+    "name": "Distance Incremental",
+    "repo": "meme0846/Distance-Incremental"
+  },
+  {
+    "id": "the-testy-tree",
+    "name": "The Testy Tree",
+    "repo": "rowantrees/The-Modding-Tree"
+  },
+  {
+    "id": "the-mathematical-tree",
+    "name": "The Mathematical Tree",
+    "repo": "TerperSquared/The-Math-Tree"
+  },
+  {
+    "id": "the-rpg-tree",
+    "name": "The RPG Tree",
+    "repo": "skralg/The-Modding-Tree"
+  },
+  {
+    "id": "the-loop-tree-2",
+    "name": "The Loop Tree 2",
+    "repo": "Idontknow73647/The-Loop-Tree-2"
+  },
+  {
+    "id": "a-game-about-rocks",
+    "name": "A game about Rocks",
+    "repo": "Kolt3rbolt3r/The-Pain-Tree"
+  },
+  {
+    "id": "gooby-cat-tree",
+    "name": "Gooby Cat Tree",
+    "repo": "22edc/Gooby-Cat-Tree"
+  },
+  {
+    "id": "the-rank-tree",
+    "name": "The Rank Tree",
+    "repo": "The-Alternate-Tree/The-Rank-Tree"
+  },
+  {
+    "id": "the-colour-tree",
+    "name": "The Colour Tree",
+    "repo": "Grassyhead13/The-Colour-Tree"
+  },
+  {
+    "id": "the-notsomodding-tree",
+    "name": "The Notsomodding Tree",
+    "repo": "whatthefoxsay0/The-Modding-Tree"
+  },
+  {
+    "id": "the-orchard-tree",
+    "name": "The Orchard Tree",
+    "repo": "tunethebee/The-Modding-Tree"
+  },
+  {
+    "id": "the-periodic-tree",
+    "name": "The Periodic Tree",
+    "repo": "coolbro101/the-periodic-tree"
   }
 ]

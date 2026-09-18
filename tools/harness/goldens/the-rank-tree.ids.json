@@ -1,0 +1,90 @@
+{
+  "id": "the-rank-tree",
+  "commit": "5d8ed926479f91b9b9bcf8d6a221933f78c4542f",
+  "layers": {
+    "info-tab": {
+      "row": "otherside",
+      "type": "none"
+    },
+    "options-tab": {
+      "row": "otherside",
+      "type": "none"
+    },
+    "changelog-tab": {
+      "row": "otherside",
+      "type": "none"
+    },
+    "r": {
+      "row": 1,
+      "type": "static"
+    },
+    "t": {
+      "row": 2,
+      "type": "static"
+    },
+    "tr": {
+      "row": 3,
+      "type": "static"
+    },
+    "p": {
+      "row": 4,
+      "type": "static"
+    },
+    "h": {
+      "row": 5,
+      "type": "static"
+    },
+    "blank": {
+      "row": null,
+      "type": "none"
+    },
+    "tree-tab": {
+      "row": null,
+      "type": "none"
+    }
+  },
+  "ids": [
+    "r:ms:1",
+    "r:ms:2",
+    "r:ms:3",
+    "r:ms:4",
+    "r:ms:5",
+    "r:ms:6",
+    "r:ms:7",
+    "r:ms:8",
+    "r:ms:9",
+    "r:ms:10",
+    "r:ms:11",
+    "r:ms:12",
+    "r:ms:13",
+    "r:ms:14",
+    "r:ms:15",
+    "t:ms:1",
+    "t:ms:2",
+    "t:ms:3",
+    "t:ms:4",
+    "t:ms:5",
+    "t:ms:6",
+    "tr:ms:1",
+    "tr:ms:2",
+    "tr:ms:3",
+    "tr:ms:4",
+    "tr:ms:5",
+    "tr:ms:6",
+    "tr:ms:7",
+    "tr:ms:8",
+    "p:ms:1",
+    "p:ms:2",
+    "p:ms:3",
+    "p:ms:4",
+    "h:ms:1",
+    "h:ms:2"
+  ],
+  "counts": {
+    "ms": 35,
+    "upg": 0,
+    "buy": 0,
+    "ch": 0,
+    "ach": 0
+  }
+}

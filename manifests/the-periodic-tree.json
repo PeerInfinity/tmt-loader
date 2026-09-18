@@ -1,0 +1,136 @@
+{
+  "schema": 1,
+  "id": "the-periodic-tree",
+  "name": "The Periodic Tree",
+  "version": "0.1",
+  "author": "amogus22, King-B3H, FebruaryTheDuck",
+  "upstream": {
+    "repo": "coolbro101/the-periodic-tree",
+    "url": "https://github.com/coolbro101/the-periodic-tree.git",
+    "branch": "master",
+    "commit": "d6d8a026407919ebe452a8d34721db8ab1e833ec",
+    "pushed_at": "2024-06-21T02:37:43Z"
+  },
+  "engine": {
+    "tmtNum": "2.6.6.2",
+    "stock_commit": "8cf14c4",
+    "moved": false,
+    "deviation": {
+      "added": 71,
+      "removed": 16
+    }
+  },
+  "entry": "index.html",
+  "load": {
+    "onload": "load()",
+    "scripts": [
+      "js/technical/break_eternity.js",
+      "js/technical/layerSupport.js",
+      "js/mod.js",
+      "js/technical/loader.js",
+      "js/technical/temp.js",
+      "js/technical/displays.js",
+      "js/game.js",
+      "js/utils.js",
+      "js/utils/easyAccess.js",
+      "js/technical/systemComponents.js",
+      "js/components.js",
+      "js/technical/canvas.js",
+      "js/technical/particleSystem.js",
+      "js/utils/NumberFormating.js",
+      "js/utils/options.js",
+      "js/utils/save.js",
+      "js/utils/themes.js"
+    ],
+    "renderOnly": [
+      "js/technical/systemComponents.js",
+      "js/components.js",
+      "js/technical/canvas.js",
+      "js/technical/particleSystem.js"
+    ],
+    "modFilesPrefix": "js/",
+    "modFiles": [
+      "layers.js",
+      "tree.js",
+      "currency-list.html"
+    ],
+    "external": {
+      "https://cdn.jsdelivr.net/npm/vue@2.6.12": "vendor",
+      "https://fonts.googleapis.com/css?family=Inconsolata": "drop"
+    },
+    "vendor": {
+      "https://cdn.jsdelivr.net/npm/vue@2.6.12": {
+        "path": "vendor/vue-2.6.12.min.js",
+        "sha256": "29296ccacaa9ed35ed168fc51e36f54fd6f8db9c7786bbf38cc59a27229ba5c2"
+      }
+    },
+    "known": {
+      "missingScripts": [
+        "js/currency-list.html"
+      ]
+    }
+  },
+  "save": {
+    "keyRule": "modInfo.id",
+    "key": "mymod"
+  },
+  "headless": {
+    "prestubs": [],
+    "renderStubs": [
+      "loadVue",
+      "resizeCanvas",
+      "retrieveCanvasData",
+      "drawTree",
+      "drawComponentBranches",
+      "drawTreeBranch",
+      "makeParticles",
+      "makeShinies",
+      "updateParticles",
+      "setDir",
+      "setSpeed",
+      "updateMouse",
+      "getOpacity",
+      "constructParticleStyle",
+      "clearParticles",
+      "sin",
+      "cos",
+      "tan",
+      "asin",
+      "acos",
+      "atan"
+    ],
+    "idleHash": {
+      "ticks": 200,
+      "diff": 0.05,
+      "hash": "e37310ce8ed9d46b"
+    },
+    "deterministic": true
+  },
+  "license": {
+    "githubSpdx": "NOASSERTION",
+    "files": {
+      "LICENSE": "MIT",
+      "Prestige-tree-license": "MIT"
+    },
+    "verdict": "MIT"
+  },
+  "census": {
+    "full_name": "coolbro101/the-periodic-tree",
+    "head": "d6d8a02",
+    "score": 35.8,
+    "layers": 4,
+    "rows": 4,
+    "milestones": 5,
+    "upgrades": 27,
+    "buyables": 0,
+    "challenges": 0,
+    "achievements": 5,
+    "trace_fields": 2
+  },
+  "patches": [],
+  "generated": {
+    "by": "tmt-fork-census scripts/manifest.mjs",
+    "commit": "b510bb6",
+    "at": "2026-09-18T02:21:59.310Z"
+  }
+}

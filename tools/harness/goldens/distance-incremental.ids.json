@@ -1,0 +1,48 @@
+{
+  "id": "distance-incremental",
+  "commit": "2d3a18e5d38582c986c5ce79d5b5dd6dd29f48be",
+  "layers": {
+    "r": {
+      "row": 0,
+      "type": "static"
+    },
+    "t": {
+      "row": 1,
+      "type": "static"
+    },
+    "a": {
+      "row": "side",
+      "type": "none"
+    },
+    "ro": {
+      "row": 2,
+      "type": "normal"
+    }
+  },
+  "ids": [
+    "a:ach:11",
+    "a:ach:12",
+    "a:ach:13",
+    "a:ach:14",
+    "a:ach:21",
+    "a:ach:22",
+    "a:ach:23",
+    "a:ach:24",
+    "a:ach:31",
+    "a:ach:32",
+    "a:ach:33",
+    "a:ach:34",
+    "a:ach:41",
+    "a:ach:42",
+    "a:ach:43",
+    "a:ach:44",
+    "ro:buy:11"
+  ],
+  "counts": {
+    "ms": 0,
+    "upg": 0,
+    "buy": 1,
+    "ch": 0,
+    "ach": 16
+  }
+}
