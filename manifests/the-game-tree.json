@@ -1,0 +1,138 @@
+{
+  "schema": 1,
+  "id": "the-game-tree",
+  "name": "The Game Tree",
+  "version": "0.6.3",
+  "author": "mysterious_124",
+  "upstream": {
+    "repo": "shenmi124/The-Game-Tree",
+    "url": "https://github.com/shenmi124/The-Game-Tree.git",
+    "branch": "master",
+    "commit": "627a2929cf62f2c8b71dcbcbb32d11c539fe5f72",
+    "pushed_at": "2021-09-27T13:32:17Z"
+  },
+  "engine": {
+    "tmtNum": "2.6.5.1",
+    "stock_commit": "5180497",
+    "moved": false,
+    "deviation": {
+      "added": 23,
+      "removed": 5
+    }
+  },
+  "entry": "index.html",
+  "load": {
+    "onload": "load()",
+    "scripts": [
+      "js/technical/break_eternity.js",
+      "js/technical/layerSupport.js",
+      "js/mod.js",
+      "js/technical/loader.js",
+      "js/layers/CT1.js",
+      "js/layers/CT2.js",
+      "js/layers/side.js",
+      "js/technical/temp.js",
+      "js/technical/displays.js",
+      "js/game.js",
+      "js/utils.js",
+      "js/utils/easyAccess.js",
+      "js/technical/systemComponents.js",
+      "js/components.js",
+      "js/technical/canvas.js",
+      "js/technical/particleSystem.js",
+      "js/utils/NumberFormating.js",
+      "js/utils/options.js",
+      "js/utils/save.js",
+      "js/utils/themes.js"
+    ],
+    "renderOnly": [
+      "js/technical/systemComponents.js",
+      "js/components.js",
+      "js/technical/canvas.js",
+      "js/technical/particleSystem.js"
+    ],
+    "modFilesPrefix": "js/",
+    "modFiles": [
+      "layers.js",
+      "tree.js"
+    ],
+    "external": {
+      "https://cdn.jsdelivr.net/npm/vue@2.6.12": "vendor",
+      "https://fonts.googleapis.com/css?family=Inconsolata": "drop"
+    },
+    "vendor": {
+      "https://cdn.jsdelivr.net/npm/vue@2.6.12": {
+        "path": "vendor/vue-2.6.12.min.js",
+        "sha256": "29296ccacaa9ed35ed168fc51e36f54fd6f8db9c7786bbf38cc59a27229ba5c2"
+      }
+    },
+    "known": {
+      "missingScripts": [
+        "js/layers.js"
+      ]
+    }
+  },
+  "save": {
+    "keyRule": "modInfo.id",
+    "key": "Gamemodv0.3"
+  },
+  "headless": {
+    "prestubs": [],
+    "renderStubs": [
+      "loadVue",
+      "resizeCanvas",
+      "retrieveCanvasData",
+      "drawTree",
+      "drawComponentBranches",
+      "drawTreeBranch",
+      "makeParticles",
+      "makeShinies",
+      "updateParticles",
+      "setDir",
+      "setSpeed",
+      "updateMouse",
+      "getOpacity",
+      "constructParticleStyle",
+      "clearParticles",
+      "sin",
+      "cos",
+      "tan",
+      "asin",
+      "acos",
+      "atan"
+    ],
+    "idleHash": {
+      "ticks": 200,
+      "diff": 0.05,
+      "hash": "01dcea7a9c5fd7d5"
+    },
+    "deterministic": true
+  },
+  "license": {
+    "githubSpdx": "NOASSERTION",
+    "files": {
+      "LICENSE": "MIT",
+      "Prestige-tree-license": "MIT"
+    },
+    "verdict": "MIT"
+  },
+  "census": {
+    "full_name": "shenmi124/The-Game-Tree",
+    "head": "627a292",
+    "score": 49.09,
+    "layers": 10,
+    "rows": 4,
+    "milestones": 12,
+    "upgrades": 78,
+    "buyables": 8,
+    "challenges": 7,
+    "achievements": 7,
+    "trace_fields": 4
+  },
+  "patches": [],
+  "generated": {
+    "by": "tmt-fork-census scripts/manifest.mjs",
+    "commit": "16d69c4",
+    "at": "2026-09-18T01:29:14.525Z"
+  }
+}

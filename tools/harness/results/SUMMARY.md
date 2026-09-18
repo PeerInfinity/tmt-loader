@@ -1901,3 +1901,37 @@ Reading this section: the subtree commits are in; manifests, index and goldens a
 | top100 goldens counts = census | the-universal-tree-voidcons0le-is-dumb | — | 0 | 0 | — | — | GREEN | 58 ids, 14 layers; ms 11 / upg 27 / buy 6 / ch 0 / ach 14 = census |
 | top100 G1 load (plain page) | the-universal-tree-voidcons0le-is-dumb | — | 3 | 0.15 | 0.05 | — | GREEN | ready 873 ms; 6 `#app .treeNode`; 68 requests, 0 non-localhost, 0 failed, 0 page errors; au nodes 0; keys `tmt-loader:the-universal-tree-voidcons0le-is-dumb:The-Universal-Tree-voidcons0le/plutonium_options`, `tmt-loader:the-universal-tree-voidcons0le-is-dumb:The-Universal-Tree-voidcons0le/plutonium` |
 | G6 games doc | null | — | 0 | 0 | — | — | GREEN | docs/games.md regenerated: 86 games in manifests/index.json, 86 listed in that order |
+
+## 2026-09-18T01:30:07Z — top100-emitter-fix (`node tools/add-game.mjs Askinga/The-MJ-Tree denisolenison/The-Leveling-Tree medsal15/The-Gaming-Tree c0v1d-9119361/The-Plague-Tree shenmi124/The-Game-Tree`) — commit `373a3d444` (tree DIRTY) — 17/21 green
+
+Reading this section: the subtree commits are in; manifests, index and goldens are uncommitted at the time of the run. idle hash = the plain page's Node twin (`--no-automation`, no exclusion) vs manifest.headless.idleHash; goldens counts vs manifest.census; G1 = `page.mjs <id> --gate load` (no flag).
+
+| gate | game | leg | ticks | gameSeconds | diff | hash | result | notes |
+|---|---|---|---|---|---|---|---|---|
+| top100-emitter-fix check-manifest | the-mj-tree | — | 0 | 0 | — | — | **RED** | [{"field":"load.known.externalHosts","drift":true,"manifest":[],"live":["tempupload.ngfiles.com"],"declaredNotInTree":[],"inTreeNotDeclared":["tempupload.ngfiles.com"],"files":{"tempupload.ngfiles.com":["index.html"]}}] |
+| top100-emitter-fix idle hash = census | the-mj-tree | idle | 200 | 10 | 0.05 | `45e3c7aa8a80c464` | GREEN | census 45e3c7aa8a80c464 |
+| top100-emitter-fix goldens counts = census | the-mj-tree | — | 0 | 0 | — | — | GREEN | 251 ids, 23 layers; ms 15 / upg 147 / buy 2 / ch 15 / ach 72 = census |
+| top100-emitter-fix G1 load (plain page) | the-mj-tree | — | 3 | 0.15 | 0.05 | — | GREEN | ready 911 ms; 10 `#app .treeNode`; 70 requests, 0 non-localhost, 0 failed, 0 page errors; au nodes 0; keys `tmt-loader:the-mj-tree:abc123`, `tmt-loader:the-mj-tree:abc123_options` |
+| top100-emitter-fix check-manifest | the-leveling-tree | — | 0 | 0 | — | — | GREEN | 17 scripts, 9 modFiles, subtree split 838af4a, games/the-leveling-tree pristine |
+| top100-emitter-fix idle hash = census | the-leveling-tree | idle | 200 | 10 | 0.05 | `ce69eeda3694ae9a` | GREEN | census ce69eeda3694ae9a |
+| top100-emitter-fix goldens counts = census | the-leveling-tree | — | 0 | 0 | — | — | GREEN | 175 ids, 12 layers; ms 60 / upg 100 / buy 6 / ch 9 / ach 0 = census |
+| top100-emitter-fix G1 load (plain page) | the-leveling-tree | — | 3 | 0.15 | 0.05 | — | GREEN | ready 974 ms; 5 `#app .treeNode`; 75 requests, 0 non-localhost, 0 failed, 0 page errors; au nodes 0; keys `tmt-loader:the-leveling-tree:bergloMod_options`, `tmt-loader:the-leveling-tree:bergloMod` |
+| top100-emitter-fix check-manifest | the-gaming-tree | — | 0 | 0 | — | — | GREEN | 19 scripts, 27 modFiles, subtree split 2a07a20, games/the-gaming-tree pristine |
+| top100-emitter-fix idle hash = census | the-gaming-tree | idle | 200 | 10 | 0.05 | `9e5cce851f1e9100` | GREEN | NONDETERMINISTIC (census deterministic=false, table false, paths ["xp.enemies","to.random"]): census 78de1dcb4e419431, run 1 9e5cce851f1e9100, run 2 848d983c5b0d658d — recorded, not failed |
+| top100-emitter-fix goldens counts = census | the-gaming-tree | — | 0 | 0 | — | — | GREEN | 357 ids, 31 layers; ms 11 / upg 153 / buy 61 / ch 16 / ach 116 = census |
+| top100-emitter-fix G1 load (plain page) | the-gaming-tree | — | 3 | 0.15 | 0.05 | — | GREEN | ready 1358 ms; 5 `#app .treeNode`; 97 requests, 0 non-localhost, 0 failed, 0 page errors; au nodes 0; keys `tmt-loader:the-gaming-tree:thegamingtreev3`, `tmt-loader:the-gaming-tree:thegamingtreev3_options` |
+| top100-emitter-fix check-manifest | plague-tree-vorona-cirus-treesease | — | 0 | 0 | — | — | GREEN | 22 scripts, 0 modFiles, subtree split bbbd3b5, games/plague-tree-vorona-cirus-treesease pristine |
+| top100-emitter-fix idle hash = census | plague-tree-vorona-cirus-treesease | idle | 200 | 10 | 0.05 | `d9f90be00b9206c9` | GREEN | NONDETERMINISTIC (census deterministic=false, table false, paths ["timePlayed","lastSave","info-tab.resetTime","options-tab.resetTime","changelog-tab.resetTime","tree-tab.resetTime","v.): census bfeb44c826e2a9e1, run 1 d9f90be00b9206c9, run 2 a092aa21080e68b7 — recorded, not failed |
+| top100-emitter-fix goldens counts = census | plague-tree-vorona-cirus-treesease | — | 0 | 0 | — | — | GREEN | 2031 ids, 23 layers; ms 372 / upg 1131 / buy 319 / ch 40 / ach 169 = census |
+| top100-emitter-fix G1 load (plain page) | plague-tree-vorona-cirus-treesease | — | 3 | 0.15 | 0.05 | — | **RED** | ready 1607 ms; 8 `#app .treeNode`; 70 requests, 0 non-localhost, 0 failed, 5 page errors; au nodes 0; keys `tmt-loader:plague-tree-vorona-cirus-treesease:c0v1d_options`, `tmt-loader:plague-tree-vorona-cirus-treesease:c0v1d`; RED: ready true error null; 8 treeNodes; blocked 0 []; failed []; page errors ["ReferenceError: player is not defined","ReferenceError: player is not defined","ReferenceError: player is not defined","ReferenceError: player is not defined","ReferenceError: player is not defined"]; verdict vs load.known {"ok":false,"failedNotDeclared":[],"blockedNotDeclared":[],"skippedEqualsDeclared":true,"errorsAfterRe |
+| top100-emitter-fix check-manifest | the-game-tree | — | 0 | 0 | — | — | **RED** | [{"field":"boot.file_errors","live":[{"file":"js/layers.js","error":"missing"}]},{"field":"load.known.missingScripts","drift":true,"manifest":[],"live":["js/layers.js"],"declaredNotInTree":[],"inTreeNotDeclared":["js/layers.js"]}] |
+| top100-emitter-fix idle hash = census | the-game-tree | idle | 200 | 10 | 0.05 | `01dcea7a9c5fd7d5` | GREEN | census 01dcea7a9c5fd7d5 |
+| top100-emitter-fix goldens counts = census | the-game-tree | — | 0 | 0 | — | — | GREEN | 112 ids, 16 layers; ms 12 / upg 78 / buy 8 / ch 7 / ach 7 = census |
+| top100-emitter-fix G1 load (plain page) | the-game-tree | — | 3 | 0.15 | 0.05 | — | **RED** | ready 884 ms; 6 `#app .treeNode`; 71 requests, 0 non-localhost, 2 failed, 0 page errors; au nodes 0; keys `tmt-loader:the-game-tree:Gamemodv0.3_options`, `tmt-loader:the-game-tree:Gamemodv0.3`; RED: ready true error null; 6 treeNodes; blocked 0 []; failed ["http://127.0.0.1:9471/games/the-game-tree/js/layers.js HTTP 404","http://127.0.0.1:9471/games/the-game-tree/js/layers.js net::ERR_ABORTED"]; page errors []; verdict vs load.known {"ok":false,"failedNotDeclared":["http://127.0.0.1:9471/games/the-game-tree/js/layers.js HTTP 404","http://127.0.0.1:9471/games/the-game-tree/js/layers.js net::ER |
+| G6 games doc | null | — | 0 | 0 | — | — | GREEN | docs/games.md regenerated: 91 games in manifests/index.json, 91 listed in that order |
+
+## 2026-09-18T01:32:04Z — gates.mjs, automation ON — commit `373a3d444` (tree DIRTY) — 1/1 green
+
+| gate | game | leg | ticks | gameSeconds | diff | hash | result | notes |
+|---|---|---|---|---|---|---|---|---|
+| G6 games doc | — | — | 0 | 0 | — | — | GREEN | docs/games.md: 91 games in manifests/index.json, generator built 91, 91 listed in that order, file byte-equal to the generator's output |
