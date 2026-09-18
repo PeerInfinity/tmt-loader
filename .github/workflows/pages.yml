@@ -1,0 +1,53 @@
+# Publishes the site to GitHub Pages. MANUAL ONLY.
+#
+# ⚖ User ruling, 2026-09-18: the Pages deploy stops happening on every push. Until then the repo was on
+# `build_type: legacy` with source {branch: main, path: /}, so every push to `main` republished the site.
+# This workflow replaces that, and the ONLY trigger it may ever have is `workflow_dispatch`.
+#
+# ⛔ Do not add `on: push` here, and do not let the sweep workflow (.github/workflows/sweep.yml) call this one.
+# Either would quietly restore the push-deploys-the-site behaviour this file exists to remove.
+#
+# WHAT is served is unchanged: the legacy build served the branch's tracked tree from the repo root, and the
+# staging step below is `git archive HEAD` — exactly the tracked tree, nothing else. Only WHEN it is served moved.
+name: pages
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# One deploy at a time; never cancel one in flight (a cancelled deploy can leave the site mid-swap).
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      # `git archive HEAD` is the tracked tree and nothing else: no .git (210 MB), no node_modules, no
+      # untracked harness output. That is byte-for-byte what the legacy deploy-from-branch build served.
+      - name: Stage the tracked tree
+        run: |
+          mkdir _site
+          git archive --format=tar HEAD | tar -x -C _site
+          echo "artifact staged: $(du -sh _site | cut -f1) over $(find _site -type f | wc -l) file(s)"
+          test ! -e _site/.git
+          test ! -e _site/node_modules
+
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+      - id: deployment
+        uses: actions/deploy-pages@v4
