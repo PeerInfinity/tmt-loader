@@ -5,8 +5,11 @@
  * Every rule is scoped under `html.tmt-mobile`, so it outranks the game's own class rules by specificity and needs
  * !important only where it is overriding an INLINE style (Vue `v-bind:style`) or a rule the engine itself marked.
  *
- * Tier 1 (this file, always on with the flag): one column, master-detail, tap targets, no horizontal overflow.
- * Tier 2 (mobile.js adds `tmt-mobile-nav` to <html>): the bottom nav bar and tap-to-open tooltips.
+ * THE LAYOUT ONLY. The bottom nav bar is a SEPARATE opt-in (`?navbar=1`, loader/navbar.css + loader/navbar.js),
+ * which `?mobile=1` implies but which is also wanted on a desktop, where this file's rules are not: one column,
+ * master-detail, tap targets, no horizontal overflow. The two groups at the end of this file (tap-to-open tooltips,
+ * the automation tab's grid) are the LAYOUT's too; they are switched on by classes navbar.js sets, because that is
+ * the one script the page loads in either mode, and it guards both on `tmtLoader.mobile`.
  *
  * ENGINE-GENERIC. The class vocabulary below (.col/.left/.right/.fullWidth/.vl/.back/.treeOverlay/
  * .overlayThing/.sideLayers) is present in every TMT engine the loader hosts — 2.2.1 through 2.7 — because the
@@ -16,7 +19,6 @@
 html.tmt-mobile {
   --tmt-mobile-gutter: 8px;
   --tmt-mobile-tap: 44px;   /* the minimum comfortable touch target */
-  --tmt-mobile-nav-h: 0px;  /* mobile.js raises this when it installs the nav bar */
 }
 
 /* ---------------------------------------------------------------- 1. one column, page-level scrolling
@@ -71,7 +73,7 @@ html.tmt-mobile .fullWidth {
   min-height: 0;
   overflow: visible;
   box-sizing: border-box;
-  padding: 0 0 calc(var(--tmt-mobile-nav-h) + 16px);
+  padding: 0 0 calc(var(--tmt-navbar-h, 0px) + 16px); /* the bar's own height, written by navbar.js (navbar.css) */
 }
 
 /* The tab body clears the back button instead of starting underneath it. `.back` is `position: absolute; top/left: 0`
@@ -96,7 +98,7 @@ html.tmt-mobile #treeOverlay .overlayThing[style] { width: auto !important; }
 html.tmt-mobile #treeTab > br { display: none; }
 html.tmt-mobile #fakeHead { display: none; }
 
-/* the corner buttons: in flow, as a wrapping strip, until mobile.js moves them into the nav bar */
+/* the corner buttons: in flow, as a wrapping strip; navbar.css then hides them, the bar having replaced them */
 html.tmt-mobile #optionWheel,
 html.tmt-mobile #info,
 html.tmt-mobile #help,
@@ -190,58 +192,17 @@ html.tmt-mobile * { -webkit-tap-highlight-color: transparent; }
   html.tmt-mobile #optionWheel:hover { transform: none; }
 }
 
-/* ================================================================ TIER 2 — mobile.js
- * These rules only ever match once loader/mobile.js has installed the nav bar (it puts `tmt-mobile-nav` on <html>)
- * or opened a tooltip. Tier 1 above is complete without them. */
-
-/* the game's corner controls are now duplicated in the nav bar; leave them in the DOM (the nav forwards clicks to
- * them, and their presence is what tells the nav which tab is open) but take them out of the layout */
-html.tmt-mobile-nav #optionWheel,
-html.tmt-mobile-nav #info,
-html.tmt-mobile-nav #help,
-html.tmt-mobile-nav #discord { display: none; }
-
-html.tmt-mobile #tmt-mobile-nav {
-  position: fixed;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  z-index: 2147483000; /* over .treeOverlay's z-index: 200000, under the loader's own error overlay */
-  display: flex;
-  justify-content: space-around;
-  align-items: stretch;
-  background: var(--background, #111);
-  border-top: 1px solid rgba(127, 127, 127, .45);
-  padding-bottom: env(safe-area-inset-bottom, 0px);
-}
-
-html.tmt-mobile .tmt-mobile-navbtn {
-  flex: 1 1 0;
-  min-height: 56px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 2px;
-  padding: 6px 2px;
-  background: transparent;
-  border: 0;
-  color: var(--color, #ddd);
-  opacity: .62;
-  cursor: pointer;
-  transition-duration: 0s;
-}
-html.tmt-mobile .tmt-mobile-navbtn[hidden] { display: none; }
-html.tmt-mobile .tmt-mobile-navbtn.active { opacity: 1; }
-html.tmt-mobile .tmt-mobile-glyph { font-size: 20px; line-height: 1; }
-html.tmt-mobile .tmt-mobile-label { font-size: 11px; line-height: 1; font-weight: normal; }
+/* ================================================================ driven by navbar.js, styled here
+ * Two things the bar's script switches on that belong to the LAYOUT, not to the bar: it is the one script the page
+ * loads in both modes, and it guards both on `tmtLoader.mobile`. Their classes are compounded with `tmt-mobile` so
+ * that a navbar-only page cannot match them even if that guard were ever lost. */
 
 /* tap-to-open tooltips, both engine shapes (2.2.1 `[tooltip]:before/:after`, 2.6/2.7 `.tooltipBox > .tooltip`) */
 html.tmt-mobile .tmt-mobile-tip[tooltip]:before,
 html.tmt-mobile .tmt-mobile-tip[tooltip]:after { visibility: visible; opacity: 1; }
 html.tmt-mobile .tmt-mobile-tip .tooltip { opacity: 1; }
 
-/* The automation tab's own grid (tier 2; the class is set by mobile.js while `player.tab === 'au'`).
+/* The automation tab's own grid (the class is set by navbar.js while `player.tab === 'au'`, mobile mode only).
  *
  * The registry lays its clickables out in fixed rows of four, and the engine renders one `.upgRow` box per row,
  * each wrapping on its own — so any width that fits fewer than four leaves an orphan. Measured: 2+2 at 360–390,

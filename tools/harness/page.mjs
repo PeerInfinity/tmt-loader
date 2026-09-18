@@ -3,7 +3,7 @@
 //                 [--state-out f] [--player-out f] [--json out]                                → one JSON line, like run.mjs
 //                 [--profile off|all|saved] [--exclude au] [--auto-opt "k=v;k2=v2"] [--no-automation]
 //   node page.mjs [<id>...] --gate load [--base URL] [--automation]                    → gate G1 (every game by default)
-//   node page.mjs [<id>...] --gate mobile [--base URL]                                 → gate M1, the mobile mode
+//   node page.mjs [<id>...] --gate mobile [--base URL]                          → gate M1, the mobile mode + the nav bar
 // Automation (?automation=1): runs default ON (the harness); `--gate load` defaults to the PLAIN page (no flag), where it
 // also asserts 0 × #app .smallNode.au, no player.au and no games-auto/ request.
 import fs from 'node:fs';
@@ -161,6 +161,11 @@ export const PHONE = { width: 390, height: 844 };  // a 2020s phone in portrait,
 // phone can produce, reported as an element escaping the viewport. mobile.css neutralises those transforms under
 // `@media (hover: none)`, which only matches when touch is emulated.
 export const PHONE_CONTEXT = { viewport: PHONE, hasTouch: true, isMobile: true };
+// The navbar-only leg runs at a DESKTOP viewport with NO touch: `?navbar=1` exists because the bar is wanted where
+// the single-column layout is not, and that is the combination the leg has to measure. Without `hasTouch` the
+// engines' `:hover` transforms apply exactly as they do for a mouse — which is the state a desktop reader is in.
+export const DESKTOP = { width: 1280, height: 800 };
+export const DESKTOP_CONTEXT = { viewport: DESKTOP };
 export const MOBILE_TICKS = 200, MOBILE_DIFF = 0.05; // the state leg: enough ticks for a divergence to show in the hash
 export const TAP_MIN = 44;                          // the tap-target minimum mobile.css promises
 
@@ -188,7 +193,7 @@ const MOBILE_PROBE = `(${function () {
   // minimum: mobile.css leaves it alone, so the gate must not demand what the stylesheet deliberately does not do.
   // The Galactic Tree hides a 1x1 easter-egg node this way.
   const sizedByGame = (el) => /height/i.test(el.getAttribute('style') || '');
-  const controls = [...document.querySelectorAll('#app button, #app .upg, #app .smallUpg, #app .tabButton, #app .remove, #tmt-mobile-nav button')]
+  const controls = [...document.querySelectorAll('#app button, #app .upg, #app .smallUpg, #app .tabButton, #app .remove, #tmt-navbar button')]
     .filter((el) => !el.hidden && !el.classList.contains('hidden') && !el.classList.contains('ghost') && vis(el))
     .map((el) => ({ el, r: el.getBoundingClientRect() })).filter(({ r }) => r.width > 0 && r.height > 0);
   return {
@@ -198,10 +203,20 @@ const MOBILE_PROBE = `(${function () {
     escaping: controls.filter(({ r }) => r.right > vw + 1 || r.left < -1).map(({ el, r }) => `${desc(el)} x=${Math.round(r.x)} w=${Math.round(r.width)}`),
     tooSmall: controls.filter(({ el, r }) => !sizedByGame(el) && (r.width < 44 || r.height < 44)).map(({ el, r }) => `${desc(el)} ${Math.round(r.width)}x${Math.round(r.height)}`),
     controls: controls.length,
-    navButtons: [...document.querySelectorAll('#tmt-mobile-nav button')].filter((b) => !b.hidden).map((b) => b.dataset.key),
-    navH: parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--tmt-mobile-nav-h')) || 0,
+    navButtons: [...document.querySelectorAll('#tmt-navbar button')].filter((b) => !b.hidden).map((b) => b.dataset.key),
+    navH: parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--tmt-navbar-h')) || 0,
     htmlClass: document.documentElement.className,
     hasMobileCss: !!document.getElementById('tmt-loader-mobile-css'),
+    hasNavbarCss: !!document.getElementById('tmt-loader-navbar-css'),
+    flags: { mobile: window.tmtLoader.mobile, navbar: window.tmtLoader.navbar },
+    // The two signals that say whether the LAYOUT is applied — for the navbar-only leg, which must see it OFF.
+    // Every engine the loader hosts sizes `.col` at 49.5% and positions `#treeOverlay` absolutely; mobile.css
+    // makes the first full-width and takes the second out of absolute positioning (measured `relative` on the
+    // tree, `static` inside a tab). Read in every view, so the phone rows carry the mobile side of the same
+    // measurement rather than the gate asserting one width in one mode only.
+    cols: [...document.querySelectorAll('#app .col')].map((e) => Math.round(e.getBoundingClientRect().width)),
+    overlayPos: document.getElementById('treeOverlay') ? getComputedStyle(document.getElementById('treeOverlay')).position : null,
+    appColumnCount: document.getElementById('app') ? getComputedStyle(document.getElementById('app')).columnCount : null,
     tab: (typeof player !== 'undefined' && player) ? player.tab : null,
   };
 }})()`;
@@ -215,13 +230,18 @@ async function gateMobile(browser, base, ids) {
       // --- leg 1: INERTNESS. Without ?mobile=1 nothing of the mode may exist, at the same phone viewport.
       const plain = await context.newPage();
       const rp = await openGame(plain, base, id, { managed: true, automation: false });
+      // BOTH opt-ins: `?navbar=1` is a flag of its own, so its file, its class, its stylesheet and its object must
+      // be absent without it just as the layout's are.
       row.plain = await plain.evaluate(() => ({
-        ready: tmtLoader.ready, mobile: tmtLoader.mobile, mobileUI: !!tmtLoader.mobileUI,
+        ready: tmtLoader.ready, mobile: tmtLoader.mobile, navbar: tmtLoader.navbar,
+        mobileUI: !!tmtLoader.mobileUI, navbarUI: !!tmtLoader.navbarUI,
         htmlClass: document.documentElement.className, css: !!document.getElementById('tmt-loader-mobile-css'),
-        nav: !!document.getElementById('tmt-mobile-nav'), loadedMobile: tmtLoader.loaded.filter((f) => /mobile/.test(f)),
+        navbarCss: !!document.getElementById('tmt-loader-navbar-css'),
+        nav: !!document.getElementById('tmt-navbar'), loadedMobile: tmtLoader.loaded.filter((f) => /mobile|navbar/.test(f)),
       }));
-      row.inertOk = !!(rp.ready && row.plain.mobile === false && !row.plain.mobileUI && !row.plain.css && !row.plain.nav
-        && row.plain.loadedMobile.length === 0 && !/tmt-mobile/.test(row.plain.htmlClass));
+      row.inertOk = !!(rp.ready && row.plain.mobile === false && row.plain.navbar === false
+        && !row.plain.mobileUI && !row.plain.navbarUI && !row.plain.css && !row.plain.navbarCss && !row.plain.nav
+        && row.plain.loadedMobile.length === 0 && !/tmt-mobile|tmt-navbar/.test(row.plain.htmlClass));
       // the state the plain page reaches in MOBILE_TICKS, to compare against the mobile page's below
       const plainState = await pageTick(plain, MOBILE_DIFF, MOBILE_TICKS).then(() => pageState(plain));
       await plain.close();
@@ -321,6 +341,56 @@ async function gateMobile(browser, base, ids) {
           && fits(tree) && fits(auTab) && evenRows);
       } else { row.both = null; row.bothOk = true; }
 
+      // --- leg 5: `?navbar=1` ALONE, at a DESKTOP viewport. The bar is the half of the mobile mode that is wanted
+      // where the single-column layout is not, so this is the combination `?mobile=1` could never exercise: the
+      // bar's own rules must apply and the layout's must not. A context of its own per page — `loadFrom` writes the
+      // snapshot into localStorage, and a second page in the same context would boot on that save, not a fresh one.
+      const deskViews = async (q) => {
+        const { context: c } = await openContext(browser, { contextOptions: DESKTOP_CONTEXT });
+        try {
+          const p = await c.newPage();
+          await p.goto(new URL(`index.html?mod=${encodeURIComponent(id)}&managed=1${q}`, base).href, { waitUntil: 'load' });
+          const r = await waitReady(p);
+          if (!r.ready) return { ready: false, error: r.error, views: [] };
+          const views = [{ view: 'fresh-tree', ...(await p.evaluate(MOBILE_PROBE)) }];
+          // and one OPEN LAYER TAB where a snapshot can open one: `.col` exists only while a tab is open, and its
+          // width is what says whether the single column leaked into a page that did not ask for it.
+          if (snapshot) {
+            const r2 = await pageLoadFrom(p, snapshot.player);
+            if (r2.ready) {
+              const layer = await p.evaluate(() => { try { for (const l of LAYERS) if (layerunlocked ? layerunlocked(l) : player[l] && player[l].unlocked) return l; } catch (e) { /* engines differ; the tree view still measures */ } return null; });
+              if (layer) { await p.evaluate((n) => showTab(n), layer); await p.waitForTimeout(250); views.push({ view: `tab:${layer}`, ...(await p.evaluate(MOBILE_PROBE)) }); }
+            }
+          }
+          return { ready: true, views };
+        } finally { await c.close(); }
+      };
+      const nb = await deskViews('&navbar=1');
+      // THE CONTROL, always, and the same views: the plain desktop page is the layout this game was authored with,
+      // so "the layout is not applied" is `equal to the plain page`, measured, rather than a width this gate
+      // happens to believe every engine uses. It is also the inertness leg at a second viewport, for free.
+      const ctl = await deskViews('');
+      const near = (a, b) => Math.abs(a - b) <= 2;
+      const paired = nb.views.map((v, i) => ({ v, c: ctl.views[i] })).filter((x) => x.c && x.v.view === x.c.view);
+      const layoutOff = ({ v, c }) => !/tmt-mobile/.test(v.htmlClass) && !v.hasMobileCss
+        && v.overlayPos === c.overlayPos && v.appColumnCount === c.appColumnCount
+        && v.cols.length === c.cols.length && v.cols.every((w, i) => near(w, c.cols[i]))
+        // and the brief's own reading of it: a `.col` is about HALF the viewport, not the whole of it
+        && v.cols.every((w) => w > 0.35 * v.vw && w < 0.65 * v.vw);
+      const barOn = (v) => v.navButtons.includes('tree') && v.navH > 0 && v.hasNavbarCss && /tmt-navbar/.test(v.htmlClass);
+      const inert = (c) => c.flags.navbar === false && c.flags.mobile === false && !c.hasNavbarCss && !c.hasMobileCss && c.navButtons.length === 0;
+      const fits = ({ v, c }) => v.escaping.length <= c.escaping.length && v.docScrollWidth <= Math.max(c.docScrollWidth, v.vw + 1);
+      row.navbarOnly = { viewport: DESKTOP, ready: nb.ready && ctl.ready, error: nb.error || ctl.error || null,
+        paired: paired.length, views: nb.views.length, controlViews: ctl.views.length,
+        rows: paired.map(({ v, c }) => ({ view: v.view, flags: v.flags, nav: v.navButtons, navH: v.navH,
+          cols: v.cols, controlCols: c.cols, overlayPos: v.overlayPos, controlOverlayPos: c.overlayPos,
+          appColumnCount: v.appColumnCount, controlAppColumnCount: c.appColumnCount,
+          mobileCss: v.hasMobileCss, navbarCss: v.hasNavbarCss, htmlClass: v.htmlClass,
+          escaping: v.escaping.slice(0, 3), controlEscaping: c.escaping.slice(0, 3), docScrollWidth: v.docScrollWidth })) };
+      row.navbarOnlyOk = !!(nb.ready && ctl.ready && paired.length === nb.views.length && paired.length > 0
+        && paired.every(({ v }) => v.flags.mobile === false && v.flags.navbar === true && barOn(v))
+        && paired.every(({ c }) => inert(c)) && paired.every(layoutOff) && paired.every(fits));
+
       const shot = path.join(REPO, `tools/harness/results/${id}-mobile.png`);
       await page.screenshot({ path: shot, fullPage: false });
       row.screenshot = path.relative(REPO, shot);
@@ -329,11 +399,11 @@ async function gateMobile(browser, base, ids) {
       row.geometryOk = bad.length === 0;
       row.worst = bad.slice(0, 3).map((v) => ({ view: v.view, escaping: v.escaping.slice(0, 4), tooSmall: v.tooSmall.slice(0, 4), docScrollWidth: v.docScrollWidth }));
       // tier 2 must have installed itself: the nav bar is present, has at least the tree button, and has a height
-      row.navOk = row.views.every((v) => v.navButtons.length >= 1 && v.navH > 0 && /tmt-mobile-nav/.test(v.htmlClass) && v.hasMobileCss);
+      row.navOk = row.views.every((v) => v.navButtons.length >= 1 && v.navH > 0 && /tmt-navbar/.test(v.htmlClass) && v.hasMobileCss && v.hasNavbarCss);
       // the mobile page must load as cleanly as the plain one: judged against the SAME manifest allowances as G1
       const j = judgeLoad(readManifest(id), base, structuredClone({ ...stats.of(page) }), await page.evaluate(() => ({ skipped: tmtLoader.skipped, pageErrors: tmtLoader.pageErrors })));
       row.loadVerdict = { ok: j.ok, failedNotDeclared: j.failedBad, blockedNotDeclared: j.blockedBad, errorsAfterReady: j.errorsAfterReady, errorsAfterReadySample: j.errorsAfterReadySample };
-      row.ok = !!(row.ready && !row.error && row.inertOk && row.stateOk && row.geometryOk && row.navOk && row.bothOk && j.ok);
+      row.ok = !!(row.ready && !row.error && row.inertOk && row.stateOk && row.geometryOk && row.navOk && row.bothOk && row.navbarOnlyOk && j.ok);
     } catch (e) {
       row.exception = String((e && e.stack) || e).slice(0, 600);
     } finally { await context.close(); }
@@ -388,7 +458,9 @@ async function main() {
       const abstained = rows.filter((r) => r.state && !r.state.deterministic).map((r) => r.id);
       console.log(`M1 mobile: ${rows.map((r) => `${r.id}=${r.ok ? 'GREEN' : 'RED'}`).join(' ')}`);
       console.log(`M1 state leg: ${rows.filter((r) => r.stateVerdict === 'equal').length} equal, ${rows.filter((r) => r.stateVerdict === 'MOVED').length} moved, ${abstained.length} abstained${abstained.length ? ` (not deterministic on their own: ${abstained.join(', ')})` : ''}`);
-      for (const r of rows.filter((x) => !x.ok)) console.log(`  ${r.id}: inert=${r.inertOk} both=${r.bothOk}${r.both ? ' ' + JSON.stringify(r.both) : ''} state=${r.stateVerdict}${r.state ? ` (plain ${r.state.plain} / control ${r.state.plainControl} / mobile ${r.state.mobile})` : ''} geometry=${r.geometryOk} nav=${r.navOk} load=${r.loadVerdict && r.loadVerdict.ok}${r.worst && r.worst.length ? ` worst=${JSON.stringify(r.worst)}` : ''}${r.exception ? ` exception=${r.exception}` : ''}`);
+      const nbViews = rows.reduce((n, r) => n + ((r.navbarOnly && r.navbarOnly.paired) || 0), 0);
+      console.log(`M1 navbar-only leg (${DESKTOP.width}\u00d7${DESKTOP.height}, no touch): ${rows.filter((r) => r.navbarOnlyOk).length}/${rows.length} green over ${nbViews} view(s), each against the same view of the plain desktop page`);
+      for (const r of rows.filter((x) => !x.ok)) console.log(`  ${r.id}: inert=${r.inertOk} both=${r.bothOk}${r.both ? ' ' + JSON.stringify(r.both) : ''} navbarOnly=${r.navbarOnlyOk}${r.navbarOnly && !r.navbarOnlyOk ? ' ' + JSON.stringify(r.navbarOnly) : ''} state=${r.stateVerdict}${r.state ? ` (plain ${r.state.plain} / control ${r.state.plainControl} / mobile ${r.state.mobile})` : ''} geometry=${r.geometryOk} nav=${r.navOk} load=${r.loadVerdict && r.loadVerdict.ok}${r.worst && r.worst.length ? ` worst=${JSON.stringify(r.worst)}` : ''}${r.exception ? ` exception=${r.exception}` : ''}`);
     } else {
       const out = await runPage(browser, base, ids[0], { ticks: Number(a.ticks ?? 200), diff: Number(a.diff ?? 0.05), leg: a.leg || 'idle', until: a.until || null, stateOut: a['state-out'], playerOut: a['player-out'], loadFrom: a['load-from'] ? fs.readFileSync(a['load-from'], 'utf8') : null, profile: a.profile || null, exclude: a.exclude ? a.exclude.split(',') : [], autoOpt: a['auto-opt'] || null, automation: !a['no-automation'] });
       delete out.json; delete out.player;

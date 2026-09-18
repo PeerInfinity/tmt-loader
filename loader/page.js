@@ -11,10 +11,13 @@ const MANAGED = params.get('managed') === '1';
 // ?automation=1 opts in to the automation tools (the registry, the `au` side layer, games-auto/<id>.js). Without it the
 // page is the game plus the contract (docs/contract.md): no layer, no DOM, nothing in the save.
 const AUTOMATION = params.get('automation') === '1';
-// ?mobile=1 opts in to the mobile layout (docs/mobile.md): loader/mobile.css, then loader/mobile.js after tmt-auto.js.
-// EXPLICIT ONLY — no viewport or pointer sniffing, so a page without the flag renders exactly as it did before the
-// mode existed, and a page with it renders the same way at every width (which is what makes it gateable).
+// ?mobile=1 opts in to the mobile LAYOUT (docs/mobile.md): loader/mobile.css, the single column and master-detail.
+// ?navbar=1 opts in to the bottom NAV BAR alone (loader/navbar.css + loader/navbar.js after tmt-auto.js), which is
+// wanted on a desktop too; ?mobile=1 IMPLIES it, so ?mobile=1 alone is what it always was.
+// EXPLICIT ONLY, both of them — no viewport or pointer sniffing, so a page without the flag renders exactly as it
+// did before the mode existed, and a page with it renders the same way at every width (which makes it gateable).
 const MOBILE = params.get('mobile') === '1';
+const NAVBAR = MOBILE || params.get('navbar') === '1';
 for (const p of ['profile', 'autoOpt']) if (!AUTOMATION && params.has(p)) console.warn(`tmt-loader: ?${p}= is ignored without ?automation=1`);
 // ?profile=off|all|saved (automation profile, applied after onload, never saved); default: off when managed, else saved.
 const PROFILE = !AUTOMATION ? 'off' : params.get('profile') || (MANAGED ? 'off' : 'saved');
@@ -27,8 +30,9 @@ function parseOptions(s) {
 }
 const abs = (p) => new URL(p, SELF).href;
 
-const T = (window.tmtLoader = { id: MOD, manifest: null, ready: false, error: null, managed: MANAGED, automation: AUTOMATION, mobile: MOBILE, options: OPTIONS, step: 'init', loaded: [], skipped: [], pageErrors: [] });
-// the class the mobile stylesheet is scoped under, set before the game's markup so there is no unstyled flash
+const T = (window.tmtLoader = { id: MOD, manifest: null, ready: false, error: null, managed: MANAGED, automation: AUTOMATION, mobile: MOBILE, navbar: NAVBAR, options: OPTIONS, step: 'init', loaded: [], skipped: [], pageErrors: [] });
+// the class the layout stylesheet is scoped under, set before the game's markup so there is no unstyled flash
+// (the nav bar's own class is added by boot(), once navbar.js has actually installed the bar)
 if (MOBILE) document.documentElement.classList.add('tmt-mobile');
 // every uncaught error that reaches window, before and after ready (the harness reads it; none of them fails a load)
 window.addEventListener('error', (ev) => { T.pageErrors.push({ when: T.ready ? 'after-ready' : 'before-ready', message: String(ev.message), filename: ev.filename || null }); });
@@ -120,13 +124,10 @@ async function boot(id) {
     link.href = l.external ? abs(l.path) : l.href; // local hrefs resolve against <base>
     document.head.appendChild(link);
   }
-  if (MOBILE) {
-    const st = document.createElement('link');
-    st.rel = 'stylesheet';
-    st.id = 'tmt-loader-mobile-css';
-    st.href = abs('loader/mobile.css'); // after the fork's own sheets: equal specificity is broken by source order
-    document.head.appendChild(st);
-  }
+  // both after the fork's own sheets: equal specificity is broken by source order
+  const sheet = (elId, file) => { const st = document.createElement('link'); st.rel = 'stylesheet'; st.id = elId; st.href = abs(file); document.head.appendChild(st); };
+  if (MOBILE) sheet('tmt-loader-mobile-css', 'loader/mobile.css');
+  if (NAVBAR) sheet('tmt-loader-navbar-css', 'loader/navbar.css');
   if (plan.title) document.title = plan.title;
   document.body.removeAttribute('class');
   document.body.innerHTML = plan.body.html;
@@ -155,11 +156,11 @@ async function boot(id) {
   step('script loader/tmt-auto.js');
   await insertScript({ src: abs('loader/tmt-auto.js') }, 'loader/tmt-auto.js');
   T.loaded.push('loader/tmt-auto.js');
-  if (MOBILE) {
-    step('script loader/mobile.js');
-    await insertScript({ src: abs('loader/mobile.js') }, 'loader/mobile.js');
-    T.loaded.push('loader/mobile.js');
-    document.documentElement.classList.add('tmt-mobile-nav'); // tier 2 is installed; mobile.css moves the corner controls
+  if (NAVBAR) {
+    step('script loader/navbar.js');
+    await insertScript({ src: abs('loader/navbar.js') }, 'loader/navbar.js');
+    T.loaded.push('loader/navbar.js');
+    document.documentElement.classList.add('tmt-navbar'); // the bar is installed; navbar.css hides the corner controls
   }
 
   // body attributes (onmousemove, …) once the functions they name exist; onload is run explicitly below
