@@ -60,6 +60,15 @@ It prints one JSON line per game: `{id, repo, rank, sha, license, added, gates: 
    doc to `manifests/index.json` (every game, once, in that order), so a game added without it is a red gate:
    `node tools/games-table.mjs --check`, or `gates.mjs --only G6`.
 
+**When a gate is red**, `node tools/harness/triage.mjs <id>...` runs check-manifest and the load gate over a batch
+and says what kind each red is, with the evidence beside it: which files reference an external host, which script
+the index names that the repo does not ship, and — read out of `tmtLoader.pageErrors` — the FILENAME and count of
+every before-ready error. It writes nothing, deliberately: `load.known` is hand-kept because a declaration is a
+person saying "yes, this game really does that". A version that wrote them declared `missingScripts: ["js/null"]`
+for `1-clicker`, a path that came from a bug in our own modFiles handling — which would have turned our defect into
+an accepted quirk of that game. Triage now flags a "missing" script whose name appears in neither the index nor
+`modFiles` as exactly that: a path we derived, to be fixed rather than declared.
+
 Commit what the tool leaves uncommitted (`manifests/`, `tools/harness/goldens/`, `docs/games.md`, `SUMMARY.md`) on top
 of its subtree commits, then run `node tools/check-pages.mjs` (G5) on the committed HEAD. For several games, pass them in one call:
 all subtrees go in first, then the manifests and gates, so one commit covers the batch.
