@@ -197,6 +197,8 @@ Everything else in both games is derived.
   - `kinds=reset,upgrades,buyables` — register only those kinds (the pinned-behaviour gate and A/B rows);
   - `kindOrder=reset,upgrades,…` — override the kind order;
   - `unlockOrder=b,g` / `rowTwoOrder=t,e,s` — override the table's first / second `unlockOrder` list (a permutation of it);
+  - `order:<featureId>=11,12,23` — override the table's `order[]` for one feature (upgrade / buyable / challenge order),
+    so an ORDER can be swept with controls before it is written into a table; an empty list clears it;
   - `include=<featureId>,…` — drop those ids from the table's `off` map, so an EXCLUSION can be measured without editing
     the table (R1′ re-evaluated `buyables:t` this way). An id the derivation does not produce, or one the table does not
     exclude, throws;

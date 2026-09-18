@@ -734,7 +734,16 @@
         T.autoDerivation.excluded++;
         continue;
       }
+      // `order:<featureId>=11,12,23` (--auto-opt / ?autoOpt=) overrides the table's order[] for one feature, the way
+      // `policy:<featureId>=` overrides its policy — so an ORDER can be swept with controls before it is written into a
+      // table (⚖ every order in a table carries provenance, and a sweep is where provenance comes from). Ids are numbers.
       var order = table.order && table.order[id];
+      var ordOv = T.options && T.options['order:' + id];
+      if (ordOv !== undefined) {
+        order = String(ordOv).split(',').filter(Boolean).map(Number);
+        if (order.some(function (n) { return !isFinite(n); })) throw new Error(src + ': option order:' + id + ' must be a comma-separated list of numeric ids');
+        if (!order.length) order = undefined;
+      }
       var policy = table.policies && table.policies[id];
       if (policy === undefined) policy = defaultPolicy(c.kind, l, !!order, !!clk[l]);
       var def = {
