@@ -31,7 +31,12 @@ async function main() {
   let browser = null, server = null;
   try {
     for (const id of ids) {
-      const live = nodeIds(id);
+      // A game that cannot boot headless is ONE red row, not the end of the batch: this runs over the whole
+      // roster, and an abort here means every id after it is never measured and never reported. Measured while
+      // adding the census top 100 — `the-tree-prestige` dies in its own getResetGain and took 15 games with it.
+      let live;
+      try { live = nodeIds(id); }
+      catch (e) { rows.push({ id, ok: false, error: String(e.message || e).slice(0, 400) }); console.log(JSON.stringify(rows.at(-1))); continue; }
       const m = readManifest(id);
       const censusCounts = Object.fromEntries(Object.entries(CENSUS_KEYS).map(([k, c]) => [k, m.census?.[c] ?? null]));
       const countsMatchCensus = Object.keys(CENSUS_KEYS).every((k) => live.counts[k] === censusCounts[k]);
