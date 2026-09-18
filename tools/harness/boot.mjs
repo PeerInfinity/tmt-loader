@@ -157,7 +157,7 @@ if (slot) {
   R.files_skipped.push({ file: slot.loader, why: 'loader (modFiles loaded after the static scripts)' });
   R.modFiles_prefix = slot.prefix;
   let mf = []; try { mf = run('typeof modInfo !== "undefined" && modInfo.modFiles || []', 'modFiles'); } catch {}
-  R.modFiles = [...mf];
+  R.modFiles = [...mf].filter((f) => f != null); // holes/nullish are not files — see loader/interpret.mjs modFilePaths
   for (const f of modFilePaths(slot, mf)) loadFile(f, path.join(ROOT, f));
 }
 try { if (!slot && run('typeof modInfo !== "undefined" && Array.isArray(modInfo.modFiles)', 'x')) R.modFiles_without_loader = run('modInfo.modFiles', 'x'); } catch {}

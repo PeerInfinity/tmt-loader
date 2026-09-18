@@ -130,4 +130,14 @@ export function executionOrder(plan) {
   const slot = plan.scripts.find((s) => s.modFilesSlot) || null;
   return { static: plan.scripts.filter((s) => !s.modFilesSlot), slot };
 }
-export const modFilePaths = (slot, modFiles) => (slot ? (modFiles || []).map((f) => normalizePath(slot.prefix + f)) : []);
+/**
+ * The engine loads these with `for (file in modInfo.modFiles)` — enumeration of OWN KEYS — so a HOLE in a sparse
+ * array is never requested at all. `.map()` also skips holes, but it leaves a hole in its RESULT, and a later
+ * `for...of` materialises that as `undefined`: the prefix is never applied and `undefined` leaks downstream. The
+ * page then asked for `<base>/undefined` and the Node boot crashed in `path.join`. `.filter(() => true)` drops
+ * holes and returns a DENSE array. Nullish entries go with them: a hole and an explicit null are the same thing
+ * once a manifest has been through JSON, which cannot carry a hole, and either way the path they would name
+ * (`<prefix>undefined`, `<prefix>null`) exists in no repository. Measured on `1-clicker`, whose mod.js writes
+ * `modFiles: [… "reb.js", ,"apoth.js" …]` with a double comma. The census emitter drops them by the same rule.
+ */
+export const modFilePaths = (slot, modFiles) => (slot ? (modFiles || []).filter((f) => f != null).map((f) => normalizePath(slot.prefix + f)) : []);

@@ -6,7 +6,7 @@
   "license": "MIT",
   "type": "module",
   "scripts": {
-    "harness:test": "node --test loader/",
+    "harness:test": "node --test loader/*.test.mjs",
     "harness:run": "node tools/harness/run.mjs",
     "harness:page": "node tools/harness/page.mjs",
     "harness:load": "node tools/harness/page.mjs --gate load",
