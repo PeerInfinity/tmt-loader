@@ -1,6 +1,10 @@
 // Merges the JSON a sharded gate run produced, and REFUSES a run whose shards do not reconstruct the full roster.
 //
 //   node tools/harness/merge-shards.mjs <dir|file>... [--expect N] [--roster a,b,c] [--json merged.json]
+//                                                     [--write-costs tools/harness/shard-costs.json]
+//
+// `--write-costs` records this run's per-game wall clock as the shard balance table. Only from a run that covered
+// the roster — a partial run would teach the next one to balance against games nobody timed.
 //
 // ⛔ WHY THIS EXISTS. A shard that dies before running anything — `npm ci` fell over, the checkout timed out, the
 // runner was reclaimed — produces no rows and no JSON. Nothing downstream can tell that apart from a shard that
@@ -116,6 +120,14 @@ function main() {
     console.log(`  spread: fastest ${(lo / 1000).toFixed(0)} s, slowest ${(hi / 1000).toFixed(0)} s (×${(hi / lo).toFixed(2)}); serial total would be ${(sum / 1000 / 60).toFixed(1)} min, sharded wall clock is the slowest at ${(hi / 1000 / 60).toFixed(1)} min`);
   }
   console.log(`  rows: ${m.rows.length}/${m.roster.length} game(s); ${m.red.length} RED${m.red.length ? `: ${m.red.join(', ')}` : ''}; ${m.abstained.length} abstained on the state leg${m.abstained.length ? ` (${m.abstained.join(', ')})` : ''}`);
+  if (a['write-costs']) {
+    if (!m.coverageOk) { console.log(`  (not writing ${a['write-costs']}: this run did not cover the roster, so its timings are not a roster's timings)`); }
+    else {
+      const ms = Object.fromEntries(m.rows.filter((r) => r.ms > 0).map((r) => [r.id, r.ms]).sort((x, y) => (x[0] < y[0] ? -1 : 1)));
+      writeJSON(a['write-costs'], { note: 'Per-game wall clock from a green sharded run. A BALANCE HINT for assignShards, nothing more: a missing id falls back to the view estimate, an id no longer on the roster is ignored, and coverage never depends on any of it. Regenerate with merge-shards.mjs --write-costs.', gate: m.gate, commit: m.commit, games: Object.keys(ms).length, ms });
+      console.log(`  wrote ${a['write-costs']}: ${Object.keys(ms).length} game(s) timed`);
+    }
+  }
   if (a.json) writeJSON(a.json, { gate: m.gate, commit: m.commit, coverageOk: m.coverageOk, ok: m.ok, perShard: m.perShard, red: m.red, abstained: m.abstained, rows: m.rows });
 
   if (m.problems.length) {

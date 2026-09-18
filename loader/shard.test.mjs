@@ -51,16 +51,32 @@ test('with equal costs the assignment degenerates to plain round-robin — inter
   for (let i = 0; i < 5; i++) assert.deepEqual(shards[i], ids.filter((_, k) => k % 5 === i));
 });
 
-test('the two heavyweight games do not land in the same shard', () => {
-  // `ptr` and `something` are the only games with a deep snapshot, so they are the only ones whose sweep opens ~20
-  // views instead of one (measured over the U2b sweep, 2026-09-18) and the only ones that cost above the base:
-  // 30.9 s and 25.6 s against ~13 s. Contiguous chunking puts both in shard 1.
-  const base = Math.min(...roster.map((id) => shardCost(id)));
-  const heavy = roster.filter((id) => shardCost(id) > base);
-  assert.deepEqual(heavy.sort(), ['ptr', 'something'], 'if this moves, the cost model has new inputs to explain');
-  const shards = assignShards(roster, 10);
-  const where = heavy.map((id) => shards.findIndex((s) => s.includes(id)));
-  assert.equal(new Set(where).size, heavy.length, `both heavyweights landed in shard ${where[0] + 1}`);
+test('the most expensive games never share a shard, and the predicted load is even', () => {
+  // The risk the interleave exists for, stated as the property rather than as two game names. ⚠ Which games are
+  // expensive is NOT what anyone would guess: the first green CI run (171 games, 2026-09-18) measured
+  // `the-gaming-tree` at 53.4 s, `the-point-tree` at 47.2 s and `plague-tree-…` at 41.1 s — all ONE-view games —
+  // against `ptr`'s 14.6 s, which opens twenty views. Boot-and-tick cost dominates view count by 30× at the median.
+  const n = 10;
+  const shards = assignShards(roster, n);
+  const dearest = [...roster].sort((a, b) => shardCost(b) - shardCost(a)).slice(0, n);
+  const where = dearest.map((id) => shards.findIndex((s) => s.includes(id)));
+  assert.equal(new Set(where).size, n, `the ${n} costliest games landed in ${new Set(where).size} shard(s), not ${n}`);
+
+  // and the whole partition is close to even on its own numbers. This is the model's PREDICTION, not a measurement
+  // — the run is what measures — but a model that cannot even predict balance is not worth consulting.
+  const load = shards.map((s) => s.reduce((t, id) => t + shardCost(id), 0));
+  const spread = Math.max(...load) / Math.min(...load);
+  assert.ok(spread < 1.25, `predicted shard load spread is \u00d7${spread.toFixed(2)}: ${load.map((x) => (x / 1000).toFixed(0) + 's').join(' ')}`);
+});
+
+test('the measured cost table is a HINT — the partition survives without it', () => {
+  // `shard-costs.json` is regenerated from a green run and will go stale; a game added tomorrow is not in it. The
+  // fallback must therefore be a working cost model on its own, not a crash and not a zero.
+  const unknown = 'a-game-that-has-never-been-timed';
+  assert.ok(shardCost(unknown) > 0, 'an untimed game must still cost something, or LPT would pile them all up');
+  const mixed = [...roster.slice(0, 20), unknown];
+  const shards = assignShards(mixed, 4);
+  assert.deepEqual([...shards.flat()].sort(), [...mixed].sort());
 });
 
 test('--shard is 1-based, like Playwright’s, and rejects what it cannot mean', () => {

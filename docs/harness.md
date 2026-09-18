@@ -151,9 +151,9 @@ node tools/harness/run.mjs ptr --profile all --ladder tools/harness/ladder/ptr.j
 
 ## The full sweep runs in CI, sharded (`--shard i/N`)
 
-Every UI slice owes a full `--gate mobile` sweep over all 171 games. Locally that is one machine held for the better
-part of an hour — U2b's visibility rules pushed it up sharply by adding four in-page probe evaluations and two forced
-rebuilds per game. `.github/workflows/sweep.yml` runs it on every push to `main` across ten runners instead, so a slice
+Every UI slice owes a full `--gate mobile` sweep over all 171 games. Locally that is one machine held for around
+three quarters of an hour (measured 2026-09-18: ~16 s/game, ~46 min for the roster — U2b's visibility rules pushed it
+up by adding four in-page probe evaluations and two forced rebuilds per game). `.github/workflows/sweep.yml` runs it on every push to `main` across ten runners instead, so a slice
 can verify a **bounded local set** — `ptr`, `something`, and whatever its own change can actually be seen on — and let
 CI own the roster.
 
@@ -196,36 +196,56 @@ or a failure; the merge carries it through and reports the count.
 ### Interleaved, not chunked
 
 `assignShards` is longest-processing-time-first: heaviest game to the lightest shard so far, ties to the lowest index.
-When every cost is equal — 169 of the 171 games — that degenerates to plain round-robin over the id-sorted roster, so
-interleaving is the floor and the cost model can only improve on it.
+When every cost is equal that degenerates to plain round-robin over the id-sorted roster, so interleaving is the floor
+and the cost model can only improve on it.
 
-The cost is measured, not declared. Only `ptr` and `something` have deep snapshots, so only they are swept at every tab
-that save can open (20 and 14 views against everyone else's 1). Contiguous chunking would put both in shard 1.
-Measured 2026-09-18 at `2cb6723f1` over six games:
+⚠ **Two cost models have been wrong here, and the second one is the interesting one.**
 
-| game | views | wall |
+The first was *cost ∝ views*. Only `ptr` and `something` have deep snapshots, so only they are swept at every tab that
+save can open — 20 and 14 views against everyone else's 1 — which looks like 20× the work. It is not: most of a game's
+cost is fixed (three boots for the state leg and its control, the navbar-only leg's paired control, the layers legs),
+and an extra view costs about 0.94 s. That model put one shard on a single game.
+
+The second was `12 s + 1 s × (views − 1)`, which replaced it. The first green CI run (171 games, `a665c24`, 2026-09-18)
+measured what no view count can see — **the dominant term is how expensive the game itself is to boot and tick**:
+
+| game | views | CI wall |
 |---|---|---|
-| `ptr` | 20 | 30.9 s |
-| `something` | 14 | 25.6 s |
-| `the-periodic-table-tree` | 1 | 16.5 s |
-| `the-dressy-tree` | 1 | 13.2 s |
-| `the-omega-tree` | 1 | 13.1 s |
-| `1-clicker` | 1 | 6.8 s |
+| `the-gaming-tree` | 1 | 53.4 s |
+| `the-point-tree` | 1 | 47.2 s |
+| `plague-tree-vorona-cirus-treesease` | 1 | 41.1 s |
+| `ptr` | 20 | 14.6 s |
+| `something` | 14 | 10.2 s |
+| *median / mean / fastest* | 1 | *3.3 s / 4.8 s / 1.6 s* |
 
-⚠ Most of a game's cost is **fixed**, not per view — three boots for the state leg and its control, the navbar-only
-leg's paired control, the layers legs. `(30.9 - 13.1) / 19 ≈ 0.94 s` per extra view. The obvious model, cost ∝ views,
-is wrong by a factor of twenty on `ptr`; using it left one shard holding a single game. `shardCost` is therefore
-`12 s + 1 s × (views − 1)`. The residual spread among one-view games (6.8 s to 16.5 s, a game's own size) is not
-modelled — it cannot be predicted from the repo without booting the game, and it averages out over the ~17 games a
-shard holds.
+`ptr` is not in the top three. The spread between the median game and the slowest is 30×, and "it averages out over
+the ~17 games a shard holds" — which this document claimed before that run — came out **false**: the shards ran 47 s
+to 157 s, a ×3.33 spread.
 
-⚠ **Nothing about coverage depends on the cost model.** A bad one makes CI slower, never wrong: the partition is
-asserted over N ∈ {1, 2, 3, 7, 10, 17, 170, 171, 200} in `loader/shard.test.mjs`.
+So `shardCost` consults a **measured table**, `tools/harness/shard-costs.json`, and falls back to the view estimate for
+a game nobody has timed yet. On the same run's numbers the measured table predicts ×1.02. Regenerate it after a green
+sweep:
+
+```
+node tools/harness/merge-shards.mjs shards --expect 10 --write-costs tools/harness/shard-costs.json
+```
+
+It refuses to write from a run that did not cover the roster — a partial run's timings would teach the next run to
+balance against games nobody timed.
+
+⚠ **Nothing about coverage depends on any of this.** The table will go stale, a new game will not be in it, and
+neither matters: `assignShards` partitions the roster exactly once whatever the costs are, asserted over
+N ∈ {1, 2, 3, 7, 10, 17, 170, 171, 200} in `loader/shard.test.mjs`. **A bad cost model makes CI slower; it cannot make
+it wrong.**
 
 ### What CI is, and is not
 
 ⚖ **Report-only, not a required check** (2026-09-18), until the sweep has a few green runs behind it. Nothing in branch
 protection references it; a red is a red X on the commit and blocks nothing.
+
+Measured on the first green run (`a665c24`, 171 games, 10 shards): **3 m 43 s** end to end, against ~46 minutes for the
+same sweep locally. Each shard job was 97–197 s, of which roughly 90 s is checkout, `npm ci` and the Playwright install
+— so the sweep itself is the smaller half of a shard's wall clock, and pushing past 10 shards buys little.
 
 ⚠ If you see a RED on `the-periodic-table-tree`'s state leg, **investigate it — do not re-run.** That leg used to
 return a false RED about 7.9 % of sweeps, which on a per-push job is a red roughly weekly for no reason; `e3ba99c74`

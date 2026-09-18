@@ -145,34 +145,57 @@ export function deepestSnapshot(id, root = REPO) {
 const SYSTEM_TABS = 3;
 
 /**
- * What one game costs the M1 sweep, in SECONDS, well enough to balance shards with. Measured 2026-09-18 at
- * `2cb6723f1` over six games chosen to span the roster:
- *
- *     ptr  20 views  30.9 s   |  the-omega-tree           1 view  13.1 s
- *     something 14 views 25.6 s  |  the-dressy-tree        1 view  13.2 s
- *                              |  1-clicker               1 view   6.8 s
- *                              |  the-periodic-table-tree 1 view  16.5 s
- *
- * Two things fall out. Most of a game's cost is FIXED — three boots for the state leg and its control, the
- * navbar-only leg's paired control, the layers legs — not per view: (30.9 - 13.1) / 19 ≈ 0.94 s per extra view.
- * ⚠ So the obvious model, "cost ∝ views", is wrong by a factor of twenty on `ptr`, and using it left one shard
- * holding a single game. Hence BASE plus a small per-view term.
- *
- * The residual spread among one-view games (6.8 s to 16.5 s, a game's own size) is not modelled: it is unpredictable
- * from the repo without booting the game, and it averages out over the ~17 games a shard holds. ⚠ NOTHING about
- * coverage depends on any of this — `assignShards` partitions the roster exactly once whatever the costs are, and
- * the unit test asserts that over every N. A bad cost model makes CI slower, never wrong.
+ * Per-game wall clock from a real sharded run, if one has been recorded. Regenerate with
+ * `node tools/harness/merge-shards.mjs <shards> --write-costs tools/harness/shard-costs.json` after a green sweep.
+ * A balance HINT and nothing more: an id missing from it falls back to the estimate below, an id in it that has left
+ * the roster is ignored, and coverage never depends on either.
  */
-const BASE_SECONDS = 12, VIEW_SECONDS = 1;
+const COSTS_FILE = path.join(REPO, 'tools/harness/shard-costs.json');
+let COSTS = undefined;
+function measuredCost(id) {
+  if (COSTS === undefined) { try { COSTS = JSON.parse(fs.readFileSync(COSTS_FILE, 'utf8')).ms || {}; } catch { COSTS = {}; } }
+  return typeof COSTS[id] === 'number' ? COSTS[id] : null;
+}
+
+/**
+ * What one game costs the M1 sweep, in MILLISECONDS, well enough to balance shards with.
+ *
+ * ⚠ TWO MODELS HAVE BEEN WRONG HERE, and the second one is the interesting one.
+ *
+ * The first was cost ∝ views: `ptr` opens 20 views against everyone else's 1, so it must be ~20× the work. It is
+ * not — most of a game's cost is FIXED (three boots for the state leg and its control, the navbar-only leg's paired
+ * control, the layers legs) at ~0.94 s per extra view. That model left one shard holding a single game.
+ *
+ * The second was BASE + per-view, which is what replaced it. The first green CI run (171 games, 2026-09-18,
+ * `a665c24`) measured what that model could not see: the dominant term is neither views nor anything else the repo
+ * declares — it is how expensive the GAME ITSELF is to boot and tick.
+ *
+ *     the-gaming-tree  53.4 s      the-point-tree  47.2 s      plague-tree-…  41.1 s   <- all ONE-view games
+ *     ptr              14.6 s      something       10.2 s                              <- the "heavyweights"
+ *     median 3.3 s, mean 4.8 s, fastest 1.6 s
+ *
+ * So `ptr` is not even in the top three, and the real spread is 30× between the median game and the slowest. A
+ * view-derived estimate cannot know that, and "it averages out over the ~17 games a shard holds" — which is what
+ * this comment used to claim — was measured false: the shards came out 47 s to 157 s, a ×3.33 spread.
+ *
+ * Hence: use a MEASURED table when there is one (×1.02 on the same run's numbers), and fall back to the estimate for
+ * a game nobody has timed yet — a new game is exactly the case with no measurement, and the estimate at least knows
+ * whether it has a snapshot. ⚠ NOTHING about coverage depends on any of this. `assignShards` partitions the roster
+ * exactly once whatever the costs are, asserted over every N in `loader/shard.test.mjs`. A bad cost model makes CI
+ * slower; it cannot make it wrong.
+ */
+const BASE_MS = 12000, VIEW_MS = 1000;
 export function shardCost(id, root = REPO) {
+  const measured = measuredCost(id);
+  if (measured != null) return measured;
   const snap = deepestSnapshot(id, root);
-  if (!snap) return BASE_SECONDS;
+  if (!snap) return BASE_MS;
   let player;
-  try { player = JSON.parse(snap.player); } catch { return BASE_SECONDS; }
+  try { player = JSON.parse(snap.player); } catch { return BASE_MS; }
   // every tab that save can open: `none`, each unlocked layer, and the system tabs — one probe each, beyond the
   // fresh tree every game already pays for
   const layers = Object.keys(player).filter((k) => player[k] && typeof player[k] === 'object' && player[k].unlocked === true).length;
-  return BASE_SECONDS + VIEW_SECONDS * (1 + layers + SYSTEM_TABS);
+  return BASE_MS + VIEW_MS * (1 + layers + SYSTEM_TABS);
 }
 
 /**
