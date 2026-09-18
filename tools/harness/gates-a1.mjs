@@ -236,7 +236,7 @@ async function part3() {
     }
   };
   if (want('ptr')) {
-    markRows('ptr', R.ptr1, R.ptr2, 1, 'rung (defaults: reset:p interval>=10, unlockOrder g,b)');
+    markRows('ptr', R.ptr1, R.ptr2, 1, "rung (the table's defaults: reset:p, unlockOrder g,b — reset:p is gain>=2x since R1′, interval>=10 before it; these rows compare run 1 with run 2, they are not pinned to a second count)");
     for (const n of names('ptr')) {
       const g = R.ptr1.marks?.[n], b = R.ptrBG.marks?.[n];
       row({ gate: `A1-3 pair order b,g (alternative) ${n}`, id: 'ptr', leg: 'profile all', ok: R.ptrBG.ok, ticks: b?.ticks, gameSeconds: b?.gameSeconds, diff: 1, hash: b?.hash, notes: `b first ${fmtMark(b)} vs g first ${fmtMark(g)}: g first ahead by ${b && g ? b.gameSeconds - g.gameSeconds : '—'} game-s` });

@@ -27,7 +27,12 @@ const row = (r) => { rows.push(r); console.log(`${r.ok ? 'GREEN' : 'RED  '} ${r.
 
 const PTR_LADDER = 'tools/harness/ladder/ptr.json', ST_LADDER = 'tools/harness/ladder/something.json';
 const SNAP = { pinned: 'tools/harness/snapshots/ptr/pinned', all: 'tools/harness/snapshots/ptr/all' };
-const KINDS_PINNED = 'kinds=reset,upgrades,buyables';
+// R1′: `reset:p interval>=10` was the ptr TABLE's default when every H1 number and every committed ptr snapshot was
+// measured; this slice moved the table to `gain>=2x` (games-auto/ptr.js). H1's rows and its snapshot fixtures therefore
+// name the policy explicitly — a pin is a measurement of a POLICY, not of which one the table happens to name. The
+// opt is inert on a game with no `p` layer (an unknown feature's `policy:` override is ignored at registration).
+const PIN_RESET_P = 'policy:reset:p=interval>=10';
+const KINDS_PINNED = 'kinds=reset,upgrades,buyables;' + PIN_RESET_P;
 const DETECT = { stall: 3600, 'stall-seen': true, 'wall-ms': 540000 };
 // The brief's pins (SUMMARY rows; S1-1 @777eceeb re-pinned every one with its hashGame): [ticks, hashGame | null].
 // M04 / M06 are A2-2 marks recorded before hashGame existed (ticks only). M05 / M09 were recorded under other predicates
@@ -90,7 +95,7 @@ async function part1() {
   for (const d of Object.values(SNAP)) fs.rmSync(path.join(REPO, d), { recursive: true, force: true });
   const base = { profile: 'all', diff: 1, ticks: 30000, ladder: PTR_LADDER, ...DETECT };
   const pinned = job('ptr', { ...base, to: 'M09', 'auto-opt': KINDS_PINNED, snapshots: SNAP.pinned });
-  const all = job('ptr', { ...base, to: 'M10', 'until-all': true, snapshots: SNAP.all });
+  const all = job('ptr', { ...base, to: 'M10', 'until-all': true, 'auto-opt': PIN_RESET_P, snapshots: SNAP.all });
 
   const b = await boot;
   const P = b.predicates || [];
@@ -127,7 +132,7 @@ async function part1() {
 
   // the snapshots: exist, their hashGame is the mark's, the import round trip (0 ticks) returns the same hash + hashGame
   const checks = [];
-  for (const [set, res, opt] of [['pinned', r, KINDS_PINNED], ['all', ra, null]]) {
+  for (const [set, res, opt] of [['pinned', r, KINDS_PINNED], ['all', ra, PIN_RESET_P]]) {
     for (const w of res.snapshotsWritten || []) {
       const s = readSnap(w.file);
       checks.push([set, w, s, job('ptr', { ticks: 0, profile: 'all', 'auto-opt': opt, 'from-snapshot': w.file })]);
@@ -175,14 +180,14 @@ async function part2() {
     resumeRow('H1-2 control: resume pinned/M07 → M09 with --no-runtime (counters only; the registry\'s lastReset / stats and the detector start empty)', `${SNAP.pinned}/M07.json`, 'M09', KINDS_PINNED, { fresh, control: true }),
     resumeRow('H1-2 resume pinned/M02 → --to M05 (rows 0–1: the interval reset:p)', `${SNAP.pinned}/M02.json`, 'M05', KINDS_PINNED, { fresh }),
     resumeRow('H1-2 control: resume pinned/M02 → M05 with --no-runtime', `${SNAP.pinned}/M02.json`, 'M05', KINDS_PINNED, { fresh, control: true }),
-    resumeRow('H1-2 resume all/M07 → --to M09, every kind', `${SNAP.all}/M07.json`, 'M09', null, { fresh: freshAll }),
+    resumeRow('H1-2 resume all/M07 → --to M09, every kind', `${SNAP.all}/M07.json`, 'M09', PIN_RESET_P, { fresh: freshAll }),
   ];
   await Promise.all(rows2);
 }
 // Part 2f: from M09 to the stall (≈ 6100 ticks at diff 1 — 3–4 min each on a quiet box)
 async function part2f() {
   const L = readLadder(PTR_LADDER);
-  const o = { profile: 'all', ticks: 100000, ladder: PTR_LADDER, to: 'M53', ...DETECT, eval: Q_EVAL };
+  const o = { profile: 'all', ticks: 100000, ladder: PTR_LADDER, to: 'M53', 'auto-opt': PIN_RESET_P, ...DETECT, eval: Q_EVAL };
   const runs = [
     ['H1-2 FRONTIER from all/M09 (every kind), run 1', job('ptr', { ...o, 'from-snapshot': `${SNAP.all}/M09.json` }), FRONTIER, null],
     ['H1-2 FRONTIER from all/M09 (every kind), run 2', job('ptr', { ...o, 'from-snapshot': `${SNAP.all}/M09.json` }), FRONTIER, null],

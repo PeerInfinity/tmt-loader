@@ -109,7 +109,8 @@ form (`{layer, varName, options}`, a string it cycles) are skipped and counted (
 | | `buyMax` | the engine's `buyMaxBuyable` where the buyable defines `buyMax`, else as `buy` |
 | | `highest-first` | as `buy`, over the ids descending (PTR's own Space Building autobuyer order), unless `order[]` is given |
 | | `buy-unless-saving` | as `buy`, but nothing while the layer has an unlocked, unowned upgrade costed in its own points that costs more than the points held |
-| | `reserve>=N` | as `buy`, but nothing while the layer holds no more than **N** of its own points — an explicit reserve where `buy-unless-saving` derives one. The layer's points is the one currency a generic reserve can read, so a buyable costed in another layer's currency is still gated on this layer's points. Added for the advanced planner, which sets N to the threshold it is protecting (`docs/planner.md`); no table uses it |
+| | `reserve>=N` | as `buy`, but nothing while the layer holds no more than **N** of its own points — an explicit reserve where `buy-unless-saving` derives one. The layer's points is the one currency a generic reserve can read, so a buyable costed in another layer's currency is still gated on this layer's points. Added for the advanced planner, which sets N to the threshold it is protecting (`docs/planner.md`) |
+| | `reserve>=next-upgrade` | as `reserve>=N` with **N read from the game**: the cost of the cheapest unowned, unlocked upgrade of the layer costed in the layer's own points (`tmp[l].upgrades[id].cost`), re-read every tick; no such upgrade = no reserve. The generic form of "save for the upgrade, spend the surplus" — unlike `buy-unless-saving`, which stops buying altogether while any own-currency upgrade costs more than is held. ⚖ minimize hardcoding: the number is never in the table (R1′, PTR `buyables:e`) |
 | `toggles` | `on` | for each held milestone (`hasMilestone(l, id)`) that declares `toggles`, sets every `player[layer][field]` that is `false` to `true` — what the game's toggle button does. The milestone only UNLOCKS the button; the field stays false until clicked |
 | `challenges` | `sequential` | the first challenge in `order[]` (else id order) that is unlocked with completions below `completionLimit` (default 1): enter it with `startChallenge` when none of the layer's challenges is active; while it is active, exit-and-complete with `startChallenge` once `canCompleteChallenge` holds (and `canExitChallenge` where the engine has it). A challenge the player entered by hand is left alone. Enters / exits are counted in `hookStats().challenges` |
 | | `off` | nothing |
@@ -177,7 +178,7 @@ in (gate S1-1 checks both agree at every tick, in Node and in the page): `hasUpg
 
 | Game | Feature | Table policy | Why (`tools/harness/results/SUMMARY.md`) |
 |---|---|---|---|
-| ptr | `reset:p` | `interval>=10` | A1-3: `always` resets p the moment points reach 10, so points never reach the 200 the b/g pair needs (a hard wall at diff 0.05 and 1); 10 s reached the row-1 predicates fastest of 5/10/30/60/120 s |
+| ptr | `reset:p` | `gain>=2x` (alt. `interval>=10`, `always`, `gain>=1`) | R1′, from S1-2's sweep + P1b's frontier control (iii): 918 / 1627 / 2112 game-s to A1-3's marks against `interval>=10`'s 1361 / 2360 / 2936, and M11 at 15582 against 15782 — and the target-driven rule ⚖ 13d.2 asks for (an interval is a proxy). `always` still walls row 1 (p resets the moment points reach 10, so points never reach the 200 the b/g pair needs, at diff 0.05 and 1); `interval>=10` was the fastest interval of 5/10/30/60/120 s and every pinned A1/A2 number and ptr snapshot was measured under it, so the pinned gates now name it explicitly |
 | ptr | `reset:b`, `reset:g` | `gain>=1` (alt. `keepsUpgrades`, milestone 0 of each) | A1 table; `unlockOrder` `[g, b]`: g first ahead at every predicate and every p interval tried |
 | ptr | `reset:t`, `reset:e`, `reset:s` | `interval>=5` | A2-3: the requirement paces a row-2 reset — s at 5–30 and t at 5–60 tie exactly with both controls; `unlockOrder` `[s, t, e]` (s,t,e 3550 / 6037 / 8035; t,e,s and e,t,s never reach (ii)) |
 | ptr | `buyables:t` | off | Extra Time Capsules cost Boosters (lowers the booster effect) |
@@ -196,7 +197,14 @@ Everything else in both games is derived.
   - `kinds=reset,upgrades,buyables` — register only those kinds (the pinned-behaviour gate and A/B rows);
   - `kindOrder=reset,upgrades,…` — override the kind order;
   - `unlockOrder=b,g` / `rowTwoOrder=t,e,s` — override the table's first / second `unlockOrder` list (a permutation of it);
+  - `include=<featureId>,…` — drop those ids from the table's `off` map, so an EXCLUSION can be measured without editing
+    the table (R1′ re-evaluated `buyables:t` this way). An id the derivation does not produce, or one the table does not
+    exclude, throws;
   - `hookAll=1` — hook every tree layer (test probe); any other key lands in `tmtLoader.autoOptions`.
+- A THROW in the table or the derivation (an unknown key, an unknown feature id, a bad `include=`) is a **hard fail** of
+  the run (`ok: false`, `failed_at: 'automation'`), not a run with `features: []` — the page fails its load on the same
+  throw, and before R1′ the Node harness recorded the error in `file_errors` and reported `ok: true`, so a mistyped
+  sweep cell measured the game with NO automation and printed a number.
 - `--marks marks.json` (`[[name, "<js predicate>"], …]`): the first tick each predicate holds, with gameSeconds, the
   state hash, `hashGame` (the hash without `player.au`) and the feature action counts at that tick; the run stops when
   all are met. `--marks-continue`: record without stopping.

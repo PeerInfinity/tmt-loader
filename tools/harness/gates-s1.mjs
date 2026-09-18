@@ -35,12 +35,18 @@ export const MARKS = {
   a2st: [['(i) primitive reset ≥ 1 (primitive.total ≥ 1)', 'player.primitive.total.gte(1)'], ['(ii) primitive ms 1 ("10 Numbers")', "hasMilestone('primitive', 1)"], ['(iii) primitive ms 2 ("100,000 Numbers")', "hasMilestone('primitive', 2)"]],
 };
 const KINDS_PINNED = 'kinds=reset,upgrades,buyables';
+// R1′: every pinned ptr number was measured with `reset:p interval>=10`, which was the TABLE's default until this slice
+// moved it to `gain>=2x` (games-auto/ptr.js; ⚖ 13d.2 + S1-2's sweep). A pin is a measurement of a POLICY's behaviour,
+// not of which policy the table happens to name, so the ptr pins now name theirs explicitly and stay comparable to the
+// baseline commits (whose tables said the same thing). The baseline side is run WITHOUT the opt, as before — at those
+// commits `interval>=10` is the table's own answer.
+const KINDS_PINNED_PTR = KINDS_PINNED + ';policy:reset:p=interval>=10';
 // Every pinned SUMMARY row: [ticks, full hash] per mark (A1-3 @ 3bc12bf rows 154–169; A2-3 @ b695e47 rows 243–245;
 // A2-3 next stall row 260; A2-1 @ 71da72e rows 187–192), and the commit that reproduces it as it was recorded.
 const PINS = [
-  { key: 'a1-3-ptr', tag: 'A1-3 ptr', id: 'ptr', baseline: '3bc12bf', marks: 'a1ptr', o: { diff: 1, ticks: 14000 }, want: [[1361, 'd76c70bf74ede9ba'], [2360, 'f8a1534d326a4840'], [2936, 'dc00ee1692610100']] },
-  { key: 'a2-3-ptr', tag: 'A2-3 ptr', id: 'ptr', baseline: '17260e03', marks: 'a2ptr', o: { diff: 1, ticks: 30000, 'wall-ms': 540000 }, want: [[3550, '0513ad9b24806ecc'], [6037, 'f226c34064109dcb'], [8035, '67743dd40de0b570']] },
-  { key: 'stall-ptr', tag: '§12d stall ptr', id: 'ptr', baseline: '17260e03', marks: 'a2ptr', o: { diff: 1, ticks: 30000, 'marks-continue': true, stall: 3600, 'stall-seen': true, 'wall-ms': 540000 }, stall: { ticks: 14131, hash: '46df73d4545bb4e2', lastProgress: 10531 } },
+  { key: 'a1-3-ptr', tag: 'A1-3 ptr', id: 'ptr', pinOpt: KINDS_PINNED_PTR, baseline: '3bc12bf', marks: 'a1ptr', o: { diff: 1, ticks: 14000 }, want: [[1361, 'd76c70bf74ede9ba'], [2360, 'f8a1534d326a4840'], [2936, 'dc00ee1692610100']] },
+  { key: 'a2-3-ptr', tag: 'A2-3 ptr', id: 'ptr', pinOpt: KINDS_PINNED_PTR, baseline: '17260e03', marks: 'a2ptr', o: { diff: 1, ticks: 30000, 'wall-ms': 540000 }, want: [[3550, '0513ad9b24806ecc'], [6037, 'f226c34064109dcb'], [8035, '67743dd40de0b570']] },
+  { key: 'stall-ptr', tag: '§12d stall ptr', id: 'ptr', pinOpt: KINDS_PINNED_PTR, baseline: '17260e03', marks: 'a2ptr', o: { diff: 1, ticks: 30000, 'marks-continue': true, stall: 3600, 'stall-seen': true, 'wall-ms': 540000 }, stall: { ticks: 14131, hash: '46df73d4545bb4e2', lastProgress: 10531 } },
   { key: 'a1-3-st', tag: 'A1-3 something', id: 'something', baseline: '3bc12bf', marks: 'a1st', o: { diff: 0.05, ticks: 14000 }, want: [[102, 'bf6f8809a163efd8'], [3733, '0253605cd2e69318']] },
   // diff 1 on Something Tree too: a game that unlocks a layer INSIDE gameLoop shows a one-tick timing difference only at
   // a coarse diff (S1's first derived reset unlocked() read tmp.layerShown: 310 / 400 / 580 here — see tmt-auto.js)
@@ -152,7 +158,7 @@ async function part1s() {
   const tree = baselineTree(pins[0].baseline);
   await pinnedRows(pins.map((p) => {
     const o = { profile: 'all', ...p.o, marks: marksFile(MARKS[p.marks]) };
-    return { p, s1: job(p.id, { ...o, 'auto-opt': KINDS_PINNED }), base: job(p.id, o, tree) };
+    return { p, s1: job(p.id, { ...o, 'auto-opt': p.pinOpt || KINDS_PINNED }), base: job(p.id, o, tree) };
   }));
 }
 async function part1(browser, base) {
@@ -162,7 +168,7 @@ async function part1(browser, base) {
   const runs = pins.map((p) => {
     const mf = marksFile(MARKS[p.marks]);
     const o = { profile: 'all', ...p.o, marks: mf };
-    return { p, s1: job(p.id, { ...o, 'auto-opt': KINDS_PINNED }), base: job(p.id, o, trees[p.baseline]) };
+    return { p, s1: job(p.id, { ...o, 'auto-opt': p.pinOpt || KINDS_PINNED }), base: job(p.id, o, trees[p.baseline]) };
   });
   const fresh = ['ptr', 'something'].map((id) => ({ id, s1: job(id, { ticks: 0, diff: 1 }), old: job(id, { ticks: 0, diff: 1 }, trees['17260e03']) }));
   const omega = job('the-omega-tree', { profile: 'all', diff: 1, ticks: 3000, stall: 3600, 'stall-seen': true, 'wall-ms': 540000 });
@@ -182,7 +188,7 @@ async function pinnedRows(runs) {
         row({ gate: `S1-1 baseline ${p.tag} ${n} @ ${p.baseline}`, id: p.id, leg: 'profile all', ok: !!baseOk, ticks: y?.ticks, gameSeconds: y?.gameSeconds, diff: p.o.diff, hash: y?.hash,
           notes: `SUMMARY ${wt} ticks / ${wh}; baseline ${fmtMark(y)}${b.error ? '; ' + b.error : ''}` });
         const ok = baseOk && !!r.ok && x && x.ticks === wt && x.hashGame === y.hashGame;
-        row({ gate: `S1-1 pinned ${p.tag} ${n} (${KINDS_PINNED})`, id: p.id, leg: 'profile all', ok: !!ok, ticks: x?.ticks, gameSeconds: x?.gameSeconds, diff: p.o.diff, hash: x?.hash,
+        row({ gate: `S1-1 pinned ${p.tag} ${n} (${p.pinOpt || KINDS_PINNED})`, id: p.id, leg: 'profile all', ok: !!ok, ticks: x?.ticks, gameSeconds: x?.gameSeconds, diff: p.o.diff, hash: x?.hash,
           notes: `game state ${x?.hashGame} vs baseline ${y?.hashGame} — equal ${x?.hashGame === y?.hashGame}; ticks ${x?.ticks} vs SUMMARY ${wt}; features ${r.features?.length}; actions ${JSON.stringify(r.hook?.actions)}${r.error ? '; ' + r.error : ''}` });
       });
     } else {
@@ -191,7 +197,7 @@ async function pinnedRows(runs) {
       row({ gate: `S1-1 baseline ${p.tag} @ ${p.baseline}`, id: p.id, leg: 'profile all', ok: baseOk, ticks: b.ticks, gameSeconds: b.gameSeconds, diff: 1, hash: b.hash,
         notes: `SUMMARY stalled ${w.ticks} / ${w.hash} / last progress ${w.lastProgress}; baseline stalled ${b.stall?.stalled} walled ${b.stall?.walled} last progress ${b.stall?.lastProgress?.ticks}; game ${b.hashGame}${b.error ? '; ' + b.error : ''}` });
       const ok = baseOk && !!r.ok && r.ticks === w.ticks && r.hashGame === b.hashGame && r.stall?.lastProgress?.ticks === w.lastProgress && r.stall?.stalled && !r.stall?.walled;
-      row({ gate: `S1-1 pinned ${p.tag} (${KINDS_PINNED})`, id: p.id, leg: 'profile all', ok, ticks: r.ticks, gameSeconds: r.gameSeconds, diff: 1, hash: r.hash,
+      row({ gate: `S1-1 pinned ${p.tag} (${p.pinOpt || KINDS_PINNED})`, id: p.id, leg: 'profile all', ok, ticks: r.ticks, gameSeconds: r.gameSeconds, diff: 1, hash: r.hash,
         notes: `stalled ${r.stall?.stalled} walled ${r.stall?.walled}; last progress ${r.stall?.lastProgress?.ticks}; game state ${r.hashGame} vs baseline ${b.hashGame} — equal ${r.hashGame === b.hashGame}; marks ${Object.entries(r.marks || {}).map(([n, m]) => `${n}: ${m?.ticks}/${m?.hashGame}`).join(' · ')}; actions ${JSON.stringify(r.hook?.actions)}; state: ${detailBrief(r)}` });
       writeJSON(path.join(REPO, 'tools/harness/results/tmp/s1-1-ptr-stall.json'), r);
     }

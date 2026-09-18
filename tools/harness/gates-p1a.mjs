@@ -87,6 +87,10 @@ const STATES = () => [
   { key: 'something-S03', id: 'something', from: `${ST_DIR}/S03.json`, ladder: ST_LADDER, note: 'A2-1 (i) — the first primitive reset' },
   { key: 'something-S04', id: 'something', from: `${ST_DIR}/S04.json`, ladder: ST_LADDER, note: 'A2-1 (ii) — primitive milestone 1' },
 ];
+// R1′ (2026-09-17): the ptr table's `reset:p` moved from `interval>=10` to `gain>=2x`. Every number and fixture in this
+// file was measured under the interval, so the runs name it explicitly; a pin is a measurement of a POLICY, not of which
+// one the table names. (An `auto-opt` in a row's own `opt` still wins — P1b's ctl-gain2x is exactly that control.)
+const PIN_RESET_P = 'policy:reset:p=interval>=10';
 const stateOpts = (s, extra = {}) => ({ profile: 'all', ...(s.from ? { 'from-snapshot': s.from, ticks: 0, diff: 1 } : { ticks: s.ticks, diff: s.diff }), ...extra });
 
 // ---- Part 0: the frontier fixture -------------------------------------------------------------------------------------
@@ -94,9 +98,9 @@ async function part0() {
   fs.mkdirSync(path.join(REPO, FRONTIER_DIR), { recursive: true });
   // The stall's CONTROL, run in parallel: the same stretch with the detector's stop removed, 204 ticks PAST the stall
   // tick. It is what a short measurement window at the frontier must be read against (P1a-2's window row).
-  const controlP = job('ptr', { profile: 'all', diff: 1, ticks: 6300, 'from-snapshot': SNAP.M09, 'wall-ms': 540000,
+  const controlP = job('ptr', { profile: 'all', diff: 1, ticks: 6300, 'from-snapshot': SNAP.M09, 'wall-ms': 540000, 'auto-opt': PIN_RESET_P,
     eval: "({b: String(player.b.points), bBest: String(player.b.best), sb: player.sb.unlocked, bNextAt: String(tmp.b.nextAt), bBaseAmount: String(tmp.b.baseAmount), points: String(player.points)})" });
-  const r = await job('ptr', { profile: 'all', diff: 1, ticks: 30000, 'from-snapshot': SNAP.M09, ...DETECT, 'stop-snapshot': FRONTIER_DIR, 'stop-snapshot-name': 'STALL' });
+  const r = await job('ptr', { profile: 'all', diff: 1, ticks: 30000, 'from-snapshot': SNAP.M09, 'auto-opt': PIN_RESET_P, ...DETECT, 'stop-snapshot': FRONTIER_DIR, 'stop-snapshot-name': 'STALL' });
   const ok = !!r.ok && r.ticks === FRONTIER_PIN.ticks && r.hash === FRONTIER_PIN.hash && r.hashGame === FRONTIER_PIN.hashGame && r.stall?.lastProgress?.ticks === FRONTIER_PIN.lastProgress && !!r.stopSnapshotWritten;
   row({ gate: 'P1a-0 the frontier fixture: from all/M09 to the stall reproduces S1 §10a.4', id: 'ptr', leg: 'profile all, diff 1, stall 3600 seen', ok, ticks: r.ticks, gameSeconds: r.gameSeconds, diff: 1, hash: r.hash,
     notes: `stalled ${r.stall?.stalled} at ${r.ticks} (pin ${FRONTIER_PIN.ticks}), last progress ${r.stall?.lastProgress?.ticks} (pin ${FRONTIER_PIN.lastProgress}), hashGame ${r.hashGame} (pin ${FRONTIER_PIN.hashGame}); wrote ${r.stopSnapshotWritten?.file} (${r.stopSnapshotWritten?.bytes} B); ${Math.round(r.ticks_ms / 1000)} s, load ${r.load?.start} → ${r.load?.end}` });
@@ -234,7 +238,7 @@ async function part1() {
   }
   // (e) the planner loaded and never called is inert — the pinned marks land where gates-s1 pins them
   const inert = [
-    { id: 'ptr', o: { profile: 'all', diff: 1, ticks: 3550, 'auto-opt': 'kinds=reset,upgrades,buyables' }, pin: { ticks: 3550, hashGame: 'ff624de18438f176' }, note: 'A2-3 (i) 3550×1, kinds=reset,upgrades,buyables' },
+    { id: 'ptr', o: { profile: 'all', diff: 1, ticks: 3550, 'auto-opt': 'kinds=reset,upgrades,buyables;' + PIN_RESET_P }, pin: { ticks: 3550, hashGame: 'ff624de18438f176' }, note: 'A2-3 (i) 3550×1, kinds=reset,upgrades,buyables' },
     { id: 'something', o: { profile: 'all', diff: 1, ticks: 399, 'auto-opt': 'kinds=reset,upgrades,buyables' }, pin: { ticks: 399, hashGame: '070dc67eca5ac00f' }, note: 'A2-1 (ii) 399×1' },
   ];
   const inertRes = await Promise.all(inert.map((x) => Promise.all([job(x.id, x.o), job(x.id, { ...x.o, planner: true })])));

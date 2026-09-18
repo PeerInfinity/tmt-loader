@@ -11,8 +11,13 @@ tmtLoader.autoTable = {
   // Every A1/A2 number was measured with a layer's reset BEFORE its purchases (the A1/A2 registration order).
   kindOrder: ['toggles', 'reset', 'upgrades', 'buyables', 'challenges', 'clickables'],
   policies: {
-    // A1-3: `always` walls row 1 (p resets at 10 points, never reaching b/g's 200); interval 10 fastest of 5/10/30/60/120 s
-    'reset:p': 'interval>=10',
+    // R1′ (this slice's default): `gain>=2x` — the target-driven rule ⚖ 13d.2 asks for, and the faster one. S1-2's sweep
+    // (docs/automation.md; SUMMARY 2026-09-15 S1-2s) 918 / 1627 / 2112 game-s to A1-3's three marks against
+    // `interval>=10`'s 1361 / 2360 / 2936 (28 % ahead), and P1b's frontier control (iii) (§12b.4) reached M11 at 15582
+    // against the interval's 15782. NOT re-derived here: R1′ took it as given (plan §14b option 1). `always` still
+    // walls row 1 (p resets at 10 points, so points never reach the 200 the b/g pair needs, A1-3); `interval>=10` was
+    // the fastest of 5/10/30/60/120 s and is kept as an alternative, since every pinned A1/A2 number was measured in it.
+    'reset:p': 'gain>=2x',
     // A1 table: b/g reset whenever they can (static: gain is 1 per reset)
     'reset:b': 'gain>=1',
     'reset:g': 'gain>=1',
@@ -22,7 +27,7 @@ tmtLoader.autoTable = {
     'reset:s': 'interval>=5',
   },
   alternatives: {
-    'reset:p': ['always', 'gain>=1'],
+    'reset:p': ['interval>=10', 'always', 'gain>=1'],
     'reset:b': ['keepsUpgrades'],
     'reset:g': ['keepsUpgrades'],
     'reset:t': ['always', 'gain>=1'],

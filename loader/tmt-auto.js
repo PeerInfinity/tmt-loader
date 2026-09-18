@@ -122,7 +122,7 @@
     // spans the whole Decimal range), so it takes the same DEC pattern as a reserve; an interval is seconds.
     reset: new RegExp('^(always|gain>=' + DEC + 'x?|keepsUpgrades|interval>=' + NUM + '|unlocks-purchase)$'),
     upgrades: /^(cheapest-first|order|order-then-cheapest)$/,
-    buyables: new RegExp('^(buyMax|buy|highest-first|buy-unless-saving|reserve>=' + DEC + ')$'),
+    buyables: new RegExp('^(buyMax|buy|highest-first|buy-unless-saving|reserve>=(' + DEC + '|next-upgrade))$'),
     toggles: /^on$/,
     challenges: /^(sequential|off)$/,
     clickables: /^(when|off)$/,
@@ -133,7 +133,7 @@
   T.policyTemplates = {
     reset: ['always', 'gain>=N', 'gain>=Nx', 'interval>=T', 'unlocks-purchase', 'keepsUpgrades'],
     upgrades: ['cheapest-first', 'order', 'order-then-cheapest'],
-    buyables: ['buy', 'buyMax', 'highest-first', 'buy-unless-saving', 'reserve>=N'],
+    buyables: ['buy', 'buyMax', 'highest-first', 'buy-unless-saving', 'reserve>=N', 'reserve>=next-upgrade'],
     toggles: ['on'],
     challenges: ['sequential', 'off'],
     clickables: ['when', 'off'],
@@ -252,6 +252,21 @@
     }
     return false;
   }
+  // The cheapest unowned, unlocked upgrade of the layer costed in the layer's OWN points, as a Decimal — or null when
+  // there is none. `reserve>=next-upgrade` is exactly this number: the reserve a purchase feature must leave standing
+  // is what the next upgrade of the same currency costs, read from the game (`tmp[l].upgrades[id].cost`) rather than
+  // written into a table (⚖ minimize hardcoding). savingFor() asks the same question with a different answer shape.
+  function cheapestOwnUpgradeCost(l) {
+    var L = layers[l];
+    if (!L.upgrades || !(tmp[l] && tmp[l].upgrades)) return null;
+    var ids = numIds(L.upgrades), best = null;
+    for (var i = 0; i < ids.length; i++) {
+      if (!buyableUpgrade(l, ids[i]) || !ownCurrency(L.upgrades[ids[i]])) continue;
+      var c = D(tmp[l].upgrades[ids[i]].cost);
+      if (best === null || c.lt(best)) best = c;
+    }
+    return best;
+  }
   function buyUpgradeCounted(l, id) {
     if (!canAffordUpgrade(l, id)) return 0;
     var before = player[l].upgrades.length;
@@ -301,8 +316,14 @@
       // The layer's points is the one currency a generic reserve can read (the same reasoning as buy-unless-saving);
       // a buyable costed in another layer's currency is still gated on THIS layer's points, so the chooser only picks
       // this policy when the quantity it wants to protect IS player[l].points (docs/planner.md, the candidate table).
+      // reserve>=next-upgrade: the reserve is not a number in the table but the cost of the layer's cheapest unowned
+      // unlocked own-currency upgrade, read live (R1′: PTR's Enhancers cost 2^(x^1.5) EP and would eat the EP that e11 /
+      // e12 / e22 need — the reserve is whichever of those is next, not a literal). No such upgrade = no reserve.
       var rsv = /^reserve>=(.*)$/.exec(f.policy);
-      if (rsv && D(player[l].points).lte(D(rsv[1]))) return 0;
+      if (rsv) {
+        var lim = rsv[1] === 'next-upgrade' ? cheapestOwnUpgradeCost(l) : D(rsv[1]);
+        if (lim !== null && D(player[l].points).lte(lim)) return 0;
+      }
       var ids = f.order ? f.order.slice() : numIds(L.buyables);
       if (f.policy === 'highest-first' && !f.order) ids.reverse();
       var n = 0;
@@ -690,7 +711,17 @@
 
     var kinds = listOpt('kinds', null);
     if (kinds) kinds.forEach(function (k) { if (KINDS_ALL.indexOf(k) < 0) throw new Error('option kinds: unknown kind "' + k + '"'); });
-    var off = table.off || {};
+    var off = Object.assign({}, table.off || {});
+    // `include=<feature id>,…` (--auto-opt / ?autoOpt=): drop those ids from the table's `off` map, so an EXCLUSION can be
+    // put under measurement without editing the table. ⚖ an exclusion carries a reason, and a reason is a claim about the
+    // game — R1′ re-evaluated `buyables:t` ("Extra Time Capsules are paid in Boosters") this way. Loud both ways: an id
+    // the derivation does not produce, or one the table does not exclude, throws rather than doing nothing.
+    var inc = listOpt('include', null);
+    if (inc) inc.forEach(function (id) {
+      known('include', id);
+      if (off[id] === undefined) throw new Error(src + ': option include names "' + id + '", which the table does not exclude');
+      delete off[id];
+    });
     T.autoExcluded = {};
     T.autoDerivation = { kindOrder: kindOrder.slice(), kinds: kinds ? kinds.slice() : KINDS_ALL.slice(), candidates: cands.length, registered: 0, excluded: 0, outOfKinds: 0, multiTogglesSkipped: 0, unlockOrder: uo };
     for (var i = 0; i < cands.length; i++) {

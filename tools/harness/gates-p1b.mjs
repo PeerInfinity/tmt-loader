@@ -105,7 +105,7 @@ async function chained(id, { from = null, marks, stopMark, ticks = 200000, legTi
     const roundsFile = path.join(dir, `leg${leg}.rounds.json`);
     const want = targetGs !== null && startGs !== null ? Math.max(1, Math.min(legTicks ?? ticks, targetGs - (all.gameSeconds - startGs))) : (legTicks ?? ticks);
     const r = await job(id, {
-      profile: 'all', diff: 1, ticks: want, 'wall-ms': WALL, marks, 'marks-continue': true, 'stop-mark': stopMark,
+      profile: 'all', diff: 1, ticks: want, 'wall-ms': WALL, marks, 'marks-continue': true, 'stop-mark': stopMark, 'auto-opt': PIN_RESET_P,
       ...(snapshot ? { 'from-snapshot': snapshot } : {}),
       ...(planner ? { planner, 'planner-ladder': ladder, 'planner-opt': plannerOpt, 'rounds-out': roundsFile } : {}),
       ...(evalExpr ? { eval: evalExpr } : {}),
@@ -137,15 +137,19 @@ async function chained(id, { from = null, marks, stopMark, ticks = 200000, legTi
 }
 
 // ---- Part 1 -------------------------------------------------------------------------------------------------------
+// R1′ (2026-09-17): the ptr table's `reset:p` moved from `interval>=10` to `gain>=2x`. Every number and fixture in this
+// file was measured under the interval, so the runs name it explicitly; a pin is a measurement of a POLICY, not of which
+// one the table names. (An `auto-opt` in a row's own `opt` still wins — P1b's ctl-gain2x is exactly that control.)
+const PIN_RESET_P = 'policy:reset:p=interval>=10';
 async function part1() {
   const ptrMarks = marksFile(PTR_LADDER), stMarks = marksFile(ST_LADDER);
   // (b) and (c) and the control run in parallel with (a).
   const openP = chained('ptr', { marks: ptrMarks, stopMark: 'M09', ladder: PTR_LADDER, legs: Number(a.legs || 8) });
   const stP = chained('something', { marks: stMarks, stopMark: 'S05', ladder: ST_LADDER, legs: 3 });
-  const controlP = job('ptr', { profile: 'all', diff: 1, ticks: 20000, marks: ptrMarks, 'marks-continue': true, 'stop-mark': 'M09', 'wall-ms': WALL });
+  const controlP = job('ptr', { profile: 'all', diff: 1, ticks: 20000, marks: ptrMarks, 'marks-continue': true, 'stop-mark': 'M09', 'wall-ms': WALL, 'auto-opt': PIN_RESET_P });
 
   // (a) determinism: two identical runs from all/M02
-  const detOpts = { profile: 'all', diff: 1, ticks: 1500, 'from-snapshot': SNAP.M02, planner: 'auto', 'planner-ladder': PTR_LADDER, 'planner-opt': PLANNER_OPT(), 'wall-ms': WALL };
+  const detOpts = { profile: 'all', diff: 1, ticks: 1500, 'from-snapshot': SNAP.M02, 'auto-opt': PIN_RESET_P, planner: 'auto', 'planner-ladder': PTR_LADDER, 'planner-opt': PLANNER_OPT(), 'wall-ms': WALL };
   const d1f = path.join(TMP, 'det1.json'), d2f = path.join(TMP, 'det2.json');
   const [d1, d2] = await Promise.all([job('ptr', { ...detOpts, 'rounds-out': d1f }), job('ptr', { ...detOpts, 'rounds-out': d2f })]);
   const r1 = fs.existsSync(d1f) ? readJSON(d1f) : null, r2 = fs.existsSync(d2f) ? readJSON(d2f) : null;

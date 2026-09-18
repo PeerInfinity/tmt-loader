@@ -197,7 +197,16 @@ if (AUTOMATION && manifest.auto && !A['no-auto']) {
   catch (e) { R.file_errors.push({ file: manifest.auto, error: String(e.message).slice(0, 200) }); }
 }
 try { run(fs.readFileSync(path.join(REPO, 'loader/tmt-auto.js'), 'utf8'), 'loader/tmt-auto.js'); }
-catch (e) { R.file_errors.push({ file: 'loader/tmt-auto.js', error: String(e.message).slice(0, 200) }); }
+catch (e) { R.file_errors.push({ file: 'loader/tmt-auto.js', error: String(e.message).slice(0, 200) }); R.autoLoadError = String(e.message).slice(0, 300); }
+// R1′: a THROW in the table or in the derivation (a bad `--auto-opt`, an unknown feature id, an exclusion that is not
+// one) left the run with `features: []`, no `au` layer and `ok: true` — the error was in `file_errors` and nothing read
+// it, so a mistyped sweep cell measured THE GAME WITH NO AUTOMATION and reported a number. In the page the same throw
+// fails the load; here it is a hard fail with a stage, so a gate cannot mistake it for a measurement.
+if (AUTOMATION && (R.autoLoadError || R.file_errors.some((f) => f.file === manifest.auto))) {
+  R.ok = false; R.failed_at = 'automation';
+  R.error = R.autoLoadError || R.file_errors.find((f) => f.file === manifest.auto).error;
+  out(R); proc.exit(0);
+}
 // loader/tmt-planner.js — the advanced system's foundation (docs/planner.md). Harness-only in P1a: it is loaded ONLY
 // with --planner, adds nothing to `player` and runs nothing on its own (gate P1a-1 (e) measures that).
 // --planner (bare) loads it inert (P1a); --planner=auto|suggest, or --planner-mode, also DRIVES it (P1b).
