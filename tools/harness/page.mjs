@@ -167,6 +167,23 @@ export const PHONE_CONTEXT = { viewport: PHONE, hasTouch: true, isMobile: true }
 export const DESKTOP = { width: 1280, height: 800 };
 export const DESKTOP_CONTEXT = { viewport: DESKTOP };
 export const MOBILE_TICKS = 200, MOBILE_DIFF = 0.05; // the state leg: enough ticks for a divergence to show in the hash
+// Extra PLAIN draws demanded before the state leg is allowed to say MOVED. One control is not enough: a game with
+// several reachable states can have its two plain runs agree BY CHANCE, and the leg then reads the mobile page's
+// ordinary variation as a regression.
+//
+// MEASURED 2026-09-18 on `the-periodic-table-tree`, 14 runs x 3 draws = 42 draws: FIFTEEN distinct hashes, the
+// mode taking 6 of them. Unbiased collision probability sum(n_i(n_i-1))/(n(n-1)) = 6.5%, so with ONE control
+// P(false RED) ~ 7.9% -- about one every 13 sweeps. One was observed in ten. Four confirmations take the same
+// estimate to ~1 in 80,000.
+//
+// The cost is paid ONLY on the path that would otherwise go red: a game whose mobile hash agrees, or whose first
+// control already disagrees, draws nothing extra. Measured: `ptr` reports `equal` with no confirmations taken.
+//
+// The other five games that abstain are far flatter -- `the-cookie-tree`, `falling-mountain-s-alterprestige`,
+// `the-gaming-tree`, `plague-tree-vorona-cirus-treesease`, `the-orchard-tree` gave ZERO repeats in 18 draws
+// apiece, so they are not demonstrably at risk at all (18 draws bounds them at roughly 2%, no better). This one
+// game dominates, which is WHY the fix is adaptive rather than a flat N controls for everybody.
+export const STATE_CONFIRMATIONS = 4;
 export const TAP_MIN = 44;                          // the tap-target minimum mobile.css promises
 
 /** The deepest recorded snapshot for a game, or null. The fresh save of most games shows ONE tree node and no open
@@ -303,12 +320,17 @@ async function gateMobile(browser, base, ids) {
       await plain.close();
       // THE CONTROL. A hash that differs between the plain and the mobile page only means the mode moved the game
       // if the game reaches the same hash twice on its own. Measured, because some do not: `the-periodic-table-tree`
-      // gave three different hashes over three plain runs, so its mobile/plain difference says nothing about the
-      // mode. Nothing in the manifests declares this, so the gate establishes it per run.
-      const plain2 = await context.newPage();
-      const rp2 = await openGame(plain2, base, id, { managed: true, automation: false });
-      const plainState2 = rp2.ready ? await pageTick(plain2, MOBILE_DIFF, MOBILE_TICKS).then(() => pageState(plain2)) : null;
-      await plain2.close();
+      // reaches FIFTEEN distinct hashes (42 draws, 2026-09-18), so its mobile/plain difference says nothing about
+      // the mode. Nothing in the manifests declares this, so the gate establishes it per run -- and one agreement
+      // is not enough to establish it, which is what STATE_CONFIRMATIONS is for.
+      const plainDraw = async () => {
+        const pg = await context.newPage();
+        const r = await openGame(pg, base, id, { managed: true, automation: false });
+        const st = r.ready ? await pageTick(pg, MOBILE_DIFF, MOBILE_TICKS).then(() => pageState(pg)) : null;
+        await pg.close();
+        return st;
+      };
+      const plainState2 = await plainDraw();
 
       // --- leg 2: the mode is a LAYOUT. Same ticks from the same fresh save, on the mobile page: the flag may not
       // move the game by one bit. Measured rather than asserted, and it is what lets the mode be an opt-in the
@@ -318,12 +340,25 @@ async function gateMobile(browser, base, ids) {
       const rf = await waitReady(fresh);
       const mobileState = rf.ready ? await pageTick(fresh, MOBILE_DIFF, MOBILE_TICKS).then(() => pageState(fresh)) : null;
       await fresh.close();
-      const deterministic = !!(plainState2 && plainState2.hash === plainState.hash);
+      let deterministic = !!(plainState2 && plainState2.hash === plainState.hash);
+      const agrees = mobileState && mobileState.hash === plainState.hash && mobileState.ticks === plainState.ticks;
+      // Only a would-be MOVED needs more evidence. An abstention is already the weakest verdict, and an `equal`
+      // that a lucky control helped reach is the vacuous pass this leg has always been able to give -- neither
+      // accuses the slice of anything. A RED does, so it is the one that has to be paid for.
+      const confirmations = [];
+      if (deterministic && !agrees) {
+        for (let i = 0; i < STATE_CONFIRMATIONS && deterministic; i++) {
+          const st = await plainDraw();
+          confirmations.push(st && st.hash);
+          if (!st || st.hash !== plainState.hash) deterministic = false;
+        }
+      }
       row.state = { ticks: MOBILE_TICKS, diff: MOBILE_DIFF, plain: plainState.hash, plainControl: plainState2 && plainState2.hash,
-        mobile: mobileState && mobileState.hash, deterministic, points: plainState.points };
+        mobile: mobileState && mobileState.hash, deterministic, points: plainState.points,
+        ...(confirmations.length ? { confirmations } : {}) };
       // an abstention, not a pass: the leg cannot discriminate on a game that does not repeat its own hash
       row.stateVerdict = !deterministic ? 'nondeterministic (control differs: the leg abstains)'
-        : (mobileState && mobileState.hash === plainState.hash && mobileState.ticks === plainState.ticks) ? 'equal' : 'MOVED';
+        : agrees ? 'equal' : 'MOVED';
       row.stateOk = row.stateVerdict !== 'MOVED';
 
       // --- leg 3: the mobile page, at the fresh save and then at the deepest snapshot, one row per view
