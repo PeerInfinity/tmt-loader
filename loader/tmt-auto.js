@@ -757,6 +757,12 @@
     derive();
     addLayer(AU, {
       tmtLoaderLayer: true,
+      // `type: 'none'` because `au` is never reset — and because leaving it undefined is not safe across engines.
+      // The engine's canReset(layer) ends in `else return layers[layer].canReset()`, so a layer whose type matches
+      // none of normal/static/none reaches a method `au` does not have. Measured on Cubedey-style 'The Stardust
+      // Tree', where the whole automation boot died on `layers[layer].canReset is not a function` while the plain
+      // page was green. 'none' is the declaration the engine already understands for "cannot reset".
+      type: 'none',
       startData: function () { return { unlocked: true, points: new Decimal(0), features: {}, disclosed: false }; },
       color: '#7fb2d9',
       row: 'side',
