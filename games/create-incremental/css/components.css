@@ -1,0 +1,241 @@
+.upg {
+	min-height: 120px;
+	width: 120px;
+	--border-radius: 30px;
+	border-radius: 30px;
+	border: 2px solid;
+	border-color: rgba(0, 0, 0, 0.125);
+	font-size: 10px;
+	overflow: visible;
+}
+
+.achievement {
+	height: 90px;
+	width: 90px;
+	--border-radius: 22.5px;
+	border-radius: 22.5px;
+	border: 2px solid;
+	border-color: rgba(0, 0, 0, 0.125);
+	font-size: 10px;
+	color: white;
+	text-shadow: 0 0 2px #000000;
+}
+.achievement:hover {
+	box-shadow: 0 0 10px var(--color);
+	z-index: 7;
+}
+.upgRow:not(:has(.bought)) .achievement.locked.A {
+	opacity: 0.25;
+	filter: blur(4px);
+	box-shadow: none;
+}
+.upgRow:not(:has(.bought)) .achievement.locked.A .tooltip {
+	display: none;
+}
+
+.buyable {
+	height: 200px;
+	width: 200px;
+	--border-radius: 50px;
+	border-radius: 50px;
+	border: 2px solid;
+	border-color: rgba(0, 0, 0, 0.125);
+	font-size: 10px;
+	position:relative;
+}
+
+.milestone {
+	width: 100%;
+	min-width: 120px;
+	padding-left: 5px;
+	padding-right: 5px;
+	height: 75px;
+	background-color: #bf8f8f;
+	border: 4px solid;
+	border-radius: 20px;
+	border-color: rgba(0, 0, 0, 0.125);
+	color: rgba(0, 0, 0, 0.5);
+}
+
+.milestoneDone {
+	width: 100%;
+	min-width: 120px;
+	padding-left: 5px;
+	padding-right: 5px;
+
+	height: 75px;
+	background-color: #77bf5f;
+	border: 4px solid;
+	border-radius: 20px;
+	border-color: rgba(0, 0, 0, 0.125);
+	color: rgba(0, 0, 0, 0.5);
+}
+
+.challenge {
+	background-color: #bf8f8f;
+	position: relative;
+	border: 4px solid;
+	border-color: rgba(0, 0, 0, 0.125);
+	color: rgba(0, 0, 0, 0.5);
+	width: 300px;
+	height: 300px;
+	font-size: 15px;
+	--border-radius: 100px;
+	border-radius: 100px;
+}
+
+.challenge.done {
+	background-color: #77bf5f;
+}
+
+.challenge.canComplete {
+	background-color: #ffbf00;
+}
+
+/* Infoboxes */
+.story {
+    width: 600px;
+    max-width: 95%;
+    border-bottom: solid 4px;
+	--border-radius: 8px;
+    border-radius: 8px;
+    margin-bottom: 8px;
+    text-align: left;
+}
+
+.story-title {
+    text-align: left;
+    font-size: 24px;
+    color: black;
+    cursor: pointer;
+    border: none;
+    padding: 2px;
+    border-radius: 8px 8px 0 0;
+}
+
+.story-toggle {
+    border: none;
+    background: black;
+    color: white;
+    font-size: 20px;
+    pointer-events: none;
+    width: 1em;
+    display: inline-block;
+}
+
+.story-text {
+	padding: 2px;
+    border: solid 4px;
+    border-color: inherit;
+    border-radius: inherit;
+    border-top-left-radius: 0;
+    margin-bottom: -2px;
+}
+
+
+/* Tiles are gridables */
+.tile {
+	height: 80px;
+	width: 80px;
+	--border-radius: 12px;
+	border-radius: 12px;
+	border: 2px solid;
+	border-color: rgba(0, 0, 0, 0.125);
+	font-size: 10px;
+	overflow: visible;
+}
+
+.tile.can:hover {
+	box-shadow: 0 0 10px var(--points);
+	transform: scale(1.1, 1.1);
+	z-index: 7;
+}
+
+.upgBig {
+	height: 200px;
+	width: 200px;
+	--border-radius: 50px;
+	border-radius: 50px;
+	border: 2px solid;
+	border-color: rgba(0, 0, 0, 0.125);
+}
+
+/* Used for respec button and similar */
+.longUpg {
+	height: 50px;
+	width: 120px;
+	background: var(--points);
+	--border-radius: 50%;
+	border-radius: 50%;
+	border: 2px solid;
+	border-color: rgba(0, 0, 0, 0.125);
+	font-size: 10px;
+}
+
+.smallUpg {
+	height: 40px;
+	width: 40px;
+	--border-radius: 10px;
+	border-radius: 10px;
+	border: 2px solid;
+	border-color: rgba(0, 0, 0, 0.125);
+}
+
+.upgRow>div>.upgAlign>button,
+.upgRow>div>.upgAlign>.achievement {
+    border-radius: 0;
+}
+
+.upgRow>div:first-child>.upgAlign>button,
+.upgRow>div:first-child>.upgAlign>.achievement {
+    border-radius: var(--border-radius) 0 0 var(--border-radius);
+}
+
+.upgRow>div:last-child>.upgAlign>button,
+.upgRow>div:last-child>.upgAlign>.achievement {
+    border-radius: 0 var(--border-radius) var(--border-radius) 0;
+}
+
+.upgRow>div:first-child:last-child>.upgAlign > button,
+.upgRow>div:first-child:last-child>.upgAlign > .achievement {
+    border-radius: var(--border-radius);
+}
+
+.upgTable > .upgRow:first-child > div:not(:first-child):not(:last-child)>.upgAlign>button,
+.upgTable > .upgRow:last-child  > div:not(:first-child):not(:last-child)>.upgAlign>button,
+.upgTable > .upgRow:not(:first-child):not(:last-child) > div>.upgAlign>button,
+.upgTable > .upgRow:first-child > div:not(:first-child):not(:last-child)>.upgAlign>.achievement,
+.upgTable > .upgRow:last-child  > div:not(:first-child):not(:last-child)>.upgAlign>.achievement,
+.upgTable > .upgRow:not(:first-child):not(:last-child) > div>.upgAlign>.achievement {
+    border-radius: 0;
+}
+
+.upgTable > .upgRow:first-child:not(:last-child)>div:first-child>.upgAlign > button,
+.upgTable > .upgRow:first-child:not(:last-child)>div:first-child>.upgAlign > .achievement {
+    border-radius: var(--border-radius) 0 0 0;
+}
+
+.upgTable > .upgRow:first-child:not(:last-child)>div:last-child>.upgAlign > button,
+.upgTable > .upgRow:first-child:not(:last-child)>div:last-child>.upgAlign > .achievement {
+    border-radius: 0 var(--border-radius) 0 0;
+}
+
+.upgTable > .upgRow:last-child:not(:first-child)>div:last-child>.upgAlign > button,
+.upgTable > .upgRow:last-child:not(:first-child)>div:last-child>.upgAlign > .achievement {
+    border-radius: 0 0 var(--border-radius) 0;
+}
+
+.upgTable > .upgRow:last-child:not(:first-child)>div:first-child>.upgAlign > button,
+.upgTable > .upgRow:last-child:not(:first-child)>div:first-child>.upgAlign > .achievement {
+    border-radius: 0 0 0 var(--border-radius);
+}
+
+#clickable-P-11,
+#clickable-P-12,
+#clickable-P-13,
+#clickable-P-14,
+#clickable-P-15,
+#clickable-P-16,
+#clickable-P-21 {
+	border-radius: 20px !important;
+}
