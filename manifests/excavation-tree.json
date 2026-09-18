@@ -1,0 +1,137 @@
+{
+  "schema": 1,
+  "id": "excavation-tree",
+  "name": "Excavation Tree",
+  "version": "1.3",
+  "author": "tree enjoyer",
+  "upstream": {
+    "repo": "SSansssssssssssss/Excavation-Tree",
+    "url": "https://github.com/SSansssssssssssss/Excavation-Tree.git",
+    "branch": "master",
+    "commit": "283533eb3c8a5ca356c94791c0a218a1bc0eaa85",
+    "pushed_at": "2025-08-05T21:58:41Z"
+  },
+  "engine": {
+    "tmtNum": "2.6.6.2",
+    "stock_commit": "8cf14c4",
+    "moved": false,
+    "deviation": {
+      "added": 500,
+      "removed": 15
+    }
+  },
+  "entry": "index.html",
+  "load": {
+    "onload": "load()",
+    "scripts": [
+      "js/technical/break_eternity.js",
+      "js/technical/layerSupport.js",
+      "js/mod.js",
+      "js/technical/loader.js",
+      "js/technical/temp.js",
+      "js/technical/displays.js",
+      "js/game.js",
+      "js/utils.js",
+      "js/utils/easyAccess.js",
+      "js/technical/systemComponents.js",
+      "js/components.js",
+      "js/technical/canvas.js",
+      "js/technical/particleSystem.js",
+      "js/utils/NumberFormating.js",
+      "js/utils/options.js",
+      "js/utils/save.js",
+      "js/utils/themes.js"
+    ],
+    "renderOnly": [
+      "js/technical/systemComponents.js",
+      "js/components.js",
+      "js/technical/canvas.js",
+      "js/technical/particleSystem.js"
+    ],
+    "modFilesPrefix": "js/",
+    "modFiles": [
+      "layers.js",
+      "tree.js",
+      "layerss.js",
+      "space.js",
+      "statica.js",
+      "challe26e.js"
+    ],
+    "external": {
+      "https://cdn.jsdelivr.net/npm/vue@2.6.12": "vendor",
+      "https://fonts.googleapis.com/css?family=Inconsolata": "drop"
+    },
+    "vendor": {
+      "https://cdn.jsdelivr.net/npm/vue@2.6.12": {
+        "path": "vendor/vue-2.6.12.min.js",
+        "sha256": "29296ccacaa9ed35ed168fc51e36f54fd6f8db9c7786bbf38cc59a27229ba5c2"
+      }
+    },
+    "known": {
+      "errorsBeforeReady": "js/utils/easyAccess.js:113 reads `options['anims']` at top level, and `options` is declared by js/utils/options.js, which the index loads AFTER it; 16 ReferenceErrors, all before ready, 0 after \u2014 the game's own script order, raised until load() runs"
+    }
+  },
+  "save": {
+    "keyRule": "modInfo.id",
+    "key": "ExcTreAvaE"
+  },
+  "headless": {
+    "prestubs": [],
+    "renderStubs": [
+      "loadVue",
+      "resizeCanvas",
+      "retrieveCanvasData",
+      "drawTree",
+      "drawComponentBranches",
+      "drawTreeBranch",
+      "makeParticles",
+      "makeShinies",
+      "updateParticles",
+      "setDir",
+      "setSpeed",
+      "updateMouse",
+      "getOpacity",
+      "constructParticleStyle",
+      "clearParticles",
+      "sin",
+      "cos",
+      "tan",
+      "asin",
+      "acos",
+      "atan"
+    ],
+    "idleHash": {
+      "ticks": 200,
+      "diff": 0.05,
+      "hash": "71da616310fb0fcb"
+    },
+    "deterministic": true
+  },
+  "license": {
+    "githubSpdx": "NOASSERTION",
+    "files": {
+      "LICENSE": "MIT",
+      "Prestige-tree-license": "MIT"
+    },
+    "verdict": "MIT"
+  },
+  "census": {
+    "full_name": "SSansssssssssssss/Excavation-Tree",
+    "head": "283533e",
+    "score": 75.08,
+    "layers": 21,
+    "rows": 5,
+    "milestones": 22,
+    "upgrades": 172,
+    "buyables": 61,
+    "challenges": 10,
+    "achievements": 86,
+    "trace_fields": 5
+  },
+  "patches": [],
+  "generated": {
+    "by": "tmt-fork-census scripts/manifest.mjs",
+    "commit": "e59a0db",
+    "at": "2026-09-18T01:37:33.304Z"
+  }
+}

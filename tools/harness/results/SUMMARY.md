@@ -1935,3 +1935,15 @@ Reading this section: the subtree commits are in; manifests, index and goldens a
 | gate | game | leg | ticks | gameSeconds | diff | hash | result | notes |
 |---|---|---|---|---|---|---|---|---|
 | G6 games doc | — | — | 0 | 0 | — | — | GREEN | docs/games.md: 91 games in manifests/index.json, generator built 91, 91 listed in that order, file byte-equal to the generator's output |
+
+## 2026-09-18T01:37:37Z — top100-excavation (`node tools/add-game.mjs SSansssssssssssss/Excavation-Tree`) — commit `15309af11` (tree DIRTY) — 4/5 green
+
+Reading this section: the subtree commits are in; manifests, index and goldens are uncommitted at the time of the run. idle hash = the plain page's Node twin (`--no-automation`, no exclusion) vs manifest.headless.idleHash; goldens counts vs manifest.census; G1 = `page.mjs <id> --gate load` (no flag).
+
+| gate | game | leg | ticks | gameSeconds | diff | hash | result | notes |
+|---|---|---|---|---|---|---|---|---|
+| top100-excavation check-manifest | excavation-tree | — | 0 | 0 | — | — | GREEN | 17 scripts, 6 modFiles, subtree split 283533e, games/excavation-tree pristine |
+| top100-excavation idle hash = census | excavation-tree | idle | 200 | 10 | 0.05 | `71da616310fb0fcb` | GREEN | census 71da616310fb0fcb |
+| top100-excavation goldens counts = census | excavation-tree | — | 0 | 0 | — | — | GREEN | 351 ids, 32 layers; ms 22 / upg 172 / buy 61 / ch 10 / ach 86 = census |
+| top100-excavation G1 load (plain page) | excavation-tree | — | 3 | 0.15 | 0.05 | — | **RED** | ready 954 ms; 5 `#app .treeNode`; 73 requests, 0 non-localhost, 0 failed, 12 page errors; au nodes 0; keys `tmt-loader:excavation-tree:ExcTreAvaE_options`, `tmt-loader:excavation-tree:ExcTreAvaE`; RED: ready true error null; 5 treeNodes; blocked 0 []; failed []; page errors ["ReferenceError: options is not defined","ReferenceError: options is not defined","ReferenceError: options is not defined","ReferenceError: options is not defined","ReferenceError: options is not defined","ReferenceError: options is not defined","ReferenceError: options is not defined","ReferenceError: options is not defined |
+| G6 games doc | null | — | 0 | 0 | — | — | GREEN | docs/games.md regenerated: 92 games in manifests/index.json, 92 listed in that order |

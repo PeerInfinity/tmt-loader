@@ -1,6 +1,6 @@
 # The games
 
-91 games, in the order they were added — the same order `manifests/index.json` and the loader's own
+92 games, in the order they were added — the same order `manifests/index.json` and the loader's own
 picker use. The first two were added by hand; the rest by `tools/add-game.mjs` from the
 [tmt-fork-census](https://github.com/PeerInfinity/tmt-fork-census) top 100, choosing games whose own play page
 no longer works.
@@ -104,3 +104,4 @@ and keeps its own license files and credits inside that subtree. `play` opens it
 | `the-gaming-tree` | The Gaming Tree | [play](https://peerinfinity.github.io/tmt-loader/?mod=the-gaming-tree) · [mobile](https://peerinfinity.github.io/tmt-loader/?mod=the-gaming-tree&mobile=1) | `medsal15/The-Gaming-Tree` @ `2a07a20` | TMT 2.6.6.2 | MIT |
 | `plague-tree-vorona-cirus-treesease` | Plague Tree (Vorona Cirus Treesease) | [play](https://peerinfinity.github.io/tmt-loader/?mod=plague-tree-vorona-cirus-treesease) · [mobile](https://peerinfinity.github.io/tmt-loader/?mod=plague-tree-vorona-cirus-treesease&mobile=1) | `c0v1d-9119361/The-Plague-Tree` @ `bbbd3b5` | TMT 2.6.6.2 | MIT |
 | `the-game-tree` | The Game Tree | [play](https://peerinfinity.github.io/tmt-loader/?mod=the-game-tree) · [mobile](https://peerinfinity.github.io/tmt-loader/?mod=the-game-tree&mobile=1) | `shenmi124/The-Game-Tree` @ `627a292` | TMT 2.6.5.1 | MIT |
+| `excavation-tree` | Excavation Tree | [play](https://peerinfinity.github.io/tmt-loader/?mod=excavation-tree) · [mobile](https://peerinfinity.github.io/tmt-loader/?mod=excavation-tree&mobile=1) | `SSansssssssssssss/Excavation-Tree` @ `283533e` | TMT 2.6.6.2 | MIT |
