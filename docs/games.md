@@ -1,6 +1,6 @@
 # The games
 
-157 games, in the order they were added — the same order `manifests/index.json` and the loader's own
+171 games, in the order they were added — the same order `manifests/index.json` and the loader's own
 picker use. The first two were added by hand; the rest by `tools/add-game.mjs` from the
 [tmt-fork-census](https://github.com/PeerInfinity/tmt-fork-census) top 100, choosing games whose own play page
 no longer works.
@@ -170,3 +170,17 @@ and keeps its own license files and credits inside that subtree. `play` opens it
 | `equilibrium` | Equilibrium | [play](https://peerinfinity.github.io/tmt-loader/?mod=equilibrium) · [mobile](https://peerinfinity.github.io/tmt-loader/?mod=equilibrium&mobile=1) | `Preta-Crowz/Equilibrium` @ `cc73f33` | TMT 2.6.6.2 | MIT |
 | `the-tree-emipiplu` | The ??? Tree | [play](https://peerinfinity.github.io/tmt-loader/?mod=the-tree-emipiplu) · [mobile](https://peerinfinity.github.io/tmt-loader/?mod=the-tree-emipiplu&mobile=1) | `EmiPiplu/The-Matter-Tree` @ `ccfd908` | TMT 2.6.6.2 | MIT |
 | `bsed-tree` | BSED Tree | [play](https://peerinfinity.github.io/tmt-loader/?mod=bsed-tree) · [mobile](https://peerinfinity.github.io/tmt-loader/?mod=bsed-tree&mobile=1) | `OhManLolLol/BSED-Tree` @ `d89a77c` | TMT 2.6.6.2 | MIT |
+| `the-pheromosa-club-tree` | The Pheromosa Club  Tree | [play](https://peerinfinity.github.io/tmt-loader/?mod=the-pheromosa-club-tree) · [mobile](https://peerinfinity.github.io/tmt-loader/?mod=the-pheromosa-club-tree&mobile=1) | `Pheromosa-Club/Pheromosa-Club-Tree` @ `915e403` | TMT 2.6.6.2 | MIT |
+| `the-romeo-julliet-tree` | The Romeo & Julliet Tree | [play](https://peerinfinity.github.io/tmt-loader/?mod=the-romeo-julliet-tree) · [mobile](https://peerinfinity.github.io/tmt-loader/?mod=the-romeo-julliet-tree&mobile=1) | `keyboardmannow/Romerium` @ `4c5dc3c` | TMT 2.3.3.1 | MIT |
+| `the-math-tree` | The Math Tree | [play](https://peerinfinity.github.io/tmt-loader/?mod=the-math-tree) · [mobile](https://peerinfinity.github.io/tmt-loader/?mod=the-math-tree&mobile=1) | `horse-offender/The-Math-Tree` @ `c58c317` | TMT 2.6.6.2 | MIT |
+| `the-snake-tree` | The Snake Tree | [play](https://peerinfinity.github.io/tmt-loader/?mod=the-snake-tree) · [mobile](https://peerinfinity.github.io/tmt-loader/?mod=the-snake-tree&mobile=1) | `FunBoiMeeper/The-Duck-Tree` @ `fa73078` | TMT 2.7 | MIT |
+| `the-modding-tree` | null | [play](https://peerinfinity.github.io/tmt-loader/?mod=the-modding-tree) · [mobile](https://peerinfinity.github.io/tmt-loader/?mod=the-modding-tree&mobile=1) | `Pimvgd/The-Modding-Tree` @ `bb4afdc` | TMT 2.0.5.1 | MIT |
+| `the-pre-brick-tree` | The Pre-Brick Tree | [play](https://peerinfinity.github.io/tmt-loader/?mod=the-pre-brick-tree) · [mobile](https://peerinfinity.github.io/tmt-loader/?mod=the-pre-brick-tree&mobile=1) | `lockstepgithub/The-Modding-Tree` @ `7b21cfe` | TMT 2.6.6.2 | MIT |
+| `reali-tree` | Reali-Tree | [play](https://peerinfinity.github.io/tmt-loader/?mod=reali-tree) · [mobile](https://peerinfinity.github.io/tmt-loader/?mod=reali-tree&mobile=1) | `superjakeyLKR/Reali-Tree` @ `ea96b13` | TMT 2.6.6.2 | MIT |
+| `1-clicker` | +1 Clicker | [play](https://peerinfinity.github.io/tmt-loader/?mod=1-clicker) · [mobile](https://peerinfinity.github.io/tmt-loader/?mod=1-clicker&mobile=1) | `alexpra231/-1Clicker` @ `45431e0` | TMT 2.6.6.2 | MIT |
+| `the-cookie-tree-thepasswordispasswor` | The Cookie Tree | [play](https://peerinfinity.github.io/tmt-loader/?mod=the-cookie-tree-thepasswordispasswor) · [mobile](https://peerinfinity.github.io/tmt-loader/?mod=the-cookie-tree-thepasswordispasswor&mobile=1) | `thepasswordispasswor/The-Cookie-Tree` @ `3617527` | TMT 2.π.1 | MIT |
+| `stupid-test-tree` | stupid test tree | [play](https://peerinfinity.github.io/tmt-loader/?mod=stupid-test-tree) · [mobile](https://peerinfinity.github.io/tmt-loader/?mod=stupid-test-tree&mobile=1) | `mysteryflower/The-Modding-Tree` @ `814015e` | TMT 2.6.6.2 | MIT |
+| `the-tree-nuclearmk43` | The ??? Tree | [play](https://peerinfinity.github.io/tmt-loader/?mod=the-tree-nuclearmk43) · [mobile](https://peerinfinity.github.io/tmt-loader/?mod=the-tree-nuclearmk43&mobile=1) | `NuclearMK43/The-Modding-Tree` @ `780dafc` | TMT 2.6.6.2 | MIT |
+| `the-burning-tree` | null | [play](https://peerinfinity.github.io/tmt-loader/?mod=the-burning-tree) · [mobile](https://peerinfinity.github.io/tmt-loader/?mod=the-burning-tree&mobile=1) | `thefinaluptake/The-Burning-Tree` @ `762f423` | TMT 2.0.4 | MIT |
+| `the-mining-tree-objectzasy` | The Mining Tree | [play](https://peerinfinity.github.io/tmt-loader/?mod=the-mining-tree-objectzasy) · [mobile](https://peerinfinity.github.io/tmt-loader/?mod=the-mining-tree-objectzasy&mobile=1) | `ObjectZAsy/The-Modding-Tree` @ `ee5c3ed` | TMT 2.6.5.1 | MIT |
+| `the-exp-tree` | The exp tree | [play](https://peerinfinity.github.io/tmt-loader/?mod=the-exp-tree) · [mobile](https://peerinfinity.github.io/tmt-loader/?mod=the-exp-tree&mobile=1) | `TelosNox/The-Modding-Tree` @ `62b0830` | TMT 2.6.6.2 | MIT |

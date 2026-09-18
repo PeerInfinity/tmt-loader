@@ -1,0 +1,57 @@
+{
+  "id": "stupid-test-tree",
+  "commit": "814015e9caf300ac2921b663bf4ee516711cbefe",
+  "layers": {
+    "info-tab": {
+      "row": "otherside",
+      "type": "none"
+    },
+    "options-tab": {
+      "row": "otherside",
+      "type": "none"
+    },
+    "changelog-tab": {
+      "row": "otherside",
+      "type": "none"
+    },
+    "l": {
+      "row": 0,
+      "type": "static"
+    },
+    "p": {
+      "row": 2,
+      "type": "static"
+    },
+    "t": {
+      "row": 0,
+      "type": "normal"
+    },
+    "h": {
+      "row": 1,
+      "type": "normal"
+    },
+    "blank": {
+      "row": null,
+      "type": "none"
+    },
+    "tree-tab": {
+      "row": null,
+      "type": "none"
+    }
+  },
+  "ids": [
+    "l:upg:11",
+    "l:upg:12",
+    "p:ms:0",
+    "p:ms:1",
+    "t:upg:11",
+    "h:ms:0"
+  ],
+  "counts": {
+    "ms": 3,
+    "upg": 3,
+    "buy": 0,
+    "ch": 0,
+    "ach": 0
+  }
+}

@@ -1,0 +1,56 @@
+{
+  "id": "the-mining-tree-objectzasy",
+  "commit": "ee5c3ed4b39a09b5b208ded2cf8118ceff579a08",
+  "layers": {
+    "info-tab": {
+      "row": "otherside",
+      "type": "none"
+    },
+    "options-tab": {
+      "row": "otherside",
+      "type": "none"
+    },
+    "changelog-tab": {
+      "row": "otherside",
+      "type": "none"
+    },
+    "m": {
+      "row": 0,
+      "type": "normal"
+    },
+    "e": {
+      "row": 1,
+      "type": "normal"
+    },
+    "bs": {
+      "row": 1,
+      "type": "normal"
+    },
+    "blank": {
+      "row": null,
+      "type": "none"
+    },
+    "tree-tab": {
+      "row": null,
+      "type": "none"
+    }
+  },
+  "ids": [
+    "m:upg:11",
+    "m:upg:12",
+    "m:upg:13",
+    "m:upg:21",
+    "m:upg:22",
+    "m:upg:23",
+    "e:ms:0",
+    "e:ms:1",
+    "e:upg:11"
+  ],
+  "counts": {
+    "ms": 2,
+    "upg": 7,
+    "buy": 0,
+    "ch": 0,
+    "ach": 0
+  }
+}

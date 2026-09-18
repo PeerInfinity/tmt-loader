@@ -1,0 +1,135 @@
+{
+  "schema": 1,
+  "id": "1-clicker",
+  "name": "+1 Clicker",
+  "version": "0.0",
+  "author": "nobody",
+  "upstream": {
+    "repo": "alexpra231/-1Clicker",
+    "url": "https://github.com/alexpra231/-1Clicker.git",
+    "branch": "master",
+    "commit": "45431e0db095c8c7e08ead41fdc34829b53fb2bb",
+    "pushed_at": "2024-09-14T11:42:26Z"
+  },
+  "engine": {
+    "tmtNum": "2.6.6.2",
+    "stock_commit": "8cf14c4",
+    "moved": false,
+    "deviation": {
+      "added": 0,
+      "removed": 0
+    }
+  },
+  "entry": "index.html",
+  "load": {
+    "onload": "load()",
+    "scripts": [
+      "js/technical/break_eternity.js",
+      "js/technical/layerSupport.js",
+      "js/mod.js",
+      "js/technical/loader.js",
+      "js/technical/temp.js",
+      "js/technical/displays.js",
+      "js/game.js",
+      "js/utils.js",
+      "js/utils/easyAccess.js",
+      "js/technical/systemComponents.js",
+      "js/components.js",
+      "js/technical/canvas.js",
+      "js/technical/particleSystem.js",
+      "js/utils/NumberFormating.js",
+      "js/utils/options.js",
+      "js/utils/save.js",
+      "js/utils/themes.js"
+    ],
+    "renderOnly": [
+      "js/technical/systemComponents.js",
+      "js/components.js",
+      "js/technical/canvas.js",
+      "js/technical/particleSystem.js"
+    ],
+    "modFilesPrefix": "js/",
+    "modFiles": [
+      "clicker.js",
+      "p.js",
+      "sp.js",
+      "reb.js",
+      "apoth.js",
+      "ff.js",
+      "tree.js"
+    ],
+    "external": {
+      "https://cdn.jsdelivr.net/npm/vue@2.6.12": "vendor",
+      "https://fonts.googleapis.com/css?family=Inconsolata": "drop"
+    },
+    "vendor": {
+      "https://cdn.jsdelivr.net/npm/vue@2.6.12": {
+        "path": "vendor/vue-2.6.12.min.js",
+        "sha256": "29296ccacaa9ed35ed168fc51e36f54fd6f8db9c7786bbf38cc59a27229ba5c2"
+      }
+    }
+  },
+  "save": {
+    "keyRule": "modInfo.id",
+    "key": "+1clicker"
+  },
+  "headless": {
+    "prestubs": [],
+    "renderStubs": [
+      "loadVue",
+      "resizeCanvas",
+      "retrieveCanvasData",
+      "drawTree",
+      "drawComponentBranches",
+      "drawTreeBranch",
+      "makeParticles",
+      "makeShinies",
+      "updateParticles",
+      "setDir",
+      "setSpeed",
+      "updateMouse",
+      "getOpacity",
+      "constructParticleStyle",
+      "clearParticles",
+      "sin",
+      "cos",
+      "tan",
+      "asin",
+      "acos",
+      "atan"
+    ],
+    "idleHash": {
+      "ticks": 200,
+      "diff": 0.05,
+      "hash": "187a14c63a3eae77"
+    },
+    "deterministic": true
+  },
+  "license": {
+    "githubSpdx": "NOASSERTION",
+    "files": {
+      "LICENSE": "MIT",
+      "Prestige-tree-license": "MIT"
+    },
+    "verdict": "MIT"
+  },
+  "census": {
+    "full_name": "alexpra231/-1Clicker",
+    "head": "45431e0",
+    "score": 23.84,
+    "layers": 6,
+    "rows": 6,
+    "milestones": 0,
+    "upgrades": 5,
+    "buyables": 3,
+    "challenges": 0,
+    "achievements": 0,
+    "trace_fields": 0
+  },
+  "patches": [],
+  "generated": {
+    "by": "tmt-fork-census scripts/manifest.mjs",
+    "commit": "b510bb6",
+    "at": "2026-09-18T02:44:52.630Z"
+  }
+}

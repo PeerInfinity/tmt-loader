@@ -1,0 +1,74 @@
+{
+  "id": "the-snake-tree",
+  "commit": "fa73078305e416e552a7caff3b1e2e2c28ec00d2",
+  "layers": {
+    "info-tab": {
+      "row": "otherside",
+      "type": "none"
+    },
+    "options-tab": {
+      "row": "otherside",
+      "type": "none"
+    },
+    "changelog-tab": {
+      "row": "otherside",
+      "type": "none"
+    },
+    "f": {
+      "row": 0,
+      "type": "normal"
+    },
+    "w": {
+      "row": 1,
+      "type": "normal"
+    },
+    "b": {
+      "row": 1,
+      "type": "normal"
+    },
+    "ft": {
+      "row": 1,
+      "type": "normal"
+    },
+    "wt": {
+      "row": 0,
+      "type": "normal"
+    },
+    "p": {
+      "row": 1,
+      "type": "normal"
+    },
+    "a": {
+      "row": "side",
+      "type": "normal"
+    },
+    "d": {
+      "row": 2,
+      "type": "normal"
+    },
+    "fd": {
+      "row": 0,
+      "type": "normal"
+    },
+    "blank": {
+      "row": null,
+      "type": "none"
+    },
+    "tree-tab": {
+      "row": null,
+      "type": "none"
+    }
+  },
+  "ids": [
+    "f:upg:11",
+    "f:upg:12",
+    "f:upg:13"
+  ],
+  "counts": {
+    "ms": 0,
+    "upg": 3,
+    "buy": 0,
+    "ch": 0,
+    "ach": 0
+  }
+}

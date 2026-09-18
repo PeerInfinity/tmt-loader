@@ -1,0 +1,130 @@
+{
+  "schema": 1,
+  "id": "the-mining-tree-objectzasy",
+  "name": "The Mining Tree",
+  "version": "0.0",
+  "author": "ObjectZ",
+  "upstream": {
+    "repo": "ObjectZAsy/The-Modding-Tree",
+    "url": "https://github.com/ObjectZAsy/The-Modding-Tree.git",
+    "branch": "master",
+    "commit": "ee5c3ed4b39a09b5b208ded2cf8118ceff579a08",
+    "pushed_at": "2021-07-31T16:38:40Z"
+  },
+  "engine": {
+    "tmtNum": "2.6.5.1",
+    "stock_commit": "5180497",
+    "moved": false,
+    "deviation": {
+      "added": 4,
+      "removed": 4
+    }
+  },
+  "entry": "index.html",
+  "load": {
+    "onload": "load()",
+    "scripts": [
+      "js/technical/break_eternity.js",
+      "js/technical/layerSupport.js",
+      "js/mod.js",
+      "js/technical/loader.js",
+      "js/technical/temp.js",
+      "js/technical/displays.js",
+      "js/game.js",
+      "js/utils.js",
+      "js/utils/easyAccess.js",
+      "js/technical/systemComponents.js",
+      "js/components.js",
+      "js/technical/canvas.js",
+      "js/technical/particleSystem.js",
+      "js/utils/NumberFormating.js",
+      "js/utils/options.js",
+      "js/utils/save.js",
+      "js/utils/themes.js"
+    ],
+    "renderOnly": [
+      "js/technical/systemComponents.js",
+      "js/components.js",
+      "js/technical/canvas.js",
+      "js/technical/particleSystem.js"
+    ],
+    "modFilesPrefix": "js/",
+    "modFiles": [
+      "layers.js",
+      "tree.js"
+    ],
+    "external": {
+      "https://cdn.jsdelivr.net/npm/vue@2.6.12": "vendor",
+      "https://fonts.googleapis.com/css?family=Inconsolata": "drop"
+    },
+    "vendor": {
+      "https://cdn.jsdelivr.net/npm/vue@2.6.12": {
+        "path": "vendor/vue-2.6.12.min.js",
+        "sha256": "29296ccacaa9ed35ed168fc51e36f54fd6f8db9c7786bbf38cc59a27229ba5c2"
+      }
+    }
+  },
+  "save": {
+    "keyRule": "modInfo.id",
+    "key": "objectzmod513298"
+  },
+  "headless": {
+    "prestubs": [],
+    "renderStubs": [
+      "loadVue",
+      "resizeCanvas",
+      "retrieveCanvasData",
+      "drawTree",
+      "drawComponentBranches",
+      "drawTreeBranch",
+      "makeParticles",
+      "makeShinies",
+      "updateParticles",
+      "setDir",
+      "setSpeed",
+      "updateMouse",
+      "getOpacity",
+      "constructParticleStyle",
+      "clearParticles",
+      "sin",
+      "cos",
+      "tan",
+      "asin",
+      "acos",
+      "atan"
+    ],
+    "idleHash": {
+      "ticks": 200,
+      "diff": 0.05,
+      "hash": "1766053c339b07f2"
+    },
+    "deterministic": true
+  },
+  "license": {
+    "githubSpdx": "NOASSERTION",
+    "files": {
+      "LICENSE": "MIT",
+      "Prestige-tree-license": "MIT"
+    },
+    "verdict": "MIT"
+  },
+  "census": {
+    "full_name": "ObjectZAsy/The-Modding-Tree",
+    "head": "ee5c3ed",
+    "score": 19.19,
+    "layers": 3,
+    "rows": 2,
+    "milestones": 2,
+    "upgrades": 7,
+    "buyables": 0,
+    "challenges": 0,
+    "achievements": 0,
+    "trace_fields": 1
+  },
+  "patches": [],
+  "generated": {
+    "by": "tmt-fork-census scripts/manifest.mjs",
+    "commit": "b510bb6",
+    "at": "2026-09-18T02:44:53.462Z"
+  }
+}
