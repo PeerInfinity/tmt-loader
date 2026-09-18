@@ -1,0 +1,5 @@
+{
+    "editor.aiStats.enabled": false,
+    "workbench.settings.showAISearchToggle": false,
+    "chat.disableAIFeatures": true
+}
