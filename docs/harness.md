@@ -153,9 +153,9 @@ node tools/harness/run.mjs ptr --profile all --ladder tools/harness/ladder/ptr.j
 
 Every UI slice owes a full `--gate mobile` sweep over all 171 games. Locally that is one machine held for around
 three quarters of an hour (measured 2026-09-18: ~16 s/game, ~46 min for the roster — U2b's visibility rules pushed it
-up by adding four in-page probe evaluations and two forced rebuilds per game). `.github/workflows/sweep.yml` runs it on every push to `main` across ten runners instead, so a slice
-can verify a **bounded local set** — `ptr`, `something`, and whatever its own change can actually be seen on — and let
-CI own the roster.
+up by adding four in-page probe evaluations and two forced rebuilds per game). `.github/workflows/sweep.yml` runs it
+on every push to `main` across ten runners instead, so a slice can verify a **bounded local set** — `ptr`, `something`,
+and whatever its own change can actually be seen on — and let CI own the roster.
 
 ### Running one shard locally
 
@@ -166,7 +166,8 @@ node tools/harness/merge-shards.mjs shards --expect 10                    # the 
 ```
 
 `i/N` is **one-based**, like Playwright's own `--shard=1/10`. The slice is a pure function of the roster and `N`, so
-`--shard 3/10` here and shard 3 in CI are the same eighteen games. `--shard` also works with an explicit roster
+`--shard 3/10` here and shard 3 in CI are the same games — verified across machines, not assumed: `--dry-run` locally
+reproduces exactly the roster CI's shards 1, 5 and 10 recorded being assigned. `--shard` also works with an explicit roster
 (`page.mjs a b c --gate mobile --shard 1/3`), which is how the arrangement is tested without a full sweep.
 
 ### What the merge asserts, and why it is not optional
@@ -184,6 +185,11 @@ the run unless those reconstruct the roster. Four independent refusals:
 3. each shard's rows covering exactly its own assigned roster, which is what catches a shard that started, ran four
    games and died (its file exists, its rows are green, and its job may well have exited 0);
 4. the union of the rows covering the full roster **exactly once** — nothing missing, nothing twice.
+
+A hung game is covered by the same mechanism rather than a special case: the gate has no per-game timeout, so a
+shard that hangs is killed by the job's `timeout-minutes` and produces no JSON — which the merge reports as a missing
+shard, naming every game that shard was assigned. ⚠ That is the *only* thing standing between a hang and a green run,
+so do not raise `timeout-minutes` past the point where a stuck shard would outlive the run.
 
 It exits 1 naming the ids. `loader/shard.test.mjs` drives it: nine shards out of ten, a shard truncated mid-slice, a
 commit mismatch, an empty matrix. Those tests were written against deliberately broken versions of the merge and the
@@ -223,8 +229,7 @@ the ~17 games a shard holds" — which this document claimed before that run —
 to 157 s, a ×3.33 spread.
 
 So `shardCost` consults a **measured table**, `tools/harness/shard-costs.json`, and falls back to the view estimate for
-a game nobody has timed yet. On the same run's numbers the measured table predicts ×1.02. Regenerate it after a green
-sweep:
+a game nobody has timed yet. Regenerate it after a green sweep:
 
 ```
 node tools/harness/merge-shards.mjs shards --expect 10 --write-costs tools/harness/shard-costs.json
@@ -232,6 +237,13 @@ node tools/harness/merge-shards.mjs shards --expect 10 --write-costs tools/harne
 
 It refuses to write from a run that did not cover the roster — a partial run's timings would teach the next run to
 balance against games nobody timed.
+
+⚠ **Do not read the in-sample number as the result.** The table predicts ×1.02 on the run it was built from; the very
+next run came out **×2.22** — better than the ×3.33 it replaced, and nowhere near the prediction. The gap is not a
+modelling failure, it is the runners. Measured across the two runs, the SAME game's wall clock moves by 0.57× to
+1.93× (median 1.05, quartiles 0.94 and 1.37), and an oracle given run 2's own timings in advance would have scored
+×1.02 on run 2 — a number no table written beforehand can reach. **×2 is roughly the floor for a static cost table
+here**, and chasing it further is chasing noise.
 
 ⚠ **Nothing about coverage depends on any of this.** The table will go stale, a new game will not be in it, and
 neither matters: `assignShards` partitions the roster exactly once whatever the costs are, asserted over
@@ -243,8 +255,9 @@ it wrong.**
 ⚖ **Report-only, not a required check** (2026-09-18), until the sweep has a few green runs behind it. Nothing in branch
 protection references it; a red is a red X on the commit and blocks nothing.
 
-Measured on the first green run (`a665c24`, 171 games, 10 shards): **3 m 43 s** end to end, against ~46 minutes for the
-same sweep locally. Each shard job was 97–197 s, of which roughly 90 s is checkout, `npm ci` and the Playwright install
+Measured on the first green run (`a665c24`, 171 games, 10 shards): **3 m 43 s** end to end, and 3 m 01 s on the
+second, against **32.5 minutes** for the same sweep locally (mean 11.4 s/game — ⚠ not the ~50 s/game this arc was
+briefed at). Each shard job was 97–197 s, of which roughly 90 s is checkout, `npm ci` and the Playwright install
 — so the sweep itself is the smaller half of a shard's wall clock, and pushing past 10 shards buys little.
 
 ⚠ If you see a RED on `the-periodic-table-tree`'s state leg, **investigate it — do not re-run.** That leg used to
@@ -253,6 +266,13 @@ took it to ~1 in 80,000 by demanding four further plain draws before it will say
 
 CI pins Node to the version the local sweep runs (`NODE_VERSION` in the workflow), because the merged output is
 compared against a local full sweep's verdicts and a different engine is a variable nobody wants in that comparison.
+
+**CI and a local sweep agree, measured.** The merged output of both CI runs was compared against a full local
+unsharded sweep at the same code: the roster is an **identical set** of 171, and `ok`, `inertOk`, `geometryOk`,
+`navOk`, `bothOk`, `navbarOnlyOk`, `layersOk`, `rulesOk`, `ready`, the per-game view count and the per-game chip
+count are **identical on every game**. The state leg abstained on the same six either way, and nothing reported
+MOVED. The shard assignment is identical across machines too: `--shard i/10 --dry-run` locally reproduces byte for
+byte the rosters CI's shards recorded being assigned.
 
 ### Publishing is a separate, manual workflow
 

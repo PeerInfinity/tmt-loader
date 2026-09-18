@@ -60,12 +60,19 @@ test('the shard matrix and the SHARDS the runner is told about are the same numb
     `SHARDS is ${n} but the matrix is [${matrix.join(', ')}]`);
 });
 
-test('the merge job cannot be skipped by a failing shard', () => {
-  // `needs: shard` without `if: always()` means one red shard silently skips the roster assertion — the exact
-  // shape of "a dead shard reads as green" this whole arrangement exists to prevent.
+test('the merge job cannot be skipped by a failing shard, and does not fire on a cancelled run', () => {
+  // A bare `needs: shard` means one red shard silently skips the roster assertion — the exact shape of "a dead
+  // shard reads as green" this whole arrangement exists to prevent. So the job needs a condition.
+  //
+  // ⚠ But NOT `always()`, which is true even when the RUN WAS CANCELLED. With `cancel-in-progress`, a newer push
+  // cancels this run's shards mid-flight; an `always()` merge would then find them missing and report a RED that
+  // means nothing, on the one gate whose value is that a red means something. `!cancelled()` gives both.
   const s = wf('sweep.yml');
   const merge = s.slice(s.indexOf('\n  merge:'));
+  const cond = /^\s{4}if: (.+)$/m.exec(merge);
+  assert.ok(cond, 'the merge job has no `if:` at all — a failing shard would skip the roster assertion');
+  assert.match(cond[1], /!cancelled\(\)/, `the merge job's condition is \`${cond[1]}\``);
+  assert.doesNotMatch(cond[1], /\balways\(\)/, 'always() fires on a cancelled run and would report a false missing shard');
   assert.match(merge, /needs: shard/);
-  assert.match(merge, /^\s{4}if: always\(\)/m, 'the merge job must run even when a shard failed');
   assert.doesNotMatch(merge, /continue-on-error:\s*true/, 'the merge is the verdict; it may not be advisory');
 });

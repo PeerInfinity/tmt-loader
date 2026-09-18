@@ -87,7 +87,12 @@ jobs:
   merge:
     name: merge + roster assertion
     needs: shard
-    if: always()
+    # ⚠ NOT `always()`. `always()` is true even when the RUN WAS CANCELLED, and `cancel-in-progress` above cancels
+    # this run whenever a newer push lands. The merge would then run against a matrix whose shards were cancelled
+    # mid-flight, find them missing, and report a RED that means nothing — on a report-only gate whose whole value is
+    # that a red means something. `!cancelled()` still runs the merge when a shard FAILED, which is the property that
+    # matters: a dead shard must never skip the roster assertion.
+    if: ${{ !cancelled() }}
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -105,7 +110,7 @@ jobs:
           merge-multiple: true
 
       - name: What arrived
-        if: always()
+        if: ${{ !cancelled() }}
         run: ls -la shards/ || echo 'NO SHARD ARTIFACTS AT ALL'
 
       # Exits 1, naming the ids, when the shards do not reconstruct the roster — or when any row is RED.
@@ -116,7 +121,7 @@ jobs:
           SHARDS: ${{ env.SHARDS }}
 
       - name: Summary
-        if: always()
+        if: ${{ !cancelled() }}
         run: |
           {
             echo '## M1 mobile sweep — 171 games over '"$SHARDS"' shards'
@@ -129,7 +134,7 @@ jobs:
           SHARDS: ${{ env.SHARDS }}
 
       - name: Upload the merged result
-        if: always()
+        if: ${{ !cancelled() }}
         uses: actions/upload-artifact@v4
         with:
           name: m1-merged
