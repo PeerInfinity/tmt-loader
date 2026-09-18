@@ -243,7 +243,8 @@ next run came out **×2.22** — better than the ×3.33 it replaced, and nowhere
 modelling failure, it is the runners. Measured across the two runs, the SAME game's wall clock moves by 0.57× to
 1.93× (median 1.05, quartiles 0.94 and 1.37), and an oracle given run 2's own timings in advance would have scored
 ×1.02 on run 2 — a number no table written beforehand can reach. **×2 is roughly the floor for a static cost table
-here**, and chasing it further is chasing noise.
+here**, and chasing it further is chasing noise. Three runs so far: ×3.33 without the table, then ×2.22 and ×1.90
+with it.
 
 ⚠ **Nothing about coverage depends on any of this.** The table will go stale, a new game will not be in it, and
 neither matters: `assignShards` partitions the roster exactly once whatever the costs are, asserted over
@@ -255,8 +256,7 @@ it wrong.**
 ⚖ **Report-only, not a required check** (2026-09-18), until the sweep has a few green runs behind it. Nothing in branch
 protection references it; a red is a red X on the commit and blocks nothing.
 
-Measured on the first green run (`a665c24`, 171 games, 10 shards): **3 m 43 s** end to end, and 3 m 01 s on the
-second, against **32.5 minutes** for the same sweep locally (mean 11.4 s/game — ⚠ not the ~50 s/game this arc was
+Measured over the first three green runs (171 games, 10 shards each): **3 m 43 s**, 3 m 01 s and 3 m 08 s end to end, against **32.5 minutes** for the same sweep locally (mean 11.4 s/game — ⚠ not the ~50 s/game this arc was
 briefed at). Each shard job was 97–197 s, of which roughly 90 s is checkout, `npm ci` and the Playwright install
 — so the sweep itself is the smaller half of a shard's wall clock, and pushing past 10 shards buys little.
 
