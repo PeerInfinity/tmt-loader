@@ -1,0 +1,73 @@
+{
+  "id": "the-reality-tree",
+  "commit": "9c407c0de7ef37c42f1929799e10f7a1669b8988",
+  "layers": {
+    "info-tab": {
+      "row": "otherside",
+      "type": "none"
+    },
+    "options-tab": {
+      "row": "otherside",
+      "type": "none"
+    },
+    "changelog-tab": {
+      "row": "otherside",
+      "type": "none"
+    },
+    "r": {
+      "row": 0,
+      "type": "custom"
+    },
+    "t": {
+      "row": 1,
+      "type": "normal"
+    },
+    "s": {
+      "row": 1,
+      "type": "normal"
+    },
+    "e": {
+      "row": 2,
+      "type": "normal"
+    },
+    "blank": {
+      "row": null,
+      "type": "none"
+    },
+    "tree-tab": {
+      "row": null,
+      "type": "none"
+    }
+  },
+  "ids": [
+    "r:upg:11",
+    "r:upg:12",
+    "r:upg:13",
+    "r:upg:14",
+    "r:upg:21",
+    "r:upg:22",
+    "t:ms:0",
+    "t:ms:1",
+    "t:upg:11",
+    "t:upg:12",
+    "t:upg:13",
+    "t:upg:21",
+    "t:upg:22",
+    "t:upg:31",
+    "s:ms:0",
+    "s:ms:1",
+    "s:upg:11",
+    "s:upg:12",
+    "s:upg:13",
+    "s:upg:21",
+    "s:upg:22",
+    "s:upg:31"
+  ],
+  "counts": {
+    "ms": 4,
+    "upg": 18,
+    "buy": 0,
+    "ch": 0,
+    "ach": 0
+  }
+}

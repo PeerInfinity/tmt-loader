@@ -2139,3 +2139,95 @@ Reading this section: the subtree commits are in; manifests, index and goldens a
 | rest-b2 goldens counts = census | the-periodic-tree | — | 0 | 0 | — | — | GREEN | 37 ids, 10 layers; ms 5 / upg 27 / buy 0 / ch 0 / ach 5 = census |
 | rest-b2 G1 load (plain page) | the-periodic-tree | — | 3 | 0.15 | 0.05 | — | **RED** | ready 892 ms; 6 `#app .treeNode`; 69 requests, 0 non-localhost, 2 failed, 0 page errors; au nodes 0; keys `tmt-loader:the-periodic-tree:mymod_options`, `tmt-loader:the-periodic-tree:mymod`; RED: ready true error null; 6 treeNodes; blocked 0 []; failed ["http://127.0.0.1:9752/games/the-periodic-tree/js/currency-list.html HTTP 404","http://127.0.0.1:9752/games/the-periodic-tree/js/currency-list.html net::ERR_ABORTED"]; page errors []; verdict vs load.known {"ok":false,"failedNotDeclared":["http://127.0.0.1:9752/games/the-periodic-tree/js/currency-list.html HTTP 404","http://127.0.0.1:9752/g |
 | G6 games doc | null | — | 0 | 0 | — | — | GREEN | docs/games.md regenerated: 136 games in manifests/index.json, 136 listed in that order |
+
+## 2026-09-18T02:35:23Z — rest-b3 (`node tools/add-game.mjs incrementalguy/The-Layerverse-Tree The-Alternate-Tree/The-Random-Update-Tree AppleLord1space/The-Modding-Tree2 INVADERover/The-Modding-Tree-level SD-Redstone/The-Exponential-Tree WoodStuff/The-Egg-Tree snakeandre/Constellation-Tree SchoolSucks69/SchoolSucks69.github.io nhunghoang2512-cmyk/The-Modding-Tree hhrjfjjxg/The-Tree Deltatron3/The-Modding-Tree Alexhupp/The-Modding-Tree EndoBTD/The-Modding-Tree gaimn/test-tree bubbacow2/The-Modding-Tree Shophaune/The-Modding-Tree Hadi-Serhan/The-Modding-Tree TheRealComnet/The-Modding-Tree Preta-Crowz/Equilibrium EmiPiplu/The-Matter-Tree OhManLolLol/BSED-Tree`) — commit `26abdc713` (tree DIRTY) — 84/85 green
+
+Reading this section: the subtree commits are in; manifests, index and goldens are uncommitted at the time of the run. idle hash = the plain page's Node twin (`--no-automation`, no exclusion) vs manifest.headless.idleHash; goldens counts vs manifest.census; G1 = `page.mjs <id> --gate load` (no flag).
+
+| gate | game | leg | ticks | gameSeconds | diff | hash | result | notes |
+|---|---|---|---|---|---|---|---|---|
+| rest-b3 check-manifest | the-layerverse-tree | — | 0 | 0 | — | — | GREEN | 17 scripts, 2 modFiles, subtree split cf242f9, games/the-layerverse-tree pristine |
+| rest-b3 idle hash = census | the-layerverse-tree | idle | 200 | 10 | 0.05 | `6a03e004e31156d0` | GREEN | census 6a03e004e31156d0 |
+| rest-b3 goldens counts = census | the-layerverse-tree | — | 0 | 0 | — | — | GREEN | 16 ids, 9 layers; ms 3 / upg 11 / buy 0 / ch 2 / ach 0 = census |
+| rest-b3 G1 load (plain page) | the-layerverse-tree | — | 3 | 0.15 | 0.05 | — | GREEN | ready 849 ms; 7 `#app .treeNode`; 68 requests, 0 non-localhost, 0 failed, 0 page errors; au nodes 0; keys `tmt-loader:the-layerverse-tree:The-Layerverse-Tree-kay`, `tmt-loader:the-layerverse-tree:The-Layerverse-Tree-kay_options` |
+| rest-b3 check-manifest | the-random-updates-tree | — | 0 | 0 | — | — | GREEN | 17 scripts, 2 modFiles, subtree split 1492ca7, games/the-random-updates-tree pristine |
+| rest-b3 idle hash = census | the-random-updates-tree | idle | 200 | 10 | 0.05 | `d6e399f9df2a570c` | GREEN | census d6e399f9df2a570c |
+| rest-b3 goldens counts = census | the-random-updates-tree | — | 0 | 0 | — | — | GREEN | 13 ids, 8 layers; ms 4 / upg 8 / buy 0 / ch 1 / ach 0 = census |
+| rest-b3 G1 load (plain page) | the-random-updates-tree | — | 3 | 0.15 | 0.05 | — | GREEN | ready 882 ms; 4 `#app .treeNode`; 68 requests, 0 non-localhost, 0 failed, 0 page errors; au nodes 0; keys `tmt-loader:the-random-updates-tree:The-Random-Updates-Tree-liam_options`, `tmt-loader:the-random-updates-tree:The-Random-Updates-Tree-liam` |
+| rest-b3 check-manifest | the-nova-tree | — | 0 | 0 | — | — | GREEN | 17 scripts, 2 modFiles, subtree split 73830f3, games/the-nova-tree pristine |
+| rest-b3 idle hash = census | the-nova-tree | idle | 200 | 10 | 0.05 | `5c1a31b1bb3d291b` | GREEN | census 5c1a31b1bb3d291b |
+| rest-b3 goldens counts = census | the-nova-tree | — | 0 | 0 | — | — | GREEN | 55 ids, 10 layers; ms 15 / upg 9 / buy 17 / ch 2 / ach 12 = census |
+| rest-b3 G1 load (plain page) | the-nova-tree | — | 3 | 0.15 | 0.05 | — | GREEN | ready 889 ms; 6 `#app .treeNode`; 68 requests, 0 non-localhost, 0 failed, 0 page errors; au nodes 0; keys `tmt-loader:the-nova-tree:applelordthirdtree_options`, `tmt-loader:the-nova-tree:applelordthirdtree` |
+| rest-b3 check-manifest | level-tree | — | 0 | 0 | — | — | GREEN | 17 scripts, 2 modFiles, subtree split 75cba10, games/level-tree pristine |
+| rest-b3 idle hash = census | level-tree | idle | 200 | 10 | 0.05 | `bedb2e5fa571176f` | GREEN | census bedb2e5fa571176f |
+| rest-b3 goldens counts = census | level-tree | — | 0 | 0 | — | — | GREEN | 57 ids, 11 layers; ms 18 / upg 26 / buy 4 / ch 2 / ach 7 = census |
+| rest-b3 G1 load (plain page) | level-tree | — | 3 | 0.15 | 0.05 | — | GREEN | ready 846 ms; 4 `#app .treeNode`; 68 requests, 0 non-localhost, 0 failed, 0 page errors; au nodes 0; keys `tmt-loader:level-tree:Levelmod`, `tmt-loader:level-tree:Levelmod_options` |
+| rest-b3 check-manifest | the-exponential-tree | — | 0 | 0 | — | — | GREEN | 17 scripts, 2 modFiles, subtree split 55db567, games/the-exponential-tree pristine |
+| rest-b3 idle hash = census | the-exponential-tree | idle | 200 | 10 | 0.05 | `9d407dbf79a292c9` | GREEN | census 9d407dbf79a292c9 |
+| rest-b3 goldens counts = census | the-exponential-tree | — | 0 | 0 | — | — | GREEN | 13 ids, 8 layers; ms 2 / upg 10 / buy 1 / ch 0 / ach 0 = census |
+| rest-b3 G1 load (plain page) | the-exponential-tree | — | 3 | 0.15 | 0.05 | — | GREEN | ready 868 ms; 6 `#app .treeNode`; 68 requests, 0 non-localhost, 0 failed, 0 page errors; au nodes 0; keys `tmt-loader:the-exponential-tree:exptr_options`, `tmt-loader:the-exponential-tree:exptr` |
+| rest-b3 check-manifest | the-egg-tree | — | 0 | 0 | — | — | **RED** | [{"field":"load.known.externalHosts","drift":true,"manifest":[],"live":["cdn.discordapp.com","media.discordapp.net"],"declaredNotInTree":[],"inTreeNotDeclared":["cdn.discordapp.com","media.discordapp.net"],"files":{"media.discordapp.net":["js/layers/misc/a.js"],"cdn.discordapp.com":["js/layers/misc/a.js"]}}] |
+| rest-b3 idle hash = census | the-egg-tree | idle | 200 | 10 | 0.05 | `8bd3eb3632b69875` | GREEN | census 8bd3eb3632b69875 |
+| rest-b3 goldens counts = census | the-egg-tree | — | 0 | 0 | — | — | GREEN | 25 ids, 9 layers; ms 3 / upg 16 / buy 0 / ch 0 / ach 6 = census |
+| rest-b3 G1 load (plain page) | the-egg-tree | — | 3 | 0.15 | 0.05 | — | GREEN | ready 889 ms; 4 `#app .treeNode`; 72 requests, 0 non-localhost, 0 failed, 0 page errors; au nodes 0; keys `tmt-loader:the-egg-tree:eggtree`, `tmt-loader:the-egg-tree:eggtree_options` |
+| rest-b3 check-manifest | the-constellation-tree | — | 0 | 0 | — | — | GREEN | 17 scripts, 13 modFiles, subtree split a602b35, games/the-constellation-tree pristine |
+| rest-b3 idle hash = census | the-constellation-tree | idle | 200 | 10 | 0.05 | `b8bf411a76c513df` | GREEN | census b8bf411a76c513df |
+| rest-b3 goldens counts = census | the-constellation-tree | — | 0 | 0 | — | — | GREEN | 11 ids, 17 layers; ms 2 / upg 9 / buy 0 / ch 0 / ach 0 = census |
+| rest-b3 G1 load (plain page) | the-constellation-tree | — | 3 | 0.15 | 0.05 | — | GREEN | ready 980 ms; 5 `#app .treeNode`; 80 requests, 0 non-localhost, 0 failed, 0 page errors; au nodes 0; keys `tmt-loader:the-constellation-tree:The-Constellation-Tree-snakeandre_options`, `tmt-loader:the-constellation-tree:The-Constellation-Tree-snakeandre` |
+| rest-b3 check-manifest | the-size-tree | — | 0 | 0 | — | — | GREEN | 17 scripts, 2 modFiles, subtree split c80a8a6, games/the-size-tree pristine |
+| rest-b3 idle hash = census | the-size-tree | idle | 200 | 10 | 0.05 | `323943966bf49751` | GREEN | census 323943966bf49751 |
+| rest-b3 goldens counts = census | the-size-tree | — | 0 | 0 | — | — | GREEN | 34 ids, 8 layers; ms 0 / upg 34 / buy 0 / ch 0 / ach 0 = census |
+| rest-b3 G1 load (plain page) | the-size-tree | — | 3 | 0.15 | 0.05 | — | GREEN | ready 880 ms; 6 `#app .treeNode`; 68 requests, 0 non-localhost, 0 failed, 0 page errors; au nodes 0; keys `tmt-loader:the-size-tree:SizingTree`, `tmt-loader:the-size-tree:SizingTree_options` |
+| rest-b3 check-manifest | the-tree-nhunghoang2512-cmyk | — | 0 | 0 | — | — | GREEN | 17 scripts, 2 modFiles, subtree split 07ed213, games/the-tree-nhunghoang2512-cmyk pristine |
+| rest-b3 idle hash = census | the-tree-nhunghoang2512-cmyk | idle | 200 | 10 | 0.05 | `92ce2bcba3c32827` | GREEN | census 92ce2bcba3c32827 |
+| rest-b3 goldens counts = census | the-tree-nhunghoang2512-cmyk | — | 0 | 0 | — | — | GREEN | 28 ids, 8 layers; ms 8 / upg 20 / buy 0 / ch 0 / ach 0 = census |
+| rest-b3 G1 load (plain page) | the-tree-nhunghoang2512-cmyk | — | 3 | 0.15 | 0.05 | — | GREEN | ready 841 ms; 4 `#app .treeNode`; 68 requests, 0 non-localhost, 0 failed, 0 page errors; au nodes 0; keys `tmt-loader:the-tree-nhunghoang2512-cmyk:The-???-Tree-nobody`, `tmt-loader:the-tree-nhunghoang2512-cmyk:The-???-Tree-nobody_options` |
+| rest-b3 check-manifest | the-tree-hhrjfjjxg | — | 0 | 0 | — | — | GREEN | 17 scripts, 2 modFiles, subtree split 31ca6af, games/the-tree-hhrjfjjxg pristine |
+| rest-b3 idle hash = census | the-tree-hhrjfjjxg | idle | 200 | 10 | 0.05 | `a911eee4ceb99ea1` | GREEN | census a911eee4ceb99ea1 |
+| rest-b3 goldens counts = census | the-tree-hhrjfjjxg | — | 0 | 0 | — | — | GREEN | 10 ids, 10 layers; ms 0 / upg 10 / buy 0 / ch 0 / ach 0 = census |
+| rest-b3 G1 load (plain page) | the-tree-hhrjfjjxg | — | 3 | 0.15 | 0.05 | — | GREEN | ready 872 ms; 7 `#app .treeNode`; 68 requests, 0 non-localhost, 0 failed, 0 page errors; au nodes 0; keys `tmt-loader:the-tree-hhrjfjjxg:The-Tree-hhrjfjjxg`, `tmt-loader:the-tree-hhrjfjjxg:The-Tree-hhrjfjjxg_options` |
+| rest-b3 check-manifest | the-last-tree | — | 0 | 0 | — | — | GREEN | 17 scripts, 2 modFiles, subtree split 6dbf973, games/the-last-tree pristine |
+| rest-b3 idle hash = census | the-last-tree | idle | 200 | 10 | 0.05 | `8aedff3ce9746bd8` | GREEN | census 8aedff3ce9746bd8 |
+| rest-b3 goldens counts = census | the-last-tree | — | 0 | 0 | — | — | GREEN | 19 ids, 9 layers; ms 1 / upg 18 / buy 0 / ch 0 / ach 0 = census |
+| rest-b3 G1 load (plain page) | the-last-tree | — | 3 | 0.15 | 0.05 | — | GREEN | ready 875 ms; 6 `#app .treeNode`; 68 requests, 0 non-localhost, 0 failed, 0 page errors; au nodes 0; keys `tmt-loader:the-last-tree:The-Last-Tree-Deltatron3_options`, `tmt-loader:the-last-tree:The-Last-Tree-Deltatron3` |
+| rest-b3 check-manifest | the-world-tree-nordrasil | — | 0 | 0 | — | — | GREEN | 17 scripts, 9 modFiles, subtree split 306e3ac, games/the-world-tree-nordrasil pristine |
+| rest-b3 idle hash = census | the-world-tree-nordrasil | idle | 200 | 10 | 0.05 | `5eb65e4aec9a79e0` | GREEN | census 5eb65e4aec9a79e0 |
+| rest-b3 goldens counts = census | the-world-tree-nordrasil | — | 0 | 0 | — | — | GREEN | 10 ids, 12 layers; ms 1 / upg 9 / buy 0 / ch 0 / ach 0 = census |
+| rest-b3 G1 load (plain page) | the-world-tree-nordrasil | — | 3 | 0.15 | 0.05 | — | GREEN | ready 784 ms; 8 `#app .treeNode`; 76 requests, 0 non-localhost, 0 failed, 0 page errors; au nodes 0; keys `tmt-loader:the-world-tree-nordrasil:TWT`, `tmt-loader:the-world-tree-nordrasil:TWT_options` |
+| rest-b3 check-manifest | the-dream-tree | — | 0 | 0 | — | — | GREEN | 17 scripts, 2 modFiles, subtree split d9abc0a, games/the-dream-tree pristine |
+| rest-b3 idle hash = census | the-dream-tree | idle | 200 | 10 | 0.05 | `bc6a2b133ab4971d` | GREEN | census bc6a2b133ab4971d |
+| rest-b3 goldens counts = census | the-dream-tree | — | 0 | 0 | — | — | GREEN | 30 ids, 12 layers; ms 0 / upg 30 / buy 0 / ch 0 / ach 0 = census |
+| rest-b3 G1 load (plain page) | the-dream-tree | — | 3 | 0.15 | 0.05 | — | GREEN | ready 857 ms; 11 `#app .treeNode`; 68 requests, 0 non-localhost, 0 failed, 0 page errors; au nodes 0; keys `tmt-loader:the-dream-tree:mymod_options`, `tmt-loader:the-dream-tree:mymod` |
+| rest-b3 check-manifest | the-testing-tree | — | 0 | 0 | — | — | GREEN | 17 scripts, 2 modFiles, subtree split 145f961, games/the-testing-tree pristine |
+| rest-b3 idle hash = census | the-testing-tree | idle | 200 | 10 | 0.05 | `f0722655cadfac43` | GREEN | census f0722655cadfac43 |
+| rest-b3 goldens counts = census | the-testing-tree | — | 0 | 0 | — | — | GREEN | 15 ids, 10 layers; ms 0 / upg 8 / buy 0 / ch 0 / ach 7 = census |
+| rest-b3 G1 load (plain page) | the-testing-tree | — | 3 | 0.15 | 0.05 | — | GREEN | ready 835 ms; 6 `#app .treeNode`; 68 requests, 0 non-localhost, 0 failed, 0 page errors; au nodes 0; keys `tmt-loader:the-testing-tree:mymod`, `tmt-loader:the-testing-tree:mymod_options` |
+| rest-b3 check-manifest | the-dingus-tree | — | 0 | 0 | — | — | GREEN | 17 scripts, 2 modFiles, subtree split 3a94b26, games/the-dingus-tree pristine |
+| rest-b3 idle hash = census | the-dingus-tree | idle | 200 | 10 | 0.05 | `53c80dfee3002250` | GREEN | census 53c80dfee3002250 |
+| rest-b3 goldens counts = census | the-dingus-tree | — | 0 | 0 | — | — | GREEN | 14 ids, 9 layers; ms 2 / upg 7 / buy 1 / ch 1 / ach 3 = census |
+| rest-b3 G1 load (plain page) | the-dingus-tree | — | 3 | 0.15 | 0.05 | — | GREEN | ready 867 ms; 6 `#app .treeNode`; 68 requests, 0 non-localhost, 0 failed, 0 page errors; au nodes 0; keys `tmt-loader:the-dingus-tree:The-Dingus-Tree-BubbaCow`, `tmt-loader:the-dingus-tree:The-Dingus-Tree-BubbaCow_options` |
+| rest-b3 check-manifest | the-reality-tree | — | 0 | 0 | — | — | GREEN | 17 scripts, 2 modFiles, subtree split 9c407c0, games/the-reality-tree pristine |
+| rest-b3 idle hash = census | the-reality-tree | idle | 200 | 10 | 0.05 | `67f2649b0bbc5938` | GREEN | census 67f2649b0bbc5938 |
+| rest-b3 goldens counts = census | the-reality-tree | — | 0 | 0 | — | — | GREEN | 22 ids, 9 layers; ms 4 / upg 18 / buy 0 / ch 0 / ach 0 = census |
+| rest-b3 G1 load (plain page) | the-reality-tree | — | 3 | 0.15 | 0.05 | — | GREEN | ready 882 ms; 4 `#app .treeNode`; 68 requests, 0 non-localhost, 0 failed, 0 page errors; au nodes 0; keys `tmt-loader:the-reality-tree:realitytree`, `tmt-loader:the-reality-tree:realitytree_options` |
+| rest-b3 check-manifest | the-mining-tree | — | 0 | 0 | — | — | GREEN | 17 scripts, 2 modFiles, subtree split ed27531, games/the-mining-tree pristine |
+| rest-b3 idle hash = census | the-mining-tree | idle | 200 | 10 | 0.05 | `8d45eea8bf38f67c` | GREEN | census 8d45eea8bf38f67c |
+| rest-b3 goldens counts = census | the-mining-tree | — | 0 | 0 | — | — | GREEN | 11 ids, 8 layers; ms 0 / upg 10 / buy 1 / ch 0 / ach 0 = census |
+| rest-b3 G1 load (plain page) | the-mining-tree | — | 3 | 0.15 | 0.05 | — | GREEN | ready 881 ms; 5 `#app .treeNode`; 68 requests, 0 non-localhost, 0 failed, 0 page errors; au nodes 0; keys `tmt-loader:the-mining-tree:mining_tree`, `tmt-loader:the-mining-tree:mining_tree_options` |
+| rest-b3 check-manifest | the-tree-therealcomnet | — | 0 | 0 | — | — | GREEN | 17 scripts, 2 modFiles, subtree split 426d811, games/the-tree-therealcomnet pristine |
+| rest-b3 idle hash = census | the-tree-therealcomnet | idle | 200 | 10 | 0.05 | `0816aad7daab91c4` | GREEN | census 0816aad7daab91c4 |
+| rest-b3 goldens counts = census | the-tree-therealcomnet | — | 0 | 0 | — | — | GREEN | 8 ids, 8 layers; ms 3 / upg 5 / buy 0 / ch 0 / ach 0 = census |
+| rest-b3 G1 load (plain page) | the-tree-therealcomnet | — | 3 | 0.15 | 0.05 | — | GREEN | ready 848 ms; 3 `#app .treeNode`; 68 requests, 0 non-localhost, 0 failed, 0 page errors; au nodes 0; keys `tmt-loader:the-tree-therealcomnet:The-???-Tree-nobody_options`, `tmt-loader:the-tree-therealcomnet:The-???-Tree-nobody` |
+| rest-b3 check-manifest | equilibrium | — | 0 | 0 | — | — | GREEN | 17 scripts, 2 modFiles, subtree split cc73f33, games/equilibrium pristine |
+| rest-b3 idle hash = census | equilibrium | idle | 200 | 10 | 0.05 | `6c0a8e0027c9ceda` | GREEN | census 6c0a8e0027c9ceda |
+| rest-b3 goldens counts = census | equilibrium | — | 0 | 0 | — | — | GREEN | 10 ids, 10 layers; ms 0 / upg 10 / buy 0 / ch 0 / ach 0 = census |
+| rest-b3 G1 load (plain page) | equilibrium | — | 3 | 0.15 | 0.05 | — | GREEN | ready 853 ms; 5 `#app .treeNode`; 68 requests, 0 non-localhost, 0 failed, 0 page errors; au nodes 0; keys `tmt-loader:equilibrium:eq.siro.dev_options`, `tmt-loader:equilibrium:eq.siro.dev` |
+| rest-b3 check-manifest | the-tree-emipiplu | — | 0 | 0 | — | — | GREEN | 17 scripts, 2 modFiles, subtree split ccfd908, games/the-tree-emipiplu pristine |
+| rest-b3 idle hash = census | the-tree-emipiplu | idle | 200 | 10 | 0.05 | `de93db23b211ecdf` | GREEN | census de93db23b211ecdf |
+| rest-b3 goldens counts = census | the-tree-emipiplu | — | 0 | 0 | — | — | GREEN | 38 ids, 11 layers; ms 4 / upg 27 / buy 7 / ch 0 / ach 0 = census |
+| rest-b3 G1 load (plain page) | the-tree-emipiplu | — | 3 | 0.15 | 0.05 | — | GREEN | ready 873 ms; 5 `#app .treeNode`; 68 requests, 0 non-localhost, 0 failed, 0 page errors; au nodes 0; keys `tmt-loader:the-tree-emipiplu:mymod_options`, `tmt-loader:the-tree-emipiplu:mymod` |
+| rest-b3 check-manifest | bsed-tree | — | 0 | 0 | — | — | GREEN | 17 scripts, 2 modFiles, subtree split d89a77c, games/bsed-tree pristine |
+| rest-b3 idle hash = census | bsed-tree | idle | 200 | 10 | 0.05 | `7c865c3feea596a7` | GREEN | census 7c865c3feea596a7 |
+| rest-b3 goldens counts = census | bsed-tree | — | 0 | 0 | — | — | GREEN | 36 ids, 11 layers; ms 7 / upg 20 / buy 3 / ch 2 / ach 4 = census |
+| rest-b3 G1 load (plain page) | bsed-tree | — | 3 | 0.15 | 0.05 | — | GREEN | ready 844 ms; 6 `#app .treeNode`; 68 requests, 0 non-localhost, 0 failed, 0 page errors; au nodes 0; keys `tmt-loader:bsed-tree:mymodlol`, `tmt-loader:bsed-tree:mymodlol_options` |
+| G6 games doc | null | — | 0 | 0 | — | — | GREEN | docs/games.md regenerated: 157 games in manifests/index.json, 157 listed in that order |

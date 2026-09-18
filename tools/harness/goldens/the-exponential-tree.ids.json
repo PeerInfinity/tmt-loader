@@ -1,0 +1,60 @@
+{
+  "id": "the-exponential-tree",
+  "commit": "55db5670566b9302f0c69aba1ce9897f4c5c6ac5",
+  "layers": {
+    "info-tab": {
+      "row": "otherside",
+      "type": "none"
+    },
+    "options-tab": {
+      "row": "otherside",
+      "type": "none"
+    },
+    "changelog-tab": {
+      "row": "otherside",
+      "type": "none"
+    },
+    "p": {
+      "row": 0,
+      "type": "normal"
+    },
+    "e": {
+      "row": 1,
+      "type": "static"
+    },
+    "em": {
+      "row": 2,
+      "type": "normal"
+    },
+    "blank": {
+      "row": null,
+      "type": "none"
+    },
+    "tree-tab": {
+      "row": null,
+      "type": "none"
+    }
+  },
+  "ids": [
+    "p:upg:11",
+    "p:upg:12",
+    "p:upg:13",
+    "p:upg:14",
+    "p:upg:21",
+    "p:upg:22",
+    "e:ms:0",
+    "e:ms:1",
+    "e:upg:11",
+    "e:upg:12",
+    "e:upg:13",
+    "e:upg:14",
+    "e:buy:11"
+  ],
+  "counts": {
+    "ms": 2,
+    "upg": 10,
+    "buy": 1,
+    "ch": 0,
+    "ach": 0
+  }
+}

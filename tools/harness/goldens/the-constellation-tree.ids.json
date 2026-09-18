@@ -1,0 +1,94 @@
+{
+  "id": "the-constellation-tree",
+  "commit": "a602b351dd9b02054248e076580ec47e1118786e",
+  "layers": {
+    "info-tab": {
+      "row": "otherside",
+      "type": "none"
+    },
+    "options-tab": {
+      "row": "otherside",
+      "type": "none"
+    },
+    "changelog-tab": {
+      "row": "otherside",
+      "type": "none"
+    },
+    "blank": {
+      "row": null,
+      "type": "none"
+    },
+    "tree-tab": {
+      "row": null,
+      "type": "none"
+    },
+    "Ari": {
+      "row": 0,
+      "type": "normal"
+    },
+    "Tau": {
+      "row": 1,
+      "type": "normal"
+    },
+    "Gem": {
+      "row": 2,
+      "type": "normal"
+    },
+    "Cnc": {
+      "row": 2,
+      "type": "normal"
+    },
+    "Leo": {
+      "row": 0,
+      "type": "normal"
+    },
+    "Vir": {
+      "row": 1,
+      "type": "normal"
+    },
+    "Lib": {
+      "row": 2,
+      "type": "normal"
+    },
+    "Sco": {
+      "row": 3,
+      "type": "normal"
+    },
+    "Sgr": {
+      "row": 0,
+      "type": "normal"
+    },
+    "Cap": {
+      "row": 1,
+      "type": "normal"
+    },
+    "Aqr": {
+      "row": 2,
+      "type": "normal"
+    },
+    "Psc": {
+      "row": 3,
+      "type": "normal"
+    }
+  },
+  "ids": [
+    "Ari:ms:0",
+    "Ari:ms:1",
+    "Ari:upg:11",
+    "Ari:upg:12",
+    "Ari:upg:13",
+    "Ari:upg:14",
+    "Ari:upg:21",
+    "Ari:upg:22",
+    "Ari:upg:23",
+    "Ari:upg:24",
+    "Tau:upg:11"
+  ],
+  "counts": {
+    "ms": 2,
+    "upg": 9,
+    "buy": 0,
+    "ch": 0,
+    "ach": 0
+  }
+}

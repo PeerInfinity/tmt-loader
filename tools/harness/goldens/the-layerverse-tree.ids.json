@@ -1,0 +1,67 @@
+{
+  "id": "the-layerverse-tree",
+  "commit": "cf242f912b448d13eb6319e22714f9201297d033",
+  "layers": {
+    "info-tab": {
+      "row": "otherside",
+      "type": "none"
+    },
+    "options-tab": {
+      "row": "otherside",
+      "type": "none"
+    },
+    "changelog-tab": {
+      "row": "otherside",
+      "type": "none"
+    },
+    "l": {
+      "row": 0,
+      "type": "normal"
+    },
+    "p": {
+      "row": 2,
+      "type": "normal"
+    },
+    "u": {
+      "row": 3,
+      "type": "normal"
+    },
+    "c": {
+      "row": 3,
+      "type": "normal"
+    },
+    "blank": {
+      "row": null,
+      "type": "none"
+    },
+    "tree-tab": {
+      "row": null,
+      "type": "none"
+    }
+  },
+  "ids": [
+    "l:upg:11",
+    "l:upg:12",
+    "l:upg:13",
+    "l:upg:14",
+    "p:upg:11",
+    "p:upg:12",
+    "p:upg:13",
+    "p:upg:14",
+    "u:upg:11",
+    "u:upg:12",
+    "u:upg:13",
+    "u:ch:11",
+    "u:ch:12",
+    "c:ms:1",
+    "c:ms:2",
+    "c:ms:3"
+  ],
+  "counts": {
+    "ms": 3,
+    "upg": 11,
+    "buy": 0,
+    "ch": 2,
+    "ach": 0
+  }
+}

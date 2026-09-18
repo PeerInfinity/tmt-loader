@@ -1,0 +1,60 @@
+{
+  "id": "the-random-updates-tree",
+  "commit": "1492ca79e27565b5cc0a41dd9748fd3118f9e4bc",
+  "layers": {
+    "info-tab": {
+      "row": "otherside",
+      "type": "none"
+    },
+    "options-tab": {
+      "row": "otherside",
+      "type": "none"
+    },
+    "changelog-tab": {
+      "row": "otherside",
+      "type": "none"
+    },
+    "p": {
+      "row": 1,
+      "type": "normal"
+    },
+    "a": {
+      "row": 2,
+      "type": "normal"
+    },
+    "e": {
+      "row": 2,
+      "type": "normal"
+    },
+    "blank": {
+      "row": null,
+      "type": "none"
+    },
+    "tree-tab": {
+      "row": null,
+      "type": "none"
+    }
+  },
+  "ids": [
+    "p:upg:11",
+    "p:upg:12",
+    "p:upg:13",
+    "p:upg:14",
+    "p:upg:15",
+    "a:ms:1",
+    "a:ms:2",
+    "a:ms:3",
+    "a:ms:4",
+    "a:ch:11",
+    "e:upg:11",
+    "e:upg:12",
+    "e:upg:13"
+  ],
+  "counts": {
+    "ms": 4,
+    "upg": 8,
+    "buy": 0,
+    "ch": 1,
+    "ach": 0
+  }
+}

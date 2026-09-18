@@ -1,0 +1,97 @@
+{
+  "id": "the-tree-emipiplu",
+  "commit": "ccfd90849778a94d7316b18d71497d020443fb85",
+  "layers": {
+    "info-tab": {
+      "row": "otherside",
+      "type": "none"
+    },
+    "options-tab": {
+      "row": "otherside",
+      "type": "none"
+    },
+    "changelog-tab": {
+      "row": "otherside",
+      "type": "none"
+    },
+    "ss": {
+      "row": 0,
+      "type": "normal"
+    },
+    "um": {
+      "row": 1,
+      "type": "normal"
+    },
+    "c": {
+      "row": 1,
+      "type": "normal"
+    },
+    "tp": {
+      "row": 1,
+      "type": "normal"
+    },
+    "K": {
+      "row": "side",
+      "type": "none"
+    },
+    "L": {
+      "row": "side",
+      "type": "none"
+    },
+    "blank": {
+      "row": null,
+      "type": "none"
+    },
+    "tree-tab": {
+      "row": null,
+      "type": "none"
+    }
+  },
+  "ids": [
+    "ss:upg:11",
+    "ss:upg:12",
+    "ss:upg:13",
+    "ss:upg:21",
+    "ss:upg:22",
+    "ss:upg:23",
+    "ss:upg:31",
+    "ss:upg:32",
+    "ss:upg:33",
+    "ss:upg:41",
+    "ss:upg:42",
+    "ss:upg:43",
+    "ss:buy:11",
+    "ss:buy:12",
+    "um:ms:0",
+    "um:ms:1",
+    "um:upg:11",
+    "um:upg:12",
+    "um:upg:13",
+    "um:upg:21",
+    "um:upg:22",
+    "um:upg:23",
+    "c:ms:0",
+    "c:ms:1",
+    "c:upg:11",
+    "c:upg:12",
+    "c:upg:13",
+    "c:upg:21",
+    "c:upg:22",
+    "c:upg:23",
+    "c:upg:31",
+    "c:upg:32",
+    "c:upg:33",
+    "tp:buy:11",
+    "K:buy:11",
+    "K:buy:12",
+    "K:buy:21",
+    "K:buy:22"
+  ],
+  "counts": {
+    "ms": 4,
+    "upg": 27,
+    "buy": 7,
+    "ch": 0,
+    "ach": 0
+  }
+}

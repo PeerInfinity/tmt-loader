@@ -1,0 +1,116 @@
+{
+  "id": "level-tree",
+  "commit": "75cba10d8f3a0619c28937fbb65da133c78773a0",
+  "layers": {
+    "info-tab": {
+      "row": "otherside",
+      "type": "none"
+    },
+    "options-tab": {
+      "row": "otherside",
+      "type": "none"
+    },
+    "changelog-tab": {
+      "row": "otherside",
+      "type": "none"
+    },
+    "t": {
+      "row": 0,
+      "type": "normal"
+    },
+    "m": {
+      "row": 1,
+      "type": "static"
+    },
+    "p": {
+      "row": 1,
+      "type": "normal"
+    },
+    "c": {
+      "row": 1,
+      "type": "none"
+    },
+    "l": {
+      "row": "side",
+      "type": "none"
+    },
+    "a": {
+      "row": "side",
+      "type": "none"
+    },
+    "blank": {
+      "row": null,
+      "type": "none"
+    },
+    "tree-tab": {
+      "row": null,
+      "type": "none"
+    }
+  },
+  "ids": [
+    "t:upg:21",
+    "t:upg:22",
+    "t:upg:23",
+    "t:upg:24",
+    "t:upg:25",
+    "t:upg:26",
+    "t:upg:27",
+    "t:upg:31",
+    "t:upg:32",
+    "t:upg:33",
+    "t:buy:11",
+    "t:buy:12",
+    "t:buy:13",
+    "m:ms:0",
+    "m:ms:1",
+    "m:ms:2",
+    "m:upg:21",
+    "m:upg:22",
+    "m:upg:23",
+    "m:upg:24",
+    "m:buy:11",
+    "p:ms:0",
+    "p:ms:1",
+    "p:ms:2",
+    "p:ms:3",
+    "p:ms:4",
+    "p:ms:5",
+    "p:ms:6",
+    "p:ms:7",
+    "p:ms:8",
+    "p:ms:9",
+    "p:ms:10",
+    "p:upg:21",
+    "p:upg:22",
+    "p:upg:23",
+    "p:upg:24",
+    "p:upg:25",
+    "c:ms:0",
+    "c:ms:1",
+    "c:ms:2",
+    "c:ms:3",
+    "c:ch:11",
+    "c:ch:12",
+    "l:upg:21",
+    "l:upg:22",
+    "l:upg:23",
+    "l:upg:24",
+    "l:upg:25",
+    "l:upg:31",
+    "l:upg:32",
+    "a:ach:11",
+    "a:ach:12",
+    "a:ach:13",
+    "a:ach:14",
+    "a:ach:15",
+    "a:ach:16",
+    "a:ach:17"
+  ],
+  "counts": {
+    "ms": 18,
+    "upg": 26,
+    "buy": 4,
+    "ch": 2,
+    "ach": 7
+  }
+}
