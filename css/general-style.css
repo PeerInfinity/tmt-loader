@@ -1,0 +1,84 @@
+/* Global things */
+body {
+	color: var(--color);
+	overflow: hidden;
+	--background: #0f0f0f;
+	--color: #dfdfdf;
+	--points: #ffffff;
+	background: var(--background)
+}
+
+/* General text */
+h1, h2, h3, b, input {
+	display: inline;
+	font-family: "Lucida Console", "Courier New", monospace
+}
+
+/* These are styles for different states of components. You can make layer-specific versions with .c.locked, for example */
+.locked {
+	background-color: #bf8f8f;
+	cursor: not-allowed;
+}
+
+/* Can meens can be clicked/bought/etc */
+.can {
+	cursor: pointer;
+}
+
+.i.can {
+	background: linear-gradient(-15deg, #ee2f0d 0%, #0daeee 100%); background-origin: border-box;
+	cursor: pointer;
+}
+
+.can:hover {
+	transform: scale(1.15, 1.15);
+	box-shadow: 0 0 20px var(--points)
+}
+
+.bought {
+	background-color: #77bf5f;
+	cursor: default;
+}
+
+.i.bought {
+	background: linear-gradient(-15deg, #0d1cee 0%, #0daeee 100%); background-origin: border-box;
+	cursor: default;
+}
+
+#points {
+	color: var(--points);
+	text-shadow: 0 0 10px var(--points);
+}
+
+@keyframes pulseColor {
+    from {
+        background-color: orange;
+    }
+
+    to {
+        background-color: rgb(255, 207, 102);
+    }
+}
+
+@keyframes pulseColor2 {
+    from {
+        background-color: rgb(82, 134, 72);
+    }
+
+    to {
+        background-color: rgb(131, 224, 127);
+    }
+}
+
+@keyframes pulseColor3 {
+    from {
+        background-color: rgb(78,80,209)
+    }
+
+    to {
+        background-color: rgb(127, 177, 224);
+    }
+}
+
+
+/*background-color: rgb(216, 244, 255);
