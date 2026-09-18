@@ -12,8 +12,9 @@ const MANAGED = params.get('managed') === '1';
 // page is the game plus the contract (docs/contract.md): no layer, no DOM, nothing in the save.
 const AUTOMATION = params.get('automation') === '1';
 // ?mobile=1 opts in to the mobile LAYOUT (docs/mobile.md): loader/mobile.css, the single column and master-detail.
-// ?navbar=1 opts in to the bottom NAV BAR alone (loader/navbar.css + loader/navbar.js after tmt-auto.js), which is
-// wanted on a desktop too; ?mobile=1 IMPLIES it, so ?mobile=1 alone is what it always was.
+// ?navbar=1 opts in to the bottom NAV BAR alone (loader/navbar.css + loader/navbar.js after tmt-auto.js) AND the
+// layer list it opens (loader/layerlist.css + loader/layerlist.js), both wanted on a desktop too; ?mobile=1 IMPLIES
+// it, so ?mobile=1 alone is what it always was.
 // EXPLICIT ONLY, both of them — no viewport or pointer sniffing, so a page without the flag renders exactly as it
 // did before the mode existed, and a page with it renders the same way at every width (which makes it gateable).
 const MOBILE = params.get('mobile') === '1';
@@ -127,7 +128,7 @@ async function boot(id) {
   // both after the fork's own sheets: equal specificity is broken by source order
   const sheet = (elId, file) => { const st = document.createElement('link'); st.rel = 'stylesheet'; st.id = elId; st.href = abs(file); document.head.appendChild(st); };
   if (MOBILE) sheet('tmt-loader-mobile-css', 'loader/mobile.css');
-  if (NAVBAR) sheet('tmt-loader-navbar-css', 'loader/navbar.css');
+  if (NAVBAR) { sheet('tmt-loader-navbar-css', 'loader/navbar.css'); sheet('tmt-loader-layerlist-css', 'loader/layerlist.css'); }
   if (plan.title) document.title = plan.title;
   document.body.removeAttribute('class');
   document.body.innerHTML = plan.body.html;
@@ -161,6 +162,11 @@ async function boot(id) {
     await insertScript({ src: abs('loader/navbar.js') }, 'loader/navbar.js');
     T.loaded.push('loader/navbar.js');
     document.documentElement.classList.add('tmt-navbar'); // the bar is installed; navbar.css hides the corner controls
+    // the LAYER LIST (docs/mobile.md) — the bar's Layers button opens it. After navbar.js, which owns the button:
+    // the entry stays hidden until `tmtLoader.layerListUI` exists, so a bar without this file is still a whole bar.
+    step('script loader/layerlist.js');
+    await insertScript({ src: abs('loader/layerlist.js') }, 'loader/layerlist.js');
+    T.loaded.push('loader/layerlist.js');
   }
 
   // body attributes (onmousemove, …) once the functions they name exist; onload is run explicitly below

@@ -1,0 +1,189 @@
+/* tmt-loader — the LAYER LIST (docs/mobile.md). Opt-in with the nav bar: `?navbar=1` (which `?mobile=1` implies)
+ * links this file and runs loader/layerlist.js. A SELECTABLE ALTERNATE VIEW of the tree, opened from the Layers
+ * button in the bar and closed again — the tree is never replaced (⚖ user, 2026-09-17).
+ *
+ * Everything here is scoped under `#tmt-layerlist`, the overlay's own element, and names only its own classes.
+ * NOTHING in this file touches the game's markup: the list is our DOM, appended to <body>, so a rule here cannot
+ * move a tab, a node or a column — which is what lets the M1 geometry legs compare the page against the plain one.
+ *
+ * ⚠ The prefix is `tmt-layerlist`, not `tmt-mobile-*`: the list is wanted on a desktop as much as on a phone, and a
+ * `tmt-mobile*` name would match the M1 inertness leg's own `/tmt-mobile/` regex (docs/mobile.md, "The file names").
+ */
+
+/* ---------------------------------------------------------------- the game's universal rule reaches in here
+ * MEASURED on ptr: `style.css` opens with `* { margin: auto; text-align: center; transition-duration: 0.5s }`, and a
+ * universal selector matches OUR elements too — it is not scoped to the game's markup. `margin: auto` on a flex item
+ * in a column flex box shrink-wraps it: the list body measured 447 px inside a 1280 px panel, so the card grid
+ * collapsed to ONE column on a desktop. The engines differ in what they declare there, so the overlay states its own
+ * box rules instead of inheriting whatever a game happens to say, and re-centres only what should be centred.
+ * `#tmt-layerlist *` is 1-0-0 against the universal selector's 0-0-0, so this wins wherever it is loaded. */
+#tmt-layerlist,
+#tmt-layerlist * {
+  margin: 0;
+  text-align: left;
+  box-sizing: border-box;
+  transition-duration: 0s;
+}
+
+#tmt-layerlist {
+  position: fixed;
+  left: 0;
+  right: 0;
+  top: 0;
+  bottom: var(--tmt-navbar-h, 0px); /* written by navbar.js: the list sits ABOVE the bar, never under it */
+  z-index: 2147482999;              /* under #tmt-navbar (2147483000), over .treeOverlay (200000) */
+  display: flex;
+  flex-direction: column;
+  background: var(--background, #111);
+  color: var(--color, #ddd);
+  overflow: hidden;                 /* the body below is the scroller */
+}
+#tmt-layerlist[hidden] { display: none; }
+
+#tmt-layerlist .tmt-layerlist-head {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 8px 12px;
+  border-bottom: 1px solid rgba(127, 127, 127, .45);
+}
+#tmt-layerlist .tmt-layerlist-title { font-size: 18px; font-weight: bold; }
+#tmt-layerlist .tmt-layerlist-close {
+  text-align: center;
+  min-width: 44px;
+  min-height: 44px;
+  background: transparent;
+  border: 0;
+  color: inherit;
+  font-size: 20px;
+  cursor: pointer;
+  transition-duration: 0s;
+}
+
+#tmt-layerlist .tmt-layerlist-body {
+  flex: 1 1 auto;
+  overflow-y: auto;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+  padding: 8px 12px calc(12px + env(safe-area-inset-bottom, 0px));
+}
+
+#tmt-layerlist .tmt-layerlist-row { margin: 0 0 14px; }
+#tmt-layerlist .tmt-layerlist-rowlabel {
+  margin: 6px 0;
+  font-size: 12px;
+  font-weight: normal;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  opacity: .62;
+}
+
+/* one card per screen width on a phone; as many as fit on a desktop, where the same overlay is wanted */
+#tmt-layerlist .tmt-layerlist-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 8px;
+}
+
+#tmt-layerlist .tmt-layerlist-card {
+  border: 1px solid rgba(127, 127, 127, .45);
+  border-radius: 8px;
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0; /* a grid item's default `min-width: auto` is what lets a long readout push a card past the screen */
+}
+/* shown but not yet unlocked: the tree draws these too, and the reset button on one of them IS the unlock */
+#tmt-layerlist .tmt-layerlist-card.tmt-layerlist-locked { opacity: .62; }
+
+#tmt-layerlist .tmt-layerlist-open {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 44px;
+  padding: 2px;
+  background: transparent;
+  border: 0;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+  min-width: 0;
+  transition-duration: 0s;
+}
+#tmt-layerlist .tmt-layerlist-badge {
+  flex: 0 0 auto;
+  text-align: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 15px;
+  font-weight: bold;
+  color: #000;
+  overflow: hidden;
+  border: 1px solid rgba(0, 0, 0, .35);
+}
+/* a long symbol has to fit the 44 px badge: the engines render the same string in a 100 px tree node */
+#tmt-layerlist .tmt-layerlist-badge[data-len="3"],
+#tmt-layerlist .tmt-layerlist-badge[data-len="4"] { font-size: 12px; }
+#tmt-layerlist .tmt-layerlist-badge[data-len="5"],
+#tmt-layerlist .tmt-layerlist-badge[data-len="6"] { font-size: 10px; }
+#tmt-layerlist .tmt-layerlist-badge[data-len="7"],
+#tmt-layerlist .tmt-layerlist-badge[data-len="8"],
+#tmt-layerlist .tmt-layerlist-badge[data-len="9"] { font-size: 8px; line-height: 1.1; word-break: break-all; }
+
+#tmt-layerlist .tmt-layerlist-meta { display: flex; flex-direction: column; min-width: 0; }
+#tmt-layerlist .tmt-layerlist-name {
+  font-size: 13px;
+  opacity: .8;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+#tmt-layerlist .tmt-layerlist-amount { font-size: 17px; font-weight: bold; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+#tmt-layerlist .tmt-layerlist-reset {
+  text-align: center;
+  min-height: 44px;
+  padding: 6px 10px;
+  border: 1px solid rgba(127, 127, 127, .55);
+  border-radius: 6px;
+  background: transparent;
+  color: inherit;
+  font-size: 13px;
+  line-height: 1.25;
+  cursor: pointer;
+  overflow-wrap: anywhere; /* a prestige string is the game's own prose and can be long */
+  transition-duration: 0s;
+}
+#tmt-layerlist .tmt-layerlist-reset.can { color: #000; font-weight: bold; }
+#tmt-layerlist .tmt-layerlist-reset.locked { opacity: .55; }
+
+#tmt-layerlist .tmt-layerlist-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+#tmt-layerlist .tmt-layerlist-chip,
+#tmt-layerlist .tmt-layerlist-more {
+  text-align: center;
+  min-width: 44px;
+  min-height: 44px;
+  padding: 4px 8px;
+  border: 1px solid rgba(127, 127, 127, .55);
+  border-radius: 6px;
+  background: transparent;
+  color: inherit;
+  font-size: 13px;
+  font-weight: bold;
+  cursor: pointer;
+  transition-duration: 0s;
+}
+#tmt-layerlist .tmt-layerlist-chip[data-state="done"] { opacity: .45; }
+#tmt-layerlist .tmt-layerlist-chip[data-state="locked"] { opacity: .3; }
+#tmt-layerlist .tmt-layerlist-chip[data-state="active"] { border-color: currentColor; border-width: 2px; }
+/* the overflow chips exist in the DOM from the start and the "+N" button reveals them; `display: none` keeps them
+ * out of the geometry probes exactly as a control the page does not show should be */
+#tmt-layerlist .tmt-layerlist-chip.tmt-layerlist-overflow { display: none; }
+#tmt-layerlist .tmt-layerlist-card.tmt-layerlist-expanded .tmt-layerlist-chip.tmt-layerlist-overflow { display: inline-block; }

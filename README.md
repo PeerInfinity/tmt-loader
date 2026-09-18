@@ -21,7 +21,9 @@ the one interface a runner talks to. Without `?mod=` the page shows a picker. `?
 ([docs/automation.md](docs/automation.md)); without it the loader adds nothing to the game — no layer, no UI, nothing in the save.
 `?mobile=1` opts in to the mobile layout ([docs/mobile.md](docs/mobile.md)): one column, master-detail and a bottom nav bar, for
 engines that ship no `@media` query at all — likewise inert without the flag. `?navbar=1` opts in to that **nav bar
-alone**, which is wanted on a desktop too; `?mobile=1` implies it.
+alone**, which is wanted on a desktop too; `?mobile=1` implies it. The bar's first button opens the **layer list** —
+the game's layers as cards grouped by tree row, each with a working reset button and chips for its features; a
+selectable alternate view of the tree, not a replacement for it.
 
 Games live under `games/<id>/` as **git subtrees**, pristine at the upstream commit their manifest records.
 
@@ -41,7 +43,7 @@ repo and pinned commit, its engine version and its license. It is generated from
 | [docs/harness.md](docs/harness.md) | the Node harness and the page runner, ladders and snapshots |
 | [docs/automation.md](docs/automation.md) | `?automation=1` — the feature registry, policies and the per-game tables |
 | [docs/planner.md](docs/planner.md) | the planner built on top of the automation registry |
-| [docs/mobile.md](docs/mobile.md) | `?mobile=1` and `?navbar=1` — the mobile layout, the nav bar, and their gate |
+| [docs/mobile.md](docs/mobile.md) | `?mobile=1` and `?navbar=1` — the mobile layout, the nav bar, the layer list, and their gate |
 | [`tools/harness/results/SUMMARY.md`](tools/harness/results/SUMMARY.md) | every gate run, with the state hashes it measured |
 
 ## Running it
@@ -63,7 +65,7 @@ It works from any sub-path (GitHub Pages serves under `/tmt-loader/`); nothing i
 |---|---|
 | `node --test loader/` | `interpret()` on both games' `index.html` |
 | `node tools/harness/run.mjs <id> --ticks N --diff d [--until "<js>"]` | Node boot (one game per process), prints `{ticks, gameSeconds, diff, hash}` |
-| `node tools/harness/page.mjs <id> --ticks N --diff d` / `--gate load` / `--gate mobile` | the same in headless Chromium; `--gate load` = gate G1, `--gate mobile` = gate M1, the layout **and** the nav bar ([docs/mobile.md](docs/mobile.md)) |
+| `node tools/harness/page.mjs <id> --ticks N --diff d` / `--gate load` / `--gate mobile` | the same in headless Chromium; `--gate load` = gate G1, `--gate mobile` = gate M1, the layout, the nav bar **and** the layer list ([docs/mobile.md](docs/mobile.md)) |
 | `node tools/harness/parity.mjs <id> --ticks N --diff d` | Node ≡ page `stateJSON()` |
 | `node tools/harness/check-goldens.mjs` / `check-manifest.mjs` | frozen `tmtLoader.ids()` / manifest pin vs the live `index.html` |
 | `node tools/harness/upstream-export.mjs <id> --upstream <clone>` | a save exported from the upstream page imports equal |

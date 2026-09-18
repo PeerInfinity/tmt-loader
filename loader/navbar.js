@@ -23,7 +23,10 @@
   var TIP_CLASS = 'tmt-mobile-tip'; // the tooltips are the LAYOUT's, not the bar's — the name says which tier owns them
 
   // key: our name · label: what the button says · target: the game control it forwards to (null = handled directly)
+  // `layers` is FIRST, so the Layers button sits immediately left of Tree; it stays hidden until
+  // loader/layerlist.js has installed `tmtLoader.layerListUI`, so this file is still a whole bar without it.
   var ENTRIES = [
+    { key: 'layers', label: 'Layers', glyph: '☰', target: null },
     { key: 'tree', label: 'Tree', glyph: '☷', target: null },
     { key: 'info', label: 'Info', glyph: 'i', target: '#info' },
     { key: 'help', label: 'Help', glyph: '?', target: '#help' },
@@ -59,6 +62,8 @@
       l.textContent = e.label;
       b.append(g, l);
       b.addEventListener('click', function () {
+        if (e.key === 'layers') return T.layerListUI ? T.layerListUI.toggle() : undefined;
+        if (T.layerListUI) T.layerListUI.close(); // the list is an overlay over the tab this button is about to open
         if (e.target === null) return onTree();
         var el = document.querySelector(e.target);
         if (el) el.click(); // the game's own handler, with the tab id that engine uses
@@ -73,6 +78,10 @@
   function refresh() {
     if (!nav) return;
     var openKey = null;
+    // the layer list is OURS, so its button needs no discovery: it exists exactly while the overlay does, and it is
+    // the active one exactly while the overlay is open
+    buttons.layers.hidden = !T.layerListUI;
+    var listOpen = !!(T.layerListUI && T.layerListUI.isOpen());
     ENTRIES.forEach(function (e) {
       if (e.target === null) return;
       var present = !!document.querySelector(e.target);
@@ -86,6 +95,7 @@
       // no system tab is open; the tree button is the active one only when no layer tab is open either
       try { openKey = (typeof player !== 'undefined' && player && player.tab === 'none') ? 'tree' : null; } catch (e2) { openKey = null; }
     }
+    if (listOpen) openKey = 'layers'; // the overlay is over whatever tab is underneath it
     ENTRIES.forEach(function (e) {
       buttons[e.key].classList.toggle('active', e.key === openKey);
     });
