@@ -1709,3 +1709,195 @@ State leg: **39 equal, 0 moved, 1 abstained** (the-periodic-table-tree). For `pt
 | gate | game | leg | ticks | gameSeconds | diff | hash | result | notes |
 |---|---|---|---|---|---|---|---|---|
 | G6 games doc | — | — | 0 | 0 | — | — | GREEN | docs/games.md: 40 games in manifests/index.json, generator built 40, 40 listed in that order, file byte-equal to the generator's output |
+
+## 2026-09-18T01:13:18Z — top100 (`node tools/add-game.mjs crazkingda1st/PrestigeTreeNGPlus-edited- thecoolcookie366/The-Modding-Tree haram0614/The-Modding-Tree CoolBoris/The-Galactic-Tree SIGMA-HOPEDY/The-PP-Tree p-u/The-Point-Tree MegaLaad/Infinity-Tree2 pg132/The-Modding-Tree epicstatbattles/Low-Taper-Fade Thaness0/The-reset-tree ThePrestigeTreeGuy/The-Modding-Tree danickverse/The-Modding-Tree ArmeKnockedOut/the-element-tree BanaCubed/Create-Incremental-Legacy-TMT e205-idle-beta/normaltree.github.io The-Alternate-Tree/The-Incremental-Tree The-Alternate-Tree/The-Loop-Tree mirc3a22000/the-lime-upgrade-tree nolhan42/The-Greek-Tree MSpekkio/The-Mana-Tree liamkelly4123-jpg/The-Incremental-Tree SorbetTheShark/SConvolution-Mainframe cyxw/Arctree xiajibazuo/Layer-Tree ArkSayCode/The-Question-Tree brendonjaygarcia2011-dot/Universal-Shifting-Tree XxXOLEGXxX/Shenanigans-Tree murapix/Universal-Reconstruction qwerty2281444/The-Fly-Eating-Tree cosmology101-active/The-H2O-Tree QnoraeT/The-Modding-Tree mikosss2/TFoTremake The-Alternate-Tree/The-Prestige-Galaxy Increveloper/The-Hyperoperator-Tree FallingMountain/The-Modding-Tree HothUH33/The-ExisReality-Tree usi1947/The-Fruit-Tree Jeehan2561/The-Numbruh-Tree gapples2/The-Modding-Tree DatMLGTaco/The-Modding-Tree Yahkub7/The-Modding-Tree Hank17227/Weakling-Tree Moosiqe/Coffee-Shop Dackel090/The-Universal-Tree masutaki/videocointree voidcons0le-is-dumb/The-Universal-Tree`) — commit `11c7ee3e6` (tree DIRTY) — 180/185 green
+
+Reading this section: the subtree commits are in; manifests, index and goldens are uncommitted at the time of the run. idle hash = the plain page's Node twin (`--no-automation`, no exclusion) vs manifest.headless.idleHash; goldens counts vs manifest.census; G1 = `page.mjs <id> --gate load` (no flag).
+
+| gate | game | leg | ticks | gameSeconds | diff | hash | result | notes |
+|---|---|---|---|---|---|---|---|---|
+| top100 check-manifest | prestige-tree-ng | — | 0 | 0 | — | — | GREEN | 13 scripts, 0 modFiles, subtree split ab6834f, games/prestige-tree-ng pristine |
+| top100 idle hash = census | prestige-tree-ng | idle | 200 | 10 | 0.05 | `98fc71314e3512a7` | GREEN | census 98fc71314e3512a7 |
+| top100 goldens counts = census | prestige-tree-ng | — | 0 | 0 | — | — | GREEN | 553 ids, 42 layers; ms 113 / upg 253 / buy 57 / ch 9 / ach 121 = census |
+| top100 G1 load (plain page) | prestige-tree-ng | — | 3 | 0.15 | 0.05 | — | GREEN | ready 605 ms; 10 `#app .treeNode`; 56 requests, 0 non-localhost, 0 failed, 0 page errors; au nodes 0; keys `tmt-loader:prestige-tree-ng:ptr` |
+| top100 check-manifest | the-cookie-tree | — | 0 | 0 | — | — | GREEN | 17 scripts, 2 modFiles, subtree split 6701b1d, games/the-cookie-tree pristine |
+| top100 idle hash = census | the-cookie-tree | idle | 200 | 10 | 0.05 | `5d75a6ce079a422e` | GREEN | NONDETERMINISTIC (census deterministic=false, table false, paths ["rng.points","rng.total","rng.best"]): census a21036d23fb17175, run 1 5d75a6ce079a422e, run 2 66f237f7ef30b574 — recorded, not failed |
+| top100 goldens counts = census | the-cookie-tree | — | 0 | 0 | — | — | GREEN | 175 ids, 43 layers; ms 24 / upg 113 / buy 0 / ch 2 / ach 36 = census |
+| top100 G1 load (plain page) | the-cookie-tree | — | 3 | 0.15 | 0.05 | — | GREEN | ready 925 ms; 16 `#app .treeNode`; 68 requests, 0 non-localhost, 0 failed, 0 page errors; au nodes 0; keys `tmt-loader:the-cookie-tree:The-Cookie-Tree-thecoolcookie366_options`, `tmt-loader:the-cookie-tree:The-Cookie-Tree-thecoolcookie366` |
+| top100 check-manifest | the-quantum-tree | — | 0 | 0 | — | — | GREEN | 17 scripts, 4 modFiles, subtree split 1cf9dee, games/the-quantum-tree pristine |
+| top100 idle hash = census | the-quantum-tree | idle | 200 | 10 | 0.05 | `5ea855912ad656ed` | GREEN | census 5ea855912ad656ed |
+| top100 goldens counts = census | the-quantum-tree | — | 0 | 0 | — | — | GREEN | 207 ids, 34 layers; ms 0 / upg 184 / buy 0 / ch 0 / ach 23 = census |
+| top100 G1 load (plain page) | the-quantum-tree | — | 3 | 0.15 | 0.05 | — | GREEN | ready 902 ms; 12 `#app .treeNode`; 70 requests, 0 non-localhost, 0 failed, 0 page errors; au nodes 0; keys `tmt-loader:the-quantum-tree:Quantum`, `tmt-loader:the-quantum-tree:Quantum_options` |
+| top100 check-manifest | the-galactic-tree | — | 0 | 0 | — | — | **RED** | [{"field":"load.known.externalHosts","drift":true,"manifest":[],"live":["i.ibb.co"],"declaredNotInTree":[],"inTreeNotDeclared":["i.ibb.co"],"files":{"i.ibb.co":["js/layers/r1/clickergame.js"]}}] |
+| top100 idle hash = census | the-galactic-tree | idle | 200 | 10 | 0.05 | `38b6482eec7301e5` | GREEN | census 38b6482eec7301e5 |
+| top100 goldens counts = census | the-galactic-tree | — | 0 | 0 | — | — | GREEN | 862 ids, 53 layers; ms 214 / upg 421 / buy 33 / ch 17 / ach 177 = census |
+| top100 G1 load (plain page) | the-galactic-tree | — | 3 | 0.15 | 0.05 | — | GREEN | ready 1248 ms; 17 `#app .treeNode`; 97 requests, 0 non-localhost, 0 failed, 0 page errors; au nodes 0; keys `tmt-loader:the-galactic-tree:galactictree11`, `tmt-loader:the-galactic-tree:galactictree11_options` |
+| top100 check-manifest | the-pp-tree | — | 0 | 0 | — | — | GREEN | 17 scripts, 3 modFiles, subtree split e483307, games/the-pp-tree pristine |
+| top100 idle hash = census | the-pp-tree | idle | 200 | 10 | 0.05 | `f6d8efecf711d945` | GREEN | census f6d8efecf711d945 |
+| top100 goldens counts = census | the-pp-tree | — | 0 | 0 | — | — | GREEN | 307 ids, 19 layers; ms 45 / upg 172 / buy 14 / ch 12 / ach 64 = census |
+| top100 G1 load (plain page) | the-pp-tree | — | 3 | 0.15 | 0.05 | — | GREEN | ready 999 ms; 9 `#app .treeNode`; 69 requests, 0 non-localhost, 0 failed, 0 page errors; au nodes 0; keys `tmt-loader:the-pp-tree:The-PP-Tree-sigma_options`, `tmt-loader:the-pp-tree:The-PP-Tree-sigma` |
+| top100 check-manifest | the-point-tree | — | 0 | 0 | — | — | GREEN | 18 scripts, 15 modFiles, subtree split afae386, games/the-point-tree pristine |
+| top100 idle hash = census | the-point-tree | idle | 200 | 10 | 0.05 | `dcbeaf75cca7703a` | GREEN | census dcbeaf75cca7703a |
+| top100 goldens counts = census | the-point-tree | — | 0 | 0 | — | — | GREEN | 1223 ids, 19 layers; ms 255 / upg 712 / buy 24 / ch 6 / ach 226 = census |
+| top100 G1 load (plain page) | the-point-tree | — | 3 | 0.15 | 0.05 | — | GREEN | ready 1265 ms; 12 `#app .treeNode`; 81 requests, 0 non-localhost, 0 failed, 0 page errors; au nodes 0; keys `tmt-loader:the-point-tree:ThepointTreeRD82_options`, `tmt-loader:the-point-tree:ThepointTreeRD82` |
+| top100 check-manifest | the-infinity-tree | — | 0 | 0 | — | — | GREEN | 17 scripts, 16 modFiles, subtree split cdebee8, games/the-infinity-tree pristine |
+| top100 idle hash = census | the-infinity-tree | idle | 200 | 10 | 0.05 | `95dd5e9eb8d1fd95` | GREEN | census 95dd5e9eb8d1fd95 |
+| top100 goldens counts = census | the-infinity-tree | — | 0 | 0 | — | — | GREEN | 166 ids, 20 layers; ms 41 / upg 67 / buy 26 / ch 3 / ach 29 = census |
+| top100 G1 load (plain page) | the-infinity-tree | — | 3 | 0.15 | 0.05 | — | GREEN | ready 1033 ms; 21 `#app .treeNode`; 82 requests, 0 non-localhost, 0 failed, 0 page errors; au nodes 0; keys `tmt-loader:the-infinity-tree:mymod`, `tmt-loader:the-infinity-tree:mymod_options` |
+| top100 check-manifest | the-incrementreeverse | — | 0 | 0 | — | — | GREEN | 9 scripts, 0 modFiles, subtree split 7bae0ce, games/the-incrementreeverse pristine |
+| top100 idle hash = census | the-incrementreeverse | idle | 200 | 10 | 0.05 | `f57524ac78b2eed6` | GREEN | census f57524ac78b2eed6 |
+| top100 goldens counts = census | the-incrementreeverse | — | 0 | 0 | — | — | GREEN | 322 ids, 16 layers; ms 31 / upg 245 / buy 30 / ch 16 / ach 0 = census |
+| top100 G1 load (plain page) | the-incrementreeverse | — | 3 | 0.15 | 0.05 | — | GREEN | ready 893 ms; 6 `#app .treeNode`; 53 requests, 0 non-localhost, 0 failed, 0 page errors; au nodes 0; keys `tmt-loader:the-incrementreeverse:incrementy` |
+| top100 check-manifest | the-low-taper-fade-tree | — | 0 | 0 | — | — | **RED** | [{"field":"load.known.externalHosts","drift":true,"manifest":[],"live":["cdn-icons-png.flaticon.com","i.ibb.co","materialkitchen.com","png.pngtree.com"],"declaredNotInTree":[],"inTreeNotDeclared":["cdn-icons-png.flaticon.com","i.ibb.co","materialkitchen.com","png.pngtree.com"],"files":{"i.ibb.co":["js/layers.js"],"png.pngtree.com":["js/layers.js"],"materialkitchen.com":["js/layers.js"],"cdn-icons- |
+| top100 idle hash = census | the-low-taper-fade-tree | idle | 200 | 10 | 0.05 | `1f37af95b87ddbae` | GREEN | census 1f37af95b87ddbae |
+| top100 goldens counts = census | the-low-taper-fade-tree | — | 0 | 0 | — | — | GREEN | 180 ids, 19 layers; ms 27 / upg 127 / buy 18 / ch 8 / ach 0 = census |
+| top100 G1 load (plain page) | the-low-taper-fade-tree | — | 3 | 0.15 | 0.05 | — | GREEN | ready 905 ms; 7 `#app .treeNode`; 68 requests, 0 non-localhost, 0 failed, 0 page errors; au nodes 0; keys `tmt-loader:the-low-taper-fade-tree:The-Low-Taper-Fade-Tree-Epic-Stat-Battles_options`, `tmt-loader:the-low-taper-fade-tree:The-Low-Taper-Fade-Tree-Epic-Stat-Battles` |
+| top100 check-manifest | the-reset-tree | — | 0 | 0 | — | — | GREEN | 17 scripts, 8 modFiles, subtree split d166a08, games/the-reset-tree pristine |
+| top100 idle hash = census | the-reset-tree | idle | 200 | 10 | 0.05 | `77681a3a7d6e7d72` | GREEN | census 77681a3a7d6e7d72 |
+| top100 goldens counts = census | the-reset-tree | — | 0 | 0 | — | — | GREEN | 134 ids, 18 layers; ms 19 / upg 69 / buy 6 / ch 4 / ach 36 = census |
+| top100 G1 load (plain page) | the-reset-tree | — | 3 | 0.15 | 0.05 | — | GREEN | ready 939 ms; 8 `#app .treeNode`; 74 requests, 0 non-localhost, 0 failed, 0 page errors; au nodes 0; keys `tmt-loader:the-reset-tree:ItsResetTime`, `tmt-loader:the-reset-tree:ItsResetTime_options` |
+| top100 check-manifest | the-doors-tree | — | 0 | 0 | — | — | GREEN | 17 scripts, 2 modFiles, subtree split 51bbdff, games/the-doors-tree pristine |
+| top100 idle hash = census | the-doors-tree | idle | 200 | 10 | 0.05 | `e23c05b04532119d` | GREEN | census e23c05b04532119d |
+| top100 goldens counts = census | the-doors-tree | — | 0 | 0 | — | — | GREEN | 162 ids, 14 layers; ms 32 / upg 112 / buy 12 / ch 2 / ach 4 = census |
+| top100 G1 load (plain page) | the-doors-tree | — | 3 | 0.15 | 0.05 | — | GREEN | ready 858 ms; 7 `#app .treeNode`; 68 requests, 0 non-localhost, 0 failed, 0 page errors; au nodes 0; keys `tmt-loader:the-doors-tree:37258649213278`, `tmt-loader:the-doors-tree:37258649213278_options` |
+| top100 check-manifest | universal-expansion | — | 0 | 0 | — | — | GREEN | 17 scripts, 13 modFiles, subtree split 874c380, games/universal-expansion pristine |
+| top100 idle hash = census | universal-expansion | idle | 200 | 10 | 0.05 | `745b2ed8b870e263` | GREEN | census 745b2ed8b870e263 |
+| top100 goldens counts = census | universal-expansion | — | 0 | 0 | — | — | GREEN | 259 ids, 14 layers; ms 37 / upg 127 / buy 38 / ch 2 / ach 55 = census |
+| top100 G1 load (plain page) | universal-expansion | — | 3 | 0.15 | 0.05 | — | GREEN | ready 1009 ms; 5 `#app .treeNode`; 79 requests, 0 non-localhost, 0 failed, 0 page errors; au nodes 0; keys `tmt-loader:universal-expansion:danickversetree_options`, `tmt-loader:universal-expansion:danickversetree` |
+| top100 check-manifest | the-element-tree | — | 0 | 0 | — | — | GREEN | 17 scripts, 12 modFiles, subtree split d0e8135, games/the-element-tree pristine |
+| top100 idle hash = census | the-element-tree | idle | 200 | 10 | 0.05 | `0055952d1d0272e9` | GREEN | census 0055952d1d0272e9 |
+| top100 goldens counts = census | the-element-tree | — | 0 | 0 | — | — | GREEN | 257 ids, 16 layers; ms 45 / upg 135 / buy 8 / ch 13 / ach 56 = census |
+| top100 G1 load (plain page) | the-element-tree | — | 3 | 0.15 | 0.05 | — | GREEN | ready 978 ms; 5 `#app .treeNode`; 78 requests, 0 non-localhost, 0 failed, 0 page errors; au nodes 0; keys `tmt-loader:the-element-tree:armeselementmodtree`, `tmt-loader:the-element-tree:armeselementmodtree_options` |
+| top100 check-manifest | create-incremental | — | 0 | 0 | — | — | GREEN | 21 scripts, 7 modFiles, subtree split 17026af, games/create-incremental pristine |
+| top100 idle hash = census | create-incremental | idle | 200 | 10 | 0.05 | `eddf94cc38cddcd3` | GREEN | census eddf94cc38cddcd3 |
+| top100 goldens counts = census | create-incremental | — | 0 | 0 | — | — | GREEN | 209 ids, 22 layers; ms 44 / upg 88 / buy 15 / ch 7 / ach 55 = census |
+| top100 G1 load (plain page) | create-incremental | — | 3 | 0.15 | 0.05 | — | GREEN | ready 978 ms; 7 `#app .treeNode`; 79 requests, 0 non-localhost, 0 failed, 0 page errors; au nodes 0; keys `tmt-loader:create-incremental:Create-Incremental-BanaCubed,-with-ideas-from-galaxy,-and-assets-by-adoplayzz`, `tmt-loader:create-incremental:Create-Incremental-BanaCubed,-with-ideas-from-galaxy,-and-assets-by-adoplayzz_options` |
+| top100 check-manifest | the-normal-tree | — | 0 | 0 | — | — | GREEN | 17 scripts, 21 modFiles, subtree split 9e46e8a, games/the-normal-tree pristine |
+| top100 idle hash = census | the-normal-tree | idle | 200 | 10 | 0.05 | `0277d6df85b35452` | GREEN | census 0277d6df85b35452 |
+| top100 goldens counts = census | the-normal-tree | — | 0 | 0 | — | — | GREEN | 115 ids, 25 layers; ms 34 / upg 78 / buy 0 / ch 3 / ach 0 = census |
+| top100 G1 load (plain page) | the-normal-tree | — | 3 | 0.15 | 0.05 | — | GREEN | ready 1076 ms; 15 `#app .treeNode`; 87 requests, 0 non-localhost, 0 failed, 0 page errors; au nodes 0; keys `tmt-loader:the-normal-tree:normal`, `tmt-loader:the-normal-tree:normal_options` |
+| top100 check-manifest | the-incremental-tree | — | 0 | 0 | — | — | GREEN | 17 scripts, 9 modFiles, subtree split 5efe1b3, games/the-incremental-tree pristine |
+| top100 idle hash = census | the-incremental-tree | idle | 200 | 10 | 0.05 | `8398494ee7559f9e` | GREEN | census 8398494ee7559f9e |
+| top100 goldens counts = census | the-incremental-tree | — | 0 | 0 | — | — | GREEN | 113 ids, 13 layers; ms 3 / upg 100 / buy 0 / ch 10 / ach 0 = census |
+| top100 G1 load (plain page) | the-incremental-tree | — | 3 | 0.15 | 0.05 | — | GREEN | ready 931 ms; 6 `#app .treeNode`; 75 requests, 0 non-localhost, 0 failed, 0 page errors; au nodes 0; keys `tmt-loader:the-incremental-tree:The-Incremental-Tree-liam`, `tmt-loader:the-incremental-tree:The-Incremental-Tree-liam_options` |
+| top100 check-manifest | the-loop-tree | — | 0 | 0 | — | — | GREEN | 17 scripts, 2 modFiles, subtree split 1adc1ad, games/the-loop-tree pristine |
+| top100 idle hash = census | the-loop-tree | idle | 200 | 10 | 0.05 | `257bb95201f9e755` | GREEN | census 257bb95201f9e755 |
+| top100 goldens counts = census | the-loop-tree | — | 0 | 0 | — | — | GREEN | 126 ids, 17 layers; ms 19 / upg 61 / buy 9 / ch 4 / ach 33 = census |
+| top100 G1 load (plain page) | the-loop-tree | — | 3 | 0.15 | 0.05 | — | GREEN | ready 878 ms; 7 `#app .treeNode`; 68 requests, 0 non-localhost, 0 failed, 0 page errors; au nodes 0; keys `tmt-loader:the-loop-tree:mymod`, `tmt-loader:the-loop-tree:mymod_options` |
+| top100 check-manifest | the-lime-upgrade-tree | — | 0 | 0 | — | — | GREEN | 17 scripts, 2 modFiles, subtree split e502847, games/the-lime-upgrade-tree pristine |
+| top100 idle hash = census | the-lime-upgrade-tree | idle | 200 | 10 | 0.05 | `677cd3c5ee1d3a58` | GREEN | census 677cd3c5ee1d3a58 |
+| top100 goldens counts = census | the-lime-upgrade-tree | — | 0 | 0 | — | — | GREEN | 202 ids, 13 layers; ms 0 / upg 166 / buy 5 / ch 0 / ach 31 = census |
+| top100 G1 load (plain page) | the-lime-upgrade-tree | — | 3 | 0.15 | 0.05 | — | GREEN | ready 870 ms; 6 `#app .treeNode`; 68 requests, 0 non-localhost, 0 failed, 0 page errors; au nodes 0; keys `tmt-loader:the-lime-upgrade-tree:limesave`, `tmt-loader:the-lime-upgrade-tree:limesave_options` |
+| top100 check-manifest | the-greek-tree | — | 0 | 0 | — | — | GREEN | 19 scripts, 3 modFiles, subtree split 1966cf8, games/the-greek-tree pristine |
+| top100 idle hash = census | the-greek-tree | idle | 200 | 10 | 0.05 | `1c60855adb7b2e73` | GREEN | census 1c60855adb7b2e73 |
+| top100 goldens counts = census | the-greek-tree | — | 0 | 0 | — | — | GREEN | 181 ids, 11 layers; ms 23 / upg 116 / buy 16 / ch 0 / ach 26 = census |
+| top100 G1 load (plain page) | the-greek-tree | — | 3 | 0.15 | 0.05 | — | GREEN | ready 865 ms; 6 `#app .treeNode`; 71 requests, 0 non-localhost, 0 failed, 0 page errors; au nodes 0; keys `tmt-loader:the-greek-tree:The-Greek-Tree-nobody`, `tmt-loader:the-greek-tree:The-Greek-Tree-nobody_options` |
+| top100 check-manifest | the-mana-tree | — | 0 | 0 | — | — | GREEN | 17 scripts, 10 modFiles, subtree split f0e3f4a, games/the-mana-tree pristine |
+| top100 idle hash = census | the-mana-tree | idle | 200 | 10 | 0.05 | `7c89a9b06ce43b0a` | GREEN | census 7c89a9b06ce43b0a |
+| top100 goldens counts = census | the-mana-tree | — | 0 | 0 | — | — | GREEN | 103 ids, 14 layers; ms 11 / upg 63 / buy 11 / ch 0 / ach 18 = census |
+| top100 G1 load (plain page) | the-mana-tree | — | 3 | 0.15 | 0.05 | — | GREEN | ready 926 ms; 4 `#app .treeNode`; 76 requests, 0 non-localhost, 0 failed, 0 page errors; au nodes 0; keys `tmt-loader:the-mana-tree:The-Mana-Tree-MSpekkio`, `tmt-loader:the-mana-tree:The-Mana-Tree-MSpekkio_options` |
+| top100 check-manifest | the-incremental-tree-liamkelly4123-jpg | — | 0 | 0 | — | — | GREEN | 17 scripts, 8 modFiles, subtree split e721385, games/the-incremental-tree-liamkelly4123-jpg pristine |
+| top100 idle hash = census | the-incremental-tree-liamkelly4123-jpg | idle | 200 | 10 | 0.05 | `e85d49cdd2b84b3a` | GREEN | census e85d49cdd2b84b3a |
+| top100 goldens counts = census | the-incremental-tree-liamkelly4123-jpg | — | 0 | 0 | — | — | GREEN | 101 ids, 12 layers; ms 1 / upg 90 / buy 0 / ch 10 / ach 0 = census |
+| top100 G1 load (plain page) | the-incremental-tree-liamkelly4123-jpg | — | 3 | 0.15 | 0.05 | — | GREEN | ready 907 ms; 5 `#app .treeNode`; 74 requests, 0 non-localhost, 0 failed, 0 page errors; au nodes 0; keys `tmt-loader:the-incremental-tree-liamkelly4123-jpg:The-Incremental-Tree-liam_options`, `tmt-loader:the-incremental-tree-liamkelly4123-jpg:The-Incremental-Tree-liam` |
+| top100 check-manifest | sorbet-s-convolution-mainframe | — | 0 | 0 | — | — | GREEN | 18 scripts, 13 modFiles, subtree split cde577a, games/sorbet-s-convolution-mainframe pristine |
+| top100 idle hash = census | sorbet-s-convolution-mainframe | idle | 200 | 10 | 0.05 | `ddba33aa6ec31b04` | GREEN | census ddba33aa6ec31b04 |
+| top100 goldens counts = census | sorbet-s-convolution-mainframe | — | 0 | 0 | — | — | GREEN | 214 ids, 17 layers; ms 54 / upg 114 / buy 8 / ch 1 / ach 37 = census |
+| top100 G1 load (plain page) | sorbet-s-convolution-mainframe | — | 3 | 0.15 | 0.05 | — | GREEN | ready 1042 ms; 11 `#app .treeNode`; 83 requests, 0 non-localhost, 0 failed, 0 page errors; au nodes 0; keys `tmt-loader:sorbet-s-convolution-mainframe:Sorbet's-Convolution:-Mainframe-SorbetShark_options`, `tmt-loader:sorbet-s-convolution-mainframe:Sorbet's-Convolution:-Mainframe-SorbetShark` |
+| top100 check-manifest | arctree | — | 0 | 0 | — | — | GREEN | 24 scripts, 2 modFiles, subtree split 83d8a43, games/arctree pristine |
+| top100 idle hash = census | arctree | idle | 200 | 10 | 0.05 | `3f2fae68ae510061` | GREEN | census 3f2fae68ae510061 |
+| top100 goldens counts = census | arctree | — | 0 | 0 | — | — | GREEN | 428 ids, 40 layers; ms 73 / upg 220 / buy 18 / ch 27 / ach 90 = census |
+| top100 G1 load (plain page) | arctree | — | 3 | 0.15 | 0.05 | — | GREEN | ready 995 ms; 13 `#app .treeNode`; 75 requests, 0 non-localhost, 0 failed, 0 page errors; au nodes 0; keys `tmt-loader:arctree:arctree_options`, `tmt-loader:arctree:arctree` |
+| top100 check-manifest | layer-tree | — | 0 | 0 | — | — | GREEN | 17 scripts, 2 modFiles, subtree split 628cc19, games/layer-tree pristine |
+| top100 idle hash = census | layer-tree | idle | 200 | 10 | 0.05 | `b54d52f63b16ef25` | GREEN | census b54d52f63b16ef25 |
+| top100 goldens counts = census | layer-tree | — | 0 | 0 | — | — | GREEN | 61 ids, 12 layers; ms 22 / upg 16 / buy 9 / ch 14 / ach 0 = census |
+| top100 G1 load (plain page) | layer-tree | — | 3 | 0.15 | 0.05 | — | GREEN | ready 856 ms; 6 `#app .treeNode`; 68 requests, 0 non-localhost, 0 failed, 0 page errors; au nodes 0; keys `tmt-loader:layer-tree:层级树-我是xiajibazuo我埃及吧做啥就做啥`, `tmt-loader:layer-tree:层级树-我是xiajibazuo我埃及吧做啥就做啥_options` |
+| top100 check-manifest | the-question-tree | — | 0 | 0 | — | — | **RED** | [{"field":"boot.file_errors","live":[{"file":"js/Layers/m.js","error":"missing"}]},{"field":"load.known.missingScripts","drift":true,"manifest":[],"live":["js/Layers/m.js"],"declaredNotInTree":[],"inTreeNotDeclared":["js/Layers/m.js"]}] |
+| top100 idle hash = census | the-question-tree | idle | 200 | 10 | 0.05 | `e827372d905c21fb` | GREEN | census e827372d905c21fb |
+| top100 goldens counts = census | the-question-tree | — | 0 | 0 | — | — | GREEN | 45 ids, 12 layers; ms 9 / upg 15 / buy 9 / ch 4 / ach 8 = census |
+| top100 G1 load (plain page) | the-question-tree | — | 3 | 0.15 | 0.05 | — | **RED** | ready 901 ms; 7 `#app .treeNode`; 75 requests, 0 non-localhost, 2 failed, 0 page errors; au nodes 0; keys `tmt-loader:the-question-tree:TQT_options`, `tmt-loader:the-question-tree:TQT`; RED: ready true error null; 7 treeNodes; blocked 0 []; failed ["http://127.0.0.1:9170/games/the-question-tree/js/Layers/m.js HTTP 404","http://127.0.0.1:9170/games/the-question-tree/js/Layers/m.js net::ERR_ABORTED"]; page errors []; verdict vs load.known {"ok":false,"failedNotDeclared":["http://127.0.0.1:9170/games/the-question-tree/js/Layers/m.js HTTP 404","http://127.0.0.1:9170/games/the-question-tre |
+| top100 check-manifest | the-universal-shifting-tree | — | 0 | 0 | — | — | GREEN | 17 scripts, 2 modFiles, subtree split 4998f17, games/the-universal-shifting-tree pristine |
+| top100 idle hash = census | the-universal-shifting-tree | idle | 200 | 10 | 0.05 | `a4e6628ab320ea2a` | GREEN | census a4e6628ab320ea2a |
+| top100 goldens counts = census | the-universal-shifting-tree | — | 0 | 0 | — | — | GREEN | 49 ids, 11 layers; ms 15 / upg 34 / buy 0 / ch 0 / ach 0 = census |
+| top100 G1 load (plain page) | the-universal-shifting-tree | — | 3 | 0.15 | 0.05 | — | GREEN | ready 841 ms; 6 `#app .treeNode`; 68 requests, 0 non-localhost, 0 failed, 0 page errors; au nodes 0; keys `tmt-loader:the-universal-shifting-tree:The-Universal-Shifting-Tree-Elitheli`, `tmt-loader:the-universal-shifting-tree:The-Universal-Shifting-Tree-Elitheli_options` |
+| top100 check-manifest | the-shenanigans-tree-rewritten | — | 0 | 0 | — | — | GREEN | 18 scripts, 0 modFiles, subtree split bb2c694, games/the-shenanigans-tree-rewritten pristine |
+| top100 idle hash = census | the-shenanigans-tree-rewritten | idle | 200 | 10 | 0.05 | `8da852b40b7a53d9` | GREEN | census 8da852b40b7a53d9 |
+| top100 goldens counts = census | the-shenanigans-tree-rewritten | — | 0 | 0 | — | — | GREEN | 180 ids, 13 layers; ms 13 / upg 117 / buy 9 / ch 5 / ach 36 = census |
+| top100 G1 load (plain page) | the-shenanigans-tree-rewritten | — | 3 | 0.15 | 0.05 | — | GREEN | ready 879 ms; 1 `#app .treeNode`; 61 requests, 0 non-localhost, 0 failed, 0 page errors; au nodes 0; keys `tmt-loader:the-shenanigans-tree-rewritten:holyfuckingshitisthatshenaniganstree!?!??!?!??!?!??!?!_options`, `tmt-loader:the-shenanigans-tree-rewritten:holyfuckingshitisthatshenaniganstree!?!??!?!??!?!??!?!` |
+| top100 check-manifest | universal-reconstruction | — | 0 | 0 | — | — | GREEN | 17 scripts, 13 modFiles, subtree split a8cd02c, games/universal-reconstruction pristine |
+| top100 idle hash = census | universal-reconstruction | idle | 200 | 10 | 0.05 | `156251f3c0050868` | GREEN | census 156251f3c0050868 |
+| top100 goldens counts = census | universal-reconstruction | — | 0 | 0 | — | — | GREEN | 154 ids, 16 layers; ms 18 / upg 78 / buy 56 / ch 2 / ach 0 = census |
+| top100 G1 load (plain page) | universal-reconstruction | — | 3 | 0.15 | 0.05 | — | GREEN | ready 1047 ms; 5 `#app .treeNode`; 79 requests, 0 non-localhost, 0 failed, 0 page errors; au nodes 0; keys `tmt-loader:universal-reconstruction:universal-reconstruction_options`, `tmt-loader:universal-reconstruction:universal-reconstruction` |
+| top100 check-manifest | devourer-of-flies | — | 0 | 0 | — | — | GREEN | 17 scripts, 2 modFiles, subtree split b221076, games/devourer-of-flies pristine |
+| top100 idle hash = census | devourer-of-flies | idle | 200 | 10 | 0.05 | `b0ec01b02b6222f0` | GREEN | census b0ec01b02b6222f0 |
+| top100 goldens counts = census | devourer-of-flies | — | 0 | 0 | — | — | GREEN | 145 ids, 14 layers; ms 24 / upg 110 / buy 3 / ch 8 / ach 0 = census |
+| top100 G1 load (plain page) | devourer-of-flies | — | 3 | 0.15 | 0.05 | — | GREEN | ready 870 ms; 6 `#app .treeNode`; 68 requests, 0 non-localhost, 0 failed, 0 page errors; au nodes 0; keys `tmt-loader:devourer-of-flies:Devourer-of-Flies-THE-ABSOLUTE-OF-FLIES-aka-Myxoedema_options`, `tmt-loader:devourer-of-flies:Devourer-of-Flies-THE-ABSOLUTE-OF-FLIES-aka-Myxoedema` |
+| top100 check-manifest | the-h2o-tree | — | 0 | 0 | — | — | GREEN | 17 scripts, 10 modFiles, subtree split 1be2828, games/the-h2o-tree pristine |
+| top100 idle hash = census | the-h2o-tree | idle | 200 | 10 | 0.05 | `72967aa1aa648fce` | GREEN | census 72967aa1aa648fce |
+| top100 goldens counts = census | the-h2o-tree | — | 0 | 0 | — | — | GREEN | 42 ids, 14 layers; ms 6 / upg 27 / buy 2 / ch 0 / ach 7 = census |
+| top100 G1 load (plain page) | the-h2o-tree | — | 3 | 0.15 | 0.05 | — | GREEN | ready 927 ms; 5 `#app .treeNode`; 76 requests, 0 non-localhost, 0 failed, 0 page errors; au nodes 0; keys `tmt-loader:the-h2o-tree:H2O`, `tmt-loader:the-h2o-tree:H2O_options` |
+| top100 check-manifest | the-tearonq-i-have-no-creative-names | — | 0 | 0 | — | — | GREEN | 18 scripts, 4 modFiles, subtree split 543aa35, games/the-tearonq-i-have-no-creative-names pristine |
+| top100 idle hash = census | the-tearonq-i-have-no-creative-names | idle | 200 | 10 | 0.05 | `b3e1b6ce96ff2b8a` | GREEN | census b3e1b6ce96ff2b8a |
+| top100 goldens counts = census | the-tearonq-i-have-no-creative-names | — | 0 | 0 | — | — | GREEN | 190 ids, 8 layers; ms 23 / upg 98 / buy 55 / ch 14 / ach 0 = census |
+| top100 G1 load (plain page) | the-tearonq-i-have-no-creative-names | — | 3 | 0.15 | 0.05 | — | GREEN | ready 944 ms; 3 `#app .treeNode`; 70 requests, 0 non-localhost, 0 failed, 0 page errors; au nodes 0; keys `tmt-loader:the-tearonq-i-have-no-creative-names:tearonq_another_game_lmao_options`, `tmt-loader:the-tearonq-i-have-no-creative-names:tearonq_another_game_lmao` |
+| top100 check-manifest | the-function-of-time-tree | — | 0 | 0 | — | — | GREEN | 17 scripts, 16 modFiles, subtree split 76ba19f, games/the-function-of-time-tree pristine |
+| top100 idle hash = census | the-function-of-time-tree | idle | 200 | 10 | 0.05 | `020b9bd68d0e96ff` | GREEN | census 020b9bd68d0e96ff |
+| top100 goldens counts = census | the-function-of-time-tree | — | 0 | 0 | — | — | GREEN | 181 ids, 23 layers; ms 5 / upg 61 / buy 36 / ch 7 / ach 72 = census |
+| top100 G1 load (plain page) | the-function-of-time-tree | — | 3 | 0.15 | 0.05 | — | GREEN | ready 1028 ms; 2 `#app .treeNode`; 82 requests, 0 non-localhost, 0 failed, 0 page errors; au nodes 0; keys `tmt-loader:the-function-of-time-tree:tfotremake_options`, `tmt-loader:the-function-of-time-tree:tfotremake` |
+| top100 check-manifest | the-prestige-galaxy | — | 0 | 0 | — | — | GREEN | 17 scripts, 2 modFiles, subtree split a4cb3c8, games/the-prestige-galaxy pristine |
+| top100 idle hash = census | the-prestige-galaxy | idle | 200 | 10 | 0.05 | `cb145b6932fd5f42` | GREEN | census cb145b6932fd5f42 |
+| top100 goldens counts = census | the-prestige-galaxy | — | 0 | 0 | — | — | GREEN | 55 ids, 9 layers; ms 1 / upg 34 / buy 0 / ch 1 / ach 19 = census |
+| top100 G1 load (plain page) | the-prestige-galaxy | — | 3 | 0.15 | 0.05 | — | GREEN | ready 879 ms; 4 `#app .treeNode`; 68 requests, 0 non-localhost, 0 failed, 0 page errors; au nodes 0; keys `tmt-loader:the-prestige-galaxy:TPG_options`, `tmt-loader:the-prestige-galaxy:TPG` |
+| top100 check-manifest | the-hyperoperator-tree | — | 0 | 0 | — | — | GREEN | 19 scripts, 0 modFiles, subtree split f24e1c5, games/the-hyperoperator-tree pristine |
+| top100 idle hash = census | the-hyperoperator-tree | idle | 200 | 10 | 0.05 | `643ba04ee03fbcd2` | GREEN | census 643ba04ee03fbcd2 |
+| top100 goldens counts = census | the-hyperoperator-tree | — | 0 | 0 | — | — | GREEN | 70 ids, 11 layers; ms 19 / upg 45 / buy 6 / ch 0 / ach 0 = census |
+| top100 G1 load (plain page) | the-hyperoperator-tree | — | 3 | 0.15 | 0.05 | — | GREEN | ready 900 ms; 6 `#app .treeNode`; 67 requests, 0 non-localhost, 0 failed, 0 page errors; au nodes 0; keys `tmt-loader:the-hyperoperator-tree:The Hyperoperator Tree` |
+| top100 check-manifest | falling-mountain-s-alterprestige | — | 0 | 0 | — | — | GREEN | 18 scripts, 7 modFiles, subtree split d3b83ae, games/falling-mountain-s-alterprestige pristine |
+| top100 idle hash = census | falling-mountain-s-alterprestige | idle | 200 | 10 | 0.05 | `23902a170501b17d` | GREEN | NONDETERMINISTIC (census deterministic=false, table false, paths ["Nanoprestige.corruption"]): census 30f8d94e75cd69ec, run 1 23902a170501b17d, run 2 829b9983b5764d3e — recorded, not failed |
+| top100 goldens counts = census | falling-mountain-s-alterprestige | — | 0 | 0 | — | — | GREEN | 245 ids, 17 layers; ms 37 / upg 107 / buy 27 / ch 5 / ach 69 = census |
+| top100 G1 load (plain page) | falling-mountain-s-alterprestige | — | 3 | 0.15 | 0.05 | — | GREEN | ready 953 ms; 8 `#app .treeNode`; 73 requests, 0 non-localhost, 0 failed, 0 page errors; au nodes 0; keys `tmt-loader:falling-mountain-s-alterprestige:alterPrestige`, `tmt-loader:falling-mountain-s-alterprestige:alterPrestige_options` |
+| top100 check-manifest | the-tree-of-existence-and-reality | — | 0 | 0 | — | — | GREEN | 17 scripts, 2 modFiles, subtree split 7a2c3c4, games/the-tree-of-existence-and-reality pristine |
+| top100 idle hash = census | the-tree-of-existence-and-reality | idle | 200 | 10 | 0.05 | `7586fb26f7cbf829` | GREEN | census 7586fb26f7cbf829 |
+| top100 goldens counts = census | the-tree-of-existence-and-reality | — | 0 | 0 | — | — | GREEN | 71 ids, 20 layers; ms 5 / upg 30 / buy 14 / ch 4 / ach 18 = census |
+| top100 G1 load (plain page) | the-tree-of-existence-and-reality | — | 3 | 0.15 | 0.05 | — | GREEN | ready 892 ms; 9 `#app .treeNode`; 68 requests, 0 non-localhost, 0 failed, 0 page errors; au nodes 0; keys `tmt-loader:the-tree-of-existence-and-reality:ExisReal`, `tmt-loader:the-tree-of-existence-and-reality:ExisReal_options` |
+| top100 check-manifest | the-fruit-tree | — | 0 | 0 | — | — | GREEN | 17 scripts, 2 modFiles, subtree split 752922e, games/the-fruit-tree pristine |
+| top100 idle hash = census | the-fruit-tree | idle | 200 | 10 | 0.05 | `12af5ddd33876ea5` | GREEN | census 12af5ddd33876ea5 |
+| top100 goldens counts = census | the-fruit-tree | — | 0 | 0 | — | — | GREEN | 90 ids, 10 layers; ms 8 / upg 82 / buy 0 / ch 0 / ach 0 = census |
+| top100 G1 load (plain page) | the-fruit-tree | — | 3 | 0.15 | 0.05 | — | GREEN | ready 866 ms; 4 `#app .treeNode`; 68 requests, 0 non-localhost, 0 failed, 0 page errors; au nodes 0; keys `tmt-loader:the-fruit-tree:mymoda`, `tmt-loader:the-fruit-tree:mymoda_options` |
+| top100 check-manifest | the-numbruh-tree | — | 0 | 0 | — | — | GREEN | 17 scripts, 2 modFiles, subtree split 08ffdec, games/the-numbruh-tree pristine |
+| top100 idle hash = census | the-numbruh-tree | idle | 200 | 10 | 0.05 | `692a88bf4d4bdf46` | GREEN | census 692a88bf4d4bdf46 |
+| top100 goldens counts = census | the-numbruh-tree | — | 0 | 0 | — | — | GREEN | 124 ids, 12 layers; ms 13 / upg 44 / buy 17 / ch 0 / ach 50 = census |
+| top100 G1 load (plain page) | the-numbruh-tree | — | 3 | 0.15 | 0.05 | — | GREEN | ready 898 ms; 5 `#app .treeNode`; 68 requests, 0 non-localhost, 0 failed, 0 page errors; au nodes 0; keys `tmt-loader:the-numbruh-tree:JHTNT`, `tmt-loader:the-numbruh-tree:JHTNT_options` |
+| top100 check-manifest | the-basic-tree | — | 0 | 0 | — | — | GREEN | 11 scripts, 0 modFiles, subtree split 49cf191, games/the-basic-tree pristine |
+| top100 idle hash = census | the-basic-tree | idle | 200 | 10 | 0.05 | `9033d1736211e07d` | GREEN | census 9033d1736211e07d |
+| top100 goldens counts = census | the-basic-tree | — | 0 | 0 | — | — | GREEN | 61 ids, 11 layers; ms 14 / upg 11 / buy 0 / ch 0 / ach 36 = census |
+| top100 G1 load (plain page) | the-basic-tree | — | 3 | 0.15 | 0.05 | — | GREEN | ready 687 ms; 5 `#app .treeNode`; 53 requests, 0 non-localhost, 0 failed, 0 page errors; au nodes 0; keys `tmt-loader:the-basic-tree:gapples2` |
+| top100 check-manifest | the-melge-tree | — | 0 | 0 | — | — | **RED** | [{"field":"load.known.externalHosts","drift":true,"manifest":[],"live":["c.tenor.com","cdn.discordapp.com","i.imgur.com","img.stablecog.com","media.discordapp.net","media.giphy.com","media1.giphy.com","media2.giphy.com","media3.giphy.com"],"declaredNotInTree":[],"inTreeNotDeclared":["c.tenor.com","cdn.discordapp.com","i.imgur.com","img.stablecog.com","media.discordapp.net","media.giphy.com","media |
+| top100 idle hash = census | the-melge-tree | idle | 200 | 10 | 0.05 | `ce8a8a1a37331ec5` | GREEN | census ce8a8a1a37331ec5 |
+| top100 goldens counts = census | the-melge-tree | — | 0 | 0 | — | — | GREEN | 87 ids, 14 layers; ms 15 / upg 48 / buy 12 / ch 0 / ach 12 = census |
+| top100 G1 load (plain page) | the-melge-tree | — | 3 | 0.15 | 0.05 | — | GREEN | ready 949 ms; 8 `#app .treeNode`; 76 requests, 0 non-localhost, 0 failed, 0 page errors; au nodes 0; keys `tmt-loader:the-melge-tree:melge011_options`, `tmt-loader:the-melge-tree:melge011` |
+| top100 check-manifest | the-cultree | — | 0 | 0 | — | — | GREEN | 17 scripts, 7 modFiles, subtree split 9549998, games/the-cultree pristine |
+| top100 idle hash = census | the-cultree | idle | 200 | 10 | 0.05 | `8beb290c0080d74f` | GREEN | census 8beb290c0080d74f |
+| top100 goldens counts = census | the-cultree | — | 0 | 0 | — | — | GREEN | 83 ids, 11 layers; ms 7 / upg 27 / buy 9 / ch 26 / ach 14 = census |
+| top100 G1 load (plain page) | the-cultree | — | 3 | 0.15 | 0.05 | — | GREEN | ready 899 ms; 8 `#app .treeNode`; 73 requests, 0 non-localhost, 0 failed, 0 page errors; au nodes 0; keys `tmt-loader:the-cultree:cult1337`, `tmt-loader:the-cultree:cult1337_options` |
+| top100 check-manifest | weakling-tree | — | 0 | 0 | — | — | GREEN | 17 scripts, 7 modFiles, subtree split 6bbb515, games/weakling-tree pristine |
+| top100 idle hash = census | weakling-tree | idle | 200 | 10 | 0.05 | `3961464ce3523efa` | GREEN | census 3961464ce3523efa |
+| top100 goldens counts = census | weakling-tree | — | 0 | 0 | — | — | GREEN | 194 ids, 14 layers; ms 69 / upg 69 / buy 3 / ch 8 / ach 45 = census |
+| top100 G1 load (plain page) | weakling-tree | — | 3 | 0.15 | 0.05 | — | GREEN | ready 911 ms; 4 `#app .treeNode`; 73 requests, 0 non-localhost, 0 failed, 0 page errors; au nodes 0; keys `tmt-loader:weakling-tree:Weakling-Tree-HankG_options`, `tmt-loader:weakling-tree:Weakling-Tree-HankG` |
+| top100 check-manifest | coffee-shop | — | 0 | 0 | — | — | GREEN | 17 scripts, 7 modFiles, subtree split 0e15311, games/coffee-shop pristine |
+| top100 idle hash = census | coffee-shop | idle | 200 | 10 | 0.05 | `b34d1d27b388071b` | GREEN | census b34d1d27b388071b |
+| top100 goldens counts = census | coffee-shop | — | 0 | 0 | — | — | GREEN | 83 ids, 11 layers; ms 11 / upg 60 / buy 12 / ch 0 / ach 0 = census |
+| top100 G1 load (plain page) | coffee-shop | — | 3 | 0.15 | 0.05 | — | GREEN | ready 907 ms; 6 `#app .treeNode`; 73 requests, 0 non-localhost, 0 failed, 0 page errors; au nodes 0; keys `tmt-loader:coffee-shop:Coffee-Shop-Moosiqe_options`, `tmt-loader:coffee-shop:Coffee-Shop-Moosiqe` |
+| top100 check-manifest | the-universal-tree | — | 0 | 0 | — | — | GREEN | 17 scripts, 2 modFiles, subtree split 257fd41, games/the-universal-tree pristine |
+| top100 idle hash = census | the-universal-tree | idle | 200 | 10 | 0.05 | `dbefc050ac8e1d86` | GREEN | census dbefc050ac8e1d86 |
+| top100 goldens counts = census | the-universal-tree | — | 0 | 0 | — | — | GREEN | 39 ids, 9 layers; ms 12 / upg 19 / buy 8 / ch 0 / ach 0 = census |
+| top100 G1 load (plain page) | the-universal-tree | — | 3 | 0.15 | 0.05 | — | GREEN | ready 867 ms; 5 `#app .treeNode`; 68 requests, 0 non-localhost, 0 failed, 0 page errors; au nodes 0; keys `tmt-loader:the-universal-tree:tttt`, `tmt-loader:the-universal-tree:tttt_options` |
+| top100 check-manifest | the-video-coin-tree | — | 0 | 0 | — | — | GREEN | 17 scripts, 2 modFiles, subtree split 8798060, games/the-video-coin-tree pristine |
+| top100 idle hash = census | the-video-coin-tree | idle | 200 | 10 | 0.05 | `e0fb73262a8c61d6` | GREEN | census e0fb73262a8c61d6 |
+| top100 goldens counts = census | the-video-coin-tree | — | 0 | 0 | — | — | GREEN | 24 ids, 8 layers; ms 6 / upg 15 / buy 0 / ch 3 / ach 0 = census |
+| top100 G1 load (plain page) | the-video-coin-tree | — | 3 | 0.15 | 0.05 | — | GREEN | ready 872 ms; 3 `#app .treeNode`; 68 requests, 0 non-localhost, 0 failed, 0 page errors; au nodes 0; keys `tmt-loader:the-video-coin-tree:The-Video-Coin-Tree-Masutaki`, `tmt-loader:the-video-coin-tree:The-Video-Coin-Tree-Masutaki_options` |
+| top100 check-manifest | the-universal-tree-voidcons0le-is-dumb | — | 0 | 0 | — | — | GREEN | 17 scripts, 2 modFiles, subtree split af28eb8, games/the-universal-tree-voidcons0le-is-dumb pristine |
+| top100 idle hash = census | the-universal-tree-voidcons0le-is-dumb | idle | 200 | 10 | 0.05 | `1a0974d731d35720` | GREEN | census 1a0974d731d35720 |
+| top100 goldens counts = census | the-universal-tree-voidcons0le-is-dumb | — | 0 | 0 | — | — | GREEN | 58 ids, 14 layers; ms 11 / upg 27 / buy 6 / ch 0 / ach 14 = census |
+| top100 G1 load (plain page) | the-universal-tree-voidcons0le-is-dumb | — | 3 | 0.15 | 0.05 | — | GREEN | ready 873 ms; 6 `#app .treeNode`; 68 requests, 0 non-localhost, 0 failed, 0 page errors; au nodes 0; keys `tmt-loader:the-universal-tree-voidcons0le-is-dumb:The-Universal-Tree-voidcons0le/plutonium_options`, `tmt-loader:the-universal-tree-voidcons0le-is-dumb:The-Universal-Tree-voidcons0le/plutonium` |
+| G6 games doc | null | — | 0 | 0 | — | — | GREEN | docs/games.md regenerated: 86 games in manifests/index.json, 86 listed in that order |

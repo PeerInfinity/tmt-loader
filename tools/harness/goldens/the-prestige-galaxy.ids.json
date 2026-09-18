@@ -1,0 +1,106 @@
+{
+  "id": "the-prestige-galaxy",
+  "commit": "a4cb3c8c503817e049e09f893ae50a6f593365df",
+  "layers": {
+    "info-tab": {
+      "row": "otherside",
+      "type": "none"
+    },
+    "options-tab": {
+      "row": "otherside",
+      "type": "none"
+    },
+    "changelog-tab": {
+      "row": "otherside",
+      "type": "none"
+    },
+    "p": {
+      "row": 1,
+      "type": "normal"
+    },
+    "s": {
+      "row": 2,
+      "type": "normal"
+    },
+    "b": {
+      "row": 2,
+      "type": "static"
+    },
+    "ach": {
+      "row": "side",
+      "type": "none"
+    },
+    "blank": {
+      "row": null,
+      "type": "none"
+    },
+    "tree-tab": {
+      "row": null,
+      "type": "none"
+    }
+  },
+  "ids": [
+    "p:upg:11",
+    "p:upg:12",
+    "p:upg:13",
+    "p:upg:14",
+    "p:upg:15",
+    "p:upg:21",
+    "p:upg:22",
+    "p:upg:23",
+    "p:upg:24",
+    "p:upg:25",
+    "s:upg:11",
+    "s:upg:12",
+    "s:upg:13",
+    "s:upg:14",
+    "s:upg:15",
+    "s:upg:21",
+    "s:upg:22",
+    "s:upg:23",
+    "s:upg:24",
+    "s:upg:25",
+    "s:upg:31",
+    "s:upg:32",
+    "s:upg:33",
+    "s:upg:34",
+    "s:upg:35",
+    "s:upg:41",
+    "s:upg:42",
+    "s:upg:43",
+    "s:ch:11",
+    "b:ms:1",
+    "b:upg:11",
+    "b:upg:12",
+    "b:upg:13",
+    "b:upg:14",
+    "b:upg:15",
+    "b:upg:21",
+    "ach:ach:11",
+    "ach:ach:12",
+    "ach:ach:13",
+    "ach:ach:14",
+    "ach:ach:15",
+    "ach:ach:21",
+    "ach:ach:22",
+    "ach:ach:23",
+    "ach:ach:24",
+    "ach:ach:25",
+    "ach:ach:31",
+    "ach:ach:32",
+    "ach:ach:33",
+    "ach:ach:34",
+    "ach:ach:35",
+    "ach:ach:41",
+    "ach:ach:42",
+    "ach:ach:43",
+    "ach:ach:44"
+  ],
+  "counts": {
+    "ms": 1,
+    "upg": 34,
+    "buy": 0,
+    "ch": 1,
+    "ach": 19
+  }
+}

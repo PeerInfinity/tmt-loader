@@ -1,0 +1,174 @@
+{
+  "id": "the-mana-tree",
+  "commit": "f0e3f4a34d10eadbf9939b27a4defbc9a58712ac",
+  "layers": {
+    "info-tab": {
+      "row": "otherside",
+      "type": "none"
+    },
+    "options-tab": {
+      "row": "otherside",
+      "type": "none"
+    },
+    "changelog-tab": {
+      "row": "otherside",
+      "type": "none"
+    },
+    "qiearth": {
+      "row": 2,
+      "type": "static"
+    },
+    "qisky": {
+      "row": 2,
+      "type": "normal"
+    },
+    "qiocean": {
+      "row": 2,
+      "type": "normal"
+    },
+    "m": {
+      "row": 1,
+      "type": "static"
+    },
+    "t": {
+      "row": 0,
+      "type": "none"
+    },
+    "d": {
+      "row": 0,
+      "type": "normal"
+    },
+    "c": {
+      "row": 1,
+      "type": "static"
+    },
+    "b": {
+      "row": 1,
+      "type": "static"
+    },
+    "a": {
+      "row": "side",
+      "type": "none"
+    },
+    "blank1": {
+      "row": 0,
+      "type": "none"
+    },
+    "tree-tab": {
+      "row": null,
+      "type": "none"
+    }
+  },
+  "ids": [
+    "qiearth:buy:11",
+    "qiearth:buy:12",
+    "qiearth:buy:13",
+    "qiearth:buy:21",
+    "qiearth:buy:22",
+    "qisky:upg:11",
+    "qisky:upg:12",
+    "qisky:upg:13",
+    "qisky:buy:11",
+    "qisky:buy:12",
+    "qiocean:upg:11",
+    "qiocean:upg:12",
+    "qiocean:upg:21",
+    "qiocean:upg:22",
+    "qiocean:upg:31",
+    "qiocean:upg:32",
+    "qiocean:buy:11",
+    "m:ms:0",
+    "m:ms:1",
+    "m:ms:2",
+    "m:ms:3",
+    "m:ms:4",
+    "m:ms:5",
+    "m:buy:11",
+    "m:buy:12",
+    "m:buy:13",
+    "t:upg:11",
+    "t:upg:12",
+    "t:upg:13",
+    "t:upg:21",
+    "t:upg:22",
+    "t:upg:31",
+    "t:upg:32",
+    "t:upg:33",
+    "d:upg:11",
+    "d:upg:12",
+    "d:upg:13",
+    "d:upg:14",
+    "d:upg:15",
+    "d:upg:21",
+    "d:upg:22",
+    "d:upg:23",
+    "d:upg:24",
+    "d:upg:25",
+    "d:upg:31",
+    "d:upg:32",
+    "d:upg:33",
+    "d:upg:34",
+    "d:upg:35",
+    "d:upg:41",
+    "d:upg:42",
+    "d:upg:43",
+    "d:upg:44",
+    "d:upg:45",
+    "c:ms:0",
+    "c:ms:1",
+    "c:ms:2",
+    "c:ms:3",
+    "c:upg:11",
+    "b:ms:0",
+    "b:upg:11",
+    "b:upg:12",
+    "b:upg:13",
+    "b:upg:14",
+    "b:upg:15",
+    "b:upg:21",
+    "b:upg:22",
+    "b:upg:23",
+    "b:upg:24",
+    "b:upg:25",
+    "b:upg:31",
+    "b:upg:32",
+    "b:upg:33",
+    "b:upg:34",
+    "b:upg:35",
+    "b:upg:41",
+    "b:upg:42",
+    "b:upg:43",
+    "b:upg:44",
+    "b:upg:45",
+    "b:upg:51",
+    "b:upg:52",
+    "b:upg:53",
+    "b:upg:54",
+    "b:upg:55",
+    "a:ach:11",
+    "a:ach:12",
+    "a:ach:13",
+    "a:ach:14",
+    "a:ach:15",
+    "a:ach:16",
+    "a:ach:17",
+    "a:ach:18",
+    "a:ach:19",
+    "a:ach:21",
+    "a:ach:22",
+    "a:ach:23",
+    "a:ach:24",
+    "a:ach:25",
+    "a:ach:26",
+    "a:ach:27",
+    "a:ach:28",
+    "a:ach:29"
+  ],
+  "counts": {
+    "ms": 11,
+    "upg": 63,
+    "buy": 11,
+    "ch": 0,
+    "ach": 18
+  }
+}

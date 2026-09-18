@@ -1,0 +1,362 @@
+{
+  "id": "the-cookie-tree",
+  "commit": "6701b1d68999b71daebcf2181579344cc2bcf5a0",
+  "layers": {
+    "info-tab": {
+      "row": "otherside",
+      "type": "none"
+    },
+    "options-tab": {
+      "row": "otherside",
+      "type": "none"
+    },
+    "changelog-tab": {
+      "row": "otherside",
+      "type": "none"
+    },
+    "qwertyuiopasdfghjklzxcvbnm": {
+      "row": 101,
+      "type": "normal"
+    },
+    "p": {
+      "row": 0,
+      "type": "normal"
+    },
+    "np": {
+      "row": 0,
+      "type": "normal"
+    },
+    "v": {
+      "row": 0,
+      "type": "normal"
+    },
+    "e": {
+      "row": 0,
+      "type": "static"
+    },
+    "w": {
+      "row": 0,
+      "type": "static"
+    },
+    "s": {
+      "row": 1,
+      "type": "normal"
+    },
+    "u": {
+      "row": 2,
+      "type": "normal"
+    },
+    "inf": {
+      "row": 2,
+      "type": "normal"
+    },
+    "etr": {
+      "row": 2,
+      "type": "normal"
+    },
+    "meta": {
+      "row": 2,
+      "type": "normal"
+    },
+    "xp": {
+      "row": 2,
+      "type": "normal"
+    },
+    "lv": {
+      "row": 2,
+      "type": "static"
+    },
+    "mlv": {
+      "row": 2,
+      "type": "static"
+    },
+    "gr": {
+      "row": 3,
+      "type": "normal"
+    },
+    "sst": {
+      "row": 3,
+      "type": "normal"
+    },
+    "vc": {
+      "row": 3,
+      "type": "normal"
+    },
+    "dcc": {
+      "row": 3,
+      "type": "normal"
+    },
+    "cc": {
+      "row": 3,
+      "type": "normal"
+    },
+    "c": {
+      "row": 3,
+      "type": "normal"
+    },
+    "nm": {
+      "row": 4,
+      "type": "normal"
+    },
+    "mm": {
+      "row": 4,
+      "type": "static"
+    },
+    "pm": {
+      "row": 4,
+      "type": "normal"
+    },
+    "pie": {
+      "row": 100,
+      "type": "normal"
+    },
+    "bc": {
+      "row": 100,
+      "type": "normal"
+    },
+    "tierone": {
+      "row": 6,
+      "type": "normal"
+    },
+    "tiertwo": {
+      "row": 6,
+      "type": "static"
+    },
+    "rng": {
+      "row": 6,
+      "type": "normal"
+    },
+    "plus": {
+      "row": 1,
+      "type": "static"
+    },
+    "multi": {
+      "row": 1,
+      "type": "static"
+    },
+    "exp": {
+      "row": 1,
+      "type": "static"
+    },
+    "tetr": {
+      "row": 1,
+      "type": "static"
+    },
+    "a": {
+      "row": "side",
+      "type": "none"
+    },
+    "ba": {
+      "row": "side",
+      "type": "none"
+    },
+    "hard": {
+      "row": "side",
+      "type": "none"
+    },
+    "what": {
+      "row": "side",
+      "type": "none"
+    },
+    "sa": {
+      "row": "side",
+      "type": "none"
+    },
+    "tf": {
+      "row": "side",
+      "type": "none"
+    },
+    "blank": {
+      "row": null,
+      "type": "none"
+    },
+    "tree-tab": {
+      "row": null,
+      "type": "none"
+    }
+  },
+  "ids": [
+    "qwertyuiopasdfghjklzxcvbnm:upg:11",
+    "qwertyuiopasdfghjklzxcvbnm:upg:12",
+    "qwertyuiopasdfghjklzxcvbnm:upg:13",
+    "qwertyuiopasdfghjklzxcvbnm:upg:14",
+    "qwertyuiopasdfghjklzxcvbnm:upg:15",
+    "p:upg:11",
+    "p:upg:21",
+    "p:upg:22",
+    "p:upg:23",
+    "p:upg:24",
+    "p:upg:25",
+    "p:upg:31",
+    "p:upg:41",
+    "p:upg:51",
+    "p:upg:61",
+    "p:upg:71",
+    "p:upg:72",
+    "p:upg:73",
+    "p:upg:81",
+    "p:upg:82",
+    "p:upg:83",
+    "p:upg:84",
+    "p:upg:85",
+    "np:upg:11",
+    "np:upg:12",
+    "np:upg:13",
+    "np:upg:14",
+    "np:upg:15",
+    "np:upg:21",
+    "np:upg:22",
+    "np:upg:23",
+    "np:upg:24",
+    "np:upg:25",
+    "v:upg:11",
+    "e:upg:11",
+    "e:upg:21",
+    "e:upg:31",
+    "e:upg:41",
+    "w:upg:11",
+    "w:upg:21",
+    "w:upg:31",
+    "s:upg:11",
+    "s:upg:21",
+    "s:upg:31",
+    "u:upg:11",
+    "u:upg:21",
+    "u:upg:31",
+    "u:upg:41",
+    "inf:upg:11",
+    "inf:upg:21",
+    "inf:upg:31",
+    "etr:upg:11",
+    "meta:upg:11",
+    "meta:upg:12",
+    "meta:upg:13",
+    "meta:upg:14",
+    "meta:upg:21",
+    "meta:upg:31",
+    "meta:upg:41",
+    "xp:upg:11",
+    "xp:upg:12",
+    "xp:upg:21",
+    "lv:ms:0",
+    "lv:ms:1",
+    "lv:ms:2",
+    "lv:upg:11",
+    "mlv:ms:0",
+    "gr:ms:0",
+    "gr:ms:1",
+    "gr:ms:2",
+    "gr:ms:3",
+    "gr:ms:4",
+    "gr:ms:5",
+    "gr:upg:11",
+    "gr:upg:12",
+    "gr:upg:13",
+    "gr:upg:21",
+    "sst:ms:0",
+    "sst:upg:11",
+    "sst:ch:11",
+    "sst:ch:12",
+    "vc:upg:11",
+    "vc:upg:12",
+    "dcc:upg:11",
+    "dcc:upg:12",
+    "dcc:upg:13",
+    "dcc:upg:14",
+    "dcc:upg:15",
+    "cc:upg:11",
+    "cc:upg:12",
+    "cc:upg:13",
+    "cc:upg:14",
+    "cc:upg:15",
+    "c:ms:0",
+    "c:ms:1",
+    "c:ms:2",
+    "c:ms:3",
+    "c:ms:4",
+    "c:ms:5",
+    "c:ms:6",
+    "nm:ms:0",
+    "nm:ms:1",
+    "mm:ms:0",
+    "mm:ms:1",
+    "pm:ms:0",
+    "pm:ms:1",
+    "pie:upg:11",
+    "pie:upg:21",
+    "pie:upg:31",
+    "bc:upg:11",
+    "tierone:upg:11",
+    "tiertwo:upg:11",
+    "rng:upg:11",
+    "rng:upg:12",
+    "rng:upg:13",
+    "rng:upg:14",
+    "rng:upg:15",
+    "rng:upg:21",
+    "rng:upg:22",
+    "rng:upg:23",
+    "rng:upg:24",
+    "rng:upg:25",
+    "rng:upg:31",
+    "rng:upg:32",
+    "rng:upg:33",
+    "rng:upg:34",
+    "rng:upg:35",
+    "rng:upg:41",
+    "plus:upg:11",
+    "plus:upg:21",
+    "plus:upg:31",
+    "multi:upg:11",
+    "multi:upg:21",
+    "exp:upg:11",
+    "exp:upg:21",
+    "tetr:upg:11",
+    "a:ach:11",
+    "a:ach:12",
+    "a:ach:13",
+    "a:ach:14",
+    "a:ach:15",
+    "a:ach:21",
+    "a:ach:22",
+    "a:ach:23",
+    "a:ach:24",
+    "a:ach:25",
+    "a:ach:26",
+    "a:ach:31",
+    "a:ach:32",
+    "a:ach:33",
+    "a:ach:34",
+    "a:ach:35",
+    "a:ach:36",
+    "a:ach:37",
+    "a:ach:38",
+    "a:ach:41",
+    "a:ach:42",
+    "a:ach:51",
+    "a:ach:52",
+    "a:ach:53",
+    "ba:ach:11",
+    "ba:ach:12",
+    "ba:ach:13",
+    "ba:ach:21",
+    "hard:ach:11",
+    "hard:ach:12",
+    "hard:ach:13",
+    "hard:ach:14",
+    "hard:ach:15",
+    "what:upg:11",
+    "what:upg:12",
+    "what:ach:11",
+    "sa:ach:11",
+    "sa:ach:12",
+    "tf:upg:11"
+  ],
+  "counts": {
+    "ms": 24,
+    "upg": 113,
+    "buy": 0,
+    "ch": 2,
+    "ach": 36
+  }
+}

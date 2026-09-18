@@ -1,0 +1,108 @@
+{
+  "id": "the-question-tree",
+  "commit": "ad063e73cdeb9cd6f5538544c6756e7c5476d615",
+  "layers": {
+    "info-tab": {
+      "row": "otherside",
+      "type": "none"
+    },
+    "options-tab": {
+      "row": "otherside",
+      "type": "none"
+    },
+    "changelog-tab": {
+      "row": "otherside",
+      "type": "none"
+    },
+    "q": {
+      "row": 0,
+      "type": "normal"
+    },
+    "a": {
+      "row": 1,
+      "type": "static"
+    },
+    "e": {
+      "row": 1,
+      "type": "normal"
+    },
+    "i": {
+      "row": 2,
+      "type": "static"
+    },
+    "t": {
+      "row": 2,
+      "type": "static"
+    },
+    "o": {
+      "row": 3,
+      "type": "normal"
+    },
+    "ac": {
+      "row": "side",
+      "type": "none"
+    },
+    "blank": {
+      "row": null,
+      "type": "none"
+    },
+    "tree-tab": {
+      "row": null,
+      "type": "none"
+    }
+  },
+  "ids": [
+    "q:upg:11",
+    "q:upg:12",
+    "q:upg:13",
+    "q:upg:21",
+    "q:upg:22",
+    "q:upg:23",
+    "a:ms:0",
+    "a:ms:1",
+    "a:ms:2",
+    "a:ms:3",
+    "a:ch:11",
+    "a:ch:12",
+    "a:ch:21",
+    "a:ch:22",
+    "e:ms:0",
+    "e:ms:1",
+    "e:ms:2",
+    "e:ms:3",
+    "e:ms:4",
+    "e:upg:11",
+    "e:upg:12",
+    "e:upg:13",
+    "e:upg:14",
+    "e:upg:21",
+    "e:upg:22",
+    "e:upg:23",
+    "e:upg:24",
+    "e:upg:31",
+    "e:buy:11",
+    "e:buy:12",
+    "e:buy:13",
+    "e:buy:21",
+    "e:buy:22",
+    "e:buy:23",
+    "e:buy:31",
+    "e:buy:32",
+    "e:buy:33",
+    "ac:ach:11",
+    "ac:ach:12",
+    "ac:ach:13",
+    "ac:ach:14",
+    "ac:ach:15",
+    "ac:ach:16",
+    "ac:ach:21",
+    "ac:ach:22"
+  ],
+  "counts": {
+    "ms": 9,
+    "upg": 15,
+    "buy": 9,
+    "ch": 4,
+    "ach": 8
+  }
+}

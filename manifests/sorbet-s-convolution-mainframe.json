@@ -1,0 +1,145 @@
+{
+  "schema": 1,
+  "id": "sorbet-s-convolution-mainframe",
+  "name": "Sorbet's Convolution: Mainframe",
+  "version": "1.2.0",
+  "author": "SorbetShark",
+  "upstream": {
+    "repo": "SorbetTheShark/SConvolution-Mainframe",
+    "url": "https://github.com/SorbetTheShark/SConvolution-Mainframe.git",
+    "branch": "master",
+    "commit": "cde577adadbcf43260def905f64298b61b0f4d88",
+    "pushed_at": "2026-04-26T00:21:12Z"
+  },
+  "engine": {
+    "tmtNum": "2.7",
+    "stock_commit": "4d8a86c",
+    "moved": true,
+    "deviation": {
+      "added": 823,
+      "removed": 999
+    }
+  },
+  "entry": "index.html",
+  "load": {
+    "onload": "load()",
+    "scripts": [
+      "Javascript/Technical/BreakEternity.js",
+      "Javascript/Technical/LayerSupport.js",
+      "Javascript/Mod.js",
+      "Javascript/Technical/Loader.js",
+      "Javascript/Technical/Temp.js",
+      "Javascript/Technical/Displays.js",
+      "Javascript/Game.js",
+      "Javascript/Utils.js",
+      "Javascript/Utilities/EasyAccess.js",
+      "Javascript/Technical/SystemComponents.js",
+      "Javascript/Components.js",
+      "Javascript/Technical/Canvas.js",
+      "Javascript/Technical/ParticleSystem.js",
+      "Javascript/Utilities/NumberFormating.js",
+      "Javascript/Utilities/Options.js",
+      "Javascript/Utilities/Save.js",
+      "Javascript/Utilities/Themes.js",
+      "Javascript/CustomFunctions.js"
+    ],
+    "renderOnly": [
+      "Javascript/Technical/SystemComponents.js",
+      "Javascript/Components.js",
+      "Javascript/Technical/Canvas.js",
+      "Javascript/Technical/ParticleSystem.js"
+    ],
+    "modFilesPrefix": "Javascript/",
+    "modFiles": [
+      "Layers/Universe.js",
+      "Layers/Money.js",
+      "Layers/Achievements.js",
+      "Layers/LayerPrestige.js",
+      "Layers/Boosters.js",
+      "Layers/Sorbet.js",
+      "Layers/EventHorizon.js",
+      "Layers/LayerArtifacts.js",
+      "Layers/Lore.js",
+      "Layers/ResourcePanel.js",
+      "Layers/Colin.js",
+      "Layers/Unknown.js",
+      "Tree.js"
+    ],
+    "external": {
+      "https://unpkg.com/vue@2.7.16/dist/vue.min.js": "vendor",
+      "https://fonts.googleapis.com/css2?family=Rubik:ital,wght@1,300&display=swap": "drop",
+      "https://fonts.googleapis.com/css2?family=Nova+Mono&display=swap": "drop",
+      "https://fonts.googleapis.com/css2?family=Rubik+Wet+Paint&display=swap": "drop",
+      "https://fonts.googleapis.com/css2?family=Jersey+25&display=swap": "drop"
+    },
+    "vendor": {
+      "https://unpkg.com/vue@2.7.16/dist/vue.min.js": {
+        "path": "vendor/vue-2.7.16.min.js",
+        "sha256": "3c1d4b0c549e8de9d4a9bafb12ab70b6a1ac747d07293b98c5b25b6632999afd"
+      }
+    }
+  },
+  "save": {
+    "keyRule": "getModID (modInfo.id ?? name-author)",
+    "key": "Sorbet's-Convolution:-Mainframe-SorbetShark"
+  },
+  "headless": {
+    "prestubs": [],
+    "renderStubs": [
+      "loadVue",
+      "resizeCanvas",
+      "retrieveCanvasData",
+      "drawTree",
+      "drawComponentBranches",
+      "drawTreeBranch",
+      "makeParticles",
+      "makeShinies",
+      "updateParticles",
+      "setDir",
+      "setSpeed",
+      "updateMouse",
+      "getOpacity",
+      "constructParticleStyle",
+      "clearParticles",
+      "sin",
+      "cos",
+      "tan",
+      "asin",
+      "acos",
+      "atan"
+    ],
+    "idleHash": {
+      "ticks": 200,
+      "diff": 0.05,
+      "hash": "ddba33aa6ec31b04"
+    },
+    "deterministic": true
+  },
+  "license": {
+    "githubSpdx": "NOASSERTION",
+    "files": {
+      "LICENSE": "MIT",
+      "Prestige-tree-license": "MIT"
+    },
+    "verdict": "MIT"
+  },
+  "census": {
+    "full_name": "SorbetTheShark/SConvolution-Mainframe",
+    "head": "cde577a",
+    "score": 58.21,
+    "layers": 6,
+    "rows": 5,
+    "milestones": 54,
+    "upgrades": 114,
+    "buyables": 8,
+    "challenges": 1,
+    "achievements": 37,
+    "trace_fields": 5
+  },
+  "patches": [],
+  "generated": {
+    "by": "tmt-fork-census scripts/manifest.mjs",
+    "commit": "24a9702",
+    "at": "2026-09-18T01:09:33.087Z"
+  }
+}

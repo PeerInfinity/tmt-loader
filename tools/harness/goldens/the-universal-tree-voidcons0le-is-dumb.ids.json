@@ -1,0 +1,129 @@
+{
+  "id": "the-universal-tree-voidcons0le-is-dumb",
+  "commit": "af28eb8ddc643bf45a90fdcf28edb405d0808413",
+  "layers": {
+    "info-tab": {
+      "row": "otherside",
+      "type": "none"
+    },
+    "options-tab": {
+      "row": "otherside",
+      "type": "none"
+    },
+    "changelog-tab": {
+      "row": "otherside",
+      "type": "none"
+    },
+    "p": {
+      "row": 0,
+      "type": "normal"
+    },
+    "s": {
+      "row": 1,
+      "type": "normal"
+    },
+    "m": {
+      "row": 0,
+      "type": "none"
+    },
+    "r": {
+      "row": 1,
+      "type": "static"
+    },
+    "sd": {
+      "row": 1,
+      "type": "static"
+    },
+    "ss": {
+      "row": 2,
+      "type": "normal"
+    },
+    "e": {
+      "row": 2,
+      "type": "none"
+    },
+    "a": {
+      "row": "side",
+      "type": "none"
+    },
+    "pl": {
+      "row": "side",
+      "type": "none"
+    },
+    "blank": {
+      "row": null,
+      "type": "none"
+    },
+    "tree-tab": {
+      "row": null,
+      "type": "none"
+    }
+  },
+  "ids": [
+    "p:upg:11",
+    "p:upg:12",
+    "p:upg:13",
+    "p:upg:14",
+    "s:ms:0",
+    "s:ms:1",
+    "s:ms:2",
+    "s:ms:3",
+    "s:ms:4",
+    "s:ms:5",
+    "s:ms:6",
+    "s:ms:7",
+    "m:upg:11",
+    "m:upg:12",
+    "m:upg:13",
+    "m:upg:14",
+    "m:buy:11",
+    "r:upg:11",
+    "r:upg:12",
+    "r:upg:13",
+    "r:upg:14",
+    "sd:ms:0",
+    "sd:ms:1",
+    "ss:upg:11",
+    "ss:upg:12",
+    "ss:upg:13",
+    "ss:upg:14",
+    "ss:upg:15",
+    "e:ms:0",
+    "e:buy:11",
+    "e:buy:12",
+    "e:buy:13",
+    "e:buy:21",
+    "e:buy:22",
+    "a:ach:11",
+    "a:ach:12",
+    "a:ach:13",
+    "a:ach:14",
+    "a:ach:15",
+    "a:ach:16",
+    "a:ach:21",
+    "a:ach:22",
+    "a:ach:23",
+    "a:ach:24",
+    "a:ach:25",
+    "a:ach:26",
+    "a:ach:31",
+    "a:ach:32",
+    "pl:upg:11",
+    "pl:upg:12",
+    "pl:upg:13",
+    "pl:upg:14",
+    "pl:upg:15",
+    "pl:upg:21",
+    "pl:upg:22",
+    "pl:upg:23",
+    "pl:upg:24",
+    "pl:upg:25"
+  ],
+  "counts": {
+    "ms": 11,
+    "upg": 27,
+    "buy": 6,
+    "ch": 0,
+    "ach": 14
+  }
+}

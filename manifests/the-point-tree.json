@@ -1,0 +1,145 @@
+{
+  "schema": 1,
+  "id": "the-point-tree",
+  "name": "The Point Tree",
+  "version": "3.6S",
+  "author": "randim82",
+  "upstream": {
+    "repo": "p-u/The-Point-Tree",
+    "url": "https://github.com/p-u/The-Point-Tree.git",
+    "branch": "master",
+    "commit": "afae3861a0aa26252be1e06bd1f5460ed3674078",
+    "pushed_at": "2026-08-11T01:22:51Z"
+  },
+  "engine": {
+    "tmtNum": "2.7",
+    "stock_commit": "0a6abc6",
+    "moved": false,
+    "deviation": {
+      "added": 281,
+      "removed": 28
+    }
+  },
+  "entry": "index.html",
+  "load": {
+    "onload": "load()",
+    "scripts": [
+      "js/technical/break_eternity.js",
+      "js/technical/layerSupport.js",
+      "js/mod.js",
+      "js/technical/loader.js",
+      "js/technical/temp.js",
+      "js/technical/displays.js",
+      "js/game.js",
+      "js/utils.js",
+      "js/utils/easyAccess.js",
+      "js/technical/systemComponents.js",
+      "js/components.js",
+      "js/technical/canvas.js",
+      "js/technical/particleSystem.js",
+      "js/utils/NumberFormating.js",
+      "js/utils/options.js",
+      "js/utils/save.js",
+      "js/utils/themes.js",
+      "inline#1"
+    ],
+    "renderOnly": [
+      "js/technical/systemComponents.js",
+      "js/components.js",
+      "js/technical/canvas.js",
+      "js/technical/particleSystem.js"
+    ],
+    "modFilesPrefix": "js/",
+    "modFiles": [
+      "basic.js",
+      "rebirth.js",
+      "prestige.js",
+      "mega.js",
+      "sacrifice.js",
+      "energy.js",
+      "achievements.js",
+      "infobox.js",
+      "supreme.js",
+      "water.js",
+      "secretAchievement.js",
+      "mastery.js",
+      "tree.js",
+      "era.js",
+      "cells.js"
+    ],
+    "external": {
+      "https://unpkg.com/vue@2.7.16/dist/vue.min.js": "vendor",
+      "https://www.googletagmanager.com/gtag/js?id=G-T59EVR5986": "drop",
+      "https://fonts.googleapis.com/css?family=Inconsolata": "drop"
+    },
+    "vendor": {
+      "https://unpkg.com/vue@2.7.16/dist/vue.min.js": {
+        "path": "vendor/vue-2.7.16.min.js",
+        "sha256": "3c1d4b0c549e8de9d4a9bafb12ab70b6a1ac747d07293b98c5b25b6632999afd"
+      }
+    }
+  },
+  "save": {
+    "keyRule": "modInfo.id",
+    "key": "ThepointTreeRD82"
+  },
+  "headless": {
+    "prestubs": [],
+    "renderStubs": [
+      "loadVue",
+      "resizeCanvas",
+      "retrieveCanvasData",
+      "drawTree",
+      "drawComponentBranches",
+      "drawTreeBranch",
+      "makeParticles",
+      "makeShinies",
+      "updateParticles",
+      "setDir",
+      "setSpeed",
+      "updateMouse",
+      "getOpacity",
+      "constructParticleStyle",
+      "clearParticles",
+      "sin",
+      "cos",
+      "tan",
+      "asin",
+      "acos",
+      "atan"
+    ],
+    "idleHash": {
+      "ticks": 200,
+      "diff": 0.05,
+      "hash": "dcbeaf75cca7703a"
+    },
+    "deterministic": true
+  },
+  "license": {
+    "githubSpdx": "NOASSERTION",
+    "files": {
+      "LICENSE": "MIT",
+      "Prestige-tree-license": "MIT"
+    },
+    "verdict": "MIT"
+  },
+  "census": {
+    "full_name": "p-u/The-Point-Tree",
+    "head": "afae386",
+    "score": 74.67,
+    "layers": 11,
+    "rows": 8,
+    "milestones": 255,
+    "upgrades": 712,
+    "buyables": 24,
+    "challenges": 6,
+    "achievements": 226,
+    "trace_fields": 14
+  },
+  "patches": [],
+  "generated": {
+    "by": "tmt-fork-census scripts/manifest.mjs",
+    "commit": "24a9702",
+    "at": "2026-09-18T01:09:30.188Z"
+  }
+}

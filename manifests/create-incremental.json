@@ -1,0 +1,140 @@
+{
+  "schema": 1,
+  "id": "create-incremental",
+  "name": "Create Incremental",
+  "version": "0.4",
+  "author": "BanaCubed, with ideas from galaxy, and assets by adoplayzz",
+  "upstream": {
+    "repo": "BanaCubed/Create-Incremental-Legacy-TMT",
+    "url": "https://github.com/BanaCubed/Create-Incremental-Legacy-TMT.git",
+    "branch": "master",
+    "commit": "17026afcbf6d8139e35f763559fad8167be3253a",
+    "pushed_at": "2025-05-12T22:37:16Z"
+  },
+  "engine": {
+    "tmtNum": "2.7",
+    "stock_commit": "0a6abc6",
+    "moved": false,
+    "deviation": {
+      "added": 2316,
+      "removed": 1780
+    }
+  },
+  "entry": "index.html",
+  "load": {
+    "onload": "load()",
+    "scripts": [
+      "js/technical/break_eternity.js",
+      "js/technical/layerSupport.js",
+      "js/mod.js",
+      "js/utils/easyAccess.js",
+      "js/technical/loader.js",
+      "js/technical/temp.js",
+      "js/technical/displays.js",
+      "js/technical/change-favicon.js",
+      "js/game.js",
+      "js/utils.js",
+      "js/utils/secrets.js",
+      "js/utils/particleConsts.js",
+      "js/technical/systemComponents.js",
+      "js/components.js",
+      "js/technical/canvas.js",
+      "js/technical/particleSystem.js",
+      "js/utils/NumberFormating.js",
+      "js/utils/buyMax.js",
+      "js/utils/options.js",
+      "js/utils/save.js",
+      "js/utils/themes.js"
+    ],
+    "renderOnly": [
+      "js/technical/systemComponents.js",
+      "js/components.js",
+      "js/technical/canvas.js",
+      "js/technical/particleSystem.js"
+    ],
+    "modFilesPrefix": "js/",
+    "modFiles": [
+      "layers.js",
+      "tree.js",
+      "layers/cash.js",
+      "layers/rebirth.js",
+      "layers/rebirth2.js",
+      "layers/rebirth3.js",
+      "layers/matter.js"
+    ],
+    "external": {
+      "https://unpkg.com/vue@2.7.16/dist/vue.min.js": "vendor",
+      "https://fonts.googleapis.com/css?family=Inconsolata": "drop"
+    },
+    "vendor": {
+      "https://unpkg.com/vue@2.7.16/dist/vue.min.js": {
+        "path": "vendor/vue-2.7.16.min.js",
+        "sha256": "3c1d4b0c549e8de9d4a9bafb12ab70b6a1ac747d07293b98c5b25b6632999afd"
+      }
+    }
+  },
+  "save": {
+    "keyRule": "getModID (modInfo.id ?? name-author)",
+    "key": "Create-Incremental-BanaCubed,-with-ideas-from-galaxy,-and-assets-by-adoplayzz"
+  },
+  "headless": {
+    "prestubs": [],
+    "renderStubs": [
+      "loadVue",
+      "resizeCanvas",
+      "retrieveCanvasData",
+      "drawTree",
+      "drawComponentBranches",
+      "drawTreeBranch",
+      "makeParticles",
+      "makeShinies",
+      "updateParticles",
+      "setDir",
+      "setSpeed",
+      "updateMouse",
+      "getOpacity",
+      "constructParticleStyle",
+      "clearParticles",
+      "sin",
+      "cos",
+      "tan",
+      "asin",
+      "acos",
+      "atan"
+    ],
+    "idleHash": {
+      "ticks": 200,
+      "diff": 0.05,
+      "hash": "eddf94cc38cddcd3"
+    },
+    "deterministic": true
+  },
+  "license": {
+    "githubSpdx": "NOASSERTION",
+    "files": {
+      "LICENSE": "MIT",
+      "Modding-tree-license": "MIT",
+      "Prestige-tree-license": "MIT"
+    },
+    "verdict": "MIT"
+  },
+  "census": {
+    "full_name": "BanaCubed/Create-Incremental-Legacy-TMT",
+    "head": "17026af",
+    "score": 61.25,
+    "layers": 14,
+    "rows": 4,
+    "milestones": 44,
+    "upgrades": 88,
+    "buyables": 15,
+    "challenges": 7,
+    "achievements": 55,
+    "trace_fields": 12
+  },
+  "patches": [],
+  "generated": {
+    "by": "tmt-fork-census scripts/manifest.mjs",
+    "commit": "24a9702",
+    "at": "2026-09-18T01:09:31.661Z"
+  }
+}

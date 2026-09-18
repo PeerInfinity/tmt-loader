@@ -1,0 +1,71 @@
+{
+  "id": "the-video-coin-tree",
+  "commit": "87980607597b3542ddaeccf542512a8dc1d1f1a7",
+  "layers": {
+    "info-tab": {
+      "row": "otherside",
+      "type": "none"
+    },
+    "options-tab": {
+      "row": "otherside",
+      "type": "none"
+    },
+    "changelog-tab": {
+      "row": "otherside",
+      "type": "none"
+    },
+    "g": {
+      "row": 0,
+      "type": "normal"
+    },
+    "r": {
+      "row": 1,
+      "type": "static"
+    },
+    "s": {
+      "row": 1,
+      "type": "normal"
+    },
+    "blank": {
+      "row": null,
+      "type": "none"
+    },
+    "tree-tab": {
+      "row": null,
+      "type": "none"
+    }
+  },
+  "ids": [
+    "g:upg:11",
+    "g:upg:12",
+    "g:upg:13",
+    "g:upg:14",
+    "g:upg:15",
+    "r:ms:0",
+    "r:ms:1",
+    "r:ms:2",
+    "r:ms:3",
+    "r:ms:4",
+    "r:ms:5",
+    "r:upg:11",
+    "r:upg:12",
+    "r:upg:13",
+    "r:upg:14",
+    "r:upg:15",
+    "s:upg:11",
+    "s:upg:12",
+    "s:upg:13",
+    "s:upg:14",
+    "s:upg:15",
+    "s:ch:11",
+    "s:ch:12",
+    "s:ch:13"
+  ],
+  "counts": {
+    "ms": 6,
+    "upg": 15,
+    "buy": 0,
+    "ch": 3,
+    "ach": 0
+  }
+}

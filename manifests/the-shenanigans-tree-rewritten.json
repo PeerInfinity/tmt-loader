@@ -1,0 +1,129 @@
+{
+  "schema": 1,
+  "id": "the-shenanigans-tree-rewritten",
+  "name": "The Shenanigans Tree: Rewritten",
+  "version": "1.0.1",
+  "author": "Holy Broly#0530 (an idiot sandwich)",
+  "upstream": {
+    "repo": "XxXOLEGXxX/Shenanigans-Tree",
+    "url": "https://github.com/XxXOLEGXxX/Shenanigans-Tree.git",
+    "branch": "master",
+    "commit": "bb2c6943839534feacdac265240a5989bee9feb0",
+    "pushed_at": "2023-08-29T11:04:18Z"
+  },
+  "engine": {
+    "tmtNum": "2.6.0.1",
+    "stock_commit": "4bc8b77",
+    "moved": false,
+    "deviation": {
+      "added": 13,
+      "removed": 13
+    }
+  },
+  "entry": "index.html",
+  "load": {
+    "onload": "load()",
+    "scripts": [
+      "js/technical/break_eternity.js",
+      "js/technical/layerSupport.js",
+      "js/tree.js",
+      "js/layers.js",
+      "js/mod.js",
+      "js/technical/temp.js",
+      "js/technical/displays.js",
+      "js/game.js",
+      "js/utils.js",
+      "js/utils/easyAccess.js",
+      "js/technical/systemComponents.js",
+      "js/components.js",
+      "js/technical/canvas.js",
+      "js/technical/particleSystem.js",
+      "js/utils/NumberFormating.js",
+      "js/utils/options.js",
+      "js/utils/save.js",
+      "js/utils/themes.js"
+    ],
+    "renderOnly": [
+      "js/technical/systemComponents.js",
+      "js/components.js",
+      "js/technical/canvas.js",
+      "js/technical/particleSystem.js"
+    ],
+    "modFilesPrefix": null,
+    "modFiles": [],
+    "external": {
+      "https://cdn.jsdelivr.net/npm/vue@2.6.12": "vendor",
+      "https://fonts.googleapis.com/css?family=Inconsolata": "drop"
+    },
+    "vendor": {
+      "https://cdn.jsdelivr.net/npm/vue@2.6.12": {
+        "path": "vendor/vue-2.6.12.min.js",
+        "sha256": "29296ccacaa9ed35ed168fc51e36f54fd6f8db9c7786bbf38cc59a27229ba5c2"
+      }
+    }
+  },
+  "save": {
+    "keyRule": "modInfo.id",
+    "key": "holyfuckingshitisthatshenaniganstree!?!??!?!??!?!??!?!"
+  },
+  "headless": {
+    "prestubs": [
+      "colors"
+    ],
+    "renderStubs": [
+      "loadVue",
+      "resizeCanvas",
+      "retrieveCanvasData",
+      "drawTree",
+      "drawTreeBranch",
+      "makeParticles",
+      "makeShinies",
+      "updateParticles",
+      "setDir",
+      "setSpeed",
+      "updateMouse",
+      "getOpacity",
+      "constructParticleStyle",
+      "clearParticles",
+      "sin",
+      "cos",
+      "tan",
+      "asin",
+      "acos",
+      "atan"
+    ],
+    "idleHash": {
+      "ticks": 200,
+      "diff": 0.05,
+      "hash": "8da852b40b7a53d9"
+    },
+    "deterministic": true
+  },
+  "license": {
+    "githubSpdx": "NOASSERTION",
+    "files": {
+      "LICENSE": "MIT",
+      "Prestige-tree-license": "MIT"
+    },
+    "verdict": "MIT"
+  },
+  "census": {
+    "full_name": "XxXOLEGXxX/Shenanigans-Tree",
+    "head": "bb2c694",
+    "score": 53.58,
+    "layers": 6,
+    "rows": 3,
+    "milestones": 13,
+    "upgrades": 117,
+    "buyables": 9,
+    "challenges": 5,
+    "achievements": 36,
+    "trace_fields": 3
+  },
+  "patches": [],
+  "generated": {
+    "by": "tmt-fork-census scripts/manifest.mjs",
+    "commit": "24a9702",
+    "at": "2026-09-18T01:09:33.987Z"
+  }
+}
