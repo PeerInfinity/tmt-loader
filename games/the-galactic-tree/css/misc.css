@@ -1,0 +1,79 @@
+/* Prestige button */
+.reset {
+	height: 130px;
+	width: 200px;
+	border-radius: 12px;
+	font-size: 15px;
+	border: 4px solid;
+	border-color: rgba(0, 0, 0, 0.25);
+}
+
+.tabButton {
+	background-color: transparent;
+	color: var(--color);
+	font-size: 20px;
+	cursor: pointer;
+	padding: 5px 20px;
+	margin: 5px;
+	border-radius: 10px;
+	border: 2px solid;
+	color: var(--color);
+}
+
+.tabButton:hover {
+	transform: scale(1.1, 1.1);
+	text-shadow: 0 0 7px var(--color);
+}
+
+.tooltip {
+	pointer-events: none;
+	text-align: center;
+	width: max-content;
+	max-width: 200px;
+	font-size: 13px;
+	line-height: 1.4;
+	bottom: calc(100% + 8px);
+	left: 50%;
+	transform: translateX(-50%);
+	padding: 6px 10px;
+	font-family: "Lucida Console", "Courier New", monospace;
+	border-radius: 5px;
+	opacity: 0;
+	transition: opacity 0.3s ease;
+
+	position: absolute;
+	z-index: 20000;
+
+	background-color: var(--background_tooltip);
+	color: var(--points);
+
+	white-space: normal;
+	word-break: break-word;
+
+	outline: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.tooltip::after {
+	content: " ";
+	position: absolute;
+	top: 100%;
+	left: 50%;
+	margin-left: -5px;
+	border-width: 5px;
+	border-style: solid;
+	border-color: var(--background_tooltip) transparent transparent transparent;
+}
+
+/* Horizontal/vertical lines */
+.vl {
+	border-left: 6px solid var(--color);
+	height: 100%;
+	position: absolute;
+	left: 50%;
+	margin-left: -3px;
+	top: 0;
+}
+
+.hl {
+	border-top: 3px solid var(--color);
+}
