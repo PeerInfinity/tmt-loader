@@ -107,6 +107,16 @@ function baselineTree(sha) {
   if (!s.includes(m1) || !s.includes(m2)) throw new Error(`baseline ${sha}: boot.mjs does not have the expected marks / hook lines`);
   s = s.replace(m1, "    const exAu = (j) => { const o = JSON.parse(j); delete o.au; return JSON.stringify(o); };\n    for (const [n] of MARKS) R.marks[n] = m.hits[n] ? { ticks: m.hits[n].ticks, gameSeconds: m.hits[n].gameSeconds, hash: sha256hex(m.hits[n].json).slice(0, 16), hashGame: sha256hex(exAu(m.hits[n].json)).slice(0, 16) } : null;");
   s = s.replace(m2, "  R.hashGame = await run(`tmtLoader.hash({ exclude: ['au'] })`, 'hash');\n  R.featureStates = run('(tmtLoader.features || []).map(f => { const s = tmtLoader.featureState(f.id); return [f.id, s.unlocked, s.policy]; })', 'x');\n" + m2);
+  // A historical tree cannot boot on modern Node: its boot.mjs installs the shims with
+  // `Object.assign(globalThis, shims)`, and Node 21+ defines `navigator` (and `crypto`, `performance`) as
+  // GETTER-ONLY accessors, so the assign throws and the BASELINE leg of every pin reads `undefined`. Measured:
+  // 34 of 52 rows red on that alone, with the current tree reproducing the recorded game states all along. The
+  // same one-line repair as the live boot.mjs (see its comment there), applied to whatever old tree we check out
+  // — a baseline is only useful if it still runs.
+  const ASSIGN = 'Object.assign(globalThis, shims);';
+  if (s.includes(ASSIGN)) {
+    s = s.replace(ASSIGN, 'for (const [k, v] of Object.entries(shims)) { try { globalThis[k] = v; } catch { Object.defineProperty(globalThis, k, { value: v, writable: true, enumerable: true, configurable: true }); } }');
+  }
   fs.writeFileSync(p, s);
   return dir;
 }
