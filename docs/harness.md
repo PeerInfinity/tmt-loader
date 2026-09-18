@@ -148,3 +148,101 @@ node tools/harness/run.mjs ptr --profile all --ladder tools/harness/ladder/ptr.j
    `null`, and print the ladder with `node tools/harness/ladder-summary.mjs [--append]`.
 4. A change to the core or a table re-checks the earlier fixtures by resuming from them: the marks after must land at
    the recorded tick and `hashGame` (or the change is a finding, not a re-record).
+
+## The full sweep runs in CI, sharded (`--shard i/N`)
+
+Every UI slice owes a full `--gate mobile` sweep over all 171 games. Locally that is one machine held for the better
+part of an hour — U2b's visibility rules pushed it up sharply by adding four in-page probe evaluations and two forced
+rebuilds per game. `.github/workflows/sweep.yml` runs it on every push to `main` across ten runners instead, so a slice
+can verify a **bounded local set** — `ptr`, `something`, and whatever its own change can actually be seen on — and let
+CI own the roster.
+
+### Running one shard locally
+
+```
+node tools/harness/page.mjs --gate mobile --shard 3/10 --dry-run          # which games is shard 3? (no browser)
+node tools/harness/page.mjs --gate mobile --shard 3/10 --json shards/m1-3.json
+node tools/harness/merge-shards.mjs shards --expect 10                    # the verdict
+```
+
+`i/N` is **one-based**, like Playwright's own `--shard=1/10`. The slice is a pure function of the roster and `N`, so
+`--shard 3/10` here and shard 3 in CI are the same eighteen games. `--shard` also works with an explicit roster
+(`page.mjs a b c --gate mobile --shard 1/3`), which is how the arrangement is tested without a full sweep.
+
+### What the merge asserts, and why it is not optional
+
+⛔ **A shard that dies before running anything reads as GREEN.** `npm ci` falls over, the runner is reclaimed, the
+checkout times out — the shard produces no rows, and an absence of failures is indistinguishable from a pass. Worse,
+the incentive runs backwards: a sharding bug that silently drops games makes the whole run **faster and greener**.
+Speed is not evidence here and neither is an exit code.
+
+So every shard records the roster it was **assigned** alongside the rows it produced, and `merge-shards.mjs` refuses
+the run unless those reconstruct the roster. Four independent refusals:
+
+1. every shard index `1..N` present exactly once, all shards agreeing on `N`;
+2. every shard reporting the same `commit` — a shard built from another tree is not part of this answer;
+3. each shard's rows covering exactly its own assigned roster, which is what catches a shard that started, ran four
+   games and died (its file exists, its rows are green, and its job may well have exited 0);
+4. the union of the rows covering the full roster **exactly once** — nothing missing, nothing twice.
+
+It exits 1 naming the ids. `loader/shard.test.mjs` drives it: nine shards out of ten, a shard truncated mid-slice, a
+commit mismatch, an empty matrix. Those tests were written against deliberately broken versions of the merge and the
+partition, and each mutant turns them red — which is the only reason to believe they mean anything.
+
+⚠ **An abstention must survive sharding.** `the-periodic-table-tree` and five others do not repeat their own hash, so
+the M1 state leg abstains on them rather than reaching a verdict. A shard boundary must never promote that to a pass
+or a failure; the merge carries it through and reports the count.
+
+### Interleaved, not chunked
+
+`assignShards` is longest-processing-time-first: heaviest game to the lightest shard so far, ties to the lowest index.
+When every cost is equal — 169 of the 171 games — that degenerates to plain round-robin over the id-sorted roster, so
+interleaving is the floor and the cost model can only improve on it.
+
+The cost is measured, not declared. Only `ptr` and `something` have deep snapshots, so only they are swept at every tab
+that save can open (20 and 14 views against everyone else's 1). Contiguous chunking would put both in shard 1.
+Measured 2026-09-18 at `2cb6723f1` over six games:
+
+| game | views | wall |
+|---|---|---|
+| `ptr` | 20 | 30.9 s |
+| `something` | 14 | 25.6 s |
+| `the-periodic-table-tree` | 1 | 16.5 s |
+| `the-dressy-tree` | 1 | 13.2 s |
+| `the-omega-tree` | 1 | 13.1 s |
+| `1-clicker` | 1 | 6.8 s |
+
+⚠ Most of a game's cost is **fixed**, not per view — three boots for the state leg and its control, the navbar-only
+leg's paired control, the layers legs. `(30.9 - 13.1) / 19 ≈ 0.94 s` per extra view. The obvious model, cost ∝ views,
+is wrong by a factor of twenty on `ptr`; using it left one shard holding a single game. `shardCost` is therefore
+`12 s + 1 s × (views − 1)`. The residual spread among one-view games (6.8 s to 16.5 s, a game's own size) is not
+modelled — it cannot be predicted from the repo without booting the game, and it averages out over the ~17 games a
+shard holds.
+
+⚠ **Nothing about coverage depends on the cost model.** A bad one makes CI slower, never wrong: the partition is
+asserted over N ∈ {1, 2, 3, 7, 10, 17, 170, 171, 200} in `loader/shard.test.mjs`.
+
+### What CI is, and is not
+
+⚖ **Report-only, not a required check** (2026-09-18), until the sweep has a few green runs behind it. Nothing in branch
+protection references it; a red is a red X on the commit and blocks nothing.
+
+⚠ If you see a RED on `the-periodic-table-tree`'s state leg, **investigate it — do not re-run.** That leg used to
+return a false RED about 7.9 % of sweeps, which on a per-push job is a red roughly weekly for no reason; `e3ba99c74`
+took it to ~1 in 80,000 by demanding four further plain draws before it will say MOVED. A red there is now a finding.
+
+CI pins Node to the version the local sweep runs (`NODE_VERSION` in the workflow), because the merged output is
+compared against a local full sweep's verdicts and a different engine is a variable nobody wants in that comparison.
+
+### Publishing is a separate, manual workflow
+
+⚖ **User ruling, 2026-09-18: the Pages deploy no longer happens on every push.** The repo was on `build_type: legacy`
+with source `{branch: main, path: /}`, so every push republished the site; it is now `build_type: workflow`, and
+`.github/workflows/pages.yml` is `workflow_dispatch` only. **To publish: `gh workflow run pages.yml --ref main`.**
+
+WHAT is served did not change — the legacy build served the branch's tracked tree from the repo root, and the workflow
+stages `git archive HEAD`, which is exactly that. Only WHEN moved. The artifact is 242 MB over 12,864 files, 128 MiB
+compressed, against a 1 GB Pages limit; excluding `.git` (210 MB) is what keeps it there.
+
+⛔ Do not add a `push:` trigger to `pages.yml`, and do not let `sweep.yml` deploy. `loader/workflows.test.mjs` asserts
+both, because the way a ruling like this gets undone is not malice but convenience.

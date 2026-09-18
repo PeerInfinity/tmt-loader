@@ -1,0 +1,140 @@
+# The full `--gate mobile` sweep over all 171 games, sharded across 10 runners.
+#
+# WHY IT IS HERE. The sweep is the gate every UI slice owes, and locally it is one machine held for the better part
+# of an hour. Sharded, a slice can verify a bounded local set — `ptr`, `something`, and whatever its own change can
+# be seen on — and let CI own the full roster on machines nobody is waiting for.
+#
+# ⛔ THE FAILURE THIS IS BUILT AGAINST. A shard that dies before running anything reads as GREEN, and a sharding bug
+# that drops games makes the run both faster and greener. Ten green checkmarks with one dead shard are
+# indistinguishable from eleven green checkmarks — unless something checks. That is the `merge` job below, and it is
+# not optional: it asserts that the union of the shards' reported rosters IS the roster, and fails naming the
+# missing ids when it is not. Do not make it `continue-on-error`, and do not drop `if: always()` from it (a failed
+# shard must still be merged, so the merge can say what went unrun).
+#
+# ⚖ REPORT-ONLY, not a required check, until it has a few green runs behind it (2026-09-18). Nothing in this repo's
+# branch protection references it; a red here is a red X on the commit and blocks nothing.
+#
+# ⚠ THIS WORKFLOW DOES NOT DEPLOY. Publishing is `.github/workflows/pages.yml`, dispatch-only, by ⚖ user ruling.
+# Adding a deploy step here would quietly restore the push-deploys-the-site behaviour that ruling removed.
+name: sweep
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: sweep-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  # Local and CI must agree, because the merge's verdicts are compared against a local full sweep's.
+  NODE_VERSION: '18.20.6'
+  SHARDS: '10'
+
+jobs:
+  shard:
+    name: M1 shard ${{ matrix.shard }}/10
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      # ⛔ A cancelled sibling would reach the merge as a MISSING SHARD — a correct refusal, but for the wrong
+      # reason, and it would hide the red that actually caused it. Every shard runs to its own end.
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # ~450 MB full; the games tree alone is 235 MB and none of the history is needed to run a gate.
+          fetch-depth: 1
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - run: npm ci
+
+      - name: Cache the Playwright browser
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+
+      - run: npx playwright install --with-deps chromium
+
+      # The harness starts its own `python3 -m http.server` when `--base` is absent, so there is no service, no
+      # container and no side process to manage here.
+      - name: M1 sweep, shard ${{ matrix.shard }}/${{ env.SHARDS }}
+        run: node tools/harness/page.mjs --gate mobile --shard ${{ matrix.shard }}/${{ env.SHARDS }} --json shards/m1-${{ matrix.shard }}.json
+
+      # `always()`: a RED shard still produced rows, and the merge wants them. A shard that produced no file at all
+      # is exactly the case the merge is here to catch, so `if-no-files-found` stays a warning — the merge is the
+      # arbiter of a missing shard, not this step.
+      - name: Upload this shard's result
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: m1-shard-${{ matrix.shard }}
+          path: shards/
+          if-no-files-found: warn
+          retention-days: 7
+
+  merge:
+    name: merge + roster assertion
+    needs: shard
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: m1-shard-*
+          path: shards
+          merge-multiple: true
+
+      - name: What arrived
+        if: always()
+        run: ls -la shards/ || echo 'NO SHARD ARTIFACTS AT ALL'
+
+      # Exits 1, naming the ids, when the shards do not reconstruct the roster — or when any row is RED.
+      - name: Merge, and assert the shards cover the whole roster
+        run: |
+          node tools/harness/merge-shards.mjs shards --expect "$SHARDS" --json shards/merged.json | tee merge.txt
+        env:
+          SHARDS: ${{ env.SHARDS }}
+
+      - name: Summary
+        if: always()
+        run: |
+          {
+            echo '## M1 mobile sweep — 171 games over '"$SHARDS"' shards'
+            echo ''
+            echo '```'
+            cat merge.txt 2>/dev/null || echo 'the merge produced no output — see the step above'
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+        env:
+          SHARDS: ${{ env.SHARDS }}
+
+      - name: Upload the merged result
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: m1-merged
+          path: |
+            shards/merged.json
+            merge.txt
+          if-no-files-found: warn
+          retention-days: 14

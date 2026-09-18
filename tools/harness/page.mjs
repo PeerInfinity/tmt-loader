@@ -4,12 +4,14 @@
 //                 [--profile off|all|saved] [--exclude au] [--auto-opt "k=v;k2=v2"] [--no-automation]
 //   node page.mjs [<id>...] --gate load [--base URL] [--automation]                    → gate G1 (every game by default)
 //   node page.mjs [<id>...] --gate mobile [--base URL]           → gate M1, the mobile mode, the nav bar + the layer list
+//   ... --gate <g> --shard i/N [--dry-run] --json out.json  → this runner's slice of the roster (1-based, like Playwright's);
+//                                                  merge the slices with merge-shards.mjs, which is what catches a dead shard
 // Automation (?automation=1): runs default ON (the harness); `--gate load` defaults to the PLAIN page (no flag), where it
 // also asserts 0 × #app .smallNode.au, no player.au and no games-auto/ request.
 import fs from 'node:fs';
 import path from 'node:path';
 import { chromium } from 'playwright';
-import { REPO, GAMES, parseArgs, startServer, writeJSON, headCommit, readManifest } from './lib.mjs';
+import { REPO, GAMES, parseArgs, startServer, writeJSON, headCommit, readManifest, deepestSnapshot, assignShards, parseShard } from './lib.mjs';
 import { DRIVE_SRC } from './policy.mjs';
 
 const LOCAL = new Set(['127.0.0.1', 'localhost']);
@@ -202,16 +204,6 @@ export const U2_CHIPS = { ptr: 120, something: 70 };
 /** The deepest recorded snapshot for a game, or null. The fresh save of most games shows ONE tree node and no open
  * tab, so a gate that only ever looks at a fresh page cannot see the layout this mode exists to fix: the split
  * column, the milestone rows and the achievement grid all appear only once a layer tab is open. */
-function deepestSnapshot(id) {
-  const dir = path.join(REPO, 'tools/harness/snapshots', id);
-  const files = ['frontier', 'all', 'pinned'].flatMap((sub) => {
-    const d = path.join(dir, sub);
-    return fs.existsSync(d) ? fs.readdirSync(d).filter((f) => f.endsWith('.json')).map((f) => path.join(d, f)) : [];
-  });
-  if (!files.length) return null;
-  const best = files.map((f) => ({ f, d: JSON.parse(fs.readFileSync(f, 'utf8')) })).sort((a, b) => (a.d.ticks || 0) - (b.d.ticks || 0)).pop();
-  return { file: path.relative(REPO, best.f), player: best.d.player, ticks: best.d.ticks };
-}
 
 /** Everything the mobile layout promises, measured in the page. Geometry only — it asserts nothing about the game. */
 const MOBILE_PROBE = `(${function () {
@@ -501,6 +493,7 @@ async function gateMobile(browser, base, ids) {
   const rows = [];
   for (const id of ids) {
     const row = { gate: 'M1', id, ok: false, views: [] };
+    const t0 = Date.now();
     const { context, stats } = await openContext(browser, { contextOptions: PHONE_CONTEXT });
     try {
       // --- leg 1: INERTNESS. Without ?mobile=1 nothing of the mode may exist, at the same phone viewport.
@@ -874,6 +867,7 @@ async function gateMobile(browser, base, ids) {
     } catch (e) {
       row.exception = String((e && e.stack) || e).slice(0, 600);
     } finally { await context.close(); }
+    row.ms = Date.now() - t0;
     rows.push(row);
     console.log(JSON.stringify({ ...row, views: row.views.map((v) => ({ view: v.view, controls: v.controls, escaping: v.escaping.length, tooSmall: v.tooSmall.length, docScrollWidth: v.docScrollWidth, nav: v.navButtons })) }));
   }
@@ -906,8 +900,19 @@ export async function runPage(browser, base, id, { ticks, diff, leg = 'idle', un
 }
 
 async function main() {
-  const a = parseArgs(process.argv.slice(2), ['automation', 'no-automation']);
-  const ids = a._.length ? a._ : GAMES();
+  const a = parseArgs(process.argv.slice(2), ['automation', 'no-automation', 'dry-run']);
+  const roster = a._.length ? a._ : GAMES();
+  // `--shard i/N` (1-based, like Playwright's) runs this runner's slice of the roster. The slice is a pure function
+  // of (roster, N), so a CI shard and a local `--shard i/N` are the same set of games. ⛔ The shard records the
+  // roster it was ASSIGNED, not just the rows it managed: a shard that dies early is otherwise a green checkmark.
+  // `merge-shards.mjs` is what turns that record into a refusal.
+  const shard = a.shard ? parseShard(a.shard) : null;
+  const ids = shard ? assignShards(roster, shard.n)[shard.i - 1] : roster;
+  const shardMeta = shard ? { i: shard.i, n: shard.n, roster: ids, rosterSize: roster.length } : undefined;
+  if (shard) console.log(`shard ${shard.i}/${shard.n}: ${ids.length} of ${roster.length} game(s) — ${ids.join(' ')}`);
+  // `--dry-run` answers "which games is shard 3 of 10?" without a browser or a server — the cheap way to check a
+  // shard boundary, and what `docs/harness.md` tells you to run before a long one.
+  if (a['dry-run']) { for (const id of ids) console.log(id); process.exit(0); }
   const browser = await chromium.launch();
   const server = a.base ? null : await startServer(REPO);
   const base = a.base || server.url;
@@ -915,12 +920,12 @@ async function main() {
   try {
     if (a.gate === 'load') {
       const rows = await gateLoad(browser, base, ids, { automation: !!a.automation });
-      if (a.json) writeJSON(a.json, { commit: headCommit(), base, rows });
+      if (a.json) writeJSON(a.json, { commit: headCommit(), base, gate: 'load', shard: shardMeta, rows });
       code = rows.every((r) => r.ok) ? 0 : 1;
       console.log(`G1 load: ${rows.map((r) => `${r.id}=${r.ok ? 'GREEN' : 'RED'}${r.allowed ? ` allowed: ${JSON.stringify(r.allowed)}` : ''}`).join(' ')}`);
     } else if (a.gate === 'mobile') {
       const rows = await gateMobile(browser, base, ids);
-      if (a.json) writeJSON(a.json, { commit: headCommit(), base, viewport: PHONE, touch: true, tapMin: TAP_MIN, rows });
+      if (a.json) writeJSON(a.json, { commit: headCommit(), base, gate: 'mobile', shard: shardMeta, viewport: PHONE, touch: true, tapMin: TAP_MIN, rows });
       code = rows.every((r) => r.ok) ? 0 : 1;
       const abstained = rows.filter((r) => r.state && !r.state.deterministic).map((r) => r.id);
       console.log(`M1 mobile: ${rows.map((r) => `${r.id}=${r.ok ? 'GREEN' : 'RED'}`).join(' ')}`);
@@ -956,6 +961,7 @@ async function main() {
       console.log(`M1 layers reset press: ${rows.filter((r) => r.resetVerdict === 'moved').length} moved player[l].points, ${rows.filter((r) => r.resetVerdict === 'NOT MOVED').length} did not, ${noCand.length} abstained${noCand.length ? ` (nothing could reset: ${noCand.join(', ')})` : ''}`);
       for (const r of rows.filter((x) => !x.ok)) console.log(`  ${r.id}: layers=${r.layersOk}${r.chipBaseline && !(r.chipBaseline.fell && r.chipBaseline.orderMoved) ? ` chipBaseline=${JSON.stringify(r.chipBaseline)}` : ''}${r.layers && !r.layersOk ? ' ' + JSON.stringify(r.layers) : ''}${r.resetVerdict && r.resetVerdict !== 'moved' ? ` reset=${r.resetVerdict} ${JSON.stringify(r.reset)}` : ''} inert=${r.inertOk} both=${r.bothOk}${r.both ? ' ' + JSON.stringify(r.both) : ''} navbarOnly=${r.navbarOnlyOk}${r.navbarOnly && !r.navbarOnlyOk ? ' ' + JSON.stringify(r.navbarOnly) : ''} state=${r.stateVerdict}${r.state ? ` (plain ${r.state.plain} / control ${r.state.plainControl} / mobile ${r.state.mobile})` : ''} geometry=${r.geometryOk} nav=${r.navOk} load=${r.loadVerdict && r.loadVerdict.ok}${r.worst && r.worst.length ? ` worst=${JSON.stringify(r.worst)}` : ''}${r.exception ? ` exception=${r.exception}` : ''}`);
     } else {
+      if (shard) throw new Error('--shard applies to --gate load / --gate mobile, not to a single-game run');
       const out = await runPage(browser, base, ids[0], { ticks: Number(a.ticks ?? 200), diff: Number(a.diff ?? 0.05), leg: a.leg || 'idle', until: a.until || null, stateOut: a['state-out'], playerOut: a['player-out'], loadFrom: a['load-from'] ? fs.readFileSync(a['load-from'], 'utf8') : null, profile: a.profile || null, exclude: a.exclude ? a.exclude.split(',') : [], autoOpt: a['auto-opt'] || null, automation: !a['no-automation'] });
       delete out.json; delete out.player;
       console.log(JSON.stringify(out));

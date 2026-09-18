@@ -28,7 +28,13 @@ export function parseArgs(argv, flags = []) {
 }
 
 export function freePort() {
-  const used = new Set(execFileSync('ss', ['-ltnH'], { encoding: 'utf8' }).split('\n').map((l) => (l.match(/:(\d+)\s/) || [])[1]).filter(Boolean).map(Number));
+  // `ss` is how we avoid a port that is already listening. It is not guaranteed to exist everywhere the harness
+  // runs — a CI container without iproute2 would otherwise throw here and take the whole run down for a reason
+  // that has nothing to do with the gate. Without it, fall back to an unfiltered draw: the range is 1,800 wide,
+  // and `startServer` fails loudly within 10 s if the draw collides, which is a far better failure than this one.
+  let used = new Set();
+  try { used = new Set(execFileSync('ss', ['-ltnH'], { encoding: 'utf8' }).split('\n').map((l) => (l.match(/:(\d+)\s/) || [])[1]).filter(Boolean).map(Number)); }
+  catch { /* no `ss` here; draw blind */ }
   for (let tries = 0; tries < 200; tries++) {
     const p = 8100 + Math.floor(Math.random() * 1800);
     if (!used.has(p)) return p;
@@ -107,4 +113,100 @@ export function entryOnly(metaUrl) {
   if (argv !== self) {
     throw new Error(`${path.basename(self)} is a battery, not a library — importing it RUNS it (boot children, and for some gates a rewrite of committed snapshots). Execute it as the entry point instead.`);
   }
+}
+
+// ---------------------------------------------------------------------------------------------------------------
+// SHARDING — splitting the roster across parallel runners.
+//
+// The full `--gate mobile` sweep is ~50 s/game over 171 games (U2b, 2026-09-18), which is over an hour holding one
+// machine. Sharded, each runner takes a slice and CI merges the results. ⛔ The hazard that shapes everything here:
+// a shard that dies before running anything is INDISTINGUISHABLE from a shard that passed, and a sharding bug that
+// drops games makes the whole run faster AND greener. So every shard records the roster it was ASSIGNED alongside
+// the rows it produced, and `merge-shards.mjs` refuses a run whose shards do not reconstruct the full roster.
+// ---------------------------------------------------------------------------------------------------------------
+
+/**
+ * The deepest committed snapshot for a game (the one with the most ticks), or null when the game has none.
+ * Lives here rather than in page.mjs because the shard cost model reads it and the shard unit test runs under
+ * `node --test` with no playwright installed.
+ */
+export function deepestSnapshot(id, root = REPO) {
+  const dir = path.join(root, 'tools/harness/snapshots', id);
+  const files = ['frontier', 'all', 'pinned'].flatMap((sub) => {
+    const d = path.join(dir, sub);
+    return fs.existsSync(d) ? fs.readdirSync(d).filter((f) => f.endsWith('.json')).map((f) => path.join(d, f)) : [];
+  });
+  if (!files.length) return null;
+  const best = files.map((f) => ({ f, d: JSON.parse(fs.readFileSync(f, 'utf8')) })).sort((a, b) => (a.d.ticks || 0) - (b.d.ticks || 0)).pop();
+  return { file: path.relative(root, best.f), player: best.d.player, ticks: best.d.ticks };
+}
+
+/** #info, #optionWheel, #help — the tabs gateMobile opens beyond the layers, when the engine offers them. */
+const SYSTEM_TABS = 3;
+
+/**
+ * What one game costs the M1 sweep, in SECONDS, well enough to balance shards with. Measured 2026-09-18 at
+ * `2cb6723f1` over six games chosen to span the roster:
+ *
+ *     ptr  20 views  30.9 s   |  the-omega-tree           1 view  13.1 s
+ *     something 14 views 25.6 s  |  the-dressy-tree        1 view  13.2 s
+ *                              |  1-clicker               1 view   6.8 s
+ *                              |  the-periodic-table-tree 1 view  16.5 s
+ *
+ * Two things fall out. Most of a game's cost is FIXED — three boots for the state leg and its control, the
+ * navbar-only leg's paired control, the layers legs — not per view: (30.9 - 13.1) / 19 ≈ 0.94 s per extra view.
+ * ⚠ So the obvious model, "cost ∝ views", is wrong by a factor of twenty on `ptr`, and using it left one shard
+ * holding a single game. Hence BASE plus a small per-view term.
+ *
+ * The residual spread among one-view games (6.8 s to 16.5 s, a game's own size) is not modelled: it is unpredictable
+ * from the repo without booting the game, and it averages out over the ~17 games a shard holds. ⚠ NOTHING about
+ * coverage depends on any of this — `assignShards` partitions the roster exactly once whatever the costs are, and
+ * the unit test asserts that over every N. A bad cost model makes CI slower, never wrong.
+ */
+const BASE_SECONDS = 12, VIEW_SECONDS = 1;
+export function shardCost(id, root = REPO) {
+  const snap = deepestSnapshot(id, root);
+  if (!snap) return BASE_SECONDS;
+  let player;
+  try { player = JSON.parse(snap.player); } catch { return BASE_SECONDS; }
+  // every tab that save can open: `none`, each unlocked layer, and the system tabs — one probe each, beyond the
+  // fresh tree every game already pays for
+  const layers = Object.keys(player).filter((k) => player[k] && typeof player[k] === 'object' && player[k].unlocked === true).length;
+  return BASE_SECONDS + VIEW_SECONDS * (1 + layers + SYSTEM_TABS);
+}
+
+/**
+ * Partition `ids` into `n` shards. Longest-processing-time-first: heaviest game to the lightest shard so far, ties
+ * to the lowest shard index. When every cost is equal — which is the case for 169 of the 171 games — that degenerates
+ * to plain round-robin over the id-sorted roster, so interleaving is the floor and the cost model only improves on it.
+ *
+ * Deterministic: the same roster and the same N give the same partition on every machine, which is what lets a CI
+ * shard and a local `--shard i/N` be talking about the same set of games.
+ */
+export function assignShards(ids, n, root = REPO) {
+  if (!Number.isInteger(n) || n < 1) throw new Error(`shard count must be an integer >= 1, got ${JSON.stringify(n)}`);
+  const shards = Array.from({ length: n }, () => []);
+  const load = new Array(n).fill(0);
+  const order = ids.map((id) => ({ id, cost: shardCost(id, root) }))
+    .sort((a, b) => b.cost - a.cost || (a.id < b.id ? -1 : a.id > b.id ? 1 : 0));
+  for (const { id, cost } of order) {
+    let k = 0;
+    for (let j = 1; j < n; j++) if (load[j] < load[k]) k = j;
+    shards[k].push(id);
+    load[k] += cost;
+  }
+  // Each shard replays the roster's own order, so a shard's log reads like a slice of the full sweep's.
+  const rank = new Map(ids.map((id, i) => [id, i]));
+  for (const s of shards) s.sort((a, b) => rank.get(a) - rank.get(b));
+  return shards;
+}
+
+/** `--shard i/N`, ONE-BASED like Playwright's own `--shard=1/10`: 1/10 is the first of ten. */
+export function parseShard(spec) {
+  const m = /^\s*(\d+)\s*\/\s*(\d+)\s*$/.exec(String(spec));
+  if (!m) throw new Error(`--shard wants i/N (1-based, like Playwright's), got ${JSON.stringify(spec)}`);
+  const i = Number(m[1]), n = Number(m[2]);
+  if (n < 1) throw new Error(`--shard N must be >= 1, got ${n}`);
+  if (i < 1 || i > n) throw new Error(`--shard i must be in 1..${n}, got ${i}`);
+  return { i, n };
 }
