@@ -133,13 +133,17 @@ html.tmt-mobile .other-back {
   line-height: 1;
   z-index: 5;
 }
-html.tmt-mobile button,
-html.tmt-mobile .tabButton { min-height: var(--tmt-mobile-tap); }
+/* `:not([style*="height"])` — IF THE GAME SIZED IT, RESPECT THAT. A layer's `nodeStyle()` becomes an inline
+ * style, and `min-height` overrides an inline `height` because they are different properties, not a conflict. The
+ * Galactic Tree hides a 1x1 easter-egg node that way; the tap minimum turned it into a 4x44 sliver and broke the
+ * secret. A control a game deliberately made unhittable is not ours to make hittable. */
+html.tmt-mobile button:not([style*="height"]),
+html.tmt-mobile .tabButton:not([style*="height"]) { min-height: var(--tmt-mobile-tap); }
 /* the interactive classes the engines size below the tap minimum in BOTH dimensions (measured across games/):
  * .smallUpg 40x40 (2.2.1 and 2.6/2.7), .remove 24x24 (the save-slot delete). `.mark` is 30x30 in 2.6/2.7 but is a
  * decoration on a tree node, not a control, so it is deliberately left alone. */
-html.tmt-mobile .smallUpg,
-html.tmt-mobile .remove { min-width: var(--tmt-mobile-tap); min-height: var(--tmt-mobile-tap); }
+html.tmt-mobile .smallUpg:not([style*="height"]),
+html.tmt-mobile .remove:not([style*="height"]) { min-width: var(--tmt-mobile-tap); min-height: var(--tmt-mobile-tap); }
 /* an engine hides spacer buttons with a class, not with display — do not give them a height */
 html.tmt-mobile button.hidden,
 html.tmt-mobile .ghost { min-height: 0; }

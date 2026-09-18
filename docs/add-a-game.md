@@ -60,6 +60,12 @@ It prints one JSON line per game: `{id, repo, rank, sha, license, added, gates: 
    doc to `manifests/index.json` (every game, once, in that order), so a game added without it is a red gate:
    `node tools/games-table.mjs --check`, or `gates.mjs --only G6`.
 
+**When a game is not worth hosting**, record it in `manifests/declined.json` — `{repo, reason}` — rather than only
+in a commit message. The judgement belongs here, where the attempt was made and the evidence is, and the census
+joins that file at the pinned commit to fill its `why not hosted` column (tmt-fork-census, stage 6). Gate **G7**
+keeps it honest: every declined repo must carry a reason, appear once, and **not** be hosted — the thing that rots
+is an entry left behind after someone fixes the game and adds it (one emitter fix unblocked five in an afternoon).
+
 **When a gate is red**, `node tools/harness/triage.mjs <id>...` runs check-manifest and the load gate over a batch
 and says what kind each red is, with the evidence beside it: which files reference an external host, which script
 the index names that the repo does not ship, and — read out of `tmtLoader.pageErrors` — the FILENAME and count of

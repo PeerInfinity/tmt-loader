@@ -13,6 +13,7 @@ import path from 'node:path';
 import { REPO } from './harness/lib.mjs';
 
 export const OUT = 'docs/games.md';
+export const DECLINED = 'manifests/declined.json';
 const LIVE = 'https://peerinfinity.github.io/tmt-loader/';
 const esc = (s) => String(s).replace(/\|/g, '\\|');
 
@@ -89,12 +90,46 @@ export function checkGamesTable() {
   return { ok: problems.length === 0, games: manifestIds.length, built: rows.length, listed: docIds.length, upToDate: have === want, problems };
 }
 
+/**
+ * Gate G7. `manifests/declined.json` records the games this loader LOOKED AT and did not host, and why — the
+ * judgement belongs on this side, where the attempt was made and the evidence is. The one thing that can rot is
+ * the obvious one: a game gets fixed and added, and nobody removes its entry, so the list publishes a reason for
+ * a game that is right there. (Five games were unblocked by one emitter fix in a single afternoon.) So: every
+ * declined repo must NOT be hosted, every entry must carry a non-empty reason, and no repo may appear twice.
+ */
+export function checkDeclined() {
+  const f = path.join(REPO, DECLINED);
+  const problems = [];
+  let list = [];
+  try { list = JSON.parse(fs.readFileSync(f, 'utf8')); }
+  catch (e) { return { ok: false, declined: 0, problems: [`${DECLINED}: ${e.message}`] }; }
+  if (!Array.isArray(list)) return { ok: false, declined: 0, problems: [`${DECLINED} is not an array`] };
+
+  const hosted = new Map();  // upstream repo (lower) -> id
+  for (const { id } of JSON.parse(fs.readFileSync(path.join(REPO, 'manifests/index.json'), 'utf8'))) {
+    const m = JSON.parse(fs.readFileSync(path.join(REPO, `manifests/${id}.json`), 'utf8'));
+    const r = m.upstream && m.upstream.repo;
+    if (r) hosted.set(r.toLowerCase(), id);
+  }
+  const seen = new Set();
+  for (const e of list) {
+    const r = e && typeof e.repo === 'string' ? e.repo : null;
+    if (!r) { problems.push(`an entry has no repo: ${JSON.stringify(e).slice(0, 80)}`); continue; }
+    if (!e.reason || !String(e.reason).trim()) problems.push(`${r}: no reason`);
+    if (seen.has(r.toLowerCase())) problems.push(`${r}: listed twice`);
+    seen.add(r.toLowerCase());
+    if (hosted.has(r.toLowerCase())) problems.push(`${r}: declined AND hosted as \`${hosted.get(r.toLowerCase())}\` — remove the entry`);
+  }
+  return { ok: problems.length === 0, declined: list.length, problems };
+}
+
 if (import.meta.url === `file://${process.argv[1]}`) {
   if (process.argv.includes('--check')) {
-    const r = checkGamesTable();
-    if (r.ok) { console.log(`${OUT} up to date — ${r.games} games in manifests/index.json, ${r.listed} listed`); process.exit(0); }
+    const r = checkGamesTable(), d = checkDeclined();
     for (const p of r.problems) console.error(`${OUT}: ${p}`);
-    process.exit(1);
+    for (const p of d.problems) console.error(`${DECLINED}: ${p}`);
+    if (r.ok && d.ok) console.log(`${OUT} up to date — ${r.games} games in manifests/index.json, ${r.listed} listed; ${DECLINED}: ${d.declined} declined, none hosted`);
+    process.exit(r.ok && d.ok ? 0 : 1);
   }
   const rows = rosterFromManifests();
   fs.writeFileSync(path.join(REPO, OUT), render(rows));

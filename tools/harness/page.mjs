@@ -184,6 +184,10 @@ const MOBILE_PROBE = `(${function () {
   const vis = (el) => { const cs = getComputedStyle(el); return cs.display !== 'none' && cs.visibility !== 'hidden' && Number(cs.opacity) !== 0; };
   const desc = (el) => `${el.tagName}.${String(el.className || '').slice(0, 34)}`;
   // controls a finger has to hit: the engines' interactive classes plus anything that is a button
+  // A control the game sized ITSELF (a layer's `nodeStyle()` lands in the style attribute) is exempt from the tap
+  // minimum: mobile.css leaves it alone, so the gate must not demand what the stylesheet deliberately does not do.
+  // The Galactic Tree hides a 1x1 easter-egg node this way.
+  const sizedByGame = (el) => /height/i.test(el.getAttribute('style') || '');
   const controls = [...document.querySelectorAll('#app button, #app .upg, #app .smallUpg, #app .tabButton, #app .remove, #tmt-mobile-nav button')]
     .filter((el) => !el.hidden && !el.classList.contains('hidden') && !el.classList.contains('ghost') && vis(el))
     .map((el) => ({ el, r: el.getBoundingClientRect() })).filter(({ r }) => r.width > 0 && r.height > 0);
@@ -192,7 +196,7 @@ const MOBILE_PROBE = `(${function () {
     docScrollWidth: document.documentElement.scrollWidth,
     // anything interactive whose box leaves the viewport sideways: unreachable, and the reason the split column fails
     escaping: controls.filter(({ r }) => r.right > vw + 1 || r.left < -1).map(({ el, r }) => `${desc(el)} x=${Math.round(r.x)} w=${Math.round(r.width)}`),
-    tooSmall: controls.filter(({ r }) => r.width < 44 || r.height < 44).map(({ el, r }) => `${desc(el)} ${Math.round(r.width)}x${Math.round(r.height)}`),
+    tooSmall: controls.filter(({ el, r }) => !sizedByGame(el) && (r.width < 44 || r.height < 44)).map(({ el, r }) => `${desc(el)} ${Math.round(r.width)}x${Math.round(r.height)}`),
     controls: controls.length,
     navButtons: [...document.querySelectorAll('#tmt-mobile-nav button')].filter((b) => !b.hidden).map((b) => b.dataset.key),
     navH: parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--tmt-mobile-nav-h')) || 0,
@@ -276,6 +280,34 @@ async function gateMobile(browser, base, ids) {
           await look(typeof t === 'string' ? `tab:${t}` : `open:${t.click}`);
         }
       }
+      // --- leg 4: the two opt-ins TOGETHER. They compose today, and nothing was asserting it: the mobile layout
+      // has to survive the `au` side layer and its tab, and the nav bar has to survive a second side node. Only
+      // for a game with an automation table — elsewhere the registry derives features but has nothing to drive.
+      if (readManifest(id).auto) {
+        const both = await context.newPage();
+        await both.goto(new URL(`index.html?mod=${encodeURIComponent(id)}&managed=1&mobile=1&automation=1`, base).href, { waitUntil: 'load' });
+        const rb = await waitReady(both);
+        let tree = null, auTab = null;
+        if (rb.ready) {
+          // ON THE TREE first. The `au` node only exists while the tree is rendered, and TMT 2.7 removes the tree
+          // from the DOM outright when a tab opens (measured: 11 treeNodes → 0, with or without the mobile flag),
+          // where 2.2.1 keeps it. Asserting the node after opening the tab would fail on 2.7 for engine reasons.
+          tree = await both.evaluate(MOBILE_PROBE);
+          tree.auNodes = await both.locator(AU_NODE_SELECTOR).count();
+          tree.features = await both.evaluate(() => (tmtLoader.features || []).length);
+          await both.evaluate(() => { try { showTab('au'); } catch (e) { /* engines differ; the geometry below still measures */ } });
+          await both.waitForTimeout(400);
+          auTab = await both.evaluate(MOBILE_PROBE);
+        }
+        await both.close();
+        const fits = (m) => m && m.escaping.length === 0 && m.tooSmall.length === 0 && m.docScrollWidth <= m.vw + 1;
+        row.both = tree && { auNodes: tree.auNodes, features: tree.features, navOnTree: tree.navButtons.length,
+          treeFits: fits(tree), auTabFits: fits(auTab), auTab: auTab && auTab.tab,
+          worst: [...(tree.escaping || []).slice(0, 2), ...((auTab && auTab.escaping) || []).slice(0, 2)] };
+        row.bothOk = !!(rb.ready && tree && tree.auNodes === 1 && tree.features > 0 && tree.navButtons.length >= 1
+          && fits(tree) && fits(auTab));
+      } else { row.both = null; row.bothOk = true; }
+
       const shot = path.join(REPO, `tools/harness/results/${id}-mobile.png`);
       await page.screenshot({ path: shot, fullPage: false });
       row.screenshot = path.relative(REPO, shot);
@@ -288,7 +320,7 @@ async function gateMobile(browser, base, ids) {
       // the mobile page must load as cleanly as the plain one: judged against the SAME manifest allowances as G1
       const j = judgeLoad(readManifest(id), base, structuredClone({ ...stats.of(page) }), await page.evaluate(() => ({ skipped: tmtLoader.skipped, pageErrors: tmtLoader.pageErrors })));
       row.loadVerdict = { ok: j.ok, failedNotDeclared: j.failedBad, blockedNotDeclared: j.blockedBad, errorsAfterReady: j.errorsAfterReady, errorsAfterReadySample: j.errorsAfterReadySample };
-      row.ok = !!(row.ready && !row.error && row.inertOk && row.stateOk && row.geometryOk && row.navOk && j.ok);
+      row.ok = !!(row.ready && !row.error && row.inertOk && row.stateOk && row.geometryOk && row.navOk && row.bothOk && j.ok);
     } catch (e) {
       row.exception = String((e && e.stack) || e).slice(0, 600);
     } finally { await context.close(); }
@@ -343,7 +375,7 @@ async function main() {
       const abstained = rows.filter((r) => r.state && !r.state.deterministic).map((r) => r.id);
       console.log(`M1 mobile: ${rows.map((r) => `${r.id}=${r.ok ? 'GREEN' : 'RED'}`).join(' ')}`);
       console.log(`M1 state leg: ${rows.filter((r) => r.stateVerdict === 'equal').length} equal, ${rows.filter((r) => r.stateVerdict === 'MOVED').length} moved, ${abstained.length} abstained${abstained.length ? ` (not deterministic on their own: ${abstained.join(', ')})` : ''}`);
-      for (const r of rows.filter((x) => !x.ok)) console.log(`  ${r.id}: inert=${r.inertOk} state=${r.stateVerdict}${r.state ? ` (plain ${r.state.plain} / control ${r.state.plainControl} / mobile ${r.state.mobile})` : ''} geometry=${r.geometryOk} nav=${r.navOk} load=${r.loadVerdict && r.loadVerdict.ok}${r.worst && r.worst.length ? ` worst=${JSON.stringify(r.worst)}` : ''}${r.exception ? ` exception=${r.exception}` : ''}`);
+      for (const r of rows.filter((x) => !x.ok)) console.log(`  ${r.id}: inert=${r.inertOk} both=${r.bothOk}${r.both ? ' ' + JSON.stringify(r.both) : ''} state=${r.stateVerdict}${r.state ? ` (plain ${r.state.plain} / control ${r.state.plainControl} / mobile ${r.state.mobile})` : ''} geometry=${r.geometryOk} nav=${r.navOk} load=${r.loadVerdict && r.loadVerdict.ok}${r.worst && r.worst.length ? ` worst=${JSON.stringify(r.worst)}` : ''}${r.exception ? ` exception=${r.exception}` : ''}`);
     } else {
       const out = await runPage(browser, base, ids[0], { ticks: Number(a.ticks ?? 200), diff: Number(a.diff ?? 0.05), leg: a.leg || 'idle', until: a.until || null, stateOut: a['state-out'], playerOut: a['player-out'], loadFrom: a['load-from'] ? fs.readFileSync(a['load-from'], 'utf8') : null, profile: a.profile || null, exclude: a.exclude ? a.exclude.split(',') : [], autoOpt: a['auto-opt'] || null, automation: !a['no-automation'] });
       delete out.json; delete out.player;

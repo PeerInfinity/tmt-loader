@@ -1,5 +1,6 @@
 // Runs the L1 gates G1–G4 for every game, then the repo-wide G6, and appends one row per gate to results/SUMMARY.md.
 //   node gates.mjs [<id>...] [--only G1,G2,G3,G4,G6] [--no-automation]
+// G6/G7 are repo-wide: the roster doc, and manifests/declined.json (a game we declined must not also be hosted).
 // G5 is not here: it needs a bare `git clone` served from a sub-path, so it lives in tools/check-pages.mjs. M1
 // (the mobile layout) likewise lives in page.mjs --gate mobile, which drives its own phone-sized touch context.
 // G6 is repo-wide rather than per-game, so it runs once, after the loop, with no id of its own.
@@ -16,7 +17,7 @@ import { parity } from './parity.mjs';
 import { upstreamExport } from './upstream-export.mjs';
 import { checkManifest } from './check-manifest.mjs';
 import { nodeIds, compareIds } from './check-goldens.mjs';
-import { checkGamesTable, OUT as GAMES_DOC } from '../games-table.mjs';
+import { checkGamesTable, checkDeclined, OUT as GAMES_DOC, DECLINED } from '../games-table.mjs';
 import { execFileSync } from 'node:child_process';
 
 const UPSTREAM = { ptr: path.join(os.homedir(), 'CC/Prestige-Tree'), something: path.join(os.homedir(), 'CC/tmt-fork-census/clones/Justcubing97__JC97sSomethingTree') };
@@ -95,6 +96,10 @@ try {
     row({ gate: 'G6 games doc', id: null, ok: g.ok, ticks: 0, gameSeconds: 0, diff: null, hash: null,
       notes: g.ok ? `${GAMES_DOC}: ${g.games} games in manifests/index.json, generator built ${g.built}, ${g.listed} listed in that order, file byte-equal to the generator's output`
         : g.problems.join('; ').slice(0, 400) });
+    const d = checkDeclined();
+    row({ gate: 'G7 declined list', id: null, ok: d.ok, ticks: 0, gameSeconds: 0, diff: null, hash: null,
+      notes: d.ok ? `${DECLINED}: ${d.declined} games declined with a reason, none of them hosted`
+        : d.problems.join('; ').slice(0, 400) });
   } else if (want('G6')) {
     console.log(`(G6 skipped: it checks ${GAMES_DOC} against the whole roster, and this run named ${a._.length} game(s))`);
   }

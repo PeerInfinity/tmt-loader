@@ -70,6 +70,7 @@ It works from any sub-path (GitHub Pages serves under `/tmt-loader/`); nothing i
 | `node tools/harness/run.mjs <id> --ladder <file> --to <mark> [--from-snapshot <file>] [--snapshots <dir>]` | a stretch of a game's ladder, from a committed snapshot; [docs/harness.md](docs/harness.md) |
 | `node tools/harness/ladder-summary.mjs` | the ladder as reached (marks, calibrated diffs, snapshot fixtures) |
 | `node tools/check-pages.mjs` | gate G5: a bare `git clone` served from a sub-path loads both games |
+| `node tools/games-table.mjs --check` (also gate G7) | `manifests/declined.json`: every declined game has a reason and is not also hosted |
 | `node tools/harness/triage.mjs <id>...` | reports what KIND each red is (declarable / broken / drift) with the evidence beside it; writes nothing |
 | `node tools/games-table.mjs --check` | gate G6: [docs/games.md](docs/games.md) lists every hosted game, once, in `manifests/index.json` order, and matches the generator |
 

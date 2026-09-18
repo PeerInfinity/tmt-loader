@@ -2590,3 +2590,10 @@ Reading this section: pinned rows compare TICKS and the game state without playe
 | G1 load | the-exp-tree | — | 3 | 0.15 | 0.05 | — | GREEN | ready 820 ms; 4 `#app .treeNode`; 69 requests, 0 blocked, 0 failed, 0 page errors; keys `tmt-loader:the-exp-tree:noxmod-exptree_options`, `tmt-loader:the-exp-tree:noxmod-exptree`; other game ptr: 1 keys in its own prefix, first untouched=true |
 | G4 goldens | the-exp-tree | — | 0 | 0 | — | — | GREEN | 6 ids, 7 layers; ms 0 / upg 2 / buy 4 / ch 0 / ach 0 (census equal=true) |
 | G4 check-manifest | the-exp-tree | — | 0 | 0 | — | — | GREEN | 17 scripts, 3 modFiles, vendor sha256 ok, subtree split 62b0830, games/the-exp-tree pristine |
+
+## 2026-09-18T04:12:38Z — gates.mjs, automation ON — commit `91af5f941` (tree DIRTY) — 2/2 green
+
+| gate | game | leg | ticks | gameSeconds | diff | hash | result | notes |
+|---|---|---|---|---|---|---|---|---|
+| G6 games doc | — | — | 0 | 0 | — | — | GREEN | docs/games.md: 171 games in manifests/index.json, generator built 171, 171 listed in that order, file byte-equal to the generator's output |
+| G7 declined list | — | — | 0 | 0 | — | — | GREEN | manifests/declined.json: 7 games declined with a reason, none of them hosted |
