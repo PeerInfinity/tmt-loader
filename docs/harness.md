@@ -104,8 +104,11 @@ and `hashGame`) is a measurement of those states, not a general guarantee; a run
 re-measure the stretch it depends on. See `docs/planner.md`.
 
 **Fixtures.** Snapshots of the marks the tables reach are committed under `tools/harness/snapshots/<game>/<set>/`:
-for PTR, `pinned/` (`--auto-opt kinds=reset,upgrades,buyables`, the A1/A2 configuration every pinned number was measured
-in), `all/` (every derived kind, the S1 frontier configuration rungs continue from) and `frontier/` (the stall itself);
+for PTR, `pinned/` (`--auto-opt kinds=reset,upgrades,buyables` plus the A2 policy set, the configuration every pinned
+number was measured in — a pin is a measurement of a CONFIGURATION, so it names one rather than inheriting whatever the
+table says today), `all/` (every derived kind, the configuration rungs continue from — **M01–M10 were measured under the
+A2 policies and M11–M16 under R1′'s table**, which is in each snapshot's `config`) and `frontier/` (the S1 stall itself,
+which R1′ walked through: M11 14745 · M12 14909 · M13 14132 · M14 14879 · M15 16048 · M16 24179, and M17 holds at M16);
 for Something Tree, `all/` (S01–S05, profile all, every kind — each lands on the A2-1 tick and `hashGame`). A PTR
 `player` is ~11 KB, a snapshot ~15–18 KB. Measured fidelity (H1-2): a resume lands on every later mark at the same tick, game-second and
 `hashGame` as the fresh run, and reproduces the frontier stall's tick and full hash; without `runtime` (the control) it

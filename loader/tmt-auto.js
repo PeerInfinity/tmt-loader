@@ -731,6 +731,16 @@
       if (off[id] === undefined) throw new Error(src + ': option include names "' + id + '", which the table does not exclude');
       delete off[id];
     });
+    // `exclude=<feature id>,…` — the inverse: do not register those, as if the table had excluded them. What a CONTROL
+    // needs (a row measured before the table lifted an exclusion cannot be reproduced without it), and what a sweep
+    // needs to turn one feature off without inventing an `off` policy for every kind. Loud the same way: an id the
+    // derivation does not produce throws, and so does one the table ALREADY excludes (that is an `include=` question).
+    var exc = listOpt('exclude', null);
+    if (exc) exc.forEach(function (id) {
+      known('exclude', id);
+      if (off[id] !== undefined) throw new Error(src + ': option exclude names "' + id + '", which the table already excludes');
+      off[id] = 'excluded by --auto-opt / ?autoOpt= exclude=' + id;
+    });
     T.autoExcluded = {};
     T.autoDerivation = { kindOrder: kindOrder.slice(), kinds: kinds ? kinds.slice() : KINDS_ALL.slice(), candidates: cands.length, registered: 0, excluded: 0, outOfKinds: 0, multiTogglesSkipped: 0, unlockOrder: uo };
     for (var i = 0; i < cands.length; i++) {

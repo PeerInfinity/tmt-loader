@@ -40,7 +40,21 @@ const KINDS_PINNED = 'kinds=reset,upgrades,buyables';
 // not of which policy the table happens to name, so the ptr pins now name theirs explicitly and stay comparable to the
 // baseline commits (whose tables said the same thing). The baseline side is run WITHOUT the opt, as before — at those
 // commits `interval>=10` is the table's own answer.
-const KINDS_PINNED_PTR = KINDS_PINNED + ';policy:reset:p=interval>=10';
+// R1′ moved FOUR ptr defaults, and three of them are inside the pinned kinds (`reset` and `buyables`), so the A2-3 pin —
+// which runs past the point where t / e / s exist — moved with them: measured 8137 instead of 8035 at (iii), while (i)
+// 3550 and (ii) 6037 were untouched (the divergence begins where e unlocks third). A pin is a measurement of a
+// CONFIGURATION, so the ptr pins now name the whole A2 configuration instead of inheriting it: reset:p interval>=10,
+// reset:t / e / s interval>=5, buyables:e buy, buyables:t excluded. With that, they are a regression test of the CODE,
+// which is what they are for, and they survive any later table move.
+const A2_CONFIG = [
+  'policy:reset:p=interval>=10',
+  'policy:reset:t=interval>=5',
+  'policy:reset:e=interval>=5',
+  'policy:reset:s=interval>=5',
+  'policy:buyables:e=buy',
+  'exclude=buyables:t',
+].join(';');
+const KINDS_PINNED_PTR = KINDS_PINNED + ';' + A2_CONFIG;
 // Every pinned SUMMARY row: [ticks, full hash] per mark (A1-3 @ 3bc12bf rows 154–169; A2-3 @ b695e47 rows 243–245;
 // A2-3 next stall row 260; A2-1 @ 71da72e rows 187–192), and the commit that reproduces it as it was recorded.
 const PINS = [
@@ -203,22 +217,35 @@ async function pinnedRows(runs) {
     }
   }
 }
+// The default moves R1′ made deliberately, with the gate that measured each one. A policy change NOT in this table is
+// still a RED: the row's job is to catch an UNINTENDED move, and a default that moves without a measurement behind it is
+// exactly that (⚖ minimize hardcoding cuts both ways — a table value needs provenance, and so does a change to one).
+const INTENDED_WHY = 'plan §14d: R1′-1 (a) / R1′-2.3 / R1′-3';
+const INTENDED_MOVES = {
+  ptr: {
+    'reset:p': 'gain>=2x',                          // S1-2's sweep + P1b control (iii); R1′-3's opening row
+    'reset:t': 'always',                            // R1′-2.3: M16 24212 against interval>=5's 24236, constant-free
+    'reset:s': 'always',                            // R1′-2.3: M16 24203 against 24236
+    'reset:e': 'gain>=2x',                          // R1′-2.3: the only value that reaches M12–M16 at all
+    'buyables:e': 'reserve>=next-upgrade',          // R1′-1 (a): the e half of M12
+  },
+};
 async function part1rest(browser, base, fresh, omega) {
 
   // fresh boot: each old feature's Locked state (unlocked()) vs the derived feature of the same id; the new ids listed
   for (const { id, s1, old } of fresh) {
     const [r, o] = await Promise.all([s1, old]);
     const now = Object.fromEntries((r.featureStates || []).map(([fid, u, pol]) => [fid, [u, pol]]));
-    const diffs = [], same = [];
+    const diffs = [], same = [], intended = [];
     for (const [fid, u, pol] of o.featureStates || []) {
       if (!now[fid]) { diffs.push(`${fid} MISSING`); continue; }
       if (now[fid][0] !== u) diffs.push(`${fid} unlocked ${u}→${now[fid][0]}`); else same.push(fid);
-      if (now[fid][1] !== pol) diffs.push(`${fid} policy ${pol}→${now[fid][1]}`);
+      if (now[fid][1] !== pol) (INTENDED_MOVES[id]?.[fid] === now[fid][1] ? intended : diffs).push(`${fid} policy ${pol}→${now[fid][1]}`);
     }
     const oldIds = new Set((o.featureStates || []).map((x) => x[0]));
     const added = (r.featureStates || []).filter(([fid]) => !oldIds.has(fid));
     row({ gate: 'S1-1 fresh boot: Locked/Off per feature, 17260e03 table vs derived', id, ok: !!r.ok && !!o.ok && diffs.length === 0 && o.featureStates?.length > 0, ticks: 0, gameSeconds: 0, diff: null, hash: r.hash,
-      notes: `${same.length}/${o.featureStates?.length} old features same unlocked + policy${diffs.length ? '; DIFFER ' + diffs.join(', ') : ''}; ${added.length} derived features added: unlocked ${added.filter((x) => x[1]).map((x) => x[0]).join(' ') || '—'}; locked ${added.filter((x) => !x[1]).length}; excluded ${JSON.stringify(r.excluded)}; derivation ${JSON.stringify(r.derivation)}` });
+      notes: `${same.length}/${o.featureStates?.length} old features same unlocked + policy${intended.length ? '; INTENDED (R1′, ' + INTENDED_WHY + ') ' + intended.join(', ') : ''}${diffs.length ? '; DIFFER ' + diffs.join(', ') : ''}; ${added.length} derived features added: unlocked ${added.filter((x) => x[1]).map((x) => x[0]).join(' ') || '—'}; locked ${added.filter((x) => !x[1]).length}; excluded ${JSON.stringify(r.excluded)}; derivation ${JSON.stringify(r.derivation)}` });
   }
 
   // the predicate compiler (tmtLoader.predicate, new Function) ≡ the harness's --until (vm / page.evaluate) on the same
@@ -369,12 +396,29 @@ async function part2k() {
 // profile all; something 1000×0.05 idle at profile off (§11e.12: on 2.7 an extra updateTemp() between ticks moves
 // player — node and page equal here means nothing S1 added calls it). The L1 battery is gates.mjs, run separately.
 async function part3(browser, base) {
-  const { parity } = await import('./parity.mjs');
-  for (const [id, ticks, diff, profile] of [['ptr', 3550, 1, 'all'], ['something', 5963, 0.05, 'all'], ['something', 1000, 0.05, 'off']]) {
-    const p = await parity(id, { ticks, diff, leg: 'idle', base, browser, profile });
+  const { parity, classifyDifferences } = await import('./parity.mjs');
+  // The ptr row runs the A2 configuration (KINDS_PINNED_PTR's policy set without the kinds restriction): bit-equality
+  // is a claim about the CODE, and it must not move when a table default does.
+  for (const [id, ticks, diff, profile, autoOpt] of [['ptr', 3550, 1, 'all', A2_CONFIG], ['something', 5963, 0.05, 'all', null], ['something', 1000, 0.05, 'off', null]]) {
+    const p = await parity(id, { ticks, diff, leg: 'idle', base, browser, profile, autoOpt });
     const same = JSON.stringify(p.node?.hook) === JSON.stringify(p.page?.hook);
-    row({ gate: `S1-3 parity node≡page, profile ${profile}, derived table`, id, leg: `idle, profile ${profile}`, ok: !!p.ok && same, ticks: p.ticks, gameSeconds: p.gameSeconds, diff, hash: p.node?.hash,
+    row({ gate: `S1-3 parity node≡page, profile ${profile}, derived table${autoOpt ? ' (the A2 policy set, named)' : ''}`, id, leg: `idle, profile ${profile}`, ok: !!p.ok && same, ticks: p.ticks, gameSeconds: p.gameSeconds, diff, hash: p.node?.hash,
       notes: p.ok ? `page ${p.page.hash} in ${p.page.ms} ms; hookStats equal ${same}; hooked ${p.node?.hook?.hooked?.length}; actions ${JSON.stringify(p.node?.hook?.actions)}` : `DIVERGED ${JSON.stringify(p.divergence || p.error).slice(0, 300)}` });
+  }
+  // R1′: ptr at the SHIPPED table is not bit-equal past ~3400 ticks — `player.points` differs by ONE ULP
+  // (5.661628996916917e108 vs …18e108 at 3550, reproduced twice; equal at 3200 and 3400). The cause is the game's own
+  // arithmetic, not the automation: once row 2's space buildings are live the formulas use fractional `Decimal.pow`,
+  // whose mantissa goes through V8's transcendentals, and those are not bit-identical between Node's V8 and Chromium's.
+  // The claim this row makes is therefore NOT "equal" but "equal in BEHAVIOUR": every difference is a relative 1e-15
+  // rounding difference in a number, the tick and game-second counts agree, and the hook statistics are identical. A
+  // page that played the game differently would put a `real` difference in the list and red the row.
+  {
+    const p = await parity('ptr', { ticks: 3550, diff: 1, leg: 'idle', base, browser, profile: 'all' });
+    const same = JSON.stringify(p.node?.hook) === JSON.stringify(p.page?.hook);
+    const cls = p.nodeJson ? classifyDifferences(p.nodeJson, p.pageJson) : { ulp: [], real: [] };
+    const ok = !!p.node && !!p.page && p.node.ticks === p.page.ticks && p.node.gameSeconds === p.page.gameSeconds && same && cls.real.length === 0;
+    row({ gate: 'S1-3 parity node≡page at the SHIPPED table: every difference is one ULP, not behaviour', id: 'ptr', leg: 'idle, profile all, no --auto-opt', ok, ticks: p.ticks, gameSeconds: p.gameSeconds, diff: 1, hash: p.node?.hash,
+      notes: `${p.ok ? 'bit-equal' : 'NOT bit-equal'}; differences: ${cls.ulp.length} ULP (rel ≤ 1e-15), ${cls.real.length} real${cls.ulp.length ? ' — ' + cls.ulp.slice(0, 4).map((d) => `${d.path} ${d.a} vs ${d.b}`).join(', ') : ''}${cls.real.length ? ' — REAL: ' + cls.real.slice(0, 4).map((d) => `${d.path} ${d.a} vs ${d.b}`).join(', ') : ''}; ticks ${p.node?.ticks}/${p.page?.ticks}, game-s ${p.node?.gameSeconds}/${p.page?.gameSeconds}; hookStats equal ${same}; page ${p.page?.hash} in ${p.page?.ms} ms` });
   }
 }
 

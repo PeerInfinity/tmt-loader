@@ -26,7 +26,34 @@ export async function parity(id, { ticks, diff, leg = 'idle', base, browser, mut
     node: { ticks: node.ticks, gameSeconds: node.gameSeconds, hash: node.hash, jsonHash: hash16(nodeJson), hook: node.hook },
     page: { ticks: page.ticks, gameSeconds: page.gameSeconds, hash: page.hash, hook: page.hook, ms: page.ms, blocked: page.blocked, failed: page.failed, pageErrors: page.pageErrors, loadVerdict: page.loadVerdict },
     divergence: div,
+    // the raw state, ONLY when the two differ: a caller that wants to classify the difference (a last-bit mantissa
+    // difference in one Decimal is not the same finding as the page playing the game differently) needs both sides,
+    // and firstDivergence() reports only the first key.
+    ...(div ? { nodeJson, pageJson: page.json } : {}),
   };
+}
+
+/** Walk two stateJSON strings and classify EVERY difference. A difference is `ulp` when both sides parse as finite
+ *  numbers whose relative difference is ≤ tol (a Decimal's mantissa is a double, and V8's transcendentals — Math.pow,
+ *  Math.exp, Math.log — are not bit-identical across V8 versions, so Node and Chromium can land one bit apart on the
+ *  same formula). Anything else is `real`. Used by the parity gate to assert that a run which is NOT bit-equal is
+ *  nonetheless equal in behaviour — a falsifiable claim, not a tolerance. */
+export function classifyDifferences(aJson, bJson, tol = 1e-15) {
+  const out = { ulp: [], real: [] };
+  const walk = (a, b, path) => {
+    if (a === b) return;
+    const num = (v) => (typeof v === 'number' ? v : (typeof v === 'string' && /^-?\d*\.?\d+(e[+-]?\d+)?$/i.test(v) ? Number(v) : NaN));
+    if (a !== null && b !== null && typeof a === 'object' && typeof b === 'object') {
+      const keys = new Set([...Object.keys(a), ...Object.keys(b)]);
+      for (const k of keys) walk(a[k], b[k], path ? `${path}.${k}` : k);
+      return;
+    }
+    const x = num(a), y = num(b);
+    if (Number.isFinite(x) && Number.isFinite(y) && x !== 0 && Math.abs(x - y) / Math.abs(x) <= tol) out.ulp.push({ path, a, b });
+    else out.real.push({ path, a, b });
+  };
+  try { walk(JSON.parse(aJson), JSON.parse(bJson), ''); } catch (e) { out.real.push({ path: '(parse)', a: String(e), b: '' }); }
+  return out;
 }
 
 async function main() {

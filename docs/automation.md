@@ -180,8 +180,10 @@ in (gate S1-1 checks both agree at every tick, in Node and in the page): `hasUpg
 |---|---|---|---|
 | ptr | `reset:p` | `gain>=2x` (alt. `interval>=10`, `always`, `gain>=1`) | R1′, from S1-2's sweep + P1b's frontier control (iii): 918 / 1627 / 2112 game-s to A1-3's marks against `interval>=10`'s 1361 / 2360 / 2936, and M11 at 15582 against 15782 — and the target-driven rule ⚖ 13d.2 asks for (an interval is a proxy). `always` still walls row 1 (p resets the moment points reach 10, so points never reach the 200 the b/g pair needs, at diff 0.05 and 1); `interval>=10` was the fastest interval of 5/10/30/60/120 s and every pinned A1/A2 number and ptr snapshot was measured under it, so the pinned gates now name it explicitly |
 | ptr | `reset:b`, `reset:g` | `gain>=1` (alt. `keepsUpgrades`, milestone 0 of each) | A1 table; `unlockOrder` `[g, b]`: g first ahead at every predicate and every p interval tried |
-| ptr | `reset:t`, `reset:e`, `reset:s` | `interval>=5` | A2-3: the requirement paces a row-2 reset — s at 5–30 and t at 5–60 tie exactly with both controls; `unlockOrder` `[s, t, e]` (s,t,e 3550 / 6037 / 8035; t,e,s and e,t,s never reach (ii)) |
-| ptr | `buyables:t` | off | Extra Time Capsules cost Boosters (lowers the booster effect) |
+| ptr | `reset:e` | **`gain>=2x`** | R1′ (gate R1′-2.3, one 12 000-tick leg from the frontier): `e` is row 2's only NORMAL layer (exponent 0.02), so its gain is a function of how high points CLIMBED, and an interval reset spends that climb every 5 s for ~1.5 EP. `interval>=5` and `always` reach M11 only (147 resets, 16 EP held, best 400); `unlocks-purchase` M11 with 263 EP; `gain>=2x` reaches **every remaining mark of the rung** (M11 14745 · M12 14909 · M13 14132 · M14 14879 · M15 16048 · M16 24179) in 299 resets, ending on 2.35e92 EP |
+| ptr | `reset:t`, `reset:s` | **`always`** | A2-3 measured `interval>=5` tying with `always` / `gain>=1` during the unlock phase; R1′-2.3 measured the tie again at the frontier (M16 24212 / 24203 against the interval's 24236) and took the constant-free rule — a static layer's gain is 1 per reset and its REQUIREMENT paces it, so a clock has nothing to be a proxy for. `unlockOrder` `[s, t, e]` (s,t,e 3550 / 6037 / 8035; t,e,s and e,t,s never reach (ii)) |
+| ptr | `buyables:t` | `buy` (was off) | R1′ lifted the exclusion. The Time Energy cap is `100·(2^(TC + extra TC) − 1)·enCapMult`, so each Extra Time Capsule DOUBLES it; without them it sits at 6300 against t12's 2e5 and the whole t12 → t13 → t23 refund chain waits. Measured: with the exclusion, t upgrades [11] and `t.unlockOrder` 1; with it lifted, 11 Capsules, cap 2.49e9, t upgrades [11,12,13,14,15,23] and **unlockOrder 0**. The booster cost is real and smaller than what it buys, and the game grants the same autobuyer itself at q milestone 1 (`player.t.autoExt`) |
+| ptr | `buyables:e` | `reserve>=next-upgrade` | R1′: Enhancers cost `2^(x^1.5)` EP and compete for the EP that e11 (25) → e12 (400) → e22 (1000, at unlockOrder 2) need — the e half of M12. `buy` ends 11 EP held with 4 Enhancers, `reserve>=next-upgrade` 47 EP with 3, and a literal `reserve>=25` is byte-identical to `buy` (once e11 is owned the next upgrade costs 400) |
 | something | `reset:unlock` | `always` | A1 table |
 | something | `reset:fundamental` | `interval>=5` | A1-3: `gain>=1` resets about every tick and starves unlock gain; 5 s → 308 game-s to unlock:upg:12 of 2/5/10/20/30/60 |
 | something | `reset:primitive` | `interval>=90` | A2-1 sweep: 90 s → 399 / 579 game-s to primitive ms 1 / ms 2 (60 → 429 / 17109; 120 → 429 / 669; 5 = 10 = `always` = `gain>=1` → 501 / —) |
@@ -200,8 +202,12 @@ Everything else in both games is derived.
   - `order:<featureId>=11,12,23` — override the table's `order[]` for one feature (upgrade / buyable / challenge order),
     so an ORDER can be swept with controls before it is written into a table; an empty list clears it;
   - `include=<featureId>,…` — drop those ids from the table's `off` map, so an EXCLUSION can be measured without editing
-    the table (R1′ re-evaluated `buyables:t` this way). An id the derivation does not produce, or one the table does not
-    exclude, throws;
+    the table (R1′ re-evaluated `buyables:t` this way, and then lifted it). An id the derivation does not produce, or one
+    the table does not exclude, throws;
+  - `exclude=<featureId>,…` — the inverse: do not register those, as if the table had excluded them. What a CONTROL needs
+    (a row measured before a table lifted an exclusion cannot be reproduced without it — the A2 pins in `gates-s1` name
+    `exclude=buyables:t` for exactly that reason) and what a sweep needs to switch one feature off without inventing an
+    `off` policy for every kind. An unknown id, or one the table already excludes, throws;
   - `hookAll=1` — hook every tree layer (test probe); any other key lands in `tmtLoader.autoOptions`.
 - A THROW in the table or the derivation (an unknown key, an unknown feature id, a bad `include=`) is a **hard fail** of
   the run (`ok: false`, `failed_at: 'automation'`), not a run with `features: []` — the page fails its load on the same
