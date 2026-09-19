@@ -168,6 +168,10 @@
   // carries. ⚠ It is NOT in `startData`: the S1 pins compare the FULL state hash, which includes `player.au`, so a
   // key present from the first boot would move every pinned `want` hash for a setting nobody touched. Absent reads
   // false, `toggleAuto` writes it on the first press, and the pins keep running in the state they were recorded in.
+  // ⚠ CORRECTED (U6, measured): the S1 PINNED rows compare ticks and `hashGame` — the state WITHOUT `player.au`
+  // — so they would not have noticed the key at all. What a seeded key does move is the FULL hash, which
+  // `gates-p1a --part 0` pins for the frontier fixture. The numbers, and the fix that needs neither, are at
+  // `installArmToggleClick` below.
   //
   // ⛔ IT DOES NOT REACH `active()`, and that is the whole reason arming is SAFE rather than a foot-gun. Every branch
   // of `active()` already ANDs with `featureUnlocked(f)`, and `isOnSaved` is stored per id independently of unlock
@@ -185,6 +189,47 @@
     else player[AU].armLocked = !!on;
     return !!on;
   };
+  // ⚠ … AND THE BUTTON DOES NOT CALL THAT SETTER. U4 wrote `Vue.set` here and the reactivity bug shipped anyway:
+  // the `toggle` component's click is hardcoded to the engine's own `toggleAuto`, so the careful reactive write sat
+  // on a path the UI never takes. A reactive write on a path nobody walks is not a reactive write.
+  // MEASURED on `ptr` (2026-09-19, the user's report): the button reads `OFF`, one press leaves the text `OFF`
+  // while `player.au.armLocked` becomes `true`. Vue 2 cannot observe a property ADDED to an object after creation,
+  // ptr's `toggleAuto` assigns plainly (`player[t[0]][t[1]] = !player[t[0]][t[1]]`), and the key is absent until
+  // that first press — so the value flips and the view never re-renders. **22 of the 171** assign plainly and 149
+  // use `Vue.set`, which is exactly why the user sees it and a `Vue.set` engine would have hidden it.
+  // ⚠ 22 and NOT 24: two games declare `toggleAuto` twice and the copies DISAGREE, so the answer is decided by
+  // LOAD ORDER — a first-match grep over the tree says 24, and the copy the click reaches is the LAST one loaded.
+  //
+  // ⛔ THE TWO ROUTES, AND WHY THIS ONE. Making the key exist at boot (`startData`) is the one-line fix, and it
+  // MOVES WHAT `player.au` CONTAINS. Measured on `ptr` at 2e0818811, with `armLocked: false` seeded:
+  //   · the state without `player.au` — what the S1 pinned rows actually compare — DOES NOT MOVE:
+  //     fresh `8daecd949227c861`, `all/M09` at 0 ticks `208197f46f08ed88`, identical either way;
+  //   · the FULL hash MOVES: fresh `6062b457fdb56dd6` → `13cd6ddb1cd512a4`, M09@0 `97d8593fb06c4537` →
+  //     `4c4937e5074ec391` (the import re-adds the key from `startData`, at the end of the key order).
+  // So the S1 pins would not have noticed — the note above this function, and `docs/contract.md`, were wrong about
+  // WHICH hash protects them — but `gates-p1a --part 0` pins the FULL hash of the frontier fixture
+  // (`FRONTIER_PIN.hash`, `63f28e099536a119`) and would go red, and a pin move is a re-record the user decides.
+  // This route moves NOTHING: the key still does not exist until the player presses the button, and the press is
+  // routed through the setter above, whose `Vue.set` both creates the key and notifies `player.au`'s own observer
+  // — which is what re-renders the engine's own button, its text and its colour.
+  //
+  // ⚠ IT IS THE NARROWEST PATCH THAT REACHES THE CLICK: every other toggle in the game goes to the original,
+  // unchanged, by the same call. Measured over all 171 games (2026-09-19): all 171 declare `function toggleAuto`
+  // at top level — so it is a `globalThis` property in the page and in the harness's vm context alike — and NONE
+  // of them puts it in the Vue instance's `data`, so the compiled template's `with(this)` falls through to exactly
+  // the property this replaces. A game where it did not would simply keep today's behaviour: `armToggleOwned` says
+  // which, rather than leaving it to be guessed.
+  function installArmToggleClick() {
+    var orig = G.toggleAuto;
+    if (typeof orig !== 'function' || orig.tmtArmWrapped) return false;
+    var wrapped = function (t) {
+      if (t instanceof Array && t[0] === AU && t[1] === 'armLocked') { T.armLocked(!armLocked()); return; }
+      return orig.apply(this, arguments);
+    };
+    wrapped.tmtArmWrapped = true;
+    try { G.toggleAuto = wrapped; } catch (e) { return false; }
+    return G.toggleAuto === wrapped;
+  }
   // A RUNTIME enable override (never saved, never a default): the advanced planner commits a configuration for an epoch
   // by switching individual features on and off under whatever profile is running — `off` is not a policy of every
   // kind, and writing player.au.features would put a planner decision into the player's save. Part of runtimeState(),
@@ -901,6 +946,8 @@
       automate: auAutomate,
     });
     T.auLayer = AU;
+    // the arming toggle's click path (above). Installed with the layer, because it is that layer's control.
+    T.armToggleOwned = installArmToggleClick();
   }
 
   // Test probe (Part-1 gate): hook every tree layer with no features, so the wrapper-call counter covers every layer.
