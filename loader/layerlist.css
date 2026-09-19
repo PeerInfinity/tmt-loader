@@ -300,3 +300,45 @@
 
 /* the expander itself: a chevron, not U2's `+N`. The counter row states every total the `+N` used to stand for. */
 #tmt-layerlist .tmt-layerlist-more { flex: 0 0 auto; font-size: 17px; }
+
+/* ---------------------------------------------------------------- U2e: the tooltip
+ * ⚖ A chip should say what it COSTS and what it DOES (user, 2026-09-18). ONE overlay for the whole list, placed by
+ * layerlist.js — so "opening one closes any other" is the shape of the thing, and the clamp that keeps it on a
+ * 390 px screen is a measurement rather than a guess.
+ *
+ * ⚠ It does NOT replace the `title` attributes U2d put on every chip, counter and button: those are the accessible
+ * name and the no-JS fallback, and the overlay's FIRST line is read straight off the element's own `title`, so the
+ * two cannot say different things. On a pointer the browser's native tooltip may still appear beside this one after
+ * its own delay, saying the short name where this says the cost and the effect — they are not duplicates.
+ *
+ * ⚠ `position: fixed`, and it is a child of the PANEL and never of a card: `.tmt-layerlist-card` carries
+ * `contain: layout`, which makes the card a containing block for a fixed descendant. Inside a card this could not
+ * be positioned against the screen at all. */
+#tmt-layerlist .tmt-layerlist-tip {
+  position: fixed;
+  left: 0;
+  top: 0;
+  z-index: 1;                 /* inside the panel's own stacking context: over the cards, under nothing else */
+  max-width: min(320px, calc(100vw - 16px));
+  padding: 8px 10px;
+  border: 1px solid rgba(127, 127, 127, .75);
+  border-radius: 6px;
+  background: var(--background, #111);
+  color: var(--color, #ddd);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, .45);
+  font-size: 13px;
+  line-height: 1.35;
+  overflow-wrap: anywhere;    /* the game's own prose, and some of it is one long unbroken token */
+  /* ⚠ IT IS A READOUT, NOT A CONTROL. Without this a tap that landed on the overlay would be swallowed by it
+   * instead of reaching the chip underneath — and a mouse crossing it would fire `pointerout` on the anchor and
+   * close the thing it is reading. It also keeps the overlay out of the gate's tap-target census, as a div with no
+   * behaviour should be. */
+  pointer-events: none;
+}
+#tmt-layerlist .tmt-layerlist-tip[hidden] { display: none; }
+#tmt-layerlist .tmt-layerlist-tip-title { font-weight: bold; }
+/* `pre-line` because the engines render a buyable's `display` that way too, and `tipLine()` deliberately keeps its
+ * newlines while collapsing everything else. `:empty` hides the second line on a control that has no detail — a
+ * counter, whose whole meaning is its name. */
+#tmt-layerlist .tmt-layerlist-tip-body { margin-top: 3px; opacity: .92; white-space: pre-line; }
+#tmt-layerlist .tmt-layerlist-tip-body:empty { display: none; }

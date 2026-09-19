@@ -28,6 +28,13 @@
 // row holds is MEASURED at render against the row's own width (`fitCards`), never a constant, and it is re-measured
 // on a resize.
 //
+// SINCE U2e, A CHIP SAYS WHAT IT COSTS AND WHAT IT DOES (⚖ user, 2026-09-18). One overlay, opened by a hover on a
+// pointer and a tap on a touch screen, whose first line IS the element's own `title` attribute and whose second is
+// composed out of the engine's own fields for that CATEGORY — a declared `tooltip`, then the description, the
+// effect and the cost. The `title` attributes U2d added stay exactly as they were: they are the accessible name and
+// the no-JS fallback, and reading the overlay's first line off them is what makes it impossible for the two to
+// disagree. See `DETAIL` and `tipDetail` below.
+//
 // ENGINE-GENERIC BY CONSTRUCTION. It knows no layer, no upgrade and no game: every value comes from `tmp[l]` /
 // `player[l]` / `layers[l]`, and anything that evaluates game code is wrapped — a throw costs one card, never the
 // list. In particular it NEVER calls the global `canReset(layer)`: that function ends in
@@ -575,10 +582,312 @@
     try { return fn(); } finally { try { if (had === false && player.hasNaN === true) player.hasNaN = false; } catch (e2) { /* not this engine's flag */ } }
   }
 
+  // ---------------------------------------------------------------- THE TOOLTIP (U2e)
+  // ⚖ A CHIP SHOULD SAY WHAT IT COSTS AND WHAT IT DOES, not only what it is called (user, 2026-09-18).
+  //
+  // ⚠ A TOOLTIP ALREADY EXISTED and that is what this one has to beat. U2d put `title` on every chip, counter and
+  // action button, so a desktop hover already opened the browser's own tooltip with the component's short name.
+  // Those attributes STAY — they are the accessible name and the no-JS fallback — and three things they cannot do
+  // are the whole of this section: a `title` is only the short NAME, native `title` does nothing on TOUCH (and the
+  // phone is the case the list was built for), and it cannot be positioned, so it cannot be kept on screen.
+  //
+  // ⚠ THE TIP'S FIRST LINE *IS* THE ELEMENT'S `title` ATTRIBUTE, read off the element rather than recomposed. So
+  // "if your tooltip and the title disagree, that is a bug in yours" is not a rule to remember: the two cannot
+  // disagree, because there is one string. Everything below is about the SECOND line.
+  //
+  // ENGINE-GENERIC, per CATEGORY and never per game: `DETAIL` names exactly the fields that category's own engine
+  // component renders, in the order it renders them, read the same way every other value in this file is (`tmp`
+  // first, then a guarded call on the declaration). Measured over the two reference engines' `components.js`:
+  //   · 2.2.1 `upgrade`   — title, `description`, "Currently: " `effectDisplay`|`effect`, "Cost: " `cost` + currency
+  //   · 2.7   `upgrade`   — the same four, plus a `<tooltip>` component beside them
+  //   · `buyable`         — title then `display`, which in both engines is the prose that carries its own cost
+  //   · `challenge`       — `challengeDescription`, "Goal: ", "Reward: " `rewardDescription`, "Currently: "
+  //   · `milestone`       — `requirementDescription` (the chip's own name) then `effectDescription`
+  var DETAIL = {
+    upgrades: [{ text: 'description' },
+      { num: 'effect', text: 'effectDisplay', label: 'Currently' },
+      { num: 'cost', whole: true, label: 'Cost', currency: 'resource', multi: 'multiRes' }],
+    // ⚠ NO SEPARATE COST LINE FOR A BUYABLE, and it is measured rather than assumed: a buyable's `display` already
+    // states it. On `ptr`'s `t/11` it reads "Cost: 138 Boosters\nAmount: 21 + 7", so a composed cost line would say
+    // the same number twice.
+    buyables: [{ text: 'display' }],
+    challenges: [{ text: 'challengeDescription' },
+      { num: 'goal', label: 'Goal', currency: 'points' },
+      { text: 'rewardDescription', label: 'Reward' },
+      { num: 'rewardEffect', text: 'rewardDisplay', label: 'Currently' }],
+    milestones: [{ text: 'effectDescription' }]
+  };
+
+  // ⚠ THE FIELDS ARE HTML — the engines render every one of them through `v-html`, so they carry `<br>`, `<b>` and
+  // colour spans, and `create-incremental`'s upgrade tooltips carry `<sub>` and `&#8594;`. Tags out FIRST with the
+  // regex `stripTags` (never by parsing), and only THEN the entities, through a `textarea`: its content model is
+  // text, so assigning to its `innerHTML` decodes `&#8594;` without ever creating an element. The other order could
+  // turn `&lt;b&gt;` into a tag.
+  var decoder = null;
+  function decodeEntities(s) {
+    if (s.indexOf('&') < 0) return s;
+    return safe(function () {
+      if (!decoder) decoder = document.createElement('textarea');
+      decoder.innerHTML = s;
+      return decoder.value;
+    }, s);
+  }
+  /** One of the engine's prose fields as one line of ours: no markup, runs of spaces collapsed, NEWLINES KEPT —
+   *  a buyable's `display` is multi-line in the engine too (`white-space: pre-line` there and here). */
+  function tipLine(s) {
+    return decodeEntities(stripTags(s)).replace(/[ \t ]+/g, ' ').replace(/\s*\n\s*/g, '\n').replace(/\n{2,}/g, '\n').trim();
+  }
+  function fmtNum(v, whole) {
+    return safe(function () {
+      if (whole && typeof formatWhole === 'function') return str(formatWhole(v));
+      if (typeof format === 'function') return str(format(v));
+      return str(v);
+    }, '');
+  }
+  /** The currency a cost or a goal is denominated in, asked the way the engines' own components ask it: the
+   *  component's `currencyDisplayName` where it declares one, else the LAYER's `resource` (an upgrade's cost) or
+   *  the engines' literal fallback for a challenge goal. */
+  function currencyOf(part, l, decl, t) {
+    var c = textOf(decl, t, 'currencyDisplayName');
+    if (str(c).trim()) return tipLine(c);
+    if (part.currency === 'resource') return tipLine(safe(function () { return str(tmp[l].resource); }, ''));
+    return part.currency === 'points' ? 'points' : '';
+  }
+  // ⚠ A `tmp` ENTRY CAN STILL BE THE FUNCTION — the engines evaluate a declaration into `tmp` only where it takes no
+  // argument (`1-clicker`'s buyable `display()` stays a function there), so a value that IS one falls through to the
+  // guarded call, exactly as `textOf` does for the prose fields.
+  function numFieldOf(field, decl, t) {
+    var v = safe(function () { return t ? t[field] : undefined; }, undefined);
+    if (v !== undefined && v !== null && typeof v !== 'function') return v;
+    return safe(function () { var x = decl[field]; return typeof x === 'function' ? x.call(decl) : x; }, undefined);
+  }
+  function labelled(label, text) { return label ? label + ': ' + text : text; }
+
+  /** THE SECOND LINE: what the component costs and does, composed out of the engine's own fields.
+   *  ⚠ WRAPPED IN `withoutRaisingNaN`, and this is the call site that most needs it: every TMT `format()` opens
+   *  `if (isNaN(...)) player.hasNaN = true`, a game's own cost and effect strings are exactly the text that formats
+   *  a NaN (`the-quantum-tree`'s `Qc` reads "Next at NaN Qt" at a fresh save), and a tooltip renders MORE of them
+   *  than anything before it. The flag goes back only if this composition was what raised it.
+   *  ⚠ A THROW COSTS ONE TOOLTIP, NEVER THE LIST: `description` and `effectDisplay` are game code. Every read is
+   *  through `safe`/`textOf` already, and the whole composition is inside one try as well. */
+  function tipDetail(kind, l, id) {
+    return withoutRaisingNaN(function () {
+      try {
+        var decl = declOf(kind, l, id), t = tmpOf(kind, l, id);
+        var out = [];
+        // ⚠ A DECLARED `tooltip` IS ADDITIVE, not a substitute for the composition. In TMT 2.7 the `<tooltip>`
+        // component sits BESIDE the button's own description block, so the field is extra text; a rule that used it
+        // INSTEAD would drop the cost and the effect, which are the reason this tooltip exists. Measured: it is not
+        // the common case either — neither reference game DRAWS a chipped component that declares one (docs/mobile.md).
+        var tip = tipLine(textOf(decl, t, 'tooltip'));
+        if (tip) out.push(tip);
+        (DETAIL[kind] || []).forEach(function (part) {
+          if (part.text && !part.num) { var s = tipLine(textOf(decl, t, part.text)); if (s) out.push(labelled(part.label, s)); return; }
+          if (part.text) { var d = tipLine(textOf(decl, t, part.text)); if (d) { out.push(labelled(part.label, d)); return; } }
+          var v = numFieldOf(part.num, decl, t);
+          if (isAmount(v)) {
+            var cur = part.currency ? currencyOf(part, l, decl, t) : '';
+            out.push(labelled(part.label, fmtNum(v, part.whole) + (cur ? ' ' + cur : '')));
+            return;
+          }
+          // ⚠ `multiRes` — a cost in SEVERAL currencies, which four games on the roster declare (`ptr` among them)
+          // and where `cost` itself is undefined. The engines render one line per entry; so does this.
+          if (!part.multi) return;
+          var m = numFieldOf(part.multi, decl, t);
+          if (!m || typeof m.length !== 'number') return;
+          var parts = [];
+          for (var i = 0; i < m.length; i++) {
+            var c = safe(function () { return m[i].cost; }, undefined);
+            if (!isAmount(c)) continue;
+            var n = tipLine(safe(function () { return str(m[i].currencyDisplayName); }, ''))
+              || tipLine(safe(function () { return str(tmp[l].resource); }, ''));
+            parts.push(fmtNum(c, part.whole) + (n ? ' ' + n : ''));
+          }
+          if (parts.length) out.push(labelled(part.label, parts.join(' + ')));
+        });
+        return out.join('\n');
+      } catch (e) { return ''; }
+    });
+  }
+
+  // ---- the overlay, and what it is anchored to
+  // ONE overlay for the whole list, so "opening one closes any other" is the shape of the thing rather than a rule
+  // it has to keep. It is identified by the component KEY, not by the element: the action row is rebuilt whenever
+  // its membership moves, so an open tooltip's element can be replaced underneath it (see `syncTip`).
+  var tipEl = null;        // the overlay
+  var tipTitleEl = null, tipBodyEl = null;
+  var tipKey = null;       // {card, role, kind, id, layer} — the component, never the element
+  var tipAnchorEl = null;  // the element it is placed against, re-found after a rebuild
+  var tipRich = false;     // did the last write find anything the `title` does not say?
+  var TIP_GAP = 6, TIP_EDGE = 8;
+
+  function buildTip() {
+    if (tipEl) return;
+    tipEl = document.createElement('div');
+    tipEl.className = 'tmt-layerlist-tip';
+    tipEl.id = 'tmt-layerlist-tip';
+    tipEl.hidden = true;
+    tipEl.setAttribute('role', 'tooltip');
+    tipTitleEl = document.createElement('div');
+    tipTitleEl.className = 'tmt-layerlist-tip-title';
+    tipBodyEl = document.createElement('div');
+    tipBodyEl.className = 'tmt-layerlist-tip-body';
+    tipEl.append(tipTitleEl, tipBodyEl);
+    // ⚠ A CHILD OF THE PANEL, NEVER OF A CARD. The card carries `contain: layout` (U2c), which makes it the
+    // containing block for a `position: fixed` descendant — a tooltip inside a card could not be clamped to the
+    // screen, which is the whole of the "nothing escapes at 390 px" promise. The panel itself has no containment.
+    panel.appendChild(tipEl);
+  }
+
+  /** Which of our controls a press or a hover landed on, `null` for anything else in the panel. The same shape as
+   *  `tipTargetOf` in loader/navbar.js, which walks up to the game's `[tooltip]` / `.tooltipBox` — these are OUR
+   *  elements, so they need their own walk, and U1's RULES are what is shared (see `onTipClick`). */
+  function tipTargetOf(node) {
+    for (var el = node; el && el !== panel; el = el.parentElement) {
+      if (!el.classList) continue;
+      if (el.classList.contains('tmt-layerlist-chip') || el.classList.contains('tmt-layerlist-act')
+        || el.classList.contains('tmt-layerlist-counter')) return el;
+    }
+    return null;
+  }
+  function tipKeyOf(el) {
+    var card = el.closest ? el.closest('.tmt-layerlist-card') : null;
+    var cardLayer = card ? card.dataset.layer : null;
+    var role = el.classList.contains('tmt-layerlist-counter') ? 'counter'
+      : el.classList.contains('tmt-layerlist-act') ? 'act' : 'chip';
+    return { card: cardLayer, role: role, kind: el.dataset.kind || '',
+      id: role === 'counter' ? null : str(el.dataset.cid),
+      layer: role === 'counter' ? cardLayer : (el.dataset.layer || cardLayer) };
+  }
+  /** The element a key points at TODAY. Found by walking the card's controls and comparing the data attributes
+   *  rather than by building a selector: an id is the game's own object key and a selector would have to escape it. */
+  function tipAnchorOf(k) {
+    var rec = k && k.card ? cards[k.card] : null;
+    if (!rec) return null;
+    var cls = k.role === 'counter' ? '.tmt-layerlist-counter' : k.role === 'act' ? '.tmt-layerlist-act' : '.tmt-layerlist-chip';
+    var list = rec.el.querySelectorAll(cls);
+    for (var i = 0; i < list.length; i++) {
+      var e = list[i];
+      if (e.dataset.kind !== k.kind) continue;
+      if (k.role === 'counter') return e;
+      if (str(e.dataset.cid) === str(k.id) && (e.dataset.layer || k.card) === k.layer) return e;
+    }
+    return null;
+  }
+
+  /** The two lines. ⚠ The FIRST is the element's own `title`, so the overlay cannot contradict the native tooltip.
+   *  Returns whether there is a SECOND — a tooltip with no detail says exactly what the browser's already says. */
+  function writeTip(el, k) {
+    var title = str(el.getAttribute ? el.getAttribute('title') : '');
+    var body = k.role === 'counter' ? '' : tipDetail(k.kind, k.layer, k.id);
+    tipTitleEl.textContent = title;
+    tipBodyEl.textContent = body;
+    tipRich = !!body && body !== title;
+    return tipRich;
+  }
+
+  /** Placed against the anchor, CLAMPED INSIDE THE PANEL — which is the visible list, and already sits above the
+   *  nav bar (`bottom: var(--tmt-navbar-h)`), so one clamp keeps the tooltip on screen AND off the bar. Above the
+   *  control by preference, below it when there is no room above, and never outside either edge. */
+  function placeTip(el) {
+    tipEl.style.left = '0px';
+    tipEl.style.top = '0px';
+    var r = el.getBoundingClientRect(), t = tipEl.getBoundingClientRect(), p = panel.getBoundingClientRect();
+    var vw = document.documentElement.clientWidth || p.right, vh = document.documentElement.clientHeight || p.bottom;
+    var minX = Math.max(TIP_EDGE, p.left + TIP_EDGE), maxX = Math.min(vw - TIP_EDGE, p.right - TIP_EDGE) - t.width;
+    var minY = Math.max(TIP_EDGE, p.top + TIP_EDGE), maxY = Math.min(vh - TIP_EDGE, p.bottom - TIP_EDGE) - t.height;
+    var x = r.left + r.width / 2 - t.width / 2;
+    tipEl.style.left = Math.round(maxX < minX ? minX : Math.max(minX, Math.min(x, maxX))) + 'px';
+    var y = r.top - t.height - TIP_GAP;
+    if (y < minY) y = r.bottom + TIP_GAP;
+    tipEl.style.top = Math.round(maxY < minY ? minY : Math.max(minY, Math.min(y, maxY))) + 'px';
+  }
+
+  function showTip(el) {
+    if (!el || !panel || !panel.contains(el)) return false;
+    // ⚠ AND IT MUST BE ON SCREEN. A collapsed card hides its whole chip row, and a control with no layout has no box
+    // to place a tooltip against — `getBoundingClientRect()` is all zeroes there, so the overlay would land in the
+    // top-left corner pointing at nothing, and the next `syncTip` would close it again. Refusing it here is what makes
+    // the two agree. MEASURED by the gate's own constructed re-read leg, which opened one on a hidden chip and read
+    // `THE REFRESH CLOSED THE TOOLTIP`.
+    if (!el.getClientRects().length) return false;
+    buildTip();
+    var k = tipKeyOf(el);
+    if (tipAnchorEl && tipAnchorEl !== el) hideTip();   // ONE overlay: opening one closes any other, by construction
+    tipKey = k;
+    tipAnchorEl = el;
+    writeTip(el, k);
+    tipEl.hidden = false;
+    try { el.setAttribute('aria-describedby', tipEl.id); } catch (e) { /* the title attribute is still the name */ }
+    placeTip(el);
+    stats.tips++;
+    if (tipRich) stats.tipsRich++;
+    return true;
+  }
+  function hideTip() {
+    if (!tipEl || tipEl.hidden) { tipKey = null; tipAnchorEl = null; return false; }
+    tipEl.hidden = true;
+    if (tipAnchorEl) { try { tipAnchorEl.removeAttribute('aria-describedby'); } catch (e) { /* already gone */ } }
+    tipKey = null;
+    tipAnchorEl = null;
+    return true;
+  }
+  function toggleTip(el) {
+    if (tipEl && !tipEl.hidden && tipAnchorEl === el) return hideTip();
+    return showTip(el);
+  }
+  /** ⚠ COST AND EFFECT MOVE EVERY TICK, so an open tooltip is re-read — on the SAME throttled path as the counters
+   *  (`syncCards`, 250 ms) and in full on every explicit `refresh()`. One per frame would undo U2d's throttle; never
+   *  would leave a stale number on screen for as long as the finger is down. And it RE-ANCHORS: the action row is
+   *  rebuilt whenever its membership moves, so the element can be replaced under an open tooltip. A control that is
+   *  gone, or that its card has collapsed out of sight, closes it. */
+  function syncTip() {
+    if (!tipEl || tipEl.hidden || !tipKey) return;
+    var el = tipAnchorEl && panel.contains(tipAnchorEl) ? tipAnchorEl : tipAnchorOf(tipKey);
+    if (!el || !el.getClientRects().length) return void hideTip();
+    tipAnchorEl = el;
+    writeTip(el, tipKey);
+    placeTip(el);
+    stats.tipSyncs++;
+  }
+
+  // ---- ⚖ HOVER ON A POINTER, TAP ON TOUCH — U1's rule (loader/navbar.js), kept, with its two constraints:
+  // the listener never calls `preventDefault`, so the chip's own click still buys; and opening one tooltip closes
+  // any other. (⚠ The PHASE differs, for a measured reason — see the `addEventListener` call in `build`.) What is NOT shared is the guard: U1's game-element tooltips are `T.mobile` only,
+  // because on a desktop the game's own CSS `:hover` already opens them. Ours are keyed on the DEVICE
+  // (`(hover: none)`) instead, because the list is wanted at a desktop width under `?navbar=1` too — where
+  // `T.mobile` is false and there would otherwise be no way to open a tooltip on a phone-sized touch screen.
+  // MEASURED in the gate's own two contexts: the phone one reports `(hover: none)`, `(pointer: coarse)` and
+  // `maxTouchPoints: 1`; the desktop one reports `(hover: hover)`, `(pointer: fine)` and `0` — and the phone
+  // context keeps `(hover: none)` when the gate resizes it to 1280, which is right: it is the device, not the width.
+  function hoverable() { return safe(function () { return !window.matchMedia('(hover: none)').matches; }, true); }
+  function onTipOver(ev) {
+    // a pointerType of '' or undefined is a synthetic event: treat it as a mouse, which is what a hover test wants
+    if (ev.pointerType && ev.pointerType !== 'mouse' && ev.pointerType !== 'pen') return;
+    var t = tipTargetOf(ev.target);
+    if (!t) { if (tipAnchorEl && !panel.contains(ev.target)) hideTip(); return; }
+    if (t !== tipAnchorEl) showTip(t);
+  }
+  function onTipOut(ev) {
+    if (ev.pointerType && ev.pointerType !== 'mouse' && ev.pointerType !== 'pen') return;
+    if (!tipAnchorEl) return;
+    // leaving for something INSIDE the same control is not leaving it
+    var to = ev.relatedTarget;
+    if (to && tipAnchorEl.contains(to)) return;
+    if (tipTargetOf(ev.target) !== tipAnchorEl) return;
+    hideTip();
+  }
+  function onTipClick(ev) {
+    if (hoverable() && ev.pointerType !== 'touch') return;  // a mouse already has the hover path
+    var t = tipTargetOf(ev.target);
+    if (!t) return void hideTip();                          // a tap anywhere else in the list closes it
+    toggleTip(t);
+  }
+
   // ---------------------------------------------------------------- the DOM
   var panel = null, body = null, open = false, sig = null, cards = Object.create(null);
   // the throttle's clock, and what the gate reads to tell a throttled build from an unthrottled one
-  var lastSync = 0, stats = { refreshes: 0, syncs: 0, throttled: 0, rebuilds: 0, fits: 0 };
+  var lastSync = 0, stats = { refreshes: 0, syncs: 0, throttled: 0, rebuilds: 0, fits: 0, tips: 0, tipsRich: 0, tipSyncs: 0 };
 
   function build() {
     if (panel) return;
@@ -603,6 +912,21 @@
     body.className = 'tmt-layerlist-body';
     panel.append(head, body);
     document.body.appendChild(panel);
+    buildTip();
+    // ⚖ hover on a pointer, tap on touch (U2e) — see `onTipClick` for what is shared with loader/navbar.js and what
+    // is not. Scoped to the PANEL, not to the document: these are our own controls, and a listener on the document
+    // would be a second handler racing U1's on every click in the game.
+    panel.addEventListener('pointerover', onTipOver, false);
+    panel.addEventListener('pointerout', onTipOut, false);
+    // ⚠ THE CLICK LISTENER IS ON THE CAPTURE PHASE, and it is the one place U1's shape had to be adapted rather
+    // than copied. U1's is a bubble delegate on the document, which is right for the GAME's elements. Ours sits on
+    // the panel over controls that RE-RENDER when they are pressed: buying an upgrade moves the action row's
+    // membership, `drawActions` replaces every button in it, and by the time a bubble listener ran its `event.target`
+    // would be a DETACHED element with no path back to the panel — so a tap that bought something would open no
+    // tooltip at all, while a tap on an unaffordable one would. On the way down the element is still live. The half
+    // of U1's rule that matters is kept exactly: nothing here calls `preventDefault`, so the control's own click
+    // still happens, and a tooltip whose control has gone closes on the next sync.
+    panel.addEventListener('click', onTipClick, true);
   }
 
   function card(l) {
@@ -732,6 +1056,7 @@
     if (on) prefRead()[l] = true; else delete prefRead()[l];
     prefWrite();
     if (!on) fitCards([l]);
+    syncTip();          // the state it hid may be the control an open tooltip was anchored to
     return on;
   }
 
@@ -933,6 +1258,8 @@
       if (ak !== rec.actionKeys) { drawActions(rec, as); refit.push(l); } else syncActions(rec);
     });
     if (refit.length) fitCards(refit);
+    // an open tooltip is re-read and re-anchored HERE, so it rides the counters' own throttle rather than the frame
+    syncTip();
   }
 
   // ---------------------------------------------------------------- acting
@@ -985,6 +1312,7 @@
   }
   function hide() {
     if (!panel) return;
+    hideTip();          // the overlay belongs to the list: a closed list has no tooltip open behind it
     open = false;
     panel.hidden = true;
     if (T.navbarUI && T.navbarUI.refresh) T.navbarUI.refresh();
@@ -1030,7 +1358,22 @@
       expanded: function () { return Object.keys(cards).filter(function (l) { return cards[l].el.classList.contains('tmt-layerlist-expanded'); }); },
       expand: function (l, on) { return setExpanded(l, on === undefined ? true : on); },
       prefKey: prefKey,
-      stats: function () { return { refreshes: stats.refreshes, syncs: stats.syncs, throttled: stats.throttled, rebuilds: stats.rebuilds, fits: stats.fits, throttleMs: COUNTER_MS }; },
+      // (U2e) THE TOOLTIP. The gate drives it through this rather than through a click wherever it is not the tap
+      // itself that is under test, for the same reason `expand` exists: a click is not a neutral probe.
+      tip: {
+        show: function (el) { return showTip(el); },
+        hide: hideTip,
+        isOpen: function () { return !!(tipEl && !tipEl.hidden); },
+        el: function () { return tipEl; },
+        // the two lines, apart: the first IS the element's `title`, the second is what this slice added
+        title: function () { return tipEl && !tipEl.hidden ? str(tipTitleEl.textContent) : null; },
+        body: function () { return tipEl && !tipEl.hidden ? str(tipBodyEl.textContent) : null; },
+        text: function () { return tipEl && !tipEl.hidden ? [str(tipTitleEl.textContent), str(tipBodyEl.textContent)].filter(Boolean).join('\n') : null; },
+        key: function () { return tipKey ? { card: tipKey.card, role: tipKey.role, kind: tipKey.kind, id: tipKey.id, layer: tipKey.layer } : null; },
+        rich: function () { return !!(tipEl && !tipEl.hidden && tipRich); },
+        hoverable: hoverable
+      },
+      stats: function () { return { refreshes: stats.refreshes, syncs: stats.syncs, throttled: stats.throttled, rebuilds: stats.rebuilds, fits: stats.fits, throttleMs: COUNTER_MS, tips: stats.tips, tipsRich: stats.tipsRich, tipSyncs: stats.tipSyncs }; },
       cards: function () { return Object.keys(cards); }
     };
     if (T.navbarUI && T.navbarUI.refresh) T.navbarUI.refresh(); // the Layers button appears once this object exists
