@@ -3844,3 +3844,17 @@ record for it.
 ⚠ Worth keeping: U2d's four new driving legs cost the sweep **nothing measurable** — 3.2 min against U2h's five
 runs at 3.0–3.7 min, and the shard spread stayed at the ×2.16 the cost table already achieves. The legs are cheap
 because three of the four ride ticks the leg was already taking.
+
+## 2026-09-19T01:05:47Z — gates.mjs, automation ON — commit `dc0652f3c` — 2/2 green
+
+| gate | game | leg | ticks | gameSeconds | diff | hash | result | notes |
+|---|---|---|---|---|---|---|---|---|
+| G6 games doc | — | — | 0 | 0 | — | — | GREEN | docs/games.md: 171 games in manifests/index.json, generator built 171, 171 listed in that order, file byte-equal to the generator's output |
+| G7 declined list | — | — | 0 | 0 | — | — | GREEN | manifests/declined.json: 12 games declined with a reason, none of them hosted |
+
+## 2026-09-19T01:08:48Z — gates.mjs, automation ON — commit `dc0652f3c` (tree DIRTY) — 2/2 green
+
+| gate | game | leg | ticks | gameSeconds | diff | hash | result | notes |
+|---|---|---|---|---|---|---|---|---|
+| G6 games doc | — | — | 0 | 0 | — | — | GREEN | docs/games.md: 171 games in manifests/index.json, generator built 171, 171 listed in that order, file byte-equal to the generator's output |
+| G7 declined list | — | — | 0 | 0 | — | — | GREEN | manifests/declined.json: 12 games declined with a reason, none of them hosted |
