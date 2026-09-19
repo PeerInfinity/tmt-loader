@@ -1311,13 +1311,17 @@ async function gateMobile(browser, base, ids) {
         const fl = (auTab && auTab.flattened) || { rows: 0, contents: 0 };
         const evenRows = fl.rows > 0 && fl.contents === fl.rows;   // every clickable row box flattened
         const arm = (auTab && auTab.arm) || null;
-        const armOk = !!(arm && arm.off && arm.stored === undefined && arm.label && arm.control >= 1
+        // ⚖ V1 SEEDED THE KEY (user, plan §15d.2), so the default is `false` and PRESENT, not absent. What this
+        // half asserts is unchanged and is the half that matters — the setting is OFF by default and every locked
+        // toggle still refuses. ⛔ This line is why the seed is not a one-line change: `stored === undefined` would
+        // have reddened this gate on ALL 171 GAMES in CI, for a key whose value is the default it always had.
+        const armOk = !!(arm && arm.off && arm.stored === false && arm.label && arm.control >= 1
           && arm.clickables === arm.features + 1 && arm.refusing === arm.locked);
         row.both = tree && { auNodes: tree.auNodes, features: tree.features, navOnTree: tree.navButtons.length,
           treeFits: fits(tree), auTabFits: fits(auTab), auTab: auTab && auTab.tab, flattened: fl, evenRows,
           arm, armOk,
           armVerdict: !arm ? 'no au tab probe'
-            : !arm.off || arm.stored !== undefined ? 'THE ARMING SETTING IS NOT OFF BY DEFAULT'
+            : !arm.off || arm.stored !== false ? `THE ARMING SETTING IS NOT OFF BY DEFAULT (player.au.armLocked = ${JSON.stringify(arm.stored)}; V1 seeds it false)`
             : !arm.label || !arm.control ? 'THE ARMING CONTROL IS NOT IN THE au TAB'
             : arm.clickables !== arm.features + 1 ? `THE SETTING JOINED THE CLICKABLE GRID (${arm.clickables} boxes for ${arm.features} features)`
             : arm.refusing !== arm.locked ? `A LOCKED TOGGLE ACCEPTS A PRESS WITH THE SETTING OFF (${arm.locked - arm.refusing} of ${arm.locked})`

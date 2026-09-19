@@ -168,7 +168,7 @@
   var sha = function (s) { return typeof T.sha256hex === 'function' ? T.sha256hex(s).slice(0, 16) : null; };
   /** The two hashes the harness compares: the full state and the state without the au layer (S1 §10a.2 item 1). */
   P.hashes = function () {
-    return { hash: sha(T.stateJSON()), hashGame: sha(T.stateJSON({ exclude: ['au'] })) };
+    return { hash: sha(T.stateJSON()), hashGame: sha(T.stateJSON(T.gameState)) };   // the ONE definition (tmt-auto.js)
   };
 
   /** An opaque record of everything an excursion can move. */

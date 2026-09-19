@@ -317,9 +317,18 @@ try {
   if (monitored) {
     const m = run('__tmtMonitor.result()', 'monitor');
     R.marks = {};
-    // hashGame: the same state without player.au — the au layer's own fields (clickables: one key per au button) move
-    // with the NUMBER of registered features, so a table change moves `hash` without any game state moving
-    const exAu = (j) => { const o = JSON.parse(j); delete o.au; return JSON.stringify(o); };
+    // hashGame: the GAME's state — WHAT it excludes is defined ONCE, in loader/tmt-auto.js (`tmtLoader.gameState`),
+    // and read from the context rather than repeated here. A second copy of the exclusion set is how the two
+    // hashGames in this file (this one, over a mark's captured JSON; and `tmtLoader.hash(gameState)` below, over
+    // the live state) drift apart. Contract-only mode has no `gameState`, and no mark run reaches here without
+    // automation, but the fallback keeps this line honest if one ever does.
+    const GAME_STATE = run('tmtLoader.gameState || { exclude: ["au"] }', 'x');
+    const exAu = (j) => {
+      const o = JSON.parse(j);
+      // the same rule `stateJSON` applies: excluding a layer drops its subtab selection with it
+      for (const k of GAME_STATE.exclude) { delete o[k]; if (o.subtabs) delete o.subtabs[k]; }
+      return JSON.stringify(o);
+    };
     for (const [n] of MARKS) R.marks[n] = m.hits[n] ? { ticks: m.hits[n].ticks, gameSeconds: m.hits[n].gameSeconds, hash: sha256hex(m.hits[n].json).slice(0, 16), hashGame: sha256hex(exAu(m.hits[n].json)).slice(0, 16), actions: m.hits[n].actions } : null;
     if (A.snapshots) { R.snapshots = {}; for (const [n] of MARKS) if (m.hits[n] && m.hits[n].snapshot) R.snapshots[n] = m.hits[n].snapshot; }
     if (A.stall || A['wall-ms']) R.stall = { window: Number(A.stall || 0), seen: !!A['stall-seen'], stalled: m.stalled, walled: m.walled, wallMs: Number(A['wall-ms'] || 0), lastProgress: m.lastProgress };
@@ -334,7 +343,7 @@ try {
   const json = run(`tmtLoader.stateJSON(${SOPTS})`, 'state');
   R.hash = await run(`tmtLoader.hash(${SOPTS})`, 'hash');
   if (EXCLUDE.length) R.hashFull = await run('tmtLoader.hash()', 'hash');
-  if (AUTOMATION) R.hashGame = await run(`tmtLoader.hash({ exclude: ['au'] })`, 'hash');
+  if (AUTOMATION) R.hashGame = await run('tmtLoader.hash(tmtLoader.gameState)', 'hash');
   R.hook = run('tmtLoader.hookStats ? tmtLoader.hookStats() : null', 'x');
   R.features = run('(tmtLoader.features || []).map(f => f.id)', 'x');
   R.featureStates = run('(tmtLoader.features || []).map(f => { const s = tmtLoader.featureState(f.id); return [f.id, s.unlocked, s.policy]; })', 'x');

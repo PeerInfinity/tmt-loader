@@ -29,7 +29,13 @@ and nothing reads it.
 ## The `au` side layer
 
 With `?automation=1`, `tmt-auto.js` adds a side layer **`au` ("Automation Tools", symbol AU)** to every game, shown next
-to the game's other side nodes (selector `#app .smallNode.au` on both engines). Its tab has:
+to the game's other side nodes (selector `#app .smallNode.au` on both engines). Since V1 its tab has **two engine-native
+subtabs**, `Simple` and `Advanced` (⚖ user, 2026-09-19).
+
+### `Simple` — the toggles (the tab as it has always been)
+
+`Simple` is FIRST in the `tabFormat` object, so it is what both engines select by default (`getStartPlayer` takes
+`Object.keys(layers[l].tabFormat)[0]`) and what an old save is repaired to (`fixSave`). Its content is unchanged:
 
 - one toggle per registered feature: **On / Off / Locked** (Locked while the feature's `unlocked()` is false), with the
   feature's policy under it;
@@ -46,6 +52,118 @@ The toggles live in `player.au.features` (`{featureId: true|false}`), `player.au
 `gameLoop` updates `best` for every side layer). **`player.au.clickables` has one key per toggle button**, so the full
 state hash moves with the NUMBER of registered features; compare game state across tables with `au` excluded (the
 harness's `hashGame`).
+
+### `Advanced` — what each feature decided, and why (V1, read-only)
+
+One block per feature, grouped by layer in the game's own layer order, with the features that cannot run yet collapsed
+to one line each. Per feature: its title and id, its state, the policy **in force** with the table's entry and the
+generic derivation's beside it *when they differ*, the **reason its last decision returned** with the numbers that
+decision compared, `acted N · last at <game-s> · on for <game-s>`, a *never fired* flag, and the table's `provenance`
+line. It renders `tmtLoader.explain()` and computes nothing of its own.
+
+**It is read-only.** No policy picker, no editable thresholds, and **no new key in the save** — nothing in `Advanced`
+writes anything. Editing is the next slice.
+
+⚠ **Subtabs make the loader depend, on every game, on a component it had never asked for**: the engine draws the
+subtab bar itself, with `tab-buttons`. Censused quote-agnostically over `games/`: **all 171 of the 171 games register
+`Vue.component("tab-buttons")`**. ⛔ That is a REGISTRATION count and not a rendering result — a game could register
+the component and still fail to draw the tab — so it is only the premise; `gates-v1 --part 6` opens the Advanced
+subtab on every game and is the witness.
+
+⛔ **It is lazy, and written for the worse engine.** PTR's `temp.js` has no special case for `tabFormat`: every
+function in a layer's data that is not in `activeFunctions` is evaluated into `tmp` on EVERY tick, open tab or not
+(`setupTempData` / `updateTempData`). 2.7's lists `"tabFormat"` and `"content"` among the things "only updated when
+needed" (`temp.js:12`, `:127`). So the Advanced content function returns `''` unless the `au` tab is on screen AND
+`Advanced` is the selected subtab — which is why a headless run never formats a single number (below).
+
+⛔ **The selected subtab is NOT game state.** Both engines keep it in `player.subtabs.au.mainTabs`, a top-level
+`player` key — so giving this tab subtabs would have moved every pinned `hashGame` in the repo, and a player
+switching subtab would move it again mid-run. `hashGame` therefore excludes `player.subtabs.au` as well as
+`player.au`, in ONE shared definition (`tmtLoader.gameState`, `docs/contract.md`). ⚠ Measured before the change:
+`player.subtabs.au` was ABSENT on both engines, so deleting the key reproduces the historical bytes exactly.
+
+### The reason vocabulary
+
+⛔ **A reason is the decision's own return value, never a second opinion about it.** Each kind's decision path yields
+`{act, code, values}` and the feature keeps the last one in `f.last`; the boolean the caller needs is `.act`. An
+explainer that re-derived "why it did not act" from the predicates would be a second implementation of them, free to
+disagree with the decision it describes, with nothing able to notice.
+
+The vocabulary is **data** — one enumerated table in `loader/tmt-auto.js`, readable at runtime as
+`tmtLoader.reasonCodes()`: code → the template its text is built from, the `values` keys that template consumes, and
+`quantities`, the subset of those that goes through the GAME's own `format()`. (An id is not a quantity: running
+every value through `format()` printed *"the cheapest upgrade is 21.00 at 20.00"*.) **No value is free text.**
+
+| code | when |
+|---|---|
+| `locked` | the feature's own `unlocked()` is false and it is not armed |
+| `armed` | saved on while still locked — it waits, and starts by itself at the unlock |
+| `off` | unlocked and not running (saved off, a runtime override, or the profile) |
+| `off:policy` | the kind's policy is literally `off` (`challenges`, `clickables`) |
+| `off:excluded` | the table's `off` map — the feature is never registered; this code appears only on `explain()`'s own row for it |
+| `blocked:gate` | the table's `gates` predicate is false |
+| `blocked:after` | an `unlockOrder` sibling is not unlocked yet |
+| `blocked:enter` / `blocked:exit` | the engine refuses to enter / to leave that challenge |
+| `yielding:native` | `tmp[l].autoPrestige` — the game's own auto-reset is doing it |
+| `cannot-reset` | `tmp[l].canReset` is false, with the two numbers the engine compared |
+| `in-challenge` | a challenge is active and not completable yet |
+| `waiting:gain` / `waiting:gain-x` | the `gain>=N` / `gain>=Nx` threshold, with the gain and what it needs |
+| `waiting:interval` | seconds elapsed of the interval |
+| `waiting:milestone` | `keepsUpgrades`' milestone, or the milestone that would grant a toggle |
+| `waiting:purchase` | `unlocks-purchase`: the points after the reset still afford nothing |
+| `waiting:when` | no clickable of the layer is unlocked, clickable and `when`-true |
+| `holding:reserve` | a `reserve>=…` holds the purchase, with what is held and the reserve |
+| `holding:saving` | `buy-unless-saving`, with the upgrade it is saving for and its cost |
+| `nothing-affordable` | there were candidates; the cheapest one and its cost |
+| `nothing-to-do` | there was no candidate at all (everything owned, every challenge at its limit, nothing unlocked) |
+| `acted:reset` · `acted:upgrades` · `acted:buyables` · `acted:toggles` · `acted:challenge-enter` · `acted:challenge-exit` · `acted:clickables` | it acted — one code per kind, so acting is as enumerable as every refusal |
+| `unknown` | an exit no code names. **A gate failure, never a display string.** |
+
+⚠ **Which two numbers a refused reset shows**, measured: a **static** layer's `canReset` compares `baseAmount`
+against **`nextAt`**, not `requires` (ptr `js/game.js:116-119`, something `js/game.js:121-124`). `requires` is the
+FIRST threshold and stops moving, so showing it read *"Cannot reset — 458.60 of 200.00"* while the engine was
+refusing. A **normal** layer compares against `requires`. Where a layer declares its own `canReset()` (2.7 allows it;
+a `custom` layer ends there) neither number is the criterion and the pair is indicative. ⛑ The decision always reads
+`tmp[l].canReset`, the engine's own answer, so a wrong pair can mislead a reader and never move a game.
+
+### `tmtLoader.explain()` — headless first
+
+The page renders this; it does not compute its own. One row per registered feature, in the order the tab draws them,
+plus one per feature the table excluded:
+
+```js
+{ id, title, layer, kind,
+  state: 'on' | 'off' | 'armed' | 'locked' | 'excluded',
+  policy: { inForce, table, derived, alternatives: [] },
+  last: { code, text, values, tick, at } | null,
+  acted, lastActedAt, neverFired, eligibleFor, gate, after, provenance }
+```
+
+`run.mjs --explain` dumps it at the stop (`R.explain`). Every reason in the tab is therefore testable in Node with no
+browser, and "what the page renders equals what the API returns" is a comparison rather than two implementations
+hoping to agree.
+
+**`neverFired`** = on, unlocked and still never acted, for at least N GAME-SECONDS. ⚠ Game-seconds, not loops: a loop
+count means different things at diff 0.05 and diff 1, so the same flag would fire at 150 game-s in a census run and
+3000 in a ladder leg. The default **3000 game-seconds** is justified against the rarest ACTING feature this repo has
+measured — R1′'s `reset:sb` fired 13 times over a 24179 game-second leg, about one action per 1860 s, so anything
+under that flags a feature that is working. `?autoOpt=neverFiredSeconds=<n>` moves it.
+
+### What it costs — a counter, not a stopwatch
+
+A leg is ~13.5 ms/tick and the harness runs hundreds of thousands of ticks, so `f.last` holds a **code and raw
+numbers**; formatting happens on READ. `tmtLoader.explainStats()` returns `{decisions, formats, texts, codes}`, where
+`codes` is a census of the whole RUN (a code seen for four hundred ticks and then replaced still counts — which is
+the only way "witnessed" can mean anything) and `formats` is every number this code turned into text.
+**Measured over the M15 → M16 leg: 634,218 decisions, 0 formats, 0 texts.** A headless run that never opens the tab
+must format NOT ONCE; an absolute zero is not something a mutant can satisfy by moving both sides of a comparison.
+
+`f.last` lives **outside `player` and outside `runtimeState()`** — it is a readout, recomputed next tick, and
+recording it in `runtimeState` would change the `runtime` block of every committed snapshot.
+
+⚠ **Everything the tab renders is escaped** (`tmtLoader.escapeText`): `display-text` is `v-html` in both engines, and
+a `provenance` line, an `off` reason and a gate predicate are author-written text while a layer's `name` and a
+feature's title are the GAME's.
 
 ### Arming a feature that is not unlocked yet (U4)
 
@@ -66,8 +184,12 @@ lifts exactly two UI predicates and reaches nothing else:
 | `active(f)` — whether it runs | unchanged | **unchanged** |
 
 **Where it lives.** `player.au.armLocked`, beside `player.au.disclosed` — the `au` layer's own non-feature UI state, and
-a store the save already carries. ⚠ It is **not** in the layer's `startData`: a key present from the first boot would
-move a recorded hash for a setting nobody has touched. Absent reads false; the first press writes it.
+a store the save already carries. ⚠ **Since V1 it IS in the layer's `startData`, seeded `false`** (⚖ user, 2026-09-19,
+plan §15d.2: *"Yes, seed it"*). U4 kept it out so that a setting nobody had touched moved no recorded hash, and U6
+measured what that cost — the reactivity bug below, routed around by owning `toggleAuto`'s click path. With the key
+present from the first boot there is nothing for Vue to observe late. It cost exactly one re-record of
+`gates-p1a --part 0`'s FULL-hash pin (`63f28e099536a119` → `11826e775e6f88d8`, `docs/contract.md`), carrying V1's
+other full-hash cause — the au tab's new `player.subtabs.au` — in the same move. `hashGame` did not move.
 
 ⚠ **U6 corrected the reason this line used to give, by measuring it.** It said "the S1 pins compare the FULL state
 hash, which includes `player.au`". They do not: the S1 **pinned** rows compare ticks and `hashGame` — the state
@@ -105,12 +227,22 @@ observe a property ADDED to an object after creation, and ptr's `toggleAuto` is
 `player[t[0]][t[1]] = !player[t[0]][t[1]]` — **22 of the 171 assign plainly, 149 use `Vue.set`**, which is why the
 user could see it and a `Vue.set` engine would have hidden it.
 
-**The fix owns the click path and nothing else.** `toggleAuto` is wrapped for exactly `['au', 'armLocked']`; every
-other toggle in the game reaches the original by the same call, and that one path goes through `armLocked(on)`,
-whose `Vue.set` both creates the key and notifies `player.au`'s own observer — which is what re-renders the engine's
-button, its text and its colour.
+**U6's fix owned the click path** — `toggleAuto` wrapped for exactly `['au', 'armLocked']`, routed through
+`armLocked(on)`, whose `Vue.set` both creates the key and notifies `player.au`'s observer. It existed because the
+other route cost a pin, and V1 paid that pin: **⚖ the key is seeded into `startData` now, and the wrapper is gone.**
+With the key present from the first boot there is nothing for Vue to observe LATE, so the engines' own plain
+assignment is seen on every one of the 171, and the button reaches the engine's own `toggleAuto` unwrapped, like
+every other toggle in every game. `tmtLoader.armLocked(on)` survives for programmatic callers (the harness, a gate).
 
-⚠ **That the wrapper can be reached at all is a census, not an assumption** — it depends on `toggleAuto` being a
+⛔ **Removed BY MEASUREMENT, both halves, because a wrapper removed on reasoning is a wrapper removed on hope.**
+(i) With the key seeded and no wrapper, `gates-a1 --part 2`'s arming legs are green on **both** engine families —
+ptr (plain assign) and something (`Vue.set`) — including the leg that asserts the button's rendered TEXT changes on
+the press, which is the one that caught U6's bug. (ii) The mutant **"unseeded AND unwrapped"** is RED on ptr: that
+is U6's original bug, so the leg can still see the thing it exists for. A green mutant there would have meant the
+removal was untested rather than tested.
+
+⚠ **That the wrapper COULD be reached at all was a census, not an assumption** — and the census stays, because it is
+also what says the seeded key is enough: — it depends on `toggleAuto` being a
 property of the global object and on the Vue instance not shadowing it, and both are the GAMES' business:
 **of the 171 games, 171 declare `function toggleAuto` at top level, 149 write the field through `Vue.set` and 22
 assign plainly, and 0 put `toggleAuto` in the Vue instance's `data`.** A top-level function declaration in a classic
@@ -266,6 +398,7 @@ tmtLoader.autoTable = {
   off: { 'buyables:t': 'Extra Time Capsules cost Boosters' }, // NOT registered; the reason is required (tmtLoader.autoExcluded)
   keep: { 'reset:b': { layer: 'b', id: 0 } },              // keepsUpgrades' milestone
   clickables: { c: [{ id: 11, when: 'player.c.points.gte(10)' }] },
+  provenance: { 'reset:p': 'R1′ (SUMMARY gate R1′-2.3): gain>=2x reached … against interval>=10’s …' },
   options: { },                                            // free-form; merged under ?autoOpt= into tmtLoader.autoOptions
 };
 ```
@@ -278,6 +411,13 @@ Every key is optional; **a game without a table (or `{ id }`) gets the derived d
   `clickables` (as `clickables:<l>`) must be one the derivation produces for this game — checked against the whole
   derived set, so a table stays valid under any `kinds` restriction;
 - `off` needs a reason string; `clickables` entries need an `id` the layer declares and a `when` string;
+- `provenance` (V1) needs a non-empty one-line string per entry: WHERE that entry came from — the SUMMARY gate row or
+  the plan § that measured it. ⚖ minimize hardcoding has always required that as a source COMMENT; this makes it data
+  too, so the `Advanced` subtab can tell a player why a default is what it is instead of leaving the answer in a file
+  nobody playing the game will open (survey §4.11). An id the table EXCLUDES is still a derived candidate, so an
+  exclusion may carry its provenance. It is author-written text rendered through `v-html`, and the loader escapes it.
+  ⚠ It is OPTIONAL, and `games-auto/something.js` deliberately does not have it: a table without the key still works
+  and its rows read `provenance: null`, which is what keeps V1's per-fork cost "unchanged";
 - `kindOrder` is a permutation of the six kinds;
 - ⚖ minimize hardcoding: a NUMBER or an ORDER in a table carries its provenance in a comment (a SUMMARY row or a plan §).
 
@@ -326,6 +466,9 @@ Everything else in both games is derived.
   the run (`ok: false`, `failed_at: 'automation'`), not a run with `features: []` — the page fails its load on the same
   throw, and before R1′ the Node harness recorded the error in `file_errors` and reported `ok: true`, so a mistyped
   sweep cell measured the game with NO automation and printed a number.
+- `--explain` — `tmtLoader.explain()` at the stop, in `R.explain`. `R.explain_stats` (`{decisions, formats, texts,
+  codes}`) is recorded on EVERY automation run and BEFORE that dump, because a counter read after the one caller that
+  formats on purpose would be measuring the reader rather than the run.
 - `--marks marks.json` (`[[name, "<js predicate>"], …]`): the first tick each predicate holds, with gameSeconds, the
   state hash, `hashGame` (the hash without `player.au`) and the feature action counts at that tick; the run stops when
   all are met. `--marks-continue`: record without stopping.
@@ -345,6 +488,10 @@ planner commits a configuration for an epoch without writing a planner decision 
 policies named by their template (`gain>=Nx`, `interval>=T`, `reserve>=N`) — the numbers belong to whoever chooses them.
 `tmtLoader.registerRuntime(name, get, set)` adds another layer's memory to the same record.
 - `node tools/harness/gates-s1.mjs --part 1|1s|2|2s-p|2s-f|2s-q|3` the S1 gates; `gates-a1.mjs`, `gates-a2.mjs` the A1/A2 ones.
+- `node tools/harness/gates-v1.mjs --part 1|2|3|4|6` — the V1 gates: every reason code witnessed by name (part 1),
+  reason ≡ decision over whole legs (2), inertness and the format counter (3), subtab switching does not move
+  `hashGame` (4), the roster's Advanced subtab (6). The page legs for the two reference games are in
+  `gates-a1 --part 2`, beside the Simple-tab legs they must not disturb.
 - `node tools/harness/sweep.mjs <id> --vary "policy:reset:e=interval>=5|always" [--opt "k=v"] <run.mjs flags>`: one run
   per value (a pool of 8), one line per value with the game-seconds to each mark. A `planner:<option>` key sweeps the
   ADVANCED planner's options instead (`--vary "planner:k=60|300|900" --planner=auto --planner-ladder …`), and every line

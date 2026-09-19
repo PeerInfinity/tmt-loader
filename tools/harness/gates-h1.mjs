@@ -6,6 +6,21 @@
 // (the S1 frontier configuration) to M01–M10; every snapshot's hashGame equals its mark's and survives the import
 // round trip (0 ticks after --from-snapshot: the same hash and hashGame). Snapshots are written to
 // tools/harness/snapshots/ptr/{pinned,all}/ (committed fixtures).
+//
+// ⛔⛔ TWO MEASURED WARNINGS ABOUT `--part 1`, BOTH FOUND BY RUNNING IT (V1, 2026-09-19). READ BEFORE YOU DO.
+//
+// 1. **IT DELETES `all/M11` … `all/M16`.** `--snapshots <dir>` clears the directory and writes only the marks THIS
+//    run reaches, and this run stops at M10. M11–M16 are R1′'s fixtures, written by `gates-r1 --part 1f` over a
+//    24179-tick leg, and they do not come back on their own — `git checkout -- tools/harness/snapshots/` is the
+//    only thing between a routine run of this gate and losing them. Run `gates-r1 --part 1f` afterwards, or do not
+//    run this part.
+// 2. **`PTR_PINS.M09` HAS BEEN STALE SINCE R1′** (8035 / `6511fcca2c6ae896`). MEASURED at `97f5f9376`, the tree
+//    BEFORE V1 touched anything, on the gate's own leg: M09 lands at **8137 / `32ad404416abf5ff`**. This is plan
+//    §14d.2 item 14 happening a second time, in the file that item did not reach: a pin inherits EVERY default, not
+//    just the one it names, and `KINDS_PINNED` here names only `policy:reset:p=interval>=10` while R1′ also moved
+//    `reset:t`, `reset:s`, `reset:e` and `buyables:e` and LIFTED the `buyables:t` exclusion. `gates-s1` was fixed
+//    then by naming the whole A2 configuration; this one was not. ⚖ Re-recording it is a decision about which
+//    configuration the H1 fixtures are supposed to pin, which is the rung owner's call, not a passing slice's.
 // Part 2 (H1-2): resume fidelity — from pinned/M07 to M09 (same game-seconds + hashGame as the fresh run), and the
 // --no-runtime control. Part 2f: the frontier from all/M09 twice (S1's frontier row) + the §12d stall from pinned/M09,
 // with the digest's Q1/Q2 numbers at the stop (a quiet box: pool ≤ 2).

@@ -52,7 +52,7 @@ export async function upstreamExport(id, { upstreamDir, ticks = 200, diff = 0.05
       const json = Buffer.from(row._exported, 'base64').toString('binary'); // atob
       const r1 = await pageLoadFrom(page, json);
       if (!r1.ready) throw new Error(`loader not ready after loadFrom: ${JSON.stringify(r1.error)}`);
-      const st = await page.evaluate(async (ex) => ({ json: tmtLoader.stateJSON({ exclude: ex }), hash: await tmtLoader.hash({ exclude: ex }), ticks: tmtLoader.ticks }), automation ? ['au'] : []);
+      const st = await page.evaluate(async (au) => { const o = au ? tmtLoader.gameState : {}; return { json: tmtLoader.stateJSON(o), hash: await tmtLoader.hash(o), ticks: tmtLoader.ticks }; }, automation);
       row.automation = automation;
       const div = firstDivergence(row._upstreamState, st.json);
       const canonDiv = firstDivergence(canonicalJSON(row._upstreamState), canonicalJSON(st.json));

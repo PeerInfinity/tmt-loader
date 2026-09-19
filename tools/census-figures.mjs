@@ -211,6 +211,9 @@ const RE = {
   pseudoUnlComponent: /pseudoUnl\s*[:(]/,
   purchaseLimit: /purchaseLimit/,
   layerSupportFile: /layersupport/i,
+  // V1 (T2): the component the ENGINE draws a subtab bar with. The `au` tab took subtabs, so the loader now asks
+  // every game for a component it has never asked for. ⚠ Quote-agnostic — the games use all three kinds.
+  tabButtons: /Vue\.component\s*\(\s*["'`]tab-buttons["'`]/,
 };
 
 /**
@@ -224,7 +227,7 @@ export function measure({ bound = 'subtree', root = REPO } = {}) {
   for (const id of ids) {
     const { files, missing } = sourcesOf(id, bound, root);
     if (missing) problems.push(`${id}: ${missing}`);
-    const g = { files: files.length, optButton: false, hardResetOpt: false, optionWheel: false, buyUpg: false, buyUpgrade: false, tabArray: 0, tabObject: 0, purchaseLimit: false, purchaseLimitInLayerSupport: false, pseudoUnlGlobal: false, pseudoUnlComponent: false, tooltipAny: false, tooltipChipped: 0, tooltipAchievement: 0, boughtBare: false, lockedBare: false, boughtValue: null, lockedValue: null, backClass: false, backGoBack: false, toggleAutoDecl: false, toggleAutoVueSet: false, toggleAutoInData: false };
+    const g = { files: files.length, optButton: false, hardResetOpt: false, optionWheel: false, buyUpg: false, buyUpgrade: false, tabArray: 0, tabObject: 0, purchaseLimit: false, purchaseLimitInLayerSupport: false, tabButtons: false, pseudoUnlGlobal: false, pseudoUnlComponent: false, tooltipAny: false, tooltipChipped: 0, tooltipAchievement: 0, boughtBare: false, lockedBare: false, boughtValue: null, lockedValue: null, backClass: false, backGoBack: false, toggleAutoDecl: false, toggleAutoVueSet: false, toggleAutoInData: false };
     // the ENTRY DOCUMENT, which no `bound` covers: it is not a `.js` file and it is where 2.2.1 keeps both anchors.
     // ⛔ A game whose entry cannot be read is a PROBLEM, never a false — the same rule the bounds are under.
     const entry = path.join(root, 'games', id, (readManifest(id, root).entry) || 'index.html');
@@ -246,6 +249,7 @@ export function measure({ bound = 'subtree', root = REPO } = {}) {
       }
       if (!g.toggleAutoInData && RE_TOGGLE_IN_DATA.test(text)) g.toggleAutoInData = true;
       if (RE.pseudoUnlComponent.test(text)) g.pseudoUnlComponent = true;
+      if (RE.tabButtons.test(text)) g.tabButtons = true;
       if (RE.purchaseLimit.test(text)) {
         g.purchaseLimit = true;
         if (RE.layerSupportFile.test(path.basename(f))) g.purchaseLimitInLayerSupport = true;
@@ -322,6 +326,9 @@ export function measure({ bound = 'subtree', root = REPO } = {}) {
     toggleAutoVueSet: where('toggleAutoVueSet').length,
     toggleAutoPlain: ids.filter((id) => per[id].toggleAutoDecl && !per[id].toggleAutoVueSet).length,
     toggleAutoInData: where('toggleAutoInData').length,
+    // --- V1: the subtab bar ---
+    tabButtons: where('tabButtons').length,
+    noTabButtons: ids.filter((id) => !per[id].tabButtons),
   };
 }
 
@@ -475,6 +482,21 @@ export function claims(sub, load) {
       },
       // ⚠ `load`, not `sub`: the question is which copy the CLICK reaches, and two games ship disagreeing copies
       measured: `${load.toggleAutoDecl} declare it of ${N}, ${load.toggleAutoVueSet} Vue.set, ${load.toggleAutoPlain} plain, ${load.toggleAutoInData} in Vue data (scope: loaded, last declaration wins)`,
+    },
+    {
+      // V1 (T2). Giving the `au` tab subtabs makes the loader depend, on EVERY game, on a component it had never
+      // asked for: the engine draws the subtab bar with `tab-buttons`. ⚠ THIS IS A REGISTRATION COUNT AND NOT A
+      // RENDERING RESULT — a game could register the component and still fail to draw the tab, which is what
+      // `gates-v1 --part 6` drives over the roster. What this claim protects is the PREMISE: the day a game stops
+      // registering it, the Advanced subtab has no bar to select it with, and nothing static would say so.
+      name: 'tab-buttons — the component the au tab\'s subtabs are drawn with (V1)',
+      doc: 'docs/automation.md',
+      re: /\*\*all (\d+) of the (\d+) games register `Vue\.component\("tab-buttons"\)`\*\*/,
+      expect: (m) => {
+        const ok = num(m[1]) === sub.tabButtons && num(m[2]) === N;
+        return [ok, `doc: ${m[1]} of ${m[2]} register tab-buttons`];
+      },
+      measured: `${sub.tabButtons} of ${N} register tab-buttons${sub.noTabButtons.length ? ' — MISSING: ' + sub.noTabButtons.join(', ') : ''}`,
     },
     {
       name: 'pseudoUnl — the global, and the game that has only the component',

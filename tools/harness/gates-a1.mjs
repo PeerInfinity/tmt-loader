@@ -105,7 +105,7 @@ try {
         row({ gate: `${tag} au layer in the page`, id, ok, ticks: 0, gameSeconds: 0, diff: null, hash: null, notes: `tmp.au ${info.tmpAu}; row ${info.row}; doReset ${info.doReset}; player.au.features ${info.features}; disclosed ${info.disclosed}; managed profile ${info.profile}; ${info.registered} features; \`${AU_NODE_SELECTOR}\` × ${nodes}; ${stats.pageErrors.length} page errors, ${stats.failed.length} failed, ${stats.blocked.length} blocked` });
       } finally { await context.close(); }
     }
-    if (!noAuto) { await part2Page(id); await part2Arm(id); }
+    if (!noAuto) { await part2Page(id); await part2Arm(id); await part2Advanced(id); }
   }
 } finally {
   await browser.close();
@@ -232,7 +232,7 @@ async function part2Arm(id) {
       const b = [...document.querySelectorAll('#app button.smallUpg')][0];
       return { armLocked: T.armLocked(), stored: player[AU].armLocked, canClick: c.canClick(), display: c.display(),
         saved: s.saved, unlocked: s.unlocked, active: s.active, armable: s.armable,
-        toggleText: b ? b.textContent.trim() : null, owned: T.armToggleOwned === true,
+        toggleText: b ? b.textContent.trim() : null, seeded: player[AU].armLocked !== undefined,
         actions: T.hookStats().actions[c.tmtFeature] || 0 };
     }, k);
 
@@ -274,7 +274,10 @@ async function part2Arm(id) {
 
     // ---- 1. THE DEFAULT: the setting is off and the button refuses ------------------------------------------------
     const s0 = await state(pick.k);
-    check(s0.armLocked === false && s0.stored === undefined, `default: armLocked off and NOT in the save (player.au.armLocked ${s0.stored})`);
+    // ⚖ SINCE V1 THE KEY IS SEEDED (`startData`, user 2026-09-19 §15d.2), so the default is `false` and PRESENT,
+    // not absent. What this half asserts is unchanged and is the half that matters: the behaviour every earlier row
+    // was measured against is still the DEFAULT — the setting is off and the locked button still refuses.
+    check(s0.armLocked === false && s0.stored === false, `default: armLocked off, and seeded false in the save (player.au.armLocked ${s0.stored})`);
     check(s0.canClick === false && s0.display === 'Locked' && s0.armable === false, `default: the toggle refuses (canClick ${s0.canClick}, display "${s0.display}")`);
     await press();
     const s1 = await state(pick.k);
@@ -300,7 +303,7 @@ async function part2Arm(id) {
     // ⚠ The two halves are the press and the press BACK, so a button stuck on `ON` fails as surely as one stuck
     // on `OFF`, and the text is not compared against a literal — the engines' wording is theirs.
     check(s0.toggleText !== null && s2.toggleText !== null && s2.toggleText !== s0.toggleText,
-      `the setting's own button RE-RENDERED on the press ("${s0.toggleText}" → "${s2.toggleText}"; click path owned by the loader: ${s2.owned})`);
+      `the setting's own button RE-RENDERED on the press ("${s0.toggleText}" → "${s2.toggleText}"; the key is seeded, so the ENGINE's own toggleAuto is enough: ${s2.seeded})`);
     await setting();
     const s2b = await state(pick.k);
     check(s2b.armLocked === false && s2b.toggleText === s0.toggleText,
@@ -381,6 +384,111 @@ async function part2Arm(id) {
   } catch (e) { ok = false; notes.push('EXCEPTION ' + String((e && e.stack) || e).slice(0, 400)); }
   finally { await context.close(); }
   row({ gate: 'A1-2 arming a locked feature (page)', id, ok, ticks: 0, gameSeconds: 0, diff: null, hash: null, notes: notes.join('; ') });
+}
+
+// ---- Part 2 (V1): the `Advanced` SUBTAB -----------------------------------------------------------------------------
+// ⚖ user, 2026-09-19 (plan §15d.3): the `au` tab takes two engine-native subtabs, `Simple` (today's grid, unchanged)
+// and `Advanced` (one block per feature, read-only). It lives beside `part2Page` rather than in `gates-v1.mjs`
+// because it opens the SAME tab those legs open, and a second battery answering the same question in its own page is
+// how two answers start disagreeing.
+//
+// The four things that can go wrong and would not show anywhere else:
+//   1. the default selection moves off `Simple` — every existing leg of this file reads that tab, and an engine
+//      picks `Object.keys(tabFormat)[0]`, so the ORDER of two object keys is load-bearing;
+//   2. the Advanced view disagrees with `tmtLoader.explain()` — the whole point of the headless API is that the page
+//      renders it, so this is a COMPARISON, not a second opinion;
+//   3. a table string reaches `v-html` unescaped. `provenance`, an `off` reason and a gate predicate are
+//      author-written text and `display-text` is `v-html` on both engines;
+//   4. it does not read at phone width. The brief's shape is "one block per feature, not a wide table" precisely
+//      because a table scrolls sideways at 390 px.
+async function part2Advanced(id) {
+  const { context, stats } = await openContext(browser);
+  const notes = [];
+  let ok = true;
+  const check = (c, w) => { if (!c) ok = false; notes.push(`${c ? '✓' : '✗'} ${w}`); };
+  try {
+    const page = await context.newPage();
+    await page.setViewportSize({ width: 390, height: 844 });   // the phone width the brief names
+    await page.goto(new URL(`index.html?mod=${encodeURIComponent(id)}&automation=1&profile=all`, base).href, { waitUntil: 'load' });
+    await page.waitForFunction(() => window.tmtLoader && (tmtLoader.ready || tmtLoader.error), null, { timeout: 30000 });
+    await page.evaluate(() => tmtLoader.pause());
+    await page.evaluate(() => tmtLoader.storage.clear());
+    await page.evaluate(() => { showTab('au'); });
+    const redraw = () => page.evaluate(() => { updateTemp(); if (typeof updateTabFormats === 'function') updateTabFormats(); });
+    await redraw();
+    await page.waitForTimeout(300);
+
+    const shape = await page.evaluate(() => ({ subs: Object.keys(tmp.au.tabFormat), sel: player.subtabs.au.mainTabs, features: tmtLoader.features.length }));
+    check(JSON.stringify(shape.subs) === '["Simple","Advanced"]', `the au tab has exactly the subtabs ${JSON.stringify(shape.subs)}`);
+    check(shape.sel === 'Simple', `a fresh boot selects ${shape.sel} — the tab every other leg of this file reads`);
+    const simple = await page.evaluate(() => ({ text: document.querySelector('#app').innerText, adv: (document.querySelector('#app').innerText || '').indexOf('Read-only.') >= 0 }));
+    check(simple.text.includes('Automation Tools') && !simple.adv, 'Simple still renders the title, and none of the Advanced view');
+
+    // run the game a little so there is something to say, then select Advanced the way the engine's button does
+    await page.evaluate(() => tmtLoader.tick(1, 300));
+    await page.evaluate(() => { player.subtabs[tmtLoader.auLayer].mainTabs = 'Advanced'; });
+    await redraw();
+    await page.waitForTimeout(300);
+
+    const adv = await page.evaluate(() => {
+      const T = window.tmtLoader, rows = T.explain();
+      const blocks = [...document.querySelectorAll('#app div[style*="border-left"]')];
+      const collapsed = rows.filter((x) => x.state === 'locked' || x.state === 'excluded');
+      const text = document.querySelector('#app').innerText || '';
+      // render ≡ headless, per feature: the block that NAMES this id must carry its reason text and its policy
+      const mismatches = [];
+      for (const r of rows) {
+        if (r.state === 'locked' || r.state === 'excluded') {
+          if (text.indexOf(r.id) < 0) mismatches.push(`${r.id}: no collapsed line`);
+          continue;
+        }
+        const b = blocks.find((el) => (el.innerText || '').indexOf(r.id) >= 0);
+        if (!b) { mismatches.push(`${r.id}: no block`); continue; }
+        const t = b.innerText || '';
+        if (r.last && t.indexOf(r.last.text) < 0) mismatches.push(`${r.id}: reason "${r.last.text}" not in the block`);
+        if (t.indexOf(r.policy.inForce) < 0) mismatches.push(`${r.id}: policy ${r.policy.inForce} not in the block`);
+        if (r.provenance && t.indexOf(r.provenance.slice(0, 40)) < 0) mismatches.push(`${r.id}: provenance missing`);
+      }
+      return { rows: rows.length, blocks: blocks.length, collapsed: collapsed.length, mismatches: mismatches.slice(0, 6),
+        unknown: rows.filter((x) => x.last && x.last.code === 'unknown').map((x) => x.id),
+        scrollX: document.documentElement.scrollWidth - document.documentElement.clientWidth,
+        rendered: text.indexOf('Read-only.') >= 0, title: text.indexOf('Automation Tools') };
+    });
+    check(adv.rendered, 'Advanced renders');
+    check(adv.rows === shape.features + (Object.keys(await page.evaluate(() => window.tmtLoader.autoExcluded || {})).length), `explain() has one row per registered feature plus each excluded one (${adv.rows} rows, ${shape.features} features)`);
+    check(adv.blocks === adv.rows - adv.collapsed, `one block per feature that can run (${adv.blocks} blocks, ${adv.collapsed} collapsed, ${adv.rows} rows)`);
+    check(adv.mismatches.length === 0, `render ≡ headless for every row${adv.mismatches.length ? ': ' + adv.mismatches.join(' · ') : ''}`);
+    check(adv.unknown.length === 0, `no feature's last decision is \`unknown\`${adv.unknown.length ? ': ' + adv.unknown.join(', ') : ''}`);
+    check(adv.scrollX <= 0, `no horizontal scroll at 390 px (scrollWidth − clientWidth = ${adv.scrollX})`);
+    await page.screenshot({ path: path.join(REPO, `tools/harness/results/${id}-au-advanced-390.png`), fullPage: true });
+
+    // ⛔ AN INJECTED `<img onerror>` IN A TABLE STRING RENDERS INERT. `display-text` is `v-html`, and `provenance`
+    // is author-written text. Constructed, because no table on the roster carries markup — and a leg that asserts
+    // an absence proves nothing until the absence has been made present once, so the same string is also checked
+    // to be PRESENT as text.
+    const xss = await page.evaluate(() => {
+      const T = window.tmtLoader, id = T.features[0].id;
+      T.autoProvenance[id] = '<img src=x onerror="window.__tmtPwned = 1">';
+      updateTemp(); if (typeof updateTabFormats === 'function') updateTabFormats();
+      return new Promise((res) => setTimeout(() => {
+        const text = document.querySelector('#app').innerText || '';
+        res({ pwned: window.__tmtPwned === 1, imgs: document.querySelectorAll('#app div[style*="border-left"] img').length, asText: text.indexOf('onerror=') >= 0, id });
+      }, 250));
+    });
+    check(xss.pwned === false && xss.imgs === 0, `an injected <img onerror> in ${xss.id}'s provenance did not execute and created no element (pwned ${xss.pwned}, imgs ${xss.imgs})`);
+    check(xss.asText === true, 'and the same string IS on screen, as text — so the check is not passing on an empty render');
+
+    // back to Simple, and the grid is where it was
+    await page.evaluate(() => { delete window.tmtLoader.autoProvenance[window.tmtLoader.features[0].id]; player.subtabs[tmtLoader.auLayer].mainTabs = 'Simple'; });
+    await redraw();
+    await page.waitForTimeout(250);
+    const back = await page.evaluate(() => ({ buttons: [...document.querySelectorAll('#app button.upg')].length, text: (document.querySelector('#app').innerText || '').indexOf('Read-only.') }));
+    check(back.buttons === shape.features + 1, `back on Simple: ${back.buttons} clickable buttons (${shape.features} features + the master toggle)`);
+    check(back.text < 0, 'and none of the Advanced view is left on screen');
+    check(stats.pageErrors.length === 0 && stats.failed.length === 0 && stats.blocked.length === 0, `${stats.pageErrors.length} page errors, ${stats.failed.length} failed, ${stats.blocked.length} blocked`);
+  } catch (e) { ok = false; notes.push('EXCEPTION ' + String((e && e.stack) || e).slice(0, 400)); }
+  finally { await context.close(); }
+  row({ gate: 'A1-2 the Advanced subtab (page, 390 px)', id, ok, ticks: 0, gameSeconds: 0, diff: null, hash: null, notes: notes.join('; ') + `; screenshot results/${id}-au-advanced-390.png` });
 }
 
 // ---- Part 3 --------------------------------------------------------------------------------------------------------

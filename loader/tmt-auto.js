@@ -11,6 +11,7 @@
 (function () {
   var T = globalThis.tmtLoader || (globalThis.tmtLoader = {});
   var G = globalThis;
+  var AU = 'au';               // the loader's own side layer (declared here because `gameState` below names it)
   T.contract = 2;
   T.ticks = T.ticks || 0;
   T.gameSeconds = T.gameSeconds || 0;
@@ -24,15 +25,41 @@
   T.stateMask = MASK.slice();
 
   // opts.exclude: TOP-LEVEL player keys to drop (e.g. ['au'] to compare against a pre-A1 anchor).
+  //
+  // ⛔ EXCLUDING A LAYER ALSO DROPS `player.subtabs[<that layer>]`, AND THAT IS ONE RULE ON PURPOSE. The engines
+  // keep which subtab of a layer's tab is on screen in `player.subtabs[layer].mainTabs` — a SEPARATE top-level
+  // key — so a caller that drops `au` and not `subtabs.au` is asking for "the game without the automation layer"
+  // and getting the automation layer's view state anyway. V1 learned this the expensive way: `hashGame` had the
+  // subtabs exclusion and `--exclude au` did not, and the moment the `au` tab took subtabs all eight L1 anchor
+  // rows of `gates-a1 --part 2` went red — `86067be644ce481c` → `51c48535df82cc29` on ptr idle 1000 — while
+  // `hashGame` was untouched. Two spellings of one intention is how that happens; there is now one spelling.
   T.stateJSON = function (opts) {
     var excl = (opts && opts.exclude) || [];
     var root = player;
+    var subs = excl.length ? root.subtabs : null;
     return JSON.stringify(root, function (k, v) {
       if (MASK.indexOf(k) >= 0) return undefined;
       if (this === root && excl.indexOf(k) >= 0) return undefined;
+      if (subs && this === subs && excl.indexOf(k) >= 0) return undefined;
       return v;
     });
   };
+
+  // ⛔ ONE DEFINITION OF "THE GAME'S STATE" — what the harness calls `hashGame`, and every consumer reads it from
+  // here rather than repeating the literal. It drops the `au` LAYER, and by the rule above the au tab's selected
+  // SUBTAB with it:
+  //   · `player.au` — the loader's own side layer. Its `clickables` map has one key per toggle BUTTON, so the full
+  //     hash moves with the NUMBER of registered features and a table change moves it without any game moving.
+  //   · `player.subtabs.au` — which subtab of the `au` tab is on screen. V1 gave that tab subtabs (Simple /
+  //     Advanced), and both engines then write `subtabs.au = {mainTabs: …}` at `getStartPlayer` and re-add it to an
+  //     imported save through `fixData` (measured on both). Without this, every pinned `hashGame` in the repo would
+  //     move — and a PLAYER switching subtab would move it again mid-run. The au tab's VIEW STATE IS NOT GAME
+  //     STATE. ⚠ Measured before the change: `player.subtabs.au` is ABSENT on both engines (ptr `{q, ps, n, ma,
+  //     mc}`, something `{changelog-tab, unlock, fundamental, …}`), so DELETING the key reproduces the historical
+  //     bytes exactly — deletion does not reorder what is left. The brief's open question ("something's engine may
+  //     already write `subtabs.au = {}`") is answered: it does not.
+  T.gameState = { exclude: [AU] };
+  T.hashGame = function () { return T.hash(T.gameState); };
 
   T.hash = function (opts) {
     var json = T.stateJSON(opts);
@@ -112,7 +139,6 @@
   // ---- automation registry -------------------------------------------------------------------------------------------
   // S1 (docs/automation.md): the features are DERIVED from what each tree layer declares (derive(), at the end of this
   // file), shaped by the per-game DATA table `tmtLoader.autoTable` (games-auto/<id>.js, inserted BEFORE this file).
-  var AU = 'au';
   var NUM = '\\d+(\\.\\d+)?';
   // a RESERVE is a quantity of the game's own currency, so it spans the whole Decimal range (1e600 is a real threshold
   // at the PTR frontier) — unlike gain>=N / interval>=T, which are small counts and seconds.
@@ -281,14 +307,15 @@
   // ⚖ MAY AUTOMATION BE ARMED FOR A FEATURE THAT IS NOT UNLOCKED YET? (user, 2026-09-19). Off by default, so the
   // behaviour every earlier row was measured against is the default. It is a SETTING of the `au` layer, and it lives
   // in `player[AU]` beside `disclosed` — the layer's own non-feature UI state, and the one store a save already
-  // carries. ⚠ It is NOT in `startData`: the S1 pins compare the FULL state hash, which includes `player.au`, so a
-  // key present from the first boot would move every pinned `want` hash for a setting nobody touched. Absent reads
-  // false, `toggleAuto` writes it on the first press, and the pins keep running in the state they were recorded in.
-  // ⚠ CORRECTED (U6, measured): the S1 PINNED rows compare ticks and `hashGame` — the state WITHOUT `player.au`
-  // — so they would not have noticed the key at all. What a seeded key does move is the FULL hash, which
-  // `gates-p1a --part 0` pins for the frontier fixture. The numbers, and the fix that needs neither, are at
-  // `installArmToggleClick` below.
-  //
+  // carries.
+  // ⚠ WHERE IT LIVES, IN THREE STEPS, AND ONLY THE LAST IS TRUE NOW. U4 kept it OUT of `startData`, reasoning that
+  // the S1 pins compare the full state hash. U6 MEASURED that and it was wrong: the S1 pinned rows compare ticks and
+  // `hashGame`, the state WITHOUT `player.au`, and would never have seen the key — what a seeded key moves is the
+  // FULL hash, which `gates-p1a --part 0` pins for the frontier fixture. A pin move is ⚖ the user's, so U6 routed
+  // around it by owning `toggleAuto`'s click path. V1: the user GRANTED the pin move (plan §15d.2, "Yes, seed it"),
+  // so `armLocked: false` IS in `startData` below, the wrapper is gone, and the pin was re-recorded ONCE —
+  // `63f28e099536a119` → `11826e775e6f88d8`, carrying the au tab's new `player.subtabs.au` in the same move, with
+  // `ticks` 14131, `lastProgress` 10531 and `hashGame` `f7a8854358ac4029` all unmoved.
   // ⛔ IT DOES NOT REACH `active()`, and that is the whole reason arming is SAFE rather than a foot-gun. Every branch
   // of `active()` already ANDs with `featureUnlocked(f)`, and `isOnSaved` is stored per id independently of unlock
   // state — so a feature armed while locked simply does not run, and `active()` turns it on BY ITSELF the moment the
@@ -305,47 +332,24 @@
     else player[AU].armLocked = !!on;
     return !!on;
   };
-  // ⚠ … AND THE BUTTON DOES NOT CALL THAT SETTER. U4 wrote `Vue.set` here and the reactivity bug shipped anyway:
-  // the `toggle` component's click is hardcoded to the engine's own `toggleAuto`, so the careful reactive write sat
-  // on a path the UI never takes. A reactive write on a path nobody walks is not a reactive write.
-  // MEASURED on `ptr` (2026-09-19, the user's report): the button reads `OFF`, one press leaves the text `OFF`
-  // while `player.au.armLocked` becomes `true`. Vue 2 cannot observe a property ADDED to an object after creation,
-  // ptr's `toggleAuto` assigns plainly (`player[t[0]][t[1]] = !player[t[0]][t[1]]`), and the key is absent until
-  // that first press — so the value flips and the view never re-renders. **22 of the 171** assign plainly and 149
-  // use `Vue.set`, which is exactly why the user sees it and a `Vue.set` engine would have hidden it.
-  // ⚠ 22 and NOT 24: two games declare `toggleAuto` twice and the copies DISAGREE, so the answer is decided by
-  // LOAD ORDER — a first-match grep over the tree says 24, and the copy the click reaches is the LAST one loaded.
+  // ⚠ … AND UNTIL V1 THE BUTTON DID NOT CALL THAT SETTER. U4 wrote `Vue.set` here and the reactivity bug shipped
+  // anyway: the `toggle` component's click is hardcoded to the engine's own `toggleAuto`, so the careful reactive
+  // write sat on a path the UI never takes. MEASURED on `ptr` (2026-09-19, the user's report): the button read
+  // `OFF`, one press left the text `OFF` while `player.au.armLocked` became `true`. Vue 2 cannot observe a property
+  // ADDED to an object after creation, ptr's `toggleAuto` assigns plainly
+  // (`player[t[0]][t[1]] = !player[t[0]][t[1]]`), and the key was absent until that first press — so the value
+  // flipped and the view never re-rendered. **22 of the 171** assign plainly and 149 use `Vue.set`, which is
+  // exactly why the user saw it and a `Vue.set` engine would have hidden it.
   //
-  // ⛔ THE TWO ROUTES, AND WHY THIS ONE. Making the key exist at boot (`startData`) is the one-line fix, and it
-  // MOVES WHAT `player.au` CONTAINS. Measured on `ptr` at 2e0818811, with `armLocked: false` seeded:
-  //   · the state without `player.au` — what the S1 pinned rows actually compare — DOES NOT MOVE:
-  //     fresh `8daecd949227c861`, `all/M09` at 0 ticks `208197f46f08ed88`, identical either way;
-  //   · the FULL hash MOVES: fresh `6062b457fdb56dd6` → `13cd6ddb1cd512a4`, M09@0 `97d8593fb06c4537` →
-  //     `4c4937e5074ec391` (the import re-adds the key from `startData`, at the end of the key order).
-  // So the S1 pins would not have noticed — the note above this function, and `docs/contract.md`, were wrong about
-  // WHICH hash protects them — but `gates-p1a --part 0` pins the FULL hash of the frontier fixture
-  // (`FRONTIER_PIN.hash`, `63f28e099536a119`) and would go red, and a pin move is a re-record the user decides.
-  // This route moves NOTHING: the key still does not exist until the player presses the button, and the press is
-  // routed through the setter above, whose `Vue.set` both creates the key and notifies `player.au`'s own observer
-  // — which is what re-renders the engine's own button, its text and its colour.
-  //
-  // ⚠ IT IS THE NARROWEST PATCH THAT REACHES THE CLICK: every other toggle in the game goes to the original,
-  // unchanged, by the same call. Measured over all 171 games (2026-09-19): all 171 declare `function toggleAuto`
-  // at top level — so it is a `globalThis` property in the page and in the harness's vm context alike — and NONE
-  // of them puts it in the Vue instance's `data`, so the compiled template's `with(this)` falls through to exactly
-  // the property this replaces. A game where it did not would simply keep today's behaviour: `armToggleOwned` says
-  // which, rather than leaving it to be guessed.
-  function installArmToggleClick() {
-    var orig = G.toggleAuto;
-    if (typeof orig !== 'function' || orig.tmtArmWrapped) return false;
-    var wrapped = function (t) {
-      if (t instanceof Array && t[0] === AU && t[1] === 'armLocked') { T.armLocked(!armLocked()); return; }
-      return orig.apply(this, arguments);
-    };
-    wrapped.tmtArmWrapped = true;
-    try { G.toggleAuto = wrapped; } catch (e) { return false; }
-    return G.toggleAuto === wrapped;
-  }
+  // ⛔ U6 OWNED THE CLICK PATH (a `toggleAuto` wrapper) BECAUSE THE OTHER ROUTE COST A PIN. V1 PAID THE PIN AND THE
+  // WRAPPER IS GONE. ⚖ The user granted the seed (plan §15d.2); `armLocked: false` is now in the layer's
+  // `startData`, so the key exists from the first boot, there is nothing for Vue to observe LATE, and the engines'
+  // own plain assignment is seen on every one of the 171. The setter above survives for programmatic callers (the
+  // harness, a gate); the BUTTON reaches the engine's own `toggleAuto`, unwrapped, like every other toggle in every
+  // game. MEASURED both ways before removing it — see the V1 as-built: with the seed and no wrapper, A1 part 2's
+  // arming legs are green on BOTH engine families; and the mutant "unseeded AND unwrapped" is RED on ptr, which is
+  // U6's original bug, so the leg can still see the thing it exists for.
+
   // A RUNTIME enable override (never saved, never a default): the advanced planner commits a configuration for an epoch
   // by switching individual features on and off under whatever profile is running — `off` is not a policy of every
   // kind, and writing player.au.features would put a planner decision into the player's save. Part of runtimeState(),
@@ -944,6 +948,81 @@
   // only appear while the setting is on, because that is the only way the flag can have been set.
   function onColor(f) { return active(f) ? '#4f9a6a' : featureUnlocked(f) ? '#3d6f91' : isOnSaved(f) ? '#8a6d3b' : '#666666'; }
 
+  // ---- the Advanced subtab (V1 Part 2) ---------------------------------------------------------------------------
+  // ⛔ IT RENDERS `T.explain()` AND COMPUTES NOTHING OF ITS OWN. Every number, word and flag below comes from the
+  // rows the headless API returns, which is why `render ≡ headless` (gates-v1 leg 5) is a comparison rather than
+  // two implementations hoping to agree — and why every reason in this tab is testable in Node with no browser.
+  //
+  // ⛔ AND IT IS LAZY, WRITTEN FOR THE WORSE ENGINE. ptr's `temp.js` has no special case for `tabFormat`: every
+  // function in a layer's data that is not in `activeFunctions` is evaluated into `tmp` on EVERY tick, open tab or
+  // not (`setupTempData` / `updateTempData`). 2.7's lists `"tabFormat", "content"` among the things "only updated
+  // when needed" (`temp.js:12`, `:127`). So this returns '' unless the `au` tab is on screen AND `Advanced` is the
+  // selected subtab — and in Node, where no tab is ever open, it never runs at all. That is what makes
+  // `explainStats().formats === 0` after a headless run a real claim about the cost (gates-v1 leg 3).
+  //
+  // ⚠ ENGINE COMPONENTS ONLY, and `loader/tmt-auto.js` still never touches the DOM (docs/contract.md). This builds
+  // a STRING that the engines' own `display-text` renders; it queries no element and holds no reference to one.
+  function advancedShown() {
+    try { return (player.tab === AU || player.navTab === AU) && !!player.subtabs && !!player.subtabs[AU] && player.subtabs[AU].mainTabs === 'Advanced'; } catch (e) { return false; }
+  }
+  var ADV_INTRO = 'What each feature decided on the last tick it was asked, and why. Read-only.';
+  // ⚠ ONE BLOCK PER FEATURE, NOT A WIDE TABLE — it has to read at 390 px with no horizontal scroll, and under
+  // `?mobile=1` the layer list draws this tab through its own reader, which skips a `display-text` entirely. So the
+  // layout is ordinary flow with `overflow-wrap`, no column widths and no element wider than its parent.
+  function chip(text, bg) { return '<span style="display:inline-block;padding:0 6px;border-radius:3px;background:' + bg + ';color:#fff;font-size:.8em;vertical-align:middle">' + esc(text) + '</span>'; }
+  var STATE_BG = { on: '#4f9a6a', off: '#3d6f91', armed: '#8a6d3b', locked: '#666666', excluded: '#5a4a4a' };
+  function advancedHTML() {
+    if (!advancedShown()) return '';
+    var rows = T.explain();
+    var out = ['<div style="text-align:left;max-width:100%;overflow-wrap:anywhere;word-break:break-word">'];
+    var running = 0, never = 0;
+    for (var i = 0; i < rows.length; i++) { if (rows[i].state === 'on') running++; if (rows[i].neverFired) never++; }
+    out.push('<div style="opacity:.75;font-size:.9em;margin-bottom:6px">' + esc(ADV_INTRO) + '</div>');
+    out.push('<div style="margin-bottom:10px">Profile <b>' + esc(T.profileName) + '</b> · ' + running + ' of ' + rows.length + ' running'
+      + (never ? ' · <b style="color:#c08a3e">' + never + ' never fired</b>' : '') + '</div>');
+    var layer = null;
+    for (var j = 0; j < rows.length; j++) {
+      var r = rows[j];
+      if (r.layer !== layer) {
+        layer = r.layer;
+        var name = layers[layer] && layers[layer].name ? String(layers[layer].name) : layer;
+        out.push('<h3 style="margin:14px 0 4px 0">' + esc(name) + ' <span style="opacity:.5;font-size:.7em">' + esc(layer) + '</span></h3>');
+      }
+      out.push(r.state === 'locked' || r.state === 'excluded' ? collapsedBlock(r) : featureBlock(r));
+    }
+    out.push('</div>');
+    return out.join('');
+  }
+  // A feature that cannot run yet is ONE LINE. There are 78 of them on ptr at a fresh save and 3 that are doing
+  // anything; a full block each would bury the three.
+  function collapsedBlock(r) {
+    return '<div style="opacity:.6;padding:2px 0">' + esc(r.title) + ' <span style="opacity:.6;font-size:.85em">' + esc(r.id) + '</span> — '
+      + chip(r.state === 'excluded' ? 'EXCLUDED' : 'LOCKED', STATE_BG[r.state]) + ' <span style="font-size:.9em">' + esc(r.last ? r.last.text : '') + '</span></div>';
+  }
+  function featureBlock(r) {
+    var p = r.policy, bits = [];
+    // ⚠ the table's entry and the generic derivation's shown BESIDE what is in force, and only when they DIFFER —
+    // survey §4.5. Equal values side by side is noise; a difference is the whole reason the table has that row.
+    bits.push('<b>' + esc(p.inForce) + '</b>');
+    if (p.table !== null && p.table !== p.inForce) bits.push('table says ' + esc(p.table));
+    if (p.derived !== null && p.derived !== p.inForce) bits.push('derived would be ' + esc(p.derived));
+    if (p.alternatives.length) bits.push('alt ' + p.alternatives.map(esc).join(', '));
+    var o = ['<div style="border-left:3px solid ' + STATE_BG[r.state] + ';background:rgba(127,178,217,.08);border-radius:4px;padding:6px 8px;margin:0 0 8px 0">'];
+    o.push('<div>' + chip(r.state.toUpperCase(), STATE_BG[r.state]) + ' <b>' + esc(r.title) + '</b> <span style="opacity:.55;font-size:.85em">' + esc(r.id) + '</span></div>');
+    o.push('<div style="font-size:.9em;opacity:.85">policy ' + bits.join(' · ') + '</div>');
+    if (r.gate) o.push('<div style="font-size:.9em;opacity:.85">gate <code>' + esc(r.gate) + '</code></div>');
+    if (r.after && r.after.length) o.push('<div style="font-size:.9em;opacity:.85">after ' + r.after.map(esc).join(', ') + '</div>');
+    o.push('<div style="margin-top:3px"><b>now:</b> ' + esc(r.last ? r.last.text : 'nothing decided yet') + '</div>');
+    o.push('<div style="font-size:.9em;opacity:.7">acted ' + r.acted + (r.lastActedAt === null ? '' : ' · last at ' + r.lastActedAt + ' s') + (r.eligibleFor === null ? '' : ' · on for ' + r.eligibleFor + ' s') + '</div>');
+    if (r.neverFired) o.push('<div style="font-size:.9em;color:#c08a3e">⚠ never fired — on and unlocked this whole time, and it has never acted</div>');
+    // ⚠ AUTHOR-WRITTEN TEXT THROUGH `v-html`. Escaped, like every other table string above (`off` reasons, gate
+    // predicates) and like the GAME's own layer names and feature titles.
+    if (r.provenance) o.push('<div style="font-size:.85em;opacity:.65;font-style:italic;margin-top:3px">' + esc(r.provenance) + '</div>');
+    o.push('</div>');
+    return o.join('');
+  }
+  T.advancedHTML = advancedHTML;
+
   function buildClickables() {
     for (var k in clickables) if (!isNaN(k)) delete clickables[k];
     var cols = 4;
@@ -1209,14 +1288,30 @@
       // Tree', where the whole automation boot died on `layers[layer].canReset is not a function` while the plain
       // page was green. 'none' is the declaration the engine already understands for "cannot reset".
       type: 'none',
-      startData: function () { return { unlocked: true, points: num(0), features: {}, disclosed: false }; },
+      // ⚖ `armLocked` IS SEEDED (user, 2026-09-19, plan §15d.2: "Yes, seed it"). U4 kept it out of `startData` so
+      // that a setting nobody had touched moved no recorded hash, and U6 measured what that cost: the engine's own
+      // `toggle` click is hardcoded to `toggleAuto`, Vue 2 cannot observe a key ADDED after creation, and 22 of the
+      // 171 engines assign plainly — so the flag flipped and the button went on reading OFF. With the key present
+      // from the first boot there is nothing to observe late and the plain assignment is seen. It moves the FULL
+      // hash once; the S1 pins compare `hashGame`, which does not contain `player.au` at all.
+      startData: function () { return { unlocked: true, points: num(0), features: {}, disclosed: false, armLocked: false }; },
       color: '#7fb2d9',
       row: 'side',
       symbol: 'AU',
       tooltip: T.auTitle,
       layerShown: function () { return true; },
       clickables: clickables,
-      tabFormat: [
+      // ⛔ THE OBJECT FORM = SUBTABS (V1, ⚖ user 2026-09-19 §15d.3). `Simple` is FIRST, so it is what both engines
+      // select by default (`getStartPlayer`: `Object.keys(layers[l].tabFormat)[0]`) and what an old save is
+      // repaired to (`fixSave`). Its content is TODAY'S TAB, unchanged — the title, the profile line, the
+      // disclosure, the arming row and `'clickables'`, in that order — so every standing artifact other gates read
+      // (`T.auTitle`, the clickable grid's ids, U1's mobile flatten) is where it was. A third subtab (the advanced
+      // planner's round log, P2) joins by being a third key; neither of these two has to move for it.
+      // ⚠ NOTHING SITS ABOVE THE SUBTAB BUTTONS: the engine draws them itself, above whatever the selected subtab
+      // says, and anything the loader put there would push the clickable grid down without being part of either
+      // subtab's content.
+      tabFormat: {
+      Simple: { content: [
         ['display-text', function () { return '<h2>' + T.auTitle + '</h2>'; }],
         'blank',
         ['display-text', function () {
@@ -1237,12 +1332,12 @@
         ['row', [['display-text', function () { return ARM_LABEL; }], ['toggle', [AU, 'armLocked']]]],
         'blank',
         'clickables',
-      ],
+      ] },
+      Advanced: { content: [['display-text', function () { return advancedHTML(); }]] },
+      },
       automate: auAutomate,
     });
     T.auLayer = AU;
-    // the arming toggle's click path (above). Installed with the layer, because it is that layer's control.
-    T.armToggleOwned = installArmToggleClick();
   }
 
   // Test probe (Part-1 gate): hook every tree layer with no features, so the wrapper-call counter covers every layer.

@@ -1511,10 +1511,25 @@ press judges **3** — `ptr` (0 / −3), `the-alphabetree` (0 / −3) and `the-e
 by a quarter of a screen on its own reset, and the worst drift on the roster had this not been fixed).
 
 And, beside them on the `?mobile=1&automation=1` page, the **default half of the arming setting** (`docs/automation.md`):
-it is off, it is not in the save, its control is in the `au` tab, every locked feature's toggle still refuses — and
+it is off, its control is in the `au` tab, every locked feature's toggle still refuses — and
 `clickables === features + 1`, which is what says the setting stayed **out** of the clickable grid whose flatten the
-same leg measures two lines above. The arming flow itself is `gates-a1.mjs --part 2`, which CI does not run; this is
-the half that protects every existing row, on the two games that have an automation table.
+same leg measures two lines above. The arming flow itself is `gates-a1.mjs --part 2`, which CI **now does run** (the
+`a1` job, over the games with an `auto` table, derived from `games-auto/`); this is the half that protects every
+existing row, on the two games that have an automation table.
+
+⚠ **V1 moved one of those assertions, and it is worth knowing why that is not a weakening.** The setting used to be
+judged "off AND absent from the save" (`player.au.armLocked === undefined`). ⚖ The user granted seeding it into the
+`au` layer's `startData` (plan §15d.2), so the default is now `false` and PRESENT, and this leg asserts `=== false`.
+⛔ Finding that out is why the seed is not a one-line change: left alone, the old assertion would have turned this
+gate RED on **all 171 games** in CI, for a key whose value is the default it always had.
+
+#### The `au` tab is object-form now, and the list reads it the same way
+
+V1 gave the `au` tab two subtabs (`Simple`, `Advanced`). The layer list's `layoutOf` already handles both `tabFormat`
+shapes: for an object it walks `tmp[l].tabFormat[player.subtabs[l].mainTabs].content`, which is `Simple` unless the
+player switched — so the list draws exactly what it drew before, and the grid flatten above is untouched
+(**measured: `ptr` 20 of 20 rows flattened, `something` 10 of 10**). The `Advanced` subtab contributes nothing to a
+card either way: it is a single `display-text`, and `emitComp` draws no chip, counter or action button for one.
 
 **The mutant round** (`bf0804821`, serially, one process, each restored from git afterwards — the work was committed
 first so a restore could not eat it):

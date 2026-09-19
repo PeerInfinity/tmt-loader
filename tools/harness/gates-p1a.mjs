@@ -41,7 +41,24 @@ const ST_DIR = 'tools/harness/snapshots/something/all';
 const KDIR = path.join(REPO, 'tools/harness/knowledge');
 const DETECT = { stall: 3600, 'stall-seen': true, 'wall-ms': 540000 };
 // S1 §10a.4 / H1-2f: the frontier, every derived kind, diff 1, from all/M09.
-const FRONTIER_PIN = { ticks: 14131, lastProgress: 10531, hash: '63f28e099536a119', hashGame: 'f7a8854358ac4029' };
+//
+// ⛔ `hash` RE-RECORDED ONCE, 2026-09-19 (V1): `63f28e099536a119` → `11826e775e6f88d8`. ⚖ Granted by the user
+// (plan §15c / §15d.2, "Yes, seed it"), and it carries BOTH of V1's causes in the one move, which is why it is one
+// move: (a) `player.au.armLocked` is now in the au layer's `startData` — U6 routed around that by owning
+// `toggleAuto`'s click path, and this replaces the wrapper with the key being there; (b) the au tab took SUBTABS,
+// so both engines now write `player.subtabs.au = {mainTabs: "Simple"}`. Neither is game state, and neither moves
+// `hashGame`: `f7a8854358ac4029`, `ticks` 14131 and `lastProgress` 10531 are all UNMOVED, measured at this tree
+// and at `97f5f9376` (before V1) with the same command.
+//
+// ⚠ AND THE PIN WAS ALREADY STALE WHEN V1 ARRIVED — plan §14d.2 item 14, in the file that item did not reach.
+// `PIN_RESET_P` named only `policy:reset:p=interval>=10`, while R1′ ALSO moved `reset:t`, `reset:s`, `reset:e` and
+// `buyables:e` and LIFTED the `buyables:t` exclusion, and a pin inherits EVERY default, not just the one it names.
+// MEASURED on both trees: under the old one-policy string this run lands at **15161 / `64ef6d95b3c4fb5b`,
+// lastProgress 11561** — three of the four fields red, identically before and after V1. Naming the whole A2
+// CONFIGURATION (below) reproduces the pin exactly, which is the same repair §14d.2 item 14 applied to `gates-s1`.
+// It is a reproduction of the historical measurement, not a re-record of it. ⚠ `gates-h1 --part 1` carries the
+// identical staleness in `KINDS_PINNED` and has NOT been repaired — see the warning at the top of that file.
+const FRONTIER_PIN = { ticks: 14131, lastProgress: 10531, hash: '11826e775e6f88d8', hashGame: 'f7a8854358ac4029' };
 // the census counts the walk is compared against (walkthrough digest §2a / tmtLoader.ids())
 const PTR_CENSUS = { upg: 172, ms: 85, ach: 80, buy: 52, ch: 9 };
 
@@ -91,7 +108,12 @@ const STATES = () => [
 // R1′ (2026-09-17): the ptr table's `reset:p` moved from `interval>=10` to `gain>=2x`. Every number and fixture in this
 // file was measured under the interval, so the runs name it explicitly; a pin is a measurement of a POLICY, not of which
 // one the table names. (An `auto-opt` in a row's own `opt` still wins — P1b's ctl-gain2x is exactly that control.)
+// ⛔ AND NOT ONLY `reset:p` — V1, 2026-09-19, measured. R1′ moved FIVE defaults and lifted one exclusion, and a pin
+// inherits every one of them. `PIN_RESET_P` alone put the frontier run at 15161 instead of 14131; the full A2
+// CONFIGURATION below puts it back on all four pinned fields. Same string, same reason, as `gates-s1` after
+// §14d.2 item 14 — which is where it should have been copied from at the time.
 const PIN_RESET_P = 'policy:reset:p=interval>=10';
+const PIN_A2 = 'policy:reset:p=interval>=10;policy:reset:t=interval>=5;policy:reset:e=interval>=5;policy:reset:s=interval>=5;policy:buyables:e=buy;exclude=buyables:t';
 const stateOpts = (s, extra = {}) => ({ profile: 'all', ...(s.from ? { 'from-snapshot': s.from, ticks: 0, diff: 1 } : { ticks: s.ticks, diff: s.diff }), ...extra });
 
 // ---- Part 0: the frontier fixture -------------------------------------------------------------------------------------
@@ -99,9 +121,9 @@ async function part0() {
   fs.mkdirSync(path.join(REPO, FRONTIER_DIR), { recursive: true });
   // The stall's CONTROL, run in parallel: the same stretch with the detector's stop removed, 204 ticks PAST the stall
   // tick. It is what a short measurement window at the frontier must be read against (P1a-2's window row).
-  const controlP = job('ptr', { profile: 'all', diff: 1, ticks: 6300, 'from-snapshot': SNAP.M09, 'wall-ms': 540000, 'auto-opt': PIN_RESET_P,
+  const controlP = job('ptr', { profile: 'all', diff: 1, ticks: 6300, 'from-snapshot': SNAP.M09, 'wall-ms': 540000, 'auto-opt': PIN_A2,
     eval: "({b: String(player.b.points), bBest: String(player.b.best), sb: player.sb.unlocked, bNextAt: String(tmp.b.nextAt), bBaseAmount: String(tmp.b.baseAmount), points: String(player.points)})" });
-  const r = await job('ptr', { profile: 'all', diff: 1, ticks: 30000, 'from-snapshot': SNAP.M09, 'auto-opt': PIN_RESET_P, ...DETECT, 'stop-snapshot': FRONTIER_DIR, 'stop-snapshot-name': 'STALL' });
+  const r = await job('ptr', { profile: 'all', diff: 1, ticks: 30000, 'from-snapshot': SNAP.M09, 'auto-opt': PIN_A2, ...DETECT, 'stop-snapshot': FRONTIER_DIR, 'stop-snapshot-name': 'STALL' });
   const ok = !!r.ok && r.ticks === FRONTIER_PIN.ticks && r.hash === FRONTIER_PIN.hash && r.hashGame === FRONTIER_PIN.hashGame && r.stall?.lastProgress?.ticks === FRONTIER_PIN.lastProgress && !!r.stopSnapshotWritten;
   row({ gate: 'P1a-0 the frontier fixture: from all/M09 to the stall reproduces S1 §10a.4', id: 'ptr', leg: 'profile all, diff 1, stall 3600 seen', ok, ticks: r.ticks, gameSeconds: r.gameSeconds, diff: 1, hash: r.hash,
     notes: `stalled ${r.stall?.stalled} at ${r.ticks} (pin ${FRONTIER_PIN.ticks}), last progress ${r.stall?.lastProgress?.ticks} (pin ${FRONTIER_PIN.lastProgress}), hashGame ${r.hashGame} (pin ${FRONTIER_PIN.hashGame}); wrote ${r.stopSnapshotWritten?.file} (${r.stopSnapshotWritten?.bytes} B); ${Math.round(r.ticks_ms / 1000)} s, load ${r.load?.start} → ${r.load?.end}` });
@@ -118,8 +140,14 @@ async function part0() {
   row({ gate: 'P1a-0 Something Tree mark fixtures (profile all, every kind, diff 1)', id: 'something', leg: '--ladder --to S05 --until-all --snapshots', ok: !!st.ok && ['S01', 'S02', 'S03', 'S04', 'S05'].every((m) => st.marks?.[m]),
     ticks: st.ticks, gameSeconds: st.gameSeconds, diff: 1, hash: st.hash, notes: `${reached.join(', ')}; wrote ${(st.snapshotsWritten || []).map((x) => x.mark).join(' ')}; A2-1 pins (kinds=reset,upgrades,buyables) are 309 / 399 / 579` });
 
-  // the fixture must boot back to the same state (the import round trip every snapshot is required to survive)
-  const back = await job('ptr', { profile: 'all', ticks: 0, 'from-snapshot': FRONTIER });
+  // the fixture must boot back to the same state (the import round trip every snapshot is required to survive).
+  // ⛔ IN THE CONFIGURATION THAT PRODUCED IT, and V1 learned this the same way as the pin above: the round trip ran
+  // with no `--auto-opt` at all, so it REGISTERED `buyables:t` where the producing run excluded it (R1′ lifted that
+  // exclusion from the table; `PIN_A2` puts it back for the pinned runs). One more registered feature is one more
+  // key in `player.au.clickables`, so the FULL hashes could not match — `e2c5836b40d5f596` against the fixture's
+  // `11826e775e6f88d8`, while `hashGame` agreed, which is exactly what "the au layer is not game state" looks like
+  // from the wrong side. A round trip that boots a different feature set is comparing two different games.
+  const back = await job('ptr', { profile: 'all', ticks: 0, 'from-snapshot': FRONTIER, 'auto-opt': PIN_A2 });
   row({ gate: 'P1a-0 the frontier fixture round-trips (--from-snapshot --ticks 0)', id: 'ptr', leg: 'import round trip', ok: !!back.ok && back.hash === FRONTIER_PIN.hash && back.hashGame === FRONTIER_PIN.hashGame && back.ticks === FRONTIER_PIN.ticks,
     ticks: back.ticks, gameSeconds: back.gameSeconds, diff: 1, hash: back.hash, notes: `hashGame ${back.hashGame}; ticks continue from the fixture` });
 }
