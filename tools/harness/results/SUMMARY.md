@@ -4299,3 +4299,95 @@ which is U2d's fit rule exercised on a card nobody had driven before. The roster
   `the-alphabetree`), and it is `placeTip`'s forced layout, not the composition;
 - `the-alphabetree` at **49 cards on a phone** is an outlier in the layout as much as in the cost, and nobody has
   looked at what that card list reads like.
+
+## 2026-09-19 — U3: the three URL-only opt-ins become buttons in the game's own options tab — commit `427f937e9`
+
+⚖ User request, standing since 2026-09-18 and repeatedly displaced: a section in the Options panel with toggles for
+the things reachable only by URL parameter, noting at the time that some may need a reload. All three do.
+
+### The three decisions this slice owned
+
+| decision | what was chosen | why the alternative was rejected |
+|---|---|---|
+| reload, or defer? | **a press reloads, immediately** | every one of these flags needs a reload — `mobile` puts its class on `<html>` *before* the game's markup, `navbar` decides whether a file is inserted at all, `automation` decides whether the registry exists. Storing the choice and saying "next load" risks the one unacceptable answer: a button that looks pressed and changed nothing |
+| the URL, or the press? | **the URL answers first at boot; a press DROPS that flag's parameter on the way out** | without the drop, a press on a `?mobile=1` page writes a preference the next load ignores, and the button visibly does nothing. With it the URL rule is untouched: PRESENCE answers, in both directions — `?mobile=0` over a stored `true` as much as `?mobile=1` over a stored `false` |
+| per game, or per person? | **one key for every game, `tmt-loader:ui.flags`, NOT under `tmt-loader:<id>:`** | these say what kind of device and session the person wants, not anything about a game — and the per-game namespace is exactly what the picker's "clear this game's save" deletes. U2c ruled the other way for the layer list's card state, which IS about that game's layers. The key cannot fall inside a save prefix by construction: a prefix ends in a colon and this key has no second one |
+
+### The gate: O1 (`--gate options`), seven legs, and not one of them reads a key
+
+⛔ A toggle that writes a key and reloads is indistinguishable from one that works, if the page was going to render
+that way anyway. So every verdict is the RENDERED page — the `tmt-*` classes, the three loader stylesheets, the bar
+and its visible buttons, `au` nodes, `player.au`, the loader files executed — and where two pages are compared they
+are compared **against each other**, never against a hand-written expectation. Each page is drawn in its own
+browser context, because a stored preference is per browser and a leg that writes one must not reach the next.
+
+| run | result |
+|---|---|
+| `page.mjs ptr something the-alphabetree a-tree-about-layers --gate options` | **4/4 GREEN**, every leg 4/4: section, inertness, stored ≡ URL, URL overrides, the press changes the page, a press over a parameter, the locked button. **0 page errors, 0 blocked requests** over the ~19 page loads per game |
+| `page.mjs --gate load` — the WHOLE roster, plain page | **171/171 GREEN**, exit 0. This is the run that matters for the one unconditional file U3 adds: `loader/options.js` is inserted on every `?mod=` page, so every game's load gate had to be re-asked |
+| `page.mjs ptr something the-alphabetree --gate mobile` | **3/3 GREEN** — and specifically **inertness 3/3** and the state leg **3 equal, 0 moved, 0 abstained**. ⛔ This is how "my change cannot weaken M1's inertness leg" was checked: by running it, not by reading it. `gateMobile` was not edited, and `/mobile\|navbar\|layerlist/` — the regex its `loaded` check uses — does not match `loader/options.js`, which is the honest reason it passes rather than a rename that slips past |
+| `npm run harness:test` | **75/75 GREEN** (60 before this slice: 11 new in `loader/flags.test.mjs`, 4 in `loader/census.test.mjs`) |
+| `node tools/census-figures.mjs` | **10/10** documented figures match the tree, including the new one below |
+
+### The anchors are a property of the GAMES, so they are censused
+
+`loader/options.js` knows no tab id, the same way the nav bar does not. It anchors on the game's own
+`<button class="opt" onclick="hardReset()">` and reads `#optionWheel`'s **absence** as that engine saying the
+options tab is the open one. Both are required: the wheel alone would be satisfied by a game that has no wheel,
+`.opt` alone by a game that draws an option button somewhere else.
+
+⛔ **Nothing that DRIVES games could tell you an anchor was missing** — a section that is never built throws
+nothing, reddens nothing and simply is not there. So `census-figures.mjs` measures both over the entry document
+plus the loaded sources: **171 with the `hardReset()` option button and 171 with the wheel, of 171**, with the
+game NAMED if one ever arrives without. The claim is driven by three unit tests (a moved digit, a reworded
+sentence, and the scan itself — `class="opt"` somewhere plus `hardReset()` somewhere is NOT the anchor).
+
+### The mutants — one broken thing each, and the legs each one must redden
+
+`tools/harness/mutants-o1.sh`, on `ptr`, serially, each restored with `git checkout --` from a **committed** tree
+(the script refuses to start on a dirty one). ⛔ Each mutant declares the EXACT set of legs it must redden, so a
+mutant reddening a leg it cannot reach fails the battery instead of reading as a pass.
+
+| mutant | legs that went red |
+|---|---|
+| control | **none** |
+| A — the stored preference ignored at boot | `same`, `press` |
+| B — the URL no longer overrides (truth instead of presence) | `override`, and nothing else |
+| C — the preference read but the stylesheet not linked | `same`, `press` |
+| D — inertness broken by defaulting the preference to on | `section`, `inert`, `same`, `override`, `press` |
+| E — the press writes the key and reloads but leaves the parameter | `pressOverUrl`, **alone** |
+| F — the locked button accepts the press anyway | `locked`, **alone** |
+
+### ⚠ Mutant D overturned both halves of its own expectation, and that is the finding
+
+The battery was written expecting D to redden `[inert same override press pressOverUrl]`. It reddened
+`[section inert same override press]`. Both differences are worth keeping:
+
+- **`section` DOES redden.** With the layout defaulted on, the plain page draws the Nav bar button LOCKED, and the
+  section leg asserts that a plain page's buttons are all unlocked. A leg written for one thing caught another.
+- **`pressOverUrl` does NOT.** That leg judges the page it gets back against `row.plain` — and this mutant moved
+  `row.plain` too, so the comparison is satisfied by a page that is wrong in exactly the same way. **A leg whose
+  reference the mutant can move cannot see that mutant.** What catches D is the inertness leg, which compares
+  against a FIXED description rather than against another page of the same run. Both styles are in O1 on purpose;
+  this is the measurement that says why neither is sufficient alone.
+
+### Two things the brief did not predict
+
+- ⚠ **On a `?mobile=1` / `?navbar=1` page the corner wheel is still in the DOM but the bar's stylesheet HIDES it**,
+  so `page.click('#optionWheel')` waits for visibility until it times out. There the affordance is the bar's own
+  **Options** button, which forwards a click to the wheel — which is exactly why the section is reachable in both
+  modes at all. The gate now opens the tab the way a person on that page would. Found by the gate's leg 5 on its
+  second press, not by reading the code.
+- `docs/harness.md`'s CI table said **46** unit tests and **3.5 s**; it was already stale at 60 before this slice
+  (U4 recorded the same thing independently) and is now 75 / 8.3 s. `census-figures` does not police that number —
+  a count in prose that no gate reads.
+
+### What this leaves open
+
+- **the picker page** has no toggles. The preference is global and the picker is where a person chooses a game, so
+  they arguably belong there too; `loader/options.js` is inserted by `boot()`, which the picker never runs. Nothing
+  about the storage would have to change.
+- **no per-game override.** If one is ever wanted it is a second key under `tmt-loader:<id>:` and a resolution
+  order of URL → game → global; nothing here forecloses it.
+- the O1 CI job runs the **bounded set**, not the roster (~19 page loads per game would be an hour). The
+  roster-wide check of this feature is the anchor census in the `fast` job.

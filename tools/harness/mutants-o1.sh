@@ -57,7 +57,13 @@ p='loader/flags.mjs';s=open(p).read()
 s=s.replace("    return { on: false, source: 'default' };","    return { on: name === 'mobile', source: 'default' };")
 open(p,'w').write(s)
 PY
-run "D inertness broken by a default" inert same override press pressOverUrl
+# ⚠ MEASURED, and BOTH halves of this expectation were wrong when it was written — which is the only reason the
+# line is worth reading. `section` DOES redden: with the layout defaulted on, the plain page draws the Nav bar
+# button LOCKED, and the section leg asserts that a plain page's buttons are all unlocked. And `pressOverUrl` does
+# NOT: that leg judges the page against `row.plain`, and this mutant moved `row.plain` too, so the comparison is
+# satisfied by a page that is wrong in exactly the same way. A leg whose reference the mutant can move cannot see
+# that mutant — the inertness leg, which compares against a FIXED description, is what catches this one.
+run "D inertness broken by a default" section inert same override press
 
 echo "mutant E — the press writes the key and reloads, but leaves the parameter:"
 python3 - <<'PY'
