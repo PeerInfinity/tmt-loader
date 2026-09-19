@@ -2,7 +2,7 @@
 //   node page.mjs <id> --ticks N --diff d [--leg idle|policy] [--until js] [--load-from player.json] [--base URL]
 //                 [--state-out f] [--player-out f] [--json out]                                → one JSON line, like run.mjs
 //                 [--profile off|all|saved] [--exclude au] [--auto-opt "k=v;k2=v2"] [--no-automation]
-//   node page.mjs [<id>...] --gate load [--base URL] [--automation]                    → gate G1 (every game by default)
+//   node page.mjs [<id>...] --gate load [--base URL] [--automation] [--allow-host h]   → gate G1 (every game by default)
 //   node page.mjs [<id>...] --gate mobile [--base URL]           → gate M1, the mobile mode, the nav bar + the layer list
 //   ... --gate <g> --shard i/N [--dry-run] --json out.json  → this runner's slice of the roster (1-based, like Playwright's);
 //                                                  merge the slices with merge-shards.mjs, which is what catches a dead shard
@@ -20,7 +20,12 @@ export const AU_NODE_SELECTOR = '#app .smallNode.au';
 
 /** Opens a browser context with the non-localhost block and the request/error counters. `stats.of(page)` holds the same
  * lists for one page (the G1 row checks its game's page against that game's `load.known`). */
-export async function openContext(browser, { allowExternal = false, contextOptions = null } = {}) {
+export async function openContext(browser, { allowExternal = false, allowHosts = [], contextOptions = null } = {}) {
+  // `allowHosts`: hosts that count as THIS site for the purposes of the blocker. Empty for every local run — the
+  // harness serves from 127.0.0.1 and a request to anywhere else is the finding. The published site is the one case
+  // where the site's own origin is not localhost (G5 against https://…github.io/tmt-loader/), and it must still be
+  // a third-party request when a GAME reaches for cdn.glitch.com. So the deploy host is named, not blanket-allowed.
+  const allowed = new Set([...LOCAL, ...allowHosts]);
   const context = await browser.newContext(contextOptions || undefined);
   const fresh = () => ({ blocked: [], failed: [], pageErrors: [] });
   const stats = { blocked: [], failed: [], pageErrors: [], consoleErrors: [], consoleWarnings: [], requests: 0, urls: [] };
@@ -30,7 +35,7 @@ export async function openContext(browser, { allowExternal = false, contextOptio
   const push = (req, key, value) => { stats[key].push(value); const p = req && pageOfReq(req); if (p) stats.of(p)[key].push(value); };
   await context.route('**', (route) => {
     const u = new URL(route.request().url());
-    if (!allowExternal && (u.protocol === 'http:' || u.protocol === 'https:') && !LOCAL.has(u.hostname)) { push(route.request(), 'blocked', u.href); return route.abort('blockedbyclient'); }
+    if (!allowExternal && (u.protocol === 'http:' || u.protocol === 'https:') && !allowed.has(u.hostname)) { push(route.request(), 'blocked', u.href); return route.abort('blockedbyclient'); }
     return route.continue();
   });
   context.on('request', (r) => { stats.requests++; stats.urls.push(r.url()); });
@@ -100,10 +105,10 @@ export async function pageLoadFrom(page, json) {
 export const pagePlayerJSON = (page) => page.evaluate(() => JSON.stringify(player));
 export const pageState = (page, exclude = []) => page.evaluate(async (ex) => ({ ticks: tmtLoader.ticks, gameSeconds: tmtLoader.gameSeconds, hash: await tmtLoader.hash({ exclude: ex }), hashFull: await tmtLoader.hash(), json: tmtLoader.stateJSON({ exclude: ex }), points: String(player.points), profile: tmtLoader.profile(), hook: tmtLoader.hookStats ? tmtLoader.hookStats() : null }), exclude);
 
-async function gateLoad(browser, base, ids, { automation = false } = {}) {
+async function gateLoad(browser, base, ids, { automation = false, allowHosts = [] } = {}) {
   const rows = [];
   for (const id of ids) {
-    const { context, stats } = await openContext(browser);
+    const { context, stats } = await openContext(browser, { allowHosts });
     const row = { gate: 'G1', id, automation, ok: false };
     try {
       const page = await context.newPage();
@@ -1248,8 +1253,10 @@ async function main() {
   let code = 0;
   try {
     if (a.gate === 'load') {
-      const rows = await gateLoad(browser, base, ids, { automation: !!a.automation });
-      if (a.json) writeJSON(a.json, { commit: headCommit(), base, gate: 'load', shard: shardMeta, rows });
+      // `--allow-host`: see openContext. Only G5's live run passes it, and it passes exactly the deploy host.
+      const allowHosts = a['allow-host'] ? String(a['allow-host']).split(',').map((x) => x.trim()).filter(Boolean) : [];
+      const rows = await gateLoad(browser, base, ids, { automation: !!a.automation, allowHosts });
+      if (a.json) writeJSON(a.json, { commit: headCommit(), base, gate: 'load', shard: shardMeta, allowHosts, rows });
       code = rows.every((r) => r.ok) ? 0 : 1;
       console.log(`G1 load: ${rows.map((r) => `${r.id}=${r.ok ? 'GREEN' : 'RED'}${r.allowed ? ` allowed: ${JSON.stringify(r.allowed)}` : ''}`).join(' ')}`);
     } else if (a.gate === 'mobile') {
