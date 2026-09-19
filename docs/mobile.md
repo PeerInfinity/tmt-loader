@@ -624,6 +624,122 @@ order matters: decoding first could turn `&lt;b&gt;` into a tag. Newlines surviv
 engines render a buyable's `display`), everything else collapses. And `format()` is the reason the whole composition
 sits inside `withoutRaisingNaN`: see below.
 
+#### What the list costs per frame, measured (U2f)
+
+The three slices above each added per-frame work, and none of them measured any. This one measures it and changes
+nothing, because the numbers say there is nothing to change. The instrument is `tools/harness/cost-layerlist.mjs`
+(`--census` costs every game on the roster; `--flat` is the paired delay comparison); every cost below is taken
+through the list's own `tmtLoader.layerListUI` surface, at the phone viewport, with `?automation=1` OFF.
+
+⛔ **THE HYPOTHESIS THIS SLICE WAS BRIEFED WITH DOES NOT HOLD**, and it fails on three separate legs. It was that
+`signature()` walks every layer's `visibleSeq` **on every frame** purely to detect a rebuild — an event that
+happens perhaps once a minute — so it should be throttled and the value updates left alone.
+
+**1. It does not run on every frame. It runs at the GAME's tick rate.** With the engine's own loop running and the
+panel open, the observer path fired **20 times a second** on every game measured — `ptr`, `something`,
+`the-alphabetree`, `the-yes-tree`, `the-dream-tree`, `the-infinity-tree`, at a fresh save and at the deepest
+recorded snapshot. That is TMT's own 50 ms game loop, not the 60 Hz animation frame: the `requestAnimationFrame`
+coalesce is **not** the binding constraint, the game's tick is. Driven artificially at one `#app` mutation per
+frame — the most the coalescer can ever be asked for — it tops out at **30–40/s**, still never 60. And at a fresh
+`ptr` save it fired **0 times in 4 seconds**, because nothing `ptr` draws moves until the first upgrade.
+
+**2. It is not the expensive half.** Over **173 game-states** (the 171 games at a fresh save, plus the two recorded
+snapshots), `signature()` costs a median of **0.083 ms** and a maximum, anywhere, of **0.463 ms**. Its *share* of
+the pass has a median of 34% — but that share is **anti-correlated with the cost** (r = −0.25): it is the majority
+only on the pages where the whole pass is already free, and on the two most expensive pages on the roster it is
+**8%** and **13%**.
+
+**3. The cost scales with something else entirely.** Across those 173 states the observer pass correlates with the
+number of **cards** at **r = 0.923**, with the number of chips at 0.649, and with the number of drawn components —
+which is exactly what `signature()` walks — at only **0.390**. Throttling `signature()` would throttle the term
+that is not the cost.
+
+⚠ What the hypothesis got RIGHT is its premise: the event really is rare. **`rebuilds` was 0 in every rate window
+measured**, on every game, at both states. `signature()` does its job and detects nothing, for minutes at a time.
+That half is true and it leads nowhere, because detecting nothing costs 0.08 ms.
+
+**What one pass costs.** The panel CLOSED costs **0.002 ms** — the `!open` guard, still the most valuable
+optimisation in the file. Open, over the 173 states: observer pass **median 0.245 ms, p90 0.495 ms, max 3.393 ms**.
+Only **4** states exceed 1 ms and only **2** exceed 2 ms.
+
+| game (state) | cards | drawn | chips | observer pass | explicit pass | `signature()` | share |
+|---|---|---|---|---|---|---|---|
+| `the-alphabetree` (fresh) | 49 | 31 | 31 | **3.39–4.13 ms** | 3.97–4.11 ms | 0.263–0.286 ms | **8%** |
+| `the-yes-tree` (fresh) | 25 | 87 | 86 | 2.05–2.33 ms | 2.74–3.44 ms | 0.259–0.285 ms | **13%** |
+| `ptr` (snapshot, 24179 ticks) | 11 | 192 | 89 | 1.10–1.47 ms | 2.27–2.65 ms | 0.450–0.463 ms | 32–41% |
+| `the-infinity-tree` (fresh) | 18 | 30 | 29 | 0.91–1.00 ms | 1.37–1.62 ms | 0.203–0.210 ms | 21% |
+| `the-dream-tree` (fresh) | 10 | 30 | 30 | 0.80–1.29 ms | 1.13–1.40 ms | 0.092–0.103 ms | 11% |
+| `something` (snapshot, 579 ticks) | 8 | 81 | 30 | 0.58–0.67 ms | 1.37 ms | 0.247–0.275 ms | 41–43% |
+| `ptr` (fresh) | 2 | 81 | 1 | 0.24–0.30 ms | 0.47 ms | 0.162–0.220 ms | 66–73% |
+
+⚠ **The two games the U2f brief named as the busiest cards were a stale figure, and this instrument is what caught
+it.** `the-tearonq-i-have-no-creative-names` was recorded at **111 chips** — at commit `5f3c04403`, *before* U2b
+made the chips mirror the game's own tab. At this head it draws **zero**, and its pass is the cheapest measured
+(0.092 ms). The census is why the table above names `the-alphabetree` and `the-yes-tree` instead: the worst case
+is a measurement, not a name.
+
+**The tooltip's cost lands only on the EXPLICIT path**, which is exactly what U2e's design predicts and nobody had
+measured. With one open, the observer pass is unchanged to within noise (`the-alphabetree` 3.50 → 3.60 ms, `ptr` at
+its snapshot 1.10 → 1.10) because the re-read rides `syncCards`' 250 ms throttle — `tipSyncs` equalled `syncs`,
+about **4/s**, in every window. The explicit pass, which a press takes, roughly **doubles to triples**: `ptr` at its
+snapshot 2.27 → 4.52 ms, `the-alphabetree` 4.11 → **10.25 ms**. That is `placeTip`'s two `getBoundingClientRect`
+calls forcing a synchronous layout of the panel, and it is paid at the rate a finger presses things.
+
+**The `pointerover` listeners** are the one cost whose rate a reader controls directly, and they are not throttled
+at all: entering a control that is not already the anchor costs **0.30–0.46 ms** (it composes and places an
+overlay), and re-entering the one that is costs **0.008–0.014 ms** (the `t !== tipAnchorEl` early return). A hand
+sweeping across a card crosses controls at some tens per second at most.
+
+**Does any of it show as main-thread delay?** ⚖ This is the question that decides whether any of the rest matters,
+because a poll that does not get scheduled is reported as STARVED and then blamed on whoever holds the slice.
+**Yes — in the tail, and by a few milliseconds.** Measured as the lateness of a **jittered 40 ms poll** (the shape
+Playwright's own `waitForFunction` uses), over five interleaved cycles of closed → open → tooltip-open on one page:
+
+| game | observer pass | p90 lateness, CLOSED | p90, OPEN | delta | cycles open > closed |
+|---|---|---|---|---|---|
+| `the-alphabetree` | 4.13 ms | 1.27 ms | 6.36 ms | **+5.09** | **5/5** |
+| `the-yes-tree` | 2.16 ms | 0.91 ms | 7.13 ms | **+6.22** | **5/5** |
+| `the-infinity-tree` | 0.93 ms | 3.02 ms | 5.58 ms | **+2.56** | **5/5** |
+| `the-dream-tree` | 0.82 ms | 0.48 ms | 2.66 ms | **+2.18** | **5/5** |
+| `ptr` (snapshot) | 1.11 ms | 7.70 ms | 6.94 ms | −0.76 | 3/5 |
+| `ptr` (fresh) | 0.25 ms | 7.74 ms | 6.55 ms | −1.19 | 2/5 |
+
+**And it is far too small to starve anything.** Over all 90 paired windows the **median** lateness was **0.07 ms**
+(worst window 2.55 ms), the frame rate never left **59.5–60.4 fps**, and the browser reported **zero** long tasks.
+An open tooltip adds nothing beyond the open panel. A poll loses a few milliseconds off its tail and keeps its
+whole budget.
+
+⚠ **`ptr` cannot see it, and that is about `ptr`.** Its own closed-panel floor is **7.7 ms** at p90 — the game's own
+render is the noisy part there — so the list's couple of milliseconds are not separable from it. A battery run on
+the reference games alone would have concluded "no effect at all". Fifth time in this arc that the reference games
+were the wrong witnesses.
+
+⚠ **The delay is bigger than the JS the timer can see.** `the-dream-tree`'s pass is 0.82 ms of JavaScript and
+produces +2.18 ms of p90 lateness. The difference is the style and layout pass the DOM writes buy, which an
+in-page `performance.now()` around `refresh()` cannot measure. The lateness is the honest observable; the JS time
+is a lower bound.
+
+**So: nothing changed.** Even a perfect version of the briefed optimisation — `signature()` throttled to nothing —
+removes **8–13%** of the pass on the pages where the pass costs anything, against a measured effect of a few
+milliseconds in the tail with the frame rate untouched. What the numbers do point at, for whoever wants it, is the
+**per-card loop**: 49 cards cost 4 ms and 2 cards cost 0.25 ms, and the correlation with the card count is 0.92.
+
+**Two things the measurement itself got wrong first**, both worth more than the result:
+
+- ⛔ **A poll at a FIXED interval phase-locks to the animation frame.** At 40 ms it does not, but the first version
+  polled at **50 ms — exactly three 16.7 ms frames** — so whether a sample waited for the frame's work was decided
+  by the window's starting phase and not by the load. It read burn ×4 at p50 **15.9 ms** and burn ×16 at **0.1 ms**,
+  which is the opposite of the truth. The poll is jittered now and the sweep is monotone.
+- ⛔ **An UNPAIRED closed-versus-open comparison could not see this effect.** The first battery compared conditions
+  across separate runs and found nothing, because the floor itself moved between them (a closed-panel p90 of 6.3 ms
+  in one run and 0.9 ms in another). The same conditions **cycled inside one page** separate in **5/5** cycles on
+  four games. A difference of five milliseconds needs a control that shares its noise.
+
+⚠ And the instrument was only worth trusting because it was shown **reporting a delay**: a burn sweep drives ×1,
+×4, ×16, ×32 and ×64 copies of the list's own pass per frame, and the frame rate falls (60 → 55 → 43 → 33 fps on
+`ptr` at its snapshot, 60 → 21 → 12 → 6.6 on `the-yes-tree`) with p50 lateness rising to tens of milliseconds. A
+probe that had only ever printed "no delay" would have said nothing at all.
+
 ### Reading a card can make the ENGINE write `player`
 
 The list assigns nothing to `player`. That is not the same as the state not moving, and two measured cases say why:
