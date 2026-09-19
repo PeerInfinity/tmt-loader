@@ -4285,6 +4285,12 @@ it. Layers leg 3/3 over **68 cards and 144 chips**; the throttle leg `throttled`
 press 3/3 moved `player[l].points`. ⚠ `the-alphabetree` also held **more buttons at 1280 than at 390** (`c` 6 → 7),
 which is U2d's fit rule exercised on a card nobody had driven before. The roster is CI's.
 
+### The CI verdict at `8d5c3dd3d` — read from the merge job's own OUTPUT
+
+| gate | games | leg | result | notes |
+|---|---|---|---|---|
+| U2f CI sweep | — 171 games — | every job | **GREEN** | run `35425784857`, all 15 jobs success. The merge job's output: `rows: 171/171 game(s); 0 RED; 6 abstained on the state leg` (the-gaming-tree, plague-tree-vorona-cirus-treesease, falling-mountain-s-alterprestige, the-cookie-tree, the-orchard-tree, the-periodic-table-tree) and `coverage: the 10 shard(s) cover all 171 game(s), each exactly once`. ⚠ Nothing under `loader/` changed this slice, so this asserts the tree, not a change |
+
 ### What this leaves open
 
 - the **per-card loop** is where the cost is (r = 0.923 with the card count; 49 cards cost 4 ms, 2 cards cost
