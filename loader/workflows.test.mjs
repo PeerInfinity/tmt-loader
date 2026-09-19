@@ -200,3 +200,27 @@ test('the live check is in the file that deploys, and the deploy is in no other 
   const verifiers = ['pages.yml', 'sweep.yml'].filter((f) => /check-pages\.mjs/.test(wf(f)));
   assert.deepEqual(verifiers, ['pages.yml']);
 });
+
+test('⛔ every piped step declares `shell: bash` — or the pipe eats the verdict', () => {
+  // MEASURED, 2026-09-19, and it had been true since the merge job was written. GitHub's default shell is
+  // `bash -e {0}`: a pipeline's exit status is its LAST command, so `merge-shards.mjs … | tee merge.txt` reports
+  // `tee`'s 0 and the step SUCCEEDS while the merge is printing "MERGE REFUSED — no shard files were found at all".
+  // The one job whose entire purpose is to refuse a matrix that covered nothing could not fail. It surfaced only
+  // because the fast gate was driven red: the matrix was skipped, no artifact existed, and the merge went green.
+  //
+  // `shell: bash` is `bash --noprofile --norc -eo pipefail`, which restores the refusal. The rule is stated for
+  // EVERY piped step, including the summary ones that end in `|| true`, so there is no exception to argue about.
+  for (const file of ['sweep.yml', 'pages.yml']) {
+    const j = jobs(wf(file));
+    for (const [name, body] of Object.entries(j)) {
+      for (const step of body.split(/^ {6}- /m).slice(1)) {
+        // a single `|` followed by a command — NOT `||` (which is a fallback, not a pipeline) and not the YAML
+        // block scalar `run: |`
+        const piped = step.split('\n').filter((l) => /(^|[^|])\|(?!\|)\s*[a-z]/.test(l) && !/run:\s*\|-?\s*$/.test(l) && !/^\s*#/.test(l));
+        if (!piped.length) continue;
+        assert.match(step, /^\s*shell: bash\b/m,
+          `${file} job \`${name}\`: a step pipes (${piped[0].trim().slice(0, 60)}…) without \`shell: bash\`, so a failure on the left of the pipe reports success`);
+      }
+    }
+  }
+});

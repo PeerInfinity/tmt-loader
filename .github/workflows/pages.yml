@@ -49,7 +49,12 @@ jobs:
 
       # `git archive HEAD` is the tracked tree and nothing else: no .git (210 MB), no node_modules, no
       # untracked harness output. That is byte-for-byte what the legacy deploy-from-branch build served.
+      # ⛔ `shell: bash` (= `bash -eo pipefail`). `git archive … | tar -x` under the default `bash -e` reports TAR's
+      # status: a `git archive` that failed would leave a partial `_site` and this step would go green — and the
+      # next steps would PUBLISH it. It cannot change what a successful archive contains; it decides whether a
+      # failed one gets served. Found 2026-09-19 by the rule in loader/workflows.test.mjs, not by a run.
       - name: Stage the tracked tree
+        shell: bash
         run: |
           mkdir _site
           git archive --format=tar HEAD | tar -x -C _site
@@ -103,12 +108,14 @@ jobs:
       - run: npx playwright install --with-deps chromium
 
       - name: G5 against ${{ needs.deploy.outputs.url }}
+        shell: bash  # bash -eo pipefail: without it `| tee` reports the pipe's status and a RED deploy check passes
         run: node tools/check-pages.mjs --live "$URL" | tee g5.txt
         env:
           URL: ${{ needs.deploy.outputs.url }}
 
       - name: Summary
         if: always()
+        shell: bash
         run: |
           {
             echo '## G5 — the published site'

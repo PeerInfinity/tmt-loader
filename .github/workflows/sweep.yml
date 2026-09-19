@@ -75,8 +75,11 @@ jobs:
       - name: Roster figures census
         run: node tools/census-figures.mjs --json census.json
 
+      # ⚠ This one pipes AND ignores the status on purpose — it is a report, and the step above is the check.
+      # `shell: bash` all the same, so the rule "a piped step declares its shell" has no exception to argue about.
       - name: Summary
         if: ${{ !cancelled() }}
+        shell: bash
         run: |
           {
             echo '## Fast checks'
@@ -171,7 +174,13 @@ jobs:
         run: ls -la shards/ || echo 'NO SHARD ARTIFACTS AT ALL'
 
       # Exits 1, naming the ids, when the shards do not reconstruct the roster — or when any row is RED.
+      # ⛔ `shell: bash` = `bash -eo pipefail`. WITHOUT IT A PIPE SWALLOWS THE VERDICT: the default shell is
+      # `bash -e`, whose exit status is the LAST command of a pipeline — `tee` — so `merge-shards.mjs … | tee` made
+      # this step SUCCEED while the merge was printing "MERGE REFUSED". Measured 2026-09-19 by driving the fast
+      # gate: the matrix was skipped, no shard file existed, the merge refused with exit 1, and the job was GREEN.
+      # The one step whose whole purpose is to refuse a run that covered nothing could not fail.
       - name: Merge, and assert the shards cover the whole roster
+        shell: bash
         run: |
           node tools/harness/merge-shards.mjs shards --expect "$SHARDS" --json shards/merged.json | tee merge.txt
         env:
@@ -179,6 +188,7 @@ jobs:
 
       - name: Summary
         if: ${{ !cancelled() }}
+        shell: bash
         run: |
           {
             echo '## M1 mobile sweep — 171 games over '"$SHARDS"' shards'
@@ -257,6 +267,7 @@ jobs:
       # The same roster assertion the matrix gets. `--expect 1`: one shard, and it must have covered everything.
       - name: Assert the run covered the roster
         if: always()
+        shell: bash  # bash -eo pipefail: without it `| tee` reports the pipe's status and the refusal is lost
         run: |
           node tools/harness/merge-shards.mjs shards --expect 1 --json shards/merged.json | tee merge.txt
           {
@@ -316,10 +327,12 @@ jobs:
       # to a file nobody commits is a write into the void; the JSON below is this run's record.
       # `--pool`: the child pool is sized for a workstation. A hosted runner has 4 cores.
       - name: S1 part 1
+        shell: bash  # bash -eo pipefail: without it `| tee` reports the pipe's status and a red row is lost
         run: node tools/harness/gates-s1.mjs --part 1 --no-summary --pool 4 | tee s1.txt
 
       - name: Summary
         if: always()
+        shell: bash
         run: |
           {
             echo '## S1 part 1 — the automation anchors'
