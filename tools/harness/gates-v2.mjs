@@ -585,17 +585,23 @@ async function part6(browser, base, ids) {
             unknown: rows.filter((x) => x.last && x.last.code === 'unknown').map((x) => x.id),
             rendered: (document.querySelector('#app').innerText || '').indexOf('What each feature decided') >= 0,
             scrollX: document.documentElement.scrollWidth > document.documentElement.clientWidth, accepted: null };
-          // …and one of them ACCEPTS AN EDIT, through the loader's own API the component calls
-          if (editable.length) {
-            const fid = editable[0].id;
+          // …and one of them ACCEPTS AN EDIT, through the loader's own API the component calls.
+          // ⚠ THE FEATURE IS THE FIRST ONE WITH AN ALTERNATIVE, NOT THE FIRST ONE ON SCREEN. MEASURED: the first
+          // editable row is very often `upgrades:<l>`, whose only alternatives (`order`, `order-then-cheapest`)
+          // both NEED an `order[]` that the game's table does not declare — so the picker correctly offers none,
+          // and a gate that edited the first row read that as a failure of the editors (the-dressy-tree,
+          // the-pro-tree, the-extended-tree, the-omega-tree, the-alphabetree, all in the first minute). A game
+          // where NO feature has an alternative abstains by name; it does not red.
+          const pick = editable.map((r) => ({ fid: r.id, alt: T.strategyChoices(r.id).filter((c) => c.available && !c.inForce)[0] })).find((x) => x.alt);
+          if (pick) {
+            const { fid, alt } = pick;
             const was = T.explain().find((x) => x.id === fid).policy.inForce;
-            const alt = T.strategyChoices(fid).filter((c) => c.available && !c.inForce)[0];
-            if (alt) {
-              const res = T.setSavedStrategy(fid, alt.id);
-              const now = T.explain().find((x) => x.id === fid).policy.inForce;
-              T.setSavedPolicy(fid, null);
-              out.accepted = { fid, was, to: alt.id, now, ok: res.ok && now !== was, cleared: T.explain().find((x) => x.id === fid).policy.inForce === was };
-            } else out.accepted = { fid, ok: false, why: 'no alternative strategy is available for this feature' };
+            const res = T.setSavedStrategy(fid, alt.id);
+            const now = T.explain().find((x) => x.id === fid).policy.inForce;
+            T.setSavedPolicy(fid, null);
+            out.accepted = { fid, was, to: alt.id, now, ok: res.ok && now !== was, cleared: T.explain().find((x) => x.id === fid).policy.inForce === was };
+          } else if (editable.length) {
+            out.accepted = { ok: null, why: 'no feature of this game has an alternative strategy available' };
           }
           return out;
         });
@@ -606,7 +612,7 @@ async function part6(browser, base, ids) {
     } catch (e) { abstained.push(`${id}: ${String(e.message).slice(0, 90)}`); continue; }
     const ok = r.rendered && r.unknown.length === 0 && r.extra <= 0 && r.scrollX === false
       && r.components.length === 4
-      && (r.editable === 0 || (r.selects >= 1 && r.accepted && r.accepted.ok && r.accepted.cleared));
+      && (r.editable === 0 || (r.selects >= 1 && r.accepted && (r.accepted.ok === null || (r.accepted.ok && r.accepted.cleared))));
     judged.push({ id, ok, r });
     if (!ok) row({ gate: 'V2-6 roster: the editable Advanced subtab', id, leg: 'profile all, 30 ticks', ok: false, notes: JSON.stringify(r).slice(0, 700) });
   }
@@ -616,7 +622,7 @@ async function part6(browser, base, ids) {
   const lacking = judged.filter((x) => x.r.engineInputs.length === 0).length;
   row({ gate: 'V2-6 the ROSTER: the loader\'s own editors render and accept an edit on every game', id: `${judged.length} judged`, leg: `${ids.length} assigned`,
     ok: red.length === 0 && judged.length > 0,
-    notes: `judged ${judged.length}, RED ${red.length} (${red.map((x) => x.id).join(', ') || 'none'}), abstained ${abstained.length}${abstained.length ? ': ' + abstained.join(' · ') : ''}; pickers ${judged.reduce((s, x) => s + x.r.selects, 0)}, fields ${judged.reduce((s, x) => s + x.r.inputs, 0)}, editable feature rows ${judged.reduce((s, x) => s + x.r.editable, 0)}; Vue versions ${JSON.stringify(vues)}; games registering NONE of the engines' own text-input / slider / drop-down: ${lacking} — every one of them still got the SAME editors, which is the point of the loader registering its own`});
+    notes: `edits driven on ${judged.filter((x) => x.r.accepted && x.r.accepted.ok === true).length} game(s); ${judged.filter((x) => x.r.accepted && x.r.accepted.ok === null).length} game(s) have NO feature with an alternative strategy available (abstained on that check alone, named: ${judged.filter((x) => x.r.accepted && x.r.accepted.ok === null).map((x) => x.id).join(', ') || 'none'}); judged ${judged.length}, RED ${red.length} (${red.map((x) => x.id).join(', ') || 'none'}), abstained ${abstained.length}${abstained.length ? ': ' + abstained.join(' · ') : ''}; pickers ${judged.reduce((s, x) => s + x.r.selects, 0)}, fields ${judged.reduce((s, x) => s + x.r.inputs, 0)}, editable feature rows ${judged.reduce((s, x) => s + x.r.editable, 0)}; Vue versions ${JSON.stringify(vues)}; games registering NONE of the engines' own text-input / slider / drop-down: ${lacking} — every one of them still got the SAME editors, which is the point of the loader registering its own`});
   writeJSON(path.join(REPO, `tools/harness/results/tmp/gates-v2-part6${a.shard ? '-' + String(a.shard).replace('/', 'of') : ''}.json`), { commit, dirty, assigned: ids, judged: judged.map((x) => ({ id: x.id, ok: x.ok, ...x.r })), abstained });
 }
 
