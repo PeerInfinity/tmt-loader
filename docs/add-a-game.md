@@ -76,8 +76,18 @@ an accepted quirk of that game. Triage now flags a "missing" script whose name a
 `modFiles` as exactly that: a path we derived, to be fixed rather than declared.
 
 Commit what the tool leaves uncommitted (`manifests/`, `tools/harness/goldens/`, `docs/games.md`, `SUMMARY.md`) on top
-of its subtree commits, then run `node tools/check-pages.mjs` (G5) on the committed HEAD. For several games, pass them in one call:
+of its subtree commits. For several games, pass them in one call:
 all subtrees go in first, then the manifests and gates, so one commit covers the batch.
+
+⚖ **G5 is no longer part of adding a game** (2026-09-18). `tools/check-pages.mjs` now runs on the DEPLOY
+(`.github/workflows/pages.yml`, after the site is published), against the live URL, where it can check the one thing
+a local clone cannot: that what is being served is this commit. Run it locally only when you are changing the loader's
+own path handling — `node tools/check-pages.mjs` still does the bare-clone-at-a-sub-path form. ⚠ A new game reaches
+the published site when someone publishes: `gh workflow run pages.yml --ref main`.
+
+⚠ **A new game moves the roster figures**, and `node tools/census-figures.mjs` (CI's fast job, seconds) will refuse
+the push until the counts in `docs/mobile.md` are re-measured against 172 games. That is deliberate: every "N of 171"
+in that document is stale the moment the roster grows, and three of them shipped wrong before anything checked.
 
 ## By hand, when the tool cannot
 

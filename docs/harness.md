@@ -149,6 +149,51 @@ node tools/harness/run.mjs ptr --profile all --ladder tools/harness/ladder/ptr.j
 4. A change to the core or a table re-checks the earlier fixtures by resuming from them: the marks after must land at
    the recorded tick and `hashGame` (or the change is a finding, not a re-record).
 
+## What runs where
+
+⚖ Until U2g (2026-09-18) CI held exactly one gate — the M1 mobile sweep — and every other check ran on one box, in
+one session, when somebody remembered. What that costs is on the record: `buyUpgrade` turned out to be an alias two
+games do not define, so a chip press bought nothing on them for two slices, and it survived because **no gate ever
+drove a chip**. ⛔ A check nobody runs is not a check.
+
+| check | where it runs now | cost |
+|---|---|---|
+| unit tests (`npm run harness:test`) | CI, the **fast** job — and everything else `needs:` it | 46 tests, 3.5 s, no browser |
+| G6 roster doc + G7 declined list (`games-table.mjs --check`) | CI, the fast job | 0.13 s |
+| roster FIGURES census (`census-figures.mjs`) | CI, the fast job | 1.2 s |
+| M1 mobile sweep (`--gate mobile`) | CI, ten shards + a merge | ~3 min end to end; 32–46 min locally |
+| G1 load (`--gate load`), plain **and** `?automation=1` | CI, two unsharded jobs | 5 min each, serial, locally |
+| S1 part 1 — the automation anchors | CI, its own job beside the matrix | 52 checks, 197 s locally |
+| G5 (`check-pages.mjs`) | **the deploy**, `pages.yml`, after the site is published | ~100 s+ |
+| the M1 sweep on a bounded local set | a slice, before it pushes | minutes |
+
+⚠ The numbers above are local wall clock on one workstation unless they say CI; CI runs this kind of work about
+**2.3× faster** than that box. They are here to explain the SHAPE of the workflow (what shards, what does not), not
+as a scoreboard — the authoritative number is a run.
+
+⛔ **Everything in `sweep.yml` past the fast job is gated on it.** Three seconds of unit tests decide whether
+thirteen runners start. `loader/workflows.test.mjs` asserts the `needs:`, because the way that gets undone is a
+convenience edit by someone whose change "does not touch the units".
+
+### G1 does not shard, and that is a measurement
+
+`--gate load` over the whole roster is **5 min 00 s** serial locally (171/171 green, 1.75 s/game, measured
+2026-09-18 at `61c7e2ba8`), and the `?automation=1` page is **5 min 07 s**. At CI's ~2.3× that is 2–3 minutes of
+sweep against roughly **90 s per job** of fixed checkout + `npm ci` + Playwright install. Ten shards would pay that
+90 s ten times to save two minutes of wall clock: a matrix that costs more setup than it saves is a worse answer
+that merely looks busier. M1 shards because it is ten times more expensive per game, not because sharding is what
+one does.
+
+⛔ **Unsharded is not unasserted.** The G1 jobs run as `--shard 1/1`, so each records the roster it was assigned and
+the same `merge-shards.mjs` refuses the run if the rows do not reconstruct it. A gate that quietly enumerated 170
+games fails there exactly as a dead shard does in the matrix.
+
+⚠ **The two G1 dimensions are two jobs, not one run.** `--gate load` defaults to the PLAIN page; `gates.mjs` runs G1
+with `?automation=1`, where the loader also installs the automation core. They are different pages, a conflated run
+could not say which one broke — and the first full run of the automation one found a real defect on two games
+(`loader/tmt-auto.js` assumed every fork calls its big-number type `Decimal`; `the-hyperoperator-tree` ships
+ExpantaNum and `the-pro-tree` ships OmegaNum, so `onload load()` died on both while the plain page was green).
+
 ## The full sweep runs in CI, sharded (`--shard i/N`)
 
 Every UI slice owes a full `--gate mobile` sweep over all 171 games. Locally that is one machine held for around
@@ -276,7 +321,32 @@ count are **identical on every game**. The state leg abstained on the same six e
 MOVED. The shard assignment is identical across machines too: `--shard i/10 --dry-run` locally reproduces byte for
 byte the rosters CI's shards recorded being assigned.
 
-### Publishing is a separate, manual workflow
+### The roster FIGURES have a gate of their own
+
+⛔ **Three wrong roster figures shipped in this arc, by two different authors, and no gate could have caught any of
+them.** The sweep drives games; a number quoted in prose has nothing behind it. All three had one cause —
+`sorbet-s-convolution-mainframe` keeps its engine under `Javascript/`, not `js/`, so a glob bounded to `js/` drops
+one game and produces a count that is too low by exactly one, which reads like a finding about a holdout rather than
+like a bug in the sweep. One of them even survived a disagreement between two sessions: each explained the mismatch
+instead of re-running the census unbounded, and the explanation was true and still hid the error.
+
+`node tools/census-figures.mjs` is the mechanism. It enumerates games from `manifests/index.json` — **never from a
+directory glob** — reads each game's sources, and REFUSES a game whose sources it could not find rather than counting
+it as zero. Then it reads the figures back out of the prose that quotes them (`docs/mobile.md`, `docs/games.md`) and
+fails when the two disagree, including when the sentence has been reworded past the anchor: a claim that stopped
+being checked must not look like a claim that passed.
+
+⚠ **A figure without its scope is not a figure**, so each claim names one: `subtree` (every `*.js` under
+`games/<id>/`, which is what the published static counts mean, and which sees `Old Code/` and `js/Demo/` that the
+loader never loads), `loaded` (only what the manifest says the loader loads), and `js` — the historical bug, kept
+only so `loader/census.test.mjs` can drive the gate bounded to it and watch it refuse by name.
+
+```
+node tools/census-figures.mjs             # measure, check the docs, exit 1 on drift
+node tools/census-figures.mjs --bound js  # the bug, on purpose: REFUSED, naming sorbet-s-convolution-mainframe
+```
+
+### Publishing is a separate, manual workflow — and the deploy is now checked
 
 ⚖ **User ruling, 2026-09-18: the Pages deploy no longer happens on every push.** The repo was on `build_type: legacy`
 with source `{branch: main, path: /}`, so every push republished the site; it is now `build_type: workflow`, and
@@ -288,3 +358,24 @@ compressed, against a 1 GB Pages limit; excluding `.git` (210 MB) is what keeps 
 
 ⛔ Do not add a `push:` trigger to `pages.yml`, and do not let `sweep.yml` deploy. `loader/workflows.test.mjs` asserts
 both, because the way a ruling like this gets undone is not malice but convenience.
+
+⚖ **G5 moved onto the deploy (2026-09-18).** `tools/check-pages.mjs` used to be a thing a session ran by hand before
+pushing. It is now the `verify` job of `pages.yml`, after the deploy, in a new `--live` form — for two reasons. On a
+push it would certify something the push did not change, since pushes no longer deploy. And nothing verified a
+manual publish at all: the deploy job going green says the ARTIFACT uploaded, and U2h still had to fetch the URL by
+hand to see whether the site was serving. **A deploy that succeeds and serves the previous tree is the failure with
+no witness.**
+
+```
+node tools/check-pages.mjs                              # the CLONE form: a bare clone, served at a sub-path, locally
+node tools/check-pages.mjs --live https://…/tmt-loader/ # the DEPLOY form: the published site
+```
+
+The live form checks what only it can: it GETs a set of tracked files from the site and compares them **byte for
+byte with `git show HEAD:<path>`**, and it WAITS — polling up to five minutes — for those bytes to become this
+commit's, reporting how long settling took. "The deploy had not propagated yet" is then a measured wait instead of a
+flaky red. It then runs the picker checks over the whole roster (one page load naming all 171 games and their
+metadata) and G1 over a NAMED three-game sample: `ptr` (the deepest), `sorbet-s-convolution-mainframe` (the game
+every bounded sweep in this repo has dropped at least once) and `the-modding-tree` (the stock engine). ⚠ It cannot
+check "the clone is unmodified" or "the repo is clean" — there is no clone — and it prints those as SKIPPED rather
+than letting them pass silently.
