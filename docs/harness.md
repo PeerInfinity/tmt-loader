@@ -171,6 +171,13 @@ drove a chip**. ⛔ A check nobody runs is not a check.
 **2.3× faster** than that box. They are here to explain the SHAPE of the workflow (what shards, what does not), not
 as a scoreboard — the authoritative number is a run.
 
+**Measured in CI**, first green run of the new arrangement (`1769f1e59`, 2026-09-19): **3 m 51 s end to end** for
+the whole battery, against 3 m 03 s for the M1 sweep alone before it. The fast job is **14 s**; the merge 14 s; the
+ten M1 shards 132–187 s; **G1 plain 178 s and G1 automation 176 s**; the anchors job 183 s. ⚠ Read the G1 numbers
+against the shards: **one unsharded G1 job costs what ONE shard of M1 costs**, because ~90 s of it is checkout,
+`npm ci` and the Playwright install. That is the whole argument against sharding it, and it is now a measurement
+rather than an extrapolation.
+
 ⛔ **Everything in `sweep.yml` past the fast job is gated on it.** Three seconds of unit tests decide whether
 thirteen runners start. `loader/workflows.test.mjs` asserts the `needs:`, because the way that gets undone is a
 convenience edit by someone whose change "does not touch the units".
