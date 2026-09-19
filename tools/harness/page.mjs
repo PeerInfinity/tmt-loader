@@ -638,6 +638,165 @@ const LAYERLIST_PROBE = `(${function () {
     });
   };
 
+  // ---- U7: THE RESET LINE, THE OTHER RESOURCES AND THE PER-CATEGORY PROGRESS, all rebuilt HERE ------------
+  // ⚠ A FOURTH independent rebuild, for the reason the other three carry: a card compared against the list's own
+  // `resetLines` / `resourcesOf` / `progressOf` would assert nothing at all. What this probe does NOT re-implement
+  // is the layer's DISPLAY TEXT — that is one walk of the game's own declarations and there is one right answer to
+  // it — but the CLASSIFICATION over that text is written out again here, which is the half the filter mutant has
+  // to get past.
+  const nf = (field, decl, t) => {                      // `numFieldOf`: tmp first unless it is still the function
+    const v = S(() => (t ? t[field] : undefined), undefined);
+    if (v !== undefined && v !== null && typeof v !== 'function') return v;
+    return S(() => { const x = decl[field]; return typeof x === 'function' ? x.call(decl) : x; }, undefined);
+  };
+  const F = (v, whole) => S(() => (whole && typeof formatWhole === 'function' ? String(formatWhole(v))
+    : typeof format === 'function' ? String(format(v)) : String(v)), '');
+
+  // --- item 1: the engine's own prestige string, split the way the card must split it
+  const engineReset = (l) => {
+    let t = S(() => tmp[l].prestigeButtonText, undefined);
+    if (typeof t !== 'string' || !t) t = S(() => (typeof prestigeButtonText === 'function' ? String(prestigeButtonText(l)) : ''), '');
+    return t || 'Reset';
+  };
+  const splitReset = (x) => {
+    const m = /(?:<br\s*\/?>\s*)+/i.exec(x);
+    return m ? [x.slice(0, m.index), x.slice(m.index + m[0].length).replace(/<br\s*\/?>/gi, ' ')] : [x, ''];
+  };
+  const flat = (x) => String(x == null ? '' : x).replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+
+  // --- item 2: which keys in `player[l]` are the LAYER's, and which of those the layer's own text states
+  const ENGINE_KEYS = { points: 1, best: 1, total: 1, unlocked: 1, resetTime: 1, forceTooltip: 1, noRespecConfirm: 1,
+    buyables: 1, clickables: 1, spentOnBuyables: 1, upgrades: 1, milestones: 1, lastMilestone: 1, primeMiles: 1,
+    achievements: 1, challenges: 1, grid: 1, prevTab: 1, activeChallenge: 1, subtabs: 1, infoboxes: 1 };
+  const isDec = (v) => S(() => !!v && typeof v === 'object' && typeof v.toNumber === 'function', false);
+  const candKeys = (l) => {
+    const pl = S(() => player[l], null);
+    if (!pl || typeof pl !== 'object') return [];
+    const out = [];
+    for (const k in pl) { if (ENGINE_KEYS[k]) continue; if (isDec(S(() => pl[k], null))) out.push(k); }
+    return out;
+  };
+  // the boundary rule, written out again: a formatted `0` is inside every `10`, `100` and `1.00e5` on the tab
+  const countNumber = (text, sub) => {
+    if (!sub) return 0;
+    let n = 0;
+    for (let i = text.indexOf(sub); i >= 0; i = text.indexOf(sub, i + 1)) {
+      if (i > 0 && /[0-9.,]/.test(text.charAt(i - 1))) continue;
+      const a = text.charAt(i + sub.length);
+      if (a && /[0-9.,eE]/.test(a)) continue;
+      n++;
+    }
+    return n;
+  };
+  const atNumber = (text, sub) => countNumber(text, sub) > 0;
+  // ⛔ THE OCCURRENCE BUDGET, rebuilt: each statement of a number is claimed by ONE key, the engine's own amounts
+  // claim before any candidate, and a candidate that finds nothing left is not a resource. A bare membership test
+  // reported 23 of them on `the-infinity-tree` at a fresh save where every amount is `0.00`.
+  const ENGINE_AMOUNTS = ['points', 'best', 'total', 'spentOnBuyables'];
+  const takeOcc = (text, budget, v) => {
+    const forms = [F(v, false), F(v, true)];
+    for (let i = 0; i < forms.length; i++) {
+      const f = forms[i];
+      if (!f || (i === 1 && f === forms[0])) continue;
+      if (budget[f] === undefined) budget[f] = countNumber(text, f);
+      if (budget[f] > 0) { budget[f]--; return f; }
+    }
+    return null;
+  };
+  /** The resources the card SHOULD show, and the string each should print, in `player[l]`'s own key order. */
+  const resExpect = (l, text) => {
+    const pl = S(() => player[l], null);
+    if (!pl || typeof pl !== 'object' || !text) return [];
+    const budget = Object.create(null);
+    for (const k of ENGINE_AMOUNTS) { const v = S(() => pl[k], null); if (isDec(v)) takeOcc(text, budget, v); }
+    const out = [];
+    for (const k of candKeys(l)) {
+      const t = takeOcc(text, budget, S(() => pl[k], null));
+      if (t !== null) out.push({ key: k, text: t });
+    }
+    return out;
+  };
+  /** What the words AFTER the number say — the prose label the list deliberately does not ship. Reported so the
+   *  user can rule on it with a sample in front of them, never rendered. */
+  const liftLabel = (text, sub) => {
+    const i = text.indexOf(sub);
+    if (i < 0) return '';
+    const after = text.slice(i + sub.length, i + sub.length + 60).replace(/^[\s:,]+/, '');
+    const m = /^[A-Za-z][A-Za-z ']{0,34}/.exec(after);
+    return m ? m[0].trim().replace(/\s+(which|that|per|and|is|are|to|of|in|for|it|you|boosts?|gives?)\b.*$/i, '').trim() : '';
+  };
+
+  // --- item 3: the numeric target per category, the unearned set, and the cheapest-or-first pick
+  const PTARGET = { upgrades: { num: 'cost', whole: true, currency: 'resource', multi: 'multiRes' },
+    buyables: { num: 'cost', whole: true, currency: 'resource', multi: 'multiRes' },
+    challenges: { num: 'goal', whole: false, currency: 'points' } };
+  const curKey = (l, kind, decl, t, locs) => {
+    const name = nf('currencyInternalName', decl, t);
+    if (!name) return kind === 'challenges' ? '@points' : `@${l}.points`;
+    const loc = nf('currencyLocation', decl, t);
+    if (loc) { let i = locs.indexOf(loc); if (i < 0) { i = locs.length; locs.push(loc); } return `${name}@loc${i}`; }
+    const lr = nf('currencyLayer', decl, t);
+    return `${name}${lr ? '@' + lr : '@player'}`;
+  };
+  const curAmt = (l, kind, decl, t) => {
+    const name = nf('currencyInternalName', decl, t);
+    if (name) {
+      const loc = nf('currencyLocation', decl, t);
+      if (loc) return S(() => loc[name], null);
+      const lr = nf('currencyLayer', decl, t);
+      if (lr) return S(() => player[lr][name], null);
+      return S(() => player[name], null);
+    }
+    // ⚠ a CHALLENGE's default is the GLOBAL `player.points` (`canCompleteChallenge`), an upgrade's and a
+    // buyable's is `player[layer].points` (`canAffordPurchase`). The two engine functions disagree and both are
+    // right about their own category.
+    return kind === 'challenges' ? S(() => player.points, null) : S(() => player[l].points, null);
+  };
+  const ltD = (a, b) => S(() => (typeof a.lt === 'function' ? !!a.lt(b) : Number(a) < Number(b)), false);
+  const gteD = (a, b) => S(() => (typeof a.gte === 'function' ? !!a.gte(b) : Number(a) >= Number(b)), false);
+  const engAfford = (kind, l, id) => {
+    if (kind === 'upgrades') return S(() => (typeof canAffordUpgrade === 'function' ? !!canAffordUpgrade(l, Number(id)) : null), null);
+    if (kind === 'buyables') return S(() => { const c = tmp[l].buyables[id].canAfford; return c === undefined ? null : !!c; }, null);
+    return null;
+  };
+  const unearnedP = (kind, l, id) => {
+    if (kind === 'upgrades') return S(() => { const u = tmp[l].upgrades[id].unlocked; return u === undefined ? true : !!u; }, true) && !earned('upgrades', l, id);
+    if (kind === 'challenges') return !earned('challenges', l, id);
+    if (kind === 'buyables') return belowLim(l, id);
+    return false;
+  };
+  const progExpect = (l) => {
+    const order = [], by = Object.create(null);
+    for (const k of seqDrawn(l)) {
+      const [ll, kind, id] = k.split('/');
+      const part = PTARGET[kind];
+      if (!part) continue;
+      if (!by[kind]) { by[kind] = { kind, cand: [], locs: [], skipped: 0 }; order.push(kind); }
+      const g = by[kind];
+      if (!unearnedP(kind, ll, id)) continue;
+      const decl = S(() => layers[ll][kind][id], null), t = S(() => tmp[ll][kind][id], null);
+      const v = nf(part.num, decl, t);
+      if (!isAmt(v)) { if (part.multi && nf(part.multi, decl, t)) g.skipped++; continue; }
+      g.cand.push({ layer: ll, kind, id, decl, t, target: v, cur: curKey(ll, kind, decl, t, g.locs) });
+    }
+    const rows = [];
+    for (const k of order) {
+      const g = by[k];
+      if (!g.cand.length) continue;
+      const same = g.cand.every((c) => c.cur === g.cand[0].cur);
+      let one = g.cand[0];
+      if (same) for (const c of g.cand) if (ltD(c.target, one.target)) one = c;
+      const part = PTARGET[k];
+      const amt = curAmt(one.layer, one.kind, one.decl, one.t);
+      if (engAfford(one.kind, one.layer, one.id) === true && isAmt(amt) && !gteD(amt, one.target)) continue;  // the wrong-currency guard
+      rows.push({ kind: k, layer: one.layer, id: one.id, candidates: g.cand.length,
+        how: g.cand.length === 1 ? 'only' : same ? 'cheapest' : 'first',
+        have: isAmt(amt) ? F(amt, part.whole) : '', need: F(one.target, part.whole),
+        first: `${g.cand[0].layer}/${g.cand[0].kind}/${g.cand[0].id}` });
+    }
+    return rows;
+  };
+
   const chipKey = (e) => `${e.dataset.layer}/${e.dataset.kind}/${e.dataset.cid}`;
   const onScreen = (e) => e.getClientRects().length > 0;   // ⚠ NOT computed `display`: a child of a hidden row keeps its own
   // a divider at every category change and at NEITHER END, over one RENDERED sequence of marks
@@ -722,6 +881,82 @@ const LAYERLIST_PROBE = `(${function () {
       return { key: `${ll}/${kind}/${id}`, wantKey: w.key, gotKey: e.dataset.skin || '',
         want: w.bg, got: String(getComputedStyle(e).backgroundColor || '') }; });
     const actSkinBad = actSkins.filter((x) => x.got !== x.want || x.gotKey !== x.wantKey);
+    // ---- U7 item 1: TWO LINE BOXES, ALWAYS ------------------------------------------------------------------
+    // ⚠ Read while the card is in whatever state it was in: the reset button is in BOTH. The claim has two halves
+    // and they need different evidence — the SPLIT (line one is the text before the engine's first run of `<br>`s,
+    // line two is the rest) and the RESERVATION (line two occupies a whole line box even when it is empty, which
+    // is the `normal` prestige string's own case once `resetGain` passes 100).
+    const resetBtn = c.querySelector('.tmt-layerlist-reset');
+    const resetEls = resetBtn ? [...resetBtn.querySelectorAll('.tmt-layerlist-resetline')] : [];
+    const wantSplit = resetBtn ? splitReset(engineReset(l)) : null;
+    const resetLH = resetBtn ? (parseFloat(getComputedStyle(resetBtn).lineHeight) || 0) : 0;
+    const reset = !resetBtn ? null : {
+      lines: resetEls.length,
+      l1: resetEls[0] ? flat(resetEls[0].innerHTML) : null,
+      l2: resetEls[1] ? flat(resetEls[1].innerHTML) : null,
+      want1: flat(wantSplit[0]), want2: flat(wantSplit[1]),
+      emptyL2: !flat(wantSplit[1]),
+      lineHeight: +resetLH.toFixed(2),
+      h1: resetEls[0] ? +resetEls[0].getBoundingClientRect().height.toFixed(2) : null,
+      h2: resetEls[1] ? +resetEls[1].getBoundingClientRect().height.toFixed(2) : null,
+      h: +resetBtn.getBoundingClientRect().height.toFixed(2),
+      type: S(() => String(tmp[l].type), ''),
+    };
+    // ⛔ the RESERVATION is what the "make the two-line height conditional on line two being non-empty" mutant
+    // breaks, and it breaks it ONLY on a card whose line two is empty — which is why `emptyL2` is reported.
+    const resetOk = !reset || (reset.lines === 2 && reset.l1 === reset.want1 && reset.l2 === reset.want2
+      && reset.lineHeight > 0 && reset.h1 >= reset.lineHeight - 1 && reset.h2 >= reset.lineHeight - 1);
+    // ---- U7 item 2: the other resources ---------------------------------------------------------------------
+    const resEls = [...c.querySelectorAll('.tmt-layerlist-resource')];
+    const gotRes = resEls.map((e) => ({ key: e.dataset.key, text: e.querySelector('.tmt-layerlist-resource-value').textContent }));
+    const text = S(() => String(window.tmtLoader.layerListUI.resourceText(l)), '');
+    const cands = candKeys(l);
+    // every rendered resource must be a CANDIDATE and its value must really be in the layer's own text; and no
+    // candidate whose value IS in that text may be missing. Both directions, so neither a filter that admits
+    // everything nor one that admits nothing can pass.
+    const resBad = [];
+    for (const r of gotRes) {
+      if (cands.indexOf(r.key) < 0) { resBad.push(`${r.key}: not a candidate (engine key or not a Decimal)`); continue; }
+      if (!atNumber(text, r.text)) resBad.push(`${r.key}: "${r.text}" is not stated in this layer's own text`);
+    }
+    // ⚠ BOTH DIRECTIONS, against the budget rebuilt above: neither a filter that admits everything nor one that
+    // admits nothing can pass, and neither can one that keeps a candidate whose occurrence an engine readout or
+    // an earlier key had already claimed.
+    const wantRes = resExpect(l, text);
+    if (gotRes.length !== wantRes.length) resBad.push(`${gotRes.length} rendered, expected ${wantRes.length} (${wantRes.map((x) => x.key).join(',') || 'none'})`);
+    wantRes.forEach((w, i) => {
+      const g = gotRes[i];
+      if (!g) return;
+      if (g.key !== w.key) resBad.push(`${i}: ${g.key} != ${w.key}`);
+      else if (g.text !== w.text) resBad.push(`${w.key}: "${g.text}" != "${w.text}"`);
+    });
+    const lift = gotRes.map((r) => ({ key: r.key, label: liftLabel(text, r.text) })).filter((x) => x.label);
+    const resCollide = gotRes.filter((r) => gotRes.filter((q) => q.text === r.text).length > 1).length;
+    // ---- U7 item 3: the per-category progress rows -----------------------------------------------------------
+    const wasX = c.classList.contains('tmt-layerlist-expanded');
+    c.classList.add('tmt-layerlist-expanded');
+    const progEls = [...c.querySelectorAll('.tmt-layerlist-prog')];
+    const gotProg = progEls.map((e) => ({ kind: e.dataset.kind, layer: e.dataset.layer, id: e.dataset.cid,
+      how: e.dataset.how, name: e.querySelector('.tmt-layerlist-prog-name').textContent,
+      text: e.querySelector('.tmt-layerlist-prog-value').textContent,
+      onScreen: e.getClientRects().length > 0,
+      h: +e.getBoundingClientRect().height.toFixed(2) }));
+    if (!wasX) c.classList.remove('tmt-layerlist-expanded');
+    const wantProg = progExpect(l);
+    const progBad = [];
+    if (gotProg.length !== wantProg.length) progBad.push(`${gotProg.length} rows, expected ${wantProg.length}`);
+    wantProg.forEach((w, i) => {
+      const g = gotProg[i];
+      if (!g) return;
+      if (g.kind !== w.kind || g.layer !== w.layer || String(g.id) !== String(w.id)) progBad.push(`${i}: ${g.kind}/${g.layer}/${g.id} != ${w.kind}/${w.layer}/${w.id}`);
+      else if (g.how !== w.how) progBad.push(`${i}: how ${g.how} != ${w.how}`);
+      else if (g.text.indexOf(`${w.have} / ${w.need}`) !== 0) progBad.push(`${i}: "${g.text}" does not open with "${w.have} / ${w.need}"`);
+    });
+    // ⛔ the DISCRIMINATOR for "cheapest replaced by first-listed": a category where the two rules pick DIFFERENT
+    // components. Counted, so a run whose sample has none says so rather than counting a vacuous pass.
+    const cheapestWitness = wantProg.filter((w) => w.how === 'cheapest' && w.first !== `${w.layer}/${w.kind}/${w.id}`).length;
+    const progDropped = S(() => window.tmtLoader.layerListUI.progress(l).dropped.map((d) => `${l}/${d.kind}:${d.why}${d.n ? '\u00d7' + d.n : ''}`), []);
+
     const visIdx = actEls.map((e, i) => (onScreen(e) ? i : -1)).filter((i) => i >= 0);
     // what fits must be a PREFIX of the offer (the tab layout's order is kept: the cut is at the end, never a gap)
     const prefix = visIdx.every((v, i) => v === i);
@@ -761,6 +996,11 @@ const LAYERLIST_PROBE = `(${function () {
       // ⚠ THE DISCRIMINATOR: a card showing ALL THREE of the engine's states at once. A two-state check
       // (bought / not) passes on a build that never renders red, which is what the build before U5 was.
       threeStates: skinSet.filter((k) => k !== 'pseudo').length >= 3,
+      // --- U7 ---
+      reset, resetOk,
+      resources: gotRes, wantRes, resBad, resCands: cands.length, resLift: lift, resCollide,
+      prog: gotProg, wantProg, progBad, progOk: progBad.length === 0, cheapestWitness, progDropped,
+      progHow: wantProg.map((w) => w.how),
       cardWidth: Math.round(cardR.width) };
   });
   const seqBad = perCard.filter((x) => !x.ok).map((x) => ({ layer: x.layer, got: x.got.slice(0, 12), want: x.want.slice(0, 12) }));
@@ -851,6 +1091,39 @@ const LAYERLIST_PROBE = `(${function () {
     actSkinOk: perCard.every((x) => x.actSkinOk),
     actSkinBad: perCard.filter((x) => !x.actSkinOk).slice(0, 3).map((x) => ({ layer: x.layer, bad: x.actSkinBad.slice(0, 3) })),
     actSkinCounts: perCard.reduce((o, x) => { x.actSkins.forEach((y) => { o[y.wantKey] = (o[y.wantKey] || 0) + 1; }); return o; }, {}),
+    // --- U7: the reset line, the other resources, the per-category progress ------------------------------
+    // the SPLIT and the RESERVATION, per card. `resetEmptyL2` names the cards whose second half the ENGINE did not
+    // emit — the `normal` type past `resetGain` 100 — which are the only cards a conditional reservation breaks.
+    resetOk: perCard.every((x) => x.resetOk),
+    resetBad: perCard.filter((x) => !x.resetOk).slice(0, 3).map((x) => ({ layer: x.layer, reset: x.reset })),
+    resetCards: perCard.filter((x) => x.reset).length,
+    resetEmptyL2: perCard.filter((x) => x.reset && x.reset.emptyL2).map((x) => `${x.layer}:${x.reset.type}`),
+    resetTypes: perCard.reduce((o, x) => { if (x.reset) o[x.reset.type] = (o[x.reset.type] || 0) + 1; return o; }, {}),
+    // the detector's own yield, and both directions of its filter
+    resOk: perCard.every((x) => x.resBad.length === 0),
+    resBad: perCard.filter((x) => x.resBad.length).slice(0, 3).map((x) => ({ layer: x.layer, why: x.resBad.slice(0, 3) })),
+    resCandidates: perCard.reduce((n, x) => n + x.resCands, 0),
+    resShown: perCard.reduce((n, x) => n + x.resources.length, 0),
+    resCards: perCard.filter((x) => x.resources.length).length,
+    resCollide: perCard.reduce((n, x) => n + x.resCollide, 0),
+    // ⚖ THE LABEL IS THE KEY and the prose lift is REPORTED, never rendered — the sample the user rules on
+    resLift: perCard.flatMap((x) => x.resLift.map((y) => `${x.layer}.${y.key} \u2192 ${y.label}`)).slice(0, 12),
+    resSample: perCard.filter((x) => x.resources.length).slice(0, 4).map((x) => ({ layer: x.layer, res: x.resources })),
+    // the progress rows against the fourth rebuild, and which rule chose each one
+    progOk: perCard.every((x) => x.progOk),
+    progBad: perCard.filter((x) => !x.progOk).slice(0, 3).map((x) => ({ layer: x.layer, why: x.progBad.slice(0, 3), got: x.prog, want: x.wantProg })),
+    progRows: perCard.reduce((n, x) => n + x.prog.length, 0),
+    progCards: perCard.filter((x) => x.prog.length).length,
+    progHow: perCard.reduce((o, x) => { x.progHow.forEach((h) => { o[h] = (o[h] || 0) + 1; }); return o; }, {}),
+    progKinds: perCard.reduce((o, x) => { x.prog.forEach((g) => { o[g.kind] = (o[g.kind] || 0) + 1; }); return o; }, {}),
+    // ⚠ 0 is an ABSTENTION on "cheapest is not first-listed", never a pass: the mutant that replaces one with the
+    // other can only redden a sample that HAS a case where they differ.
+    cheapestWitnesses: perCard.reduce((n, x) => n + x.cheapestWitness, 0),
+    // what the list DROPPED and why: `multiRes` (a cost in several currencies at once, which four games declare)
+    // and `currency` (the engine says the component can be bought while the generic reading says the amount is
+    // short — the tell for a game that buys with something it never declared). Reported, never asserted: they are
+    // properties of the ROSTER, and a run with none of them must say so rather than pass in silence.
+    progDropped: perCard.flatMap((x) => x.progDropped),
     ctrSkinOk: perCard.every((x) => x.ctrSkinOk),
     ctrSkinBad: perCard.filter((x) => !x.ctrSkinOk).slice(0, 3).map((x) => ({ layer: x.layer, bad: x.ctrSkinBad.slice(0, 3) })),
     // the counter states this page actually SHOWS, per category: the natural witnesses for the user's table. A page
@@ -2141,6 +2414,190 @@ async function gateMobile(browser, base, ids) {
       row.digitsOk = !/MOVED|NOT RESTORED/.test(row.digits.verdict);
 
 
+      // --- U7 leg L: THE RESET BLOCK'S HEIGHT DOES NOT ANSWER TO THE PRESTIGE STRING ---------------------------
+      // ⚖ "the 'Reset for +1 boosters' text can take up either one line or two, causing the layout to flicker …
+      // make it always two lines" (user, 2026-09-19). Leg E above cannot see this: it writes the AMOUNT readout
+      // and holds every other string still, and the prestige text is a different readout on a different row.
+      //
+      // ⚠ THE THREE STRINGS ARE THE GAME'S OWN, not a literal of the gate's. For each card the leg takes the
+      // engine's CURRENT prestige string and derives two more from it:
+      //   · GROWN — every run of digits replaced by a much longer one (the same string at a much later save);
+      //   · FLIPPED — the OTHER shape: a string whose second half the engine dropped gets one, and one that has a
+      //     second half loses it.
+      // The flipped variant is the half a wrap-only check cannot see, and on a `normal` layer it is not a
+      // hypothetical: `prestigeButtonText` drops the whole second part once `resetGain.gte(100)` or
+      // `points.gte(1e3)`, so the card really does go from two lines to one as the game is played. MEASURED on
+      // `ptr` at its deep snapshot: `p` and `e` are `normal` layers rendering an EMPTY second line right now.
+      //
+      // ⚠ IT WRITES `tmp`, NOT `player`, and puts it back — `restored` is what says it did. The list reads
+      // `tmp[l].prestigeButtonText` first (2.2.1 keeps one there; on 2.7 the key does not exist and writing it is
+      // what makes the same path testable), the page is `?managed=1` so the engine's own loop cannot overwrite it
+      // between the write and the measurement, and the state hash is taken across the whole leg.
+      const resetH = await page.evaluate(async () => {
+        const ui = window.tmtLoader.layerListUI;
+        const h0 = await tmtLoader.hash();
+        const cards = [...document.querySelectorAll('.tmt-layerlist-card')].filter((c) => c.querySelector('.tmt-layerlist-reset'));
+        const BREAK = /(?:<br\s*\/?>\s*)+/i;
+        // ⚠ THE GROWN STRING USES THE WIDEST MAGNITUDE `format()` REACHES, which is leg E's own vocabulary
+        // (`1.111e3,284`, 11 characters, measured in this arc as the widest TMT prints even at e3284) and not an
+        // arbitrarily long literal: a number nobody's `format()` can produce would only be measuring word wrap.
+        const grow = (x) => x.replace(/\d[\d,.]*(?:e[\d,]+)?/gi, '1.111e3,284');
+        // ⚠ and the flipped string's second half is SHORT on purpose — the claim is that the ROW EXISTS whether
+        // or not the engine filled it, so the variant must not smuggle in a wrap of its own.
+        const flip = (x) => { const m = BREAK.exec(x); return m ? x.slice(0, m.index) : x + '<br><br>Req: 5 / 10 pts'; };
+        const box = (c) => {
+          const b = c.querySelector('.tmt-layerlist-reset');
+          const ls = [...b.querySelectorAll('.tmt-layerlist-resetline')];
+          const lh = parseFloat(getComputedStyle(b).lineHeight) || 0;
+          return { reset: +b.getBoundingClientRect().height.toFixed(2),
+            card: +c.getBoundingClientRect().height.toFixed(2),
+            lines: ls.length, lh: +lh.toFixed(2),
+            // the per-half height AND how many line boxes it is, so a half that genuinely needs a second line is
+            // distinguishable from a half whose box moved
+            hs: ls.map((e) => +e.getBoundingClientRect().height.toFixed(2)),
+            rows: lh > 0 ? ls.map((e) => Math.round(e.getBoundingClientRect().height / lh)) : [] };
+        };
+        const rows = [], notRestored = [];
+        for (const c of cards) {
+          const l = c.dataset.layer;
+          const had = Object.prototype.hasOwnProperty.call(tmp[l], 'prestigeButtonText');
+          const was = had ? tmp[l].prestigeButtonText : undefined;
+          const split = ui.resetLines(l);
+          const base = (split[0] + (split[1] ? '<br><br>' + split[1] : ''));
+          const type = String((tmp[l] || {}).type || '');
+          const emptyL2 = !split[1];
+          const at = (x) => { tmp[l].prestigeButtonText = x; ui.refresh(); return box(c); };
+          // ⚠ the baseline is the card BEFORE anything was written, and the restore is judged against THAT rather
+          // than against the leg's own reconstruction of the string — the two can differ legitimately (a third
+          // `<br>` inside the second half collapses to a space), and a restore check keyed to the reconstruction
+          // would report a difference that is the leg's and not the page's.
+          const before = box(c);
+          const a = at(base), b = at(grow(base)), d = at(flip(base));
+          if (had) tmp[l].prestigeButtonText = was; else delete tmp[l].prestigeButtonText;
+          ui.refresh();
+          const back = box(c);
+          if (Math.abs(back.reset - before.reset) > 0.5 || Math.abs(back.card - before.card) > 0.5) notRestored.push(l);
+          rows.push({ layer: l, type, emptyL2, base: a, grown: b, flipped: d, back, before });
+        }
+        const h1 = await tmtLoader.hash();
+        return { rows, notRestored, hashBefore: h0, hashAfter: h1, stateMoved: h0 !== h1 };
+      });
+      {
+        const MOVE = 0.5;   // the same sub-pixel tolerance leg E uses; the unfixed build moves this by a whole line
+        const bad = [], wrapped = [];
+        for (const r of resetH.rows) {
+          // ⛔ NO LINE ELEMENTS AT ALL is the split reverted: the button is one run of text again, and this leg
+          // cannot measure a half that does not exist. It is a failure here, named, as well as in the probe.
+          if (r.base.lines !== 2) { bad.push(`${r.layer}(${r.type}) has ${r.base.lines} line element(s), not 2`); continue; }
+          // GROWN, per half: a half whose LINE-BOX COUNT rose really does need the extra line (the string got
+          // longer than the card is wide), and that card abstains from this half rather than reddening — the
+          // promise is one line box per half, never that prose cannot wrap. A half whose count did NOT rise and
+          // whose box moved anyway is the bug.
+          let grewRows = false;
+          for (let i = 0; i < 2; i++) if (r.grown.rows[i] !== r.base.rows[i]) grewRows = true;
+          if (grewRows) wrapped.push(`${r.layer}(${r.type}) ${r.base.rows.join('+')}\u2192${r.grown.rows.join('+')}`);
+          else if (Math.abs(r.grown.reset - r.base.reset) > MOVE) bad.push(`${r.layer}(${r.type}) GROWN ${r.base.reset}\u2192${r.grown.reset}`);
+          // FLIPPED: the other shape entirely — a second half where the engine emitted none, or none where it
+          // did. ⛔ NO ABSTENTION HERE. This is the reservation itself, and the variant's own second half is short
+          // enough that it cannot wrap; a height that moves is a height that answers to whether the engine filled
+          // the row, which is exactly the `normal` type's permanent one-line/two-line change.
+          if (Math.abs(r.flipped.reset - r.base.reset) > MOVE) bad.push(`${r.layer}(${r.type}${r.emptyL2 ? ',emptyL2' : ''}) FLIPPED ${r.base.reset}\u2192${r.flipped.reset}`);
+        }
+        const flippedWitness = resetH.rows.filter((r) => r.emptyL2);
+        row.resetHeight = {
+          cards: resetH.rows.length, types: [...new Set(resetH.rows.map((r) => r.type))],
+          // ⚠ the cards whose SECOND HALF THE ENGINE DOES NOT EMIT right now — the only ones a reservation that
+          // was conditional on line two being non-empty would break, and therefore the only ones that make that
+          // mutant non-vacuous. A page with none of them still judges the flip in the other direction.
+          emptyL2: flippedWitness.map((r) => `${r.layer}:${r.type}`),
+          normalCards: resetH.rows.filter((r) => r.type === 'normal').length,
+          staticCards: resetH.rows.filter((r) => r.type === 'static').length,
+          lineHeight: resetH.rows.length ? resetH.rows[0].base.lh : null,
+          grownWrapped: wrapped.slice(0, 4), grownWrappedCards: wrapped.length,
+          bad: bad.slice(0, 4),
+          restored: resetH.notRestored.length === 0, notRestored: resetH.notRestored,
+          stateMoved: resetH.stateMoved, hash: resetH.hashAfter,
+          verdict: !resetH.rows.length ? 'abstains (no card on this game has a prestige button)'
+            : bad.length ? 'THE RESET BLOCK MOVED WITH THE STRING'
+            : resetH.notRestored.length ? 'NOT RESTORED'
+            : `unchanged over the grown and the flipped string on all ${resetH.rows.length} card(s) (${resetH.rows.filter((r) => r.type === 'static').length} static, ${resetH.rows.filter((r) => r.type === 'normal').length} normal); ${flippedWitness.length} render an EMPTY second line today; ${wrapped.length} abstained from the grown half for a real wrap`,
+        };
+        row.resetHeightOk = !/MOVED|NOT RESTORED/.test(row.resetHeight.verdict);
+      }
+
+      // --- U7 leg M: A FULL RENDER WRITES NOTHING, WITH THE NEW READERS IN IT ----------------------------------
+      // ⛔ The standing constraint (the list writes NOTHING to `player`) is most at risk here: item 2 evaluates
+      // the layers' OWN display functions and item 3 reads their costs, both of which are game code. `layersInert`
+      // above measures the hash across OPENING the panel; this one measures it across an explicit `refresh()` with
+      // the panel already open, which is the pass those two readers ride on, repeated so a single quiet tick
+      // cannot pass for stillness. Same abstention rule: a page that will not repeat its own hash cannot judge.
+      row.renderInert = await page.evaluate(async () => {
+        const ui = window.tmtLoader.layerListUI;
+        const h = () => tmtLoader.hash();
+        ui.open();
+        const c0 = await h(), c1 = await h();
+        const before = await h();
+        for (let i = 0; i < 5; i++) ui.refresh();
+        const after = await h();
+        const stable = c0 === c1;
+        return { stable, before, after, ok: !stable || before === after,
+          verdict: !stable ? 'the page does not repeat its own hash (abstains)' : before === after ? 'unchanged' : 'MOVED' };
+      });
+      row.renderInertOk = !!row.renderInert.ok;
+
+      // --- U7 leg N: A COST IN SEVERAL CURRENCIES IS SKIPPED, CONSTRUCTED ---------------------------------------
+      // ⚠ `multiRes` — a cost in SEVERAL currencies at once, where `cost` itself is `undefined`. Four games on the
+      // roster declare it (`ptr`, `prestige-tree-ng`, `prestige-tree-rewritten-unsoftcapped4`,
+      // `the-extended-tree`); a `x / y` row has no meaning for one, so the list skips it and records why.
+      // ⛔ IT HAS TO BE CONSTRUCTED. `ptr` declares its own on the `hn` layer, which is reachable in NO recorded
+      // snapshot state on the roster — so a leg that waited for a real one would be an abstention on every game
+      // and the "render it instead of skipping it" mutant would stay green everywhere. The leg puts one on the
+      // component the card has ALREADY CHOSEN, which is what makes the effect visible: the chosen row must either
+      // name a different component (there were others) or disappear (there were not).
+      // ⚠ It writes `tmp`, never `player`, and puts it back; `restored` is the row coming back unchanged.
+      row.multiRes = await page.evaluate(() => {
+        const ui = window.tmtLoader.layerListUI;
+        const one = (l) => ui.progress(l).rows.find((g) => g.kind === 'upgrades' || g.kind === 'buyables');
+        let l = null, g = null;
+        for (const c of ui.cards()) { const r = one(c); if (r) { l = c; g = r; break; } }
+        if (!l) return { verdict: 'abstains (no card on this game shows an upgrade or buyable progress row)' };
+        const t = tmp[g.layer][g.kind][g.id];
+        // ⚠ BOTH SIDES, and this is the half the first version of this leg missed: the list reads `cost` through
+        // `numFieldOf`, which falls back to the DECLARATION when `tmp` holds nothing — and a declared `cost()` is a
+        // function, so clearing tmp alone left the real cost in place and the construction did nothing at all. A
+        // component that really declares `multiRes` declares no `cost` on either side, which is what this makes.
+        const d = layers[g.layer][g.kind][g.id];
+        const hadCost = Object.prototype.hasOwnProperty.call(t, 'cost'), wasCost = t.cost;
+        const hadDCost = Object.prototype.hasOwnProperty.call(d, 'cost'), wasDCost = d.cost;
+        const hadMulti = Object.prototype.hasOwnProperty.call(t, 'multiRes'), wasMulti = t.multiRes;
+        const key = (r) => (r ? `${r.kind}/${r.layer}/${r.id}` : null);
+        const before = key(g);
+        t.cost = undefined;
+        delete d.cost;
+        t.multiRes = [{ cost: new Decimal(1) }, { currencyDisplayName: 'prestige points', currencyInternalName: 'points', currencyLayer: l, cost: new Decimal(1) }];
+        ui.refresh();
+        const p2 = ui.progress(l);
+        const after = key(p2.rows.find((r) => r.kind === g.kind));
+        const dropped = p2.dropped.filter((d) => d.kind === g.kind && d.why === 'multiRes');
+        // the RENDERED row too, not only the API: the mutant this leg exists for changes what is on the card
+        const rendered = [...document.querySelectorAll(`.tmt-layerlist-card[data-layer="${CSS.escape(l)}"] .tmt-layerlist-prog`)]
+          .map((e) => `${e.dataset.kind}/${e.dataset.layer}/${e.dataset.cid}`);
+        if (hadCost) t.cost = wasCost; else delete t.cost;
+        if (hadDCost) d.cost = wasDCost; else delete d.cost;
+        if (hadMulti) t.multiRes = wasMulti; else delete t.multiRes;
+        ui.refresh();
+        const back = key(ui.progress(l).rows.find((r) => r.kind === g.kind));
+        return { layer: l, kind: g.kind, id: g.id, candidates: g.candidates, before, after, back, rendered,
+          dropped: dropped.length, restored: back === before,
+          // with more than one candidate the row must name a DIFFERENT component; with only one it must go
+          skipped: g.candidates > 1 ? (after !== null && after !== before) : after === null,
+          notRendered: rendered.indexOf(before) < 0 };
+      });
+      row.multiResOk = !row.multiRes.verdict
+        ? !!(row.multiRes.skipped && row.multiRes.dropped > 0 && row.multiRes.notRendered && row.multiRes.restored)
+        : true;   // an abstention is not a failure, and the verdict says so out loud
+
+
       // --- U2c leg F: THE CARD THE PLAYER LEFT OPEN COMES BACK OPEN -------------------------------------------
       // ⚠ IT RUNS LAST, AFTER EVERYTHING THAT MOVES THE GAME, and that is a MEASURED choice rather than an
       // accident of where it was written. The leg needs a card with an expander to change, and a card only has one
@@ -2494,7 +2951,10 @@ async function gateMobile(browser, base, ids) {
         && sameSet(L.cards, L.expect) && L.misrowed.length === 0 && L.dupeChips.length === 0
         && L.seqOk && L.dividerOk && L.radiusOk
         && L.countersOk && L.actionsOk && L.fitOk && L.twoRowsOk && L.statesOk && ctrRadOk(L)
-        && L.skinOk && L.actSkinOk && L.ctrSkinOk);
+        && L.skinOk && L.actSkinOk && L.ctrSkinOk
+        // U7: the reset line's split and its two reserved line boxes, the other-resources filter in BOTH
+        // directions, and the progress rows against the probe's own fourth rebuild
+        && L.resetOk && L.resOk && L.progOk);
       // GEOMETRY, at each width on that width's own terms: the phone demands nothing escapes and nothing is under
       // 44 px (the same bar the other phone views are held to); the desktop is judged against the PLAIN desktop
       // page, which is the layout this game's author shipped (leg 5's rule).
@@ -2524,7 +2984,10 @@ async function gateMobile(browser, base, ids) {
         && row.digitsOk && row.persistOk && row.tipsOk
         && row.anchorOk && !/DRIFTED/.test(row.resetDrift.verdict)
         && row.threeWayOk && row.backOk
-        && row.counterWayOk && row.msCounterOk && row.lockedOk);
+        && row.counterWayOk && row.msCounterOk && row.lockedOk
+        // U7: the reset block's height against the game's own string, and a full render with the two new readers
+        // in it still writing nothing
+        && row.resetHeightOk && row.renderInertOk && row.multiResOk);
       row.layersScreenshot = path.relative(REPO, llShot);
 
       const shot = path.join(REPO, `tools/harness/results/${id}-mobile.png`);

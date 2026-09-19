@@ -760,6 +760,39 @@
     }, '');
   }
 
+  // ---------------------------------------------------------------- U7: THE RESET LINE IS ALWAYS TWO LINES
+  // ⚖ "make it always two lines, splitting it between 'Reset for +1 boosters' and 'x / y points'" (user,
+  // 2026-09-19). Until U7 this file collapsed the engines' own `<br><br>` to a SPACE, so the card's tallest readout
+  // was ONE run of text — and a run of text is one line or two depending on how many digits are in it today.
+  // Both of the options the comment there weighed were real (the engines' break is for a tall tab button; dropping
+  // it in CSS jams the two halves together); the third was not considered: keep the break as a STRUCTURAL split
+  // into two rows, each with its own line box.
+  //
+  // ⛔ AND THE WRAP IS THE SMALLER HALF OF THE BUG. The engines' two prestige strings fail DIFFERENTLY:
+  //  · `static` emits its `<br><br>` unconditionally, so its second line always exists and only ever wraps;
+  //  · `normal` drops the WHOLE second half once `resetGain.gte(100)` or `points.gte(1e3)`, so its card goes
+  //    from two lines to one AS THE GAME PROGRESSES — a permanent height change, not a flicker.
+  // ⚠ MEASURED, and it corrects the brief this slice was written from: `static` is unconditional in 170 of the
+  // 171 games but NOT in all of them — `the-factoree` wraps its static second half in
+  // `player[layer].points.lt(1e7) ? … : (!canReset(layer) ? … : "")`, so that game's static layers collapse to one
+  // line too. RESERVING TWO LINE BOXES UNCONDITIONALLY is what fixes every one of those; a height that collapsed
+  // when the second half is absent would re-introduce the `normal` case, which is why the reservation lives in the
+  // stylesheet and is NOT keyed on `line2` being non-empty.
+  //
+  // ⚠ THE SPLIT IS ON THE FIRST RUN OF `<br>`s AND ONLY THE FIRST. 39 games declare 106 per-LAYER
+  // `prestigeButtonText` overrides (the engines' `else return layers[layer].prestigeButtonText()` branch), and
+  // their break counts run 0 ×36, 1 ×22, 2 ×35, 3 ×5, 4 ×4, 5 ×1, 6 ×2, 8 ×1 — measured, docs/mobile.md. So
+  // whatever is left after the first run keeps today's SPACE COLLAPSE, and a string with no break at all puts
+  // everything on line one and leaves line two empty. An empty line two still occupies its row.
+  // ⚠ `resetText` already falls back to the bare word `Reset` for a layer whose text throws or returns '' — that
+  // fallback is one line, and it must occupy two like every other.
+  var RESET_BREAK = /(?:<br\s*\/?>\s*)+/i;
+  function resetLines(s) {
+    var t = str(s), m = RESET_BREAK.exec(t);
+    if (!m) return [t, ''];
+    return [t.slice(0, m.index), t.slice(m.index + m[0].length).replace(/<br\s*\/?>/gi, ' ')];
+  }
+
   // ⚠ RENDERING A CARD CAN MAKE THE ENGINE WRITE `player`. Every TMT engine's `format()` begins
   //     if (isNaN(decimal.sign) || isNaN(decimal.layer) || isNaN(decimal.mag)) { player.hasNaN = true; return "NaN" }
   // and a game's own prestige text can format a NaN — MEASURED on the-quantum-tree, whose `Qc` layer says
@@ -899,6 +932,351 @@
         return out.join('\n');
       } catch (e) { return ''; }
     });
+  }
+
+  // ---------------------------------------------------------------- U7: A LAYER'S OTHER RESOURCES
+  // ⚖ "Some layers have more than one resource whose quantity is only reported in that layer's panel. For example,
+  // the generators layer has 'generators' and 'generator power'. Is there a way we can detect what resources are on
+  // each layer and display them all in the Layers view?" (user, 2026-09-19). `ptr`'s `g` is exactly that: the card
+  // already shows `player.g.points` (the generators), and `player.g.power` — Generator Power — is stated nowhere
+  // outside that layer's own tab.
+  //
+  // ⛔ DETECTION IS EASY; CLASSIFICATION IS THE WHOLE PROBLEM. A layer's `startData()` routinely carries Decimals
+  // that are not resources at all — `unlockOrder`, `setBuyableAmount`, `autoTime`, `prevH`, `target`, `cost`,
+  // `spent`, `buildLim`. Two discriminators were measured over the roster (docs/mobile.md):
+  //  · "is this key used as a `currencyInternalName` somewhere" — 136 of the 1,713 (layer, key) pairs. ⛔ REJECTED:
+  //    it misses ~92% of the real ones, `power` among them;
+  //  · "does the layer SHOW it to the player" — which is also the user's own phrasing ("whose quantity is only
+  //    reported in that layer's panel"), and it is the rule below.
+  //
+  // ⚠ AND IT IS A RUNTIME TEST, NOT A NAME MATCH. The static form of the same question (`format(…​.key)` anywhere in
+  // the game's files) is FILE-SCOPED and over-counts badly: one `format(x.power)` matches every layer's `power` in
+  // that file. So the list evaluates the layer's own display text and keeps a candidate only when THIS value is in
+  // it — and the string the card prints is the very string that was found there, not a re-formatting of it.
+  //
+  // ⚠ WHERE THE TEXT COMES FROM, AND IT IS NOT `tmp`. The engines' `updateTempData` skips every key whose name
+  // carries "display", "description" or "tabformat" unless that LAYER's tab is the open one, so a closed layer's
+  // `tmp[l].tabFormat` still holds `setupTemp`'s placeholder (`new Decimal(1)`) wherever its display data was a
+  // function. The DECLARATION is the only place those functions survive, so that is what is walked here — a second,
+  // smaller walk than `layoutOf`, because it answers a different question (the strings the tab would render, not
+  // the components it would draw) out of the only source that can answer it.
+  // ⚠ CALLING THEM IS CALLING GAME CODE. Every call is `safe()`d, the whole pass rides inside `withoutRaisingNaN`
+  // (`refresh`), and the list's standing claim — ⛔ it writes NOTHING to `player` — is ASSERTED per game by the M1
+  // gate's own state-hash leg across a full render rather than assumed here.
+
+  // the keys every engine puts in `player[l]` itself — the union of 2.2.1's `getStartPlayer` and 2.7's
+  // `getStartLayerData`. Everything else in there came from the layer's own `startData()`.
+  var ENGINE_PLAYER_KEYS = { points: 1, best: 1, total: 1, unlocked: 1, resetTime: 1, forceTooltip: 1,
+    noRespecConfirm: 1, buyables: 1, clickables: 1, spentOnBuyables: 1, upgrades: 1, milestones: 1,
+    lastMilestone: 1, primeMiles: 1, achievements: 1, challenges: 1, grid: 1, prevTab: 1, activeChallenge: 1,
+    subtabs: 1, infoboxes: 1 };
+  // ⚠ A DECIMAL, not `isAmount`'s wider test. A plain number in `startData` is a timer or a counter (`first: 0`,
+  // `autoTime`), never a resource the tab prints with `format()`; admitting them would put the bookkeeping the
+  // discriminator above exists to keep out back in through the type test.
+  function isDecimalAmt(v) { return safe(function () { return !!v && typeof v === 'object' && typeof v.toNumber === 'function'; }, false); }
+
+  // the three components both reference engines render free HTML through (`components.js`), all `v-html` of `data`
+  var TEXT_COMPS = { 'display-text': 1, 'raw-html': 1, 'tall-display-text': 1 };
+  function declFmt(l) {
+    return safe(function () { var f = layers[l].tabFormat; return typeof f === 'function' ? f.call(layers[l]) : f; }, undefined);
+  }
+  function textData(data, l) {
+    var v = safe(function () { return typeof data === 'function' ? data.call(layers[l]) : data; }, '');
+    return typeof v === 'string' ? v : '';
+  }
+  /** The prose THIS layer's own tab would render, in the tab layout's order: `layers[l].display` (the free-text
+   *  member the engines draw above the components) and every text component the DECLARED layout reaches. Bounded
+   *  by `MAX_DEPTH` and by `seen`, like every other walk in this file. */
+  function collectText(l, out, depth, seen) {
+    if (depth > MAX_DEPTH || seen[l]) return;
+    seen[l] = true;
+    var d = safe(function () { var x = layers[l].display; return typeof x === 'function' ? x.call(layers[l]) : x; }, '');
+    if (typeof d === 'string' && d) out.push(d);
+    var fmt = declFmt(l);
+    if (fmt && typeof fmt === 'object' && !Array.isArray(fmt)) {
+      var key = safe(function () { return player.subtabs[l].mainTabs; }, undefined);
+      var sub = safe(function () { return fmt[key] !== undefined ? fmt[key] : fmt[Object.keys(fmt)[0]]; }, null);
+      if (!sub) return;
+      var emb = safe(function () { return sub.embedLayer; }, null);
+      if (emb) return collectText(emb, out, depth + 1, seen);
+      return walkText(safe(function () { return sub.content; }, null), l, out, depth + 1, seen);
+    }
+    walkText(Array.isArray(fmt) ? fmt : DEFAULT_FORMAT, l, out, depth + 1, seen);
+  }
+  function walkText(list, l, out, depth, seen) {
+    if (!Array.isArray(list) || depth > MAX_DEPTH) return;
+    list.forEach(function (item) {
+      if (typeof item === 'string') return textComp(item, undefined, l, out, depth, seen);
+      if (Array.isArray(item) && (item.length === 2 || item.length === 3)) return textComp(item[0], item[1], l, out, depth, seen);
+    });
+  }
+  function textComp(name, data, l, out, depth, seen) {
+    if (name === 'column' || name === 'row') return walkText(data, l, out, depth + 1, seen);
+    if (name === 'layer-proxy') {
+      var ol = safe(function () { return data[0]; }, null);
+      if (ol) walkText(safe(function () { return data[1]; }, null), ol, out, depth + 1, seen);
+      return;
+    }
+    if (name === 'microtabs') {
+      var mt = safe(function () { return layers[l].microtabs[data][player.subtabs[l][data]]; }, null);
+      if (!mt) return;
+      var emb = safe(function () { return mt.embedLayer; }, null);
+      if (emb) return collectText(emb, out, depth + 1, seen);
+      return walkText(safe(function () { return mt.content; }, null), l, out, depth + 1, seen);
+    }
+    if (name === '@midsection') return walkText(safe(function () { return layers[l].midsection; }, null), l, out, depth + 1, seen);
+    if (TEXT_COMPS[name] && data !== undefined && data !== null) { var t = textData(data, l); if (t) out.push(t); }
+  }
+  /** The layer's whole display text, tags out, as one string. */
+  function displayTextOf(l) {
+    var out = [];
+    collectText(l, out, 0, Object.create(null));
+    return decodeEntities(stripTags(out.join('\n')));
+  }
+
+  // ⚠ MATCHED ON A NUMBER BOUNDARY, NEVER AS A BARE SUBSTRING. A bookkeeping key sitting at zero formats to `0`,
+  // and `0` is inside every `10`, `100` and `1.00e5` on the tab — a plain `indexOf` would admit the whole of what
+  // the discriminator exists to exclude. The boundary is "not another digit, comma or decimal point", plus an `e`
+  // on the right so `1.00` does not match inside `1.00e5`.
+  var NUM_L = /[0-9.,]/, NUM_R = /[0-9.,eE]/;
+  function countAsNumber(text, sub) {
+    if (!sub) return 0;
+    var n = 0;
+    for (var i = text.indexOf(sub); i >= 0; i = text.indexOf(sub, i + 1)) {
+      if (i > 0 && NUM_L.test(text.charAt(i - 1))) continue;
+      var after = text.charAt(i + sub.length);
+      if (after && NUM_R.test(after)) continue;
+      n++;
+    }
+    return n;
+  }
+
+  // ⛔ AN OCCURRENCE BUDGET, NOT A BARE "IS THIS NUMBER IN THE TEXT" — and this is the correction the first
+  // version of this detector needed. MEASURED on `the-infinity-tree` at a fresh save, where every amount on every
+  // layer is `0.00`: a bare membership test reported 23 resources across 9 cards, 21 of them sharing a value, and
+  // the things it admitted were `resetting`, `buyableSpent`, `timeSpent`, `lastElectron`, `electronGain` — the
+  // whole of the bookkeeping the discriminator exists to exclude. One `0.00` in "You have 0.00 energy" cannot be
+  // evidence for six different keys.
+  //
+  // So an occurrence is CONSUMED by whoever claims it, and the engine's own amounts claim FIRST: a layer's text
+  // routinely states its `points`, `best` and `total` itself ("Your best Generators is 0"), and those numbers
+  // belong to readouts the card already has. What is left over is what the layer says about something else.
+  // Candidates take it in `player[l]`'s own key order.
+  // ⚠ MEASURED, and this is what the rule buys: on `ptr` it removes `q.time` — a bookkeeping Decimal that happens
+  // to hold exactly `q.energy`'s 2,011, which the bare test admitted AND gave `energy`'s own prose label to.
+  // ⚠ AND WHAT IT COSTS: a layer whose readouts are ALL the same number can attribute none of them. `ptr`'s `g` at
+  // the M16 snapshot is exactly that — `points`, `best`, `total` and `power` are all `0` — so Generator Power,
+  // which is the user's own example, is not reported AT THAT STATE. It is at every state where the numbers differ.
+  // That is an abstention the text genuinely cannot resolve, not a rule that could be tightened out of it.
+  var ENGINE_AMOUNT_KEYS = ['points', 'best', 'total', 'spentOnBuyables'];
+  /** Claim one occurrence of `v`'s formatted value, in whichever of the two forms the text still has left.
+   *  Returns the string that was claimed, or `null` when the text has none to give. */
+  function takeOccurrence(text, budget, v) {
+    var forms = [fmtNum(v, false), fmtNum(v, true)];
+    for (var i = 0; i < forms.length; i++) {
+      var f = forms[i];
+      if (!f || (i === 1 && f === forms[0])) continue;
+      if (budget[f] === undefined) budget[f] = countAsNumber(text, f);
+      if (budget[f] > 0) { budget[f]--; return f; }
+    }
+    return null;
+  }
+
+  /** THE LAYER'S OTHER RESOURCES — every Decimal in `player[l]` the engine did not put there whose value the
+   *  layer's own text states, in `player[l]`'s own key order.
+   *  ⚠ THE LABEL IS THE KEY, and that is a DECISION rather than a limitation of the scan. The prose name
+   *  ("generator power") lives only in the words around the number, and lifting them is a heuristic that reads
+   *  badly often enough to be the user's call rather than ours — `T.layerListUI.resourceText(l)` is what a caller
+   *  lifts them from, and the U7 record carries the sample it would have produced. ⛔ No per-game name table:
+   *  ⚖ MINIMIZE HARDCODING.
+   *  ⚠ TWO KEYS CAN HOLD EQUAL VALUES, in which case the text cannot say which of them it is stating. Both are
+   *  kept — the card is reporting quantities, and both quantities are right — and `collide` records that the
+   *  attribution is ambiguous so the gate can measure how often it happens. */
+  function resourcesOf(l) {
+    var p = safe(function () { return player[l]; }, null);
+    if (!p || typeof p !== 'object') return [];
+    var keys = [];
+    for (var k in p) {
+      if (ENGINE_PLAYER_KEYS[k]) continue;
+      if (!isDecimalAmt(safe(function () { return p[k]; }, null))) continue;
+      keys.push(k);
+    }
+    if (!keys.length) return [];
+    var text = displayTextOf(l);
+    if (!text) return [];
+    var budget = Object.create(null);
+    ENGINE_AMOUNT_KEYS.forEach(function (k) {
+      var v = safe(function () { return p[k]; }, null);
+      if (isDecimalAmt(v)) takeOccurrence(text, budget, v);
+    });
+    var out = [], byText = Object.create(null);
+    keys.forEach(function (k) {
+      var v = safe(function () { return p[k]; }, null);
+      var shown = takeOccurrence(text, budget, v);
+      if (shown === null) return;
+      byText[shown] = (byText[shown] || 0) + 1;
+      out.push({ layer: l, key: k, value: v, text: shown });
+    });
+    // two resources CAN still print the same number where the layer states it twice; the card is reporting
+    // quantities and both are right, and this records that the attribution between them is by key order alone
+    out.forEach(function (r) { r.collide = byText[r.text] > 1; });
+    return out;
+  }
+
+  // ---------------------------------------------------------------- U7: PER-CATEGORY PROGRESS (the expanded card)
+  // ⚖ "when a layer is in expanded view, can we add a row to display the progress towards the next unearned item
+  // from each category, like how we display progress towards the next reset for the layer? Is there a way to detect
+  // what the cheapest unearned item from each category is? If not, then we can just pick the one whose chip is
+  // currently listed first." (user, 2026-09-19).
+  //
+  // WHAT THE ENGINES DECLARE, and it decides which categories can have a row at all:
+  //   | upgrades     | `tmp[l].upgrades[id].cost`  | ✅ comparable while the currency matches                   |
+  //   | buyables     | `tmp[l].buyables[id].cost`  | ✅ `tmp` holds it ALREADY EVALUATED at the current amount  |
+  //   | challenges   | `goal`                      | a goal, not a cost — comparable within one currency       |
+  //   | milestones   | —                           | `requirementDescription` is PROSE. No number exists.      |
+  //   | achievements | —                           | the same                                                  |
+  //   | clickables   | —                           | no cost concept                                           |
+  // So: ⛔ A CATEGORY WITH NO NUMBER GETS NO ROW. "Progress" with no denominator is not a weaker row, it is a
+  // different thing; the three categories above the line are the ones a `x / y` can be honest about, and the gate
+  // reports which categories on which games produced none.
+  //
+  // ⚖ CHEAPEST WHERE A COST EXISTS AND THE CURRENCIES AGREE, FIRST-LISTED OTHERWISE — which is the user's own
+  // stated fallback, so no ruling was needed to ship it. "The currencies agree" is asked on the engine's own
+  // identity for a currency (`currencyKey`), because two costs in different currencies do not compare at all and
+  // picking the numerically smaller of them would be picking by an accident of scale.
+  //
+  // ⚠ "UNEARNED" IS NOT ONE PREDICATE, and this is `actionable()`'s rule read one level down (it works on CHIPS,
+  // which exist only for a component with a usable short name; a progress row does not need one). Upgrades: drawn
+  // and `open` — not bought, and a PSEUDO teaser is not a thing you buy. Buyables: never "earned" at all, so the
+  // row means "progress to the NEXT one", and one at its `purchaseLimit` has no next one and is skipped rather
+  // than shown at 100%. Challenges: not completed, active or not.
+  //
+  // ⚠ ONLY CATEGORIES THE CARD ACTUALLY DRAWS, which `visibleSeq` is: a row for a hidden category would leak
+  // exactly what U2c's visibility rules hide.
+  /** The `DETAIL` part that reads a category's numeric target — the SAME object the tooltip composes its cost line
+   *  out of, so the two readers cannot drift. ⚠ A BUYABLE is the one category `DETAIL` carries no cost part for (a
+   *  buyable's own `display` already states its cost, so the overlay composes none); the part below is declared in
+   *  exactly the shape `DETAIL`'s other two use and goes through the same `numFieldOf` / `currencyOf` / `fmtNum`. */
+  function detailPart(kind, field) {
+    var parts = DETAIL[kind] || [];
+    for (var i = 0; i < parts.length; i++) if (parts[i].num === field) return parts[i];
+    return null;
+  }
+  var TARGET = { upgrades: detailPart('upgrades', 'cost'), challenges: detailPart('challenges', 'goal'),
+    buyables: { num: 'cost', whole: true, label: 'Cost', currency: 'resource', multi: 'multiRes' } };
+
+  /** THE CURRENT AMOUNT of whatever a component is bought with — `canAffordPurchase` (both engines' `js/utils.js`)
+   *  and `canCompleteChallenge` (`js/game.js`), written once and generically, in their own four branches.
+   *  ⚠ THE TWO DEFAULTS DIFFER, and it is measured rather than inferred: an upgrade's and a buyable's fallback is
+   *  `player[layer].points`, a CHALLENGE's is the GLOBAL `player.points`. A single reader with one fallback would
+   *  be wrong on every challenge whose layer has points of its own.
+   *  ⚠ Read through `numFieldOf`, i.e. `tmp` first: the engines hand their own `canAffordPurchase` the TMP copy of
+   *  the component, so a `currencyLocation` that tmp holds stale is stale for the engine's own affordability too. */
+  function currencyAmount(l, kind, decl, t) {
+    var name = numFieldOf('currencyInternalName', decl, t);
+    if (name) {
+      var loc = numFieldOf('currencyLocation', decl, t);
+      if (loc) return safe(function () { return loc[name]; }, null);
+      var lr = numFieldOf('currencyLayer', decl, t);
+      if (lr) return safe(function () { return player[lr][name]; }, null);
+      return safe(function () { return player[name]; }, null);
+    }
+    if (kind === 'challenges') return safe(function () { return player.points; }, null);
+    return safe(function () { return player[l].points; }, null);
+  }
+  /** The IDENTITY of that currency, so "do these two costs compare?" is answerable at all. A `currencyLocation` is
+   *  an OBJECT and two components can name the same key in different locations, so a location is identified by
+   *  reference (its index in this category's own list) rather than by a word. */
+  function currencyKey(l, kind, decl, t, locs) {
+    var name = numFieldOf('currencyInternalName', decl, t);
+    if (!name) return kind === 'challenges' ? '@points' : '@' + l + '.points';
+    var loc = numFieldOf('currencyLocation', decl, t);
+    if (loc) { var i = locs.indexOf(loc); if (i < 0) { i = locs.length; locs.push(loc); } return str(name) + '@loc' + i; }
+    var lr = numFieldOf('currencyLayer', decl, t);
+    return str(name) + (lr ? '@' + str(lr) : '@player');
+  }
+  function ltAmt(a, b) {
+    return safe(function () { return typeof a.lt === 'function' ? !!a.lt(b) : Number(a) < Number(b); }, false);
+  }
+  function gteAmt(a, b) {
+    return safe(function () { return typeof a.gte === 'function' ? !!a.gte(b) : Number(a) >= Number(b); }, false);
+  }
+  /** The ENGINE's own answer to "can this be bought right now", or `null` where it declares none.
+   *  ⚠ THREE-VALUED ON PURPOSE. `affordable()` defaults an undeclared answer to `true`, which is right for lighting
+   *  a button and would make the guard below fire on every component that declares nothing at all. */
+  function engineAfford(kind, l, id) {
+    if (kind === 'upgrades') return safe(function () { return typeof canAffordUpgrade === 'function' ? !!canAffordUpgrade(l, Number(id)) : null; }, null);
+    if (kind === 'buyables') return safe(function () { var c = tmp[l].buyables[id].canAfford; return c === undefined ? null : !!c; }, null);
+    return null;   // starting a challenge costs nothing in either engine, so there is no answer to disagree with
+  }
+  function unearned(kind, l, id, state) {
+    if (kind === 'upgrades') return state === 'open';
+    if (kind === 'challenges') return state !== 'done';
+    if (kind === 'buyables') return belowLimit(l, id);
+    return false;
+  }
+
+  /** ONE ROW PER CATEGORY THE CARD DRAWS that has a numeric target and something unearned in it, in the tab
+   *  layout's own order. `how` records which rule chose the item — `cheapest`, `first` (the currencies did not
+   *  agree) or `only` (one candidate, where the two rules cannot differ) — so a check on the choice can say
+   *  whether it was ever exercised. `skipped` counts the components passed over for `multiRes`. */
+  function progressOf(l) {
+    var order = [], by = Object.create(null);
+    visibleSeq(l).forEach(function (e) {
+      var part = TARGET[e.kind];
+      if (!part) return;
+      if (!by[e.kind]) { by[e.kind] = { kind: e.kind, cand: [], locs: [], skipped: 0, drawn: 0 }; order.push(e.kind); }
+      var g = by[e.kind];
+      g.drawn++;
+      if (!unearned(e.kind, e.layer, e.id, e.state)) return;
+      var decl = declOf(e.kind, e.layer, e.id), t = tmpOf(e.kind, e.layer, e.id);
+      var v = numFieldOf(part.num, decl, t);
+      if (!isAmount(v)) {
+        // ⚠ `multiRes` — a cost in SEVERAL currencies, where `cost` itself is undefined; four games on the roster
+        // declare it, `ptr` among them. A `x / y` row has no meaning for those, so they are SKIPPED and counted,
+        // never rendered as `undefined / undefined`.
+        if (part.multi && numFieldOf(part.multi, decl, t)) g.skipped++;
+        return;
+      }
+      g.cand.push({ layer: e.layer, kind: e.kind, id: e.id, decl: decl, tmp: t, target: v,
+        cur: currencyKey(e.layer, e.kind, decl, t, g.locs) });
+    });
+    var rows = [], dropped = [];
+    order.map(function (k) { return by[k]; }).filter(function (g) { return g.cand.length; }).forEach(function (g) {
+      var same = g.cand.every(function (c) { return c.cur === g.cand[0].cur; });
+      var one = g.cand[0];
+      if (same) g.cand.forEach(function (c) { if (ltAmt(c.target, one.target)) one = c; });
+      var part = TARGET[g.kind];
+      var amt = currencyAmount(one.layer, one.kind, one.decl, one.tmp);
+      // ⛔ THE GUARD, and it is MEASURED rather than defensive. `currencyAmount` is the engines' OWN generic
+      // reader, and a game may still buy with something it never declared to the engine: `ptr`'s `s` buildings
+      // hand-roll `canAfford()` / `buy()` against `player.g.power` and declare neither `currencyInternalName` nor
+      // `currencyDisplayName`, so the generic reading gives a numerator in space energy against a cost in
+      // generator power. In every engine-GENERIC path affordability implies amount ≥ cost, so "the engine says it
+      // can be bought and our amount is short" can only mean our amount is the wrong currency — that row is
+      // dropped and counted rather than shown. ⚠ The converse is NOT a signal: a game's `canAfford` routinely ANDs
+      // a second condition (`layers.s.space().gt(0)`), so "engine says no, we say yes" is ordinary.
+      // ⚠ It cannot see the case where the game simply cannot afford the item today — that row still ships with a
+      // numerator the game does not buy with. The M1 gate counts those it can find; the limitation is recorded.
+      var eng = engineAfford(one.kind, one.layer, one.id);
+      if (eng === true && isAmount(amt) && !gteAmt(amt, one.target)) {
+        dropped.push({ kind: g.kind, layer: one.layer, id: one.id, why: 'currency' });
+        return;
+      }
+      var cur = part.currency ? currencyOf(part, one.layer, one.decl, one.tmp) : '';
+      var K = KINDS[g.kind];
+      var title = stripTags(textOf(one.decl, one.tmp, K ? K.field : 'title')).trim() || (one.kind + ' ' + one.id);
+      var C = COUNTERS[g.kind];
+      rows.push({ kind: g.kind, layer: one.layer, id: one.id, label: C ? C.label : g.kind, name: title,
+        how: g.cand.length === 1 ? 'only' : same ? 'cheapest' : 'first', candidates: g.cand.length,
+        skipped: g.skipped, currency: cur,
+        have: isAmount(amt) ? fmtNum(amt, part.whole) : '', need: fmtNum(one.target, part.whole),
+        text: (isAmount(amt) ? fmtNum(amt, part.whole) : '?') + ' / ' + fmtNum(one.target, part.whole) + (cur ? ' ' + cur : '') });
+    });
+    // ⚠ `multiRes` is counted per CATEGORY even where the category produced a row, so a page that skipped one is
+    // never silent about it: four games on the roster declare a cost in several currencies at once.
+    order.forEach(function (k) { if (by[k].skipped) dropped.push({ kind: k, layer: l, why: 'multiRes', n: by[k].skipped }); });
+    return { rows: rows, dropped: dropped };
   }
 
   // ---- the overlay, and what it is anchored to
@@ -1154,15 +1532,40 @@
     head.appendChild(openBtn);
     el.appendChild(head);
 
+    // ---- (U7) THE LAYER'S OTHER RESOURCES, in BOTH states: they are readouts of the same kind as the amount in
+    // the head, not controls, so hiding them behind the expander would hide the thing the user asked to see.
+    // ⚠ Built empty and always present, for the same reason the two collapsed rows are: a resource can APPEAR
+    // without the rebuild signature moving (a key the tab only names once it is above zero), and a row that only
+    // existed when it started non-empty would have nowhere to put it. `:empty` hides it.
+    var resourceBox = document.createElement('div');
+    resourceBox.className = 'tmt-layerlist-resources';
+    el.appendChild(resourceBox);
+
     // the prestige button, on the engine's own condition for having one at all
-    var reset = null;
+    // ⚖ (U7) TWO ROWS, ALWAYS. The two spans are built ONCE and never replaced — only their contents move — so
+    // the block's height is decided by the stylesheet's reservation and not by whether the engine emitted a
+    // second half this tick. `data-line` is what the gate reads them back by.
+    var reset = null, resetL1 = null, resetL2 = null;
     if (safe(function () { return tmp[l].type; }, null) !== 'none') {
       reset = document.createElement('button');
       reset.type = 'button';
       reset.className = 'tmt-layerlist-reset';
+      resetL1 = document.createElement('span');
+      resetL1.className = 'tmt-layerlist-resetline';
+      resetL1.dataset.line = '1';
+      resetL2 = document.createElement('span');
+      resetL2.className = 'tmt-layerlist-resetline';
+      resetL2.dataset.line = '2';
+      reset.append(resetL1, resetL2);
       reset.addEventListener('click', function () { act(function () { doReset(l); }); });
       el.appendChild(reset);
     }
+
+    // ---- (U7) PER-CATEGORY PROGRESS, in the EXPANDED card and UNDER the reset button — ⚠ the reset line's second
+    // half IS the per-LAYER progress display, so these sit beneath it and are styled to match it.
+    var progressBox = document.createElement('div');
+    progressBox.className = 'tmt-layerlist-progress';
+    el.appendChild(progressBox);
 
     var chips = chipsOf(l);
     var chipBox = null, more = null, counterBox = null, actionBox = null;
@@ -1224,11 +1627,16 @@
     actionBox.className = 'tmt-layerlist-actions';
     el.appendChild(actionBox);
     var rec = { el: el, layer: l, head: head, name: name, amount: amount, reset: reset, chips: chips, more: more,
+      resetL1: resetL1, resetL2: resetL2,
       chipEls: chipBox ? [].slice.call(chipBox.querySelectorAll('.tmt-layerlist-chip')) : [],
       counterBox: counterBox, counterKeys: '', counterEls: [], reserved: Object.create(null),
+      resourceBox: resourceBox, resourceKeys: '', resourceEls: [], resReserved: Object.create(null),
+      progressBox: progressBox, progressKeys: '', progressEls: [],
       actionBox: actionBox, actionKeys: '', actionEls: [] };
     cards[l] = rec;
     drawCounters(rec, counters);
+    drawResources(rec, resourcesOf(l));
+    drawProgress(rec, progressOf(l).rows);
     drawActions(rec, actions);
     return el;
   }
@@ -1304,6 +1712,75 @@
     if (sk.key) e.box.dataset.skin = sk.key; else delete e.box.dataset.skin;
     e.box.style.backgroundColor = sk.bg;
     return true;
+  }
+
+  // ---------------------------------------------------------------- (U7) the two new rows
+  /** THE OTHER RESOURCES. Same shape as the counters: rebuilt only when the SET of keys changes, otherwise the
+   *  values move in place — and the value's width reservation only ever GROWS, for the reason `syncCounters`
+   *  states (a width that shrank back would move the row the moment a number did). */
+  function drawResources(rec, rs) {
+    rec.resourceBox.textContent = '';
+    rec.resourceEls = rs.map(function (r) {
+      var box = document.createElement('span');
+      box.className = 'tmt-layerlist-resource';
+      box.dataset.key = r.key;
+      var lab = document.createElement('span');
+      lab.className = 'tmt-layerlist-resource-label';
+      lab.textContent = r.key;
+      var val = document.createElement('span');
+      val.className = 'tmt-layerlist-resource-value';
+      box.append(lab, val);
+      rec.resourceBox.appendChild(box);
+      return { key: r.key, box: box, val: val };
+    });
+    rec.resourceKeys = rs.map(function (r) { return r.key; }).join(' ');
+    syncResources(rec, rs);
+  }
+  function syncResources(rec, rs) {
+    rs.forEach(function (r, i) {
+      var e = rec.resourceEls[i];
+      if (!e || e.key !== r.key) return;
+      e.val.textContent = r.text;
+      e.box.title = r.key + ': ' + r.text;
+      e.box.dataset.collide = r.collide ? 'yes' : 'no';
+      var want = Math.max(r.text.length, rec.resReserved[r.key] || 0);
+      if (want !== rec.resReserved[r.key]) { rec.resReserved[r.key] = want; e.val.style.minWidth = want + 'ch'; }
+    });
+  }
+
+  /** THE PER-CATEGORY PROGRESS ROWS. Rebuilt when the CATEGORY set or the chosen component changes — which is a
+   *  purchase, an unlock or a completion, never a tick — and otherwise only the numbers move. */
+  function drawProgress(rec, ps) {
+    rec.progressBox.textContent = '';
+    rec.progressEls = ps.map(function (g) {
+      var row = document.createElement('div');
+      row.className = 'tmt-layerlist-prog';
+      row.dataset.kind = g.kind;
+      row.dataset.cid = g.id;
+      row.dataset.layer = g.layer;
+      row.dataset.how = g.how;
+      var lab = document.createElement('span');
+      lab.className = 'tmt-layerlist-prog-label';
+      lab.textContent = g.label;
+      var nm = document.createElement('span');
+      nm.className = 'tmt-layerlist-prog-name';
+      var val = document.createElement('span');
+      val.className = 'tmt-layerlist-prog-value';
+      row.append(lab, nm, val);
+      rec.progressBox.appendChild(row);
+      return { key: g.kind + '/' + g.layer + '/' + g.id, box: row, name: nm, val: val };
+    });
+    rec.progressKeys = ps.map(function (g) { return g.kind + '/' + g.layer + '/' + g.id; }).join(' ');
+    syncProgress(rec, ps);
+  }
+  function syncProgress(rec, ps) {
+    ps.forEach(function (g, i) {
+      var e = rec.progressEls[i];
+      if (!e) return;
+      e.name.textContent = g.name;
+      e.val.textContent = g.text;
+      e.box.title = g.name + ' \u2014 ' + g.text;
+    });
   }
 
   /** Row two. Rebuilt when the SET changes — which affordability can never do; only a purchase, an unlock or a
@@ -1431,9 +1908,12 @@
       c.name.textContent = res || nm || l;
       c.amount.textContent = amountOf(l);
       if (c.reset) {
-        // the engines' prestige strings carry `<br><br>` to break a tall tab button in two; on a card the line is
-        // one run of text, and dropping the break in CSS would jam the two halves together ("space energyReq:")
-        c.reset.innerHTML = resetText(l).replace(/<br\s*\/?>/gi, ' ');
+        // ⚖ (U7) TWO LINES, ALWAYS — see `resetLines`. The engines' own `<br><br>` IS the split point, so the
+        // two halves keep their own line boxes instead of being collapsed into one run of text whose height
+        // answers to the digit count.
+        var rl = resetLines(resetText(l));
+        c.resetL1.innerHTML = rl[0];
+        c.resetL2.innerHTML = rl[1];
         var can = safe(function () { return !!tmp[l].canReset; }, false);
         c.reset.classList.toggle('can', can);
         c.reset.classList.toggle('locked', !can);
@@ -1467,6 +1947,14 @@
       var rec = cards[l];
       var cs = countersOf(l), ck = cs.map(function (g) { return g.kind; }).join(' ');
       if (ck !== rec.counterKeys) { drawCounters(rec, cs); refit.push(l); } else syncCounters(rec, cs);
+      // (U7) the other resources and the per-category progress, on this same budget: both are one pass per card
+      // over what the card already walks, and both are readouts rather than controls, so a 4 Hz read is what they
+      // want. ⚠ `resourcesOf` is the one that calls GAME CODE (the layer's own display functions) — it is here,
+      // once per card per sync, and not on the frame path.
+      var rs = resourcesOf(l), rk = rs.map(function (r) { return r.key; }).join(' ');
+      if (rk !== rec.resourceKeys) drawResources(rec, rs); else syncResources(rec, rs);
+      var ps = progressOf(l).rows, pk = ps.map(function (g) { return g.kind + '/' + g.layer + '/' + g.id; }).join(' ');
+      if (pk !== rec.progressKeys) drawProgress(rec, ps); else syncProgress(rec, ps);
       var as = actionsOf(rec.chips), ak = as.map(function (c) { return c.key; }).join(' ');
       if (ak !== rec.actionKeys) { drawActions(rec, as); refit.push(l); } else syncActions(rec);
       paintChips(rec);   // (U5) and the chips' own three-way colour, on the same budget as the lit/grey above
@@ -1638,6 +2126,14 @@
       visibleSeq: visibleSeq,
       countersOf: countersOf,
       actionsOf: function (l) { return actionsOf(chipsOf(l)); },
+      // (U7) the reset button's two lines, apart — the split the card renders, not a second reading of it
+      resetLines: function (l) { return resetLines(resetText(l)); },
+      // (U7) the layer's OTHER resources, and the text they were detected in. The text is what a caller lifts a
+      // prose label out of; the list itself ships the KEY as the label (see `resourcesOf`).
+      resources: function (l) { return resourcesOf(l).map(function (r) { return { layer: r.layer, key: r.key, text: r.text, collide: r.collide }; }); },
+      resourceText: displayTextOf,
+      // (U7) the per-category progress rows, with the rule that chose each one
+      progress: progressOf,
       fit: function () { fitCards(null); },
       // (U2c) which cards are OPEN, and the button's own path for opening one. The gate drives the list through
       // this rather than through the chevron, because a click is not a neutral probe — some games count every

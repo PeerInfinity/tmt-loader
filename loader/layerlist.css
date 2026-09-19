@@ -207,7 +207,18 @@
   white-space: nowrap;
 }
 
+/* ⚖ (U7) THE RESET LINE IS ALWAYS TWO LINES (user, 2026-09-19). layerlist.js splits the engine's own string on
+ * its first run of `<br>`s into two spans; this is the half that makes the block occupy two line boxes WHATEVER
+ * those spans hold — including nothing, which is what the `normal` prestige string emits once `resetGain` passes
+ * 100 and what `the-factoree`'s `static` one emits past `1e7`.
+ * ⚠ THE RESERVATION IS DERIVED, NOT A MAGIC PIXEL COUNT: `--tmt-reset-lh` is the button's own line-height, and
+ * each line reserves exactly one of them (`calc(var(--tmt-reset-lh) * 1em)`). Change the line-height and the
+ * reservation follows it. A line that WRAPS still grows the button — that is content, not digits, and the 44 px
+ * tap minimum below is a floor rather than a cap.
+ * ⛔ The reservation is deliberately NOT keyed on the second line being non-empty: a height that collapsed when
+ * the engine dropped the second half would re-introduce exactly the permanent height change this fixes. */
 #tmt-layerlist .tmt-layerlist-reset {
+  --tmt-reset-lh: 1.25;
   text-align: center;
   min-height: 44px;
   padding: 6px 10px;
@@ -216,13 +227,81 @@
   background: transparent;
   color: inherit;
   font-size: 13px;
-  line-height: 1.25;
+  line-height: var(--tmt-reset-lh);
   cursor: pointer;
   overflow-wrap: anywhere; /* a prestige string is the game's own prose and can be long */
   transition-duration: 0s;
 }
+/* ⚠ `text-align: center` is re-stated here rather than inherited: `#tmt-layerlist *` at the top of this file sets
+ * every descendant to `text-align: left`, and it beats inheritance — so the two spans would have left-aligned the
+ * text the button has always centred. */
+#tmt-layerlist .tmt-layerlist-resetline {
+  display: block;
+  text-align: center;
+  line-height: var(--tmt-reset-lh);
+  min-height: calc(var(--tmt-reset-lh) * 1em);
+}
 #tmt-layerlist .tmt-layerlist-reset.can { color: #000; font-weight: bold; }
 #tmt-layerlist .tmt-layerlist-reset.locked { opacity: .55; }
+
+/* ⚖ (U7) A LAYER'S OTHER RESOURCES (user, 2026-09-19) — the quantities a layer reports only inside its own
+ * panel. In BOTH states, because they are readouts of the same kind as the amount in the card's head and not
+ * controls: no tap minimum, and `:empty` hides the row on a layer that has none. The label is the player key
+ * (`power`), which is the certain half — see `resourcesOf` in layerlist.js for why the prose name is not lifted. */
+#tmt-layerlist .tmt-layerlist-resources { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+#tmt-layerlist .tmt-layerlist-resources:empty { display: none; }
+#tmt-layerlist .tmt-layerlist-resource {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 5px;
+  min-height: 26px;
+  padding: 3px 8px;
+  border: 1px dashed rgba(127, 127, 127, .55);   /* dashed: a readout, never a control */
+  border-radius: 6px;
+  font-size: 13px;
+  max-width: 100%;
+}
+#tmt-layerlist .tmt-layerlist-resource-label {
+  font-size: 11px;
+  opacity: .72;
+  letter-spacing: .04em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+/* the same reservation the counters carry, and for the same reason: layerlist.js writes the width in `ch` and only
+ * ever grows it, and the tabular figures at the top of this file are what make a `ch` a fixed column. */
+#tmt-layerlist .tmt-layerlist-resource-value {
+  font-variant-numeric: tabular-nums;
+  font-weight: bold;
+  text-align: right;
+  white-space: nowrap;
+}
+
+/* ⚖ (U7) PER-CATEGORY PROGRESS (user, 2026-09-19) — in the EXPANDED card only, under the reset button, because
+ * the reset line's second half IS the per-layer progress display and these are the per-category ones. One line
+ * each, reserved off the same line-height the reset button uses, so a growing number cannot make a row taller.
+ * The NAME is what gives way when the number grows — it ellipses; the number never wraps. */
+#tmt-layerlist .tmt-layerlist-progress { --tmt-reset-lh: 1.25; display: none; flex-direction: column; gap: 2px; }
+#tmt-layerlist .tmt-layerlist-card.tmt-layerlist-expanded .tmt-layerlist-progress { display: flex; }
+/* ⚠ written with the card in the selector so it MATCHES the expanded rule's specificity and comes after it:
+ * `#tmt-layerlist .tmt-layerlist-progress:empty` alone loses to `…card.…expanded .…progress`, and an empty
+ * flex box would still cost the card one `gap`. */
+#tmt-layerlist .tmt-layerlist-card .tmt-layerlist-progress:empty { display: none; }
+#tmt-layerlist .tmt-layerlist-prog {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  min-height: calc(var(--tmt-reset-lh) * 1em);
+  line-height: var(--tmt-reset-lh);
+  font-size: 13px;
+  opacity: .85;
+}
+#tmt-layerlist .tmt-layerlist-prog-label { flex: 0 0 auto; font-size: 11px; opacity: .72; letter-spacing: .04em; }
+#tmt-layerlist .tmt-layerlist-prog-name { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+#tmt-layerlist .tmt-layerlist-prog-value { flex: 0 0 auto; font-variant-numeric: tabular-nums; font-weight: bold; white-space: nowrap; }
+/* ⚖ MILESTONES SQUARE, THE REST ROUND is the card's own distinction — there is no milestone progress row at all
+ * (a `requirementDescription` is prose and declares no number), so nothing here needs it. */
 
 /* ---------------------------------------------------------------- U2d: the two views
  * ⚖ COLLAPSED IS TWO ROWS (user, 2026-09-18) — the counters, then what you can act on — and EXPANDED is exactly
