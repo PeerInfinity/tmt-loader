@@ -209,42 +209,64 @@ test('the stall fallback fires only after K× the TYPICAL own-rule interval, and
   assert.ok(ctx.resets.length > 3, `the fallback never broke the stall: ${ctx.resets.length} reset(s)`);
 });
 
-test('⛔ a reset fired BY THE FALLBACK never feeds `typical` — the remembered intervals stay the own-rule ones', () => {
+test('⛔ a reset fired BY THE FALLBACK never feeds `typical` — against a reference the mutant CANNOT move', () => {
+  // ⛔ THE REFERENCE IS A SEPARATE CONTROL RUN, not this run's own later history. A mutant that let a timed-out wait
+  // feed `typical` would grow BOTH the threshold and the intervals it is computed from, so a bound taken from the
+  // mutated run would grow with it and the leg would pass. The control runs the SAME fixture with K so large that
+  // the fallback can never fire, which makes its intervals purely own-rule — and nothing the mutant does can reach
+  // them. (PTR's q measured ~10, 83, 332 s by its own rule; a timed-out wait feeding the threshold makes that
+  // sequence geometric, which is the very stall the modifier exists to break.)
+  const control = boot({ a: stalling('a', 1, 6, 5) }, { 'policy:reset:a': 'gain>=2x|stall>=100000x/5' });
+  tick(control, 600);
+  const own = (control.tmtLoader.runtimeState().stallIntervals || {})['reset:a'] || [];
+  assert.ok(own.length >= 1, `the control produced no own-rule interval at all: ${JSON.stringify(own)}`);
+
   const ctx = boot({ a: stalling('a', 1, 6, 5) }, { 'policy:reset:a': 'gain>=2x|stall>=2x/5' });
-  tick(ctx, 60);                                        // the own-rule phase
-  const own = (ctx.tmtLoader.runtimeState().stallIntervals || {})['reset:a'] || [];
-  tick(ctx, 600);                                       // a long stretch of fallback resets
+  tick(ctx, 660);
   const after = (ctx.tmtLoader.runtimeState().stallIntervals || {})['reset:a'] || [];
-  assert.deepEqual(after, own, `a fallback reset fed the threshold: ${JSON.stringify(own)} → ${JSON.stringify(after)}`);
-  // …and the waits therefore stay BOUNDED rather than growing geometrically. The bound is computed from the
-  // OWN-RULE intervals, which the mutant cannot move — never from the run's own later history.
-  const bound = 2 * Math.max(...own) + 2;               // K × (the largest own-rule interval) + one tick of slack
+  // every interval the run remembered must be one the CONTROL also produced — i.e. an own-rule one
+  for (const iv of after) assert.ok(own.indexOf(iv) >= 0, `a remembered interval ${iv} is not an own-rule one (${JSON.stringify(own)})`);
+  // …and the fallback's waits therefore stay bounded by K × the largest own-rule interval, from the control
+  const bound = 2 * Math.max(...own) + 2;
   const resets = ctx.resets.length;
-  const spacing = 600 / Math.max(1, resets - 4);
-  assert.ok(spacing <= bound, `the fallback's waits grew: ~${spacing.toFixed(1)} s apart against a bound of ${bound} s`);
+  assert.ok(resets > 4, `the fallback never broke the stall: ${resets} reset(s)`);
+  const spacing = 600 / (resets - 4);
+  assert.ok(spacing <= bound, `the fallback's waits grew: ~${spacing.toFixed(1)} s apart against a bound of ${bound} s taken from the control`);
 });
 
-test('CONSTRUCTED: the ARBITER — two features stalled in the same tick, only the one closest to its target fires', () => {
-  // ⛔ NO FIXTURE IN THIS REPO HAS TWO STALLED FEATURES AT ONCE, so the state is built. `a` is capped at 6 against a
-  // bar of 2× what it holds; `b` the same, with a HIGHER cap, so `b` sits at a larger gain/need fraction.
-  const ctx = boot({ a: stalling('a', 1, 6, 5), b: stalling('b', 1, 6, 5) }, {
-    'policy:reset:a': 'gain>=2x|stall>=2x/5', 'policy:reset:b': 'gain>=2x|stall>=2x/5',
+test('CONSTRUCTED: the ARBITER picks the feature with the HIGHEST progress fraction, and only one per tick', () => {
+  // ⛔ NO FIXTURE IN THIS REPO HAS TWO STALLED FEATURES AT ONCE, so the state is built — and built PRECISELY, by
+  // restoring a runtime that puts both features past their stall clocks on the very next tick with fractions that
+  // are known and different. `a` sits at gain 3 against a bar of 2 × 5 = 10 (0.30); `b` at gain 9 against
+  // 2 × 5 = 10 (0.90). A mutant that took the LOWEST fraction reverses the answer, which "one per tick" alone
+  // cannot see.
+  const fixed = (name, gain) => ({
+    name, row: 1, type: 'normal', layerShown: () => true,
+    startData: () => ({ unlocked: true, points: new Decimal(5) }),
+    tmtStubTemp(tmp, player) {
+      const t = tmp[name] || (tmp[name] = {});
+      t.type = 'normal'; t.baseAmount = new Decimal(player[name].points); t.requires = new Decimal(1); t.nextAt = new Decimal(1);
+      t.canReset = true; t.autoPrestige = false; t.resetGain = new Decimal(gain);
+    },
   });
-  tick(ctx, 400);
-  // whatever else happens, no two fallback resets ever land in the same gameLoop
-  const perTick = {};
-  let last = null, ties = 0;
-  for (let i = 0; i < 200; i++) {
-    const before = ctx.resets.length;
-    tick(ctx, 1);
-    if (ctx.resets.length - before > 1) ties++;
-  }
-  assert.equal(ties, 0, 'two reset features fired in the same tick while both were stalled');
-  // and both DO get their turn — the arbiter orders them, it does not starve one
-  assert.ok(ctx.resets.filter((x) => x === 'a').length > 0 && ctx.resets.filter((x) => x === 'b').length > 0,
-    `one of the two was starved: ${JSON.stringify(ctx.resets.slice(-20))}`);
-  const yielded = Object.keys(ctx.tmtLoader.explainStats().codes).includes('waiting:stall-yield');
-  assert.ok(yielded, 'the arbiter never said `waiting:stall-yield`, so nothing was ever arbitrated');
+  const mk = () => {
+    const ctx = boot({ a: fixed('a', 3), b: fixed('b', 9) }, { 'policy:reset:a': 'gain>=2x|stall>=1x/5', 'policy:reset:b': 'gain>=2x|stall>=1x/5' });
+    ctx.player.timePlayed = 1000;
+    ctx.tmtLoader.restoreRuntime({
+      lastReset: { 'reset:a': 900, 'reset:b': 900 }, loopNo: 10, ranAt: {}, stats: {},
+      stallIntervals: { 'reset:a': [50], 'reset:b': [50] }, stallSince: { 'reset:a': 850, 'reset:b': 850 },
+    });
+    return ctx;
+  };
+  const ctx = mk();
+  // both are 100 game-seconds past a 1 × 50 s clock, so both are stalled on the next tick
+  tick(ctx, 1);
+  assert.deepEqual(ctx.resets, ['b'], `the arbiter did not pick the feature closest to its target: ${JSON.stringify(ctx.resets)}`);
+  assert.equal(rowOf(ctx, 'reset:a').last.code, 'waiting:stall-yield', `the loser did not say why: ${rowOf(ctx, 'reset:a').last.code}`);
+  assert.equal(rowOf(ctx, 'reset:a').last.values.layer, 'b');
+  // and the one that yielded re-decides on the NEXT tick, in the world the winner's reset left behind
+  tick(ctx, 1);
+  assert.ok(ctx.resets.length <= 2, `more than one fallback reset landed per tick: ${JSON.stringify(ctx.resets)}`);
 });
 
 test('the modifier writes NOTHING into runtimeState when no feature carries one', () => {

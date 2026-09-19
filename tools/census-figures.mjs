@@ -214,6 +214,14 @@ const RE = {
   // V1 (T2): the component the ENGINE draws a subtab bar with. The `au` tab took subtabs, so the loader now asks
   // every game for a component it has never asked for. ⚠ Quote-agnostic — the games use all three kinds.
   tabButtons: /Vue\.component\s*\(\s*["'`]tab-buttons["'`]/,
+  // V2: the mechanism the LOADER's own editors ride on, and the three engine inputs it deliberately does NOT use.
+  // ⛔ `column` is the load-bearing premise: both engines render a `tabFormat` entry by NAME through it
+  // (`v-bind:is="item[0]"`), which is the only reason a component the loader registers can appear in the au tab at
+  // all. The day a game stops registering it, the editors have nothing to draw them and nothing static would say so.
+  colComponent: /Vue\.component\s*\(\s*["'`]column["'`]/,
+  textInput: /Vue\.component\s*\(\s*["'`]text-input["'`]/,
+  sliderComponent: /Vue\.component\s*\(\s*["'`]slider["'`]/,
+  dropDown: /Vue\.component\s*\(\s*["'`]drop-down["'`]/,
 };
 
 /**
@@ -227,7 +235,7 @@ export function measure({ bound = 'subtree', root = REPO } = {}) {
   for (const id of ids) {
     const { files, missing } = sourcesOf(id, bound, root);
     if (missing) problems.push(`${id}: ${missing}`);
-    const g = { files: files.length, optButton: false, hardResetOpt: false, optionWheel: false, buyUpg: false, buyUpgrade: false, tabArray: 0, tabObject: 0, purchaseLimit: false, purchaseLimitInLayerSupport: false, tabButtons: false, pseudoUnlGlobal: false, pseudoUnlComponent: false, tooltipAny: false, tooltipChipped: 0, tooltipAchievement: 0, boughtBare: false, lockedBare: false, boughtValue: null, lockedValue: null, backClass: false, backGoBack: false, toggleAutoDecl: false, toggleAutoVueSet: false, toggleAutoInData: false };
+    const g = { files: files.length, optButton: false, hardResetOpt: false, optionWheel: false, buyUpg: false, buyUpgrade: false, tabArray: 0, tabObject: 0, purchaseLimit: false, purchaseLimitInLayerSupport: false, tabButtons: false, colComponent: false, textInput: false, sliderComponent: false, dropDown: false, pseudoUnlGlobal: false, pseudoUnlComponent: false, tooltipAny: false, tooltipChipped: 0, tooltipAchievement: 0, boughtBare: false, lockedBare: false, boughtValue: null, lockedValue: null, backClass: false, backGoBack: false, toggleAutoDecl: false, toggleAutoVueSet: false, toggleAutoInData: false };
     // the ENTRY DOCUMENT, which no `bound` covers: it is not a `.js` file and it is where 2.2.1 keeps both anchors.
     // ⛔ A game whose entry cannot be read is a PROBLEM, never a false — the same rule the bounds are under.
     const entry = path.join(root, 'games', id, (readManifest(id, root).entry) || 'index.html');
@@ -250,6 +258,10 @@ export function measure({ bound = 'subtree', root = REPO } = {}) {
       if (!g.toggleAutoInData && RE_TOGGLE_IN_DATA.test(text)) g.toggleAutoInData = true;
       if (RE.pseudoUnlComponent.test(text)) g.pseudoUnlComponent = true;
       if (RE.tabButtons.test(text)) g.tabButtons = true;
+      if (RE.colComponent.test(text)) g.colComponent = true;
+      if (RE.textInput.test(text)) g.textInput = true;
+      if (RE.sliderComponent.test(text)) g.sliderComponent = true;
+      if (RE.dropDown.test(text)) g.dropDown = true;
       if (RE.purchaseLimit.test(text)) {
         g.purchaseLimit = true;
         if (RE.layerSupportFile.test(path.basename(f))) g.purchaseLimitInLayerSupport = true;
@@ -329,6 +341,12 @@ export function measure({ bound = 'subtree', root = REPO } = {}) {
     // --- V1: the subtab bar ---
     tabButtons: where('tabButtons').length,
     noTabButtons: ids.filter((id) => !per[id].tabButtons),
+    colComponent: where('colComponent').length,
+    noColComponent: ids.filter((id) => !per[id].colComponent),
+    textInput: where('textInput').length,
+    sliderComponent: where('sliderComponent').length,
+    dropDown: where('dropDown').length,
+    noEngineInput: ids.filter((id) => !per[id].textInput && !per[id].sliderComponent && !per[id].dropDown),
   };
 }
 
@@ -482,6 +500,35 @@ export function claims(sub, load) {
       },
       // ⚠ `load`, not `sub`: the question is which copy the CLICK reaches, and two games ship disagreeing copies
       measured: `${load.toggleAutoDecl} declare it of ${N}, ${load.toggleAutoVueSet} Vue.set, ${load.toggleAutoPlain} plain, ${load.toggleAutoInData} in Vue data (scope: loaded, last declaration wins)`,
+    },
+    {
+      // V2. `column` is the LOAD-BEARING PREMISE of the editors: both engines render a `tabFormat` entry by NAME
+      // through it (`v-bind:is="item[0]"`), which is the only reason a component the LOADER registers can appear in
+      // the au tab at all. The day a game stops registering it, the editors have nothing to draw them and nothing
+      // static would say so. ⚠ A REGISTRATION count, like `tab-buttons`; `gates-v2 --part 6` drives the result.
+      name: 'column — the component the loader\'s OWN editors are rendered by (V2)',
+      doc: 'docs/automation.md',
+      re: /\*\*all (\d+) of the (\d+)\s+games register `Vue\.component\("column"\)`\*\*/,
+      expect: (m) => {
+        const ok = num(m[1]) === sub.colComponent && num(m[2]) === N;
+        return [ok, `doc: ${m[1]} of ${m[2]} register column`];
+      },
+      measured: `${sub.colComponent} of ${N} register column${sub.noColComponent.length ? ' — MISSING: ' + sub.noColComponent.join(', ') : ''}`,
+    },
+    {
+      // V2. The three inputs the loader deliberately does NOT depend on. ⛔ THE FIGURE THAT DECIDED THE DESIGN: it
+      // is not only that some games lack all three, it is that `ptr` — one of the two reference games this whole
+      // arc is measured on — is one of them. A clickable-only "baseline" plus an "enhanced" family was the first
+      // plan; supplying the loader's own components is ONE family on all 171.
+      name: 'text-input / slider / drop-down — the engine inputs the loader does NOT use (V2)',
+      doc: 'docs/automation.md',
+      re: /only (\d+) \/ (\d+) \/ (\d+) of the (\d+) games\s+register them[\s\S]{0,160}?\*\*(\d+) register none of the three, `ptr` among them\*\*/,
+      expect: (m) => {
+        const ok = num(m[1]) === sub.textInput && num(m[2]) === sub.sliderComponent && num(m[3]) === sub.dropDown
+          && num(m[4]) === N && num(m[5]) === sub.noEngineInput.length && sub.noEngineInput.includes('ptr');
+        return [ok, `doc: ${m[1]} / ${m[2]} / ${m[3]} of ${m[4]}, ${m[5]} with none of the three`];
+      },
+      measured: `${sub.textInput} text-input, ${sub.sliderComponent} slider, ${sub.dropDown} drop-down of ${N}; ${sub.noEngineInput.length} register NONE of the three (ptr among them: ${sub.noEngineInput.includes('ptr')})`,
     },
     {
       // V1 (T2). Giving the `au` tab subtabs makes the loader depend, on EVERY game, on a component it had never

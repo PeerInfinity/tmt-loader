@@ -410,7 +410,7 @@ async function part6(browser, base, ids) {
           const blocks = document.querySelectorAll('#app div[style*="border-left"]').length;
           const collapsed = rows.filter((x) => x.state === 'locked' || x.state === 'excluded').length;
           return { features: T.features.length, rows: rows.length, blocks, collapsed, unknown: rows.filter((x) => x.last && x.last.code === 'unknown').map((x) => x.id),
-            sub: player.subtabs.au.mainTabs, subs: Object.keys(tmp.au.tabFormat), rendered: text.indexOf('Read-only.') >= 0, len: text.length,
+            sub: player.subtabs.au.mainTabs, subs: Object.keys(tmp.au.tabFormat), rendered: text.indexOf('What each feature decided') >= 0, len: text.length,
             scrollX: document.documentElement.scrollWidth > document.documentElement.clientWidth };
         });
         r.errsBefore = b0;

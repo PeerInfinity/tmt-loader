@@ -1353,10 +1353,11 @@
     if (!f) throw new Error('no feature "' + id + '"');
     var e = editsOf();
     if (!e) return { ok: false, policy: policyOf(f), error: 'this save has no automation store yet (player.' + AU + '.edits)' };
-    if (policy === null || policy === undefined) { delIn(e, id); player[AU].disclosed = true; return { ok: true, policy: policyOf(f), error: null }; }
+    if (policy === null || policy === undefined) { delIn(e, id); player[AU].disclosed = true; editGen++; return { ok: true, policy: policyOf(f), error: null }; }
     if (typeof policy !== 'string' || !policyOk(f.kind, policy)) return { ok: false, policy: policyOf(f), error: '"' + policy + '" is not a ' + f.kind + ' strategy this build knows' };
     setIn(e, id, { policy: policy });
     player[AU].disclosed = true;
+    editGen++;
     return { ok: true, policy: policyOf(f), error: null };
   };
   T.savedPolicy = function (id) { var f = byId[id]; if (!f) throw new Error('no feature "' + id + '"'); return savedPolicyOf(f); };
@@ -1376,6 +1377,17 @@
     var next = { id: P.id, params: Object.assign({}, P.params), modifier: P.modifier ? { id: P.modifier.id, params: Object.assign({}, P.modifier.params) } : null };
     (onMod ? next.modifier.params : next.params)[name] = String(value).trim();
     return T.setSavedPolicy(id, formatPolicy(f.kind, next));
+  };
+  /** Pick a different STRATEGY, at its own defaults, keeping whatever modifier is in force. */
+  T.setSavedStrategy = function (id, strategyId) {
+    var f = byId[id];
+    if (!f) throw new Error('no feature "' + id + '"');
+    var S = byStrategyId(f.kind, strategyId);
+    if (!S || S.kind !== f.kind) return { ok: false, policy: policyOf(f), error: '"' + strategyId + '" is not a ' + f.kind + ' strategy' };
+    var a = availability(f, S);
+    if (!a.ok) return { ok: false, policy: policyOf(f), error: a.why };
+    var P = parsedOf(f);
+    return T.setSavedPolicy(id, formatPolicy(f.kind, { id: S.id, params: {}, modifier: P && P.modifier ? P.modifier : null }));
   };
   /** Turn the modifier on (at its defaults) or off, keeping the primary strategy and its parameters. */
   T.setSavedModifier = function (id, modId) {
@@ -1530,34 +1542,13 @@
   function advancedShown() {
     try { return (player.tab === AU || player.navTab === AU) && !!player.subtabs && !!player.subtabs[AU] && player.subtabs[AU].mainTabs === 'Advanced'; } catch (e) { return false; }
   }
-  var ADV_INTRO = 'What each feature decided on the last tick it was asked, and why. Read-only.';
+  // ⚠ V1's word was "Read-only." — V2 is the slice that stopped it being true.
+  var ADV_INTRO = 'What each feature decided on the last tick it was asked, and why — and the strategy it decides by, which you can change here.';
   // ⚠ ONE BLOCK PER FEATURE, NOT A WIDE TABLE — it has to read at 390 px with no horizontal scroll, and under
   // `?mobile=1` the layer list draws this tab through its own reader, which skips a `display-text` entirely. So the
   // layout is ordinary flow with `overflow-wrap`, no column widths and no element wider than its parent.
   function chip(text, bg) { return '<span style="display:inline-block;padding:0 6px;border-radius:3px;background:' + bg + ';color:#fff;font-size:.8em;vertical-align:middle">' + esc(text) + '</span>'; }
   var STATE_BG = { on: '#4f9a6a', off: '#3d6f91', armed: '#8a6d3b', locked: '#666666', excluded: '#5a4a4a' };
-  function advancedHTML() {
-    if (!advancedShown()) return '';
-    var rows = T.explain();
-    var out = ['<div style="text-align:left;max-width:100%;overflow-wrap:anywhere;word-break:break-word">'];
-    var running = 0, never = 0;
-    for (var i = 0; i < rows.length; i++) { if (rows[i].state === 'on') running++; if (rows[i].neverFired) never++; }
-    out.push('<div style="opacity:.75;font-size:.9em;margin-bottom:6px;text-align:left">' + esc(ADV_INTRO) + '</div>');
-    out.push('<div style="margin-bottom:10px;text-align:left">Profile <b>' + esc(T.profileName) + '</b> · ' + running + ' of ' + rows.length + ' running'
-      + (never ? ' · <b style="color:#c08a3e">' + never + ' never fired</b>' : '') + '</div>');
-    var layer = null;
-    for (var j = 0; j < rows.length; j++) {
-      var r = rows[j];
-      if (r.layer !== layer) {
-        layer = r.layer;
-        var name = layers[layer] && layers[layer].name ? String(layers[layer].name) : layer;
-        out.push('<h3 style="margin:14px 0 4px 0">' + esc(name) + ' <span style="opacity:.5;font-size:.7em">' + esc(layer) + '</span></h3>');
-      }
-      out.push(r.state === 'locked' || r.state === 'excluded' ? collapsedBlock(r) : featureBlock(r));
-    }
-    out.push('</div>');
-    return out.join('');
-  }
   // A feature that cannot run yet is ONE LINE. There are 78 of them on ptr at a fresh save and 3 that are doing
   // anything; a full block each would bury the three.
   function collapsedBlock(r) {
@@ -1569,6 +1560,10 @@
     // ⚠ the table's entry and the generic derivation's shown BESIDE what is in force, and only when they DIFFER —
     // survey §4.5. Equal values side by side is noise; a difference is the whole reason the table has that row.
     bits.push('<b>' + esc(p.inForce) + '</b>');
+    // V2: an EDITED feature has to READ as edited, with the answer it would go back to beside it — that is what
+    // makes "one press returns it to the default" a visible offer rather than a guess.
+    if (p.saved) bits.push(chip('EDITED', '#7fb2d9') + ' default ' + esc(p.base));
+    if (p.runtime) bits.push(chip('OVERRIDDEN', '#8a6d3b') + ' by a runtime setting');
     if (p.table !== null && p.table !== p.inForce) bits.push('table says ' + esc(p.table));
     if (p.derived !== null && p.derived !== p.inForce) bits.push('derived would be ' + esc(p.derived));
     if (p.alternatives.length) bits.push('alt ' + p.alternatives.map(esc).join(', '));
@@ -1591,7 +1586,221 @@
     o.push('</div>');
     return o.join('');
   }
-  T.advancedHTML = advancedHTML;
+  // ---- THE EDITORS (V2 Part 3) — the loader registers its OWN Vue input components ---------------------------------
+  // ⚖ CORRECTED MID-SLICE (user, 2026-09-19): the brief's first plan was to build the controls out of `clickable`s,
+  // because only 154 of the 171 games register `text-input` and 152 register `drop-down`. The user asked why the
+  // engines' inputs could not simply be SUPPLIED, and they can: both engines' `column` / `row` render ANY registered
+  // component by NAME (`v-bind:is="item[0]"` with `:layer` and `:data` — ptr `js/components.js:71-73`, something
+  // `:60-72`), so a component the LOADER registers appears inside a `tabFormat` exactly like an engine one. That is
+  // ONE control family on all 171 games instead of a baseline and an enhancement, and it removes the dependency on
+  // three components whose behaviour differs by engine version and which `ptr` ITSELF does not have (none of
+  // `text-input`, `slider` or `drop-down`).
+  //
+  // ⛔ `loader/tmt-auto.js` STILL NEVER TOUCHES THE DOM (docs/contract.md). These are component DEFINITIONS handed to
+  // the engine's own Vue; Vue does every bit of the rendering. Nothing here queries an element or holds a reference
+  // to one, and no file under `games/` changes.
+  //
+  // ⚠ NAMESPACED (`tmtl-`), so a game's own component can never be shadowed by one of these, nor these by one of
+  // its. ⚠ REGISTERED IN AUTOMATION MODE ONLY: this code is below the contract-only early return, so the plain page
+  // registers nothing at all — `gates-v2` asserts that.
+  var VUE = (function () { try { return new Function('return typeof Vue !== "undefined" ? Vue : null')(); } catch (e) { return null; } })();
+  T.vueVersion = VUE && VUE.version ? String(VUE.version) : null;
+  T.componentNames = [];
+
+  // ⛔ THE VIEW READS A PER-TICK CACHE OF `explain()`, AND THAT IS A SAFETY PROPERTY, NOT AN OPTIMISATION.
+  // A Vue computed that WRITES a reactive property re-triggers itself. `explain()` formats numbers through the
+  // game's own `format()` inside `withoutRaisingNaN`, which RESTORES `player.hasNaN` to false when the formatter
+  // raised it — a reactive write. On a game whose values make the formatter raise it (measured on `arctree` in V1's
+  // roster leg, where the GAME raises it on every `updateTemp()`), render → write → render is a loop. One shared
+  // answer per tick bounds that to a single extra render, and it also means the header's `display-text` and the
+  // component below do not each pay for a full explain().
+  // ⚠ The key carries an EDIT COUNTER as well as the clock, because a page under `?managed=1` does not tick: an
+  // edit must show up in the view immediately, not at the next game loop that may never come.
+  var viewCache = { key: null, rows: null };
+  var editGen = 0;
+  function explainForView() {
+    var key = T.ticks + '/' + (Number(player.timePlayed) || 0) + '/' + editGen + '/' + features.length;
+    if (viewCache.key !== key) { viewCache.key = key; viewCache.rows = T.explain(); }
+    return viewCache.rows;
+  }
+
+  // ---- the read-only half: V1's blocks, unchanged, exposed so a component can render one -------------------------
+  function advancedHeaderHTML() {
+    if (!advancedShown()) return '';
+    var rows = explainForView();
+    var running = 0, never = 0, edited = 0;
+    for (var i = 0; i < rows.length; i++) { if (rows[i].state === 'on') running++; if (rows[i].neverFired) never++; if (rows[i].policy && rows[i].policy.saved) edited++; }
+    return '<div style="text-align:left;max-width:100%;overflow-wrap:anywhere;word-break:break-word">'
+      + '<div style="opacity:.75;font-size:.9em;margin-bottom:6px;text-align:left">' + esc(ADV_INTRO) + '</div>'
+      + '<div style="margin-bottom:4px;text-align:left">Profile <b>' + esc(T.profileName) + '</b> · ' + running + ' of ' + rows.length + ' running'
+      + (never ? ' · <b style="color:#c08a3e">' + never + ' never fired</b>' : '')
+      + (edited ? ' · <b style="color:#7fb2d9">' + edited + ' edited</b>' : '') + '</div></div>';
+  }
+  T.advancedHTML = advancedHeaderHTML;
+  T.featureBlockHTML = function (r) { return r.state === 'locked' || r.state === 'excluded' ? collapsedBlock(r) : featureBlock(r); };
+  T.advancedRows = explainForView;
+
+  // ---- the components ---------------------------------------------------------------------------------------------
+  // ⚠ TRAP (i) — THE GAME'S HOTKEYS. Both engines listen on `document.onkeydown` and act on a bare letter, so typing
+  // `p` into a field would PRESTIGE on ptr. Measured, in each engine's own words: ptr `js/utils.js:997-1012` and
+  // something `js/utils.js:308-322` BOTH carry `if (onFocused) return` and both define a global `focused(x)` — the
+  // brief said 2.2.1 has no such guard and that is wrong; what 2.2.1 lacks is a `text-input` COMPONENT that CALLS
+  // it. So this component does both, and the first one is the load-bearing half: every key event is stopped at the
+  // input (the game's handler is on an ANCESTOR, so it never sees the event), and `focused(true/false)` is called
+  // where the game defines it, which is what its own input does. A fork that defines neither still cannot fire a
+  // hotkey, because the event never reaches the document.
+  function setFocused(on) { try { var f = new Function('return typeof focused === "function" ? focused : null')(); if (f) f(!!on); } catch (e) { /* a fork without it */ } }
+  var FIELD_STYLE = 'width:7.5em;max-width:40vw;margin:0 3px;padding:1px 3px;font-family:inherit;font-size:.9em';
+  var BTN_STYLE = 'margin:0 1px;padding:0 5px;font-family:inherit;font-size:.9em;cursor:pointer';
+
+  var COMPONENTS = {
+    // ONE parameter. `data` = {fid, which, name, value, label, type, min, max}
+    // ⚠ TRAP (ii) — RE-RENDER WHILE TYPING. The Advanced tab re-renders on every tick, so a field bound straight to
+    // the saved value would have a half-typed `1e` parsed out from under the caret. The field is bound to LOCAL
+    // state and commits on change / Enter / blur; the watcher refuses to overwrite the draft while the field has
+    // focus, which is the other half of the same rule.
+    'tmtl-number': {
+      props: ['data'],
+      data: function () { return { draft: String(this.data.value), editing: false, error: null }; },
+      watch: { 'data.value': function (v) { if (!this.editing) { this.draft = String(v); this.error = null; } } },
+      methods: {
+        onFocus: function () { this.editing = true; setFocused(true); },
+        onBlur: function () { this.commit(); this.editing = false; setFocused(false); },
+        onKey: function (e) { if (e.key === 'Enter') this.commit(); else if (e.key === 'Escape') { this.draft = String(this.data.value); this.error = null; } },
+        commit: function () {
+          if (this.draft === String(this.data.value)) { this.error = null; return; }
+          var r = T.setSavedParam(this.data.fid, this.data.name, this.draft, this.data.which);
+          this.error = r.ok ? null : r.error;
+          if (r.ok) this.draft = String(this.data.value);
+        },
+        step: function (dir) {
+          var v = this.data.value, t = this.data.type, next;
+          if (t === 'quantity') { try { next = String(dir > 0 ? D(v).times(2) : D(v).div(2)); } catch (e) { next = v; } }
+          else if (t === 'count') next = String(Math.max(0, Math.round(Number(v)) + dir));
+          else if (t === 'fraction') next = String(Math.round((Number(v) + dir * 0.05) * 100) / 100);
+          else next = String(Math.round((Number(v) * (dir > 0 ? 1.5 : 1 / 1.5) + dir * 0.5) * 100) / 100);
+          var r = T.setSavedParam(this.data.fid, this.data.name, next, this.data.which);
+          this.error = r.ok ? null : r.error;
+          if (r.ok) this.draft = String(this.data.value);
+        },
+      },
+      template: '<span style="display:inline-block;text-align:left;margin:2px 8px 2px 0;white-space:nowrap">'
+        + '<span style="opacity:.75;font-size:.85em">{{ data.label }}</span>'
+        // ⚠ `data-fid` / `data-param` are how a GATE points at ONE feature's field. The first cut of `gates-v2`
+        // located `input.tmtl-input` with `.first()` and typed into whichever feature happened to be drawn first,
+        // then reported that the value had not committed — the leg was measuring the wrong block.
+        + '<input type="text" class="tmtl-input" :data-fid="data.fid" :data-param="data.which + \':\' + data.name"'
+        + ' :value="draft" :title="data.label" style="' + FIELD_STYLE + '"'
+        + ' @input="draft = $event.target.value" @change="commit" @focus="onFocus" @blur="onBlur"'
+        + ' @keydown.stop="onKey" @keyup.stop @keypress.stop>'
+        + '<button type="button" style="' + BTN_STYLE + '" @click="step(-1)" @keydown.stop>&minus;</button>'
+        + '<button type="button" style="' + BTN_STYLE + '" @click="step(1)" @keydown.stop>+</button>'
+        + '<span v-if="error" class="tmtl-error" style="color:#d07a7a;font-size:.85em;display:block;white-space:normal">{{ error }}</span>'
+        + '</span>',
+    },
+    // The STRATEGY PICKER. `data` = {fid, value, options: [{id, label, help, available, why}]}
+    // ⚠ An unavailable strategy is SHOWN, disabled, with the reason in its own label — `gain>=Nx` can never fire on
+    // a static layer (plan §14d.5), and a picker that silently omitted it would leave the player wondering.
+    'tmtl-select': {
+      props: ['data'],
+      data: function () { return { error: null }; },
+      methods: {
+        onChange: function (e) {
+          var r = T.setSavedStrategy(this.data.fid, e.target.value);
+          this.error = r.ok ? null : r.error;
+        },
+      },
+      template: '<span style="display:inline-block;text-align:left">'
+        + '<select class="tmtl-select" :data-fid="data.fid" :value="data.value" style="max-width:min(100%,22em);font-family:inherit;font-size:.9em"'
+        + ' @change="onChange" @keydown.stop @keyup.stop>'
+        + '<option v-for="o in data.options" :value="o.id" :disabled="!o.available">{{ o.label }}{{ o.available ? \'\' : \' — \' + o.why }}</option>'
+        + '</select>'
+        + '<span v-if="error" class="tmtl-error" style="color:#d07a7a;font-size:.85em;display:block">{{ error }}</span>'
+        + '</span>',
+    },
+    // ONE feature: V1's read-only block, then the picker, the modifier switch and one editor per parameter.
+    'tmtl-feature': {
+      props: ['data'],
+      computed: {
+        r: function () { return this.data.row; },
+        html: function () { return T.featureBlockHTML(this.data.row); },
+        editable: function () { var r = this.data.row; return r.state !== 'excluded' && r.state !== 'locked'; },
+        picker: function () {
+          var r = this.data.row;
+          return { fid: r.id, kind: r.kind, value: r.policy.strategy, options: T.strategyChoices(r.id) };
+        },
+        fields: function () {
+          var r = this.data.row, out = [], i;
+          var add = function (which, id, params) {
+            var S = null, all = which === 'modifier' ? T.modifiers(r.kind) : T.strategies(r.kind);
+            for (var j = 0; j < all.length; j++) if (all[j].id === id) S = all[j];
+            if (!S) return;
+            for (var k = 0; k < S.params.length; k++) {
+              var p = S.params[k];
+              out.push({ key: which + ':' + p.name, fid: r.id, which: which, name: p.name, type: p.type,
+                label: p.label, value: (params && params[p.name] !== undefined) ? params[p.name] : p.default });
+            }
+          };
+          if (r.policy.strategy) add('primary', r.policy.strategy, r.policy.params);
+          if (r.policy.modifier) add('modifier', r.policy.modifier.id, r.policy.modifier.params);
+          return out;
+        },
+        mods: function () { return T.modifiers(this.data.row.kind); },
+        modOn: function () { return !!this.data.row.policy.modifier; },
+        edited: function () { return !!this.data.row.policy.saved; },
+      },
+      methods: {
+        toggleMod: function () { T.setSavedModifier(this.data.row.id, this.modOn ? null : this.mods[0].id); },
+        toDefault: function () { T.setSavedPolicy(this.data.row.id, null); },
+      },
+      template: '<div style="text-align:left">'
+        + '<h3 v-if="data.head" style="margin:14px 0 4px 0;text-align:left">{{ data.layerName }} <span style="opacity:.5;font-size:.7em">{{ data.row.layer }}</span></h3>'
+        + '<div v-html="html"></div>'
+        + '<div v-if="editable" style="text-align:left;margin:-6px 0 10px 0;padding:0 0 0 11px">'
+        +   '<div style="text-align:left;margin-bottom:2px">'
+        +     '<span style="opacity:.75;font-size:.85em;margin-right:4px">strategy</span>'
+        +     '<tmtl-select :data="picker"></tmtl-select>'
+        +     '<button v-if="edited" type="button" class="tmtl-default" :data-fid="data.row.id" style="' + BTN_STYLE + ';margin-left:6px" @click="toDefault" @keydown.stop>use the default</button>'
+        +   '</div>'
+        +   '<div v-if="fields.length" style="text-align:left">'
+        +     '<tmtl-number v-for="f in fields" :key="f.key" :data="f"></tmtl-number>'
+        +   '</div>'
+        +   '<div v-if="mods.length" style="text-align:left;font-size:.9em">'
+        +     '<button type="button" class="tmtl-mod" :data-fid="data.row.id" style="' + BTN_STYLE + '" @click="toggleMod" @keydown.stop>{{ modOn ? \'remove the stall fallback\' : \'add the stall fallback\' }}</button>'
+        +     '<span v-if="data.row.stall && data.row.stall.why" style="opacity:.7;margin-left:6px">{{ data.row.stall.why }}</span>'
+        +     '<span v-else-if="data.row.stall" style="opacity:.7;margin-left:6px">typical {{ data.row.stall.typical }} s over {{ data.row.stall.remembered }} own-rule reset(s) · {{ data.row.stall.elapsed }} s of {{ data.row.stall.need }} s</span>'
+        +   '</div>'
+        + '</div></div>',
+    },
+    // The LIST. One instance for the whole Advanced view, so the input elements keep their identity across ticks.
+    'tmtl-editors': {
+      props: ['layer', 'data'],
+      computed: {
+        blocks: function () {
+          // ⚠ `player.timePlayed` is read on purpose: it is what makes this computed re-evaluate every tick, which
+          // is what keeps V1's reason line LIVE. Without a reactive dependency that moves, the view would render
+          // once and then sit there.
+          var clock = player.timePlayed;
+          var rows = explainForView(), out = [], prev = null;
+          for (var i = 0; i < rows.length; i++) {
+            var l = rows[i].layer;
+            var name = l;
+            try { name = layers[l] && layers[l].name ? String(layers[l].name) : l; } catch (e) { name = l; }
+            out.push({ row: rows[i], head: l !== prev, layerName: name, clock: clock });
+            prev = l;
+          }
+          return out;
+        },
+      },
+      template: '<div style="text-align:left;max-width:100%;overflow-wrap:anywhere;word-break:break-word">'
+        + '<tmtl-feature v-for="b in blocks" :key="b.row.id" :data="b"></tmtl-feature>'
+        + '</div>',
+    },
+  };
+  if (VUE && typeof VUE.component === 'function') {
+    for (var cn in COMPONENTS) { VUE.component(cn, COMPONENTS[cn]); T.componentNames.push(cn); }
+  }
+  T.componentDefs = function () { var o = {}; for (var k in COMPONENTS) o[k] = true; return o; };
 
   function buildClickables() {
     for (var k in clickables) if (!isNaN(k)) delete clickables[k];
@@ -1909,7 +2118,19 @@
         'blank',
         'clickables',
       ] },
-      Advanced: { content: [['display-text', function () { return advancedHTML(); }]] },
+      // ⛔ THE HEADER IS STILL A `display-text` FUNCTION, AND THAT IS WHERE THE LAZY GUARD LIVES. ptr's
+      // `updateTempData` evaluates every function in the WHOLE `tabFormat` object — both subtabs — whenever the au
+      // tab is the open tab (`js/technical/temp.js:96`), so this function is called on every tick of a tab the
+      // player may be looking at with `Simple` selected. `advancedHeaderHTML()` returns '' unless `Advanced` is on
+      // screen, and `gates-v1 --part 3p` is the PAIRED measurement that says so (0 formats on Simple against
+      // thousands with Advanced selected). Removing the guard still reds that leg.
+      // ⚠ The blocks themselves are a COMPONENT, not more HTML, because they now contain inputs: a string rebuilt
+      // every tick would replace the `<input>` element under the player's caret. Vue keeps one instance per feature
+      // (`:key`) and only updates its props, which is the whole reason the editors are components at all.
+      Advanced: { content: [
+        ['display-text', function () { return advancedHeaderHTML(); }],
+        ['tmtl-editors', null],
+      ] },
       },
       automate: auAutomate,
     });

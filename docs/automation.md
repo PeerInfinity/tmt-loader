@@ -53,7 +53,7 @@ The toggles live in `player.au.features` (`{featureId: true|false}`), `player.au
 state hash moves with the NUMBER of registered features; compare game state across tables with `au` excluded (the
 harness's `hashGame`).
 
-### `Advanced` — what each feature decided, and why (V1, read-only)
+### `Advanced` — what each feature decided, why, and the strategy it decides by (V1 read-out, V2 editing)
 
 One block per feature, grouped by layer in the game's own layer order, with the features that cannot run yet collapsed
 to one line each. Per feature: its title and id, its state, the policy **in force** with the table's entry and the
@@ -61,14 +61,69 @@ generic derivation's beside it *when they differ*, the **reason its last decisio
 decision compared, `acted N · last at <game-s> · on for <game-s>`, a *never fired* flag, and the table's `provenance`
 line. It renders `tmtLoader.explain()` and computes nothing of its own.
 
-**It is read-only.** No policy picker, no editable thresholds, and **no new key in the save** — nothing in `Advanced`
-writes anything. Editing is the next slice.
+**Since V2 it is EDITABLE** (⚖ user, 2026-09-19: *"For cases where there are multiple known strategies, I'll want the
+user to be able to select which one to use, and to adjust any relevant values"*). Each running feature's block carries:
+
+- a **strategy picker** — every strategy of that feature's kind, in the table's order. A strategy that cannot fire on
+  this feature is shown DISABLED with the reason in its own label, never omitted: `gain>=Nx` can never fire on a
+  **static** layer (its gain is 1 per reset, so a multiple of what it already holds is unreachable the moment it holds
+  1), `keepsUpgrades` needs a `keep` milestone the table has not declared, `order` needs an `order[]`;
+- one **editor per parameter** of the picked strategy, and of its modifier when one is in force;
+- the stall modifier's own press (*add / remove the stall fallback*), with its clock beside it;
+- an **EDITED** chip and the default it would return to, and a **use the default** press that clears the choice.
+
+The V1 read-out is unchanged and stays LIVE beside the controls — watching the reason line change is the point of
+editing. **Choices live in the save** (`player.au.edits`, below).
 
 ⚠ **Subtabs make the loader depend, on every game, on a component it had never asked for**: the engine draws the
 subtab bar itself, with `tab-buttons`. Censused quote-agnostically over `games/`: **all 171 of the 171 games register
 `Vue.component("tab-buttons")`**. ⛔ That is a REGISTRATION count and not a rendering result — a game could register
 the component and still fail to draw the tab — so it is only the premise; `gates-v1 --part 6` opens the Advanced
 subtab on every game and is the witness.
+
+### The controls: the loader registers its OWN components
+
+⚖ **Corrected during V2** (the user asked why the engines' own inputs could not be used on every game — they can be
+SUPPLIED). Both engines' `column` / `row` render **any registered component by name** (`v-bind:is="item[0]"` with
+`:layer` and `:data` — ptr `js/components.js:71-73`, something `:60-72`), so a component the LOADER registers appears
+inside a `tabFormat` exactly like an engine one. Censused quote-agnostically over `games/`: **all 171 of the 171
+games register `Vue.component("column")`**, which is the premise the whole design rests on. `tmt-auto.js` registers
+four components, namespaced so nothing can collide:
+
+| component | what it is |
+|---|---|
+| `tmtl-editors` | the whole Advanced list — ONE instance, so the input elements keep their identity across ticks |
+| `tmtl-feature` | one feature: V1's read-only block (`v-html`), then the picker, the parameter editors and the modifier press |
+| `tmtl-select` | the strategy picker (a `<select>`) |
+| `tmtl-number` | one parameter: a text field with `−` / `+` steps, bound to LOCAL state and committed on change / Enter / blur |
+
+⛔ **`loader/tmt-auto.js` still never touches the DOM** (`docs/contract.md`). These are component *definitions* handed
+to the engine's own Vue; Vue does every bit of the rendering. Nothing queries an element or holds a reference to one,
+and no file under `games/` changes. ⚠ **Registration is in automation mode only** — the definitions live below the
+contract-only early return, so a page without `?automation=1` has no `tmtl-*` component at all
+(`gates-v2 --part 4`). In **Node** the definitions go to the harness's Vue *stub* (`boot.mjs:119`) and render nothing.
+
+⚠ **Do NOT depend on the engines' own `text-input` / `slider` / `drop-down`:** only 154 / 154 / 152 of the 171 games
+register them, and their behaviour differs by engine version. **17 register none of the three, `ptr` among them** —
+one of the two reference games this whole arc is measured on. There is no second "fallback" control family: one
+family on all 171, and a game that needed anything else is a RED in `gates-v2 --part 6`, not a fallback.
+
+Three traps the components exist to avoid, each with its own leg:
+
+1. ⛔ **The game's hotkeys.** Both engines act on a bare letter from `document.onkeydown`, so typing `p` into a field
+   would PRESTIGE on ptr. Measured in each engine's own words: ptr `js/utils.js:997-1012` and something
+   `js/utils.js:308-322` **both** carry `if (onFocused) return` and **both** define a global `focused(x)` — what
+   2.2.1 lacks is a `text-input` COMPONENT that calls it, not the guard. `tmtl-number` stops every key event at the
+   input (the game's handler is on an ANCESTOR, so it never sees it) *and* calls `focused()` where the game defines
+   one; the first half works on a fork that defines neither. Measured, paired: a real key press of a live hotkey with
+   the caret in the field moves nothing, and the same press outside the field acts.
+2. ⚠ **Re-render while typing.** The tab re-renders every tick, so a field bound straight to the saved value would
+   have a half-typed `1e` parsed out from under the caret. The field is bound to local state and refuses to overwrite
+   the draft while it has focus.
+3. ⚠ **`?mobile=1`.** The loader's own layer list reads each tab's `tabFormat` with its own walker
+   (`loader/layerlist.js`), which knows the engines' component names and nothing else: an unknown name falls through
+   `emitComp` and costs nothing — no chip, no throw. Measured at 390 px, with no horizontal page scroll and no
+   control wider than the viewport.
 
 ⛔ **It is lazy — and where that matters is not where it looks.** Both engines already refuse to evaluate a
 `tabFormat` they are not showing: 2.2.1 (`ptr`) skips any key whose name contains `tabformat` / `display` /
@@ -309,6 +364,48 @@ tree, and the tree was committed before the round so a `git checkout` restore co
 A profile is applied after `load()` and is never written into the save: reload without `?profile=` and the toggles
 show what the save says. `tmtLoader.profile(name)` switches at runtime.
 
+## Editing, precedence, and the save (V2)
+
+⚖ **Choices live in the SAVE** (user, 2026-09-19). One new key, seeded in the `au` layer's `startData`:
+
+```js
+player.au.edits = { '<featureId>': { policy: '<the strategy string>' }, … }   // {} on every boot
+```
+
+⛔ **ONE key, and a NESTED object on purpose.** The next editing slice's `until`, `priority` and `maxActions` join as
+further fields of the SAME per-feature entry, so this slice's ⚖-granted full-hash re-record is the only one the
+editing arc needs; a flat `player.au.policies` beside a later `player.au.until` would have cost one re-record per
+field. ⚠ It is **seeded** because Vue 2 cannot observe a property ADDED to an object after creation and 22 of the 171
+engines assign plainly (U6, measured); `derive()` runs before `addLayer`, so the key exists from the first boot and
+the per-feature entries are written with `Vue.set`. Measured on an OLD snapshot written before V2
+(`gates-v2 --part 5`): the engines' own `fixSave` / `fixData` add the nested `edits: {}` exactly as they add a flat
+field, and `hashGame` is unmoved.
+
+**Precedence, in one place** — `f.policy` is a GETTER over it, so the tab and the decision path cannot disagree:
+
+| | wins over | what it is |
+|---|---|---|
+| the generic derivation | — | `defaultPolicy(kind, layer)` |
+| the game's table | the derivation | `autoTable.policies[<id>]` |
+| `--auto-opt policy:<id>=` | the table | how a harness leg or a sweep pins a configuration for a whole run (applied at registration) |
+| **the player's saved choice** | all of the above | `player.au.edits[<id>].policy` |
+| **a runtime override** | everything | `tmtLoader.setPolicy(id, policy)` — the A/B lever and the planner's committed epoch. `setPolicy(id, null)` gives the feature back to the save |
+
+⚠ **A saved policy this build cannot validate is IGNORED, not run** — a save written by a later version, or by hand,
+falls back to the default rather than reaching the decision path.
+
+⛔ **A pinned harness run is unmoved BY CONSTRUCTION**, not by a rule: its snapshots carry no `edits` entries, so the
+middle term is empty and `f.policy` is what it has always been. `?profile=all` does **not** change that: a profile
+says which features RUN, never which strategy they run — so a player who switches to `all` to watch everything keeps
+their tuning, and the harness's `--profile all` legs are unaffected because their fixtures have nothing saved.
+
+**Writing a choice** (what the components call, and what a gate can call headlessly):
+`tmtLoader.setSavedPolicy(id, policy | null)`, `tmtLoader.setSavedStrategy(id, strategyId)` (keeps the modifier),
+`tmtLoader.setSavedParam(id, name, value[, 'modifier'])`, `tmtLoader.setSavedModifier(id, modifierId | null)`,
+`tmtLoader.savedPolicy(id)`. Each returns `{ok, policy, error}`. ⛔ **A refusal changes nothing and says why** — a
+value the strategy cannot parse leaves the previous one in force and the field shows the reason; it is never silently
+dropped.
+
 ## Derivation
 
 After the game's scripts (and the table), `tmt-auto.js` walks `layers`. For every **tree layer** — a numeric `row`, not a
@@ -346,6 +443,53 @@ form (`{layer, varName, options}`, a string it cycles) are skipped and counted (
 
 ## Kinds and policies
 
+### The strategy table — ONE source (V2)
+
+Before V2 a policy was written down three times: a hand-written validator regex per kind, a hand-written
+`policyTemplates` list, and the knowledge (in whatever UI wanted it) that `gain>=Nx` takes a number. Three spellings
+of one fact is how they drift. Since V2 a **strategy is one row of DATA** in `loader/tmt-auto.js` and everything else
+is derived from it — the validator regex, the enumerable alphabet, the picker's list, the parameter editors and the
+help the tab shows. ⚖ *minimize hardcoding*: **a new strategy is one table entry and no UI code at all.**
+
+A row declares `kind`, a `template` with `{param}` placeholders (`gain>={n}x`), a `label`, a one-sentence `help` in
+the player's terms, its `params`, and — where it applies — the layer types it can ever fire on with the `why` when it
+cannot, or a `needs(f)` saying what this feature lacks. The row's **id** is its template with every placeholder
+replaced by that parameter's letter (`gain>=Nx`), which is what `policyTemplates` lists and what the picker and the
+save name a strategy by.
+
+⛔ **A parameter's value is always the RAW STRING.** `format(parse(s)) === s` is then exact by construction rather
+than by luck: `Number('10.0')` prints `10` and `new Decimal('1e600')` prints `1e+600`, so a table that stored typed
+values could not round-trip its own strings. The decision path converts at the point of use — which is also where the
+game's own big-number type belongs, since a `quantity` spans the whole Decimal range and `1e600` is a real threshold
+at the PTR frontier.
+
+| parameter type | accepts | used by |
+|---|---|---|
+| `count` | a whole number | the stall modifier's window `N` |
+| `seconds` | a number of GAME-seconds | `interval>=T`, `rate-peak`'s hold |
+| `factor` | a number (a dimensionless multiple) | `gain>=Nx`, the stall modifier's `K` |
+| `fraction` | a number in **0 … 1** | `rate-peak`'s value buffer |
+| `quantity` | the whole Decimal range, exponent and all | `gain>=N`, `reserve>=N` |
+
+⛔ **A policy is valid when the grammar AND the declared bounds accept it**, both from the same row. The first cut
+checked only the grammar and `rate-peak@2/0` sailed through — a value buffer of 2 puts the threshold at
+`best × (1 − 2)`, a NEGATIVE rate no rate can ever be under, so the strategy would have been selectable, spelled
+correctly and silently incapable of ever firing. A bound a row declares and nothing enforces is documentation, not a
+guard.
+
+Read it at runtime: `tmtLoader.strategies([kind])`, `tmtLoader.modifiers([kind])`, `tmtLoader.paramTypes()`,
+`tmtLoader.policyTemplates`, `tmtLoader.parsePolicy(kind, s)`, `tmtLoader.formatPolicy(kind, parsed)`,
+`tmtLoader.defaultPolicyString(kind, id)`, `tmtLoader.checkParam(kind, id, name, value)`,
+`tmtLoader.policyOk(kind, s)` and `tmtLoader.strategyChoices(featureId)` — the last says, per feature, whether each
+strategy is available and **why not**. The whole table is byte-identical on every game (measured on ptr and
+something, `gates-v2 --part 1`): the strategies are generic, so no game can have its own.
+
+### MODIFIERS: a strategy that rides on another one
+
+A `reset` policy may carry **one modifier**, appended with `|`: `gain>=2x|stall>=3x/5`. The primary strategy still
+decides; the modifier only speaks when the primary has refused. There is one today (`stall>=Kx/N`, below) and the
+grammar, the validator and the editors take another from one more table row.
+
 | Kind | Policy | What it does each tick |
 |---|---|---|
 | `reset` | `always` | `doReset(l)` whenever `tmp[l].canReset` |
@@ -354,6 +498,8 @@ form (`{layer, varName, options}`, a string it cycles) are skipped and counted (
 | | `interval>=T` | … when at least T of `player.timePlayed` passed since this feature's last reset (runtime memory, not saved) |
 | | `keepsUpgrades` | … only while `hasMilestone(keep.layer, keep.id)` holds (a post-milestone policy: it never starts the layer) |
 | | `unlocks-purchase` | … only when `player[l].points + tmp[l].resetGain` affords the cheapest unowned, unlocked upgrade of `l`, or the next level of one of its unlocked buyables — both only where costed in the layer's own points (no `currencyInternalName` / `currencyLocation` / `currencyLayer`); else wait |
+| | **`rate-peak@B/H`** | the currency-per-second optimum, with no threshold in the layer's own units. `rate = tmp[l].resetGain / (game-seconds since this feature's own last reset)`, `best` = the highest rate since that reset; reset once `(gain + 1) / elapsed < best × (1 − B)` has held **continuously** for `H` game-seconds. See below |
+| | **`… \| stall>=Kx/N`** (a MODIFIER) | on top of any of the above: if the primary rule has been waiting `K ×` as long as this feature's own resets usually take, reset anyway — but only the stalled feature closest to its target goes first. See below |
 | `upgrades` | `cheapest-first` | buys unlocked, unowned, affordable upgrades, cheapest `tmp` cost first (ties by id) |
 | | `order` | only the table's `order[]`, in that order |
 | | `order-then-cheapest` | the table's `order[]` first (each affordable one, in order), then `cheapest-first` over the upgrades not in it |
@@ -368,6 +514,68 @@ form (`{layer, varName, options}`, a string it cycles) are skipped and counted (
 | | `off` | nothing |
 | `clickables` | `when` | for each `{id, when}` the table lists for the layer: `clickClickable(l, id)` when the clickable is unlocked, `canClick`, and `when` holds |
 | | `off` | nothing |
+
+### `rate-peak@B/H` — the currency-per-second optimum (V2)
+
+⛔ **It is what `gain>=Nx` cannot do.** The ratio rule fails wherever the bar rises with every reset while the gain
+does not: PTR's `q` gains 2 Quirks a reset and its `2× held` grows geometrically, so from `all/M16.json` the derived
+default stalls at M19 (24607) and reads *"Waiting — gain 2.00 of 6.00 (2× the 3.00 held)"* for the remaining ~11,500
+game-seconds (plan §17, the user's own report). `rate-peak` asks the only question that needs no literal in the
+layer's own units: **is the currency-per-second of this cycle still rising?** The `+ 1` is a one-unit lookahead — for
+a large gain it vanishes and the rule is "the average has peaked"; for a small integer gain it is what stops the rule
+waiting for a step that is not coming.
+
+⚖ **Two parameters, both the user's** (2026-09-19): *"The strategy shouldn't be to reset immediately after the gain
+per second starts going down. There should be an editable buffer."* and then *"Actually, I meant a time buffer, not a
+value buffer. Maybe we should have both. A time buffer meaning don't reset until the value has stayed below the
+threshold for that long."*
+
+| | meaning | provisional default | what it is a proxy for (⚖ 13d.2) |
+|---|---|---|---|
+| `B` | the VALUE buffer: the threshold is `best × (1 − B)` | `0.1` | how much of the peak rate we are willing to give up before conceding the cycle has peaked. An integer gain makes the rate a SAWTOOTH — every step-up lifts it, every second between steps lowers it — and `B` is what separates a tooth from the peak |
+| `H` | the TIME buffer, in GAME-seconds: the condition must hold CONTINUOUSLY for this long. The moment it reads false the clock returns to **zero**, because a step-up lifting the rate back over the threshold is exactly what the wait is for | `30` | how long a dip must last before it is a peak rather than the gap before the next step |
+
+**`rate-peak@0/0` is the bare rule and stays selectable** — it is the CONTROL every measurement of the other two is
+against. ⚖ **R2's sweep owns the real defaults**; V2 moves none and writes nothing into `games-auto/`.
+
+### `stall>=Kx/N` — the stall fallback (V2), a MODIFIER
+
+⚖ **The user's rule, verbatim** (2026-09-19): *"If we are stuck waiting a long time for resources to double their
+previous amount, triggering a reset, then we should do a reset of whichever resource is closest to reaching its
+target. We could set the timeout threshold dynamically, based on how long previous resets have taken."*
+
+It is a **modifier, not a policy of its own**: the primary rule still decides, and the fallback only fires when the
+primary has been saying no for too long. A policy that REPLACED the primary would lose the rule the player chose.
+
+- `typical` = the **median** of the last `N` intervals between resets of this feature **that its PRIMARY rule
+  fired**. The feature is *stalled* once `player.timePlayed − lastReset ≥ K × typical`.
+- ⛔ **A reset the FALLBACK fired never feeds `typical`.** PTR's `q` reset by its own rule after ~10, 83 and 332
+  game-seconds; if a timed-out wait fed the threshold, `typical` would grow with every timeout and the timeouts with
+  it — geometrically, which is the very stall the modifier exists to break.
+- A stalled feature resets when the engine's own `canReset` holds and its gain is at least 1.
+- **The arbiter** — *"whichever resource is closest to reaching its target"*: at most **one** stalled feature per
+  `gameLoop`, the one with the highest **progress fraction**. For a **static** layer that is `baseAmount / nextAt`
+  (⛔ not `requires`, which is the first threshold and stops moving — plan §16.3 item 8); otherwise it is whatever
+  ratio the chosen strategy declares as its `progress`, which is the one it is itself waiting on. A strategy with no
+  measurable target (`unlocks-purchase`, `keepsUpgrades`) has no fraction and ranks last. **Ties break by
+  registration order** — layer row ascending, then the `layers` key order, then kind order, the same order the tab
+  draws — so the answer is identical on every run. The others re-decide on the next tick, because that reset changed
+  the world they were judged in.
+- ⚠ **With no own-rule interval yet there is no `typical` and the modifier is SILENT**: the feature shows its
+  primary's own reason, and the block says *"no reset by this feature's own rule yet, so there is nothing to be late
+  against"*. The first interval starts at the first tick the modifier ran for that feature (`stallSince`), so the
+  feature's FIRST reset is an interval too — without that, a feature that resets once by its own rule and then waits
+  forever has zero intervals and the fallback stays dormant on the very shape it exists for (measured on the stub
+  while building it).
+- `K` and `N` are **parameters with provisional defaults** (3 and 5) and ⚖ R2's sweep owns the real ones. `K = 3` is
+  a proxy for "three times longer than this feature's own resets have been taking is not a wait, it is a stall";
+  `N = 5` is short enough to follow a changing game and long enough that one unusual interval does not move the
+  median.
+
+**Memory** (`tmtLoader.runtimeState()`, never the save): `stallIntervals`, `stallSince`, `stallFired`, `rateBest`,
+`rateHold`. ⛔ Each appears **only when it has something to say**, and intervals are recorded only for a feature whose
+policy carries the modifier — so a run that uses neither new strategy writes byte-for-byte the record it wrote before
+V2, and every snapshot committed in this repo stays valid.
 
 **`buy` vs `buyMax`.** TMT 2.2.1 calls `buyMaxBuyable` only from autobuyers — no component calls it — and Prestige
 Tree's `buyMax()` bodies raise the amount to the affordable target **without subtracting the cost** (they are the

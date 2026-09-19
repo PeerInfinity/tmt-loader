@@ -575,6 +575,141 @@ jobs:
           retention-days: 14
 
   # ---------------------------------------------------------------------------------------------------------------
+  # V2 — THE STRATEGY TABLE, THE TWO NEW RESET STRATEGIES, AND THE EDITORS. `gates-v2.mjs` is what stops each of
+  # these from rotting, and nothing else in this workflow can see any of them:
+  #   · a strategy row whose pattern, parameter type and implementation have drifted apart, or a declared bound that
+  #     nothing enforces (part 1 — `rate-peak@2/0` validated once, and could never have fired);
+  #   · the stall modifier's memory or `rate-peak`'s hold clock leaving `runtimeState()`, so a resumed run diverges
+  #     from an uninterrupted one (part 3);
+  #   · a run that makes NO edit no longer landing on R1′'s M15 → M16 number, or the new save key going missing from
+  #     `startData`, where Vue 2 cannot observe it (part 5);
+  #   · the editors becoming cosmetic — a picker that writes the save while the decision path reads the table — or
+  #     the game's own HOTKEYS firing while the player types into a field (part 4).
+  #
+  # ⚠ TWO JOBS, for the same measured reason as V1's pair: parts 1, 3 and 5 import the `playwright` package and
+  # never launch it, so they skip the browser download; part 4 needs a real page.
+  #
+  # ⛔ LEFT OUT OF CI, and why: part 2 is the MEASUREMENT (ten 12,000-tick cells twice each from `all/M16.json`,
+  # about an hour) and it decides nothing — ⚖ R2's sweep owns the defaults, so a CI job re-measuring them every push
+  # would be paying an hour to re-print a table. Part 6 opens all 171 games (~20 min unsharded) and would need
+  # sharding plus a merge assertion to be honest; it is the one-off witness that the editors render across the
+  # roster, and the shape is now fixed. Both are run by hand and quoted in the as-built with the head they ran at.
+  #
+  # ⛔ `--assert` on every part: `gates-v2` already exits 1 on a red row, which does NOT catch the battery that
+  # stopped part-way — it prints fewer rows, and fewer rows is fewer reds. Each part declares the row count it emits.
+  # ---------------------------------------------------------------------------------------------------------------
+  v2-node:
+    name: V2 strategies — headless (parts 1, 3, 5)
+    needs: fast
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      # ⚠ `npm ci` but NO `playwright install`: these parts import the package and never launch a browser.
+      - run: npm ci
+
+      - name: Part 1 — schema ≡ behaviour
+        shell: bash  # bash -eo pipefail: without it `| tee` reports the pipe's status and a refusal is lost
+        run: |
+          set -o pipefail
+          node tools/harness/gates-v2.mjs --part 1 --no-summary --assert --pool 3 | tee v2-1.txt
+
+      - name: Part 3 — determinism, and a run cut mid-clock and resumed
+        shell: bash
+        run: |
+          set -o pipefail
+          node tools/harness/gates-v2.mjs --part 3 --no-summary --assert --pool 3 | tee v2-3.txt
+
+      - name: Part 5 — inertness, and the new save key present and empty
+        shell: bash
+        run: |
+          set -o pipefail
+          node tools/harness/gates-v2.mjs --part 5 --no-summary --assert --pool 2 | tee v2-5.txt
+
+      - name: Summary
+        if: always()
+        shell: bash
+        run: |
+          {
+            echo '## V2 strategies — headless'
+            echo ''
+            echo '```'
+            cat v2-1.txt v2-3.txt v2-5.txt 2>/dev/null | grep -E 'VERDICT|REFUSED|^RED|green$' || echo 'no output'
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload the rows
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: v2-node
+          path: tools/harness/results/tmp/gates-v2-part*-last.json
+          if-no-files-found: warn
+          retention-days: 14
+
+  v2-page:
+    name: V2 editors — in the page (part 4)
+    needs: fast
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - run: npm ci
+
+      - name: Cache the Playwright browser
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+
+      - run: npx playwright install --with-deps chromium
+
+      # ⚠ Every arm here is PAIRED against a control it cannot move: the action-count row measures its own two-load
+      # floor first, and the hotkey row sends the SAME key outside the field and requires the game to act.
+      - name: Part 4 — an edit is not cosmetic, and a hotkey typed into a field does not reach the game
+        shell: bash
+        run: |
+          set -o pipefail
+          node tools/harness/gates-v2.mjs --part 4 --no-summary --assert | tee v2-4.txt
+
+      - name: Summary
+        if: always()
+        shell: bash
+        run: |
+          {
+            echo '## V2 editors — in the page'
+            echo ''
+            echo '```'
+            cat v2-4.txt 2>/dev/null | grep -E 'VERDICT|REFUSED|^RED|green$' || echo 'no output'
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload the rows
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: v2-page
+          path: tools/harness/results/tmp/gates-v2-part*-last.json
+          if-no-files-found: warn
+          retention-days: 14
+
+  # ---------------------------------------------------------------------------------------------------------------
   # S1 part 1 — the automation anchors. 52 checks, 197 s locally, and EVERY slice this arc has run it by hand to
   # prove no anchor moved. That is exactly the check that should not depend on a human remembering.
   #
