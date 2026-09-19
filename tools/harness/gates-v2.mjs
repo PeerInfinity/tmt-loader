@@ -573,7 +573,14 @@ async function part6(browser, base, ids) {
         await page.waitForTimeout(60);
         const perRedraw = errs.length - b0;
         const before = errs.length;
-        await showAdvanced(page);
+        // ⛔ THE SELECTION MUST COST EXACTLY ONE REDRAW, because the control above is ONE redraw. MEASURED:
+        // `showAdvanced()` does two (one to open the tab, one after setting the subtab), so on a game that logs on
+        // EVERY redraw the leg saw one extra and called it the subtab's — `arctree`, which logs
+        // "We meet an NaN at (e^NaN)NaN" once per `updateTemp()` from its own values (plan §16.3 item 12). The tab
+        // is already open here, so the subtab is set and redrawn once, which is what the control measured.
+        await page.evaluate(() => { player.subtabs[tmtLoader.auLayer].mainTabs = 'Advanced'; });
+        await redraw(page);
+        await page.waitForTimeout(200);
         r = await page.evaluate(() => {
           const T = window.tmtLoader, rows = T.explain();
           const editable = rows.filter((x) => x.state !== 'locked' && x.state !== 'excluded');
