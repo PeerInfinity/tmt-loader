@@ -4388,10 +4388,30 @@ by name after each one.
 | C₀ | ⚠ the first version of C also dropped the `cameFrom = null` | `ptr` | reddened at step ONE (`THE MEMORY SURVIVED THE BACK PRESS`) and never reached the half it was written for. A mutant that dies early proves the early check, not the one it was aimed at |
 | D | the layer's colour replaced by a constant | `ptr` | `THE AFFORDABLE CHIP IS NOT THE LAYER'S OWN COLOUR (can rgb(119,191,95) != rgb(49,174,176))`. ⚠ **The colours leg is GREEN on it** — `ptr` draws no affordable chip at that state, so the constructed leg is the only thing that sees it. That is the whole argument for building it |
 
+### The CI verdict — run `35448469370` at `91dbc1e70`, all 15 jobs success
+
+`merge + roster assertion`: **`rows: 171/171 game(s); 0 RED; 6 abstained on the state leg`**
+(the-gaming-tree, plague-tree-vorona-cirus-treesease, falling-mountain-s-alterprestige, the-cookie-tree,
+the-orchard-tree, the-periodic-table-tree — the same six as U4), `coverage: the 10 shard(s) cover all 171 game(s),
+each exactly once`. Shards 137–203 s; serial would be 27.4 min.
+
+What the roster says about the three U5 legs, read off the merged artifact:
+
+| leg | judged | abstained | what it saw |
+|---|---|---|---|
+| colours | 171 | 0 | **1,092 chips**: 960 `locked`, 77 `bought`, **55 `can`** over **26 games** — so all three keys are exercised naturally somewhere, and every one matched the probe's own expectation |
+| three-way (constructed) | **54** | 117 | 116 "no card draws three unlocked upgrade chips at this state", and **1** the named colour abstention (`the-prestige-tree`). **4 distinct bought/locked palettes**: the family's on 51, plus `the-rainbow-void-tree`, `the-congratulations-tree` (`hsl()`) and `the-factoree` (`rgba()` with alpha) |
+| Back | **170** | 1 | `the-loop-tree-2`: its card's open button did not open the tab (`player.tab is none`) — the layer's own `onClick` is the game's and need not open a tab, which is why the leg names it. Tree route: the engine's own node on **166**, `showTab` on 4 |
+| stability (no-hop) | 7 | 164 | 5 saw both vectors move, 1 lit/grey only, 1 the chips' colour only; the row held byte-identical on all 7 |
+
+⛔ **ZERO of the 171 games shows all three states on ONE card at a recorded state.** The question the bounded set
+left open is answered, and the answer is the strong form: the constructed leg is not a convenience, it is the only
+judge of the three-way reading that exists.
+
 ### What this leaves open
 
-- the **natural** three-state witness is still 0 on all six games driven here. CI's 171 will say whether any game
-  on the roster shows all three at a recorded state; if none does, the constructed leg is the only judge there is;
+- a `can` chip and a `locked` chip coexist on cards across 26 games, but never a `bought` one beside them. Nothing
+  asks for a state in which they do; if one is ever wanted, it has to be built, not found;
 - `pseudo` chips now carry the engines' own `.pseudo` / `.plocked` colours, and **no game on the roster draws one
   at any recorded state** — the same gap U2b recorded, inherited rather than closed;
 - the chip keeps `color: inherit` on its new background, which is what the engines' own controls do (their
