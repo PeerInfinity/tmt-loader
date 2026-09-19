@@ -4593,6 +4593,22 @@ their rows apply the same principle by analogy and are recorded as an **inferenc
 | census-figures | — | — | GREEN | **13/13** documented figures = the tree (the new `toggleAuto` claim among them) |
 | games-table `--check` | — 171 games — | — | GREEN | no game's tree touched |
 
+### The CI verdict at `fea7777eb` — run `35453622084`, **16/16 jobs**, `rows: 171/171; 0 RED`
+
+(6 abstained on the state leg, the usual six.) What the new legs actually judged over the roster:
+
+| leg | judged | abstained | what it saw |
+|---|---|---|---|
+| I2 — the counter's three states, CONSTRUCTED | **61** | 110 | all three colours on one card, on 61 different games |
+| I3 — a milestone counter red and green | **54** | 117 | 53 in `rgb()` and **one in `rgba()`** — `the-factoree`'s 8-digit hex, with real alpha |
+| K — the inaccessible press | **167** | 4 | **42 on a NATURAL inaccessible layer, 125 on a constructed one** |
+
+⛔ **Non-vacuous on every key of the user's table**, over the whole roster: `upgrades:locked` 210,
+`achievements:locked` 88, `milestones:locked` 68, `buyables:locked` 18, **`upgrades:can` 17**, `challenges:locked`
+8, **`upgrades:bought` 6**, **`milestones:bought` 5**, **`buyables:can` 5** — nine of the table's cells witnessed
+by a real game rather than by a construction. The action buttons split **765 `locked` / 55 `can`**, which is both
+of the two states a button can be in.
+
 ### The mutants
 
 Five, each run on `ptr`, the work restored from a COPY taken before any mutation (`diff` against it after every
