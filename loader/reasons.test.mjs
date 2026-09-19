@@ -235,8 +235,11 @@ test('⛔ `unknown` never occurs, and the check can SEE it', () => {
   // the one exit that reaches `unknown`: a policy the validator accepted and the switch does not implement
   // ⚠ NOT `gain>=notanumberx`: that MATCHES the gain>=Nx branch, multiplies by NaN and answers `waiting:gain-x`
   // perfectly reasonably. The exit is a policy no branch recognises at all.
+  // ⚠ V2: `f.policy` is a GETTER over the precedence chain (derived < table < the player's save < setPolicy), so the
+  // exit is forced at the BASE of that chain. `parsePolicy` answers null for a string no strategy row matches, and
+  // the decision path's last line is what turns that into `unknown`.
   const f = ctx.tmtLoader.features.find((x) => x.id === 'reset:a');
-  f.policy = 'mystery';
+  f.policy0 = 'mystery';
   ctx.player.points = new Decimal(1000);
   tick(ctx, 1);
   assert.ok(codes(ctx).unknown > 0, 'a policy no branch implements did not reach `unknown`');
