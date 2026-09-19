@@ -11,7 +11,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { chromium } from 'playwright';
-import { REPO, GAMES, parseArgs, startServer, readManifest, headCommit, treeDirty, writeJSON, entryOnly } from './lib.mjs';
+import { REPO, GAMES, parseArgs, startServer, readManifest, headCommit, treeDirty, writeJSON, entryOnly, gateCoverage, coverageLine } from './lib.mjs';
 import { runNode } from './run.mjs';
 import { openContext, openGame, pageTick } from './page.mjs';
 import { parity } from './parity.mjs';
@@ -35,7 +35,7 @@ const MARKS = {
 };
 export const AU_NODE_SELECTOR = '#app .smallNode.au';
 
-const a = parseArgs(process.argv.slice(2), ['no-summary']);
+const a = parseArgs(process.argv.slice(2), ['no-summary', 'assert']);
 const PART = String(a.part || '1');
 const ids = a._.length ? a._ : GAMES();
 const noAuto = PART === '1';
@@ -477,4 +477,13 @@ for (const r of rows) md += `| ${cell(r.gate)} | ${r.id} | ${cell(r.leg)} | ${ce
 if (!a['no-summary']) fs.appendFileSync(SUMMARY, md);
 writeJSON(path.join(REPO, `tools/harness/results/tmp/gates-a1-part${PART}-last.json`), { date, commit, dirty, rows });
 console.log(`gates-a1 part ${PART}: ${rows.filter((r) => r.ok).length}/${rows.length} green`);
+// `--assert` (V1, for CI): green rows are only half a verdict. A battery that booted one game and threw inside the
+// second printed `1/12 green` and exited 0 — fewer games is fewer rows is fewer reds. `gateCoverage` refuses a run
+// whose rows do not cover the roster it was GIVEN, and one where the games did not all run the same battery.
+if (a.assert) {
+  const label = `a1-part${PART}`;
+  const c = gateCoverage(rows, ids, { label });
+  console.log(coverageLine(c, label));
+  if (!c.ok) { console.log(`${label} REFUSED:`); for (const p of c.problems) console.log(`  · ${p}`); process.exit(1); }
+}
 process.exit(rows.every((r) => r.ok) ? 0 : 1);

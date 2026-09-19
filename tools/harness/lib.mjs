@@ -233,3 +233,53 @@ export function parseShard(spec) {
   if (i < 1 || i > n) throw new Error(`--shard i must be in 1..${n}, got ${i}`);
   return { i, n };
 }
+
+// ---------------------------------------------------------------------------------------------------------------
+// COVERAGE — the same accusation `merge-shards.mjs` makes, for a gate that does not shard.
+//
+// ⛔ Same inversion as everywhere else in this repo: a battery that ran fewer games finishes faster and shows
+// fewer reds. `gates-a1.mjs` enumerates its own roster and, until V1, exited 0 whatever its rows said — so a run
+// that booted one game, threw inside the second and printed `1/12 green` was a GREEN step in CI. Two independent
+// things have to be asserted and neither implies the other: that every game the run was GIVEN produced rows, and
+// that the rows are green.
+//
+// The per-game row COUNT is the third, and it is the one that catches a battery dying mid-way through a game:
+// every game of a `gates-a1` part runs the identical sequence of checks, so unequal counts mean one of them
+// stopped early — which otherwise reads as a game with fewer (and therefore fewer failing) rows.
+// ---------------------------------------------------------------------------------------------------------------
+
+/**
+ * Judge a non-sharded battery's rows against the roster it was told to cover. Pure, so the unit test can feed it
+ * rows that never booted a game. `rows` = [{gate, id, ok}], `roster` = the ids the run was given.
+ * Returns {ok, problems: [string], games, expected, rows, red, perGame}.
+ */
+export function gateCoverage(rows, roster, { label = 'gate' } = {}) {
+  const problems = [];
+  const say = (m) => problems.push(m);
+  const want = [...new Set(roster)];
+  const seen = [];
+  const perGame = {};
+  for (const r of rows) {
+    const id = r && r.id;
+    if (id === undefined || id === null) { say(`${label}: a row carries no game id (${JSON.stringify(r).slice(0, 120)}), so it cannot be placed in the run`); continue; }
+    if (!seen.includes(id)) seen.push(id);
+    perGame[id] = (perGame[id] || 0) + 1;
+  }
+  if (!rows.length) say(`${label}: the run produced NO ROWS AT ALL — a battery that died before its first check leaves exactly this, and it is not a pass`);
+  const missing = want.filter((id) => !seen.includes(id));
+  if (missing.length) say(`${label}: GAME(S) MISSING from the rows: ${missing.join(', ')} — the run was given ${want.length} (${want.join(', ')}) and produced rows for ${seen.length}`);
+  const extra = seen.filter((id) => !want.includes(id));
+  if (extra.length) say(`${label}: rows for ${extra.join(', ')}, which the run was not given — the roster and the rows disagree about what was measured`);
+  const counts = [...new Set(want.filter((id) => perGame[id]).map((id) => perGame[id]))];
+  if (counts.length > 1) {
+    say(`${label}: the games did not run the same battery — ${want.filter((id) => perGame[id]).map((id) => `${id} ${perGame[id]} row(s)`).join(', ')}. Every game runs the identical sequence, so an unequal count is a game that stopped part-way, and its missing rows cannot be red`);
+  }
+  const red = rows.filter((r) => !r.ok);
+  if (red.length) say(`${label}: ${red.length} RED row(s): ${red.map((r) => `${r.gate} [${r.id}]`).join(' · ')}`);
+  return { ok: problems.length === 0, problems, games: seen.length, expected: want.length, rows: rows.length, red: red.length, perGame };
+}
+
+/** The one line a CI step's log is read for. */
+export function coverageLine(c, label = 'gate') {
+  return `${label} VERDICT: games ${c.games}/${c.expected}; rows ${c.rows - c.red}/${c.rows}; ${c.red} RED`;
+}

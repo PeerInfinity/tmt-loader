@@ -359,6 +359,80 @@ jobs:
           retention-days: 7
 
   # ---------------------------------------------------------------------------------------------------------------
+  # A1 part 2 — the `au` TAB ITSELF (`gates-a1.mjs --part 2`). Until V1 this ran NOWHERE in CI: only part 1's half
+  # (the registry with no per-game table) rode inside M1's `both` leg, so every check of the tab the player actually
+  # sees — the toggles' text, `?profile=all` not writing the save, a toggle surviving a reload, the disclosure line,
+  # the whole U4/U6 arming battery — depended on a session remembering to run it. V1 adds a subtab to that tab, which
+  # is exactly the change that would break those rows silently.
+  #
+  # ⛔ THE SET IS DERIVED, NEVER TYPED. The gate's subject is "a game with an automation table", and `games-auto/`
+  # IS that set; a third table added tomorrow joins this job by existing. (`loader/census.test.mjs` asserts that
+  # directory and the manifests' `auto` fields name the same games, so a table the loader never loads cannot slip
+  # in here.) A typed list would quietly stop covering the roster it names — the same failure the merge job exists
+  # to refuse, one level up.
+  #
+  # ⛔ AND THE GATE IS ASKED TO PROVE WHAT IT COVERED. `--assert` refuses a run whose rows do not cover the games it
+  # was given, or where the games did not all run the same battery — a battery that boots one game and throws inside
+  # the second prints `12/24 green`, exits 0 on the half it ran, and reads as a smaller, faster, greener run.
+  # ---------------------------------------------------------------------------------------------------------------
+  a1:
+    name: A1 part 2 — the au tab
+    needs: fast
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - run: npm ci
+
+      - name: Cache the Playwright browser
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+
+      - run: npx playwright install --with-deps chromium
+
+      # `--no-summary`: results/SUMMARY.md is the committed record of runs a person ran and read.
+      - name: A1 part 2 over the games that have an automation table
+        shell: bash  # bash -eo pipefail: without it `| tee` reports the pipe's status and the refusal is lost
+        run: |
+          set -o pipefail
+          SET=$(ls games-auto/*.js | xargs -n 1 basename | sed 's/\.js$//' | tr '\n' ' ')
+          test -n "$SET" || { echo 'games-auto/ named no game at all'; exit 1; }
+          echo "A1_SET=${SET% }" >> "$GITHUB_ENV"
+          echo "derived set: $SET"
+          node tools/harness/gates-a1.mjs --part 2 $SET --no-summary --assert | tee a1.txt
+
+      - name: Summary
+        if: always()
+        shell: bash
+        run: |
+          {
+            echo '## A1 part 2 — the au tab ('"${A1_SET:-the games-auto set}"')'
+            echo ''
+            echo '```'
+            tail -40 a1.txt 2>/dev/null || echo 'no output — the gate produced nothing'
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload the rows
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: a1-part2
+          path: tools/harness/results/tmp/gates-a1-part2-last.json
+          if-no-files-found: warn
+          retention-days: 14
+
+  # ---------------------------------------------------------------------------------------------------------------
   # S1 part 1 — the automation anchors. 52 checks, 197 s locally, and EVERY slice this arc has run it by hand to
   # prove no anchor moved. That is exactly the check that should not depend on a human remembering.
   #

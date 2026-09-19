@@ -224,3 +224,37 @@ test('⛔ every piped step declares `shell: bash` — or the pipe eats the verdi
     }
   }
 });
+
+// ---------------------------------------------------------------------------------------------------------------
+// V1: `gates-a1 --part 2` — the au TAB's own gate — joins CI. It ran nowhere before, which is why the properties
+// that keep it honest are asserted here rather than left to whoever reads the YAML next.
+// ---------------------------------------------------------------------------------------------------------------
+
+test('the au tab has its own job, gated by the fast one', () => {
+  const j = jobs(wf('sweep.yml'));
+  assert.ok(j.a1, 'sweep.yml has no `a1` job — `gates-a1 --part 2` is back to running nowhere');
+  assert.deepEqual(needs(j.a1), ['fast']);
+  assert.match(j.a1, /gates-a1\.mjs --part 2/, 'the a1 job does not run part 2');
+  assert.doesNotMatch(j.a1, /continue-on-error:\s*true/, 'the a1 job is advisory — then a red au tab is still a green run');
+});
+
+test('⛔ the a1 job DERIVES its game set and does not type ids', () => {
+  // The gate's subject is "a game with an automation table". `games-auto/` is that set, and a third table added
+  // tomorrow has to join the job by existing. A typed list is a roster that silently stops covering what it names.
+  const j = jobs(wf('sweep.yml'));
+  const run = j.a1.split(/^ {6}- /m).find((st) => st.includes('gates-a1.mjs --part 2'));
+  assert.match(run, /ls games-auto\//, 'the a1 job no longer derives its set from games-auto/');
+  for (const id of ['ptr', 'something']) {
+    assert.doesNotMatch(run, new RegExp(`--part 2[^\\n]*\\b${id}\\b`), `the a1 job names \`${id}\` on its command line instead of deriving it`);
+  }
+  assert.match(run, /test -n "\$SET"/, 'an empty derivation would run the gate over NO games and exit 0');
+});
+
+test('⛔ the a1 job asks the gate to prove what it COVERED, not just that nothing failed', () => {
+  // `gates-a1` already exits 1 on a red row. That is the half that does not catch a battery which booted one game
+  // and threw inside the second: it prints `12/24 green`, every row it produced is green, and it is smaller,
+  // faster and greener than a full run. `--assert` is the other half.
+  const j = jobs(wf('sweep.yml'));
+  assert.match(j.a1, /--assert\b/, 'the a1 job does not assert its coverage — fewer games is fewer rows is fewer reds');
+  assert.match(j.a1, /set -o pipefail/, 'the gate is piped into tee without pipefail, so the refusal is lost');
+});
