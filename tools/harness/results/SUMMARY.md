@@ -4276,6 +4276,15 @@ games were the wrong witnesses.
 `performance.now()` around `refresh()` cannot measure. The lateness is the honest observable; the JS time is a
 lower bound.
 
+### The bounded local set at `8511a5fee` — no `loader/` file changed, so this is a tree check
+
+`node tools/harness/page.mjs ptr something the-alphabetree --gate mobile` — **3/3 GREEN**. `the-alphabetree` joins
+the set because the census named it the most expensive card list on the roster and no local set had ever included
+it. Layers leg 3/3 over **68 cards and 144 chips**; the throttle leg `throttled` on 3/3; the tooltip leg **186 of
+186** judged controls richer over 214; state leg 3 equal, 0 moved, 0 abstained; inertness 3/3 unchanged; reset
+press 3/3 moved `player[l].points`. ⚠ `the-alphabetree` also held **more buttons at 1280 than at 390** (`c` 6 → 7),
+which is U2d's fit rule exercised on a card nobody had driven before. The roster is CI's.
+
 ### What this leaves open
 
 - the **per-card loop** is where the cost is (r = 0.923 with the card count; 49 cards cost 4 ms, 2 cards cost
