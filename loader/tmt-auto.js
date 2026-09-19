@@ -1673,12 +1673,21 @@
           this.error = r.ok ? null : r.error;
           if (r.ok) this.draft = String(this.data.value);
         },
+        // ⚠ A STEP IS CLAMPED TO THE PARAMETER'S OWN BOUNDS, so the buttons can never hand the validator a value it
+        // is about to refuse: one press below a minimum would otherwise show an error the player did not type.
+        // The step RULE is per type, because one rule cannot serve a count, a number of seconds and a quantity that
+        // may be 1e600: ±1 for a count, ±0.05 for a fraction, ×1.5 (+0.5) for a number, and ×2 for a quantity.
         step: function (dir) {
-          var v = this.data.value, t = this.data.type, next;
+          var v = this.data.value, t = this.data.type, next, lo = this.data.min, hi = this.data.max;
+          var clamp = function (x) {
+            if (lo !== null && lo !== undefined && x < Number(lo)) x = Number(lo);
+            if (hi !== null && hi !== undefined && x > Number(hi)) x = Number(hi);
+            return Math.round(x * 1e6) / 1e6;
+          };
           if (t === 'quantity') { try { next = String(dir > 0 ? D(v).times(2) : D(v).div(2)); } catch (e) { next = v; } }
-          else if (t === 'count') next = String(Math.max(0, Math.round(Number(v)) + dir));
-          else if (t === 'fraction') next = String(Math.round((Number(v) + dir * 0.05) * 100) / 100);
-          else next = String(Math.round((Number(v) * (dir > 0 ? 1.5 : 1 / 1.5) + dir * 0.5) * 100) / 100);
+          else if (t === 'count') next = String(clamp(Math.round(Number(v)) + dir));
+          else if (t === 'fraction') next = String(clamp(Number(v) + dir * 0.05));
+          else next = String(clamp(Number(v) * (dir > 0 ? 1.5 : 1 / 1.5) + dir * 0.5));
           var r = T.setSavedParam(this.data.fid, this.data.name, next, this.data.which);
           this.error = r.ok ? null : r.error;
           if (r.ok) this.draft = String(this.data.value);
@@ -1738,7 +1747,8 @@
             for (var k = 0; k < S.params.length; k++) {
               var p = S.params[k];
               out.push({ key: which + ':' + p.name, fid: r.id, which: which, name: p.name, type: p.type,
-                label: p.label, value: (params && params[p.name] !== undefined) ? params[p.name] : p.default });
+                label: p.label, min: p.min, max: p.max,
+                value: (params && params[p.name] !== undefined) ? params[p.name] : p.default });
             }
           };
           if (r.policy.strategy) add('primary', r.policy.strategy, r.policy.params);

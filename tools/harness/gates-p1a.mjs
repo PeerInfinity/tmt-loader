@@ -42,7 +42,19 @@ const KDIR = path.join(REPO, 'tools/harness/knowledge');
 const DETECT = { stall: 3600, 'stall-seen': true, 'wall-ms': 540000 };
 // S1 §10a.4 / H1-2f: the frontier, every derived kind, diff 1, from all/M09.
 //
-// ⛔ `hash` RE-RECORDED ONCE, 2026-09-19 (V1): `63f28e099536a119` → `11826e775e6f88d8`. ⚖ Granted by the user
+// ⛔ `hash` RE-RECORDED ONCE MORE, 2026-09-19 (V2): `11826e775e6f88d8` → `257bca85661ac1b4`. ⚖ Granted by the user
+// UP FRONT and ONCE, covering every save key the editing slice adds at a stroke (plan §17: "choices live in the
+// SAVE ... one more FULL-hash re-record granted"), and V2 adds exactly ONE: `player.au.edits`, seeded `{}` in the
+// au layer's `startData`. It is a NESTED object on purpose — the next editing slice's `until`, `priority` and
+// `maxActions` join the same per-feature entry, so this is the last re-record the editing arc needs.
+// MEASURED at `2f1506e10`, and the move really is one field: `ticks` 14131, `lastProgress` 10531 and `hashGame`
+// `f7a8854358ac4029` are ALL UNMOVED, and the regenerated fixtures' only content diff is `"edits":{}` appearing in
+// `player.au` (`tools/harness/snapshots/something/all/S03.json` carries the same `hashGame` `5de8903ce94ad67b` it
+// carried before). ⚠ The engines' own `fixSave` / `fixData` add the nested key to a PRE-V2 save exactly as they
+// add a flat one — measured on a fresh boot and on `all/M15` by `gates-v2 --part 5`, which is the leg that says a
+// key Vue 2 cannot observe late is not being relied on.
+//
+// ⛔ `hash` RE-RECORDED ONCE BEFORE THAT, 2026-09-19 (V1): `63f28e099536a119` → `11826e775e6f88d8`. ⚖ Granted by the user
 // (plan §15c / §15d.2, "Yes, seed it"), and it carries BOTH of V1's causes in the one move, which is why it is one
 // move: (a) `player.au.armLocked` is now in the au layer's `startData` — U6 routed around that by owning
 // `toggleAuto`'s click path, and this replaces the wrapper with the key being there; (b) the au tab took SUBTABS,
@@ -58,7 +70,7 @@ const DETECT = { stall: 3600, 'stall-seen': true, 'wall-ms': 540000 };
 // CONFIGURATION (below) reproduces the pin exactly, which is the same repair §14d.2 item 14 applied to `gates-s1`.
 // It is a reproduction of the historical measurement, not a re-record of it. ⚠ `gates-h1 --part 1` carries the
 // identical staleness in `KINDS_PINNED` and has NOT been repaired — see the warning at the top of that file.
-const FRONTIER_PIN = { ticks: 14131, lastProgress: 10531, hash: '11826e775e6f88d8', hashGame: 'f7a8854358ac4029' };
+const FRONTIER_PIN = { ticks: 14131, lastProgress: 10531, hash: '257bca85661ac1b4', hashGame: 'f7a8854358ac4029' };
 // the census counts the walk is compared against (walkthrough digest §2a / tmtLoader.ids())
 const PTR_CENSUS = { upg: 172, ms: 85, ach: 80, buy: 52, ch: 9 };
 
