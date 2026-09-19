@@ -22,9 +22,9 @@ the one interface a runner talks to. Without `?mod=` the page shows a picker. `?
 `?mobile=1` opts in to the mobile layout ([docs/mobile.md](docs/mobile.md)): one column, master-detail and a bottom nav bar, for
 engines that ship no `@media` query at all — likewise inert without the flag. `?navbar=1` opts in to that **nav bar
 alone**, which is wanted on a desktop too; `?mobile=1` implies it. The bar's first button opens the **layer list** —
-the game's layers as cards grouped by tree row, each with a working reset button and chips for its features, in
-the order and with the membership the game's own tab gives them; a selectable alternate view of the tree, not a
-replacement for it.
+the game's layers as cards grouped by tree row, each with a working reset button, a counter per category the
+layer draws and a button per thing you can act on, expanding to chips for every feature in the order and with the
+membership the game's own tab gives them; a selectable alternate view of the tree, not a replacement for it.
 
 Games live under `games/<id>/` as **git subtrees**, pristine at the upstream commit their manifest records.
 

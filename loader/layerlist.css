@@ -80,10 +80,16 @@
   opacity: .62;
 }
 
-/* one card per screen width on a phone; as many as fit on a desktop, where the same overlay is wanted */
+/* One card per screen width on a phone; as many as fit on a desktop, where the same overlay is wanted.
+ * ⚠ THE MINIMUM IS 380px, NOT U2's 280px, and it is `min(100%, 380px)` so a 366px phone card still gets ONE column
+ * instead of a 380px track overflowing it. MEASURED: at 280px the auto-fill gave a 1280px desktop FOUR columns of
+ * 308px against the phone's single 366px one — a desktop card NARROWER than a phone card, which is the opposite of
+ * what a wider window should buy you, and it made ⚖ "more buttons on a desktop, fewer on a phone" (user,
+ * 2026-09-18) unbuildable however the fit was measured. At 380 the desktop takes three 413px columns and every
+ * viewport above the phone's holds a card at least as wide as the phone's. */
 #tmt-layerlist .tmt-layerlist-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 380px), 1fr));
   gap: 8px;
 }
 
@@ -99,7 +105,11 @@
 /* shown but not yet unlocked: the tree draws these too, and the reset button on one of them IS the unlock */
 #tmt-layerlist .tmt-layerlist-card.tmt-layerlist-locked { opacity: .62; }
 
+/* the card's own head: the layer (which fills it) and the expander, which has to be pressable in BOTH states and
+ * so lives in neither of the two rows it toggles between */
+#tmt-layerlist .tmt-layerlist-cardhead { display: flex; align-items: center; gap: 8px; }
 #tmt-layerlist .tmt-layerlist-open {
+  flex: 1 1 auto;
   display: flex;
   align-items: center;
   gap: 10px;
@@ -164,8 +174,56 @@
 #tmt-layerlist .tmt-layerlist-reset.can { color: #000; font-weight: bold; }
 #tmt-layerlist .tmt-layerlist-reset.locked { opacity: .55; }
 
-#tmt-layerlist .tmt-layerlist-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+/* ---------------------------------------------------------------- U2d: the two views
+ * ⚖ COLLAPSED IS TWO ROWS (user, 2026-09-18) — the counters, then what you can act on — and EXPANDED is exactly
+ * U2b's chip row. Each state hides the other's boxes outright, which is why the gate can assert that a card really
+ * renders something different in the two. `:empty` is what hides a row a layer has nothing to put in. */
+#tmt-layerlist .tmt-layerlist-chips { display: none; flex-wrap: wrap; gap: 6px; }
+#tmt-layerlist .tmt-layerlist-card.tmt-layerlist-expanded .tmt-layerlist-chips { display: flex; }
+#tmt-layerlist .tmt-layerlist-card.tmt-layerlist-expanded .tmt-layerlist-counters,
+#tmt-layerlist .tmt-layerlist-card.tmt-layerlist-expanded .tmt-layerlist-actions { display: none; }
+#tmt-layerlist .tmt-layerlist-counters:empty,
+#tmt-layerlist .tmt-layerlist-actions:empty { display: none; }
+
+/* ROW ONE — the counters. Not buttons: they are readouts, so they carry no tap minimum and the card stays short. */
+#tmt-layerlist .tmt-layerlist-counters { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+#tmt-layerlist .tmt-layerlist-counter {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 5px;
+  min-height: 30px;
+  padding: 4px 8px;
+  border: 1px solid rgba(127, 127, 127, .55);
+  border-radius: 6px;
+  font-size: 13px;
+}
+#tmt-layerlist .tmt-layerlist-counter-label { font-size: 11px; opacity: .72; letter-spacing: .04em; }
+/* ⚠ TABULAR FIGURES AND A RESERVED WIDTH, from the start. `x` changes as you play, and in a proportional face a
+ * `1` is narrower than a `7` — so without these the row would shuffle sideways on a number that did not even
+ * change width. The reservation itself is written by layerlist.js (`chars`), which knows the widest value each
+ * counter can reach; this is the half that makes the reservation mean a fixed number of columns. */
+#tmt-layerlist .tmt-layerlist-counter-value {
+  font-variant-numeric: tabular-nums;
+  font-weight: bold;
+  text-align: right;
+}
+/* ⚖ MILESTONES SQUARE, THE REST ROUND (user, 2026-09-18) — the same distinction their chips carry, so the passive
+ * category reads the same way in both views. */
+#tmt-layerlist .tmt-layerlist-counter[data-kind="milestones"] { border-radius: 0; }
+
+/* ROW TWO — what you can act on. A box of its own: ⚖ the two rows wrap and fit INDEPENDENTLY (user, 2026-09-18),
+ * so a card with several counters still gives its buttons the whole card width. */
+#tmt-layerlist .tmt-layerlist-actions { display: flex; flex-wrap: wrap; gap: 6px; }
+/* what did not fit on the FIRST line of that row, hidden after layerlist.js has measured where the browser put it.
+ * `display: none` also keeps it out of the geometry probes, as a control the page does not show should be. */
+#tmt-layerlist .tmt-layerlist-act.tmt-layerlist-nofit { display: none; }
+/* ⚖ AFFORDABILITY IS APPEARANCE, NEVER SELECTION (user, 2026-09-18): this pair of rules is the whole of what
+ * `canAffordUpgrade` / `canAfford` decides. Which buttons exist, and where they sit, is decided without it. */
+#tmt-layerlist .tmt-layerlist-act[data-afford="no"] { opacity: .5; }
+#tmt-layerlist .tmt-layerlist-act[data-afford="yes"] { border-color: currentColor; }
+
 #tmt-layerlist .tmt-layerlist-chip,
+#tmt-layerlist .tmt-layerlist-act,
 #tmt-layerlist .tmt-layerlist-more {
   text-align: center;
   min-width: 44px;
@@ -207,8 +265,5 @@
   opacity: .34;
 }
 
-/* the overflow chips exist in the DOM from the start and the "+N" button reveals them; `display: none` keeps them
- * out of the geometry probes exactly as a control the page does not show should be */
-#tmt-layerlist .tmt-layerlist-overflow { display: none; }
-#tmt-layerlist .tmt-layerlist-card.tmt-layerlist-expanded .tmt-layerlist-chip.tmt-layerlist-overflow { display: inline-block; }
-#tmt-layerlist .tmt-layerlist-card.tmt-layerlist-expanded .tmt-layerlist-divider.tmt-layerlist-overflow { display: block; }
+/* the expander itself: a chevron, not U2's `+N`. The counter row states every total the `+N` used to stand for. */
+#tmt-layerlist .tmt-layerlist-more { flex: 0 0 auto; font-size: 17px; }

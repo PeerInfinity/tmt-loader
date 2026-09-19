@@ -104,8 +104,10 @@ away, and closing the list puts you back exactly where you were.
 
 **The card acts, it does not only navigate** (⚖ user, 2026-09-18). Each card carries the layer's symbol on its own
 colour as a badge, the resource name and the current amount, a **working** reset button showing the game's own
-prestige text, and **chips** for the layer's notable features. Tapping the badge or the name opens that layer's
-tab; pressing the reset button really resets; pressing a chip really buys.
+prestige text, and — since U2d — **two rows**: a counter per category the layer draws, and below it a button per
+component you can act on. The expander in its head opens the card into U2b's full **chip** row. Tapping the badge
+or the name opens that layer's tab; pressing the reset button really resets; pressing a chip or a button really
+buys.
 
 `loader/layerlist.js` + `loader/layerlist.css`, appended to `<body>` like the bar. It reads `tmp` / `player` /
 `LAYERS` and calls the engine's own `showTab`, `doReset`, `buyUpgrade`, `buyBuyable` and `startChallenge`. It
@@ -145,7 +147,10 @@ here that evaluates game code is wrapped: a throw costs one card, never the list
   and otherside nodes its tree draws. By the same rule the loader's own `au` layer gets a card under
   `?automation=1` (measured on ptr: cards `p`, `a`, `au`, no chips on it, no page error) — it is a side node on the
   tree, so the view of the tree shows it. The M1 combined leg does not yet assert that; it was measured by hand.
-- **How many chips, and which win.** Six, then a `+N` button that expands the card — still true.
+- **How many chips, and which win.** Six, then a `+N` button that expands the card.
+  ⚠ **SUPERSEDED TWICE.** U2d retired the "six" half: the collapsed card is a counter row over a button row and
+  shows no chips at all, the expander is a chevron in the card's head, and how many BUTTONS a row holds is
+  measured at render rather than fixed ("The collapsed card", below).
   ⚠ The ORDER half of this answer was **superseded by U2b** ("The chips mirror the normal view", below): the
   chips are no longer ordered by state at all. What survives is the reason it was not affordability — those move
   every tick, and chips that reorder under a finger are worse than chips in a stale order — and U2b keeps it, by
@@ -320,29 +325,107 @@ computed `display` rather than the classes the list wrote. That also closes the 
 presses the `+N` button, so the expanded chip row is not measured". It toggles the card's own class rather than
 clicking, because a click is not a neutral probe and the `+N` handler does nothing else.
 
-#### What the collapsed card shows — measured, and deliberately left alone
+#### The collapsed card: counters, then what you can act on (U2d)
 
-The cap belongs to the card, but the layout order groups a card by category with the **milestones first**, so a
-flat "the first six" can show nothing but milestones — the passive category — while every upgrade and buyable
-hides behind the expander.
+⚖ **Two rows, not one flowing block** (user, 2026-09-18). U2's flat "the first six chips, then `+N`" is gone, and
+so is the question it raised — the tab layout puts **milestones first**, so the first six could be nothing but the
+passive category, and **8 of the roster's 47 multi-category cards hid a whole category behind the `+N`** (`ptr`'s
+`t` and `s` their upgrades, `ptr`'s `q` its only buyable, `the-unbalanced-tree`'s `inf`/`e`/`r` and
+`a-game-about-rocks`'s `s` their challenges, `the-melge-tree`'s `i` its milestones). Every category the tab draws
+now has a counter, whether or not it has a chip, so the question is retired rather than answered. **The chips are
+the expanded view**, unchanged from U2b.
 
-MEASURED rather than argued, over the whole roster: **8 of the 47 multi-category cards** come out that way —
-`ptr`'s `t` and `s` hide their upgrades (`t` shows five milestones and one buyable and hides all fifteen), `ptr`'s
-`q` hides its only buyable, `the-unbalanced-tree`'s `inf`, `e` and `r` and `a-game-about-rocks`'s `s` hide their
-challenges, and `the-melge-tree`'s `i` hides its milestones.
+**Row one — the counters.** One per category the layer draws, in the same tab-layout order the chips use, and only
+for a category that is non-empty after the three visibility rules.
 
-**U2b does not change it.** The collapsed card's selection rule is U2's — the first six, then `+N` — and ⚖ the
-user has since redesigned that card outright (2026-09-18: a per-category `x/y` counter, square-cornered for
-milestones and rounded for the rest, with a few buy buttons under it), which retires the question rather than
-answering it. **U2b is the expanded view.** The count is reported by the gate at every run, and asserted by
-nothing, so the slice that builds the new card starts from a measurement rather than from this paragraph.
+| category | reads | corners |
+|---|---|---|
+| milestones | `x/y`, earned over drawn | **square** |
+| upgrades, challenges, achievements | `x/y`, earned over drawn | rounded |
+| buyables, clickables | **the total owned** — one number | rounded |
 
-⚠ One thing worth carrying into that slice: U2 deliberately did **not** order or select chips by affordability,
-because chips that reorder under a finger are worse than chips in a stale order. The new collapsed design brings
-affordability back as a *selection* rule. How fast those states move, measured here: a chip's state is recomputed
-on every refresh, which is driven by the game's own re-renders and coalesced to one per animation frame — up to
-60/s while the panel is open — and affordability itself moves with the engine's tick, 20/s in play. Order is not
-recomputed there at all; only a change of **membership** rebuilds, which is what the rebuild signature is keyed on.
+⚖ The two shapes are the user's decision (2026-09-18), taken over an `x/y` of "how many you own at least one of":
+a buyable holds an **amount** and is never "done", so that ratio would have a denominator meaning nothing. It
+scans differently from its neighbours and that is the honest reading.
+
+`y` is what the tab **draws**, not what the layer declares — so a player who sets `msDisplay` to `incomplete` sees
+the milestones they have left rather than a total that counts what the tab is hiding. The card reads the same tab
+the chips do. A component with no usable short name still **counts**, although it gets no chip and no button: a
+counter needs no name to count something.
+
+⚠ **Clickables and achievements are walked for their counters and never chipped.** That is not new policy — a
+clickable's `display()` is prose and an achievement is not something you press — but it is why `visibleSeq` now
+yields two more categories than `chipsOf` does.
+
+**Which clickables get no counter, and why the obvious rule is wrong.** ⚠ **The two engines disagree about a
+clickable's starting value**: TMT 2.2.1 gives every clickable `new Decimal(0)` (`getStartClickables`,
+`games/ptr/js/utils.js:194`) and TMT 2.7 gives it `""` (`games/something/js/utils/save.js:102`). So "is the state
+a number?" separates *holds an amount* from *holds nothing* on 2.7 and **not** on 2.2.1, where every clickable
+would earn a box reading `0` — exactly the meaningless zero the user ruled out. The rule that works on both is the
+**value**: a clickable counts only while it holds a number above zero, so a category that will never hold one
+never gets a box. A **buyable** keeps its box at zero, because a buyable always has an amount (both engines define
+`getBuyableAmount`). The asymmetry is the engines', not ours. Measured: **no clickable on the roster holds a
+positive amount at any recorded state**, so the gate constructs the condition instead (see the layers leg).
+
+**Row two — what you can act on.** ⚖ **Unlocked and not yet bought, in tab-layout order** (user, 2026-09-18), and
+**not** "affordable right now": affordability decides only whether a button is **lit or greyed**, never whether it
+is present and never where it sits. It is the same principle U2 applied to the chips — a control that moves out
+from under a finger is worse than one that sits still looking unavailable — and since the user chose it over the
+alternative, it is the property the gate asserts rather than merely implies.
+
+Three readings that phrase leaves open, decided here:
+
+- a **milestone** has no action at all, so it never gets a button; its counter is how the collapsed card carries it;
+- a **pseudo-unlocked** upgrade is *not unlocked*. It is a real control on the tab (the teaser you press to unlock
+  rather than to buy), but the rule says unlocked, so it stays in the expanded chip row. Named rather than hidden:
+  it is the one reading where "what you can act on" and "unlocked and not yet bought" genuinely disagree;
+- a **buyable** is bought repeatedly, so "not yet bought" cannot mean for it what it means for an upgrade. It
+  qualifies while it can still be bought **at all** — below its `purchaseLimit` where one is declared, and never on
+  affordability. ⚠ Only TMT 2.7 declares that field (it defaults it to `Decimal(Infinity)`,
+  `games/something/js/technical/layerSupport.js:127`); 2.2.1 has no such concept, so there the test is vacuous and
+  a buyable always qualifies — which is what that engine's own button does anyway.
+
+A **challenge** qualifies while it is not completed, active or not: `startChallenge` is what its own button calls
+in both states.
+
+**How many buttons: as many as the row holds**, ⚖ measured at render against the row's own width (user,
+2026-09-18), never a constant. Every candidate is in the DOM; the ones the browser wrapped onto a second line are
+hidden, in **one** batched pass after the cards are in the document — `getBoundingClientRect()` forces layout, and
+a per-card read during construction would force one per card. Hiding a trailing flex item cannot move the items
+before it, so one pass is enough. A `resize` listener re-measures; it registers no timer and writes nothing.
+
+⚠ **The two rows fit independently of each other**, which overturns a number the brief carried. The user's reason
+for considering four buttons rather than six was that "the x/y entries take up space" — on their own row they no
+longer do, so the button row gets the whole card width back. Measured on `something`'s `fundamental`: **7 buttons
+at 390 px and 8 at 1280 px**, of 13 offered.
+
+⚠ **THE GRID HAD TO CHANGE FOR "more on a desktop" TO BE TRUE AT ALL, and this is a defect U2 shipped.** The card
+grid was `repeat(auto-fill, minmax(280px, 1fr))`, which at 1280 px gives **four columns of 308 px** against a
+phone's single **366 px** card — a desktop card *narrower* than a phone card, so no fit rule measured on the row
+could have held more buttons there. It is now `minmax(min(100%, 380px), 1fr)`: the `min()` is what keeps a 366 px
+phone on one column instead of overflowing a 380 px track, and the desktop takes **three columns of 413 px**. Every
+viewport above the phone's now holds a card at least as wide as the phone's.
+
+**The counters do not move the layout.** They carry `font-variant-numeric: tabular-nums` and a reserved width in
+`ch`, computed from the widest value each counter can reach (`y/y` for a ratio) and **only ever grown**, never
+given back — a width that shrank back would move the row the moment a number did. Without the tabular figures a
+proportional face makes a `1` narrower than a `7`, so the row would shuffle sideways on a number that did not even
+change width.
+
+**The counters are throttled, at 250 ms (4 Hz).** ⚖ The user agreed a throttle was fine (2026-09-18); the rate is
+this slice's. A counter is a number you read, not an animation, and 250 ms is below the delay at which a readout
+starts to feel stale — while the refresh it rides on is driven by the game's own re-renders, coalesced per
+animation frame, so up to 60 Hz. It is the card's heaviest per-refresh work (one pass per category per card), so
+this is roughly a 15× cut. ⚠ **Only the observer path is throttled.** An explicit `refresh()` — the API, a press,
+opening the panel — is a caller asking for a fresh read and always does the whole thing; a throttle that swallowed
+those would make the list lie immediately after the press that changed it. Measured by the gate rather than
+declared: twelve `#app` mutations one per animation frame produce **12 refreshes and 1 sync**.
+
+**The expander moved into the card's head, and lost its digit.** It has to be pressable in *both* states — the
+expanded card hides the counters and the buttons — so it can live in neither of the two rows it toggles between;
+in the head it also costs no vertical space of its own. It is a chevron, not U2's `+N`: the counter row now states
+every total that `+N` stood for, and a second, shakier answer to the same question would be one more number to
+hold still.
 
 ### Reading a card can make the ENGINE write `player`
 
@@ -467,11 +550,13 @@ Run at **both** widths — on the phone page, over the deep snapshot the geometr
   `tmp[l].tabFormat`, with the same three visibility rules, and never asked of the list: a list compared against
   its own `chipsOf` would assert nothing;
 - **(U2b) a divider at every category change and at neither end**, measured on what the browser RENDERS in BOTH
-  states — collapsed and expanded — by reading each element's computed `display` rather than the classes the list
+  states — collapsed and expanded — by reading each element's `getClientRects()` rather than the classes the list
   wrote. The card's expanded class is toggled directly rather than clicked, because a click is not a neutral probe
-  and the `+N` handler does nothing else;
-- **(U2b) a milestone chip's computed `border-radius` is not an upgrade chip's**, where the page has both
-  (abstained where it has only one kind);
+  and the expander's handler does nothing else. ⚠ U2d changed that test from computed `display`: see below;
+- **(U2b, hardened by U2d) a milestone chip's computed `border-radius` is `0` and an upgrade chip's is not**,
+  where the page has both (abstained where it has only one kind);
+- **(U2d) the collapsed card's two rows** — the counters, the buttons, the fit, and that the two states differ.
+  The whole of it is in "What U2d added to the leg", below;
 - **nothing escapes the viewport**, on each width's own terms: the phone demands zero escaping controls, zero under
   44 px and no document wider than the screen; the desktop is judged against the **plain desktop page in the same
   state** (its last view), because at 1280 px the plain page is the layout the game's author shipped. MEASURED: the
@@ -558,6 +643,86 @@ produce the same chips. Finding a game that could see it took a roster scan, not
 when `pseudoUnl` was forced true"; the mutant that removes the rule made the chips not move, which the probe read
 as an **abstention** and passed. The probe now re-runs the independent expectation under the constructed
 condition, so a list that stops asking the engine does not merely stop changing — it DISAGREES.
+
+
+#### What U2d added to the leg
+
+Six more assertions at **both** widths, every expectation rebuilt inside the probe out of `tmp` / `player` and
+none of it asked of the list:
+
+- **the counters are the engine's own answer** — one per category the tab draws, in the tab layout's order, `x/y`
+  for the ones you finish and the total owned for the ones you accumulate;
+- **the button set is unlocked-and-not-yet-bought**, rebuilt the same way. ⚠ This is the check that catches a
+  build selecting on affordability, and it catches it without waiting for anything to move;
+- **the two rows are genuinely two**: no counter shares a line with a button. Measured on the **elements**, not on
+  the two container boxes — a build that dropped the buttons into the counters' own row would leave an empty
+  `.tmt-layerlist-actions` behind and a container test would abstain on it rather than fail. ⚠ Judged only where
+  the card has something in both rows, and the cards that would look *wrong* under a single-row build (**two or
+  more counters and two or more buttons**) are named at every run: `ptr/s`, `something/primitive`,
+  `the-unbalanced-tree/inf`, `/e`, `/r`, `a-game-about-rocks/s`, `the-melge-tree/i` — which are, not by accident,
+  the same cards U2b measured hiding a whole category behind the `+N`;
+- **what fits is measured**: the visible buttons are a prefix of the offer, they are all on one line, and nothing
+  — counter or button — sticks out past the card;
+- **the collapsed card and the expanded one render differently**. ⚠ The visibility test for this and for the
+  dividers is now `getClientRects()`, not computed `display`: the collapsed card hides the whole chip **row**, and
+  a child of a `display: none` parent still reports its own computed display — so the old test said the collapsed
+  card was rendering every chip it was in fact hiding;
+- **the milestone counter's corners are square and the rest round.** ⚠ Not "they differ" — the same hardening was
+  applied to U2b's chip check, because a build that **swapped** the two differs just as well. U2b's mutant D made
+  them the same, which is why the weaker test held up then.
+
+And four legs that have to drive something:
+
+| leg | what it does | what it says when it cannot |
+|---|---|---|
+| fit at two widths | resizes **this** page 390 → 1280 → 390 and compares the per-card button counts | abstains, naming the game, when no card offers more buttons than the phone row already holds (`ptr`) |
+| the set against affordability | ticks in rounds of 250 until the lit/grey vector moves, then demands the **set** did not — per card, and skipping a card whose independent expectation moved for a real reason | abstains when affordability did not move in 1000 ticks |
+| the throttle | mutates `#app` once per animation frame, twelve times, and counts the syncs the list actually did | abstains if the observer fired fewer than three times |
+| a counter's `x` moves | presses a lit upgrade **button on the card** and reads the counter's `x` back, parsed — never the string | abstains, naming the game, when nothing is affordable (`ptr`) |
+
+⚠ The two-width leg resizes one page rather than comparing the phone page against the desktop one from leg 5.
+Those are two browsing contexts at two different game states — MEASURED on `ptr`, 83 chips on the phone against 89
+on the desktop page — so a button count taken from each would be comparing states as much as widths. It is also
+the resize the requirement is actually about.
+
+⚠ **Two more constructed conditions join `msDisplay` and `pseudoUnl`.**
+
+- **A clickable that holds an amount.** Every clickable on the roster sits at its engine's own starting value, so
+  the rule that decides which clickables get a counter is exercised by no recorded state. The leg gives one drawn
+  clickable a positive amount, looks for the box, and puts the value back — and checks there was **no** box at the
+  engine's own zero, which is the half the user's ruling is about.
+- **A buyable holding 1e400.** ⚠ This one exists because it caught a real defect *after* the whole bounded set was
+  green. "Is this value an amount?" was first asked as `isFinite(v.toNumber())`, which is **false for any Decimal
+  past 1.8e308** — and a TMT save reaches there routinely (`ptr`'s own points read 6.7e3284 at the gate's own
+  snapshot). No recorded state has a *buyable* up there, so every game on the roster would have stayed green while
+  a real buyable was dropped out of its own total, silently, on exactly the saves where the number matters most.
+  The question is about the **type**, not the magnitude, in both implementations now; the leg gives one drawn
+  buyable 1e400 and the box has to survive.
+
+**Eight mutants for U2d**, each RED, each restored, with the control GREEN either side — and deliberately not all
+on the reference game, because `ptr` abstains on two of the four driving legs:
+
+| # | the mutant | seen on | how it reds |
+|---|---|---|---|
+| A | affordability used for SELECTION, not just styling | `something` | the button set disagrees with the expectation (every row empty), **and** the set moves as the ticks make things affordable |
+| B | the fit taken from a constant 6 instead of the row's width | `the-unbalanced-tree` | `NO CARD HELD MORE AT 1280` — 6 buttons at both widths on four cards offering 10, 15, 22 and 10 |
+| C | the counters' square and round corners swapped | `ptr` | milestone counter radius `6px`, the rest `0px` |
+| C2 | the **chips'** corners swapped (U2b's own check, hardened here) | `ptr` | milestone chip radius `6px`, the rest `0px` — GREEN under the old "they differ" test |
+| D | the counters left unthrottled | `ptr` | `NOT THROTTLED`: 12 syncs over 12 refreshes where the cap is 2 |
+| E | a buyable counter rendered as `x/y` | `ptr` | the counters disagree with the expectation on `t`, `e`, `s` and `q` |
+| F | the two rows collapsed into one | `the-unbalanced-tree` | no card passes "no counter shares a line with a button", on the two discriminating cards `inf` and `r` |
+| G | "is it an amount?" asked as `isFinite(toNumber())` again | `ptr` | `THE BOX VANISHED AT 1e400` — the defect above, which nothing on the roster could see |
+
+⚠ **Mutant A's first version was caught by ONE of the two checks, not both.** The temporal leg read GREEN, because
+a build that selects on affordability starts with an empty row — so its lit/grey vector never moves, and the leg
+abstained on exactly the defect it exists for. It skipped any card that had no buttons *before* the ticks; it now
+skips only a card that has nothing to say either side, and the mutant reds on both checks. It is the
+change-detector abstention, and it took a mutant to find.
+
+⚠ **Mutant F's first version was RED for the wrong reason** and would have been recorded as a pass. Moving the
+actions box inside the counters box at build time put it there *before* `drawCounters` cleared that box, so the
+buttons ended up detached and the card rendered none at all — a red on the set check, not on the two-row one. The
+mutant now moves the box after both rows are drawn, and reds on `two rows in 0/1` as it should.
 
 One property the leg does NOT discriminate, said out loud: **phase 1 of the chip rule**. Removing the token
 extension leaves phase 2 to number the collisions (`INM`, `INM2`, `INM3` instead of `INM`, `INMI`, `INMII`), which

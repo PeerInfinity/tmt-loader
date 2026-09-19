@@ -19,6 +19,15 @@
 // components that layout draws, in the order it draws them, with a divider wherever the category changes. State is
 // a chip's APPEARANCE, never its position.
 //
+// SINCE U2d, THE COLLAPSED CARD IS TWO ROWS (⚖ user, 2026-09-18) and the chips are the EXPANDED view alone. Row one
+// is a COUNTER per category the layer draws — `x/y` for the categories you finish (upgrades, challenges,
+// achievements, milestones) and the TOTAL OWNED for the ones you accumulate (buyables, clickables); row two is an
+// ACTION BUTTON per component you can act on. ⚖ The two rows wrap and fit INDEPENDENTLY of each other, and ⚖ the
+// button SET is "unlocked and not yet bought" — affordability decides only whether a button is lit or greyed, never
+// whether it is there and never where it sits, which is the same rule U2 applied to the chips. How many buttons a
+// row holds is MEASURED at render against the row's own width (`fitCards`), never a constant, and it is re-measured
+// on a resize.
+//
 // ENGINE-GENERIC BY CONSTRUCTION. It knows no layer, no upgrade and no game: every value comes from `tmp[l]` /
 // `player[l]` / `layers[l]`, and anything that evaluates game code is wrapped — a throw costs one card, never the
 // list. In particular it NEVER calls the global `canReset(layer)`: that function ends in
@@ -31,8 +40,15 @@
   if (!T || !T.navbar) return; // unreachable without the flag: page.js only inserts this file when it is on
 
   var PANEL_ID = 'tmt-layerlist';
-  var CHIP_CAP = 6;      // chips a card shows before the "+N" button; see docs/mobile.md for why 6
   var CHIP_TOKENS = 3;   // "about three tokens" — the measured chip rule
+  // ⚖ THE COUNTERS ARE THROTTLED (user, 2026-09-18, who agreed a throttle is fine). 250 ms = 4 Hz: a counter is a
+  // number you read, not an animation, and 250 ms is below the delay at which a readout starts to feel stale —
+  // while the refresh it rides on is driven by the game's own re-renders, coalesced per animation frame, so up to
+  // 60 Hz. It is the card's heaviest per-refresh work (one pass per category per card), so this is a 15x cut.
+  // ⚠ Only the OBSERVER path is throttled. An explicit `refresh()` — the API, a press, opening the panel — is a
+  // caller asking for a fresh read and always does the whole thing; a throttle that swallowed those would make the
+  // list lie right after the press that changed it.
+  var COUNTER_MS = 250;
 
   // ---------------------------------------------------------------- reading the engine, never trusting it
   // Every read of game data goes through this: `tmp[l].foo` can throw (a getter a layer defines, a tmp entry the
@@ -150,11 +166,14 @@
     // same rule as every other chip, and one that yields no tokens gets no chip.
     milestones: { field: 'requirementDescription', act: null }
   };
-  // component name → the category it draws. Anything else the layout names draws no chip and is simply walked
-  // past — `clickables` and `achievements` among them, deliberately (docs/mobile.md: a clickable's `display()` is
-  // prose, not a short name, and an achievement is not something you press).
-  var PLURAL = { upgrades: 'upgrades', buyables: 'buyables', challenges: 'challenges', milestones: 'milestones' };
-  var SINGLE = { upgrade: 'upgrades', buyable: 'buyables', challenge: 'challenges', milestone: 'milestones' };
+  // component name → the category it draws. `clickables` and `achievements` draw NO CHIP — a clickable's `display()`
+  // is prose rather than a short name and an achievement is not something you press (docs/mobile.md) — but since
+  // U2d they are still WALKED, because the collapsed card counts every category the tab draws, not only the four
+  // that earn chips. `KINDS` above is what decides the chips; this is what decides the walk.
+  var PLURAL = { upgrades: 'upgrades', buyables: 'buyables', challenges: 'challenges', milestones: 'milestones',
+    clickables: 'clickables', achievements: 'achievements' };
+  var SINGLE = { upgrade: 'upgrades', buyable: 'buyables', challenge: 'challenges', milestone: 'milestones',
+    clickable: 'clickables', achievement: 'achievements' };
   var TREE = { 'upgrade-tree': 'upgrades', 'buyable-tree': 'buyables' }; // data = rows of ids, in reading order
   // The engine's own default when a layer declares NO `tabFormat` — read out of `layer-tab` in
   // `js/technical/systemComponents.js`, where BOTH reference engines (2.2.1 and 2.7) write the same family.
@@ -308,7 +327,11 @@
       var done = safe(function () { var c = player[l].challenges || {}; return Number(c[id]) > 0; }, false);
       return (maxed || done) ? 'done' : 'open';
     }
-    return 'open'; // buyables: `unlocked` is the whole of the engine's condition
+    if (kind === 'achievements') {
+      // both engines draw an achievement on `unlocked` alone and paint it `bought` / `locked` by `hasAchievement`
+      return safe(function () { return typeof hasAchievement === 'function' && !!hasAchievement(l, id); }, false) ? 'done' : 'open';
+    }
+    return 'open'; // buyables and clickables: `unlocked` is the whole of the engine's condition
   }
 
   /** The layer's drawn components, in the tab layout's order, with each one's state. Cheap enough to recompute on
@@ -349,22 +372,131 @@
     return items; // ⚠ NO sort. The order IS the tab layout's, which is the whole of U2b.
   }
 
-  /** WHICH CHIPS THE COLLAPSED CARD SHOWS — a parallel array of booleans, one per chip.
-   *
-   * ⚠ This is U2's rule, DELIBERATELY UNCHANGED by U2b: the first `CHIP_CAP`, then the `+N` expander. It is one
-   * function rather than an inline `i >= CHIP_CAP` only so that the next slice has one place to change.
-   *
-   * The question it raises is real and is NOT answered here. The layout order groups a card by category with the
-   * MILESTONES first, so a flat "the first six" can show nothing but milestones — the passive category — while
-   * every upgrade and buyable hides behind the expander. MEASURED on the two reference games alone: 3 of their 7
-   * multi-category cards come out that way (`ptr`'s `t` shows five milestones and one buyable and hides all
-   * fifteen upgrades; its `q` shows six milestones and hides its only buyable). The gate reports that count at
-   * every run rather than asserting it, because ⚖ the user has since redesigned the collapsed card outright
-   * (2026-09-18: a per-category `x/y` counter plus a few buy buttons), which retires the question rather than
-   * answering it. U2b is the EXPANDED view. */
-  function capVisible(chips, cap) {
-    return chips.map(function (c, i) { return i < cap; });
+  // ---------------------------------------------------------------- THE COLLAPSED CARD (U2d)
+  // ⚖ Two rows, not one flowing block (user, 2026-09-18): the COUNTERS own the first, the ACTION BUTTONS the
+  // second, and they wrap and fit independently of each other. U2's flat "first six chips, then +N" is gone — the
+  // question it raised (the tab layout puts MILESTONES first, so the first six could be nothing but the passive
+  // category, and 8 of the roster's 47 multi-category cards hid a whole category behind the `+N`) is retired by
+  // this card rather than answered: every category the layer draws now has a counter, whether or not it has a chip.
+  //
+  // What each category READS, and why the two shapes (⚖ user, 2026-09-18):
+  //  · the ones you FINISH — milestones, upgrades, challenges, achievements — read `x/y`, earned over drawn;
+  //  · the ones you ACCUMULATE — buyables, clickables — read THE TOTAL OWNED, one number. A buyable holds an
+  //    AMOUNT and is never "done", so an `x/y` of "how many you own at least one of" would be a ratio out of a
+  //    denominator that means nothing. It scans differently from its neighbours, and that is the honest reading.
+  var COUNTERS = {
+    upgrades:     { label: 'Upg',   name: 'Upgrades bought',        mode: 'ratio' },
+    buyables:     { label: 'Buy',   name: 'Buyables owned',         mode: 'owned' },
+    challenges:   { label: 'Chal',  name: 'Challenges completed',   mode: 'ratio' },
+    clickables:   { label: 'Click', name: 'Clickables owned',       mode: 'owned' },
+    milestones:   { label: 'Mile',  name: 'Milestones earned',      mode: 'ratio' },
+    achievements: { label: 'Ach',   name: 'Achievements earned',    mode: 'ratio' }
+  };
+
+  // A TMT amount is a Decimal, a plain number, or (2.7's clickable default) a string.
+  // ⚠ IS IT AN AMOUNT is a question about the TYPE, not about the magnitude. An early version asked
+  // `isFinite(v.toNumber())`, which is FALSE for any Decimal past 1.8e308 — and TMT games run there routinely
+  // (ptr's own points read 6.7e3284 at the gate's snapshot). That would have dropped a real buyable out of its
+  // own total, silently, on exactly the saves where the number matters most.
+  function isAmount(v) {
+    if (typeof v === 'number') return isFinite(v);
+    return safe(function () { return !!v && typeof v === 'object' && typeof v.toNumber === 'function'; }, false);
   }
+  function positiveAmt(v) {
+    if (typeof v === 'number') return v > 0;
+    return safe(function () { return typeof v.gt === 'function' ? !!v.gt(0) : Number(v.toNumber()) > 0; }, false);
+  }
+  function addAmt(acc, v) { // sum as the engine's own type where we can, so a Decimal total stays a Decimal
+    if (acc === null) return v;
+    return safe(function () { return typeof acc.add === 'function' ? acc.add(v) : (typeof v === 'object' && v !== null && typeof v.add === 'function' ? v.add(acc) : acc + v); }, acc);
+  }
+  function whole(v) { return safe(function () { return typeof formatWhole === 'function' ? str(formatWhole(v)) : str(v); }, str(v)); }
+
+  /** The amount a component of an ACCUMULATING category holds, or `null` for one that holds none.
+   *  ⚠ THE TWO ENGINES DISAGREE ABOUT A CLICKABLE'S DEFAULT and it is what decides "which clickables get no
+   *  counter". TMT 2.2.1 starts every clickable at `new Decimal(0)` (`getStartClickables`, utils.js:194); TMT 2.7
+   *  starts it at `""` (utils/save.js:102). So "is the state a number?" separates a clickable that holds an amount
+   *  from one that holds nothing on 2.7 and NOT on 2.2.1, where every clickable would read as a numeric zero and
+   *  earn a box saying `0` — exactly the meaningless zero the user ruled out. The rule that works on both is the
+   *  VALUE: a clickable counts only while it holds a number above zero, so a category that will never hold one
+   *  simply never gets a box. A BUYABLE always has an amount (both engines define `getBuyableAmount`), so it keeps
+   *  its box at zero — the asymmetry is the engines', not ours. */
+  function ownedAmount(kind, l, id) {
+    if (kind === 'buyables') {
+      var b = safe(function () { return typeof getBuyableAmount === 'function' ? getBuyableAmount(l, Number(id)) : player[l].buyables[id]; }, null);
+      return isAmount(b) ? b : null;
+    }
+    var c = safe(function () { return player[l].clickables[id]; }, null);
+    return isAmount(c) && positiveAmt(c) ? c : null;
+  }
+
+  /** ONE COUNTER PER CATEGORY THE LAYER DRAWS, in the tab layout's own order (first appearance wins) — and only
+   *  for a category that is non-empty after the three visibility rules, because `visibleSeq` never yields what the
+   *  tab does not draw. A `ratio` counter's `y` is what the tab draws, so a player who has set `msDisplay` to
+   *  `'incomplete'` sees the milestones they have left rather than a total that includes what the tab is hiding —
+   *  the card reads the same tab the chips do. */
+  function countersOf(l) {
+    var order = [], by = Object.create(null);
+    visibleSeq(l).forEach(function (e) {
+      var C = COUNTERS[e.kind];
+      if (!C) return;
+      if (!by[e.kind]) { by[e.kind] = { kind: e.kind, label: C.label, name: C.name, mode: C.mode, x: 0, y: 0, total: null, any: false }; order.push(e.kind); }
+      var g = by[e.kind];
+      if (C.mode === 'ratio') { g.y++; if (e.state === 'done') g.x++; g.any = true; return; }
+      var amt = ownedAmount(e.kind, e.layer, e.id);
+      if (amt === null) return;
+      g.any = true;
+      g.total = addAmt(g.total, amt);
+    });
+    return order.map(function (k) { return by[k]; }).filter(function (g) {
+      return g.mode === 'ratio' ? g.y > 0 : g.any;
+    }).map(function (g) {
+      g.text = g.mode === 'ratio' ? g.x + '/' + g.y : whole(g.total);
+      // the width a counter RESERVES, in characters, so a growing number cannot move the row (see also
+      // `tabular-nums` in layerlist.css). A ratio can never be wider than `y/y`; an accumulating total can, so the
+      // reservation only ever grows — it is never given back, which is what keeps the reflow one-way.
+      g.chars = g.mode === 'ratio' ? String(g.y).length * 2 + 1 : g.text.length;
+      return g;
+    });
+  }
+
+  /** WHICH COMPONENTS GET AN ACTION BUTTON — ⚖ "unlocked and not yet bought", in tab-layout order (user,
+   *  2026-09-18), and NOT "affordable right now": affordability decides lit-vs-grey below and nothing else, so a
+   *  button never moves out from under a finger. Three readings the user's phrase leaves open, decided here:
+   *   · a MILESTONE has no action at all (it is passive, and pressing its chip opens the tab), so it never gets a
+   *     button — its counter is how the collapsed card carries it;
+   *   · a PSEUDO-UNLOCKED upgrade is NOT unlocked. It is a real control on the tab (the teaser you press to unlock
+   *     the upgrade rather than to buy it), but the rule says unlocked, so it stays in the expanded chip row;
+   *   · a BUYABLE is bought REPEATEDLY, so "not yet bought" cannot mean what it means for an upgrade. It qualifies
+   *     while it can still be bought AT ALL — below its `purchaseLimit` where one is declared, and never on
+   *     affordability. ⚠ Only TMT 2.7 declares that field (it defaults it to `Decimal(Infinity)` in
+   *     `layerSupport.js:127`); 2.2.1 has no such concept, so there the test is vacuous and a buyable always
+   *     qualifies — which is exactly what that engine's own button does.
+   *  A CHALLENGE qualifies while it is not completed, active or not: `startChallenge` is what its own button calls
+   *  in both states.
+   *  ⚠ Clickables and achievements are walked for their COUNTERS but never get a button: an achievement is not
+   *  something you press, and a clickable has no short name to press it by (docs/mobile.md) — the same reason
+   *  neither gets a chip. */
+  function belowLimit(l, id) {
+    var lim = safe(function () { var t = tmp[l].buyables[id]; return t ? t.purchaseLimit : undefined; }, undefined);
+    if (lim === undefined || lim === null) return true;
+    var amt = safe(function () { return typeof getBuyableAmount === 'function' ? getBuyableAmount(l, Number(id)) : player[l].buyables[id]; }, null);
+    if (amt === null) return true;
+    return safe(function () { return typeof amt.gte === 'function' ? !amt.gte(lim) : !(Number(amt) >= Number(lim.toNumber ? lim.toNumber() : lim)); }, true);
+  }
+  function actionable(c) {
+    if (c.act === null) return false;             // milestones
+    if (c.state === 'done' || c.state === 'pseudo') return false;
+    if (c.kind === 'buyables') return belowLimit(c.layer, c.id);
+    return true;                                  // upgrades `open`, challenges `open` or `active`
+  }
+  /** LIT OR GREY, and nothing else. The engine's own affordability, asked the way its own button asks it. */
+  function affordable(c) {
+    if (c.kind === 'upgrades') return safe(function () { return typeof canAffordUpgrade === 'function' ? !!canAffordUpgrade(c.layer, c.id) : true; }, true);
+    if (c.kind === 'buyables') return safe(function () { return !!tmp[c.layer].buyables[c.id].canAfford; }, true);
+    return true;                                  // starting a challenge costs nothing in either engine
+  }
+  function actionsOf(chips) { return chips.filter(actionable); }
 
   // ---------------------------------------------------------------- the card's own readouts
   // 2.2.1 computes `tmp[l].prestigeButtonText` in `updateTemp` and its component reads it; 2.7 has no such tmp key
@@ -402,6 +534,8 @@
 
   // ---------------------------------------------------------------- the DOM
   var panel = null, body = null, open = false, sig = null, cards = Object.create(null);
+  // the throttle's clock, and what the gate reads to tell a throttled build from an unthrottled one
+  var lastSync = 0, stats = { refreshes: 0, syncs: 0, throttled: 0, rebuilds: 0, fits: 0 };
 
   function build() {
     if (panel) return;
@@ -454,7 +588,13 @@
     meta.append(name, amount);
     openBtn.append(badge, meta);
     openBtn.addEventListener('click', function () { openTab(l); });
-    el.appendChild(openBtn);
+    // ⚠ THE EXPANDER SITS IN THE CARD'S HEAD, not in either of the two rows, because it has to be pressable in
+    // BOTH states — the expanded card hides the counters and the buttons, so a toggle living in either of them
+    // could not be pressed to collapse again. In the head it also costs no vertical space of its own.
+    var head = document.createElement('div');
+    head.className = 'tmt-layerlist-cardhead';
+    head.appendChild(openBtn);
+    el.appendChild(head);
 
     // the prestige button, on the engine's own condition for having one at all
     var reset = null;
@@ -467,21 +607,21 @@
     }
 
     var chips = chipsOf(l);
-    var chipBox = null, more = null;
+    var chipBox = null, more = null, counterBox = null, actionBox = null;
     if (chips.length) {
+      // ---- the EXPANDED view: U2b's chip row, untouched, minus the `+N` cut. Every chip is in it now, because
+      // the collapsed card is no longer a PREFIX of the chips — it is two rows of its own.
       chipBox = document.createElement('div');
       chipBox.className = 'tmt-layerlist-chips';
-      var vis = capVisible(chips, CHIP_CAP), hidden = 0;
       chips.forEach(function (c, i) {
         // ⚖ DIVIDERS BETWEEN THE CATEGORIES (user, 2026-09-18). A divider is emitted BEFORE the chip whose
-        // category it introduces and takes that chip's visibility, which is what keeps one off both ends in
-        // BOTH views: there is none before the first chip, and the `+N` cut can never leave one trailing.
+        // category it introduces, which is what keeps one off both ends: there is none before the first chip, and
+        // since U2d the row is all-or-nothing, so no cut can leave one trailing either.
         if (i > 0 && chips[i - 1].kind !== c.kind) {
           var d = document.createElement('span');
           d.className = 'tmt-layerlist-divider';
           d.setAttribute('aria-hidden', 'true');
           d.dataset.between = chips[i - 1].kind + '|' + c.kind;
-          if (!vis[i]) d.classList.add('tmt-layerlist-overflow');
           chipBox.appendChild(d);
         }
         var b = document.createElement('button');
@@ -493,25 +633,136 @@
         b.dataset.layer = c.layer;     // a `layer-proxy` chip acts on ANOTHER layer than the card it sits on
         b.textContent = c.chip;
         b.title = c.title;
-        if (!vis[i]) { b.classList.add('tmt-layerlist-overflow'); hidden++; }
         b.addEventListener('click', function () { chipPressed(c); });
         chipBox.appendChild(b);
       });
-      if (hidden > 0) {
-        more = document.createElement('button');
-        more.type = 'button';
-        more.className = 'tmt-layerlist-more';
-        more.textContent = '+' + hidden;
-        more.addEventListener('click', function () {
-          var all = el.classList.toggle('tmt-layerlist-expanded');
-          more.textContent = all ? '−' : '+' + hidden;
-        });
-        chipBox.appendChild(more);
-      }
       el.appendChild(chipBox);
+      more = document.createElement('button');
+      more.type = 'button';
+      more.className = 'tmt-layerlist-more';
+      // ⚠ NO DIGIT ON THE TOGGLE. U2's label was `+N`, the count hidden behind it; the counter row now states
+      // every one of those totals outright, so a number here would be a second, shakier answer to a question the
+      // row above has already answered — and one more number to hold still. A chevron says only "there is more".
+      setMore(more, false);
+      more.addEventListener('click', function () { setMore(more, el.classList.toggle('tmt-layerlist-expanded')); });
+      head.appendChild(more);
     }
-    cards[l] = { el: el, name: name, amount: amount, reset: reset, chips: chips, chipEls: chipBox ? [].slice.call(chipBox.querySelectorAll('.tmt-layerlist-chip')) : [] };
+    // ---- the COLLAPSED view, row one: the counters
+    // ⚠ BOTH ROWS ARE ALWAYS BUILT, empty or not, and `:empty` is what hides them: a category can APPEAR without
+    // the rebuild signature moving (a clickable's first amount, an upgrade that comes back into reach), and a row
+    // that only existed when it started non-empty would have nowhere to put it.
+    var counters = countersOf(l);
+    counterBox = document.createElement('div');
+    counterBox.className = 'tmt-layerlist-counters';
+    el.appendChild(counterBox);
+    // ---- and row two: what you can act on. A SEPARATE box, so the two wrap and fit independently of each other.
+    var actions = actionsOf(chips);
+    actionBox = document.createElement('div');
+    actionBox.className = 'tmt-layerlist-actions';
+    el.appendChild(actionBox);
+    var rec = { el: el, head: head, name: name, amount: amount, reset: reset, chips: chips, more: more,
+      chipEls: chipBox ? [].slice.call(chipBox.querySelectorAll('.tmt-layerlist-chip')) : [],
+      counterBox: counterBox, counterKeys: '', counterEls: [], reserved: Object.create(null),
+      actionBox: actionBox, actionKeys: '', actionEls: [] };
+    cards[l] = rec;
+    drawCounters(rec, counters);
+    drawActions(rec, actions);
     return el;
+  }
+
+  function setMore(btn, expanded) {
+    btn.textContent = expanded ? '\u2303' : '\u2304';   // ⌃ / ⌄
+    btn.title = expanded ? 'Show less' : 'Show every component';
+    btn.setAttribute('aria-label', btn.title);
+    btn.setAttribute('aria-expanded', expanded ? 'true' : 'false');
+  }
+
+  /** Row one. Rebuilt only when the SET of categories changes; otherwise `syncCounters` moves the numbers. */
+  function drawCounters(rec, counters) {
+    rec.counterBox.textContent = '';
+    rec.counterEls = counters.map(function (g) {
+      var box = document.createElement('span');
+      box.className = 'tmt-layerlist-counter';
+      box.dataset.kind = g.kind;      // also what gives the MILESTONE counter its square corners, in CSS
+      box.dataset.mode = g.mode;
+      box.title = g.name;
+      var lab = document.createElement('span');
+      lab.className = 'tmt-layerlist-counter-label';
+      lab.textContent = g.label;
+      var val = document.createElement('span');
+      val.className = 'tmt-layerlist-counter-value';
+      box.append(lab, val);
+      rec.counterBox.appendChild(box);
+      return { kind: g.kind, box: box, val: val };
+    });
+    rec.counterKeys = counters.map(function (g) { return g.kind; }).join(' ');
+    syncCounters(rec, counters);
+  }
+  function syncCounters(rec, counters) {
+    counters.forEach(function (g, i) {
+      var e = rec.counterEls[i];
+      if (!e || e.kind !== g.kind) return;
+      e.val.textContent = g.text;
+      e.box.dataset.x = g.mode === 'ratio' ? String(g.x) : '';
+      e.box.dataset.y = g.mode === 'ratio' ? String(g.y) : '';
+      e.box.dataset.total = g.mode === 'ratio' ? '' : g.text;
+      // ⚠ THE RESERVATION ONLY GROWS. A width that shrank back would move the row the moment a number did, which
+      // is the jitter the reservation exists to prevent (see `chars` above, and `tabular-nums` in the CSS).
+      var want = Math.max(g.chars, rec.reserved[g.kind] || 0);
+      if (want !== rec.reserved[g.kind]) { rec.reserved[g.kind] = want; e.val.style.minWidth = want + 'ch'; }
+    });
+  }
+
+  /** Row two. Rebuilt when the SET changes — which affordability can never do; only a purchase, an unlock or a
+   *  completion can. The lit/grey class is the only thing a tick moves. */
+  function drawActions(rec, actions) {
+    rec.actionBox.textContent = '';
+    rec.actionEls = actions.map(function (c) {
+      var b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'tmt-layerlist-act';
+      b.dataset.kind = c.kind;
+      b.dataset.cid = c.id;
+      b.dataset.layer = c.layer;
+      b.textContent = c.chip;
+      b.title = c.title;
+      b.addEventListener('click', function () { chipPressed(c); });
+      rec.actionBox.appendChild(b);
+      return { chip: c, el: b };
+    });
+    rec.actionKeys = actions.map(function (c) { return c.key; }).join(' ');
+    syncActions(rec);
+  }
+  function syncActions(rec) {
+    rec.actionEls.forEach(function (a) { a.el.dataset.afford = affordable(a.chip) ? 'yes' : 'no'; });
+  }
+
+  /** HOW MANY BUTTONS A ROW HOLDS — ⚖ measured at render, never a constant (user, 2026-09-18). Every candidate is
+   *  in the DOM; the ones the browser wrapped onto a second line are hidden. Measured against the row's OWN box, so
+   *  a wider card holds more and a phone holds fewer, and re-measured on a resize.
+   *  ⚠ Read in one batch, after the cards are in the document: `getBoundingClientRect()` forces layout, and a
+   *  per-card read during construction would force one per card. Hiding a trailing flex item cannot move the items
+   *  before it, so one pass is enough. */
+  function fitCards(list) {
+    var boxes = [];
+    (list || Object.keys(cards)).forEach(function (l) {
+      var rec = cards[l];
+      if (!rec || !rec.actionBox || !rec.actionEls.length) return;
+      rec.actionEls.forEach(function (a) { a.el.classList.remove('tmt-layerlist-nofit'); });
+      boxes.push(rec);
+    });
+    boxes.forEach(function (rec) {
+      var top = null, cut = false;
+      rec.actionEls.forEach(function (a) {
+        var t = a.el.getBoundingClientRect().top;
+        a.hide = false;
+        if (top === null) { top = t; return; }
+        if (cut || t > top + 1) { cut = true; a.hide = true; } else { a.hide = false; }
+      });
+      rec.actionEls.forEach(function (a) { if (a.hide) a.el.classList.add('tmt-layerlist-nofit'); });
+      rec.fitted = rec.actionEls.filter(function (a) { return !a.hide; }).length;
+    });
+    if (boxes.length) stats.fits++;
   }
 
   function rebuild() { return withoutRaisingNaN(rebuildInner); }
@@ -534,6 +785,9 @@
       body.appendChild(sec);
     });
     sig = signature(gs);
+    stats.rebuilds++;
+    // the cards are in the document now, so this is where the row width exists to be measured
+    fitCards(null);
   }
 
   /** What a REBUILD is keyed on: the rows and their layers, and — since U2b — each card's drawn components in the
@@ -550,11 +804,15 @@
 
   /** The live values: the amount, the prestige text, and each control's state. Never REORDERS — a rebuild is what
    * handles an arrangement that really changed (see `signature`), so nothing moves under a finger. */
-  function refresh() {
+  /** `refresh(false)` is the OBSERVER's call and may skip the counters (see `COUNTER_MS`); every other caller —
+   *  the API, a press, opening the panel — gets the whole thing. */
+  function refresh(force) {
     if (!panel || !open) return;
-    return withoutRaisingNaN(refreshInner);
+    var f = force !== false;
+    return withoutRaisingNaN(function () { return refreshInner(f); });
   }
-  function refreshInner() {
+  function refreshInner(force) {
+    stats.refreshes++;
     var gs = groups();
     if (signature(gs) !== sig) { rebuild(); }
     Object.keys(cards).forEach(function (l) {
@@ -586,6 +844,26 @@
         if (c.chipEls[i]) c.chipEls[i].dataset.state = st;
       });
     });
+    syncCards(force);
+  }
+
+  /** THE THROTTLED HALF: the counters and the action row. One pass per category per card, so it is the card's
+   *  heaviest work and the one the rate in `COUNTER_MS` is about. A row is REDRAWN only when its membership moved
+   *  — which affordability can never do — and re-fitted only when it was redrawn. */
+  function syncCards(force) {
+    var now = Date.now();
+    if (!force && (now - lastSync) < COUNTER_MS) { stats.throttled++; return; }
+    lastSync = now;
+    stats.syncs++;
+    var refit = [];
+    Object.keys(cards).forEach(function (l) {
+      var rec = cards[l];
+      var cs = countersOf(l), ck = cs.map(function (g) { return g.kind; }).join(' ');
+      if (ck !== rec.counterKeys) { drawCounters(rec, cs); refit.push(l); } else syncCounters(rec, cs);
+      var as = actionsOf(rec.chips), ak = as.map(function (c) { return c.key; }).join(' ');
+      if (ak !== rec.actionKeys) { drawActions(rec, as); refit.push(l); } else syncActions(rec);
+    });
+    if (refit.length) fitCards(refit);
   }
 
   // ---------------------------------------------------------------- acting
@@ -646,10 +924,20 @@
     var obs = new MutationObserver(function () {
       if (!open || queued) return;
       queued = true;
-      requestAnimationFrame(function () { queued = false; refresh(); });
+      // ⚠ `false`: this is the path the throttle is for. A game re-renders continuously, so without it the
+      // counters would recompute once per animation frame for every card on the page.
+      requestAnimationFrame(function () { queued = false; refresh(false); });
     });
     var app = document.getElementById('app');
     if (app) obs.observe(app, { childList: true, subtree: true, characterData: true });
+    // ⚖ THE FIT MUST SURVIVE A RESIZE (user, 2026-09-18). A resize moves no game DOM, so the observer above never
+    // sees it; the row is simply re-measured. Still no timer of ours, and still nothing written to `player`.
+    var rq = false;
+    window.addEventListener('resize', function () {
+      if (!open || rq) return;
+      rq = true;
+      requestAnimationFrame(function () { rq = false; fitCards(null); });
+    });
     T.layerListUI = {
       panel: panel,
       open: show, close: hide,
@@ -659,6 +947,10 @@
       groups: groups,
       chipsOf: chipsOf,
       visibleSeq: visibleSeq,
+      countersOf: countersOf,
+      actionsOf: function (l) { return actionsOf(chipsOf(l)); },
+      fit: function () { fitCards(null); },
+      stats: function () { return { refreshes: stats.refreshes, syncs: stats.syncs, throttled: stats.throttled, rebuilds: stats.rebuilds, fits: stats.fits, throttleMs: COUNTER_MS }; },
       cards: function () { return Object.keys(cards); }
     };
     if (T.navbarUI && T.navbarUI.refresh) T.navbarUI.refresh(); // the Layers button appears once this object exists
