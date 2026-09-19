@@ -675,6 +675,9 @@ run in, and the navbar-only leg can therefore assert the bar at a *desktop* widt
 
 ## Not in scope
 
+The tooltip does not replace the browser's own: the `title` attributes stay, the overlay sits on top of them, and on
+a pointer both can be on screen at once — one saying the name, the other the cost (U2e).
+
 The mobile layout keeps **the tree**, and so does the layer list above: it is a second way to look at the same
 layers, reached from a button and closed again, not a replacement for the tree (⚖ user, 2026-09-17).
 
@@ -754,6 +757,9 @@ Run at **both** widths — on the phone page, over the deep snapshot the geometr
   where the page has both (abstained where it has only one kind);
 - **(U2d) the collapsed card's two rows** — the counters, the buttons, the fit, and that the two states differ.
   The whole of it is in "What U2d added to the leg", below;
+- **(U2e) the tooltip is strictly richer than the element's own `title`** — cost or effect text the `title` does
+  not state, with the witnesses read out of the engine in the probe; plus the tap path, the hover path, one overlay
+  at a time, a constructed NaN cost and a constructed cost move under an open tooltip. "What U2e added to the leg";
 - **(U2c) the boxes do not answer to the digits, and the cards you left open come back** — the readout's own
   string written in at each magnitude with nothing in the game touched, and a card CHANGED before a read-back on a
   second page with a second card left closed as the control. Both at both widths; "What U2c added to the leg";
@@ -1030,6 +1036,106 @@ had to cut, so the re-fit half is exercised on seventeen of them rather than inf
 with an unmeasured action row are different defects — the first is the persistence, the second is the fit pass the
 persistence broke — and the first version of the verdict called both `NOT RESTORED`, which would have sent the
 next reader to the wrong file. Driving F is what showed it.
+
+#### What U2e added to the leg
+
+⛔ **The obvious assertion is vacuous, and that is the design constraint.** U2d's `title` attributes mean a hover
+already opened a tooltip on the build before this one, so "a tooltip appeared" would pass unchanged. Every claim
+below is therefore about the overlay being **strictly richer** than the `title` it sits on, or about a path a
+native `title` does not have at all.
+
+Measured at **both** widths, over every control on every card — the counters and the action buttons on the
+collapsed card, the chips on the expanded one, with the class toggled directly rather than clicked:
+
+- **strictly richer than the element's own `title`.** The witnesses are read in the probe out of `tmp` / `layers` —
+  the category's prose field and its number — and a witness the `title` **already contains** is dropped, because
+  it could not tell this build from the native tooltip either way. `judged` is how many controls carry a witness
+  the title omits, and `richer` how many of those the overlay states; a game where `judged` is 0 **abstains**.
+  ⚠ Not a length comparison: `something`'s `primitive/milestones/1` reads "1: 10 Numbers" as its title and
+  "x50 Points." as its detail — shorter, and a different fact. The substring test is what discriminates.
+- **the first line IS the element's `title`**, character for character.
+- **a declared `tooltip` field is shown wherever one is drawn** — and the cost and the effect are still there,
+  which is what says the field is additive.
+- **one overlay at a time**, and the previous anchor loses its `aria-describedby`. A build that appended one
+  overlay per control would pass "a tooltip is open" and fail this.
+- **nothing escapes the viewport.**
+
+And three things a probe cannot fake, driven:
+
+- **a real TAP on the phone page** opens the tooltip **and** still reaches the engine. The second half is observed
+  by wrapping the engine's own `buyUpg` / `buyUpgrade` / `buyBuyable` / `startChallenge` in counters, not by looking
+  for a purchase: affordability must not decide whether the leg can run, and an unaffordable buy is a no-op in the
+  engine while the CALL is exactly what U1's no-`preventDefault` rule is about. ⚠ Whether a `window` assignment is
+  even visible to the list — which reads those names as bare identifiers — is measured per game, and the leg says so
+  rather than reading a `let`-declared engine as "the tap did not reach it".
+- **a real HOVER on the desktop page**, which has no touch, so the tap path is off there: a pointer user who could
+  not open a tooltip at all would be the regression. An action button by preference, a counter only if there is
+  none — a counter's tooltip is its name and nothing more, so hovering one cannot show that the pointer path carries
+  the richer text.
+- **the tooltip is re-read while open**: the underlying `tmp` cost is moved and an explicit `refresh()` asked for,
+  and the body must show the new number. Constructed, because nothing on a paused page moves on its own.
+
+⚠ **And the NaN rule is CONSTRUCTED, because the roster does not reach it.** Measured across all **171 games**:
+1,238 numbers formatted out of drawn chipped components (`cost`, `effect`, `goal`, `rewardEffect`), and **zero**
+raise `player.hasNaN`. So `withoutRaisingNaN` around the composition would have been untested on every game on the
+roster. The leg sets one drawn upgrade's `tmp` cost to a NaN `Decimal` — never `player` — with a **control** that
+formatting it really does raise the flag on that engine, asserts the tooltip leaves the flag where it was, then sets
+the flag itself and asserts the tooltip does **not** lower it. Ten games already carry `hasNaN === true` at their
+load state, which is where that second half matters in the wild.
+
+⚠ **A tooltip is refused on a control with no layout, and the gate found it.** The first version of the re-read
+check grabbed a chip off a **collapsed** card: the chip row is `display: none` there, so the element had no box, the
+overlay landed in the corner and the next sync closed it — `THE REFRESH CLOSED THE TOOLTIP`. `showTip` now refuses
+such an element, and the constructed checks take a **rendered** anchor (the action button, else the chip with the
+card expanded) and require the open to have succeeded — otherwise a pass would mean the probe had missed rather than
+that the list had behaved.
+
+⚠ **Two of the three RED rounds were the PROBE's own**, and both are the same family — reading a field the way the
+engine does not:
+
+- **named HTML entities.** `create-incremental`'s upgrade 24 declares `&times;`; the page shows `×`. The probe
+  decoded only the numeric `&#NNN;` form and reported that game red for a difference entirely its own. It now
+  decodes with the browser's own decoder (tags out with the regex first, then a `textarea`, whose content model is
+  text so nothing is parsed as markup).
+- **a `tmp` entry that is still the FUNCTION.** The engines evaluate a declaration into `tmp` only where it takes no
+  argument; `1-clicker`'s buyable `display()` stays a function there and the engine calls it at render time with
+  `this` set to the declaration. The probe took the `tmp` value as it found it and used the function's **source
+  text** as its witness. (The implementation had the same hazard in its number reader and was hardened with it.)
+
+⚠ **Ten mutants, each RED on the game that can see it**, with the control GREEN either side and the tree checked
+clean after every restore. Each reds through exactly **one** of the new checks and leaves the other legs alone:
+
+| # | the mutant | seen on | how it reds |
+|---|---|---|---|
+| A | the declared `tooltip` field IGNORED (composition only) | `1-clicker`, `create-incremental` | `A DECLARED tooltip FIELD IS NOT IN THE OVERLAY` — 0 of 10 and 0 of 6. ⚠ **GREEN on `ptr`**, which draws none |
+| B | tags left UNSTRIPPED | `create-incremental`, `ptr` | `THE OVERLAY HOLDS THE GAME'S OWN MARKUP` — 3 overlays of 6 and of 13 markup-bearing controls |
+| C | the NaN wrapper removed from the composition | `ptr` | the constructed NaN cost: `THE TOOLTIP RAISED player.hasNaN` |
+| D1 | **`preventDefault()` added to the tap handler** | `ptr` | ⚠ **GREEN.** See below |
+| D2 | `stopPropagation()` added to the tap handler | `ptr` | `THE TAP DID NOT REACH THE ENGINE` — the tooltip still opens, `buyBuyable` is never called |
+| E | the tooltip re-read moved OFF the throttled path (once per frame) | `ptr` | `THE TOOLTIP IS NOT THROTTLED` — `tipSyncs` 6 against a cap of 2, while `syncs` stayed 0. ⚠ It reds the **throttle** leg and nothing else, which is why `tipSyncs` had to be added: the counters' own numbers do not move |
+| F | an open tooltip never re-reads its text | `ptr` | `THE OPEN TOOLTIP DID NOT RE-READ THE COST` |
+| G | the first line RECOMPOSED instead of read off the element's `title` | `ptr` | `THE FIRST LINE IS NOT THE ELEMENT'S OWN title` — a milestone chip's name is its `requirementDescription`, and there is no `title` field to recompose it from |
+| H | the viewport clamp removed | `ptr` | `A TOOLTIP ESCAPED THE VIEWPORT` at 390 px, on 3 controls |
+| I | `aria-describedby` left on the previous anchor | `ptr` | `THE FIRST IS STILL DESCRIBED` |
+
+⚠ **D1 is the brief's own named mutant and it cannot discriminate — measured, not argued.** `preventDefault()` in
+this handler is GREEN: it suppresses a default **action**, and a chip's buy is a click **listener**, which runs
+regardless. What can swallow the control's click from a capture-phase handler is `stopPropagation()`, and D2 reds on
+it. The leg's verdict says so rather than naming `preventDefault`, because the next reader would otherwise test the
+wrong thing.
+
+⚠ **A is GREEN on `ptr`, and `ptr` is the game the brief named for the composition path.** A battery run only on the
+reference games would have called the `tooltip`-field half proven while it was blind to it — the fourth time in this
+arc that a bounded set could not see a defect the roster can (U2d `buyUpgrade`, U2g `Decimal` and the picker, U2c the
+persistence read-back).
+
+⚠ **And a process defect, worth more than any single mutant.** The first attempt ran **two mutant harnesses on one
+tree at once**: a background battery that had not died, plus a second started in the foreground. The contaminated
+round printed an entirely plausible RED — the *tags* mutant reading `THE TOOLTIP RAISED player.hasNaN`, which it has
+no path to — and both rounds had to be thrown away and the battery re-run serially. It is the same family as U2c's
+`git checkout` accident and the tell was the same: **a mutant reddening a check it cannot reach.** What caught it
+was the harness's own refusal to start on a dirty tree, firing when the *other* battery had a mutant applied. A
+mutant harness needs a lock, or a single process; "I started it in the background" is not a guarantee that it ended.
 
 ### The state leg needs a control
 

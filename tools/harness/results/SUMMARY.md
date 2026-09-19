@@ -4132,3 +4132,63 @@ had to be thrown away and the implementation rewritten from the session's own re
 from a COPY of the tree it found, never from HEAD**, unless the work under test is already committed — and the
 tell that something was wrong was not the reds, which looked right, but that a mutant in the JS reddened a leg in
 the CSS.
+
+## 2026-09-19 — U2e: a chip says what it costs and does — commit `284daf76b`
+
+⚖ user, 2026-09-18: a chip reading `RPB` should say what the upgrade costs and does. ⛔ **The trap in this slice is
+that a tooltip ALREADY existed**: U2d put a `title` on every chip, counter and action button, so on a desktop a
+hover already opened the browser's own with the short name, and "a tooltip appeared" is a claim that passes on the
+build before this one. Every row below is about the overlay being **strictly richer than that `title`**, or about a
+path a native `title` does not have.
+
+| gate | game | leg | result | notes |
+|---|---|---|---|---|
+| ⛔ PRE-MEASUREMENT — the brief's census | — 171 games — | `tooltip:` by enclosing category | **the figure was the ACHIEVEMENTS'** | the brief quoted "165 of 171 games declare `tmp[l][kind][id].tooltip`". Measured by attributing each declaration to the innermost enclosing `<kind>: {`: **all 171** mention `tooltip` (worthless — the engines define the component), **140** declare one on a CHIPPED category, **406** such declarations against **3,133 on achievements** — and an achievement gets no chip, so those can never reach the overlay. Now a `census-figures.mjs` claim with two unit tests |
+| ⛔ PRE-MEASUREMENT — the brief's reference game | ptr, something | drawn chipped components with a `tooltip` | **ZERO on both** | the brief named `something` as "the `tooltip` field path". At its deepest snapshot `something` draws 42 `tooltip`-bearing ACHIEVEMENTS and **0** chipped components with the field; `ptr` 80 and **0**. The field path is exercised on `1-clicker` (10 drawn controls) and `create-incremental` (6) instead — found by a bounded scan of the games whose sources declare one |
+| ⛔ PRE-MEASUREMENT — can a game's own cost or effect format a NaN? | — 171 games — | `formatWhole`/`format` over every drawn chipped `cost`/`effect`/`goal`/`rewardEffect` | **1,238 formatted, 0 raise the flag** | so `withoutRaisingNaN` around the composition is UNTESTABLE on the roster as it stands, and the gate CONSTRUCTS the condition instead (with a control that the construction really raises it). 10 games already carry `hasNaN === true` at their load state, which is where "never lower a flag the game had already raised" matters in the wild |
+| M1 tooltip leg (U2e) | ptr | 390 + 1280 | GREEN | 111 controls (86 chips, 8 buttons, 17 counters), **94 of 94 judged richer** than their own `title`; the first line is the attribute verbatim on all 111; one overlay at a time; nothing escaping; a tap opens it and `buyBuyable:t/11` still fires; a hover opens the richer text with no click; the constructed NaN cost leaves the flag where it was, both ways; a constructed cost move under an open tooltip is re-read |
+| M1 tooltip leg (U2e) | something | same | GREEN | 49 controls, 44 of 44 judged richer; tap → `buyUpgrade:unlock/13` |
+| M1 tooltip leg (U2e) | 1-clicker | same | GREEN | the `tooltip` FIELD path, naturally: **10 of its drawn controls declare one**, all 10 in the overlay, and the cost is still there beside it |
+| M1 tooltip leg (U2e) | create-incremental | same | GREEN | 6 declared tooltips, 6 shown; **6 controls whose own fields carry a tag, 0 overlays holding one** — the markup half is non-vacuous here |
+| M1 tooltip leg (U2e) | the-quantum-tree | same | GREEN | the game whose `Qc` prestige text formats a NaN at a fresh save — the tooltip path does not reach that string, which is what the roster measurement above says of every game |
+| M1 whole gate, the bounded local set | ptr, something, 1-clicker, create-incremental, the-quantum-tree | every leg | GREEN | 5/5; the roster is CI's |
+| unit tests (`npm run harness:test`) | — | — | GREEN | **60** tests (58 + the two new census ones) |
+| census-figures | — | — | GREEN | 9/9 documented figures = the tree (the new tooltip claim among them) |
+
+### The mutants
+
+**Each on the game that can see it**, with the control GREEN either side, and the tree checked clean after each
+restore. ⚠ **The work was COMMITTED before the battery ran** — that is the choice this slice made about U2c's
+`git checkout` accident, and the harness refuses to start on a dirty tree and re-checks after every mutant.
+
+| # | the mutant | seen on | how it reds |
+|---|---|---|---|
+| A | the declared `tooltip` field IGNORED (composition only) | `1-clicker`, `create-incremental` | `A DECLARED tooltip FIELD IS NOT IN THE OVERLAY` — 0 of 10 shown and 0 of 6. ⚠ **GREEN on `ptr`**, which draws none |
+| B | tags left UNSTRIPPED | `create-incremental`, `ptr` | `THE OVERLAY HOLDS THE GAME'S OWN MARKUP` — 3 overlays, of 6 and of 13 markup-bearing controls. ⚠ This check had to be ADDED mid-slice: `strip()` normalises the body it judges, so the richness test compared EQUAL and passed the mutant |
+| C | the NaN wrapper removed from the composition | `ptr` | the constructed NaN cost: `THE TOOLTIP RAISED player.hasNaN` |
+| D1 | **`preventDefault()` added to the tap handler** — the brief's own named mutant | `ptr` | ⚠ **GREEN.** It suppresses a default ACTION; a chip's buy is a click LISTENER and runs regardless. The tap still opened the tooltip and `buyBuyable:t/11` still fired |
+| D2 | `stopPropagation()` added to the tap handler (capture phase) | `ptr` | `THE TAP DID NOT REACH THE ENGINE` — the tooltip opens, `buyBuyable` is never called. This is the mutant D1 was meant to be |
+| E | the tooltip re-read moved OFF the throttled path (once per animation frame) | `ptr` | `THE TOOLTIP IS NOT THROTTLED` — `tipSyncs` **6** against a cap of 2 while `syncs` stayed **0**. ⚠ Reds the THROTTLE leg and nothing else, which is exactly why `tipSyncs` exists: the counters' own numbers do not move |
+| F | an open tooltip never re-reads its text | `ptr` | `THE OPEN TOOLTIP DID NOT RE-READ THE COST` |
+| G | the first line RECOMPOSED instead of read off the element's `title` | `ptr` | `THE FIRST LINE IS NOT THE ELEMENT'S OWN title` — a milestone chip's name is its `requirementDescription` and there is no `title` field to recompose it from |
+| H | the viewport clamp removed | `ptr` | `A TOOLTIP ESCAPED THE VIEWPORT` at 390 px, on 3 controls |
+| I | `aria-describedby` left on the previous anchor | `ptr` | `THE FIRST IS STILL DESCRIBED` |
+
+⚠ **A is GREEN on `ptr`** — the game the brief named as the composition reference. A battery run on the reference
+games alone would have called the `tooltip`-field half proven while blind to it. Fourth time in this arc.
+
+⚠ **THREE RED ROUNDS on the bounded set before the battery, and the first was the implementation's:**
+
+| # | round | what it was |
+|---|---|---|
+| 1 | `THE REFRESH CLOSED THE TOOLTIP`, ptr + something, both widths | **the implementation's.** A tooltip opened on a chip of a COLLAPSED card has no box to be placed against, so the overlay landed in the corner and the next sync closed it. `showTip` now refuses an element with no layout, and the constructed checks take a RENDERED anchor and require the open to have succeeded — otherwise a pass would mean the probe had missed |
+| 2 | `A TOOLTIP IS NO RICHER…` on `create-incremental` | **the probe's.** It decoded only numeric `&#NNN;` entities; that game's upgrade 24 declares `&times;` and the page shows `×`. It decodes with the browser's own decoder now |
+| 3 | `A TOOLTIP IS NO RICHER…` on `1-clicker` | **the probe's.** `tmp[l].buyables[id].display` is still the FUNCTION there — the engines evaluate a declaration into `tmp` only where it takes no argument — and the function's SOURCE TEXT became the witness. The implementation's number reader had the same hazard and was hardened with it |
+
+⚠ **And a process defect worth more than any mutant: TWO MUTANT HARNESSES ON ONE TREE.** The first attempt left a
+background battery running and a second was started in the foreground; the contaminated round printed an entirely
+plausible RED — the **tags** mutant reading `THE TOOLTIP RAISED player.hasNaN`, which it has no path to — and both
+rounds were thrown away and the battery re-run serially. Same family as U2c's `git checkout` accident, same tell:
+**a mutant reddening a check it cannot reach.** What caught it was this harness's own refusal to start on a dirty
+tree, firing because the *other* battery had a mutant applied. "I started it in the background" is not a guarantee
+that it ended — check by PID.
