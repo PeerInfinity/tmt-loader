@@ -348,3 +348,67 @@ test('every table string the tab renders is ESCAPED', () => {
   assert.equal(esc, '&lt;img src=x onerror=&quot;alert(1)&quot;&gt;');
   assert.doesNotMatch(esc, /<img/);
 });
+
+// ---------------------------------------------------------------------------------------------------------------
+// V2 — the three codes the two new reset strategies added. ⛔ THEY BELONG HERE, not only in
+// `loader/strategies.test.mjs`, because `gates-v1 --part 1` requires EVERY code in the vocabulary to be witnessed
+// by name and runs THIS file for the constructed ones. MEASURED when they were not: `RED V1-1 EVERY code witnessed
+// by name — 33 codes … unwitnessed: waiting:rate, waiting:stall-clock, waiting:stall-yield`. A vocabulary grows by
+// three entries and the gate that exists for exactly that notices; the fix is to witness them, not to widen the
+// gate.
+// ---------------------------------------------------------------------------------------------------------------
+
+test('CONSTRUCTED: waiting:rate — `rate-peak` while the cycle is still improving', () => {
+  // no fixture uses `rate-peak`: it is new in V2 and no table names it.
+  // ⚠ `kinds: reset` — measured: with every kind registered, `buyables:a` spends the layer's points (its buyable
+  // costs 5) BEFORE the reset feature decides, so `gain>=Nx`'s bar drops to zero and the reset fires. The state
+  // these three codes need is about the RESET rule, so the other kinds are not registered.
+  const ctx = boot({ options: { kinds: 'reset', 'policy:reset:a': 'rate-peak@0/0' } });
+  ctx.player.points = new Decimal(1000);        // so the engine's own canReset holds
+  tick(ctx, 1);                                  // the first reset: no cycle to compare against yet
+  tick(ctx, 2);                                  // …and now there is one
+  const r = rowOf(ctx, 'reset:a');
+  assert.equal(r.last.code, 'waiting:rate', JSON.stringify(r.last));
+  assert.ok(codes(ctx)['waiting:rate'] > 0);
+  // the reason carries the three numbers the player needs: the rate now, the best, and the threshold the buffer puts under it
+  for (const k of ['rate', 'best', 'need', 'held', 'hold']) assert.ok(r.last.values[k] !== undefined, `values.${k} missing`);
+});
+
+/** Both reset features stalled at once, with their clocks seeded — no fixture in this repo has such a state. */
+function stalled(over = {}) {
+  const ctx = boot({ options: { kinds: 'reset', 'policy:reset:a': 'gain>=2x|stall>=1x/5', 'policy:reset:b': 'gain>=2x|stall>=1x/5' } }, over);
+  ctx.player.points = new Decimal(1000);
+  ctx.player.a.points = new Decimal(5);          // gain 1 against a bar of 2 × 5: `gain>=2x` refuses
+  // ⚠ `b` NEEDS POINTS TOO, or it is not stalled at all: `gain>=2x` on a layer holding 0 has a bar of 0, so it
+  // ACTS on the first tick and never becomes a candidate for the arbiter to weigh (measured — `a` fired by the
+  // fallback instead of yielding, because it was the only stalled feature there was).
+  ctx.player.b.points = new Decimal(10);
+  ctx.player.b.unlocked = true;
+  ctx.player.timePlayed = 1000;
+  return ctx;
+}
+
+test('CONSTRUCTED: waiting:stall-clock — the modifier is armed and its clock has NOT run out', () => {
+  const ctx = stalled();
+  ctx.tmtLoader.restoreRuntime({ lastReset: { 'reset:a': 990 }, loopNo: 1, ranAt: {}, stats: {},
+    stallIntervals: { 'reset:a': [100] }, stallSince: { 'reset:a': 890 } });
+  tick(ctx, 1);                                  // 11 s into a 1 × 100 s clock
+  const r = rowOf(ctx, 'reset:a');
+  assert.equal(r.last.code, 'waiting:stall-clock', JSON.stringify(r.last));
+  assert.equal(r.last.values.policy, 'gain>=Nx', 'the countdown must NAME the primary rule that is still refusing');
+  assert.ok(Number(r.last.values.need) === 100 && Number(r.last.values.elapsed) < 100, JSON.stringify(r.last.values));
+});
+
+test('CONSTRUCTED: waiting:stall-yield — stalled, and another stalled feature is closer to its target', () => {
+  // ⛔ THE ARBITER'S OWN STATE, which neither of the other two codes can express. `b` is static, so its progress is
+  // `baseAmount / nextAt` (1000 / 1, capped at 1); `a` is normal at gain 1 against 2 × 5 — so `b` wins and `a`
+  // must SAY it yielded, and to whom.
+  const ctx = stalled();
+  ctx.tmtLoader.restoreRuntime({ lastReset: { 'reset:a': 900, 'reset:b': 900 }, loopNo: 1, ranAt: {}, stats: {},
+    stallIntervals: { 'reset:a': [50], 'reset:b': [50] }, stallSince: { 'reset:a': 850, 'reset:b': 850 } });
+  tick(ctx, 1);                                  // both are 100 s past a 1 × 50 s clock
+  const r = rowOf(ctx, 'reset:a');
+  assert.equal(r.last.code, 'waiting:stall-yield', JSON.stringify(r.last));
+  assert.equal(r.last.values.layer, 'b', 'it yielded to the wrong feature');
+  assert.deepEqual(ctx.resets, ['b'], `only the closest may fire: ${JSON.stringify(ctx.resets)}`);
+});

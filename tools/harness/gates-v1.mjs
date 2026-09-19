@@ -86,6 +86,10 @@ const CONSTRUCTED = [
   'blocked:gate', 'off:policy', 'blocked:enter', 'blocked:exit', 'in-challenge',
   'acted:challenge-enter', 'acted:challenge-exit', 'waiting:when', 'acted:clickables',
   'waiting:milestone', 'acted:toggles', 'holding:saving', 'waiting:purchase', 'waiting:gain', 'armed',
+  // V2's three. No fixture can show them either: no table names `rate-peak` or the `stall` modifier, and the
+  // ARBITER's state needs TWO reset features stalled in the same tick, which no recorded state has. All three are
+  // constructed in `loader/reasons.test.mjs`, which this part RUNS and requires green.
+  'waiting:rate', 'waiting:stall-clock', 'waiting:stall-yield',
 ];
 const LEGS = [
   { key: 'ptr fresh 400×1 (profile all)', id: 'ptr', o: { profile: 'all', diff: 1, ticks: 400, explain: true } },

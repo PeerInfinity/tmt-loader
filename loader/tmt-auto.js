@@ -1353,11 +1353,11 @@
     if (!f) throw new Error('no feature "' + id + '"');
     var e = editsOf();
     if (!e) return { ok: false, policy: policyOf(f), error: 'this save has no automation store yet (player.' + AU + '.edits)' };
-    if (policy === null || policy === undefined) { delIn(e, id); player[AU].disclosed = true; editGen++; return { ok: true, policy: policyOf(f), error: null }; }
+    if (policy === null || policy === undefined) { delIn(e, id); player[AU].disclosed = true; invalidateView(); return { ok: true, policy: policyOf(f), error: null }; }
     if (typeof policy !== 'string' || !policyOk(f.kind, policy)) return { ok: false, policy: policyOf(f), error: '"' + policy + '" is not a ' + f.kind + ' strategy this build knows' };
     setIn(e, id, { policy: policy });
     player[AU].disclosed = true;
-    editGen++;
+    invalidateView();
     return { ok: true, policy: policyOf(f), error: null };
   };
   T.savedPolicy = function (id) { var f = byId[id]; if (!f) throw new Error('no feature "' + id + '"'); return savedPolicyOf(f); };
@@ -1614,20 +1614,40 @@
   // roster leg, where the GAME raises it on every `updateTemp()`), render → write → render is a loop. One shared
   // answer per tick bounds that to a single extra render, and it also means the header's `display-text` and the
   // component below do not each pay for a full explain().
-  // ⚠ The key carries an EDIT COUNTER as well as the clock, because a page under `?managed=1` does not tick: an
-  // edit must show up in the view immediately, not at the next game loop that may never come.
-  var viewCache = { key: null, rows: null };
+  // ⛔⛔ AND THE REFRESH POINT IS `updateTemp()`, NOT THE CLOCK — MEASURED, after the first cut keyed the cache on
+  // `(ticks, timePlayed, editGen)` and `gates-a1 --part 2` went red on BOTH engines. That leg pokes
+  // `tmtLoader.autoProvenance` directly and redraws; with a clock-keyed cache the poke changed nothing the key
+  // could see, the view kept the previous answer, and on a PAUSED page it would have kept it for ever. A cache
+  // whose only invalidation is the game clock is stale by construction for every out-of-band change there is.
+  // The header's `display-text` runs inside `updateTemp()` — which is exactly "the view is being rebuilt" — so IT
+  // recomputes and the component reuses that answer. A Vue re-render does NOT call `updateTemp`, so the render →
+  // reactive-write → render loop is still bounded by one shared answer per redraw, which is the whole reason the
+  // cache exists (see above).
+  // ⚠ An EDIT invalidates immediately as well, because a page under `?managed=1` does not redraw on its own.
+  var viewCache = { rows: null };
   var editGen = 0;
-  function explainForView() {
-    var key = T.ticks + '/' + (Number(player.timePlayed) || 0) + '/' + editGen + '/' + features.length;
-    if (viewCache.key !== key) { viewCache.key = key; viewCache.rows = T.explain(); }
+  function explainForView(fresh) {
+    if (fresh || viewCache.rows === null) viewCache.rows = T.explain();
     return viewCache.rows;
   }
+  function invalidateView() { viewCache.rows = null; editGen++; }
+  T.invalidateView = invalidateView;
+  // ⛔⛔ AND THE COMPONENT NEEDS A REACTIVE DEPENDENCY THAT IS NOT THE CLOCK. MEASURED, and it is the second half
+  // of the same defect: refreshing the cache inside `updateTemp()` is not enough, because Vue only re-renders a
+  // computed whose REACTIVE inputs changed — and on a PAUSED page `player.timePlayed` never moves, so the tab kept
+  // showing the previous rows however fresh the cache was. `gates-a1 --part 2`'s XSS leg pokes
+  // `tmtLoader.autoProvenance` and redraws with no tick at all, and stayed red through the cache fix alone.
+  // `tmp` IS in the engines' Vue data and is NOT in `stateJSON` (which serialises `player`), so a counter there is
+  // reactive and cannot move a hash. The au layer declares it as a plain function; both engines' `updateTempData`
+  // evaluate a layer-level function into `tmp` on every redraw, which is exactly the cadence the view wants.
+  // ⚠ It returns a CONSTANT while the Advanced view is off screen, so a tab nobody is looking at churns nothing.
+  var viewGen = 0;
+  function auViewGen() { return advancedShown() ? ++viewGen : 0; }
 
   // ---- the read-only half: V1's blocks, unchanged, exposed so a component can render one -------------------------
   function advancedHeaderHTML() {
     if (!advancedShown()) return '';
-    var rows = explainForView();
+    var rows = explainForView(true);   // the redraw IS the refresh point — see explainForView
     var running = 0, never = 0, edited = 0;
     for (var i = 0; i < rows.length; i++) { if (rows[i].state === 'on') running++; if (rows[i].neverFired) never++; if (rows[i].policy && rows[i].policy.saved) edited++; }
     return '<div style="text-align:left;max-width:100%;overflow-wrap:anywhere;word-break:break-word">'
@@ -1807,7 +1827,10 @@
           // ⚠ `player.timePlayed` is read on purpose: it is what makes this computed re-evaluate every tick, which
           // is what keeps V1's reason line LIVE. Without a reactive dependency that moves, the view would render
           // once and then sit there.
-          var clock = player.timePlayed;
+          // the reactive dependency: `tmp.au.auViewGen` moves on every redraw while this view is on screen, which
+          // is what keeps the reason line LIVE and what makes an out-of-band change visible on a paused page.
+          var clock = 0;
+          try { clock = tmp[AU].auViewGen; } catch (e) { clock = player.timePlayed; }
           var rows = explainForView(), out = [], prev = null;
           for (var i = 0; i < rows.length; i++) {
             var l = rows[i].layer;
@@ -2107,6 +2130,8 @@
       // the next editing slice's `until` / `priority` / `maxActions` join as fields of the same per-feature entry and
       // cost no further re-record. Empty on every boot: nothing is chosen until a player chooses it.
       startData: function () { return { unlocked: true, points: num(0), features: {}, disclosed: false, armLocked: false, edits: {} }; },
+      // the Advanced view's reactive heartbeat — see `auViewGen` above. NOT game state: it lives in `tmp`.
+      auViewGen: auViewGen,
       color: '#7fb2d9',
       row: 'side',
       symbol: 'AU',
@@ -2156,7 +2181,17 @@
       // (`:key`) and only updates its props, which is the whole reason the editors are components at all.
       Advanced: { content: [
         ['display-text', function () { return advancedHeaderHTML(); }],
-        ['tmtl-editors', null],
+        // ⛔ THE BARE STRING FORM, WITH NO `data` — because `['tmtl-editors', null]` PUT A `null` IN THE TAB FORMAT
+        // AND FOUR ENGINES CRASH ON IT. MEASURED in CI (`G1 load — automation page`, 4 RED at
+        // `onload load(): Cannot read properties of null (reading 'constructor')`): the-necromantree,
+        // the-prestige-tree, the-christmas-tree and the-romeo-julliet-tree all walk `tmp` with
+        //   `else if ((!!x) && (x.constructor === Object) || (typeof x === "object") && traversable.includes(x.constructor.name))`
+        // and `&&` binds tighter than `||`, so a `null` skips the guarded half and reaches `null.constructor` in
+        // the UNGUARDED half. `typeof null === "object"` is the whole bug. The engines' `column` accepts a bare
+        // component name (`v-if="!Array.isArray(item)"`), which passes no `data` at all and puts no `null`
+        // anywhere — and this component never wanted one.
+        // ⚠ V1 could not hit this: its Advanced content was `[['display-text', fn]]`, with no null in it.
+        'tmtl-editors',
       ] },
       },
       automate: auAutomate,
