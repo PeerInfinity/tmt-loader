@@ -9,6 +9,16 @@
 #
 # WHAT is served is unchanged: the legacy build served the branch's tracked tree from the repo root, and the
 # staging step below is `git archive HEAD` — exactly the tracked tree, nothing else. Only WHEN it is served moved.
+#
+# ⚖ AND THE DEPLOY IS NOW CHECKED (user ruling, 2026-09-18). G5 (`tools/check-pages.mjs`) used to run before a push,
+# on a session's own box, against a bare clone served from a local sub-path. It belongs here instead:
+#   · a push no longer deploys, so on a push G5 certified something the push did not change;
+#   · nothing verified a manual publish at all. The deploy job going green says the ARTIFACT uploaded — U2h still had
+#     to fetch the URL by hand to see whether the site was serving. A deploy that succeeds and serves the previous
+#     tree is the failure with no witness.
+# The `verify` job below is that witness, and it checks the one thing only a post-deploy run can: that the bytes the
+# live URL returns ARE this commit's. It waits for the deploy to settle rather than assuming it has, and it FAILS the
+# workflow — it is not advisory.
 name: pages
 
 on:
@@ -29,6 +39,8 @@ jobs:
     runs-on: ubuntu-latest
     environment:
       name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    outputs:
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - uses: actions/checkout@v4
@@ -51,3 +63,66 @@ jobs:
           path: _site
       - id: deployment
         uses: actions/deploy-pages@v4
+
+  # ---------------------------------------------------------------------------------------------------------------
+  # G5, against the site that was just published.
+  #
+  # ⛔ It must be able to FAIL, and it must fail the workflow: a verification step that cannot go red is decoration.
+  # ⚠ It runs against the LIVE URL, never against the artifact — an artifact that is correct and a site that is not
+  # is exactly the case this job exists for. `check-pages.mjs --live` polls the served bytes against
+  # `git show HEAD:<path>` until they match (up to 5 minutes) and reports how long settling took, so "the deploy had
+  # not propagated yet" is a measured wait rather than a flaky red.
+  # ⚠ G1 over the whole roster across the public network is minutes of traffic for a per-game check the sweep
+  # workflow already owns on every push. So the live form bounds G1 to a NAMED sample and says so in its verdict
+  # line; what it covers for the whole roster is the picker, which names all 171 games in one page load.
+  # ---------------------------------------------------------------------------------------------------------------
+  verify:
+    name: G5 — the live site serves this commit
+    needs: deploy
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # `git show HEAD:<path>` only needs HEAD, which is what the deploy staged with `git archive HEAD`.
+          fetch-depth: 1
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '18.20.6'
+          cache: npm
+
+      - run: npm ci
+
+      - name: Cache the Playwright browser
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+
+      - run: npx playwright install --with-deps chromium
+
+      - name: G5 against ${{ needs.deploy.outputs.url }}
+        run: node tools/check-pages.mjs --live "$URL" | tee g5.txt
+        env:
+          URL: ${{ needs.deploy.outputs.url }}
+
+      - name: Summary
+        if: always()
+        run: |
+          {
+            echo '## G5 — the published site'
+            echo ''
+            echo '```'
+            tail -30 g5.txt 2>/dev/null || echo 'no output'
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload the result
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: g5-live
+          path: tools/harness/results/tmp/check-pages-last.json
+          if-no-files-found: warn
+          retention-days: 14

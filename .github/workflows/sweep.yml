@@ -1,15 +1,22 @@
-# The full `--gate mobile` sweep over all 171 games, sharded across 10 runners.
+# Everything that used to run only when a session remembered to run it.
 #
-# WHY IT IS HERE. The sweep is the gate every UI slice owes, and locally it is one machine held for the better part
-# of an hour. Sharded, a slice can verify a bounded local set — `ptr`, `something`, and whatever its own change can
-# be seen on — and let CI own the full roster on machines nobody is waiting for.
+# WHY IT IS HERE. Until U2g this workflow held ONE gate — the M1 mobile sweep — and every other check in the repo
+# ran on one box, serially, when whoever was working remembered. U2d is what that costs: `buyUpgrade` turned out to
+# be an alias two games do not define, so a chip press had bought nothing on them for two slices, and it survived
+# because no gate ever drove a chip. When one finally did, NINE of the ten shard checkmarks were green and the id
+# came only from the merge job. ⛔ A check nobody runs is not a check, and a green checkmark is not evidence that
+# anything ran.
 #
-# ⛔ THE FAILURE THIS IS BUILT AGAINST. A shard that dies before running anything reads as GREEN, and a sharding bug
-# that drops games makes the run both faster and greener. Ten green checkmarks with one dead shard are
-# indistinguishable from eleven green checkmarks — unless something checks. That is the `merge` job below, and it is
-# not optional: it asserts that the union of the shards' reported rosters IS the roster, and fails naming the
-# missing ids when it is not. Do not make it `continue-on-error`, and do not drop `if: always()` from it (a failed
-# shard must still be merged, so the merge can say what went unrun).
+# ⛔ THE FAILURE EVERY JOB HERE IS BUILT AGAINST, and it runs backwards from the usual one: a CI change that runs
+# LESS looks FASTER and GREENER. A shard that dies before running anything, a matrix that never starts, a job that
+# is skipped, a command that silently no-ops — every one of them reads as success. So:
+#   · the M1 matrix records the roster each shard was ASSIGNED and `merge-shards.mjs` refuses a run that does not
+#     put the roster back together (the `merge` job below, driven by `loader/shard.test.mjs`);
+#   · G1 gets the SAME assertion through the same tool, as a run of ONE shard — unsharded is not unasserted;
+#   · the roster FIGURES the docs quote get `tools/census-figures.mjs`, which refuses a game whose sources it could
+#     not read rather than counting it as zero (`loader/census.test.mjs` drives it bounded to `js/`, the bug it
+#     exists to catch);
+#   · `loader/workflows.test.mjs` asserts the shape of these files, including the ⚖ rulings they encode.
 #
 # ⚖ REPORT-ONLY, not a required check, until it has a few green runs behind it (2026-09-18). Nothing in this repo's
 # branch protection references it; a red here is a red X on the commit and blocks nothing.
@@ -36,8 +43,55 @@ env:
   SHARDS: '10'
 
 jobs:
+  # ---------------------------------------------------------------------------------------------------------------
+  # Seconds, no browser, no per-game boot — and EVERYTHING else needs it. If the units are red there is no point
+  # spending fourteen runners to find out that the roster still has 171 games in it.
+  # ---------------------------------------------------------------------------------------------------------------
+  fast:
+    name: units + repo-wide checks
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      # ⚠ No `npm ci` on purpose. Every file this job runs imports only `node:` builtins and its own relative
+      # neighbours — the one dependency in package.json is Playwright, which nothing here touches. Installing it
+      # would triple this job's wall clock to gate nothing.
+      - name: Unit tests (node --test)
+        run: npm run harness:test
+
+      - name: G6 + G7 — the roster doc and the declined list
+        run: node tools/games-table.mjs --check
+
+      # The figures the docs QUOTE, regenerated from the tree. Three of them shipped wrong in this arc by two
+      # different authors and no gate could have caught any of them, because the sweep drives games and a number in
+      # prose has nothing behind it.
+      - name: Roster figures census
+        run: node tools/census-figures.mjs --json census.json
+
+      - name: Summary
+        if: ${{ !cancelled() }}
+        run: |
+          {
+            echo '## Fast checks'
+            echo ''
+            echo '```'
+            node tools/census-figures.mjs 2>&1 | tail -20 || true
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  # ---------------------------------------------------------------------------------------------------------------
+  # M1 — the mobile sweep, 171 games, sharded ten ways.
+  # ---------------------------------------------------------------------------------------------------------------
   shard:
     name: M1 shard ${{ matrix.shard }}/10
+    needs: fast
     runs-on: ubuntu-latest
     timeout-minutes: 30
     strategy:
@@ -92,6 +146,9 @@ jobs:
     # mid-flight, find them missing, and report a RED that means nothing — on a report-only gate whose whole value is
     # that a red means something. `!cancelled()` still runs the merge when a shard FAILED, which is the property that
     # matters: a dead shard must never skip the roster assertion.
+    #
+    # ⚠ It is also NOT conditioned on `fast`: `needs: shard` already carries it. A skipped matrix skips this too,
+    # which is the one case where reporting nothing is right — nothing ran, and nothing claims to have run.
     if: ${{ !cancelled() }}
     runs-on: ubuntu-latest
     timeout-minutes: 10
@@ -141,5 +198,142 @@ jobs:
           path: |
             shards/merged.json
             merge.txt
+          if-no-files-found: warn
+          retention-days: 14
+
+  # ---------------------------------------------------------------------------------------------------------------
+  # G1 — "the page loads this game": every game, a browser, no per-game state work.
+  #
+  # ⚠ IT DOES NOT SHARD, and that is a measurement, not an oversight. Serial over the whole roster it is 5 min 00 s
+  # locally (171/171 green, 1.75 s/game, measured 2026-09-18 at 61c7e2ba8) — CI runs this kind of work about 2.3×
+  # faster than that box, so one job is ~2–3 min of sweep against ~90 s of fixed checkout + `npm ci` + Playwright
+  # install. Ten shards would pay that 90 s TEN times to save two minutes of wall clock. A matrix that costs more
+  # setup than it saves is a worse answer that merely looks busier.
+  #
+  # ⛔ Unsharded is not unasserted. It runs as `--shard 1/1`, so it records the roster it was assigned and the SAME
+  # `merge-shards.mjs` refuses it if the rows do not reconstruct the roster — a game dropped from the gate's own
+  # enumeration fails here exactly as it would in the matrix.
+  #
+  # ⚠ TWO DIMENSIONS, TWO JOBS. `--gate load` defaults to the PLAIN page; `gates.mjs` runs G1 with `?automation=1`,
+  # where the loader also installs the automation core. They are different pages and a conflated run could not say
+  # which one broke, so they are separate jobs with separate artifacts.
+  # ---------------------------------------------------------------------------------------------------------------
+  g1:
+    name: G1 load — ${{ matrix.mode }} page
+    needs: fast
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - mode: plain
+            flag: ''
+          - mode: automation
+            flag: '--automation'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - run: npm ci
+
+      - name: Cache the Playwright browser
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+
+      - run: npx playwright install --with-deps chromium
+
+      - name: G1 over the whole roster (${{ matrix.mode }} page)
+        run: node tools/harness/page.mjs --gate load ${{ matrix.flag }} --shard 1/1 --json shards/g1-1.json
+
+      # The same roster assertion the matrix gets. `--expect 1`: one shard, and it must have covered everything.
+      - name: Assert the run covered the roster
+        if: always()
+        run: |
+          node tools/harness/merge-shards.mjs shards --expect 1 --json shards/merged.json | tee merge.txt
+          {
+            echo '## G1 load — ${{ matrix.mode }} page'
+            echo ''
+            echo '```'
+            cat merge.txt
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload the result
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: g1-${{ matrix.mode }}
+          path: shards/
+          if-no-files-found: warn
+          retention-days: 7
+
+  # ---------------------------------------------------------------------------------------------------------------
+  # S1 part 1 — the automation anchors. 52 checks, 197 s locally, and EVERY slice this arc has run it by hand to
+  # prove no anchor moved. That is exactly the check that should not depend on a human remembering.
+  #
+  # ⚠ Its own job, in parallel with the matrix, NOT folded into `fast`: at ~3.3 min it is the second most expensive
+  # thing here, and `fast` is worth having only because it finishes in seconds.
+  #
+  # ⛔ `fetch-depth: 0`. Each pinned row re-runs the COMMIT that first recorded it in a throwaway `git worktree`
+  # (3bc12bf, 17260e03, 71da72e — all on main) and requires it to reproduce its tick and full hash. A depth-1
+  # checkout does not have those objects, and the job would fail for a reason that has nothing to do with the code.
+  # ---------------------------------------------------------------------------------------------------------------
+  anchors:
+    name: S1 part 1 — automation anchors
+    needs: fast
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - run: npm ci
+
+      - name: Cache the Playwright browser
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+
+      - run: npx playwright install --with-deps chromium
+
+      # `--no-summary`: results/SUMMARY.md is the committed record of runs a person ran and read. A CI run appending
+      # to a file nobody commits is a write into the void; the JSON below is this run's record.
+      # `--pool`: the child pool is sized for a workstation. A hosted runner has 4 cores.
+      - name: S1 part 1
+        run: node tools/harness/gates-s1.mjs --part 1 --no-summary --pool 4 | tee s1.txt
+
+      - name: Summary
+        if: always()
+        run: |
+          {
+            echo '## S1 part 1 — the automation anchors'
+            echo ''
+            echo '```'
+            tail -40 s1.txt 2>/dev/null || echo 'no output'
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload the rows
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: s1-part1
+          path: tools/harness/results/tmp/gates-s1-part1-last.json
           if-no-files-found: warn
           retention-days: 14

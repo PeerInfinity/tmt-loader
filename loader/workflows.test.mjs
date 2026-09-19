@@ -1,4 +1,10 @@
-// Two properties of the CI workflows that no run of them would tell you about in time.
+// Properties of the CI workflows that no run of them would tell you about in time — or that a run would tell you
+// about only by looking GREEN.
+//
+// ⛔ THE INVERSION THESE TESTS LIVE UNDER. A CI change that runs LESS looks faster and greener. A job whose `needs:`
+// is dropped starts spending ten runners on red units; a job that quietly gains an `if:` stops running and reports
+// nothing, which renders identically to a pass; a gate moved out of a workflow leaves no trace at all in that
+// workflow's output. None of those is visible in a run's own result, so they are asserted here.
 //
 // ⚖ User ruling, 2026-09-18: the Pages deploy stops happening on every push. That ruling lives in one place — the
 // absence of a `push:` trigger in .github/workflows/pages.yml — and the way it gets undone is not malice but
@@ -14,6 +20,34 @@ import path from 'node:path';
 
 const REPO = path.resolve(new URL('..', import.meta.url).pathname);
 const wf = (n) => fs.readFileSync(path.join(REPO, '.github/workflows', n), 'utf8');
+
+/** The workflow's jobs as {name: body}, by indentation. No YAML dependency, as above. */
+function jobs(text) {
+  const lines = text.split('\n');
+  const start = lines.findIndex((l) => /^jobs:\s*$/.test(l));
+  assert.ok(start >= 0, 'the workflow has no `jobs:` block');
+  const out = {};
+  let name = null, body = [];
+  for (const l of lines.slice(start + 1)) {
+    const m = /^ {2}([a-zA-Z_][\w-]*):\s*$/.exec(l);
+    if (m) { if (name) out[name] = body.join('\n'); name = m[1]; body = []; continue; }
+    if (/^\S/.test(l) && l.trim()) break;
+    if (name) body.push(l);
+  }
+  if (name) out[name] = body.join('\n');
+  return out;
+}
+
+/** The job names a job lists in `needs:` (scalar or list form). */
+function needs(body) {
+  const one = /^\s{4}needs:\s*([\w-]+)\s*$/m.exec(body);
+  if (one) return [one[1]];
+  const inline = /^\s{4}needs:\s*\[([^\]]*)\]/m.exec(body);
+  if (inline) return inline[1].split(',').map((x) => x.trim()).filter(Boolean);
+  const block = /^\s{4}needs:\s*\n((?:\s{6}-\s*[\w-]+\s*\n)+)/m.exec(body);
+  if (block) return [...block[1].matchAll(/-\s*([\w-]+)/g)].map((m) => m[1]);
+  return [];
+}
 
 /** The keys of the top-level `on:` block, by indentation. No YAML dependency, and this file has no reason to be exotic. */
 function triggers(text) {
@@ -75,4 +109,94 @@ test('the merge job cannot be skipped by a failing shard, and does not fire on a
   assert.doesNotMatch(cond[1], /\balways\(\)/, 'always() fires on a cancelled run and would report a false missing shard');
   assert.match(merge, /needs: shard/);
   assert.doesNotMatch(merge, /continue-on-error:\s*true/, 'the merge is the verdict; it may not be advisory');
+});
+
+// ---------------------------------------------------------------------------------------------------------------
+// U2g: the rest of the battery moved into CI. What it is easy to undo, asserted.
+// ---------------------------------------------------------------------------------------------------------------
+
+test('every expensive job in the sweep is GATED by the fast one', () => {
+  // The fast job is 46 unit tests, the roster doc, the declined list and the figures census: seconds, no browser.
+  // Its entire value is that nothing else starts when it is red. A `needs:` dropped for convenience — "my change
+  // does not touch the units" — spends ten runners plus three more to discover what three seconds already knew,
+  // and nothing about the resulting run would look wrong.
+  const j = jobs(wf('sweep.yml'));
+  assert.ok(j.fast, 'sweep.yml has no `fast` job at all');
+  for (const name of ['shard', 'g1', 'anchors']) {
+    assert.ok(j[name], `sweep.yml has no \`${name}\` job`);
+    assert.deepEqual(needs(j[name]), ['fast'], `the ${name} job does not wait for the fast checks`);
+  }
+  // …and the merge is gated transitively, through the matrix, which is the one correct way for it to be skipped
+  assert.deepEqual(needs(j.merge), ['shard']);
+});
+
+test('the fast job runs all three cheap checks — as CHECKS, not inside its own summary', () => {
+  // ⚠ The first version of this test asserted only that the command appeared in the job, and a mutant walked
+  // straight through it: the summary step at the end of the job reruns `census-figures.mjs` to paste its output
+  // into $GITHUB_STEP_SUMMARY, swallowing the exit code with `|| true`. Deleting the real step left the text in
+  // place and the test green. A command whose status nothing reads is not a check.
+  const j = jobs(wf('sweep.yml'));
+  const steps = j.fast.split(/^ {6}- /m).slice(1);
+  for (const cmd of ['npm run harness:test', 'node tools/games-table.mjs --check', 'node tools/census-figures.mjs']) {
+    const real = steps.filter((st) => st.includes(cmd) && !st.includes('GITHUB_STEP_SUMMARY'));
+    assert.ok(real.length >= 1, `the fast job no longer runs \`${cmd}\` as a step whose failure fails the job`);
+  }
+  assert.doesNotMatch(j.fast, /playwright install/, 'the fast job installed a browser — it is then no longer the fast job');
+});
+
+test('G1 in CI carries the SAME roster assertion as the sharded sweep', () => {
+  // G1 does not shard (measured: 5 min serial for the roster, against ~90 s of fixed setup a matrix would pay ten
+  // times). ⛔ Unsharded is not unasserted: it runs as `--shard 1/1` and the same merge-shards refuses it if the
+  // rows do not reconstruct the roster. A gate that quietly enumerated 170 games would otherwise pass.
+  const j = jobs(wf('sweep.yml'));
+  assert.match(j.g1, /--gate load[^\n]*--shard 1\/1/, 'the G1 job does not record the roster it was assigned');
+  assert.match(j.g1, /merge-shards\.mjs shards --expect 1/, 'the G1 job does not assert its coverage');
+});
+
+test('every gate run that writes a shard JSON is followed by a merge assertion', () => {
+  // Stated as a property rather than per job, so a gate added tomorrow inherits it.
+  const j = jobs(wf('sweep.yml'));
+  // …either in the job itself (G1, one shard) or in a job downstream of it (the M1 matrix, whose merge is its own
+  // job because the shards have to upload their artifacts first). Both are the assertion; neither is optional.
+  const merges = (name) => /merge-shards\.mjs/.test(j[name]) || Object.entries(j).some(([n, b]) => needs(b).includes(name) && /merge-shards\.mjs/.test(b));
+  const produced = Object.keys(j).filter((n) => /--gate \w+[^\n]*--json/.test(j[n]));
+  assert.ok(produced.length >= 2, `only ${produced.length} job(s) run a gate at all — did one get dropped?`);
+  for (const name of produced) {
+    assert.ok(merges(name), `job \`${name}\` runs a gate into a JSON and nothing ever asserts what it covered`);
+  }
+});
+
+test('⚖ G5 runs on the DEPLOY and nowhere else', () => {
+  // User ruling, 2026-09-18. check-pages.mjs hits the published site; on a push it would certify something the push
+  // did not change, because pushes no longer deploy. The two halves of that ruling:
+  const pages = wf('pages.yml'), sweep = wf('sweep.yml');
+  assert.match(pages, /check-pages\.mjs --live/, 'pages.yml no longer verifies the deploy it just made');
+  assert.doesNotMatch(sweep, /check-pages\.mjs/, 'the sweep runs G5 again — it is on the push, where it certifies an unchanged site');
+  // and it runs AFTER the deploy, not beside it
+  const j = jobs(pages);
+  assert.ok(j.verify, 'pages.yml has no verify job');
+  assert.deepEqual(needs(j.verify), ['deploy'], 'the verification does not wait for the deploy');
+  assert.match(j.verify, /--live "\$URL"/, 'the verification does not run against the deployed URL');
+});
+
+test('the deploy verification may not be advisory, and may not skip itself', () => {
+  // A check that cannot fail the workflow is decoration, and a check with a condition on it is a check that one
+  // day quietly stops running. Both read as a green deploy.
+  const j = jobs(wf('pages.yml'));
+  assert.doesNotMatch(j.verify, /continue-on-error:\s*true/, 'the deploy verification is advisory — then a red deploy is still a green run');
+  const cond = /^\s{4}if: (.+)$/m.exec(j.verify);
+  assert.equal(cond, null, `the verify job has a condition on it (\`${cond && cond[1]}\`), so it can skip and report nothing`);
+  // the steps that produce the verdict are unconditional too; only the reporting steps may carry `if: always()`
+  const verdict = j.verify.split('\n').findIndex((l) => l.includes('check-pages.mjs'));
+  assert.ok(verdict > 0);
+});
+
+test('the live check is in the file that deploys, and the deploy is in no other file', () => {
+  // The pair, stated together: if either half moved, push-deploys-the-site would be back under a different name, or
+  // the live check would be running against a site nobody had just published.
+  assert.deepEqual(triggers(wf('pages.yml')), ['workflow_dispatch']);
+  const deployers = ['pages.yml', 'sweep.yml'].filter((f) => wf(f).split('\n').some((l) => /^\s*-?\s*uses:/.test(l) && /deploy-pages/.test(l)));
+  assert.deepEqual(deployers, ['pages.yml']);
+  const verifiers = ['pages.yml', 'sweep.yml'].filter((f) => /check-pages\.mjs/.test(wf(f)));
+  assert.deepEqual(verifiers, ['pages.yml']);
 });
