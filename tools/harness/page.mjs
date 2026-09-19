@@ -586,6 +586,58 @@ const LAYERLIST_PROBE = `(${function () {
   };
   const SKINMARK = { bought: 'b', can: 'c', locked: 'l', pseudo: 'p' };
 
+  // ---- U6: THE COUNTER'S OWN COLOUR, rebuilt here out of the engine ----------------------------------------
+  // ⚖ "match what the main view already says" (user, 2026-09-19): milestones and achievements GREEN when all are
+  // earned and RED whenever one is not, never the layer colour; challenges the same by analogy; upgrades GREEN when
+  // all are bought, RED when none of the unbought is affordable, the LAYER's colour otherwise; buyables and
+  // clickables never green, RED when nothing in the category can be bought / clicked right now, the layer's colour
+  // otherwise. Written a THIRD time here for the same reason the sequence and the counters' text are: a colour
+  // compared against the list's own `counterSkin` would assert nothing at all.
+  // ⚠ The category's OWN class, with the family's bare `bought` / `locked` as the fallback — the same order the
+  // list resolves in, and the reason it is not "read `.bought` everywhere": a milestone counter must match the
+  // milestone boxes it counts on a game whose `.milestoneDone` is not its `.bought`.
+  const CTR_DONE = { upgrades: (l) => `${l} upg bought`, challenges: () => 'hChallenge done',
+    milestones: () => 'milestoneDone', achievements: (l) => `${l} achievement bought` };
+  const CTR_NO = { upgrades: (l) => `${l} upg locked`, buyables: () => 'buyable locked', clickables: () => 'upg locked',
+    challenges: () => 'locked', milestones: () => 'milestone', achievements: (l) => `${l} achievement locked` };
+  const CTR_LAYER = { upgrades: 1, buyables: 1, clickables: 1 };   // the three that can say "there is something to do"
+  const bgOrBare = (cls, bare) => { const v = bgOf(cls); return v && v !== NOBG ? v : bgOf(bare); };
+  const belowLim = (l, id) => {
+    const lim = S(() => tmp[l].buyables[id].purchaseLimit, undefined);
+    if (lim === undefined || lim === null) return true;
+    const amt = S(() => typeof getBuyableAmount === 'function' ? getBuyableAmount(l, Number(id)) : player[l].buyables[id], null);
+    if (amt === null) return true;
+    return S(() => typeof amt.gte === 'function' ? !amt.gte(lim) : !(Number(amt) >= Number(lim.toNumber ? lim.toNumber() : lim)), true);
+  };
+  // "is there anything to DO in this category right now", per component and on the engine's own terms
+  const ctrAvail = (kind, l, id) => {
+    if (kind === 'upgrades') return !earned('upgrades', l, id)
+      && S(() => { const u = tmp[l].upgrades[id].unlocked; return u === undefined ? true : !!u; }, true)   // a pseudo teaser is not "available"
+      && canAfford('upgrades', l, id);
+    if (kind === 'buyables') return belowLim(l, id) && canAfford('buyables', l, id);
+    if (kind === 'clickables') return S(() => !!tmp[l].clickables[id].canClick, false);
+    return false;
+  };
+  const ctrSkinExpect = (l) => {
+    const order = [], by = Object.create(null);
+    for (const k of seqDrawn(l)) {
+      const [ll, kind, id] = k.split('/');
+      if (!by[kind]) { by[kind] = { kind, x: 0, y: 0, any: false, avail: false }; order.push(kind); }
+      const g = by[kind];
+      if (!g.avail) g.avail = ctrAvail(kind, ll, id);
+      if (RATIO[kind]) { g.y++; g.any = true; if (earned(kind, ll, id)) g.x++; continue; }
+      let amt = null;
+      if (kind === 'buyables') { const b = S(() => typeof getBuyableAmount === 'function' ? getBuyableAmount(ll, Number(id)) : player[ll].buyables[id], null); amt = isAmt(b) ? b : null; }
+      else { const c = S(() => player[ll].clickables[id], null); amt = (isAmt(c) && posAmt(c)) ? c : null; }
+      if (amt !== null) g.any = true;
+    }
+    return order.map((k) => by[k]).filter((g) => RATIO[g.kind] ? g.y > 0 : g.any).map((g) => {
+      if (RATIO[g.kind] && g.y > 0 && g.x >= g.y) return { kind: g.kind, key: 'bought', bg: bgOrBare(CTR_DONE[g.kind](l), 'bought') };
+      if (CTR_LAYER[g.kind] && g.avail) return { kind: g.kind, key: 'can', bg: bgOfValue(S(() => String(tmp[l].color), '')) };
+      return { kind: g.kind, key: 'locked', bg: bgOrBare(CTR_NO[g.kind](l), 'locked') };
+    });
+  };
+
   const chipKey = (e) => `${e.dataset.layer}/${e.dataset.kind}/${e.dataset.cid}`;
   const onScreen = (e) => e.getClientRects().length > 0;   // ⚠ NOT computed `display`: a child of a hidden row keeps its own
   // a divider at every category change and at NEITHER END, over one RENDERED sequence of marks
@@ -652,10 +704,24 @@ const LAYERLIST_PROBE = `(${function () {
     const ctrEls = [...c.querySelectorAll('.tmt-layerlist-counter')];
     const counters = ctrEls.map((e) => `${e.dataset.kind}:${e.querySelector('.tmt-layerlist-counter-value').textContent}`);
     const wantCounters = ctrExpect(l);
+    // ---- U6: and what each counter is PAINTED, against the third rebuild above -------------------------------
+    const wantCtrSkin = ctrSkinExpect(l);
+    const ctrSkins = ctrEls.map((e, i) => { const w = wantCtrSkin[i] || { kind: '?', key: '', bg: '' };
+      return { kind: e.dataset.kind, wantKind: w.kind, wantKey: w.key, gotKey: e.dataset.skin || '',
+        want: w.bg, got: String(getComputedStyle(e).backgroundColor || '') }; });
+    const ctrSkinBad = ctrSkins.filter((x) => x.kind !== x.wantKind || x.got !== x.want || x.gotKey !== x.wantKey);
     // ---- row two, the buttons. `all` is what the list decided to offer; `vis` is what the row HELD. ----------
     const actEls = [...c.querySelectorAll('.tmt-layerlist-act')];
     const acts = actEls.map((e) => `${e.dataset.layer}/${e.dataset.kind}/${e.dataset.cid}`);
     const wantActs = actExpect(l);
+    // ---- U6: an ACTION BUTTON WEARS ITS CHIP'S SKIN. Against `skinExpect`, the SAME rebuild the chips are judged
+    // by — which is the whole claim: the two controls stand for one component and must say the same thing.
+    // ⚠ `data-afford` is asserted separately (`lit` below) and is NOT this: lit/grey is "can I press it now".
+    const actSkins = actEls.map((e) => { const kind = e.dataset.kind, ll = e.dataset.layer || l, id = e.dataset.cid;
+      const w = skinExpect(kind, ll, id);
+      return { key: `${ll}/${kind}/${id}`, wantKey: w.key, gotKey: e.dataset.skin || '',
+        want: w.bg, got: String(getComputedStyle(e).backgroundColor || '') }; });
+    const actSkinBad = actSkins.filter((x) => x.got !== x.want || x.gotKey !== x.wantKey);
     const visIdx = actEls.map((e, i) => (onScreen(e) ? i : -1)).filter((i) => i >= 0);
     // what fits must be a PREFIX of the offer (the tab layout's order is kept: the cut is at the end, never a gap)
     const prefix = visIdx.every((v, i) => v === i);
@@ -687,6 +753,11 @@ const LAYERLIST_PROBE = `(${function () {
       twoRowWitness: !!(collShape.counters >= 2 && collShape.acts >= 2),
       // --- U5 ---
       skins, skinBad, skinVec, skinSet, rowOrder, skinOk: skinBad.length === 0,
+      // --- U6: the collapsed card's two rows carry colour too ---
+      ctrSkins, ctrSkinBad, ctrSkinOk: ctrSkinBad.length === 0,
+      ctrSkinSet: [...new Set(ctrSkins.map((x) => x.wantKey))],
+      actSkins, actSkinBad, actSkinOk: actSkinBad.length === 0,
+      actSkinSet: [...new Set(actSkins.map((x) => x.wantKey))],
       // ⚠ THE DISCRIMINATOR: a card showing ALL THREE of the engine's states at once. A two-state check
       // (bought / not) passes on a build that never renders red, which is what the build before U5 was.
       threeStates: skinSet.filter((k) => k !== 'pseudo').length >= 3,
@@ -776,6 +847,15 @@ const LAYERLIST_PROBE = `(${function () {
     skinOk: perCard.every((x) => x.skinOk),
     skinBad: perCard.filter((x) => !x.skinOk).slice(0, 3).map((x) => ({ layer: x.layer, bad: x.skinBad.slice(0, 3) })),
     skinCounts: perCard.reduce((o, x) => { x.skins.forEach((y) => { o[y.wantKey] = (o[y.wantKey] || 0) + 1; }); return o; }, {}),
+    // --- U6: the action buttons and the counters, judged the same way -------------------------------------
+    actSkinOk: perCard.every((x) => x.actSkinOk),
+    actSkinBad: perCard.filter((x) => !x.actSkinOk).slice(0, 3).map((x) => ({ layer: x.layer, bad: x.actSkinBad.slice(0, 3) })),
+    actSkinCounts: perCard.reduce((o, x) => { x.actSkins.forEach((y) => { o[y.wantKey] = (o[y.wantKey] || 0) + 1; }); return o; }, {}),
+    ctrSkinOk: perCard.every((x) => x.ctrSkinOk),
+    ctrSkinBad: perCard.filter((x) => !x.ctrSkinOk).slice(0, 3).map((x) => ({ layer: x.layer, bad: x.ctrSkinBad.slice(0, 3) })),
+    // the counter states this page actually SHOWS, per category: the natural witnesses for the user's table. A page
+    // that never renders one of them is an ABSTENTION here — the constructed leg is what forces all three.
+    ctrSkinCounts: perCard.reduce((o, x) => { x.ctrSkins.forEach((y) => { const k = `${y.wantKind}:${y.wantKey}`; o[k] = (o[k] || 0) + 1; }); return o; }, {}),
     // ⚠ how many cards a build could be JUDGED on at this state, and how many show all three at once. `0` is an
     // ABSTENTION on the three-way reading, never a pass — the constructed leg is what makes the claim non-vacuous.
     threeStateCards: perCard.filter((x) => x.threeStates).map((x) => x.layer),
@@ -784,7 +864,10 @@ const LAYERLIST_PROBE = `(${function () {
       // (U5) the chips' colour vector, the chip row's own `layer/kind/id` sequence, and — rebuilt in this probe
       // and NOT asked of the list — the sequence that row is SUPPOSED to hold, so a leg watching the colours can
       // tell a repaint from a legitimate membership change (an upgrade unlocking) the way the button row does
-      skins: x.skinVec, chipOrder: x.rowOrder, chipWant: x.want.join(' ') })),
+      skins: x.skinVec, chipOrder: x.rowOrder, chipWant: x.want.join(' '),
+      // (U6) the two collapsed rows' own colour vectors, so a CI red names the card and the state it disagreed on
+      actSkins: x.actSkins.map((y) => SKINMARK[y.gotKey] || '?').join(''),
+      ctrSkins: x.ctrSkins.map((y) => `${y.kind}:${y.gotKey || '-'}`).join(' ') })),
     throttle: S(() => window.tmtLoader.layerListUI.stats(), null),
   };
 }})()`;
@@ -1871,6 +1954,155 @@ async function gateMobile(browser, base, ids) {
         return out;
       });
       row.threeWayOk = !/IS NOT|VANISHED|NOT RESTORED/.test(row.threeWay.verdict);
+
+      // --- U6 leg I2: THE COUNTER'S THREE STATES, AND THE ACTION ROW'S TWO, CONSTRUCTED ------------------------
+      // ⚖ the user's table (docs/mobile.md, "The counters wear colours too"). ⛔ THE DISCRIMINATOR IS THE SAME
+      // ONE U5 had to construct, for the same reason: no state of any game on the roster shows an upgrades counter
+      // green, red and layer-coloured at once, so a check that only asked "does the counter have a colour" would
+      // pass a build that painted every counter the layer colour. The three are FORCED here, on one card, by the
+      // same two levers leg I uses — `player[l].upgrades` and the engine's own `canAffordUpgrade`.
+      // ⚠ AN ACTION BUTTON HAS ONLY TWO STATES, and that is not a weaker check: the row's membership is "unlocked
+      // and not yet bought", so a button is never `bought`. Both of the two it CAN wear are asserted here, against
+      // the same colours the chips are judged by.
+      row.counterWay = await page.evaluate(() => {
+        const ui = window.tmtLoader.layerListUI;
+        if (!ui) return { verdict: 'abstains (no layerListUI)' };
+        ui.open();
+        const NOBG = 'rgba(0, 0, 0, 0)';
+        const measure = (fn) => {
+          try {
+            const e = document.createElement('span');
+            e.style.cssText = 'position:absolute;left:-9999px;top:0;width:1px;height:1px;visibility:hidden';
+            fn(e);
+            document.body.appendChild(e);
+            const v = String(getComputedStyle(e).backgroundColor || '');
+            document.body.removeChild(e);
+            return v || NOBG;
+          } catch (err) { return NOBG; }
+        };
+        const box = (l, kind) => document.querySelector(`.tmt-layerlist-card[data-layer="${l}"] .tmt-layerlist-counter[data-kind="${kind}"]`);
+        const read = (l, kind) => { const e = box(l, kind); return e ? { skin: e.dataset.skin || '', bg: String(getComputedStyle(e).backgroundColor || ''), text: e.querySelector('.tmt-layerlist-counter-value').textContent } : null; };
+        const actsOf = (l) => [...document.querySelectorAll(`.tmt-layerlist-card[data-layer="${l}"] .tmt-layerlist-act[data-kind="upgrades"]`)]
+          .filter((e) => (e.dataset.layer || l) === l)
+          .map((e) => ({ id: e.dataset.cid, skin: e.dataset.skin || '', afford: e.dataset.afford, bg: String(getComputedStyle(e).backgroundColor || '') }));
+        let target = null;
+        for (const l of ui.cards()) {
+          if (!box(l, 'upgrades')) continue;
+          const ids = [...document.querySelectorAll(`.tmt-layerlist-card[data-layer="${l}"] .tmt-layerlist-chip[data-kind="upgrades"]`)]
+            .filter((e) => (e.dataset.layer || l) === l && e.dataset.state !== 'pseudo').map((e) => e.dataset.cid);
+          if (ids.length >= 2) { target = { l, ids }; break; }
+        }
+        if (!target) return { verdict: 'abstains (no card draws an upgrades counter over two or more unlocked upgrade chips)' };
+        const visible = (() => { try { return new Function('return typeof canAffordUpgrade === "function" && canAffordUpgrade === window.canAffordUpgrade')(); } catch (e) { return false; } })();
+        if (!visible) return { layer: target.l, visible, verdict: 'abstains (the engine keeps canAffordUpgrade off `window`, so affordability cannot be constructed)' };
+        const l = target.l, A = target.ids[0], B = target.ids[1];
+        const had = (player[l].upgrades || []).slice();
+        const orig = window.canAffordUpgrade;
+        const before = read(l, 'upgrades');
+        let out;
+        try {
+          const want = { bought: measure((e) => { e.className = `${l} upg bought`; }),
+            can: measure((e) => { e.style.backgroundColor = String(tmp[l].color || ''); }),
+            locked: measure((e) => { e.className = `${l} upg locked`; }) };
+          // 1. EVERY upgrade the layer declares is bought — whatever the tab draws, x === y
+          const all = Object.keys((layers[l] || {}).upgrades || {}).filter((k) => !isNaN(k)).map(Number);
+          player[l].upgrades = all;
+          window.canAffordUpgrade = function () { return false; };
+          ui.refresh();
+          const gBought = read(l, 'upgrades');
+          // 2. none bought, and nothing affordable
+          player[l].upgrades = [];
+          ui.refresh();
+          const gLocked = read(l, 'upgrades'), aLocked = actsOf(l);
+          // 3. none bought, exactly one affordable — and the action row now holds one of each
+          window.canAffordUpgrade = function (ll, id) { return String(ll) === String(l) && String(id) === String(A); };
+          ui.refresh();
+          const gCan = read(l, 'upgrades'), aMixed = actsOf(l);
+          out = { layer: l, ids: [A, B], visible, want, got: { bought: gBought, can: gCan, locked: gLocked },
+            acts: { none: aLocked.slice(0, 4), mixed: aMixed.slice(0, 4) } };
+        } finally {
+          player[l].upgrades = had;
+          window.canAffordUpgrade = orig;
+          ui.refresh();
+        }
+        const after = read(l, 'upgrades');
+        out.restored = !!before && !!after && before.skin === after.skin && before.bg === after.bg && before.text === after.text;
+        const w = out.want, g = out.got;
+        const distinct = new Set([w.bought, w.can, w.locked]).size === 3;
+        const ok = (k) => g[k] && g[k].skin === k && g[k].bg === w[k];
+        // the action row under construction 3: the affordable one lit and wearing the layer's colour, at least one
+        // other grey and wearing the game's `locked` red
+        const lit = out.acts.mixed.find((x) => String(x.id) === String(A));
+        const grey = out.acts.mixed.find((x) => String(x.id) !== String(A));
+        out.verdict = !g.bought || !g.can || !g.locked ? 'THE COUNTER VANISHED UNDER THE CONSTRUCTION'
+          : !distinct ? `abstains (the game paints the three states ${JSON.stringify([w.bought, w.can, w.locked])} — not three colours)`
+          : !ok('bought') ? `ALL BOUGHT IS NOT THE GAME'S BOUGHT COLOUR (${g.bought.skin} ${g.bought.bg} != ${w.bought}, text ${g.bought.text})`
+          : !ok('locked') ? `NOTHING AFFORDABLE IS NOT THE GAME'S LOCKED COLOUR (${g.locked.skin} ${g.locked.bg} != ${w.locked}, text ${g.locked.text})`
+          : !ok('can') ? `SOMETHING AFFORDABLE IS NOT THE LAYER'S OWN COLOUR (${g.can.skin} ${g.can.bg} != ${w.can}, text ${g.can.text})`
+          : !lit || !grey ? `abstains (the action row held ${out.acts.mixed.length} upgrade buttons under the construction)`
+          : lit.skin !== 'can' || lit.bg !== w.can || lit.afford !== 'yes' ? `THE AFFORDABLE ACTION BUTTON IS NOT THE LAYER'S OWN COLOUR (${lit.skin} ${lit.bg} afford=${lit.afford})`
+          : grey.skin !== 'locked' || grey.bg !== w.locked || grey.afford !== 'no' ? `THE UNAFFORDABLE ACTION BUTTON IS NOT THE GAME'S LOCKED COLOUR (${grey.skin} ${grey.bg} afford=${grey.afford})`
+          : !out.restored ? 'NOT RESTORED'
+          : `all three on ${l}: ${w.bought} / ${w.can} / ${w.locked}, and the action row lit ${lit.bg} / grey ${grey.bg}`;
+        return out;
+      });
+      row.counterWayOk = !/IS NOT|VANISHED|NOT RESTORED/.test(row.counterWay.verdict);
+
+      // --- U6 leg I3: A MILESTONE COUNTER, RED WITH ONE UNEARNED AND GREEN WITH ALL EARNED ---------------------
+      // ⚖ user, verbatim (2026-09-19): "Unearned milestones and achievements are displayed in red in the main view
+      // and earned ones are displayed in green. And so we should use green and red, not layer colors." Both halves
+      // are driven, because the rule that matters is the RED one — a build that painted a milestone counter the
+      // layer colour would be green on any check that only looked at the all-earned case.
+      // ⚠ The lever is the engine's own `hasMilestone`, replaced the same way `canAffordUpgrade` is above, and the
+      // leg abstains where the engine keeps it off `window`.
+      row.msCounter = await page.evaluate(() => {
+        const ui = window.tmtLoader.layerListUI;
+        if (!ui) return { verdict: 'abstains (no layerListUI)' };
+        ui.open();
+        const NOBG = 'rgba(0, 0, 0, 0)';
+        const measure = (cls) => {
+          try {
+            const e = document.createElement('span');
+            e.className = cls;
+            e.style.cssText = 'position:absolute;left:-9999px;top:0;width:1px;height:1px;visibility:hidden';
+            document.body.appendChild(e);
+            const v = String(getComputedStyle(e).backgroundColor || '');
+            document.body.removeChild(e);
+            return v || NOBG;
+          } catch (err) { return NOBG; }
+        };
+        const box = (l) => document.querySelector(`.tmt-layerlist-card[data-layer="${l}"] .tmt-layerlist-counter[data-kind="milestones"]`);
+        const read = (l) => { const e = box(l); return e ? { skin: e.dataset.skin || '', bg: String(getComputedStyle(e).backgroundColor || ''), text: e.querySelector('.tmt-layerlist-counter-value').textContent } : null; };
+        let l = null;
+        for (const x of ui.cards()) if (box(x)) { l = x; break; }
+        if (!l) return { verdict: 'abstains (no card draws a milestones counter at this state)' };
+        const visible = (() => { try { return new Function('return typeof hasMilestone === "function" && hasMilestone === window.hasMilestone')(); } catch (e) { return false; } })();
+        if (!visible) return { layer: l, visible, verdict: 'abstains (the engine keeps hasMilestone off `window`, so the earned state cannot be constructed)' };
+        const orig = window.hasMilestone, before = read(l);
+        let out;
+        try {
+          const want = { bought: measure('milestoneDone') || NOBG, locked: measure('milestone') || NOBG };
+          window.hasMilestone = function () { return true; };
+          ui.refresh();
+          const all = read(l);
+          window.hasMilestone = function () { return false; };
+          ui.refresh();
+          const none = read(l);
+          out = { layer: l, visible, want, got: { bought: all, locked: none } };
+        } finally { window.hasMilestone = orig; ui.refresh(); }
+        const after = read(l);
+        out.restored = !!before && !!after && before.skin === after.skin && before.bg === after.bg && before.text === after.text;
+        const w = out.want, g = out.got;
+        const ok = (k) => g[k] && g[k].skin === k && g[k].bg === w[k];
+        out.verdict = !g.bought || !g.locked ? 'THE COUNTER VANISHED UNDER THE CONSTRUCTION (the tab hides what the construction earned)'
+          : w.bought === w.locked ? `abstains (the game paints earned and unearned milestones the same: ${w.bought})`
+          : !ok('bought') ? `ALL EARNED IS NOT GREEN (${g.bought.skin} ${g.bought.bg} != ${w.bought}, text ${g.bought.text})`
+          : !ok('locked') ? `ONE UNEARNED IS NOT RED (${g.locked.skin} ${g.locked.bg} != ${w.locked}, text ${g.locked.text})`
+          : !out.restored ? 'NOT RESTORED'
+          : `green ${w.bought} with all earned, red ${w.locked} with none on ${l}`;
+        return out;
+      });
+      row.msCounterOk = !/IS NOT|VANISHED|NOT RESTORED|NOT GREEN|NOT RED/.test(row.msCounter.verdict);
       // --- U2c leg E: THE LAYOUT HOLDS STILL AS THE DIGITS CHANGE ---------------------------------------------
       // At BOTH widths and in BOTH states, because U2d's counters and the amount readout are different numbers on
       // different rows and either can move the box. The probe writes the magnitudes itself (see DIGITS_PROBE for
@@ -2131,6 +2363,92 @@ async function gateMobile(browser, base, ids) {
       })();
       row.backOk = !/DID NOT RETURN|SURVIVED|RETURNED TO THE LIST|OPENING FROM THE TREE SET/.test(row.back.verdict);
 
+      // --- U6 leg K: PRESSING AN INACCESSIBLE LAYER DOES NOTHING AT ALL ----------------------------------------
+      // ⚖ user, 2026-09-19. ⛔ THE DISCRIMINATOR IS THE OVERLAY, NOT THE TAB. Every engine's `showTab` already
+      // begins `if (LAYERS.includes(name) && !layerunlocked(name)) return` — a silent no-op — so "player.tab did
+      // not move" is GREEN on the unfixed build and asserts nothing. What the unfixed build did was hide the list
+      // FIRST and find out afterwards, leaving the player looking at whatever tab was already open, and move U5's
+      // remembered view to a tab that never opened. All three are asserted.
+      // ⚠ AND A CONTROL, on the same page and through the same button: a build whose open button did nothing at
+      // all would pass the half above. The control is a REACHABLE layer, which must still open.
+      // ⚠ RUNS AFTER LEG J, which is the leg that leaves the page on the tree with the memory clear.
+      row.locked = await (async () => {
+        const setup = await page.evaluate(() => {
+          const ui = window.tmtLoader.layerListUI;
+          if (!ui || !ui.cameFrom) return { candidate: null, why: 'the list does not expose cameFrom()' };
+          try { showTab('none'); } catch (e) { /* a game with no tree tab */ }
+          ui.open(); ui.refresh();
+          // the ENGINE's own predicate, asked HERE rather than of the list — it is the one that decides whether
+          // the tab opens, and it is not the `player[l].unlocked` the card's greyed class reads
+          const reach = (l) => { try { return typeof layerunlocked === 'function' ? !!layerunlocked(l) : !!(player[l] && player[l].unlocked); } catch (e) { return null; } };
+          const has = (l) => !!document.querySelector(`.tmt-layerlist-card[data-layer="${l}"] .tmt-layerlist-open`);
+          const cards = ui.cards();
+          const bad = cards.find((l) => reach(l) === false && has(l));
+          const good = cards.filter((l) => reach(l) === true && has(l));
+          // ⚠ CONSTRUCTED WHERE THERE IS NO NATURAL ONE, and on this roster that is the norm rather than the
+          // exception: the two games with deep snapshots are swept AT them, where everything is unlocked, so the
+          // leg would abstain on exactly the two games a bounded local set runs. The engine's own
+          // `layerunlocked` is replaced with one that refuses a single layer — the same shape as the
+          // `canAffordUpgrade` and `hasMilestone` constructions above, and it is the predicate BOTH the engine's
+          // `showTab` and the list consult, so the constructed state is the real one.
+          let constructed = null;
+          if (!bad && good.length >= 2) {
+            const vis = (() => { try { return new Function('return typeof layerunlocked === "function" && layerunlocked === window.layerunlocked')(); } catch (e) { return false; } })();
+            if (vis) { constructed = good[0]; const orig = window.layerunlocked;
+              window.tmtLoaderU6Restore = () => { window.layerunlocked = orig; };
+              window.layerunlocked = function (n) { return String(n) === String(constructed) ? false : orig.apply(this, arguments); };
+              ui.refresh(); }
+          }
+          return { candidate: bad || constructed, constructed: !!constructed, control: (bad ? good[0] : good[1]) || null,
+            shown: cards.length, reach: cards.map((l) => `${l}:${reach(l)}`).slice(0, 12),
+            tab0: String(player.tab), open0: ui.isOpen(), cameFrom0: ui.cameFrom(),
+            why: bad ? null : (good.length < 2 ? 'fewer than two reachable layers to construct with'
+              : 'no shown layer is inaccessible and the engine keeps layerunlocked off `window`') };
+        });
+        if (!setup.candidate) return { ...setup, verdict: `abstains (${setup.why})` };
+        // ⚠ A REAL PRESS, BOUNDED, AND A FAILED PRESS IS AN ABSTENTION rather than an exception that costs the
+        // whole row. MEASURED on `the-shenanigans-tree-rewritten`, where the game's own "Achievement Gotten!"
+        // toast sits over the overlay and intercepts pointer events: an unbounded `page.click` spent 30 s and
+        // threw, and the row lost every leg after this one. The leg must not PASS in that case either — it did
+        // not press anything — so it says so.
+        const clickOpen = async (l) => {
+          try { await page.click(`.tmt-layerlist-card[data-layer="${l}"] .tmt-layerlist-open`, { timeout: 5000 }); return null; }
+          catch (e) { return String(e && e.message || e).split('\n')[0].slice(0, 140); }
+        };
+        const clickErr = await clickOpen(setup.candidate);
+        await page.waitForTimeout(150);
+        const look = () => page.evaluate(() => ({ tab: String(player.tab), open: window.tmtLoader.layerListUI.isOpen(), cameFrom: window.tmtLoader.layerListUI.cameFrom() }));
+        const after = await look();
+        let ctl = null, ctlErr = null;
+        if (!clickErr && setup.control && after.open) {
+          ctlErr = await clickOpen(setup.control);
+          await page.waitForTimeout(150);
+          ctl = await look();
+        }
+        // put the page back where the leg found it — including the constructed predicate
+        const restored = await page.evaluate(() => {
+          const ui = window.tmtLoader.layerListUI;
+          let back = null;
+          if (typeof window.tmtLoaderU6Restore === 'function') { window.tmtLoaderU6Restore(); delete window.tmtLoaderU6Restore; back = true; }
+          if (ui.isOpen()) ui.close(); else { ui.open(); ui.refresh(); ui.close(); }
+          try { showTab('none'); } catch (e) {}
+          return back;
+        });
+        const r = { candidate: setup.candidate, constructed: setup.constructed, restored, control: setup.control, shown: setup.shown, reach: setup.reach,
+          tab0: setup.tab0, open0: setup.open0, cameFrom0: setup.cameFrom0, after, ctl, clickErr, ctlErr };
+        r.verdict = clickErr ? `abstains (the card's open button could not be pressed: ${clickErr})`
+          : ctlErr ? `abstains (the control's open button could not be pressed: ${ctlErr})`
+          : !after.open ? 'THE OVERLAY CLOSED ON AN INACCESSIBLE LAYER'
+          : after.tab !== setup.tab0 ? `THE TAB MOVED TO ${after.tab}`
+          : after.cameFrom !== setup.cameFrom0 ? `THE REMEMBERED VIEW MOVED TO ${after.cameFrom}`
+          : !setup.control ? 'abstains (no reachable layer on this page to control against)'
+          : !ctl || ctl.tab !== setup.control ? `THE CONTROL DID NOT OPEN (${setup.control}: player.tab is ${ctl && ctl.tab})`
+          : setup.constructed && !restored ? 'THE CONSTRUCTED PREDICATE WAS NOT RESTORED'
+          : `nothing at all on ${setup.candidate}${setup.constructed ? ' (constructed)' : ''}; ${setup.control} still opens`;
+        return r;
+      })();
+      row.lockedOk = !/CLOSED|MOVED|DID NOT OPEN|NOT RESTORED/.test(row.locked.verdict);
+
       await page.evaluate(() => { const ui = window.tmtLoader.layerListUI; if (ui) ui.close(); });
       const llDesk = nb.layerList;
       // one card per shown layer, in the row the engine names, with distinct chips on each card and the button in
@@ -2151,7 +2469,7 @@ async function gateMobile(browser, base, ids) {
         && sameSet(L.cards, L.expect) && L.misrowed.length === 0 && L.dupeChips.length === 0
         && L.seqOk && L.dividerOk && L.radiusOk
         && L.countersOk && L.actionsOk && L.fitOk && L.twoRowsOk && L.statesOk && ctrRadOk(L)
-        && L.skinOk);
+        && L.skinOk && L.actSkinOk && L.ctrSkinOk);
       // GEOMETRY, at each width on that width's own terms: the phone demands nothing escapes and nothing is under
       // 44 px (the same bar the other phone views are held to); the desktop is judged against the PLAIN desktop
       // page, which is the layout this game's author shipped (leg 5's rule).
@@ -2180,7 +2498,8 @@ async function gateMobile(browser, base, ids) {
         && row.fitOk && row.stabilityOk && row.throttleOk && row.counterVerdict !== 'NOT MOVED'
         && row.digitsOk && row.persistOk && row.tipsOk
         && row.anchorOk && !/DRIFTED/.test(row.resetDrift.verdict)
-        && row.threeWayOk && row.backOk);
+        && row.threeWayOk && row.backOk
+        && row.counterWayOk && row.msCounterOk && row.lockedOk);
       row.layersScreenshot = path.relative(REPO, llShot);
 
       const shot = path.join(REPO, `tools/harness/results/${id}-mobile.png`);
@@ -2522,6 +2841,9 @@ async function main() {
       console.log(`M1 layers colours (U5 — every chip's COMPUTED background against the game's own stylesheet, rebuilt in the probe): ${rows.length - skRed.length}/${rows.length}${skRed.length ? ` (RED: ${skRed.map((x) => `${x} ${JSON.stringify(ll(rows.find((r) => r.id === x)).skinBad)}`).join('; ')})` : ''}; ${JSON.stringify(skCounts)}; ${sk3.length} game(s) show all three on ONE card at their own state${sk3.length ? `: ${sk3.slice(0, 6).join(', ')}` : ' — which is an ABSTENTION, and why the CONSTRUCTED leg below exists'}`);
       console.log(`M1 layers three-way (U5 — CONSTRUCTED: one card's three upgrade chips forced bought / affordable / unaffordable): ${JSON.stringify(fv('threeWay'))}${rows.filter((r) => r.threeWay && /IS NOT|VANISHED|NOT RESTORED/.test(r.threeWay.verdict)).map((r) => ` — ${r.id}: ${r.threeWay.verdict}`).join('')}`);
       console.log(`M1 layers Back (U5 — opened from the LIST returns to the list, opened from the TREE returns to the tab): ${JSON.stringify(fv('back'))}; tree route: ${JSON.stringify(rows.reduce((o, r) => { if (r.back && r.back.route) o[r.back.route] = (o[r.back.route] || 0) + 1; return o; }, {}))}${rows.filter((r) => r.back && !r.backOk).map((r) => ` — ${r.id}: ${r.back.verdict}`).join('')}`);
+      console.log(`M1 layers counter colours (U6 — the user's table, constructed on one card): ${JSON.stringify(fv('counterWay'))}${rows.filter((r) => r.counterWay && !r.counterWayOk).map((r) => ` — ${r.id}: ${r.counterWay.verdict}`).join('')}`);
+      console.log(`M1 layers milestone counter (U6 — RED with one unearned, GREEN with all earned): ${JSON.stringify(fv('msCounter'))}${rows.filter((r) => r.msCounter && !r.msCounterOk).map((r) => ` — ${r.id}: ${r.msCounter.verdict}`).join('')}`);
+      console.log(`M1 layers inaccessible press (U6 — the overlay STAYS OPEN and nothing moves): ${JSON.stringify(fv('locked'))}${rows.filter((r) => r.locked && !r.lockedOk).map((r) => ` — ${r.id}: ${r.locked.verdict}`).join('')}`);
       console.log(`M1 layers throttle (${rows[0] && rows[0].throttle ? rows[0].throttle.throttleMs : '—'} ms): ${JSON.stringify(fv('throttle'))}`);
       const cmNo = rows.filter((r) => r.counterVerdict && r.counterVerdict.startsWith('no candidate')).map((r) => r.id);
       console.log(`M1 layers counter press: ${rows.filter((r) => r.counterVerdict === 'moved').length} moved a counter's x by buying through the card, ${rows.filter((r) => r.counterVerdict === 'NOT MOVED').length} did not, ${cmNo.length} abstained${cmNo.length ? ` (nothing affordable: ${cmNo.slice(0, 8).join(', ')}${cmNo.length > 8 ? `, …(${cmNo.length})` : ''})` : ''}`);

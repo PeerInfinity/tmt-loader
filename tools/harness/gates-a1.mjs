@@ -227,8 +227,12 @@ async function part2Arm(id) {
     const redraw = () => page.evaluate(() => { updateTemp(); if (typeof updateTabFormats === 'function') updateTabFormats(); });
     const state = (k) => page.evaluate((kk) => {
       const T = window.tmtLoader, AU = T.auLayer, c = layers[AU].clickables[kk], s = T.featureState(c.tmtFeature);
+      // (U6) … and WHAT THE SETTING'S OWN BUTTON RENDERS. The flag is not the claim: it already flipped on the
+      // build the user reported, and the button still read `OFF`.
+      const b = [...document.querySelectorAll('#app button.smallUpg')][0];
       return { armLocked: T.armLocked(), stored: player[AU].armLocked, canClick: c.canClick(), display: c.display(),
         saved: s.saved, unlocked: s.unlocked, active: s.active, armable: s.armable,
+        toggleText: b ? b.textContent.trim() : null, owned: T.armToggleOwned === true,
         actions: T.hookStats().actions[c.tmtFeature] || 0 };
     }, k);
 
@@ -258,7 +262,9 @@ async function part2Arm(id) {
     notes.push(`candidate ${pick.id} (${pick.kind} on ${pick.layer}), ${pick.locked}/${pick.features} features locked`);
     const press = async () => { await page.locator('#app button.upg').filter({ hasText: pick.title }).first().click(); await redraw(); };
     const master = async () => { await page.locator('#app button.upg').filter({ hasText: 'All features' }).first().click(); await redraw(); };
-    const setting = async () => { await page.locator('#app button.smallUpg').first().click(); await redraw(); };
+    // ⚠ a real click on the engine's own control, and a beat for Vue to re-render: the claim under test is what
+    // the button SHOWS after the press, which is one `nextTick` away from the write that caused it.
+    const setting = async () => { await page.locator('#app button.smallUpg').first().click(); await redraw(); await page.waitForTimeout(80); };
     // how many features the save says are on, and whether OUR candidate is one of them — the master toggle is judged
     // on both, because "it armed nothing" and "it turned nothing on at all" are different defects
     const tally = () => page.evaluate((fid) => {
@@ -287,6 +293,21 @@ async function part2Arm(id) {
     await setting();
     const s2 = await state(pick.k);
     check(s2.armLocked === true && s2.stored === true, `the au tab's own toggle wrote player.au.armLocked = ${s2.stored}`);
+    // ⛔ (U6) AND THE BUTTON SAYS SO. This is the leg the user's 2026-09-19 report is about: on `ptr` the press
+    // flipped `player.au.armLocked` to true and the button went on reading `OFF`, because Vue 2 cannot observe a
+    // key ADDED to an object after creation and 24 of the 171 engines' `toggleAuto` assigns plainly. Asserting the
+    // FLAG would have been green on that build; asserting the RENDERED TEXT is what catches it.
+    // ⚠ The two halves are the press and the press BACK, so a button stuck on `ON` fails as surely as one stuck
+    // on `OFF`, and the text is not compared against a literal — the engines' wording is theirs.
+    check(s0.toggleText !== null && s2.toggleText !== null && s2.toggleText !== s0.toggleText,
+      `the setting's own button RE-RENDERED on the press ("${s0.toggleText}" → "${s2.toggleText}"; click path owned by the loader: ${s2.owned})`);
+    await setting();
+    const s2b = await state(pick.k);
+    check(s2b.armLocked === false && s2b.toggleText === s0.toggleText,
+      `and back on the second press (armLocked ${s2b.armLocked}, button "${s2b.toggleText}")`);
+    await setting();
+    const s2c = await state(pick.k);
+    check(s2c.armLocked === true && s2c.toggleText === s2.toggleText, `and on again (armLocked ${s2c.armLocked}, button "${s2c.toggleText}")`);
     check(s2.canClick === true && s2.armable === true, `with it on, the locked button accepts a press (canClick ${s2.canClick})`);
     // ⚖ and *All features* arms the locked ones too (decided in U4, docs/automation.md)
     await master();

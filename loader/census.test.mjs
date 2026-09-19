@@ -12,7 +12,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
-import { check, measure, sourcesOf, tooltipsByKind, hasHardResetOptButton } from '../tools/census-figures.mjs';
+import { check, measure, sourcesOf, tooltipsByKind, hasHardResetOptButton, toggleAutoBodies } from '../tools/census-figures.mjs';
 
 const REPO = path.resolve(new URL('..', import.meta.url).pathname);
 const read = (f) => fs.readFileSync(path.join(REPO, f), 'utf8');
@@ -99,6 +99,48 @@ for (const [claim, from, to] of [
     assert.deepEqual(red, [row(r, claim).name], `other claims went red too: ${red.join(', ')}`);
   });
 }
+
+// ⚠ U6 — the arming toggle's click path. Its own document, so it gets its own mutant rather than joining the
+// mobile.md table above.
+test('a wrong figure in the prose is caught: toggleAuto (docs/automation.md)', () => {
+  const DOC = 'docs/automation.md';
+  const from = '149 write the field through `Vue.set` and 22';
+  const to = '147 write the field through `Vue.set` and 24';
+  const text = read(DOC);
+  assert.ok(text.includes(from), `the doc no longer contains ${JSON.stringify(from)} — re-point this mutant`);
+  const r = judge({ [DOC]: text.replace(from, to) });
+  assert.equal(r.ok, false, 'the doctored document passed');
+  assert.equal(row(r, 'toggleAuto').ok, false, 'the toggleAuto claim did not notice');
+  const red = r.rows.filter((x) => !x.ok).map((x) => x.name);
+  assert.deepEqual(red, [row(r, 'toggleAuto').name], `other claims went red too: ${red.join(', ')}`);
+});
+
+// ⛔ U6 — the instrument that was WRONG first. A `[\s\S]{0,800}?\n\}` window ran past the closing brace on two
+// long bodies and found a `Vue.set` further down the file, which is why the body is brace-matched. The second case
+// below is that mutant's shape: a long body, then a `Vue.set` outside it.
+test('toggleAutoBodies brace-matches, and does not run past the closing brace', () => {
+  const one = toggleAutoBodies('function toggleAuto(t) {\n  if (x) { y() }\n  player[t[0]][t[1]] = !player[t[0]][t[1]]\n}\n');
+  assert.equal(one.length, 1);
+  assert.ok(one[0].endsWith('}'));
+  assert.ok(!/Vue\.set/.test(one[0]));
+  const long = `function toggleAuto(t) {\n${'  // filler\n'.repeat(120)}  player[t[0]][t[1]] = !player[t[0]][t[1]]\n}\nfunction other() { Vue.set(a, 'b', 1) }\n`;
+  const two = toggleAutoBodies(long);
+  assert.equal(two.length, 1);
+  assert.ok(!/Vue\.set/.test(two[0]), 'the body ran past its own closing brace');
+  // two declarations in one file: both are returned, in source order, and the LAST is the one that wins at runtime
+  const pair = toggleAutoBodies('function toggleAuto(t) { a() }\nfunction toggleAuto(t) { Vue.set(p, k, v) }\n');
+  assert.equal(pair.length, 2);
+  assert.ok(!/Vue\.set/.test(pair[0]) && /Vue\.set/.test(pair[1]));
+});
+
+// ⚠ U6 — and the SCOPE of that figure: two games ship disagreeing copies, so the answer depends on load order.
+test('the toggleAuto census is answered over the LOADED files, last declaration winning', () => {
+  assert.equal(load.toggleAutoDecl, 171, 'every game declares `function toggleAuto` at top level');
+  assert.equal(load.toggleAutoInData, 0, 'no game shadows it in its Vue instance\'s data');
+  assert.equal(load.toggleAutoVueSet + load.toggleAutoPlain, load.toggleAutoDecl);
+  assert.ok(load.toggleAutoPlain > 0 && load.toggleAutoPlain < load.toggleAutoDecl,
+    'the split is what the fix rests on: some engines assign plainly and some do not');
+});
 
 test('the tooltip census separates the chipped declarations from the achievements', () => {
   // ⛔ The brief this slice was given quoted ~165 of 171 for "components that declare a `tooltip`", which is the

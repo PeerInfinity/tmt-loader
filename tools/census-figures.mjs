@@ -168,6 +168,40 @@ const FAMILY = { bought: '#77bf5f', locked: '#bf8f8f' };
 const RE_BACK_CLASS = /<button[^>]{0,400}?class="[^"]{0,120}?\bother-back\b[^"]{0,120}?"|<button[^>]{0,400}?class="[^"]{0,120}?\bback\b[^"]{0,120}?"|back\s*==\s*'big'\s*\?\s*'other-back'\s*:\s*'back'/;
 const RE_BACK_GOBACK = /goBack\s*\(/;
 
+// ⚠ U6 — THE ARMING TOGGLE'S CLICK PATH (docs/automation.md). `loader/tmt-auto.js` replaces the global
+// `toggleAuto` for exactly `['au','armLocked']`, and whether that replacement is REACHABLE is the games' business:
+// a top-level `function toggleAuto` is a property of the global object (a Vue template compiles to `with(this)` and
+// falls through to it), while a game that put `toggleAuto` in its Vue instance's `data` would shadow it and keep
+// today's behaviour instead. Both are static properties of each tree, and no gate that DRIVES games would notice
+// the day one changed — a wrapper that is never reached throws nothing.
+// ⚠ The BODY test is what splits the roster into the games that write the field through `Vue.set` and the ones
+// that assign plainly — the plain ones are where the defect is visible at all, because Vue 2 cannot observe a key
+// added after creation. ⛔ IT IS BRACE-MATCHED, not a bounded regex. A `[\s\S]{0,800}?\n\}` window was measured
+// misclassifying TWO games whose body is longer than the window: it ran past the closing brace and found a
+// `Vue.set` further down the file, reporting 149/22 where the truth is 147/24.
+// ⛔ AND THE SCOPE IS `loaded`, NOT `subtree`, with the LAST declaration winning. Measured: TWO games declare
+// `toggleAuto` in more than one file and the copies DISAGREE — `the-yes-tree` (`js/mod.js` plain,
+// `js/utils/options.js` through `Vue.set`) and `the-tree-emipiplu` (three copies under `2/`, `3/` and `js/`). Which
+// one the click reaches is decided by LOAD ORDER, so the question is only answerable over the manifest's own list,
+// in the manifest's own order, taking the last.
+const RE_TOGGLE_DECL = /^function\s+toggleAuto\s*\(/m;
+/** Every top-level `function toggleAuto(...) {...}` in one file, brace-matched, in source order. */
+export function toggleAutoBodies(text) {
+  const out = [];
+  for (const m of String(text).matchAll(/^function\s+toggleAuto\s*\([^)]*\)\s*\{/gm)) {
+    let depth = 0, end = -1;
+    for (let i = m.index + m[0].length - 1; i < text.length; i++) {
+      const c = text[i];
+      if (c === '{') depth++;
+      else if (c === '}') { depth--; if (depth === 0) { end = i; break; } }
+    }
+    out.push(text.slice(m.index, end < 0 ? text.length : end + 1));
+  }
+  return out;
+}
+// `data: { … toggleAuto … }` in a `new Vue({...})` block — the shadowing case, measured rather than assumed
+const RE_TOGGLE_IN_DATA = /data:\s*\{[\s\S]{0,2000}?\btoggleAuto\b[\s\S]{0,2000}?\}/;
+
 const RE = {
   optButton: /<button\b[^>]*\bclass\s*=\s*["'][^"']*\bopt\b/i,
   optionWheel: /\bid\s*=\s*["']optionWheel["']/i,
@@ -190,7 +224,7 @@ export function measure({ bound = 'subtree', root = REPO } = {}) {
   for (const id of ids) {
     const { files, missing } = sourcesOf(id, bound, root);
     if (missing) problems.push(`${id}: ${missing}`);
-    const g = { files: files.length, optButton: false, hardResetOpt: false, optionWheel: false, buyUpg: false, buyUpgrade: false, tabArray: 0, tabObject: 0, purchaseLimit: false, purchaseLimitInLayerSupport: false, pseudoUnlGlobal: false, pseudoUnlComponent: false, tooltipAny: false, tooltipChipped: 0, tooltipAchievement: 0, boughtBare: false, lockedBare: false, boughtValue: null, lockedValue: null, backClass: false, backGoBack: false };
+    const g = { files: files.length, optButton: false, hardResetOpt: false, optionWheel: false, buyUpg: false, buyUpgrade: false, tabArray: 0, tabObject: 0, purchaseLimit: false, purchaseLimitInLayerSupport: false, pseudoUnlGlobal: false, pseudoUnlComponent: false, tooltipAny: false, tooltipChipped: 0, tooltipAchievement: 0, boughtBare: false, lockedBare: false, boughtValue: null, lockedValue: null, backClass: false, backGoBack: false, toggleAutoDecl: false, toggleAutoVueSet: false, toggleAutoInData: false };
     // the ENTRY DOCUMENT, which no `bound` covers: it is not a `.js` file and it is where 2.2.1 keeps both anchors.
     // ⛔ A game whose entry cannot be read is a PROBLEM, never a false — the same rule the bounds are under.
     const entry = path.join(root, 'games', id, (readManifest(id, root).entry) || 'index.html');
@@ -204,6 +238,13 @@ export function measure({ bound = 'subtree', root = REPO } = {}) {
       if (RE.buyUpg.test(text)) g.buyUpg = true;
       if (RE.buyUpgrade.test(text)) g.buyUpgrade = true;
       if (RE.pseudoUnlGlobal.test(text)) g.pseudoUnlGlobal = true;
+      // ⚠ `.js` only (the entry document is walked with the sources here, and it is not a script of the game's
+      // own load order), and the LAST declaration wins — over the loaded files, in the loader's order.
+      if (/\.js$/i.test(f) && RE_TOGGLE_DECL.test(text)) {
+        const bodies = toggleAutoBodies(text);
+        if (bodies.length) { g.toggleAutoDecl = true; g.toggleAutoVueSet = /Vue\.set/.test(bodies[bodies.length - 1]); }
+      }
+      if (!g.toggleAutoInData && RE_TOGGLE_IN_DATA.test(text)) g.toggleAutoInData = true;
       if (RE.pseudoUnlComponent.test(text)) g.pseudoUnlComponent = true;
       if (RE.purchaseLimit.test(text)) {
         g.purchaseLimit = true;
@@ -276,6 +317,11 @@ export function measure({ bound = 'subtree', root = REPO } = {}) {
       || (per[id].lockedValue && per[id].lockedValue !== FAMILY.locked)),
     backClass: where('backClass').length,
     backGoBack: where('backGoBack').length,
+    // --- U6: the arming toggle's click path ---
+    toggleAutoDecl: where('toggleAutoDecl').length,
+    toggleAutoVueSet: where('toggleAutoVueSet').length,
+    toggleAutoPlain: ids.filter((id) => per[id].toggleAutoDecl && !per[id].toggleAutoVueSet).length,
+    toggleAutoInData: where('toggleAutoInData').length,
   };
 }
 
@@ -414,6 +460,21 @@ export function claims(sub, load) {
         return [ok, `doc: ${m[2]} of ${m[1]} draw it by class, ${m[3]} route it through goBack`];
       },
       measured: `${sub.backClass} of ${N} draw it by class, ${sub.backGoBack} route it through goBack`,
+    },
+    {
+      // U6 — the figure the arming toggle's click path rests on. If a game ever stops declaring `toggleAuto` at
+      // top level, or starts putting it in its Vue `data`, the wrapper silently stops being reached on that game
+      // and its ON/OFF button goes back to being stuck — with nothing driving it to say so.
+      name: 'toggleAuto — the arming toggle\'s click path (U6)',
+      doc: 'docs/automation.md',
+      re: /\*\*of the (\d+) games, (\d+) declare `function toggleAuto` at top level, (\d+) write the field through `Vue\.set` and (\d+) assign plainly, and (\d+) put `toggleAuto` in the Vue instance's `data`\.\*\*/,
+      expect: (m) => {
+        const ok = num(m[1]) === N && num(m[2]) === load.toggleAutoDecl && num(m[3]) === load.toggleAutoVueSet
+          && num(m[4]) === load.toggleAutoPlain && num(m[5]) === load.toggleAutoInData;
+        return [ok, `doc: ${m[2]} declare it of ${m[1]}, ${m[3]} Vue.set, ${m[4]} plain, ${m[5]} in Vue data`];
+      },
+      // ⚠ `load`, not `sub`: the question is which copy the CLICK reaches, and two games ship disagreeing copies
+      measured: `${load.toggleAutoDecl} declare it of ${N}, ${load.toggleAutoVueSet} Vue.set, ${load.toggleAutoPlain} plain, ${load.toggleAutoInData} in Vue data (scope: loaded, last declaration wins)`,
     },
     {
       name: 'pseudoUnl — the global, and the game that has only the component',
