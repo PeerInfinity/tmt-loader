@@ -827,6 +827,12 @@ const TIP_PROBE = `(${function () {
   // Every control on every card, in the state that RENDERS it: the counters and the action buttons on the collapsed
   // card, the chips on the expanded one. The class is toggled directly rather than clicked, for the same reason the
   // divider check does it — a click is not a neutral probe and the expander's handler does nothing else here.
+  // ⚠ THE FLAG ACROSS OPENING EVERY TOOLTIP ON EVERY CARD — the claim as it was asked for. It cannot DISCRIMINATE
+  // on this roster (measured: 1,238 numbers formatted out of drawn chipped components across all 171 games, zero
+  // raise it), which is why the constructed check below exists as well; a sweep that reports `unchanged` here is
+  // saying the games do not reach the condition, not that the wrapper works.
+  let nanBefore = null;
+  try { nanBefore = player.hasNaN; } catch (e) { nanBefore = null; }
   const cards = [...panel.querySelectorAll('.tmt-layerlist-card')];
   for (const c of cards) {
     const l = c.dataset.layer, was = c.classList.contains('tmt-layerlist-expanded');
@@ -838,6 +844,12 @@ const TIP_PROBE = `(${function () {
     if (!was) c.classList.remove('tmt-layerlist-expanded');
   }
   ui.tip.hide();
+  let nanAfter = null;
+  try { nanAfter = player.hasNaN; } catch (e) { nanAfter = null; }
+  const sweepNaN = { before: nanBefore, after: nanAfter,
+    verdict: nanBefore === null ? 'abstains (this engine has no player.hasNaN)'
+      : nanAfter === nanBefore ? 'unchanged across every tooltip on every card'
+      : nanBefore === false ? 'OPENING THE TOOLTIPS RAISED player.hasNaN' : 'OPENING THE TOOLTIPS LOWERED player.hasNaN' };
 
   // ---- ONE AT A TIME. Two controls, opened in turn: exactly one overlay may be showing, it must name the SECOND,
   // and the first must have lost its `aria-describedby` — a build that appended one overlay per control would pass a
@@ -970,7 +982,7 @@ const TIP_PROBE = `(${function () {
     markupSource: rows.filter((x) => x.role !== 'counter'
       && ((PROSE[x.kind] || []).concat(['tooltip'])).some((f) => /<[a-z!/][^>]*>/i.test(String(read(x.kind, x.layer, x.id, f) == null ? '' : read(x.kind, x.layer, x.id, f))))).length,
     samples: judgedRows.slice(0, 3).map((x) => x.role + ' ' + x.card + '/' + x.kind + '/' + x.id + ': ' + x.sample),
-    exclusive, nan, live,
+    exclusive, nan, live, sweepNaN,
     stats: S(() => ui.stats(), null),
   };
 }})()`;
@@ -1459,7 +1471,10 @@ async function gateMobile(browser, base, ids) {
           verdict: !tapSetup.candidate ? `abstains (${tapSetup.why})`
             : wrappedNone ? 'abstains (the engine keeps its buy functions off `window`, so the call cannot be counted)'
             : !(tapped.tips > tapSetup.tips) ? 'A TAP OPENED NO TOOLTIP'
-            : !tapped.calls.length ? 'THE TAP DID NOT REACH THE ENGINE (preventDefault?)'
+            // ⚠ NOT "preventDefault?" — that mutant is GREEN, measured on `ptr`: `preventDefault()` suppresses a
+            // default ACTION and the control's own click LISTENER runs regardless. A `stopPropagation()` in this
+            // handler's capture phase is what swallows it, and that one reds here.
+            : !tapped.calls.length ? 'THE TAP DID NOT REACH THE ENGINE (the handler swallowed the click)'
             : `a tap opens the tooltip and the control still acts (${tapped.calls[0]})` },
         // and the POINTER path, on the desktop page from leg 5: a real mouse hover, no click at all
         hover: (nb.tipHover && nb.tipHover.verdict) ? nb.tipHover : { verdict: 'abstains (no desktop layer-list page)' },
@@ -1470,6 +1485,7 @@ async function gateMobile(browser, base, ids) {
         : !t.titleFirst ? 'THE FIRST LINE IS NOT THE ELEMENT\'S OWN title'
         : t.escaping.length ? 'A TOOLTIP ESCAPED THE VIEWPORT'
         : t.markup.length ? 'THE OVERLAY HOLDS THE GAME\'S OWN MARKUP'
+        : /RAISED|LOWERED/.test(t.sweepNaN.verdict) ? t.sweepNaN.verdict
         : /RAISED|LOWERED/.test(t.nan.verdict) ? t.nan.verdict
         : /THE FIRST|MORE THAN ONE/.test(t.exclusive.verdict) ? t.exclusive.verdict
         : /CLOSED|DID NOT|WOULD NOT OPEN/.test(t.live.verdict) ? t.live.verdict
@@ -1958,7 +1974,7 @@ async function main() {
       const tvTap = rows.reduce((o, r) => { const v = r.tips && r.tips.tap && r.tips.tap.verdict; if (v) { const k = v.replace(/\(.*/, '(…)').replace(/ \(buy.*/, ''); o[k] = (o[k] || 0) + 1; } return o; }, {});
       const tvHov = rows.reduce((o, r) => { const v = r.tips && r.tips.hover && r.tips.hover.verdict; if (v) { const k = v.replace(/\(.*/, '(…)'); o[k] = (o[k] || 0) + 1; } return o; }, {});
       console.log(`M1 layers tooltip (U2e — STRICTLY RICHER than the element's own \`title\`, which U2d already set on every control): ${rows.length - tpRed.length - tpAbst.length - tpNone.length}/${rows.length} green over ${tpSum('richer')} of ${tpSum('judged')} judged control(s) out of ${tpSum('controls')} (${tpSum('chips')} chip(s), ${tpSum('acts')} button(s), ${tpSum('counters')} counter(s)); ${tpSum('markupSource')} control(s) whose OWN fields carry a tag, ${rows.reduce((n, r) => n + (((r.tips && r.tips.phone && r.tips.phone.markup) || []).length), 0)} overlay(s) holding one${tpAbst.length ? `, ${tpAbst.length} abstained: ${tpAbst.slice(0, 6).map((x) => `${x} ${(rows.find((r) => r.id === x).tips || {}).phoneVerdict}`).join('; ')}` : ''}${tpNone.length ? `, ⛔ ${tpNone.length} NEVER RAN (the row threw: ${tpNone.slice(0, 6).join(', ')})` : ''}${tpRed.length ? ` (RED: ${tpRed.map((x) => `${x} ${(rows.find((r) => r.id === x).tips || {}).phoneVerdict} / desktop ${(rows.find((r) => r.id === x).tips || {}).desktopVerdict}`).join('; ')})` : ''}`);
-      console.log(`M1 layers tooltip paths: a DECLARED \`tooltip\` field is drawn on ${tpDecl.length} game(s)${tpDecl.length ? ` (${tpDecl.slice(0, 8).join(', ')}${tpDecl.length > 8 ? `, …(${tpDecl.length})` : ''})` : ' — every other game reaches the tooltip by COMPOSITION alone'}; tap on touch → ${JSON.stringify(tvTap)}; hover on a pointer → ${JSON.stringify(tvHov)}; a CONSTRUCTED NaN cost → ${JSON.stringify(tvNan)}; a CONSTRUCTED cost move under an OPEN tooltip → ${JSON.stringify(rows.reduce((o, r) => { const v = r.tips && r.tips.phone && r.tips.phone.live && r.tips.phone.live.verdict; if (v) { const k = v.replace(/\(.*/, '(…)'); o[k] = (o[k] || 0) + 1; } return o; }, {}))}`);
+      console.log(`M1 layers tooltip paths: a DECLARED \`tooltip\` field is drawn on ${tpDecl.length} game(s)${tpDecl.length ? ` (${tpDecl.slice(0, 8).join(', ')}${tpDecl.length > 8 ? `, …(${tpDecl.length})` : ''})` : ' — every other game reaches the tooltip by COMPOSITION alone'}; tap on touch → ${JSON.stringify(tvTap)}; hover on a pointer → ${JSON.stringify(tvHov)}; the flag across opening EVERY tooltip → ${JSON.stringify(rows.reduce((o, r) => { const v = r.tips && r.tips.phone && r.tips.phone.sweepNaN && r.tips.phone.sweepNaN.verdict; if (v) { const k = v.replace(/\(.*/, '(…)'); o[k] = (o[k] || 0) + 1; } return o; }, {}))}; a CONSTRUCTED NaN cost → ${JSON.stringify(tvNan)}; a CONSTRUCTED cost move under an OPEN tooltip → ${JSON.stringify(rows.reduce((o, r) => { const v = r.tips && r.tips.phone && r.tips.phone.live && r.tips.phone.live.verdict; if (v) { const k = v.replace(/\(.*/, '(…)'); o[k] = (o[k] || 0) + 1; } return o; }, {}))}`);
       const psNone = rows.filter((r) => !r.persist).map((r) => r.id);
       const psRed = rows.filter((r) => r.persist && !r.persistOk).map((r) => r.id);
       const psAbst = rows.filter((r) => r.persist && /abstains/.test(r.persist.verdict)).map((r) => r.id);
