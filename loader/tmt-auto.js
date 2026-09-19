@@ -189,7 +189,21 @@
       after: f.after.slice(), order: f.order ? f.order.slice() : null, keep: f.keepMilestone ? { layer: f.keepMilestone.layer, id: f.keepMilestone.id } : null, multiSkipped: f.multiSkipped || 0 };
   };
 
-  function D(x) { return x instanceof Decimal ? x : new Decimal(x === undefined || x === null ? 0 : x); }
+  // ⛔ NOT EVERY FORK CALLS ITS BIG-NUMBER TYPE `Decimal`. Most ship break_eternity, but `the-hyperoperator-tree`
+  // ships ExpantaNum and `the-pro-tree` ships OmegaNum — both under the file name `break_eternity.js`, and neither
+  // defines `Decimal` at all. Measured 2026-09-18 (U2g, the first G1 run over the whole roster WITH ?automation=1):
+  // the au layer's startData below called `new Decimal(0)` unconditionally, so `onload load()` died with "Decimal is
+  // not defined" and the automation page was dead on those two games while the plain page was green. Same shape as
+  // the canReset note further down, and as U2d's `buyUpgrade` alias: a global the loader assumes and a fork lacks.
+  // Read once — tmt-auto.js is inserted after every game script, so the type is already whatever this game's is.
+  var NUMBER = (function () {
+    for (var i = 0, n = ['Decimal', 'ExpantaNum', 'OmegaNum']; i < n.length; i++) {
+      try { var C = new Function('return typeof ' + n[i] + ' !== "undefined" ? ' + n[i] + ' : null')(); if (C) return C; } catch (e) { /* not this one */ }
+    }
+    return null;
+  })();
+  function num(x) { return NUMBER ? new NUMBER(x) : x; }
+  function D(x) { return NUMBER ? (x instanceof NUMBER ? x : new NUMBER(x === undefined || x === null ? 0 : x)) : x; }
   function numIds(obj) { var o = []; for (var id in obj) if (!isNaN(id)) o.push(Number(id)); return o.sort(function (a, b) { return a - b; }); }
   function owned(l, id) { return player[l].upgrades.indexOf(id) >= 0 || player[l].upgrades.indexOf(String(id)) >= 0; }
   // upgrades a feature may buy: unlocked, unowned, not a pseudo-upgrade (`pseudoUnl`, PTR)
@@ -822,7 +836,7 @@
       // Tree', where the whole automation boot died on `layers[layer].canReset is not a function` while the plain
       // page was green. 'none' is the declaration the engine already understands for "cannot reset".
       type: 'none',
-      startData: function () { return { unlocked: true, points: new Decimal(0), features: {}, disclosed: false }; },
+      startData: function () { return { unlocked: true, points: num(0), features: {}, disclosed: false }; },
       color: '#7fb2d9',
       row: 'side',
       symbol: 'AU',
