@@ -441,7 +441,8 @@ viewport above the phone's now holds a card at least as wide as the phone's.
 `ch`, computed from the widest value each counter can reach (`y/y` for a ratio) and **only ever grown**, never
 given back — a width that shrank back would move the row the moment a number did. Without the tabular figures a
 proportional face makes a `1` narrower than a `7`, so the row would shuffle sideways on a number that did not even
-change width.
+change width. ⚠ U2c **verified** that rather than inheriting it: the digits leg below writes a shorter value, and
+one the same length in wider glyphs, into every counter and asserts the box did not move.
 
 **The counters are throttled, at 250 ms (4 Hz).** ⚖ The user agreed a throttle was fine (2026-09-18); the rate is
 this slice's. A counter is a number you read, not an animation, and 250 ms is below the delay at which a readout
@@ -457,6 +458,75 @@ expanded card hides the counters and the buttons — so it can live in neither o
 in the head it also costs no vertical space of its own. It is a chevron, not U2's `+N`: the counter row now states
 every total that `+N` stood for, and a second, shakier answer to the same question would be one more number to
 hold still.
+
+#### The cards you opened come back (U2c)
+
+⚖ **The expander may not reset on every load** (user, 2026-09-18), **per layer and per game**. One key holds the
+ids of the cards that are open; a card the key does not name is closed, which is also what an absent key says.
+
+**The store is the loader's own namespace, and no second one was invented.** `tmtLoader.storage`
+(`loader/page.js`) is already keyed `tmt-loader:<id>:`, so the key is `tmt-loader:<id>:ui.layerlist.expanded` and
+two games on the same origin cannot read each other's. It is written through `storage.raw` rather than through
+`localStorage`: the prefix shim would namespace it just the same, but the raw methods state *which* namespace this
+key is in, and they keep the list independent of a game that re-patches `Storage.prototype` after the shim. ⚠ It
+is emphatically **not** `player` — the list still assigns nothing there, which is what keeps it invisible to the
+automation ladder (`gates-s1.mjs --part 1`, 52/52).
+
+⚠ **Storage can throw and can come back empty** — a private window, blocked site data, a quota. Every read and
+every write is wrapped, and a list with nothing stored renders exactly as it did before this existed. Nothing
+open is nothing to remember, so closing the last card **removes** the key rather than storing an empty list.
+
+**Does "clear this game's save" drop these preferences?** **Yes** — and the launching session's view was *no*, on
+the reasoning that a collapsed card is not progress. What overturned it is not a judgement about what a preference
+deserves but a mechanical fact: *namespaced per game* and *cleared per game* are the **same namespace**. `clear()`
+removes every key under `tmt-loader:<id>:`, the picker's own button counts those keys and promises to "Delete
+every saved key of <game> in this browser", and the only way to survive that is a key **outside** the prefix —
+which is the second store the brief ruled out, and a key nothing in the UI could ever remove again. The
+consequence is benign and worth stating: a cleared game comes back with every card closed, which is exactly what a
+first load does.
+
+⚠ **It found a defect of its own, and the defect is the persistence's, not U2d's.** A card **built open** hides its
+whole action row, and a `display: none` row has no layout — `getBoundingClientRect()` reports every button at the
+same zero top, so the build-time fit pass cannot see where the browser wrapped them and marks none. MEASURED on
+`the-unbalanced-tree`'s `i` before the fix: reopened from the store and then closed, it showed **all 10 of its
+buttons on two lines, 261 px tall**, against the 7 on one line and 211 px it had before the reload. So `fitCards`
+now **skips an open card** — a row it cannot measure is a row it must not judge — and closing one pays the
+measurement that was skipped. The gate closes the restored card and re-reads the fit for exactly this.
+
+#### The layout does not move as the digits do (U2c)
+
+A TMT number grows by thousands of orders of magnitude over one save, and `.tmt-layerlist-amount` had **no width
+reservation**: the readout was sized by its own string. It now carries `width: 12ch; max-width: 100%`, the whole
+overlay carries `font-variant-numeric: tabular-nums` (plus `font-feature-settings: "tnum"` for the older engines'
+fonts), and the card carries `contain: layout`.
+
+⚠ **The brief's premise did not survive the measurement, and the correction matters for what the gate asserts.**
+The **card's** box does not move and never did: the grid is `repeat(auto-fill, minmax(min(100%, 380px), 1fr))`, so
+a card's width comes from the track and not from its contents, and the readout is `white-space: nowrap`, so it
+cannot change the card's height either. What moves is the **meta column inside** the card — the resource **name**
+sits directly above the amount and shares that column, so the column is as wide as the number currently is, and
+the name's box (and its ellipsis) is resized by every growth in the number. Measured at 390 px on the deep
+snapshot, moving nothing but the readout's string from `0` to `1.111e3,284`: **10 of ptr's 11 cards** moved
+(`q` 46.97 → 112.59 px, `b` 62.63 → 112.59, `a` 10.25 → 112.59) and **8 of `something`'s 8** (`primitive`
+54.8 → 112.59). With the reservation: none of them, at either width, in either state.
+
+- **`12ch`** because with tabular figures a `ch` is exactly one digit and TMT's `format()` caps the string near
+  10–12 characters even at e3284 — the widest string this slice could construct is `1.111e3,284`, 11 characters —
+  and the existing ellipsis takes anything past it. `max-width: 100%` is what leaves the ellipsis room on a card
+  too narrow to hold 12.
+- **`tabular-nums` is a measured NO-OP on both reference engines' fonts.** `111` and `777` are both 30.72 px in the
+  amount readout with it and without it, because those fonts already default to tabular figures. It is declared
+  for the games that ship a font that does not, and because a reservation in `ch` is only a fixed number of
+  columns if a column is a fixed width. Said out loud because a rule that changes nothing measurable here is a
+  rule a later reader will delete.
+- **`contain: layout` is `layout`, not `size`.** A card's own height still answers to its content, so a card that
+  really grows still moves the cards below it; nothing in CSS prevents that short of fixing the height. It states
+  that a re-layout inside one card cannot reach the grid, and it moved no box on either reference game.
+- **The prestige button was checked too and did not move.** It is the card's other number-bearing readout and it
+  is the game's own prose, wrapping rather than clipping — but at the magnitudes `format()` reaches it stays
+  within the same wrap on a 366 px card (measured on `ptr`: `+111` through `+1.111e3,284 prestige points`, every
+  card's height unchanged). It gets the tabular figures with everything else and no reservation, because a
+  reservation for prose would be a guess.
 
 ### Reading a card can make the ENGINE write `player`
 
@@ -588,6 +658,9 @@ Run at **both** widths — on the phone page, over the deep snapshot the geometr
   where the page has both (abstained where it has only one kind);
 - **(U2d) the collapsed card's two rows** — the counters, the buttons, the fit, and that the two states differ.
   The whole of it is in "What U2d added to the leg", below;
+- **(U2c) the boxes do not answer to the digits, and the cards you left open come back** — the readout's own
+  string written in at each magnitude with nothing in the game touched, and a card CHANGED before a read-back on a
+  second page with a second card left closed as the control. Both at both widths; "What U2c added to the leg";
 - **nothing escapes the viewport**, on each width's own terms: the phone demands zero escaping controls, zero under
   44 px and no document wider than the screen; the desktop is judged against the **plain desktop page in the same
   state** (its last view), because at 1280 px the plain page is the layout the game's author shipped. MEASURED: the
@@ -760,6 +833,76 @@ mutant now moves the box after both rows are drawn, and reds on `two rows in 0/1
 One property the leg does NOT discriminate, said out loud: **phase 1 of the chip rule**. Removing the token
 extension leaves phase 2 to number the collisions (`INM`, `INM2`, `INM3` instead of `INM`, `INMI`, `INMII`), which
 is uglier but still unique — so the gate stays green. Phase 1 is a quality property, not a correctness one.
+
+#### What U2c added to the leg
+
+Two more legs, both at **both** widths, both run on the phone page after the constructed conditions have been put
+back — they are the last things done there, because one of them loads a second page and the other writes into the
+list's own DOM.
+
+**The digits leg.** The probe writes each magnitude into `.tmt-layerlist-amount` **itself** and measures the card,
+the meta column, the name and the amount; then it does the same to U2d's counters with a *shorter* value and with
+one the same length in wider glyphs. Nothing in the game is touched, which is the point: the layer set, the
+counters, the buttons and the chips are held exactly still while the only thing that moves is the string. Every
+readout is put back and `restored` is what says it was.
+
+⚠ **Why not "compare the fresh load against the deep one", which is the obvious reading of the requirement.**
+MEASURED: `ptr`'s fresh save has **2 cards** against the deep save's **11**, and of the two only `p` carries an
+amount at all (`0` → `3.93e541`) — whose meta column is sized by the resource NAME, 117.41 px, wider than either
+number. So that comparison **does not move even on the unfixed build**, while the two loads differ in card count,
+counter rows and button rows for reasons that have nothing to do with digits. It would have been a green that
+proved nothing. The magnitudes the probe injects *are* the two loads' own — `0` is the fresh save's and
+`9.88e3284` the deep snapshot's order of magnitude — applied to every card instead of to the one that happens to
+exist at both.
+
+**The persistence leg.** ⚠ **The discriminator is the control card.** A card is **changed** before the read-back
+and a *second* card is left closed: asserting that a default-closed card is still closed passes with no
+persistence at all. The state is set through `layerListUI.expand`, the chevron's own path, because a click is not
+a neutral probe. The read-back is a **second page in the same context** rather than a reload of this one — same
+origin, same `localStorage`, same save — so this page's own request record, which the load verdict judges, is left
+as the leg found it. It asserts, at each width:
+
+- the **first load was clean**: no key, and no card open, before anything is written;
+- every key the write ADDED is inside `tmt-loader:<id>:`. ⚠ This is the mechanical form of "two games cannot share
+  it": `localStorage` is per **origin** and every game is served from the same one, so the prefix is the only
+  thing keeping them apart, and a key outside it is a key both games read;
+- the **changed** card comes back open, with its chevron saying so, and the **control** card comes back closed;
+- closing the restored card leaves its action row **measured** — a prefix of the offer, on one line. This is the
+  defect persistence introduced (above), and it needs a card whose row the phone had to CUT, so the leg picks one
+  where the game has one (`ptr` has none and that half is vacuous there; `something` and `the-unbalanced-tree`
+  have one);
+- and closing the last card **removes** the key rather than leaving an empty list behind.
+
+⚠ **A summary row that lied, found while driving these mutants.** A leg that THREW leaves its row absent, and the
+first version of both new SUMMARY lines counted `rows.length` minus the reds it could SEE — so a build with no
+`layerListUI.expand`, where the probe throws and the row goes to the catch as an exception, printed
+`1/1 restored`. A row with no leg is now named as **never having run**. It is the same shape as the dead shard a
+green checkmark hides, one level down.
+
+**Six mutants**, each driven on `the-unbalanced-tree` — which has both a card whose action row the phone has to
+cut and a resource name short enough for the readout to outgrow it — with the control GREEN either side:
+
+| # | the mutant | how it reds |
+|---|---|---|
+| A | the amount's reserved width removed (the build this slice inherited) | digits: `i.meta[w] 62.63→71.66` at `1.11e10`, with `i.name`, `i.amount` and `info-tab.meta` beside it, at the phone width in the collapsed state |
+| B | `tabular-nums` removed | ⚠ **GREEN** |
+| C | `contain: layout` removed | ⚠ **GREEN** |
+| D | the store written but never read back | persistence: `NOT RESTORED AFTER THE RELOAD` |
+| E | the key built without the game's prefix | persistence: `THE KEY IS NOT THIS GAME'S` |
+| F | no re-fit when a card built OPEN is closed | persistence: `THE REOPENED CARD'S ACTION ROW WAS NEVER MEASURED` — 10 buttons on two lines where 7 fit on one |
+
+⚠ **Two of the six are GREEN, and they are recorded rather than quietly dropped.** B and C are real declarations
+that this gate — and, as far as this slice could measure, any gate on this roster — cannot see: the engines' fonts
+already default to tabular figures, so removing the request changes no width, and `contain: layout` changes no box
+because nothing inside a card was escaping it. They are kept for the reasons in "The layout does not move as the
+digits do" above, and the honest statement is that **the reservation is what the gate is holding**, not the other
+two rules. A later slice that deletes either will see no red — which is exactly why the measurement is written
+down here instead of being inferred from a green run.
+
+⚠ **The two persistence failures are named apart.** A card that came back closed and a card that came back open
+with an unmeasured action row are different defects — the first is the persistence, the second is the fit pass the
+persistence broke — and the first version of the verdict called both `NOT RESTORED`, which would have sent the
+next reader to the wrong file. Driving F is what showed it.
 
 ### The state leg needs a control
 

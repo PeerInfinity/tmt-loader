@@ -1314,17 +1314,21 @@ async function gateMobile(browser, base, ids) {
         }, pref0.target);
         persist.cleared = cleared;
         await p2.close();
-        const okAt = (b) => !!(b.ready && b.present && b.open && b.aria === 'true' && !b.controlOpen
-          && (!b.refit || (b.refit.prefix && b.refit.lines <= 1)));
+        // ⚠ THE TWO FAILURES ARE NAMED APART. A card that came back closed and a card that came back open with an
+        // unmeasured action row are different defects — the first is the persistence, the second is the fit pass
+        // it broke — and a verdict that called both "NOT RESTORED" would send the next reader to the wrong file.
+        const restoredAt = (b) => !!(b.present && b.open && b.aria === 'true' && !b.controlOpen);
+        const fittedAt = (b) => !b.refit || (b.refit.prefix && b.refit.lines <= 1);
         persist.verdict = !(pref0.stored === null && pref0.expanded && pref0.expanded.length === 0) ? 'A FIRST LOAD WAS NOT CLEAN'
           : !persist.keyOk ? 'THE KEY IS NOT THIS GAME\'S'
           : !persist.back.every((b) => b.ready) ? 'THE READ-BACK PAGE DID NOT LOAD'
-          : !persist.back.every(okAt) ? 'NOT RESTORED AFTER THE RELOAD'
+          : !persist.back.every(restoredAt) ? 'NOT RESTORED AFTER THE RELOAD'
+          : !persist.back.every(fittedAt) ? 'THE REOPENED CARD\'S ACTION ROW WAS NEVER MEASURED'
           : cleared.stored !== null ? 'THE KEY SURVIVED CLOSING THE LAST CARD'
           : `restored at both widths (${pref0.target} open, ${pref0.control || 'no control card'} closed)`;
       }
       row.persist = persist;
-      row.persistOk = !/A FIRST LOAD|THE KEY|NOT RESTORED|DID NOT LOAD|SURVIVED/.test(persist.verdict);
+      row.persistOk = !/A FIRST LOAD|THE KEY|NOT RESTORED|DID NOT LOAD|SURVIVED|NEVER MEASURED/.test(persist.verdict);
 
       await page.evaluate(() => { const ui = window.tmtLoader.layerListUI; if (ui) ui.close(); });
       const llDesk = nb.layerList;

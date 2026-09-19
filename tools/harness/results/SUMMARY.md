@@ -4037,3 +4037,56 @@ CI's fast job, so a push that changes the roster and not the prose is red before
 ⚠ **Three defects were found by putting existing gates over the whole roster for the first time**, and none of them
 was a new-code defect: the automation page dead on 2 games, the picker rendering `vnull by null` on 2 games, and a
 fourth/fifth scope error in the tabFormat census. The gates existed. Nobody had run them over everything.
+
+## 2026-09-19 — U2c: the list stops moving under you — commit `8280ec9de`
+
+Two unrelated user requests (2026-09-18), both about the list holding still: the expander must remember what you
+opened, and the layout must not shift as the numbers grow. Every row below is a MEASUREMENT; the two that matter
+most are the PRE-FIX ones, because a stability assertion proves nothing until the thing has been shown moving.
+
+| gate | game | leg | ticks | gameSeconds | diff | hash | result | notes |
+|---|---|---|---|---|---|---|---|---|
+| ⛔ PRE-FIX — the readout's string alone | ptr | digits, 390 px, deep snapshot | 0 | 0 | — | — | **MOVED** | `0` → `1.111e3,284`, nothing in the game touched: the meta column moved on **10 of ptr's 11 cards** — `q` 46.97 → 112.59 px, `a` 10.25 → 112.59, `b` 62.63 → 112.59, and `sb`/`t`/`e`/`s` at the widest string. `111` vs `777` moved nothing (those fonts are already tabular) |
+| ⛔ PRE-FIX — the same on the other engine | something | digits, 390 px, deep snapshot | 0 | 0 | — | — | **MOVED** | 8 of 8 cards at `1.111e3,284`; `primitive` 54.8 → 112.59 px, `savebank` 62.63 → 112.59 |
+| ⛔ PRE-FIX — the card's own box | ptr, something | fresh load vs deep snapshot | — | — | — | — | **did NOT move** | ⚠ the comparison the brief asked for, and it cannot discriminate: the card is grid-sized, so its WIDTH never answers to its contents, and ptr's fresh save has 2 cards against the deep save's 11 with only `p` carrying an amount — whose column is sized by the resource NAME (117.41 px), wider than `0` or `3.93e541`. The leg injects the magnitudes instead |
+| ⛔ PRE-FIX — a card reopened from the store | the-unbalanced-tree | the fit pass | — | — | — | — | **10 buttons on 2 lines** | the defect the persistence introduced: a card BUILT OPEN hides its action row, a `display: none` row has no layout, so the build-time fit marked none as wrapped. Closed again: 10 of 10 shown, two lines, card 261 px — against 7 on one line and 211 px before the reload |
+| M1 digits leg (U2c) | ptr | 390 + 1280, collapsed + expanded | — | — | — | — | GREEN | 7 magnitudes over 11 readouts and 17 counters; every card, meta, name and amount box unchanged, every readout restored |
+| M1 digits leg (U2c) | something | same | — | — | — | — | GREEN | 8 readouts, 5 counters |
+| M1 digits leg (U2c) | the-unbalanced-tree | same | — | — | — | — | GREEN | 8 readouts, 10 counters |
+| M1 persistence leg (U2c) | ptr | read back on a 2nd page, 390 + 1280 | — | — | — | — | GREEN | `p` opened, `b` left closed as the control; key `tmt-loader:ptr:ui.layerlist.expanded`, value `["p"]`, the only key the write added; ⚠ the re-fit half is VACUOUS here — no ptr card offers more buttons than the phone row holds |
+| M1 persistence leg (U2c) | something | same | — | — | — | — | GREEN | `fundamental` opened (a card the phone row CUT), `unlock` the control; reopened and closed, the row measured 7/13 at 390 and **8/13 at 1280**, one line, a prefix at both |
+| M1 persistence leg (U2c) | the-unbalanced-tree | same | — | — | — | — | GREEN | `i` opened (cut), `p` the control; 7/10 at 390, 8/10 at 1280 |
+| M1 whole gate, the bounded local set | ptr, something, the-unbalanced-tree | every leg | — | — | — | — | GREEN | 3/3; 27 cards, 185 chips; the roster is CI's |
+| unit tests (`npm run harness:test`) | — | — | 0 | 0 | — | — | GREEN | 58 tests, 10.8 s |
+| census-figures | — | — | 0 | 0 | — | — | GREEN | 8/8 documented figures = the tree (no figure moved: this slice quotes per-game numbers, not roster ones) |
+| G6 + G7 (`games-table.mjs --check`) | — | — | 0 | 0 | — | — | GREEN | 0.13 s |
+
+**Six mutants**, on `the-unbalanced-tree` — the game that has both a card whose action row the phone must cut and a
+resource name short enough for the readout to outgrow it — control GREEN either side:
+
+| # | the mutant | result | how it reds |
+|---|---|---|---|
+| A | the amount's reserved width removed (the inherited build) | **RED** | digits: `i.meta[w] 62.63→71.66` at `1.11e10`, with `i.name`, `i.amount`, `info-tab.meta` |
+| B | `tabular-nums` removed | ⚠ **GREEN** | the engines' fonts already default to tabular figures — `111` and `777` are both 30.72 px either way |
+| C | `contain: layout` removed | ⚠ **GREEN** | it is `layout`, not `size`; nothing inside a card was escaping it, so no box moves |
+| D | the store written but never read back | **RED** | `NOT RESTORED AFTER THE RELOAD` |
+| E | the key built without the game's prefix | **RED** | `THE KEY IS NOT THIS GAME'S` |
+| F | no re-fit when a card built OPEN is closed | **RED** | `THE REOPENED CARD'S ACTION ROW WAS NEVER MEASURED` |
+
+⚠ **B and C are declarations this gate cannot see, and that is written down rather than inferred.** A later slice
+that deletes either will get a green run. What the gate holds is the RESERVATION; the other two are kept for the
+reasons in docs/mobile.md and are honest about being unmeasurable on this roster.
+
+⚠ **A SUMMARY ROW THAT LIED, and it was this slice's own.** A leg that THROWS leaves its row absent, and the first
+version of both new summary lines counted `rows.length` minus the reds it could SEE — so a build with no
+`layerListUI.expand`, where the probe throws and the row goes to the catch as an exception, printed `1/1 restored`
+over a RED row. A row with no leg is now named as never having run. Same shape as a dead shard behind a green
+checkmark, one level down.
+
+⚠ **And a process defect worth more than any of the above.** The first mutant harness restored with
+`git checkout -- loader/layerlist.css loader/layerlist.js` — which reverted the slice's own **uncommitted** work to
+HEAD. Mutants B through F then ran against the ORIGINAL build while printing entirely plausible reds, and the run
+had to be thrown away and the implementation rewritten from the session's own record. **A mutant harness restores
+from a COPY of the tree it found, never from HEAD**, unless the work under test is already committed — and the
+tell that something was wrong was not the reds, which looked right, but that a mutant in the JS reddened a leg in
+the CSS.
