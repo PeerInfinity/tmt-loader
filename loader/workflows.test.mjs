@@ -250,6 +250,16 @@ test('⛔ the a1 job DERIVES its game set and does not type ids', () => {
   assert.match(run, /test -n "\$SET"/, 'an empty derivation would run the gate over NO games and exit 0');
 });
 
+test('⛔ the a1 job checks out the whole history — its check-manifest row reads it', () => {
+  // MEASURED in production on the job's first run (35458073272): part 2's `check-manifest` row searches the whole
+  // history for each game's subtree-squash commit, so a depth-1 checkout returns `null` for both halves and the row
+  // goes RED for a reason that has nothing to do with the au tab. A future "why is this job cloning 450 MB?" is
+  // exactly how that comes back, so the answer is here rather than only in the YAML comment.
+  const j = jobs(wf('sweep.yml'));
+  const checkout = j.a1.split(/^ {6}- /m).find((st) => st.includes('actions/checkout'));
+  assert.match(checkout, /fetch-depth: 0/, 'the a1 job takes a shallow checkout — check-manifest cannot read the subtree squash');
+});
+
 test('⛔ the a1 job asks the gate to prove what it COVERED, not just that nothing failed', () => {
   // `gates-a1` already exits 1 on a red row. That is the half that does not catch a battery which booted one game
   // and threw inside the second: it prints `12/24 green`, every row it produced is green, and it is smaller,

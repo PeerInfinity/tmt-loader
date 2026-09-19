@@ -383,7 +383,13 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          fetch-depth: 1
+          # ⛔ `fetch-depth: 0`, MEASURED in production on the job's very first run (35458073272): part 2's
+          # `check-manifest` row searches the whole HISTORY for each game's subtree-squash commit
+          # (`--grep=^git-subtree-dir: games/<id>$`, then the squash's tree against `HEAD:games/<id>`). On a depth-1
+          # checkout both come back `null` and the row goes RED for a reason that has nothing to do with the au tab:
+          # `{"field":"upstream.commit","subtreeSplit":null}` · `{"field":"games pristine","treeSquash":null}`, on
+          # both games. The `anchors` job pays the same price for the same kind of reason.
+          fetch-depth: 0
 
       - uses: actions/setup-node@v4
         with:
