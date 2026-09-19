@@ -895,7 +895,12 @@
       // a `pseudo` chip stands for the engine's SECOND button — the teaser that unlocks the upgrade rather than
       // buying it — so it makes that button's call, not the buy
       if (c.state === 'pseudo') { if (typeof unlockUpg === 'function') unlockUpg(c.layer, c.id); return; }
-      if (c.act === 'upgrade') buyUpgrade(c.layer, c.id);
+      // ⚠ THE ENGINE'S OWN NAME, WHICHEVER IT HAS. `buyUpgrade` is an ALIAS the TMT engines grew later: 169 of the
+      // 171 games define it, 170 define `buyUpg`, and TWO — `the-modding-tree` (2.0.5.1) and `the-burning-tree` —
+      // define ONLY `buyUpg`, so a chip on those two called a function that does not exist and bought nothing.
+      // MEASURED by U2d's counter-press leg, which is the first thing ever to drive a chip: the U2 gate pressed the
+      // RESET button and nothing else, so a press that silently did nothing was green for two slices.
+      if (c.act === 'upgrade') (typeof buyUpgrade === 'function' ? buyUpgrade : buyUpg)(c.layer, c.id);
       else if (c.act === 'buyable') buyBuyable(c.layer, c.id);
       else if (c.act === 'challenge') startChallenge(c.layer, c.id);
     });

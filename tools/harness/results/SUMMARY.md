@@ -3814,3 +3814,22 @@ desktop FOUR columns of **308px** against a phone's single **366px** card — th
 "more buttons on a desktop" was unbuildable however the fit was measured. Now `minmax(min(100%, 380px), 1fr)`:
 **366 → 413px**, three columns, and every viewport above the phone's holds a card at least as wide as the phone's.
 
+### The first CI sweep at `daeab5795` found a defect this slice did not write — and neither did U2d's own bounded set
+
+`171/171 covered, 1 RED: the-modding-tree`, read from the `merge + roster assertion` job (⛔ never from the shard
+checkmarks: nine were green and the tenth's failure is what carried it). The verdict: `counter=NOT MOVED`,
+`0/1 → 0/1` on `p/11`.
+
+⚠ **`buyUpgrade` is an ALIAS the TMT engines grew later.** Censused over the roster: **169 of 171 games define
+`buyUpgrade`, 170 define `buyUpg`, and exactly two — `the-modding-tree` (2.0.5.1) and `the-burning-tree` — define
+only `buyUpg`.** So since U2 a chip press on those two called a function that does not exist and bought nothing.
+It survived two slices because **no gate had ever DRIVEN a chip**: the layers leg pressed the reset button and
+nothing else, and a press that silently does nothing looks exactly like a press with nothing to do. U2d's counter
+press is the first leg that buys, and it is what turned the defect into a red.
+
+⚠ **`the-burning-tree` did NOT red** — its counter press abstains, because nothing is affordable at its state. One
+of the two carried the whole finding, which is the shape of the roster-owns-the-verdict argument: a bounded local
+set of nine could not have contained it, and the reference games both define the alias.
+
+Fixed by calling whichever name the engine has; both games GREEN afterwards, and the pre-fix CI run is the mutant
+record for it.

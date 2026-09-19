@@ -164,6 +164,13 @@ here that evaluates game code is wrapped: a throw costs one card, never the list
   ⚠ U2b added two cases: a **milestone** chip is passive and always opens the tab, and a **pseudo-unlocked**
   upgrade chip calls `unlockUpg` — which is what the engine's own second button on that upgrade calls — rather
   than `buyUpgrade`. There is no `locked` chip any more: a component the tab does not draw gets no chip at all.
+  ⚠ **U2d found that the upgrade press had never worked on two games.** `buyUpgrade` is an ALIAS the TMT engines
+  grew later: **169 of the 171 games define it, 170 define `buyUpg`, and `the-modding-tree` (2.0.5.1) and
+  `the-burning-tree` define ONLY `buyUpg`** — so on those two a chip press called a function that does not exist
+  and bought nothing, silently, for two slices. It went unseen because the gate had never DRIVEN a chip: it pressed
+  the reset button and nothing else. U2d's counter press is the first leg that buys, and it caught it on the first
+  CI sweep after the push (`the-modding-tree`: `counter=NOT MOVED`, `0/1 → 0/1`). The list now calls whichever name
+  the engine has.
 
 ### The chips — the rule
 
@@ -699,7 +706,8 @@ the resize the requirement is actually about.
   The question is about the **type**, not the magnitude, in both implementations now; the leg gives one drawn
   buyable 1e400 and the box has to survive.
 
-**Eight mutants for U2d**, each RED, each restored, with the control GREEN either side — and deliberately not all
+**Nine mutants for U2d** (eight constructed, one the roster's own), each RED, each restored, with the control
+GREEN either side — and deliberately not all
 on the reference game, because `ptr` abstains on two of the four driving legs:
 
 | # | the mutant | seen on | how it reds |
@@ -712,6 +720,7 @@ on the reference game, because `ptr` abstains on two of the four driving legs:
 | E | a buyable counter rendered as `x/y` | `ptr` | the counters disagree with the expectation on `t`, `e`, `s` and `q` |
 | F | the two rows collapsed into one | `the-unbalanced-tree` | no card passes "no counter shares a line with a button", on the two discriminating cards `inf` and `r` |
 | G | "is it an amount?" asked as `isFinite(toNumber())` again | `ptr` | `THE BOX VANISHED AT 1e400` — the defect above, which nothing on the roster could see |
+| H | `buyUpgrade` called unconditionally, as U2 wrote it | `the-modding-tree` | `counter=NOT MOVED`, `0/1 → 0/1` — and this one was not a constructed mutant at all: it is the state the first CI sweep of this slice measured, on the one game of the 171 that both lacks the alias and has something affordable |
 
 ⚠ **Mutant A's first version was caught by ONE of the two checks, not both.** The temporal leg read GREEN, because
 a build that selects on affordability starts with an empty row — so its lit/grey vector never moves, and the leg
