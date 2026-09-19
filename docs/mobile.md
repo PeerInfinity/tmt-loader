@@ -1324,6 +1324,28 @@ it is off, it is not in the save, its control is in the `au` tab, every locked f
 same leg measures two lines above. The arming flow itself is `gates-a1.mjs --part 2`, which CI does not run; this is
 the half that protects every existing row, on the two games that have an automation table.
 
+**The mutant round** (`bf0804821`, serially, one process, each restored from git afterwards — the work was committed
+first so a restore could not eat it):
+
+| mutant | result |
+|---|---|
+| `overflow-anchor: auto` | **RED on all three** games of the bounded set, in BOTH halves: constructed 0/3 held, real press 0/2 (`ptr` −3/−3, `the-alphabetree` −3/−3) |
+| the constructed half grows the first card's `marginTop` **and** anchoring back on | ⚠ **`something` reads GREEN** — the suppressed probe certifies a build with the defect fully present. `ptr` and `the-alphabetree` still red because their REAL press catches it, so on a game where only the constructed half can judge, this probe is a false green. This is the mutant that justifies the spacer |
+
+⚠ **Nothing else went red in either round**, which is the tell for a clean mutant run (a mutant reddening a check it
+cannot reach means the tree was contaminated).
+
+✅ **Bounded local set at `fcd0ce459`: M1 3/3 GREEN** (`ptr`, `something`, `the-alphabetree`), 68 cards / 144 chips,
+the drift leg **3/3 judged on the constructed half and 2/2 on the real press** (1 abstained: `something`'s reset does
+not move the height), and the `au` arming default green on both games with a table. `gates-a1 --part 2`: **24/24
+green**. `npm run harness:test` **60**; `census-figures` **9/9**.
+
+⚠ **No S1 anchor moved, and it was measured rather than assumed**: `player.au` is byte-identical before and after,
+so the FULL state hash is too. Measured in a throwaway worktree at `d7cd5c185` against this tree — `ptr` 0 ticks
+`6062b457fdb56dd6`, 200 ticks `714a8562c80f38ce`; `something` 0 / 200 / 1000 ticks `87a27eed58b62fee` /
+`a716a598351c179c` / `0c459f705233fbf2` — every one equal on both sides. That is the whole reason the arming flag is
+not in the layer's `startData`.
+
 ### The state leg needs a control
 
 A hash that differs between the plain and the mobile page only means the mode moved the game **if the game reaches

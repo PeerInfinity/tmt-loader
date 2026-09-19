@@ -90,6 +90,25 @@ flag) and the row says which path it took. ⚠ Neither sticks everywhere — mea
 `unlock.update()` recomputes `player.fundamental.unlocked` every tick and puts it straight back — so the fallback
 replaces the feature's derived `unlocked()` with one that says yes, the same construction gate M1 uses for `pseudoUnl`.
 
+⚠ **Where only that fallback was available, the "and it ACTS" half ABSTAINS**, and that is not fastidiousness: every
+action the registry takes goes through the engine (`buyUpgrade`, `doReset`, …) and the engine gates each of them on
+ITS OWN `player[l].unlocked`, not on the registry's predicate. Measured on Something Tree — `active` flips,
+`tmp.fundamental.upgrades` stay locked, and 400 ticks with 1e30 points buy nothing. `ptr` carries that half, through
+a real `doReset('p')`: `upgrades:p` goes active and buys an upgrade with no further press and no help at all.
+
+**The mutant round** (`bf0804821`, serially, each restored from git afterwards):
+
+| mutant | the checks that reddened |
+|---|---|
+| the setting ignored by the **per-feature** toggle (`canClick: featureUnlocked(f)`) | *the locked button accepts a press* (canClick false), *armed by a real press* (false), *the button says so* ("Off / locked"), *after a reload*, *it went active*, *it ACTED* — six |
+| the setting ignored by the **master** toggle | exactly one: *with it on, All features armed everything including the locked* (1/78 on). Nothing else moved, which is what says the two toggles are judged apart |
+| `active()` relaxed — its `featureUnlocked` dropped | *armed but locked* (active **true**), *200 ticks armed-and-locked* (active true), *after a reload* (running true) — the three that carry "it does not run while locked", and only those |
+
+⚠ **Nothing else went red in any round.** A mutant reddening a check it cannot reach is the tell for a contaminated
+tree, and the tree was committed before the round so a `git checkout` restore could not eat uncommitted work.
+
+✅ Recorded green at `fcd0ce459`: `gates-a1 --part 2` **24/24**, both games.
+
 ## Profiles
 
 | Profile | What runs | Selected by |
