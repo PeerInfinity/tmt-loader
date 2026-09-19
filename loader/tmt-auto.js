@@ -992,8 +992,8 @@
     var out = ['<div style="text-align:left;max-width:100%;overflow-wrap:anywhere;word-break:break-word">'];
     var running = 0, never = 0;
     for (var i = 0; i < rows.length; i++) { if (rows[i].state === 'on') running++; if (rows[i].neverFired) never++; }
-    out.push('<div style="opacity:.75;font-size:.9em;margin-bottom:6px">' + esc(ADV_INTRO) + '</div>');
-    out.push('<div style="margin-bottom:10px">Profile <b>' + esc(T.profileName) + '</b> · ' + running + ' of ' + rows.length + ' running'
+    out.push('<div style="opacity:.75;font-size:.9em;margin-bottom:6px;text-align:left">' + esc(ADV_INTRO) + '</div>');
+    out.push('<div style="margin-bottom:10px;text-align:left">Profile <b>' + esc(T.profileName) + '</b> · ' + running + ' of ' + rows.length + ' running'
       + (never ? ' · <b style="color:#c08a3e">' + never + ' never fired</b>' : '') + '</div>');
     var layer = null;
     for (var j = 0; j < rows.length; j++) {
@@ -1011,7 +1011,7 @@
   // A feature that cannot run yet is ONE LINE. There are 78 of them on ptr at a fresh save and 3 that are doing
   // anything; a full block each would bury the three.
   function collapsedBlock(r) {
-    return '<div style="opacity:.6;padding:2px 0">' + esc(r.title) + ' <span style="opacity:.6;font-size:.85em">' + esc(r.id) + '</span> — '
+    return '<div style="opacity:.6;padding:2px 0;text-align:left">' + esc(r.title) + ' <span style="opacity:.6;font-size:.85em">' + esc(r.id) + '</span> — '
       + chip(r.state === 'excluded' ? 'EXCLUDED' : 'LOCKED', STATE_BG[r.state]) + ' <span style="font-size:.9em">' + esc(r.last ? r.last.text : '') + '</span></div>';
   }
   function featureBlock(r) {
@@ -1022,17 +1022,22 @@
     if (p.table !== null && p.table !== p.inForce) bits.push('table says ' + esc(p.table));
     if (p.derived !== null && p.derived !== p.inForce) bits.push('derived would be ' + esc(p.derived));
     if (p.alternatives.length) bits.push('alt ' + p.alternatives.map(esc).join(', '));
-    var o = ['<div style="border-left:3px solid ' + STATE_BG[r.state] + ';background:rgba(127,178,217,.08);border-radius:4px;padding:6px 8px;margin:0 0 8px 0">'];
-    o.push('<div>' + chip(r.state.toUpperCase(), STATE_BG[r.state]) + ' <b>' + esc(r.title) + '</b> <span style="opacity:.55;font-size:.85em">' + esc(r.id) + '</span></div>');
-    o.push('<div style="font-size:.9em;opacity:.85">policy ' + bits.join(' · ') + '</div>');
-    if (r.gate) o.push('<div style="font-size:.9em;opacity:.85">gate <code>' + esc(r.gate) + '</code></div>');
-    if (r.after && r.after.length) o.push('<div style="font-size:.9em;opacity:.85">after ' + r.after.map(esc).join(', ') + '</div>');
-    o.push('<div style="margin-top:3px"><b>now:</b> ' + esc(r.last ? r.last.text : 'nothing decided yet') + '</div>');
-    o.push('<div style="font-size:.9em;opacity:.7">acted ' + r.acted + (r.lastActedAt === null ? '' : ' · last at ' + r.lastActedAt + ' s') + (r.eligibleFor === null ? '' : ' · on for ' + r.eligibleFor + ' s') + '</div>');
-    if (r.neverFired) o.push('<div style="font-size:.9em;color:#c08a3e">⚠ never fired — on and unlocked this whole time, and it has never acted</div>');
+    // ⚠ `text-align:left` ON EVERY DIV, not only on the wrappers, and INHERITANCE IS NOT ENOUGH — measured: the
+    // block's own child divs compute `center` with no inline style of their own, so a game's stylesheet is
+    // targeting them DIRECTLY and beating what they would have inherited. An inline declaration is what wins.
+    // (Seen on the first screenshots: the headings read left and every fact inside a block read centred, which is
+    // prose, not a list.)
+    var o = ['<div style="border-left:3px solid ' + STATE_BG[r.state] + ';background:rgba(127,178,217,.08);border-radius:4px;padding:6px 8px;margin:0 0 8px 0;text-align:left">'];
+    o.push('<div style="text-align:left">' + chip(r.state.toUpperCase(), STATE_BG[r.state]) + ' <b>' + esc(r.title) + '</b> <span style="opacity:.55;font-size:.85em">' + esc(r.id) + '</span></div>');
+    o.push('<div style="text-align:left;font-size:.9em;opacity:.85">policy ' + bits.join(' · ') + '</div>');
+    if (r.gate) o.push('<div style="text-align:left;font-size:.9em;opacity:.85">gate <code>' + esc(r.gate) + '</code></div>');
+    if (r.after && r.after.length) o.push('<div style="text-align:left;font-size:.9em;opacity:.85">after ' + r.after.map(esc).join(', ') + '</div>');
+    o.push('<div style="text-align:left;margin-top:3px"><b>now:</b> ' + esc(r.last ? r.last.text : 'nothing decided yet') + '</div>');
+    o.push('<div style="text-align:left;font-size:.9em;opacity:.7">acted ' + r.acted + (r.lastActedAt === null ? '' : ' · last at ' + r.lastActedAt + ' s') + (r.eligibleFor === null ? '' : ' · on for ' + r.eligibleFor + ' s') + '</div>');
+    if (r.neverFired) o.push('<div style="text-align:left;font-size:.9em;color:#c08a3e">⚠ never fired — on and unlocked this whole time, and it has never acted</div>');
     // ⚠ AUTHOR-WRITTEN TEXT THROUGH `v-html`. Escaped, like every other table string above (`off` reasons, gate
     // predicates) and like the GAME's own layer names and feature titles.
-    if (r.provenance) o.push('<div style="font-size:.85em;opacity:.65;font-style:italic;margin-top:3px">' + esc(r.provenance) + '</div>');
+    if (r.provenance) o.push('<div style="text-align:left;font-size:.85em;opacity:.65;font-style:italic;margin-top:3px">' + esc(r.provenance) + '</div>');
     o.push('</div>');
     return o.join('');
   }
