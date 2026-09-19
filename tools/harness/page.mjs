@@ -2307,30 +2307,51 @@ async function gateMobile(browser, base, ids) {
         if (!setup.candidate) return { ...setup, verdict: `abstains (${setup.why})` };
         const L = setup.candidate;
         const look = () => page.evaluate(() => ({ tab: String(player.tab), open: window.tmtLoader.layerListUI.isOpen(), cameFrom: window.tmtLoader.layerListUI.cameFrom() }));
+        // ⛔ EVERY PRESS IN THIS LEG IS BOUNDED. MEASURED (U6, 2026-09-19) on
+        // `the-shenanigans-tree-rewritten`, whose own "Achievement Gotten!" toast sits over the overlay and
+        // intercepts pointer events: an UNBOUNDED `page.click` spent Playwright's default 30 s, threw, and the row
+        // lost EVERY leg after it — a green-looking roster with one row silently gutted. A press that could not
+        // land is an ABSTENTION that names the interception: the leg did not press anything, so it must not pass
+        // either. U6 bounded its own press and flagged this leg as carrying the same exposure; this is that fix.
+        const clickBounded = async (sel) => {
+          try { await page.click(sel, { timeout: 5000 }); return null; }
+          catch (e) { return String((e && e.message) || e).split('\n')[0].slice(0, 140); }
+        };
         const openFromList = async () => {
-          await page.click(`.tmt-layerlist-card[data-layer="${L}"] .tmt-layerlist-open`);
+          const clickErr = await clickBounded(`.tmt-layerlist-card[data-layer="${L}"] .tmt-layerlist-open`);
           await page.waitForTimeout(120);
-          return look();
+          return { ...(await look()), clickErr };
         };
         // the engine's own back control, whichever of the two names this game draws
         const pressBack = async () => {
           const sel = ['#app .back', '#app .other-back'];
           for (const x of sel) {
             const loc = page.locator(`${x}:visible`).first();
-            if (await loc.count()) { await loc.click(); await page.waitForTimeout(150); return { pressed: x }; }
+            if (await loc.count()) {
+              // a LOCATOR click carries the same default 30 s as page.click — bound it identically
+              try { await loc.click({ timeout: 5000 }); }
+              catch (e) { return { pressed: null, clickErr: String((e && e.message) || e).split('\n')[0].slice(0, 140) }; }
+              await page.waitForTimeout(150);
+              return { pressed: x };
+            }
           }
           return { pressed: null };
         };
         const fromList = await openFromList();
+        if (fromList.clickErr) return { candidate: L, fromList, verdict: `abstains (the open button could not be pressed: ${fromList.clickErr})` };
         if (fromList.tab !== L) return { candidate: L, fromList, verdict: `abstains (the card's open button did not open ${L}: player.tab is ${fromList.tab})` };
         const pressed1 = await pressBack();
-        if (!pressed1.pressed) return { candidate: L, fromList, verdict: 'abstains (the game draws no visible back control on this tab)' };
+        if (!pressed1.pressed) return { candidate: L, fromList, verdict: pressed1.clickErr
+          ? `abstains (the back control could not be pressed: ${pressed1.clickErr})`
+          : 'abstains (the game draws no visible back control on this tab)' };
         const afterList = await look();
 
         // step 2: armed again, then left by the nav bar's Tree button — which is not a back press
         await page.evaluate(() => { const ui = window.tmtLoader.layerListUI; if (!ui.isOpen()) ui.open(); });
         const armed = await openFromList();
-        await page.click('#tmt-navbar button[data-key="tree"]');
+        if (armed.clickErr) return { candidate: L, fromList, armed, verdict: `abstains (the open button could not be pressed a second time: ${armed.clickErr})` };
+        const treeErr = await clickBounded('#tmt-navbar button[data-key="tree"]');
+        if (treeErr) return { candidate: L, fromList, armed, verdict: `abstains (the nav bar's Tree button could not be pressed: ${treeErr})` };
         await page.waitForTimeout(120);
         const afterTree = await look();
 
