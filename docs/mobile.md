@@ -766,10 +766,18 @@ rebuild runs; and a *forced* membership change measures **Δ 0**, because the wi
 task with no layout between them. Reducing the height churn would have been a second, weaker option; disabling
 anchoring on the one scroller we own is exact.
 
-**Who can witness it.** 44 of the 171 games; the other **127 cannot**, because their list is not scrollable at
-390×844 at all (measured over the whole roster at `d7cd5c185`). ⚠ `ptr` **is** one of the 44 — but only once its deep
-snapshot is loaded, which is the state gate M1 reaches it in. At a fresh save its list fits the viewport exactly
-(737 px of content in 737 px), which is why a first look said it could not witness this.
+**Who can witness it, and it depends on the STATE.** A game can only witness this where its list SCROLLS, and how
+much it has to show grows as the save does:
+
+| measured at | witnesses | cannot (list not scrollable at 390×844) |
+|---|---|---|
+| a bare probe: fresh save, deep snapshot where one exists (`d7cd5c185`) | 44 | 127 |
+| gate M1's own state — 3,000 ticks, a reset press and a purchase past that (CI at `ccb0ed08a`) | **49** | 122 |
+
+⚠ So the roster figure is not a property of the roster; **five more games cross the threshold between those two
+states**, and a number quoted without its state is not reproducible. ⚠ `ptr` is a witness in both — but only once
+its deep snapshot is loaded. At a fresh save its list fits the viewport *exactly* (737 px of content in 737 px),
+which is why a first look said it could not witness this at all.
 
 **The gate** (`--gate mobile`, two halves, in the layers leg):
 
@@ -1315,8 +1323,9 @@ Two verdicts per game, both in the layers leg and both summarised on one `M1 lay
 | `abstains (the press did not move the content height)` | the real half only: the reset moved nothing to anchor against |
 
 ⚠ **The abstentions are the majority and the line says so**, because the whole risk here is a green that means
-"nothing was measured". The constructed half judges 44 games; the real half judges however many of them have a
-reset press that moves the height (2 of the 5 in the bounded local set: `ptr` and `the-alphabetree`).
+"nothing was measured". Over the roster (CI at `ccb0ed08a`) the constructed half judges **49** games and the real
+press judges **3** — `ptr` (0 / −3), `the-alphabetree` (0 / −3) and `the-earth-tree` (0 / **+241**, a card that grows
+by a quarter of a screen on its own reset, and the worst drift on the roster had this not been fixed).
 
 And, beside them on the `?mobile=1&automation=1` page, the **default half of the arming setting** (`docs/automation.md`):
 it is off, it is not in the save, its control is in the `au` tab, every locked feature's toggle still refuses — and
@@ -1334,6 +1343,11 @@ first so a restore could not eat it):
 
 ⚠ **Nothing else went red in either round**, which is the tell for a clean mutant run (a mutant reddening a check it
 cannot reach means the tree was contaminated).
+
+✅ **CI at `ccb0ed08a` (run `35445364610`): all 15 jobs green, `rows: 171/171 game(s); 0 RED`, the ten shards
+covering all 171 games each exactly once.** The drift leg: `overflow-anchor` reads `none` on every game, the
+constructed half **49 judged / 49 held / 122 abstained**, the real press **3 judged / 3 held / 168 abstained**; the
+`au` arming default green on both games with a table (56 locked toggles refusing on `ptr`, 31 on `something`).
 
 ✅ **Bounded local set at `fcd0ce459`: M1 3/3 GREEN** (`ptr`, `something`, `the-alphabetree`), 68 cards / 144 chips,
 the drift leg **3/3 judged on the constructed half and 2/2 on the real press** (1 abstained: `something`'s reset does

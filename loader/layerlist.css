@@ -87,9 +87,11 @@
    * followed it). ⚠ It is NOT `rebuildInner`'s `body.textContent = ''`: a reset does not change MEMBERSHIP, so no
    * rebuild runs, and a forced membership change measures Δ 0 because the wipe and the refill happen inside one
    * task with no layout between them.
-   * ⚠ 44 of the 171 games witness it and 127 cannot — their list is not scrollable at 390x844 (measured over the
-   * whole roster at d7cd5c185). `ptr` and `something` are both witnesses ONCE THEIR DEEP SNAPSHOT IS LOADED, which
-   * is the state gate M1 reaches them in; at a fresh save ptr's list fits the viewport exactly (737/737).
+   * ⚠ WHO CAN WITNESS IT DEPENDS ON THE STATE, so a bare count is not reproducible: 44 of the 171 games at a fresh
+   * save (deep snapshot where one exists, measured at d7cd5c185) and 49 at the state gate M1 reaches them in
+   * (3,000 ticks, a reset press and a purchase past that; CI at ccb0ed08a). The rest cannot — their list does not
+   * scroll at 390x844. `ptr` and `something` are witnesses ONCE THEIR DEEP SNAPSHOT IS LOADED; at a fresh save
+   * ptr's list fits the viewport exactly (737/737).
    * ⛔ The gate's discriminator is NOT "scrollTop did not move": a build that stopped the content height moving at
    * all would pass that while proving nothing about anchoring. It asserts Δ scrollTop === 0 WHILE Δ height ≠ 0. */
   overflow-anchor: none;
