@@ -101,7 +101,24 @@ export function tooltipsByKind(text) {
   return out;
 }
 
+// ⚠ U3 — THE OPTIONS SECTION'S TWO ANCHORS (docs/options.md). `loader/options.js` knows no tab id, exactly as the
+// nav bar knows none: it finds the options tab by the game's OWN `hardReset()` option button, and reads the corner
+// wheel's absence as that engine saying the options tab is the open one. Both are properties of the GAME, so the
+// day a game arrives without one the section would simply never appear on it — and no gate that DRIVES games would
+// say so, because a panel that is never built throws nothing and reddens nothing. Hence a static census, over the
+// ENTRY DOCUMENT as well as the sources: 2.2.1 writes its options tab into index.html, 2.7 into a component file.
+const BUTTON_TAG = /<button\b[^>]*>/gi;
+const CLASS_OPT = /\bclass\s*=\s*["'][^"']*\bopt\b[^"']*["']/i;
+const ONCLICK_HARD_RESET = /\bonclick\s*=\s*["'][^"']*hardReset\s*\(/i;
+/** Does this text carry a `<button class="opt" onclick="hardReset()">`, in either attribute order? */
+export function hasHardResetOptButton(text) {
+  for (const m of String(text).match(BUTTON_TAG) || []) if (CLASS_OPT.test(m) && ONCLICK_HARD_RESET.test(m)) return true;
+  return false;
+}
+
 const RE = {
+  optButton: /<button\b[^>]*\bclass\s*=\s*["'][^"']*\bopt\b/i,
+  optionWheel: /\bid\s*=\s*["']optionWheel["']/i,
   buyUpg: /function\s+buyUpg\s*\(/,
   buyUpgrade: /function\s+buyUpgrade\s*\(/,
   pseudoUnlGlobal: /function\s+pseudoUnl\s*\(/,
@@ -121,10 +138,17 @@ export function measure({ bound = 'subtree', root = REPO } = {}) {
   for (const id of ids) {
     const { files, missing } = sourcesOf(id, bound, root);
     if (missing) problems.push(`${id}: ${missing}`);
-    const g = { files: files.length, buyUpg: false, buyUpgrade: false, tabArray: 0, tabObject: 0, purchaseLimit: false, purchaseLimitInLayerSupport: false, pseudoUnlGlobal: false, pseudoUnlComponent: false, tooltipAny: false, tooltipChipped: 0, tooltipAchievement: 0 };
-    for (const f of files) {
+    const g = { files: files.length, optButton: false, hardResetOpt: false, optionWheel: false, buyUpg: false, buyUpgrade: false, tabArray: 0, tabObject: 0, purchaseLimit: false, purchaseLimitInLayerSupport: false, pseudoUnlGlobal: false, pseudoUnlComponent: false, tooltipAny: false, tooltipChipped: 0, tooltipAchievement: 0 };
+    // the ENTRY DOCUMENT, which no `bound` covers: it is not a `.js` file and it is where 2.2.1 keeps both anchors.
+    // ⛔ A game whose entry cannot be read is a PROBLEM, never a false — the same rule the bounds are under.
+    const entry = path.join(root, 'games', id, (readManifest(id, root).entry) || 'index.html');
+    if (!fs.existsSync(entry)) problems.push(`${id}: the manifest's entry document is not in the tree (${path.relative(root, entry)})`);
+    for (const f of [...files, ...(fs.existsSync(entry) ? [entry] : [])]) {
       // latin1: these are third-party trees and some are not valid UTF-8; every pattern here is ASCII.
       const text = fs.readFileSync(f, 'latin1');
+      if (RE.optButton.test(text)) g.optButton = true;
+      if (RE.optionWheel.test(text)) g.optionWheel = true;
+      if (hasHardResetOptButton(text)) g.hardResetOpt = true;
       if (RE.buyUpg.test(text)) g.buyUpg = true;
       if (RE.buyUpgrade.test(text)) g.buyUpgrade = true;
       if (RE.pseudoUnlGlobal.test(text)) g.pseudoUnlGlobal = true;
@@ -156,6 +180,10 @@ export function measure({ bound = 'subtree', root = REPO } = {}) {
     files: sum('files'),
     problems,
     per,
+    optButton: where('optButton').length,
+    hardResetOpt: where('hardResetOpt').length,
+    optionWheel: where('optionWheel').length,
+    noOptionsAnchor: ids.filter((id) => !(per[id].hardResetOpt && per[id].optionWheel)),
     buyUpg: where('buyUpg').length,
     buyUpgrade: where('buyUpgrade').length,
     onlyBuyUpg: ids.filter((id) => per[id].buyUpg && !per[id].buyUpgrade),
@@ -207,6 +235,18 @@ export function claims(sub, load) {
         return [bad.length === 0, `docs/mobile.md quotes a denominator that is not the roster: ${bad.join(' / ')}`];
       },
       measured: `${N}`,
+    },
+    {
+      // U3: the two anchors loader/options.js finds the options tab by. Measured under `loaded` PLUS the entry
+      // document — the scope of "what the loader actually runs on this page" — because a section that is never
+      // built throws nothing, and no gate that drives games would ever say the anchor was missing.
+      name: 'the Options section\u2019s two anchors (U3, loaded + the entry document)',
+      doc: 'docs/options.md',
+      re: /\*\*all (\d+) of the (\d+) games carry both the `hardReset\(\)` option button and `#optionWheel`\*\*/,
+      expect: (m) => [num(m[1]) === load.hardResetOpt && num(m[1]) === load.optionWheel && num(m[2]) === N
+        && load.noOptionsAnchor.length === 0,
+        `${m[1]} of ${m[2]}`],
+      measured: `${load.hardResetOpt} with the option button and ${load.optionWheel} with the wheel, of ${N}${load.noOptionsAnchor.length ? ` \u2014 WITHOUT one: ${load.noOptionsAnchor.join(', ')}` : ''}`,
     },
     {
       name: 'buyUpg / buyUpgrade definitions (subtree)',

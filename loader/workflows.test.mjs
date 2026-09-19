@@ -116,13 +116,13 @@ test('the merge job cannot be skipped by a failing shard, and does not fire on a
 // ---------------------------------------------------------------------------------------------------------------
 
 test('every expensive job in the sweep is GATED by the fast one', () => {
-  // The fast job is 46 unit tests, the roster doc, the declined list and the figures census: seconds, no browser.
+  // The fast job is the unit tests, the roster doc, the declined list and the figures census: seconds, no browser.
   // Its entire value is that nothing else starts when it is red. A `needs:` dropped for convenience — "my change
   // does not touch the units" — spends ten runners plus three more to discover what three seconds already knew,
   // and nothing about the resulting run would look wrong.
   const j = jobs(wf('sweep.yml'));
   assert.ok(j.fast, 'sweep.yml has no `fast` job at all');
-  for (const name of ['shard', 'g1', 'anchors']) {
+  for (const name of ['shard', 'g1', 'anchors', 'options']) {
     assert.ok(j[name], `sweep.yml has no \`${name}\` job`);
     assert.deepEqual(needs(j[name]), ['fast'], `the ${name} job does not wait for the fast checks`);
   }

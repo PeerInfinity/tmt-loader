@@ -288,6 +288,77 @@ jobs:
           retention-days: 7
 
   # ---------------------------------------------------------------------------------------------------------------
+  # O1 — the OPTIONS SECTION (docs/options.md). U3 made the three URL-only opt-ins reachable from inside the game,
+  # which is a SECOND way to switch a mode on and therefore a second way to break the inertness the whole sweep
+  # rests on. The gate re-asks inertness against a stored preference, asserts the URL still overrides one in both
+  # directions, and presses the real button — judging the page that comes back, never the key that was written.
+  #
+  # ⚠ A BOUNDED SET, on purpose, and it is not sharded. Each game costs ~19 page loads (six of the legs draw a fresh
+  # browser context so a preference cannot leak into the next one), so the roster would be an hour. The set is the
+  # two reference engines plus two more: 2.2.1 `ptr`, 2.7 `something` and `a-tree-about-layers`, and
+  # `the-alphabetree`, whose options tab is the busiest on the roster. What the roster-wide check of this feature
+  # actually is: the two ANCHORS it finds the options tab by, censused over all 171 games by census-figures.mjs in
+  # the `fast` job above — a section that never gets built throws nothing, so driving games could not find that.
+  # ---------------------------------------------------------------------------------------------------------------
+  options:
+    name: O1 — the Options section
+    needs: fast
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - run: npm ci
+
+      - name: Cache the Playwright browser
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+
+      - run: npx playwright install --with-deps chromium
+
+      # ⛔ The set is named ONCE, and the run records the roster it was assigned, so the assertion below is the same
+      # one the sharded sweep gets: bounded is not unasserted, and a run that quietly did three of the four games
+      # would otherwise be a green checkmark.
+      - name: O1 on the bounded set
+        shell: bash
+        run: |
+          set -o pipefail
+          SET='ptr something a-tree-about-layers the-alphabetree'
+          echo "O1_SET=${SET// /,}" >> "$GITHUB_ENV"
+          node tools/harness/page.mjs $SET --gate options --shard 1/1 --json shards/o1-1.json | tee o1.txt
+
+      - name: Assert the run covered the set it was given
+        if: always()
+        shell: bash
+        run: |
+          node tools/harness/merge-shards.mjs shards --expect 1 --roster "$O1_SET" | tee merge.txt
+          {
+            echo '## O1 — the Options section'
+            echo ''
+            echo '```'
+            cat o1.txt merge.txt
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload the result
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: o1
+          path: shards/
+          if-no-files-found: warn
+          retention-days: 7
+
+  # ---------------------------------------------------------------------------------------------------------------
   # S1 part 1 — the automation anchors. 52 checks, 197 s locally, and EVERY slice this arc has run it by hand to
   # prove no anchor moved. That is exactly the check that should not depend on a human remembering.
   #

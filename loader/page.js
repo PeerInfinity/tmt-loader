@@ -2,6 +2,7 @@
 import { interpret, executionOrder, modFilePaths } from './interpret.mjs';
 import { installSavePrefix, captureRaw, rawKeys, prefixFor } from './shims/save-prefix.js';
 import { installTimers } from './shims/timers.js';
+import { FLAGS, PREF_KEY, parsePrefs, serializePrefs, resolveFlags } from './flags.mjs';
 
 // 1. absolute URLs captured before any <base> exists (Pages serves under /tmt-loader/, so nothing is /-rooted)
 const SELF = new URL('.', location.href);
@@ -10,15 +11,32 @@ const MOD = params.get('mod');
 const MANAGED = params.get('managed') === '1';
 // ?automation=1 opts in to the automation tools (the registry, the `au` side layer, games-auto/<id>.js). Without it the
 // page is the game plus the contract (docs/contract.md): no layer, no DOM, nothing in the save.
-const AUTOMATION = params.get('automation') === '1';
 // ?mobile=1 opts in to the mobile LAYOUT (docs/mobile.md): loader/mobile.css, the single column and master-detail.
 // ?navbar=1 opts in to the bottom NAV BAR alone (loader/navbar.css + loader/navbar.js after tmt-auto.js) AND the
 // layer list it opens (loader/layerlist.css + loader/layerlist.js), both wanted on a desktop too; ?mobile=1 IMPLIES
 // it, so ?mobile=1 alone is what it always was.
-// EXPLICIT ONLY, both of them — no viewport or pointer sniffing, so a page without the flag renders exactly as it
-// did before the mode existed, and a page with it renders the same way at every width (which makes it gateable).
-const MOBILE = params.get('mobile') === '1';
-const NAVBAR = MOBILE || params.get('navbar') === '1';
+// Since U3 each of the three is ALSO reachable as a remembered preference the Options section writes
+// (loader/options.js, docs/options.md) — and the URL still answers first, in both directions, whenever it says
+// anything at all about that flag. EXPLICIT ONLY remains the rule: no viewport or pointer sniffing anywhere, so a
+// page with neither the parameter nor the preference renders exactly as it did before these modes existed, and a
+// page with either renders the same way at every width (which is what makes them gateable).
+// ⚠ THE RAW `Storage` METHODS, captured before installSavePrefix() patches the prototype (and before a game can):
+// the preference key is the loader's own and belongs in no game's namespace, so it is never read or written through
+// the prefixing `localStorage`. It is also read HERE, at module top, because MOBILE decides a class that goes on
+// <html> before the game's markup — long before the shim exists.
+const RAW = { getItem: Storage.prototype.getItem, setItem: Storage.prototype.setItem, removeItem: Storage.prototype.removeItem };
+const readPrefs = () => { try { return parsePrefs(RAW.getItem.call(localStorage, PREF_KEY)); } catch { return {}; } };
+const writePrefs = (prefs) => {
+  try {
+    const s = serializePrefs(prefs);
+    if (s) RAW.setItem.call(localStorage, PREF_KEY, s); else RAW.removeItem.call(localStorage, PREF_KEY);
+  } catch { /* a full, blocked or read-only store costs the preference, never the page */ }
+  return readPrefs();
+};
+const RESOLVED = resolveFlags(params, readPrefs());
+const AUTOMATION = RESOLVED.automation;
+const MOBILE = RESOLVED.mobile;
+const NAVBAR = RESOLVED.navbar;
 for (const p of ['profile', 'autoOpt']) if (!AUTOMATION && params.has(p)) console.warn(`tmt-loader: ?${p}= is ignored without ?automation=1`);
 // ?profile=off|all|saved (automation profile, applied after onload, never saved); default: off when managed, else saved.
 const PROFILE = !AUTOMATION ? 'off' : params.get('profile') || (MANAGED ? 'off' : 'saved');
@@ -32,6 +50,12 @@ function parseOptions(s) {
 const abs = (p) => new URL(p, SELF).href;
 
 const T = (window.tmtLoader = { id: MOD, manifest: null, ready: false, error: null, managed: MANAGED, automation: AUTOMATION, mobile: MOBILE, navbar: NAVBAR, options: OPTIONS, step: 'init', loaded: [], skipped: [], pageErrors: [] });
+// what each opt-in is, and WHO said so — `url` | `stored` | `implied` | `default` (docs/options.md). The Options
+// section reads both: the values to label its buttons, the sources to say whether the address is overriding what
+// this browser remembers.
+T.flags = { mobile: MOBILE, navbar: NAVBAR, automation: AUTOMATION };
+T.flagSource = RESOLVED.source;
+T.prefs = { key: PREF_KEY, names: FLAGS, read: readPrefs, write: writePrefs };
 // the class the layout stylesheet is scoped under, set before the game's markup so there is no unstyled flash
 // (the nav bar's own class is added by boot(), once navbar.js has actually installed the bar)
 if (MOBILE) document.documentElement.classList.add('tmt-mobile');
@@ -157,6 +181,12 @@ async function boot(id) {
   step('script loader/tmt-auto.js');
   await insertScript({ src: abs('loader/tmt-auto.js') }, 'loader/tmt-auto.js');
   T.loaded.push('loader/tmt-auto.js');
+  // the OPTIONS SECTION (docs/options.md) — the only file here with no flag in front of it, and it has to be:
+  // it is how a page that carries none of the flags offers them. It adds nothing to <head>, nothing to `player`
+  // and no timer; its one element lives inside the game's own options tab, while that tab is open.
+  step('script loader/options.js');
+  await insertScript({ src: abs('loader/options.js') }, 'loader/options.js');
+  T.loaded.push('loader/options.js');
   if (NAVBAR) {
     step('script loader/navbar.js');
     await insertScript({ src: abs('loader/navbar.js') }, 'loader/navbar.js');

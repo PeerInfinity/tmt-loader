@@ -4,6 +4,7 @@
 //                 [--profile off|all|saved] [--exclude au] [--auto-opt "k=v;k2=v2"] [--no-automation]
 //   node page.mjs [<id>...] --gate load [--base URL] [--automation] [--allow-host h]   → gate G1 (every game by default)
 //   node page.mjs [<id>...] --gate mobile [--base URL]           → gate M1, the mobile mode, the nav bar + the layer list
+//   node page.mjs [<id>...] --gate options [--base URL]          → gate O1, the Options section and the stored preference
 //   ... --gate <g> --shard i/N [--dry-run] --json out.json  → this runner's slice of the roster (1-based, like Playwright's);
 //                                                  merge the slices with merge-shards.mjs, which is what catches a dead shard
 // Automation (?automation=1): runs default ON (the harness); `--gate load` defaults to the PLAIN page (no flag), where it
@@ -1857,6 +1858,201 @@ async function gateMobile(browser, base, ids) {
   return rows;
 }
 
+// ---------------------------------------------------------------- gate O1: the Options section (docs/options.md)
+// U3 turned the three URL-only opt-ins into buttons inside the game's own options tab, backed by one remembered
+// preference. Two things can go wrong that no screenshot shows, and this gate exists for both:
+//   · the preference becomes a SECOND way to turn a mode on, and the page the harness asks for by URL is no longer
+//     the page it gets — so every leg below re-measures inertness, and the override in BOTH directions;
+//   · the button writes a key, reloads, and the page was going to render that way anyway. ⛔ NOTHING HERE ASSERTS
+//     A KEY. Every verdict is the RENDERED page — the class on <html>, the loader's stylesheets, the bar and its
+//     buttons, the `au` layer — compared against the page the URL parameter produces.
+const OPT_SECTION = '#tmt-loader-options';
+const OPT_PREF_KEY = 'tmt-loader:ui.flags';
+// what "the same page" means here. ⚠ `flagSource` and the stored key are deliberately NOT in it: they are how the
+// two pages differ, and a fingerprint that included them could never find them equal.
+const OPT_RENDER_KEYS = ['ready', 'mobile', 'navbar', 'automation', 'htmlClasses', 'mobileCss', 'navbarCss',
+  'layerListCss', 'nav', 'navButtons', 'layerListUI', 'navbarUI', 'optionsUI', 'loaderFiles', 'auNodes', 'playerAu'];
+
+const optFingerprint = (page) => page.evaluate(() => {
+  const T = window.tmtLoader;
+  const au = (() => { try { return typeof player !== 'undefined' && player && !!player.au; } catch (e) { return false; } })();
+  return {
+    ready: !!T.ready, mobile: T.mobile, navbar: T.navbar, automation: T.automation,
+    htmlClasses: (document.documentElement.className.match(/tmt-[\w-]+/g) || []).sort(),
+    mobileCss: !!document.getElementById('tmt-loader-mobile-css'),
+    navbarCss: !!document.getElementById('tmt-loader-navbar-css'),
+    layerListCss: !!document.getElementById('tmt-loader-layerlist-css'),
+    nav: !!document.getElementById('tmt-navbar'),
+    navButtons: Array.from(document.querySelectorAll('#tmt-navbar .tmt-navbar-btn')).filter((b) => !b.hidden).map((b) => b.dataset.key).sort(),
+    layerListUI: !!T.layerListUI, navbarUI: !!T.navbarUI, optionsUI: !!T.optionsUI,
+    loaderFiles: T.loaded.filter((f) => /^loader\//.test(f)).sort(),
+    auNodes: document.querySelectorAll('#app .smallNode.au').length, playerAu: au,
+    section: !!document.querySelector('#tmt-loader-options'),
+    sectionStyle: !!document.getElementById('tmt-loader-options-style'),
+    flagSource: T.flagSource, stored: T.prefs.read(), search: location.search,
+    pageErrors: T.pageErrors.length,
+  };
+});
+const optRender = (f) => Object.fromEntries(OPT_RENDER_KEYS.map((k) => [k, f[k]]));
+const optSame = (a, b) => JSON.stringify(optRender(a)) === JSON.stringify(optRender(b));
+/** The loader page for `id`, always managed, with whatever else the leg is asking about. */
+const optUrl = (base, id, extra) => new URL(`index.html?mod=${encodeURIComponent(id)}&managed=1${extra ? `&${extra}` : ''}`, base).href;
+/** Open the game's options tab the way a person on THIS page would, and wait for the section to land.
+ *  ⚠ MEASURED (U3, ptr): on a `?mobile=1` / `?navbar=1` page the corner wheel is still in the DOM but the bar's
+ *  stylesheet HIDES it, so a click on it waits for visibility forever. There the affordance is the bar's own
+ *  Options button — which forwards to the wheel, which is why the section is reachable in both modes at all. */
+const optOpenTab = async (p) => {
+  const bar = await p.$('#tmt-navbar button[data-key="options"]');
+  if (bar && await bar.isVisible()) await bar.click(); else await p.click('#optionWheel');
+  await p.waitForSelector(OPT_SECTION, { timeout: 10000 });
+};
+
+async function gateOptions(browser, base, ids) {
+  const rows = [];
+  for (const id of ids) {
+    const row = { id };
+    const errors = [];
+    try {
+      // one context per case: a stored preference is per browser, so a leg that writes one must not be able to
+      // reach the next leg's page. `prefs` is planted BEFORE any page script runs, which is where a person's
+      // browser would already have it.
+      const draw = async (extra, prefs, act) => {
+        const { context: c, stats } = await openContext(browser, { contextOptions: DESKTOP_CONTEXT });
+        try {
+          if (prefs !== null) await c.addInitScript(([k, v]) => { try { v === null ? localStorage.removeItem(k) : localStorage.setItem(k, v); } catch (e) { /* blocked store */ } }, [OPT_PREF_KEY, prefs]);
+          const p = await c.newPage();
+          await p.goto(optUrl(base, id, extra), { waitUntil: 'load' });
+          const r = await waitReady(p);
+          if (!r.ready) throw new Error(`not ready (${extra || 'plain'}): ${JSON.stringify(r.error)}`);
+          await p.evaluate(() => new Promise((res) => requestAnimationFrame(() => requestAnimationFrame(res))));
+          const out = act ? await act(p) : await optFingerprint(p);
+          // ⚠ Playwright's own lists, not the loader's: an error the loader never saw still counts here.
+          errors.push(...stats.pageErrors.map((m) => `${extra || 'plain'}: ${m}`),
+            ...stats.blocked.map((u) => `${extra || 'plain'}: BLOCKED ${u}`));
+          return out;
+        } finally { await c.close(); }
+      };
+      // --- leg 1: the SECTION is in the options tab, and nowhere else. Opened through the game's OWN corner
+      // control, which is the affordance a person presses; the section is read, then the tab is left again.
+      row.section = await draw('', null, async (p) => {
+        const before = await optFingerprint(p);
+        await optOpenTab(p);
+        const open = await p.evaluate(() => {
+          const s = document.querySelector('#tmt-loader-options');
+          const btns = Array.from(s.querySelectorAll('button[data-flag]'));
+          return { flags: btns.map((b) => b.dataset.flag), labels: btns.map((b) => b.textContent),
+            locked: btns.filter((b) => b.classList.contains('locked')).map((b) => b.dataset.flag),
+            note: s.querySelector('.tmt-loader-options-note').textContent,
+            style: !!document.getElementById('tmt-loader-options-style'),
+            // where it landed: the tab column the game drew, and after the game's own option buttons
+            inTab: !!s.closest('.col, .fullWidth'), afterGameOpts: document.querySelectorAll('button.opt').length - btns.length };
+        });
+        await p.evaluate(() => { try { showTab('none'); } catch (e) { /* the button below is the real test */ } });
+        await p.waitForSelector(OPT_SECTION, { state: 'detached', timeout: 10000 }).catch(() => {});
+        const after = await optFingerprint(p);
+        return { beforeSection: before.section, beforeStyle: before.sectionStyle, open, afterSection: after.section,
+          pageErrors: after.pageErrors };
+      });
+      row.sectionOk = !!(row.section && !row.section.beforeSection && !row.section.beforeStyle
+        && JSON.stringify(row.section.open.flags) === JSON.stringify(['mobile', 'navbar', 'automation'])
+        && row.section.open.labels.every((t) => /: (ON|OFF)/.test(t)) && row.section.open.locked.length === 0
+        && /reloads the page/.test(row.section.open.note) && row.section.open.inTab
+        && row.section.open.afterGameOpts > 0 && !row.section.afterSection && row.section.pageErrors === 0);
+
+      // --- leg 2: INERTNESS. A page with neither a parameter nor a stored preference is the page the loader has
+      // always served. This is gate M1's own leg, re-asked here because U3 added a second way to break it.
+      row.plain = await draw('', null);
+      const inert = (f) => f.mobile === false && f.navbar === false && f.automation === false
+        && f.htmlClasses.length === 0 && !f.mobileCss && !f.navbarCss && !f.layerListCss && !f.nav
+        && f.navButtons.length === 0 && !f.layerListUI && !f.navbarUI && f.auNodes === 0 && !f.playerAu
+        && f.loaderFiles.every((x) => !/mobile|navbar|layerlist/.test(x));
+      row.inertOk = inert(row.plain) && row.plain.optionsUI === true && row.plain.stored && Object.keys(row.plain.stored).length === 0;
+
+      // --- leg 3: a STORED preference produces the same page as the URL parameter. Compared against the flagged
+      // page itself, never against a hand-written expectation.
+      row.same = {};
+      for (const [flag, extra] of [['mobile', 'mobile=1'], ['navbar', 'navbar=1'], ['automation', 'automation=1']]) {
+        const byUrl = await draw(extra, null);
+        const byPref = await draw('', JSON.stringify({ [flag]: true }));
+        row.same[flag] = { equal: optSame(byUrl, byPref), url: optRender(byUrl), pref: optRender(byPref),
+          sourceUrl: byUrl.flagSource[flag], sourcePref: byPref.flagSource[flag],
+          // …and the page is not simply the plain page: the flag has to have DONE something, or "equal" is vacuous
+          moved: !optSame(byUrl, row.plain) };
+      }
+      row.sameOk = ['mobile', 'navbar', 'automation'].every((f) => row.same[f].equal && row.same[f].moved
+        && row.same[f].sourceUrl === 'url' && row.same[f].sourcePref === 'stored');
+
+      // --- leg 4: the URL OVERRIDES a contradicting stored preference, in both directions.
+      row.override = {};
+      for (const flag of ['mobile', 'navbar', 'automation']) {
+        const onOverStoredOff = await draw(`${flag}=1`, JSON.stringify({ [flag]: false }));
+        const offOverStoredOn = await draw(`${flag}=0`, JSON.stringify({ [flag]: true }));
+        row.override[flag] = {
+          onWins: onOverStoredOff[flag] === true && onOverStoredOff.flagSource[flag] === 'url',
+          offWins: offOverStoredOn[flag] === false && offOverStoredOn.flagSource[flag] === 'url',
+          // ⛔ and `?flag=0` over a stored `true` is the INERT page, not merely a false in the loader's object
+          offIsThePlainPage: optSame(offOverStoredOn, row.plain),
+          onIsTheFlaggedPage: optSame(onOverStoredOff, row.same[flag].url),
+        };
+      }
+      row.overrideOk = ['mobile', 'navbar', 'automation'].every((f) => {
+        const o = row.override[f];
+        return o.onWins && o.offWins && o.offIsThePlainPage && o.onIsTheFlaggedPage;
+      });
+
+      // --- leg 5: THE DISCRIMINATOR. The button is PRESSED, on a page that was rendering the other way, and the
+      // verdict is the page that comes back — never the key that was written. Pressed twice: on and off again.
+      row.press = {};
+      for (const flag of ['mobile', 'automation']) {
+        row.press[flag] = await draw('', null, async (p) => {
+          const pressOnce = async () => {
+            await optOpenTab(p);
+            await Promise.all([p.waitForNavigation({ waitUntil: 'load', timeout: 30000 }),
+              p.click(`${OPT_SECTION} button[data-flag="${flag}"]`)]);
+            const r = await waitReady(p);
+            if (!r.ready) throw new Error(`not ready after the press: ${JSON.stringify(r.error)}`);
+            await p.evaluate(() => new Promise((res) => requestAnimationFrame(() => requestAnimationFrame(res))));
+            return optFingerprint(p);
+          };
+          const on = await pressOnce();
+          const off = await pressOnce();
+          return { on: optRender(on), off: optRender(off), onSource: on.flagSource[flag], offStored: off.stored,
+            pageErrors: off.pageErrors };
+        });
+      }
+      row.pressOk = ['mobile', 'automation'].every((f) => {
+        const q = row.press[f];
+        return q && JSON.stringify(q.on) === JSON.stringify(row.same[f].url)   // the page the parameter makes
+          && JSON.stringify(q.off) === JSON.stringify(optRender(row.plain))    // and all the way back to inert
+          && q.onSource === 'stored' && q.pageErrors === 0;
+      });
+
+      // --- leg 6: a press made ON A FLAGGED PAGE is not a no-op. The URL answers first, so a press that only wrote
+      // a key would come back rendering exactly as before — the failure this leg exists to catch.
+      row.pressOverUrl = await draw('mobile=1', null, async (p) => {
+        await optOpenTab(p);
+        await Promise.all([p.waitForNavigation({ waitUntil: 'load', timeout: 30000 }),
+          p.click(`${OPT_SECTION} button[data-flag="mobile"]`)]);
+        const r = await waitReady(p);
+        if (!r.ready) throw new Error(`not ready after the press: ${JSON.stringify(r.error)}`);
+        await p.evaluate(() => new Promise((res) => requestAnimationFrame(() => requestAnimationFrame(res))));
+        return optFingerprint(p);
+      });
+      row.pressOverUrlOk = optSame(row.pressOverUrl, row.plain) && !/mobile=/.test(row.pressOverUrl.search);
+
+    } catch (e) {
+      row.exception = String((e && e.message) || e).slice(0, 300);
+    }
+    row.errors = errors.slice(0, 5);
+    row.errorCount = errors.length;
+    row.ok = !row.exception && !!(row.sectionOk && row.inertOk && row.sameOk && row.overrideOk && row.pressOk
+      && row.pressOverUrlOk && errors.length === 0);
+    rows.push(row);
+    console.log(`O1 ${id}: ${row.ok ? 'GREEN' : 'RED'} section=${row.sectionOk} inert=${row.inertOk} same=${row.sameOk} override=${row.overrideOk} press=${row.pressOk} pressOverUrl=${row.pressOverUrlOk} errors=${row.errorCount}${row.exception ? ` exception=${row.exception}` : ''}`);
+  }
+  return rows;
+}
+
 export async function runPage(browser, base, id, { ticks, diff, leg = 'idle', until = null, stateOut, loadFrom = null, playerOut = null, mutant = false, profile = null, exclude = [], autoOpt = null, automation = true }) {
   const { context, stats } = await openContext(browser);
   try {
@@ -1988,6 +2184,16 @@ async function main() {
       const noCand = rows.filter((r) => r.resetVerdict && r.resetVerdict.startsWith('no candidate')).map((r) => r.id);
       console.log(`M1 layers reset press: ${rows.filter((r) => r.resetVerdict === 'moved').length} moved player[l].points, ${rows.filter((r) => r.resetVerdict === 'NOT MOVED').length} did not, ${noCand.length} abstained${noCand.length ? ` (nothing could reset: ${noCand.join(', ')})` : ''}`);
       for (const r of rows.filter((x) => !x.ok)) console.log(`  ${r.id}: layers=${r.layersOk} digits=${r.digits ? r.digits.verdict : '—'}${r.digits && !r.digitsOk ? ' ' + JSON.stringify(r.digits) : ''} tips=${r.tips ? `${r.tips.phoneVerdict} / desktop ${r.tips.desktopVerdict} / tap ${r.tips.tap.verdict} / hover ${r.tips.hover.verdict}` : '—'}${r.tips && !r.tipsOk ? ' ' + JSON.stringify(r.tips) : ''} persist=${r.persist ? r.persist.verdict : '—'}${r.persist && !r.persistOk ? ' ' + JSON.stringify(r.persist) : ''} fit=${r.fitOk}${r.fitWidths && !r.fitOk ? ' ' + JSON.stringify(r.fitWidths) : ''} stability=${r.stabilityOk}${r.stability && !r.stabilityOk ? ' ' + JSON.stringify(r.stability) : ''} throttle=${r.throttleOk}${r.throttle && !r.throttleOk ? ' ' + JSON.stringify(r.throttle) : ''} counter=${r.counterVerdict}${r.counterMove && r.counterVerdict === 'NOT MOVED' ? ' ' + JSON.stringify(r.counterMove) : ''}${r.chipBaseline && !(r.chipBaseline.fell && r.chipBaseline.orderMoved) ? ` chipBaseline=${JSON.stringify(r.chipBaseline)}` : ''}${r.layers && !r.layersOk ? ' ' + JSON.stringify(r.layers) : ''}${r.resetVerdict && r.resetVerdict !== 'moved' ? ` reset=${r.resetVerdict} ${JSON.stringify(r.reset)}` : ''} inert=${r.inertOk} both=${r.bothOk}${r.both ? ' ' + JSON.stringify(r.both) : ''} navbarOnly=${r.navbarOnlyOk}${r.navbarOnly && !r.navbarOnlyOk ? ' ' + JSON.stringify(r.navbarOnly) : ''} state=${r.stateVerdict}${r.state ? ` (plain ${r.state.plain} / control ${r.state.plainControl} / mobile ${r.state.mobile})` : ''} geometry=${r.geometryOk} nav=${r.navOk} load=${r.loadVerdict && r.loadVerdict.ok}${r.worst && r.worst.length ? ` worst=${JSON.stringify(r.worst)}` : ''}${r.exception ? ` exception=${r.exception}` : ''}`);
+    } else if (a.gate === 'options') {
+      const rows = await gateOptions(browser, base, ids);
+      if (a.json) writeJSON(a.json, { commit: headCommit(), base, gate: 'options', shard: shardMeta, viewport: DESKTOP, rows });
+      code = rows.every((r) => r.ok) ? 0 : 1;
+      console.log(`O1 options: ${rows.map((r) => `${r.id}=${r.ok ? 'GREEN' : 'RED'}`).join(' ')}`);
+      const leg = (f) => `${rows.filter((r) => r[f]).length}/${rows.length}`;
+      console.log(`O1 legs: section ${leg('sectionOk')}, inertness ${leg('inertOk')}, stored \u2261 URL ${leg('sameOk')}, URL overrides ${leg('overrideOk')}, the PRESS changes the page ${leg('pressOk')}, a press over a parameter ${leg('pressOverUrlOk')}`);
+      const lbl = rows.map((r) => r.section && r.section.open && r.section.open.labels.join(' \u00b7 ')).filter(Boolean)[0];
+      console.log(`O1 the section, as drawn: ${lbl || '\u2014'}${rows.some((r) => r.errorCount) ? `; \u26d4 ${rows.reduce((n, r) => n + r.errorCount, 0)} page error(s)/blocked request(s): ${rows.flatMap((r) => r.errors).slice(0, 4).join(' | ')}` : '; 0 page errors, 0 blocked requests'}`);
+      for (const r of rows.filter((x) => !x.ok)) console.log(`  ${r.id}: ${JSON.stringify({ section: r.section, same: r.same, override: r.override, press: r.press, pressOverUrl: r.pressOverUrl && { search: r.pressOverUrl.search, flags: optRender(r.pressOverUrl) }, errors: r.errors, exception: r.exception })}`);
     } else {
       if (shard) throw new Error('--shard applies to --gate load / --gate mobile, not to a single-game run');
       const out = await runPage(browser, base, ids[0], { ticks: Number(a.ticks ?? 200), diff: Number(a.diff ?? 0.05), leg: a.leg || 'idle', until: a.until || null, stateOut: a['state-out'], playerOut: a['player-out'], loadFrom: a['load-from'] ? fs.readFileSync(a['load-from'], 'utf8') : null, profile: a.profile || null, exclude: a.exclude ? a.exclude.split(',') : [], autoOpt: a['auto-opt'] || null, automation: !a['no-automation'] });

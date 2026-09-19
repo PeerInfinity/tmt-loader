@@ -789,6 +789,12 @@ page with one renders the same way at every width. That is a deliberate trade �
 layout — and it is what makes the modes gateable: the gate's verdict does not depend on the window it happened to
 run in, and the navbar-only leg can therefore assert the bar at a *desktop* width without contradicting anything.
 
+Since U3 each flag is ALSO reachable as a remembered preference, set from buttons in the game's own options tab
+(docs/options.md). That changes nothing here: there is still no sniffing, the URL still answers first whenever it
+says anything about a flag — `?mobile=0` over a remembered *on* as much as `?mobile=1` over a remembered *off* —
+and a page with neither a parameter nor a preference is still inert. The gate's inertness leg below is re-asked,
+against a stored preference as well as a parameter, by gate O1.
+
 ## Not in scope
 
 The tooltip does not replace the browser's own: the `title` attributes stay, the overlay sits on top of them, and on

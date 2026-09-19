@@ -12,7 +12,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
-import { check, measure, sourcesOf, tooltipsByKind } from '../tools/census-figures.mjs';
+import { check, measure, sourcesOf, tooltipsByKind, hasHardResetOptButton } from '../tools/census-figures.mjs';
 
 const REPO = path.resolve(new URL('..', import.meta.url).pathname);
 const read = (f) => fs.readFileSync(path.join(REPO, f), 'utf8');
@@ -180,4 +180,46 @@ test('a game that declares NO name of its own is reported, not silently accepted
   // only the second is drift. Today every game on the roster declares a name, so the count is 0 — and if it ever is
   // not, the check says how many rather than passing quietly.
   assert.equal(checkSelfDeclared().undeclared, 0);
+});
+
+// ---------------------------------------------------------------------------------------------------------------
+// U3 — the OPTIONS SECTION's two anchors (docs/options.md). The reason these are censused at all: loader/options.js
+// finds the game's options tab by the game's own `hardReset()` option button and by `#optionWheel`, and a game that
+// carried neither would simply never show the section. Nothing that DRIVES games would report that — a panel that is
+// never built throws nothing — so the claim has to be a static one, and a static claim has to be driven.
+const OPTIONS_DOC = 'docs/options.md';
+
+test('the Options anchors hold over the whole roster, in the scope the loader actually runs', () => {
+  assert.deepEqual(load.noOptionsAnchor, [], 'a game the Options section could not anchor in');
+  assert.equal(load.hardResetOpt, GAMES().length);
+  assert.equal(load.optionWheel, GAMES().length);
+  assert.equal(load.problems.length, 0, load.problems.join('\n'));
+});
+
+test('a wrong anchor figure in the prose is caught, and nothing else moves', () => {
+  const text = read(OPTIONS_DOC);
+  // ⚠ the sentence WRAPS in the file; the gate flattens whitespace before matching, this mutant must not assume it
+  const from = '**all 171 of the 171 games carry both the';
+  assert.ok(text.includes(from), 'the doc no longer contains the anchored sentence — re-point this mutant');
+  const r = judge({ [OPTIONS_DOC]: text.replace(from, '**all 170 of the 171 games carry both the') });
+  assert.equal(r.ok, false, 'the doctored document passed');
+  const red = r.rows.filter((x) => !x.ok).map((x) => x.name);
+  assert.deepEqual(red, [row(r, 'the Options section').name], `other claims went red too: ${red.join(', ')}`);
+});
+
+test('a reworded anchor claim FAILS rather than silently ceasing to be checked', () => {
+  const text = read(OPTIONS_DOC);
+  const r = judge({ [OPTIONS_DOC]: text.replace(/\*\*all 171 of the 171 games carry[^*]*\*\*/, 'every game carries both') });
+  assert.equal(r.ok, false);
+  assert.match(row(r, 'the Options section').why, /no longer states this claim/);
+});
+
+test('the anchor reader wants ONE button that is both, not two buttons that are each one', () => {
+  // the discriminator for the scan itself: `class="opt"` somewhere and `hardReset()` somewhere is not the anchor
+  // loader/options.js looks for, and a reader that accepted it would certify a game the section cannot anchor in.
+  assert.equal(hasHardResetOptButton('<button class="opt" onclick="hardReset()">HARD RESET</button>'), true);
+  assert.equal(hasHardResetOptButton('<button onclick="hardReset()" class="opt">HARD RESET</button>'), true, 'attribute order');
+  assert.equal(hasHardResetOptButton('<button class="opt">Save</button><button onclick="hardReset()">reset</button>'), false);
+  assert.equal(hasHardResetOptButton('<button class="options" onclick="hardReset()">x</button>'), false, '`options` is not `opt`');
+  assert.equal(hasHardResetOptButton('<button class="opt" onclick="save()">Save</button>'), false);
 });

@@ -158,13 +158,14 @@ drove a chip**. ⛔ A check nobody runs is not a check.
 
 | check | where it runs now | cost |
 |---|---|---|
-| unit tests (`npm run harness:test`) | CI, the **fast** job — and everything else `needs:` it | 46 tests, 3.5 s, no browser |
+| unit tests (`npm run harness:test`) | CI, the **fast** job — and everything else `needs:` it | 75 tests, 8.3 s, no browser (⚠ it read `46 tests, 3.5 s` until U3, which was stale by fourteen tests before U3 added fifteen — a count in prose that no gate reads) |
 | G6 roster doc + G7 declined list (`games-table.mjs --check`) | CI, the fast job | 0.13 s |
 | roster FIGURES census (`census-figures.mjs`) | CI, the fast job | 1.2 s |
 | M1 mobile sweep (`--gate mobile`) | CI, ten shards + a merge | ~3 min end to end; 32–46 min locally |
 | G1 load (`--gate load`), plain **and** `?automation=1` | CI, two unsharded jobs | 5 min each, serial, locally |
 | S1 part 1 — the automation anchors | CI, its own job beside the matrix | 52 checks, 197 s locally |
 | G5 (`check-pages.mjs`) | **the deploy**, `pages.yml`, after the site is published | ~100 s+ |
+| O1 options (`--gate options`) | a slice, on a bounded set; not sharded | ~19 page loads per game, ~1 min/game locally |
 | the M1 sweep on a bounded local set | a slice, before it pushes | minutes |
 
 ⚠ The numbers above are local wall clock on one workstation unless they say CI; CI runs this kind of work about
