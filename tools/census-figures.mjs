@@ -73,6 +73,34 @@ export function sourcesOf(id, bound = 'subtree', root = REPO) {
   return { files, missing: files.length ? null : `manifests/${id}.json names no local script at all` };
 }
 
+// ⚠ U2e — THE TOOLTIP CENSUS, and the reason it is a scan and not a grep. "Does this game declare a `tooltip`?" is
+// 171 of 171 and WORTHLESS: every engine defines the component, so the word is in every tree. What decides whether
+// the layer list's tooltip can prefer a declared field is whether a CHIPPED category declares one — an upgrade, a
+// buyable, a challenge or a milestone — and an ACHIEVEMENT's `tooltip`, which is where the great majority of them
+// are, never reaches a chip at all (docs/mobile.md: achievements and clickables are counted, never chipped).
+// So each `tooltip:` is attributed to the innermost enclosing `<kind>: {` by BRACE DEPTH. ⚠ That is a text scan and
+// not a parse: a brace inside a string or a comment can move an attribution, which is why the figure is reported per
+// category with a `layer` bucket for everything that is in none of them, rather than as one number.
+const KIND_KEYS = ['upgrades', 'buyables', 'challenges', 'milestones', 'achievements', 'clickables'];
+const CHIPPED = ['upgrades', 'buyables', 'challenges', 'milestones'];
+const KIND_OPEN = new RegExp('\\b(' + KIND_KEYS.join('|') + ')\\s*:\\s*\\{', 'g');
+export function tooltipsByKind(text) {
+  const out = { layer: 0 };
+  for (const k of KIND_KEYS) out[k] = 0;
+  const opens = new Map();
+  for (const m of text.matchAll(KIND_OPEN)) opens.set(m.index + m[0].length - 1, m[1]);  // the index of the `{`
+  const tips = new Set([...text.matchAll(/\btooltip\s*:/g)].map((m) => m.index));
+  const stack = [];
+  let depth = 0;
+  for (let i = 0; i < text.length; i++) {
+    if (tips.has(i)) out[stack.length ? stack[stack.length - 1][0] : 'layer']++;
+    const c = text[i];
+    if (c === '{') { depth++; if (opens.has(i)) stack.push([opens.get(i), depth]); }
+    else if (c === '}') { if (stack.length && stack[stack.length - 1][1] === depth) stack.pop(); depth--; }
+  }
+  return out;
+}
+
 const RE = {
   buyUpg: /function\s+buyUpg\s*\(/,
   buyUpgrade: /function\s+buyUpgrade\s*\(/,
@@ -93,7 +121,7 @@ export function measure({ bound = 'subtree', root = REPO } = {}) {
   for (const id of ids) {
     const { files, missing } = sourcesOf(id, bound, root);
     if (missing) problems.push(`${id}: ${missing}`);
-    const g = { files: files.length, buyUpg: false, buyUpgrade: false, tabArray: 0, tabObject: 0, purchaseLimit: false, purchaseLimitInLayerSupport: false, pseudoUnlGlobal: false, pseudoUnlComponent: false };
+    const g = { files: files.length, buyUpg: false, buyUpgrade: false, tabArray: 0, tabObject: 0, purchaseLimit: false, purchaseLimitInLayerSupport: false, pseudoUnlGlobal: false, pseudoUnlComponent: false, tooltipAny: false, tooltipChipped: 0, tooltipAchievement: 0 };
     for (const f of files) {
       // latin1: these are third-party trees and some are not valid UTF-8; every pattern here is ASCII.
       const text = fs.readFileSync(f, 'latin1');
@@ -104,6 +132,12 @@ export function measure({ bound = 'subtree', root = REPO } = {}) {
       if (RE.purchaseLimit.test(text)) {
         g.purchaseLimit = true;
         if (RE.layerSupportFile.test(path.basename(f))) g.purchaseLimitInLayerSupport = true;
+      }
+      if (text.indexOf('tooltip') >= 0) {
+        g.tooltipAny = true;
+        const by = tooltipsByKind(text);
+        for (const k of CHIPPED) g.tooltipChipped += by[k];
+        g.tooltipAchievement += by.achievements;
       }
       // a declaration is classified by the first character of its VALUE: `[` array form, `{` object/subtab form.
       // A `tabFormat()` function (PTR has one) is neither, and is counted separately rather than silently dropped.
@@ -133,6 +167,10 @@ export function measure({ bound = 'subtree', root = REPO } = {}) {
     noPurchaseLimit: ids.filter((id) => !per[id].purchaseLimit),
     pseudoUnlGlobal: where('pseudoUnlGlobal'),
     pseudoUnlComponentOnly: ids.filter((id) => per[id].pseudoUnlComponent && !per[id].pseudoUnlGlobal),
+    tooltipAny: where('tooltipAny').length,
+    tooltipChippedGames: ids.filter((id) => per[id].tooltipChipped > 0).length,
+    tooltipChipped: sum('tooltipChipped'),
+    tooltipAchievement: sum('tooltipAchievement'),
   };
 }
 
@@ -222,6 +260,17 @@ export function claims(sub, load) {
         return [ok, `doc: ${m[1]} without it, naming ${named.join(', ')}${notIn.length ? ` — but ${notIn.join(', ')} DOES carry it` : ''}`];
       },
       measured: `${sub.noPurchaseLimit.length} without it: ${sub.noPurchaseLimit.join(', ')}`,
+    },
+    {
+      name: 'the tooltip census — the worthless figure and the useful one (U2e)',
+      doc: 'docs/mobile.md',
+      re: /\*\*all (\d+) of the (\d+) games\*\* mention `tooltip`[^*]*\*\*(\d+) games declare one on a chipped category\*\*, ([\d,]+) declarations against ([\d,]+) on achievements/,
+      expect: (m) => {
+        const ok = num(m[1]) === sub.tooltipAny && num(m[2]) === N && num(m[3]) === sub.tooltipChippedGames
+          && num(m[4]) === sub.tooltipChipped && num(m[5]) === sub.tooltipAchievement;
+        return [ok, `doc: ${m[1]}/${m[2]} mention it, ${m[3]} games declare one on a chipped category, ${m[4]} against ${m[5]} on achievements`];
+      },
+      measured: `${sub.tooltipAny}/${N} mention it, ${sub.tooltipChippedGames} games declare one on a chipped category, ${sub.tooltipChipped} against ${sub.tooltipAchievement} on achievements`,
     },
     {
       name: 'pseudoUnl — the global, and the game that has only the component',

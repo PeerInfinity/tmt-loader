@@ -528,6 +528,102 @@ snapshot, moving nothing but the readout's string from `0` to `1.111e3,284`: **1
   card's height unchanged). It gets the tabular figures with everything else and no reservation, because a
   reservation for prose would be a guess.
 
+#### The tooltip: what a chip costs and does (U2e)
+
+⚖ **A chip reading `RPB` should say what the upgrade costs and does**, not only that it is called "Reverse Prestige
+Boost" (user, 2026-09-18).
+
+⚠ **A tooltip already existed, and that is the whole difficulty of this slice.** U2d put a `title` on every chip,
+counter and action button, so on a desktop a hover already opened the *browser's* tooltip with the short name. So
+"a tooltip appeared" is a claim that passes on the build before this one. Three things a native `title` cannot do
+are what U2e is:
+
+1. it is only the short **name** — never the cost, never the effect;
+2. it does **nothing on touch**, and the phone is the case the layer list was built for;
+3. it cannot be styled or positioned, so it cannot be kept on a 390 px screen, and it opens on the browser's delay.
+
+**The `title` attributes stay.** They are the accessible name and the no-JS fallback. ⚠ And the overlay's **first
+line is the element's own `title`, read off the attribute** rather than recomposed — so "if the tooltip and the
+`title` disagree, the tooltip is wrong" is not a rule anybody has to remember: there is one string. On a pointer the
+native tooltip may still appear beside ours after its own delay, saying the name where ours says the cost; they are
+not duplicates, and dropping the attribute to prevent it would cost the accessible name.
+
+**The second line, per CATEGORY and never per game.** `DETAIL` in `loader/layerlist.js` names exactly the fields
+that category's own engine component renders, in the order it renders them — measured in both reference engines'
+`components.js`:
+
+| category | what the overlay composes | why |
+|---|---|---|
+| upgrades | `description`, then `Currently:` `effectDisplay` (else the formatted `effect`), then `Cost:` `cost` + currency | 2.2.1 and 2.7 render the same four in the button |
+| buyables | `display` alone | it already carries the cost — `ptr`'s `t/11` reads "Cost: 138 Boosters / Amount: 21 + 7", so a composed cost line would say the same number twice |
+| challenges | `challengeDescription`, `Goal:`, `Reward:` `rewardDescription`, `Currently:` | the engines' own order and their own labels |
+| milestones | `effectDescription` | the `requirementDescription` is already the chip's name, and therefore its `title` |
+| counters | nothing — the name alone | a category total has no cost and no effect; what the counter closes is gap 2, not gap 1 |
+
+A cost is formatted the way the engine's own button formats it (`formatWhole`, then `currencyDisplayName` or the
+layer's `resource`), including **`multiRes`**, the multi-currency cost four games declare and where `cost` itself is
+undefined. A `goal` uses `format`, as its component does.
+
+⚠ **A declared `tooltip` field is ADDITIVE, not a substitute — and the brief's rule and its census were both
+wrong.** The brief said "prefer `tooltip` where the component declares one, otherwise compose", on a census of
+*165 of 171 games*. Measured instead:
+
+- **all 171 of the 171 games** mention `tooltip` (the engines define the component, so the word is in every tree —
+  that census answers nothing), while **140 games declare one on a chipped category**, 406 declarations against
+  3,133 on achievements — and an achievement gets **no chip**, so the overwhelming majority of the roster's
+  `tooltip` declarations can never reach this overlay at all. The "165" is the achievement figure.
+- **Neither reference game DRAWS one.** At its deepest snapshot `ptr` has 80 `tooltip`-bearing achievements and
+  `something` 42, and **zero** chipped components with the field on either. So the field path is not the common
+  case, and preferring it *exclusively* would have been untestable on both reference games.
+- In the engines the `<tooltip>` component sits **beside** the button's own description block, so the field is extra
+  text rather than a replacement. An exclusive rule would drop the cost and the effect — which is the one thing this
+  slice exists to add. The declared tooltip is therefore the overlay's first detail line and the composition follows
+  it. Measured naturally on `1-clicker` (10 of its drawn controls) and `create-incremental` (6), which is where the
+  gate exercises that path without constructing anything.
+
+**⚖ Hover on a pointer, tap on touch** — U1's rule (`loader/navbar.js`), with its constraints kept: nothing calls
+`preventDefault`, so the control's own click still buys, and opening one tooltip closes any other (there is **one**
+overlay for the whole list, so that is the shape of the thing rather than a rule it has to keep).
+
+Two places where it is not a copy of U1, both for measured reasons:
+
+- **the guard is the DEVICE, not `tmtLoader.mobile`.** U1's game-element tooltips are mobile-only because on a
+  desktop the game's own CSS `:hover` already opens them. Ours key the tap path on `(hover: none)`, because the
+  layer list is wanted at a desktop width under `?navbar=1` too — where `mobile` is false and there would otherwise
+  be no way to open a tooltip on a phone-sized touch screen. Measured in the gate's own two contexts: the phone one
+  reports `(hover: none)`, `(pointer: coarse)` and `maxTouchPoints: 1`; the desktop one reports `(hover: hover)`,
+  `(pointer: fine)` and `0` — and the phone context keeps `(hover: none)` when the gate resizes it to 1280 px,
+  which is right, because it is the device and not the width.
+- **the click listener is on the CAPTURE phase.** U1's is a bubble delegate on the document, which is right for the
+  game's elements. Ours sits on the panel over controls that **re-render when pressed**: buying an upgrade moves the
+  action row's membership, `drawActions` replaces every button in it, and a bubble listener would then be handed a
+  **detached** `event.target` with no path back to the panel — so a tap that bought something would open no tooltip
+  while a tap on an unaffordable one would. On the way down the element is still live.
+
+**Cost and effect move every tick, so an open tooltip is re-read** — on the *same* throttled path as the counters
+(`syncCards`, 250 ms) and in full on every explicit `refresh()`. One recompute per animation frame would undo U2d's
+throttle; never recomputing would leave a stale number under the finger. It also **re-anchors by component key**
+rather than by element, because the button it points at can be replaced by a rebuild; a control that has gone — or
+whose card has collapsed out of sight — closes it.
+
+⚠ **A tooltip is refused on a control with no layout**, and the gate is what found it: a collapsed card hides its
+whole chip row, and an element with no box has nothing to place a tooltip against, so the overlay landed in the
+corner pointing at nothing and the next sync closed it again. Refusing it up front is what makes `showTip` and
+`syncTip` agree.
+
+**The overlay is a child of the PANEL and never of a card.** `.tmt-layerlist-card` carries `contain: layout`
+(U2c), which makes the card a containing block for a `position: fixed` descendant — inside one, the tooltip could
+not be positioned against the screen at all. It is clamped inside the panel's own box, which already sits above the
+nav bar, so one clamp keeps it on screen *and* off the bar. It is `pointer-events: none`: a readout, so a tap that
+lands on it reaches the control underneath, and a mouse crossing it cannot fire `pointerout` on the anchor it is
+describing.
+
+**The fields are HTML** (`v-html` in every engine), so tags come out with the regex first and the entities are
+decoded afterwards through a `textarea` — whose content model is text, so nothing is ever parsed as markup. That
+order matters: decoding first could turn `&lt;b&gt;` into a tag. Newlines survive (`white-space: pre-line`, as the
+engines render a buyable's `display`), everything else collapses. And `format()` is the reason the whole composition
+sits inside `withoutRaisingNaN`: see below.
+
 ### Reading a card can make the ENGINE write `player`
 
 The list assigns nothing to `player`. That is not the same as the state not moving, and two measured cases say why:

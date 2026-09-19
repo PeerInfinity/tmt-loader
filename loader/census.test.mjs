@@ -12,7 +12,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
-import { check, measure, sourcesOf } from '../tools/census-figures.mjs';
+import { check, measure, sourcesOf, tooltipsByKind } from '../tools/census-figures.mjs';
 
 const REPO = path.resolve(new URL('..', import.meta.url).pathname);
 const read = (f) => fs.readFileSync(path.join(REPO, f), 'utf8');
@@ -78,6 +78,10 @@ for (const [claim, from, to] of [
   ['tabFormat static declarations (LOADED', '**935 array-form and 455 object-form', '**935 array-form and 641 object-form'],
   ['purchaseLimit (subtree)', '**155 of the 171 games carry', '**154 of the 171 games carry'],
   ['the games with no purchaseLimit', 'The **16** that do not', 'The **17** that do not'],
+  // ⚠ U2e: the figure that matters is the CHIPPED one, not "does this game mention `tooltip`" (171 of 171, and
+  // worthless). The digit moved here is the games count, which is what decides whether the field path is worth
+  // preferring at all.
+  ['the tooltip census', '**140 games declare one on a chipped category**', '**141 games declare one on a chipped category**'],
 ]) {
   test(`a wrong figure in the prose is caught: ${claim}`, () => {
     const text = read(MOBILE);
@@ -90,6 +94,20 @@ for (const [claim, from, to] of [
     assert.deepEqual(red, [row(r, claim).name], `other claims went red too: ${red.join(', ')}`);
   });
 }
+
+test('the tooltip census separates the chipped declarations from the achievements', () => {
+  // ⛔ The brief this slice was given quoted ~165 of 171 for "components that declare a `tooltip`", which is the
+  // ACHIEVEMENT figure: an achievement gets no chip, so those declarations can never reach the layer list's tooltip.
+  // The two numbers must not be interchangeable, and the scan must attribute a declaration to its own category.
+  assert.equal(sub.tooltipAny, GAMES().length, 'every game mentions `tooltip` — the engines define the component');
+  assert.ok(sub.tooltipAchievement > sub.tooltipChipped * 5,
+    `achievements should dominate: ${sub.tooltipAchievement} vs ${sub.tooltipChipped} chipped`);
+  assert.ok(sub.tooltipChippedGames > 0 && sub.tooltipChippedGames < GAMES().length,
+    `a census that said all or none would not be telling the two apart: ${sub.tooltipChippedGames}`);
+  // and the scanner itself, on text whose braces it has to follow rather than grep past
+  const by = tooltipsByKind('{ tooltip: "layer", upgrades: { 11: { tooltip: "u" } }, achievements: { 11: { tooltip: "a" }, 12: { tooltip: "a2" } } }');
+  assert.deepEqual([by.layer, by.upgrades, by.achievements, by.milestones], [1, 1, 2, 0]);
+});
 
 test('the named games are checked, not just the counts', () => {
   const text = read(MOBILE);
