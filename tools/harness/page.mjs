@@ -702,6 +702,268 @@ const LAYERLIST_PROBE = `(${function () {
   };
 }})()`;
 
+/**
+ * ⚠ U2e — THE TOOLTIP, and the reason this probe exists at all is that the OBVIOUS assertion is VACUOUS. U2d put a
+ * `title` on every chip, counter and action button, so on the build this slice started from a desktop hover already
+ * opened the browser's own tooltip with the component's short name: "a tooltip appeared" passes without U2e.
+ *
+ * So what is asserted is that the overlay is STRICTLY RICHER than the element's own `title` — that it contains cost
+ * or effect text the title does not — and every witness is read HERE out of `tmp` / `layers` and never asked of the
+ * list, like every other expectation in this file. A control whose only witness the `title` already contains is
+ * ABSTAINED on rather than failed: it cannot tell this build from the native tooltip either way.
+ *
+ * It also asserts the tooltip's FIRST line is the element's `title` verbatim (the list reads the attribute rather
+ * than recomposing the name, so the two cannot drift), that opening one closes any other, that nothing escapes the
+ * viewport, and — CONSTRUCTED, because no recorded state reaches it — that rendering a tooltip over a NaN cost
+ * neither raises `player.hasNaN` nor lowers a flag the game had already raised.
+ */
+const TIP_PROBE = `(${function () {
+  const S = (f, d) => { try { const v = f(); return v === undefined ? d : v; } catch (e) { return d; } };
+  const ui = window.tmtLoader.layerListUI;
+  const panel = document.getElementById('tmt-layerlist');
+  if (!ui || !ui.tip || !panel) return { why: 'no tooltip API' };
+  ui.open();
+  const tipEl = ui.tip.el();
+  if (!tipEl) return { why: 'no overlay element' };
+  const vw = document.documentElement.clientWidth, vh = document.documentElement.clientHeight;
+  // ⚠ ENTITIES DECODED, and with the BROWSER's own decoder rather than a table of our own: the engines render every
+  // one of these fields through `v-html`, and `create-incremental`'s upgrade 24 says `&times;` where the page shows
+  // `×`. A first version of this probe decoded only the NUMERIC form and reported that game RED for a difference
+  // that was entirely the probe's. Tags out first with the regex (so nothing here parses markup), then the entities
+  // through a `textarea`, whose content model is text — no element is ever created.
+  const dec = document.createElement('textarea');
+  const strip = (s) => {
+    const t = String(s == null ? '' : s).replace(/<[^>]*>/g, ' ');
+    if (t.indexOf('&') >= 0) { try { dec.innerHTML = t; return dec.value.replace(/\s+/g, ' ').trim(); } catch (e) { /* keep the raw form */ } }
+    return t.replace(/\s+/g, ' ').trim();
+  };
+  const isAmt = (v) => typeof v === 'number' ? isFinite(v) : S(() => !!v && typeof v === 'object' && typeof v.toNumber === 'function', false);
+  // ⚠ A `tmp` ENTRY CAN STILL BE THE FUNCTION. The engines evaluate a declaration into `tmp` only where it takes no
+  // argument; `1-clicker`'s buyable `display()` is left as a function there and the engine calls it at render time
+  // (`run(layers[l]…display, layers[l]…)` — with `this` set to the DECLARATION). A first version of this probe took
+  // the `tmp` value as it found it and used the function's SOURCE TEXT as its witness, reporting that game RED for a
+  // difference that was entirely its own.
+  const read = (kind, l, id, f) => {
+    const decl = S(() => layers[l][kind][id], null), t = S(() => tmp[l][kind][id], null);
+    const v = S(() => t ? t[f] : undefined, undefined);
+    if (v !== undefined && v !== null && typeof v !== 'function') return v;
+    return S(() => { const x = decl[f]; return typeof x === 'function' ? x.call(decl) : x; }, undefined);
+  };
+  // The witnesses, named here and INDEPENDENTLY of the list's own table: the category's prose field, and its number.
+  // ⚠ Deliberately a SUBSET of what the list composes. A probe that enumerated the same fields in the same order
+  // would be the implementation wearing two hats; this asks only "is the thing the chip COSTS and DOES in there".
+  const PROSE = { upgrades: ['description'], buyables: ['display'],
+    challenges: ['challengeDescription', 'rewardDescription'], milestones: ['effectDescription'] };
+  const NUM = { upgrades: ['cost'], challenges: ['goal'] };
+  const witness = (kind, l, id) => {
+    const parts = [];
+    for (const f of (PROSE[kind] || [])) { const s = strip(read(kind, l, id, f)); if (s.length >= 6) parts.push({ f, s }); }
+    for (const f of (NUM[kind] || [])) {
+      const v = read(kind, l, id, f);
+      if (!isAmt(v)) continue;
+      const s = strip(S(() => typeof formatWhole === 'function' ? String(formatWhole(v)) : String(v), ''));
+      if (s) parts.push({ f, s });
+    }
+    return { parts, declared: strip(read(kind, l, id, 'tooltip')) || null };
+  };
+  // ⚠ A RENDERED anchor for one component, or `null`. The list refuses to open a tooltip on a control with no
+  // layout, so a constructed sub-check that grabbed a chip off a COLLAPSED card would open nothing and then pass
+  // vacuously — the instrument suppressing the very effect it is measuring. The action button if the row is showing
+  // it, else the chip with the card expanded, and the expansion is handed back through `restore`.
+  const anchorFor = (cardLayer, kind, id) => {
+    const card = panel.querySelector('.tmt-layerlist-card[data-layer="' + cardLayer + '"]');
+    if (!card) return null;
+    const find = (cls) => {
+      const list = card.querySelectorAll(cls);
+      for (let i = 0; i < list.length; i++) if (list[i].dataset.kind === kind && String(list[i].dataset.cid) === String(id)) return list[i];
+      return null;
+    };
+    const act = find('.tmt-layerlist-act:not(.tmt-layerlist-nofit)');
+    if (act && act.getClientRects().length) return { el: act, restore: () => {} };
+    const was = card.classList.contains('tmt-layerlist-expanded');
+    card.classList.add('tmt-layerlist-expanded');
+    const chip = find('.tmt-layerlist-chip');
+    if (chip && chip.getClientRects().length) return { el: chip, restore: () => { if (!was) card.classList.remove('tmt-layerlist-expanded'); } };
+    if (!was) card.classList.remove('tmt-layerlist-expanded');
+    return null;
+  };
+
+  const rows = [];
+  const judge = (el, role, cardLayer) => {
+    const kind = el.dataset.kind || '', id = el.dataset.cid, layer = el.dataset.layer || cardLayer;
+    const title = strip(el.getAttribute('title'));
+    const opened = ui.tip.show(el);
+    const tipTitle = strip(ui.tip.title()), body = strip(ui.tip.body());
+    const w = role === 'counter' ? { parts: [], declared: null } : witness(kind, layer, id);
+    // a witness the TITLE already states cannot discriminate this build from the one that only had `title`
+    const usable = w.parts.filter((x) => title.indexOf(x.s) < 0);
+    const missed = usable.filter((x) => body.indexOf(x.s) < 0);
+    const r = tipEl.getBoundingClientRect(), a = el.getBoundingClientRect();
+    rows.push({ card: cardLayer, role, kind, id: id === undefined ? null : String(id), opened,
+      titleIsFirstLine: tipTitle === title,
+      judged: usable.length > 0,
+      // ⚠ NOT a length comparison. `something`'s `primitive/milestones/1` reads "1: 10 Numbers" as its title and
+      // "x50 Points." as its detail — SHORTER, and a different fact. What makes a tooltip richer is that it states
+      // something the `title` does not, which is exactly what `usable` (a witness the title omits) already tests.
+      richer: usable.length > 0 && missed.length === 0,
+      witnesses: w.parts.length, usable: usable.length,
+      missed: missed.map((x) => x.f + '=' + x.s.slice(0, 40)),
+      // where a component DECLARES a `tooltip` the overlay must show it — and still show the cost and the effect,
+      // which is what says the field is ADDITIVE rather than a substitute for the composition
+      declared: w.declared ? w.declared.slice(0, 40) : null,
+      declaredShown: w.declared ? body.indexOf(w.declared) >= 0 : null,
+      escapes: r.width > 0 && (r.left < -1 || r.top < -1 || r.right > vw + 1 || r.bottom > vh + 1),
+      rect: [Math.round(r.x), Math.round(r.y), Math.round(r.width), Math.round(r.height)],
+      anchorShown: a.width > 0 && a.height > 0,
+      sample: (title + ' | ' + body).slice(0, 110) });
+  };
+
+  // Every control on every card, in the state that RENDERS it: the counters and the action buttons on the collapsed
+  // card, the chips on the expanded one. The class is toggled directly rather than clicked, for the same reason the
+  // divider check does it — a click is not a neutral probe and the expander's handler does nothing else here.
+  const cards = [...panel.querySelectorAll('.tmt-layerlist-card')];
+  for (const c of cards) {
+    const l = c.dataset.layer, was = c.classList.contains('tmt-layerlist-expanded');
+    c.classList.remove('tmt-layerlist-expanded');
+    for (const e of c.querySelectorAll('.tmt-layerlist-counter')) judge(e, 'counter', l);
+    for (const e of c.querySelectorAll('.tmt-layerlist-act:not(.tmt-layerlist-nofit)')) judge(e, 'act', l);
+    c.classList.add('tmt-layerlist-expanded');
+    for (const e of c.querySelectorAll('.tmt-layerlist-chip')) judge(e, 'chip', l);
+    if (!was) c.classList.remove('tmt-layerlist-expanded');
+  }
+  ui.tip.hide();
+
+  // ---- ONE AT A TIME. Two controls, opened in turn: exactly one overlay may be showing, it must name the SECOND,
+  // and the first must have lost its `aria-describedby` — a build that appended one overlay per control would pass a
+  // count of "the tooltip is open" and fail this.
+  let exclusive = { verdict: 'abstains (fewer than two controls on the page)' };
+  const all = [...panel.querySelectorAll('.tmt-layerlist-counter, .tmt-layerlist-act:not(.tmt-layerlist-nofit)')];
+  if (all.length >= 2) {
+    const a = all[0], b = all[1];
+    ui.tip.show(a);
+    const aKey = ui.tip.key(), aDesc = a.getAttribute('aria-describedby');
+    ui.tip.show(b);
+    const bKey = ui.tip.key();
+    const showing = [...panel.querySelectorAll('.tmt-layerlist-tip')].filter((e) => !e.hidden).length;
+    const stillA = a.getAttribute('aria-describedby');
+    ui.tip.hide();
+    exclusive = { showing, first: aKey, second: bKey, firstDescribed: !!aDesc, firstStillDescribed: !!stillA,
+      verdict: !aDesc ? 'THE FIRST WAS NEVER DESCRIBED' : showing !== 1 ? 'MORE THAN ONE OVERLAY IS SHOWING'
+        : stillA ? 'THE FIRST IS STILL DESCRIBED' : 'one at a time' };
+  }
+
+  // ---- CONSTRUCTED: A NaN COST. Measured over the roster (docs/mobile.md): no game's own cost or effect formats a
+  // NaN at any recorded state, so `withoutRaisingNaN` around the composition would be untested on every one of them.
+  // The condition is built here instead — one drawn upgrade's `tmp` cost set to a NaN Decimal — with a CONTROL that
+  // the construction really does raise the flag on this engine, because otherwise the leg would be asserting nothing.
+  // ⚠ It writes to `tmp`, never to `player`, and puts both the cost and the flag back in a `finally`.
+  const nan = (() => {
+    let had;
+    try { had = player.hasNaN; } catch (e) { return { verdict: 'abstains (this engine has no player.hasNaN)' }; }
+    if (typeof Decimal !== 'function') return { verdict: 'abstains (no Decimal)' };
+    for (const l of ui.cards()) {
+      for (const e of ui.visibleSeq(l)) {
+        if (e.kind !== 'upgrades') continue;
+        const t = S(() => tmp[e.layer].upgrades[e.id], null);
+        if (!t || !isAmt(S(() => t.cost, undefined))) continue;
+        const a = anchorFor(l, 'upgrades', e.id);
+        if (!a) continue;
+        const el = a.el, was = t.cost;
+        try {
+          t.cost = new Decimal(NaN);
+          try { player.hasNaN = false; } catch (e2) { /* not this engine's */ }
+          S(() => typeof formatWhole === 'function' ? formatWhole(t.cost) : null, null);
+          let control = false;
+          try { control = player.hasNaN === true; } catch (e2) { control = false; }
+          try { player.hasNaN = false; } catch (e2) { /* not this engine's */ }
+          if (!control) return { layer: e.layer, id: e.id, control, verdict: 'abstains (a NaN cost does not raise the flag on this engine)' };
+          // ⚠ the show must really have OPENED, or the flag could not have moved for a reason that has nothing to do
+          // with the wrapper — a pass that proves the probe missed rather than that the list behaved
+          if (!ui.tip.show(el)) return { layer: e.layer, id: e.id, control, verdict: 'THE TOOLTIP WOULD NOT OPEN ON A RENDERED CONTROL' };
+          let after = null;
+          try { after = player.hasNaN; } catch (e2) { after = null; }
+          // …and the other half of the rule: a flag the GAME had already raised is not ours to hide
+          ui.tip.hide();
+          try { player.hasNaN = true; } catch (e2) { /* not this engine's */ }
+          ui.tip.show(el);
+          let kept = null;
+          try { kept = player.hasNaN; } catch (e2) { kept = null; }
+          return { layer: e.layer, id: e.id, control, raised: after === true, lowered: kept !== true,
+            body: strip(ui.tip.body()).slice(0, 60),
+            verdict: after === true ? 'THE TOOLTIP RAISED player.hasNaN'
+              : kept !== true ? 'THE TOOLTIP LOWERED A FLAG THE GAME HAD RAISED' : 'the flag is the game\'s own, both ways' };
+        } finally {
+          t.cost = was;
+          try { player.hasNaN = had; } catch (e2) { /* not this engine's */ }
+          ui.tip.hide();
+          a.restore();
+        }
+      }
+    }
+    return { verdict: 'abstains (no drawn upgrade carries a numeric cost)' };
+  })();
+
+  // ---- CONSTRUCTED: AN OPEN TOOLTIP IS RE-READ. Cost and effect move every tick, so a tooltip composed once and
+  // never again goes stale while the finger is still on the chip. Driven by moving the underlying `tmp` cost — never
+  // `player` — and asking for an explicit `refresh()`, which is always the full pass; the throttled path is measured
+  // by the throttle leg's own budget instead (`tipSyncs`). Restored in a `finally`, like the NaN construction.
+  const live = (() => {
+    if (typeof Decimal !== 'function') return { verdict: 'abstains (no Decimal)' };
+    for (const l of ui.cards()) {
+      for (const e of ui.visibleSeq(l)) {
+        if (e.kind !== 'upgrades') continue;
+        const t = S(() => tmp[e.layer].upgrades[e.id], null);
+        if (!t || !isAmt(S(() => t.cost, undefined))) continue;
+        const a = anchorFor(l, 'upgrades', e.id);
+        if (!a) continue;
+        const el = a.el, was = t.cost;
+        try {
+          if (!ui.tip.show(el)) return { layer: e.layer, id: e.id, verdict: 'THE TOOLTIP WOULD NOT OPEN ON A RENDERED CONTROL' };
+          const before = strip(ui.tip.body());
+          t.cost = new Decimal('1.2345e97');
+          ui.refresh();
+          const after = strip(ui.tip.body());
+          const want = strip(S(() => typeof formatWhole === 'function' ? String(formatWhole(t.cost)) : '', ''));
+          return { layer: e.layer, id: e.id, before: before.slice(0, 60), after: after.slice(0, 60), want,
+            open: ui.tip.isOpen(),
+            verdict: !ui.tip.isOpen() ? 'THE REFRESH CLOSED THE TOOLTIP'
+              : after === before ? 'THE OPEN TOOLTIP DID NOT RE-READ THE COST'
+              : want && after.indexOf(want) < 0 ? 'THE RE-READ DID NOT SHOW THE NEW COST'
+              : 'an open tooltip re-reads its cost' };
+        } finally {
+          t.cost = was;
+          ui.tip.hide();
+          ui.refresh();
+          a.restore();
+        }
+      }
+    }
+    return { verdict: 'abstains (no drawn upgrade carries a numeric cost)' };
+  })();
+
+  const judgedRows = rows.filter((x) => x.judged);
+  const declRows = rows.filter((x) => x.declared);
+  return {
+    vw, controls: rows.length, chips: rows.filter((x) => x.role === 'chip').length,
+    acts: rows.filter((x) => x.role === 'act').length, counters: rows.filter((x) => x.role === 'counter').length,
+    opened: rows.filter((x) => x.opened).length,
+    // ⚠ THE DISCRIMINATOR: how many controls carry a tooltip the `title` does not already state, and whether every
+    // one of them does. A run where `judged` is 0 has measured nothing about richness and says so.
+    judged: judgedRows.length,
+    richer: judgedRows.filter((x) => x.richer).length,
+    poor: judgedRows.filter((x) => !x.richer).slice(0, 3),
+    titleFirst: rows.every((x) => x.titleIsFirstLine),
+    titleBad: rows.filter((x) => !x.titleIsFirstLine).slice(0, 3),
+    // the `tooltip` FIELD path — the components that declare one, and whether the overlay shows it
+    declared: declRows.length, declaredShown: declRows.filter((x) => x.declaredShown).length,
+    declaredBad: declRows.filter((x) => !x.declaredShown).slice(0, 3),
+    escaping: rows.filter((x) => x.escapes).slice(0, 3),
+    samples: judgedRows.slice(0, 3).map((x) => x.role + ' ' + x.card + '/' + x.kind + '/' + x.id + ': ' + x.sample),
+    exclusive, nan, live,
+    stats: S(() => ui.stats(), null),
+  };
+}})()`;
+
 async function gateMobile(browser, base, ids) {
   const rows = [];
   for (const id of ids) {
@@ -856,7 +1118,7 @@ async function gateMobile(browser, base, ids) {
           const p = await c.newPage();
           await p.goto(new URL(`index.html?mod=${encodeURIComponent(id)}&managed=1${q}`, base).href, { waitUntil: 'load' });
           const r = await waitReady(p);
-          if (!r.ready) return { ready: false, error: r.error, views: [], layerList: null };
+          if (!r.ready) return { ready: false, error: r.error, views: [], layerList: null, tips: null, tipHover: null };
           const views = [{ view: 'fresh-tree', ...(await p.evaluate(MOBILE_PROBE)) }];
           // and one OPEN LAYER TAB where a snapshot can open one: `.col` exists only while a tab is open, and its
           // width is what says whether the single column leaked into a page that did not ask for it.
@@ -869,14 +1131,39 @@ async function gateMobile(browser, base, ids) {
           }
           // the LAYER LIST at a desktop width, on the page that has the bar. Taken here and not as another entry in
           // `views`, because every view in that array is PAIRED against the plain page, which has no panel to pair.
-          let layerList = null;
+          let layerList = null, tips = null, tipHover = null;
           if (withLayers) {
             await p.evaluate(() => { const b = document.querySelector('#tmt-navbar button[data-key="layers"]'); if (b) b.click(); });
             await p.waitForTimeout(250);
             layerList = { ...(await p.evaluate(LAYERLIST_PROBE)), geometry: await p.evaluate(MOBILE_PROBE) };
+            // (U2e) the tooltip at a DESKTOP width, and the POINTER path with a real mouse — this context has no
+            // touch, so `(hover: none)` is false here and the click path is deliberately off: a hover that opened
+            // nothing would mean a pointer user could not read a chip at all.
+            tips = await p.evaluate(TIP_PROBE);
+            // ⚠ AN ACTION BUTTON BY PREFERENCE, a counter only if there is none: a counter's tooltip is its name and
+            // nothing more (there is no cost or effect for a category total), so hovering one could not show that the
+            // POINTER path carries the richer text — which is the whole claim.
+            const ASEL = '#tmt-layerlist .tmt-layerlist-act:not(.tmt-layerlist-nofit)';
+            const HSEL = (await p.locator(ASEL).count()) ? ASEL : '#tmt-layerlist .tmt-layerlist-counter';
+            if (await p.locator(HSEL).count()) {
+              await p.locator(HSEL).first().hover();
+              await p.waitForTimeout(80);
+              tipHover = await p.evaluate((sel) => {
+                const ui = window.tmtLoader.layerListUI;
+                const r = { on: sel.indexOf('-act') > 0 ? 'act' : 'counter', open: ui.tip.isOpen(), key: ui.tip.key(),
+                  title: ui.tip.title(), body: ui.tip.body(), rich: ui.tip.rich(), hoverable: ui.tip.hoverable() };
+                r.verdict = !r.hoverable ? 'abstains (this context reports no hover)'
+                  : !r.open ? 'A HOVER OPENED NO TOOLTIP'
+                  : r.on === 'counter' ? 'a hover opens it (on a counter, so richness is not judged here)'
+                  : !r.rich ? 'A HOVER OPENED A TOOLTIP NO RICHER THAN THE title'
+                  : 'a hover opens the richer tooltip, with no click at all';
+                ui.tip.hide();
+                return r;
+              }, HSEL);
+            } else { tipHover = { verdict: 'abstains (no counter or action button on the desktop page)' }; }
             await p.evaluate(() => { const ui = window.tmtLoader.layerListUI; if (ui) ui.close(); });
           }
-          return { ready: true, views, layerList };
+          return { ready: true, views, layerList, tips, tipHover };
         } finally { await c.close(); }
       };
       const nb = await deskViews('&navbar=1', true);
@@ -1018,6 +1305,12 @@ async function gateMobile(browser, base, ids) {
         const frame = () => new Promise((r) => { let done = false;
           requestAnimationFrame(() => { if (!done) { done = true; r(); } });
           setTimeout(() => { if (!done) { done = true; r(); } }, 100); });
+        // (U2e) …with a tooltip OPEN, so the one budget covers the tooltip's own re-read as well. It rides
+        // `syncCards`, the counters' own throttled path; a build that re-read it once per animation frame instead
+        // would show up HERE and nowhere else, because it moves no other counter in `stats()`.
+        const anchor = document.querySelector('#tmt-layerlist .tmt-layerlist-act:not(.tmt-layerlist-nofit)')
+          || document.querySelector('#tmt-layerlist .tmt-layerlist-counter');
+        if (anchor && ui.tip) ui.tip.show(anchor);
         const s0 = ui.stats(), t0 = performance.now();
         for (let i = 0; i < 12; i++) {
           if (app) { const d = document.createElement('span'); d.textContent = 'u2d'; app.appendChild(d); app.removeChild(d); }
@@ -1025,14 +1318,18 @@ async function gateMobile(browser, base, ids) {
         }
         await frame();
         const s1 = ui.stats(), ms = Math.round(performance.now() - t0);
+        const tipOpen = !!(ui.tip && ui.tip.isOpen());
+        if (ui.tip) ui.tip.hide();
         return { ms, refreshes: s1.refreshes - s0.refreshes, syncs: s1.syncs - s0.syncs,
-          throttled: s1.throttled - s0.throttled, throttleMs: s1.throttleMs };
+          throttled: s1.throttled - s0.throttled, throttleMs: s1.throttleMs,
+          tipOpen, tipSyncs: s1.tipSyncs - s0.tipSyncs };
       });
       row.throttle.cap = row.throttle.throttleMs ? Math.ceil(row.throttle.ms / row.throttle.throttleMs) + 1 : null;
       row.throttle.verdict = row.throttle.refreshes === undefined ? 'no stats()'
         : row.throttle.refreshes < 3 ? `abstains (the observer fired ${row.throttle.refreshes}x in ${row.throttle.ms} ms)`
         : row.throttle.syncs > row.throttle.cap ? 'NOT THROTTLED'
-        : `throttled (${row.throttle.syncs} sync(s) over ${row.throttle.refreshes} refresh(es) in ${row.throttle.ms} ms)`;
+        : row.throttle.tipOpen && row.throttle.tipSyncs > row.throttle.cap ? 'THE TOOLTIP IS NOT THROTTLED'
+        : `throttled (${row.throttle.syncs} sync(s)${row.throttle.tipOpen ? ` and ${row.throttle.tipSyncs} tooltip re-read(s)` : ''} over ${row.throttle.refreshes} refresh(es) in ${row.throttle.ms} ms)`;
       row.throttleOk = !/NOT THROTTLED|no stats/.test(row.throttle.verdict);
       // THE CARD ACTS (⚖ user, 2026-09-18): the reset button really resets. Pressed on a layer the engine says can,
       // and judged by `player[l].points` MOVING — the one claim a rendering test cannot fake. Most games cannot reset
@@ -1097,6 +1394,83 @@ async function gateMobile(browser, base, ids) {
       });
       row.counterVerdict = !row.counterMove.candidate ? 'no candidate (the leg abstains)'
         : row.counterMove.x1 !== null && row.counterMove.x1 > row.counterMove.x0 ? 'moved' : 'NOT MOVED';
+
+      // --- U2e leg G: THE TOOLTIP SAYS WHAT THE CHIP COSTS AND DOES --------------------------------------------
+      // ⚖ "a chip reading RPB should say what the upgrade costs and does" (user, 2026-09-18). Everything about the
+      // TEXT is in TIP_PROBE above, at this width; the two things a probe cannot fake are driven here.
+      const tipPhone = await page.evaluate(TIP_PROBE);
+      // ⚠ THE TAP, with a real touch event, and the half of it that matters: the control's own click must STILL
+      // happen (U1's no-`preventDefault` rule). Observed by WRAPPING the engine's own buy functions in counters
+      // rather than by looking for a purchase — affordability must not decide whether this leg can run, and an
+      // unaffordable buy is a no-op in the engine while the CALL is exactly what the rule is about. Restored
+      // immediately afterwards, like every other constructed condition on this page.
+      const ACT_SEL = '#tmt-layerlist .tmt-layerlist-act:not(.tmt-layerlist-nofit)';
+      const tapSetup = await page.evaluate((sel) => {
+        const ui = window.tmtLoader.layerListUI;
+        ui.open();
+        const btn = document.querySelector(sel);
+        if (!btn) return { candidate: null, why: 'no action button is showing on any card' };
+        const names = ['buyUpg', 'buyUpgrade', 'buyBuyable', 'startChallenge'];
+        window.__tmtTip = { calls: [], orig: {} };
+        for (const n of names) {
+          if (typeof window[n] !== 'function') continue;
+          window.__tmtTip.orig[n] = window[n];
+          window[n] = function () { window.__tmtTip.calls.push(n + ':' + [].slice.call(arguments).join('/')); return window.__tmtTip.orig[n].apply(this, arguments); };
+        }
+        // ⚠ MEASURED, not assumed: the list reads these as BARE identifiers, so a `window` assignment only reaches it
+        // where the game declared them as function declarations. A `let` would make this leg blind, and it says so.
+        const visible = {};
+        for (const n of Object.keys(window.__tmtTip.orig)) {
+          try { visible[n] = new Function('return typeof ' + n + ' === "function" && ' + n + ' === window.' + n)(); } catch (e) { visible[n] = false; }
+        }
+        return { candidate: btn.dataset.layer + '/' + btn.dataset.kind + '/' + btn.dataset.cid, visible,
+          wrapped: Object.keys(window.__tmtTip.orig), tips: ui.stats().tips, hoverable: ui.tip.hoverable() };
+      }, ACT_SEL);
+      let tapped = null;
+      if (tapSetup.candidate) {
+        await page.locator(ACT_SEL).first().tap();
+        await page.waitForTimeout(80);
+        tapped = await page.evaluate(() => {
+          const ui = window.tmtLoader.layerListUI;
+          const r = { tips: ui.stats().tips, calls: window.__tmtTip.calls.slice(0, 4), open: ui.tip.isOpen(),
+            key: ui.tip.key(), rich: ui.tip.rich() };
+          for (const n of Object.keys(window.__tmtTip.orig)) window[n] = window.__tmtTip.orig[n];
+          delete window.__tmtTip;
+          ui.tip.hide();
+          return r;
+        });
+      }
+      const wrappedNone = tapSetup.candidate && !Object.values(tapSetup.visible || {}).some(Boolean);
+      row.tips = {
+        phone: tipPhone, desktop: nb.tips || null,
+        tap: { candidate: tapSetup.candidate, why: tapSetup.why, visible: tapSetup.visible, hoverable: tapSetup.hoverable,
+          opened: tapped ? tapped.tips > tapSetup.tips : null, calls: tapped ? tapped.calls : null,
+          verdict: !tapSetup.candidate ? `abstains (${tapSetup.why})`
+            : wrappedNone ? 'abstains (the engine keeps its buy functions off `window`, so the call cannot be counted)'
+            : !(tapped.tips > tapSetup.tips) ? 'A TAP OPENED NO TOOLTIP'
+            : !tapped.calls.length ? 'THE TAP DID NOT REACH THE ENGINE (preventDefault?)'
+            : `a tap opens the tooltip and the control still acts (${tapped.calls[0]})` },
+        // and the POINTER path, on the desktop page from leg 5: a real mouse hover, no click at all
+        hover: (nb.tipHover && nb.tipHover.verdict) ? nb.tipHover : { verdict: 'abstains (no desktop layer-list page)' },
+      };
+      // ⚠ `judged === 0` is an ABSTENTION on richness, never a pass: it means no control on this page carries a
+      // cost or an effect the `title` does not already state, so nothing here could tell U2e from U2d.
+      const tipVerdict = (t) => !t || t.why ? `abstains (${(t && t.why) || 'no probe'})`
+        : !t.titleFirst ? 'THE FIRST LINE IS NOT THE ELEMENT\'S OWN title'
+        : t.escaping.length ? 'A TOOLTIP ESCAPED THE VIEWPORT'
+        : /RAISED|LOWERED/.test(t.nan.verdict) ? t.nan.verdict
+        : /THE FIRST|MORE THAN ONE/.test(t.exclusive.verdict) ? t.exclusive.verdict
+        : /CLOSED|DID NOT|WOULD NOT OPEN/.test(t.live.verdict) ? t.live.verdict
+        : /WOULD NOT OPEN/.test(t.nan.verdict) ? t.nan.verdict
+        : t.declared && t.declaredShown < t.declared ? 'A DECLARED tooltip FIELD IS NOT IN THE OVERLAY'
+        : !t.judged ? 'abstains (no control carries text the title does not already state)'
+        : t.richer < t.judged ? 'A TOOLTIP IS NO RICHER THAN THE title IT SITS ON'
+        : `richer than the title on ${t.richer}/${t.judged} control(s)`;
+      row.tips.phoneVerdict = tipVerdict(tipPhone);
+      row.tips.desktopVerdict = tipVerdict(nb.tips);
+      const tipBad = (v) => /THE FIRST|ESCAPED|RAISED|LOWERED|MORE THAN ONE|DECLARED|NO RICHER|no probe|CLOSED|DID NOT|WOULD NOT OPEN/.test(v);
+      row.tipsOk = !tipBad(row.tips.phoneVerdict) && !tipBad(row.tips.desktopVerdict)
+        && !/A TAP OPENED|DID NOT REACH/.test(row.tips.tap.verdict) && !/NOT OPEN|NOT RICHER/.test(row.tips.hover.verdict);
       // --- and the two VISIBILITY RULES the roster's recorded states cannot exercise on their own.
       // Rules 1 and 3 are measured by the sequence check on every game. Rule 2 (`pseudoUnl`) and the milestones'
       // second condition (`milestoneShown`, which reads the player's own `msDisplay`) are not: no game on the
@@ -1429,7 +1803,7 @@ async function gateMobile(browser, base, ids) {
       row.layersOk = !!(row.layers.phoneOk && row.layers.desktopOk && row.layersInert.ok && row.resetVerdict !== 'NOT MOVED'
         && row.rulesOk && (!row.chipBaseline || (row.chipBaseline.fell && row.chipBaseline.orderMoved))
         && row.fitOk && row.stabilityOk && row.throttleOk && row.counterVerdict !== 'NOT MOVED'
-        && row.digitsOk && row.persistOk);
+        && row.digitsOk && row.persistOk && row.tipsOk);
       row.layersScreenshot = path.relative(REPO, llShot);
 
       const shot = path.join(REPO, `tools/harness/results/${id}-mobile.png`);
@@ -1560,6 +1934,19 @@ async function main() {
       const dgAbst = rows.filter((r) => r.digits && /abstains/.test(r.digits.verdict)).map((r) => r.id);
       const d0 = rows.find((r) => r.digits && r.digits.magnitudes);
       console.log(`M1 layers digits (U2c — the readout's own string, ${d0 ? d0.digits.magnitudes : '—'} magnitudes, both widths, both states): ${rows.length - dgRed.length - dgAbst.length - dgNone.length}/${rows.length} held every box still over ${rows.reduce((n, r) => n + ((r.digits && r.digits.amounts) || 0), 0)} amount readout(s) and ${rows.reduce((n, r) => n + ((r.digits && r.digits.counters) || 0), 0)} counter(s)${dgAbst.length ? `, ${dgAbst.length} abstained` : ''}${dgNone.length ? `, ⛔ ${dgNone.length} NEVER RAN (the row threw: ${dgNone.slice(0, 6).join(', ')})` : ''}${dgRed.length ? ` (RED: ${dgRed.map((x) => `${x} ${JSON.stringify((rows.find((r) => r.id === x).digits || {}).bad)}`).join('; ')})` : ''}`);
+      // U2e: THE TOOLTIP. ⚠ Two numbers, not one — `judged` is how many controls carry text the `title` does not
+      // already state, and it is the only thing that makes `richer` mean anything. A row with `judged: 0` measured
+      // nothing about richness and is counted as an abstention, never as a green.
+      const tpNone = rows.filter((r) => !r.tips).map((r) => r.id);
+      const tpRed = rows.filter((r) => r.tips && !r.tipsOk).map((r) => r.id);
+      const tpAbst = rows.filter((r) => r.tips && r.tipsOk && /abstains/.test(r.tips.phoneVerdict)).map((r) => r.id);
+      const tpSum = (f) => rows.reduce((n, r) => n + ((r.tips && r.tips.phone && r.tips.phone[f]) || 0), 0);
+      const tpDecl = rows.filter((r) => r.tips && r.tips.phone && r.tips.phone.declared).map((r) => `${r.id} ${r.tips.phone.declaredShown}/${r.tips.phone.declared}`);
+      const tvNan = rows.reduce((o, r) => { const v = r.tips && r.tips.phone && r.tips.phone.nan && r.tips.phone.nan.verdict; if (v) { const k = v.replace(/\(.*/, '(…)'); o[k] = (o[k] || 0) + 1; } return o; }, {});
+      const tvTap = rows.reduce((o, r) => { const v = r.tips && r.tips.tap && r.tips.tap.verdict; if (v) { const k = v.replace(/\(.*/, '(…)').replace(/ \(buy.*/, ''); o[k] = (o[k] || 0) + 1; } return o; }, {});
+      const tvHov = rows.reduce((o, r) => { const v = r.tips && r.tips.hover && r.tips.hover.verdict; if (v) { const k = v.replace(/\(.*/, '(…)'); o[k] = (o[k] || 0) + 1; } return o; }, {});
+      console.log(`M1 layers tooltip (U2e — STRICTLY RICHER than the element's own \`title\`, which U2d already set on every control): ${rows.length - tpRed.length - tpAbst.length - tpNone.length}/${rows.length} green over ${tpSum('richer')} of ${tpSum('judged')} judged control(s) out of ${tpSum('controls')} (${tpSum('chips')} chip(s), ${tpSum('acts')} button(s), ${tpSum('counters')} counter(s))${tpAbst.length ? `, ${tpAbst.length} abstained: ${tpAbst.slice(0, 6).map((x) => `${x} ${(rows.find((r) => r.id === x).tips || {}).phoneVerdict}`).join('; ')}` : ''}${tpNone.length ? `, ⛔ ${tpNone.length} NEVER RAN (the row threw: ${tpNone.slice(0, 6).join(', ')})` : ''}${tpRed.length ? ` (RED: ${tpRed.map((x) => `${x} ${(rows.find((r) => r.id === x).tips || {}).phoneVerdict} / desktop ${(rows.find((r) => r.id === x).tips || {}).desktopVerdict}`).join('; ')})` : ''}`);
+      console.log(`M1 layers tooltip paths: a DECLARED \`tooltip\` field is drawn on ${tpDecl.length} game(s)${tpDecl.length ? ` (${tpDecl.slice(0, 8).join(', ')}${tpDecl.length > 8 ? `, …(${tpDecl.length})` : ''})` : ' — every other game reaches the tooltip by COMPOSITION alone'}; tap on touch → ${JSON.stringify(tvTap)}; hover on a pointer → ${JSON.stringify(tvHov)}; a CONSTRUCTED NaN cost → ${JSON.stringify(tvNan)}; a CONSTRUCTED cost move under an OPEN tooltip → ${JSON.stringify(rows.reduce((o, r) => { const v = r.tips && r.tips.phone && r.tips.phone.live && r.tips.phone.live.verdict; if (v) { const k = v.replace(/\(.*/, '(…)'); o[k] = (o[k] || 0) + 1; } return o; }, {}))}`);
       const psNone = rows.filter((r) => !r.persist).map((r) => r.id);
       const psRed = rows.filter((r) => r.persist && !r.persistOk).map((r) => r.id);
       const psAbst = rows.filter((r) => r.persist && /abstains/.test(r.persist.verdict)).map((r) => r.id);
@@ -1572,7 +1959,7 @@ async function main() {
       console.log(`M1 layers inertness: ${rows.filter((r) => r.layersInert && r.layersInert.verdict === 'unchanged').length} unchanged state hash across opening the list, ${rows.filter((r) => r.layersInert && r.layersInert.verdict === 'MOVED').length} moved, ${llAbst.length} abstained${llAbst.length ? ` (the page does not repeat its own hash: ${llAbst.join(', ')})` : ''}`);
       const noCand = rows.filter((r) => r.resetVerdict && r.resetVerdict.startsWith('no candidate')).map((r) => r.id);
       console.log(`M1 layers reset press: ${rows.filter((r) => r.resetVerdict === 'moved').length} moved player[l].points, ${rows.filter((r) => r.resetVerdict === 'NOT MOVED').length} did not, ${noCand.length} abstained${noCand.length ? ` (nothing could reset: ${noCand.join(', ')})` : ''}`);
-      for (const r of rows.filter((x) => !x.ok)) console.log(`  ${r.id}: layers=${r.layersOk} digits=${r.digits ? r.digits.verdict : '—'}${r.digits && !r.digitsOk ? ' ' + JSON.stringify(r.digits) : ''} persist=${r.persist ? r.persist.verdict : '—'}${r.persist && !r.persistOk ? ' ' + JSON.stringify(r.persist) : ''} fit=${r.fitOk}${r.fitWidths && !r.fitOk ? ' ' + JSON.stringify(r.fitWidths) : ''} stability=${r.stabilityOk}${r.stability && !r.stabilityOk ? ' ' + JSON.stringify(r.stability) : ''} throttle=${r.throttleOk}${r.throttle && !r.throttleOk ? ' ' + JSON.stringify(r.throttle) : ''} counter=${r.counterVerdict}${r.counterMove && r.counterVerdict === 'NOT MOVED' ? ' ' + JSON.stringify(r.counterMove) : ''}${r.chipBaseline && !(r.chipBaseline.fell && r.chipBaseline.orderMoved) ? ` chipBaseline=${JSON.stringify(r.chipBaseline)}` : ''}${r.layers && !r.layersOk ? ' ' + JSON.stringify(r.layers) : ''}${r.resetVerdict && r.resetVerdict !== 'moved' ? ` reset=${r.resetVerdict} ${JSON.stringify(r.reset)}` : ''} inert=${r.inertOk} both=${r.bothOk}${r.both ? ' ' + JSON.stringify(r.both) : ''} navbarOnly=${r.navbarOnlyOk}${r.navbarOnly && !r.navbarOnlyOk ? ' ' + JSON.stringify(r.navbarOnly) : ''} state=${r.stateVerdict}${r.state ? ` (plain ${r.state.plain} / control ${r.state.plainControl} / mobile ${r.state.mobile})` : ''} geometry=${r.geometryOk} nav=${r.navOk} load=${r.loadVerdict && r.loadVerdict.ok}${r.worst && r.worst.length ? ` worst=${JSON.stringify(r.worst)}` : ''}${r.exception ? ` exception=${r.exception}` : ''}`);
+      for (const r of rows.filter((x) => !x.ok)) console.log(`  ${r.id}: layers=${r.layersOk} digits=${r.digits ? r.digits.verdict : '—'}${r.digits && !r.digitsOk ? ' ' + JSON.stringify(r.digits) : ''} tips=${r.tips ? `${r.tips.phoneVerdict} / desktop ${r.tips.desktopVerdict} / tap ${r.tips.tap.verdict} / hover ${r.tips.hover.verdict}` : '—'}${r.tips && !r.tipsOk ? ' ' + JSON.stringify(r.tips) : ''} persist=${r.persist ? r.persist.verdict : '—'}${r.persist && !r.persistOk ? ' ' + JSON.stringify(r.persist) : ''} fit=${r.fitOk}${r.fitWidths && !r.fitOk ? ' ' + JSON.stringify(r.fitWidths) : ''} stability=${r.stabilityOk}${r.stability && !r.stabilityOk ? ' ' + JSON.stringify(r.stability) : ''} throttle=${r.throttleOk}${r.throttle && !r.throttleOk ? ' ' + JSON.stringify(r.throttle) : ''} counter=${r.counterVerdict}${r.counterMove && r.counterVerdict === 'NOT MOVED' ? ' ' + JSON.stringify(r.counterMove) : ''}${r.chipBaseline && !(r.chipBaseline.fell && r.chipBaseline.orderMoved) ? ` chipBaseline=${JSON.stringify(r.chipBaseline)}` : ''}${r.layers && !r.layersOk ? ' ' + JSON.stringify(r.layers) : ''}${r.resetVerdict && r.resetVerdict !== 'moved' ? ` reset=${r.resetVerdict} ${JSON.stringify(r.reset)}` : ''} inert=${r.inertOk} both=${r.bothOk}${r.both ? ' ' + JSON.stringify(r.both) : ''} navbarOnly=${r.navbarOnlyOk}${r.navbarOnly && !r.navbarOnlyOk ? ' ' + JSON.stringify(r.navbarOnly) : ''} state=${r.stateVerdict}${r.state ? ` (plain ${r.state.plain} / control ${r.state.plainControl} / mobile ${r.state.mobile})` : ''} geometry=${r.geometryOk} nav=${r.navOk} load=${r.loadVerdict && r.loadVerdict.ok}${r.worst && r.worst.length ? ` worst=${JSON.stringify(r.worst)}` : ''}${r.exception ? ` exception=${r.exception}` : ''}`);
     } else {
       if (shard) throw new Error('--shard applies to --gate load / --gate mobile, not to a single-game run');
       const out = await runPage(browser, base, ids[0], { ticks: Number(a.ticks ?? 200), diff: Number(a.diff ?? 0.05), leg: a.leg || 'idle', until: a.until || null, stateOut: a['state-out'], playerOut: a['player-out'], loadFrom: a['load-from'] ? fs.readFileSync(a['load-from'], 'utf8') : null, profile: a.profile || null, exclude: a.exclude ? a.exclude.split(',') : [], autoOpt: a['auto-opt'] || null, automation: !a['no-automation'] });
