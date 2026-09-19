@@ -439,6 +439,142 @@ jobs:
           retention-days: 14
 
   # ---------------------------------------------------------------------------------------------------------------
+  # V1 — THE REASONS. `gates-v1.mjs` is what stops the reason vocabulary from rotting, and nothing else in this
+  # workflow can see any of the four ways it does:
+  #   · a code nobody witnesses, or an exit that reaches `unknown` (part 1);
+  #   · a reason that disagrees with the decision it describes (part 2) — the whole design rests on the reason being
+  #     the decision's OWN return value, and the day someone "helpfully" computes one beside it, this is the row;
+  #   · the lazy guard lost, so the Advanced view is rebuilt on every tick of a tab nobody is looking at (part 3p);
+  #   · `player.subtabs.au` leaking back into `hashGame`, which moves every pinned number in the repo (part 4).
+  #
+  # ⚠ TWO JOBS, and it is a measurement rather than tidiness. Parts 1–3 are Node only — they need the `playwright`
+  # PACKAGE (the module imports `chromium` at the top) but never launch it, so they skip the ~30 s browser download
+  # and the ~1 min of `--with-deps`. Parts 3p and 4 need a real page. Run as one job they are ~21 min serial; split,
+  # the wall clock is the longer half (~16 min) for one extra checkout + `npm ci`. ⛔ This is the OPPOSITE call from
+  # G1's above, and for the opposite reason: there the matrix would have paid its setup ten times to save two
+  # minutes; here one extra setup buys five, and the two halves answer different questions with different artifacts.
+  #
+  # ⛔ `--assert` on every part: `gates-v1` already exits 1 on a red row, which does NOT catch the battery that
+  # stopped part-way — it prints fewer rows, and fewer rows is fewer reds. Each part declares the row count it emits.
+  # ---------------------------------------------------------------------------------------------------------------
+  v1-node:
+    name: V1 reasons — headless (parts 1, 2, 3)
+    needs: fast
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      # ⚠ `npm ci` but NO `playwright install`: parts 1–3 import the package and never launch a browser.
+      - run: npm ci
+
+      - name: Part 1 — every reason code witnessed by name
+        shell: bash  # bash -eo pipefail: without it `| tee` reports the pipe's status and a refusal is lost
+        run: |
+          set -o pipefail
+          node tools/harness/gates-v1.mjs --part 1 --no-summary --assert --pool 4 | tee v1-1.txt
+
+      - name: Part 2 — reason ≡ decision, every feature every tick
+        shell: bash
+        run: |
+          set -o pipefail
+          node tools/harness/gates-v1.mjs --part 2 --no-summary --assert --pool 4 | tee v1-2.txt
+
+      - name: Part 3 — inertness and the format counter
+        shell: bash
+        run: |
+          set -o pipefail
+          node tools/harness/gates-v1.mjs --part 3 --no-summary --assert --pool 2 | tee v1-3.txt
+
+      - name: Summary
+        if: always()
+        shell: bash
+        run: |
+          {
+            echo '## V1 reasons — headless'
+            echo ''
+            echo '```'
+            cat v1-1.txt v1-2.txt v1-3.txt 2>/dev/null | grep -E 'VERDICT|REFUSED|^RED|green$' || echo 'no output'
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload the rows
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: v1-node
+          path: tools/harness/results/tmp/gates-v1-part*-last.json
+          if-no-files-found: warn
+          retention-days: 14
+
+  v1-page:
+    name: V1 reasons — in the page (parts 3p, 4)
+    needs: fast
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - run: npm ci
+
+      - name: Cache the Playwright browser
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+
+      - run: npx playwright install --with-deps chromium
+
+      # ⚠ The PAIRED leg: the Advanced content must not run while `Simple` is on screen, AND the same spin with
+      # `Advanced` selected must format — without the second arm the zero means "nothing ever calls it".
+      - name: Part 3p — the lazy guard, where it actually works
+        shell: bash
+        run: |
+          set -o pipefail
+          node tools/harness/gates-v1.mjs --part 3p --no-summary --assert | tee v1-3p.txt
+
+      - name: Part 4 — the subtab is not game state (T1)
+        shell: bash
+        run: |
+          set -o pipefail
+          node tools/harness/gates-v1.mjs --part 4 --no-summary --assert | tee v1-4.txt
+
+      - name: Summary
+        if: always()
+        shell: bash
+        run: |
+          {
+            echo '## V1 reasons — in the page'
+            echo ''
+            echo '```'
+            cat v1-3p.txt v1-4.txt 2>/dev/null | grep -E 'VERDICT|REFUSED|^RED|green$' || echo 'no output'
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload the rows
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: v1-page
+          path: tools/harness/results/tmp/gates-v1-part*-last.json
+          if-no-files-found: warn
+          retention-days: 14
+
+  # ---------------------------------------------------------------------------------------------------------------
   # S1 part 1 — the automation anchors. 52 checks, 197 s locally, and EVERY slice this arc has run it by hand to
   # prove no anchor moved. That is exactly the check that should not depend on a human remembering.
   #

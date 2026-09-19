@@ -25,11 +25,18 @@ import { REPO, GAMES, parseArgs, startServer, headCommit, treeDirty, writeJSON, 
 import { appendSection } from './summary.mjs';
 entryOnly(import.meta.url);
 
-const a = parseArgs(process.argv.slice(2), ['no-summary']);
+const a = parseArgs(process.argv.slice(2), ['no-summary', 'assert']);
 const PART = String(a.part || '1');
 const commit = headCommit(), dirty = treeDirty();
 const rows = [];
 const row = (r) => { rows.push(r); console.log(`${r.ok ? 'GREEN' : 'RED  '} ${r.gate} ${r.id || ''} ${r.leg || ''} ticks=${r.ticks ?? '-'} hash=${r.hash ?? '-'} ${String(r.notes || '').slice(0, 400)}`); };
+
+// ⛔ THE FLOOR EACH PART MUST REACH, for `--assert` (CI). A battery that dies part-way through prints fewer rows,
+// and fewer rows is fewer reds: exiting 0 because nothing that RAN failed is the same green as a full pass. These
+// are deliberately the exact counts each part emits today, not a lower bound — a part that grows a leg has to come
+// here and say so, which is the point. (Same reasoning as `gateCoverage`'s per-game row-count check for `gates-a1`;
+// this battery's rows are not per-game, so it needs its own floor.)
+const ROWS = { 1: 9, 2: 3, 3: 2, '3p': 2, 4: 4, 6: 1 };
 
 const SNAP = (id, m) => `tools/harness/snapshots/${id}/all/${m}.json`;
 // M15 → M16: R1′'s own leg, and the one long ptr leg V1's inertness is measured on (plan §14d).
@@ -450,4 +457,14 @@ const date = new Date().toISOString().slice(0, 19) + 'Z';
 if (!a['no-summary']) appendSection({ title: `V1 part ${PART} (\`node tools/harness/gates-v1.mjs --part ${PART}\`)`, commit, dirty, rows });
 writeJSON(path.join(REPO, `tools/harness/results/tmp/gates-v1-part${PART}-last.json`), { date, commit, dirty, rows });
 console.log(`gates-v1 part ${PART}: ${rows.filter((r) => r.ok).length}/${rows.length} green`);
+if (a.assert) {
+  const want = ROWS[PART];
+  const line = `v1-part${PART} VERDICT: rows ${rows.filter((r) => r.ok).length}/${rows.length}${want === undefined ? '' : ` of ${want} expected`}; ${rows.filter((r) => !r.ok).length} RED`;
+  console.log(line);
+  if (want === undefined) { console.log(`v1-part${PART} REFUSED: no expected row count is declared for this part`); process.exit(1); }
+  if (rows.length !== want) {
+    console.log(`v1-part${PART} REFUSED: ${rows.length} row(s), expected ${want} — a battery that stops part-way prints fewer rows, and fewer rows is fewer reds`);
+    process.exit(1);
+  }
+}
 process.exit(rows.every((r) => r.ok) ? 0 : 1);

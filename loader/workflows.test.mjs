@@ -250,6 +250,51 @@ test('⛔ the a1 job DERIVES its game set and does not type ids', () => {
   assert.match(run, /test -n "\$SET"/, 'an empty derivation would run the gate over NO games and exit 0');
 });
 
+// ---------------------------------------------------------------------------------------------------------------
+// V1's reason battery in CI. Two jobs, and the properties that keep them honest.
+// ---------------------------------------------------------------------------------------------------------------
+
+test('the V1 reason battery runs in CI, both halves, gated by the fast job', () => {
+  const j = jobs(wf('sweep.yml'));
+  for (const name of ['v1-node', 'v1-page']) {
+    assert.ok(j[name], `sweep.yml has no \`${name}\` job — gates-v1 is back to running only when someone remembers`);
+    assert.deepEqual(needs(j[name]), ['fast'], `the ${name} job does not wait for the fast checks`);
+    assert.doesNotMatch(j[name], /continue-on-error:\s*true/, `the ${name} job is advisory — then a red reason battery is still a green run`);
+  }
+  // every part is actually driven somewhere, and each exactly once: a part quietly dropped leaves no trace in a run
+  const both = j['v1-node'] + j['v1-page'];
+  for (const part of ['1', '2', '3', '3p', '4']) {
+    const runs = [...both.matchAll(new RegExp(`--part ${part.replace('p', 'p')}(?![\\dp])`, 'g'))].length;
+    assert.equal(runs, 1, `\`--part ${part}\` is driven ${runs} time(s) in CI`);
+  }
+});
+
+test('⛔ every V1 part in CI asserts its ROW COUNT, not just that nothing failed', () => {
+  // `gates-v1` already exits 1 on a red row. That does not catch the battery that stopped part-way: it prints
+  // fewer rows, and fewer rows is fewer reds. Same inversion as the a1 job's `--assert`.
+  const j = jobs(wf('sweep.yml'));
+  for (const name of ['v1-node', 'v1-page']) {
+    const steps = j[name].split(/^ {6}- /m).slice(1).filter((st) => st.includes('gates-v1.mjs'));
+    assert.ok(steps.length >= 2, `the ${name} job runs only ${steps.length} part(s)`);
+    for (const st of steps) {
+      assert.match(st, /--assert\b/, `a gates-v1 step in ${name} does not assert its coverage`);
+      assert.match(st, /set -o pipefail/, `a gates-v1 step in ${name} pipes into tee without pipefail`);
+    }
+  }
+});
+
+test('⚠ the headless half does NOT install a browser — that is the reason it is its own job', () => {
+  // Parts 1–3 import the playwright package and never launch it. If this job ever grows a browser install, the
+  // split has stopped paying for itself and should be folded back into one job rather than left costing double.
+  // ⚠ COMMENTS DO NOT COUNT — the job's own comment SAYS "no `playwright install`", and a naive match on the job
+  // body is satisfied by that sentence. The same trap the fast job's census step already carries: what is asserted
+  // has to be the line that RUNS.
+  const j = jobs(wf('sweep.yml'));
+  const cmds = (body) => body.split('\n').filter((l) => !/^\s*#/.test(l)).join('\n');
+  assert.doesNotMatch(cmds(j['v1-node']), /playwright install/, 'the headless V1 job installs a browser it never launches');
+  assert.match(cmds(j['v1-page']), /playwright install/, 'the page V1 job has no browser');
+});
+
 test('⛔ the a1 job checks out the whole history — its check-manifest row reads it', () => {
   // MEASURED in production on the job's first run (35458073272): part 2's `check-manifest` row searches the whole
   // history for each game's subtree-squash commit, so a depth-1 checkout returns `null` for both halves and the row
