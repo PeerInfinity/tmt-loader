@@ -260,6 +260,11 @@
 /* ⚖ MILESTONES SQUARE, THE REST ROUND (user, 2026-09-18) — the same distinction their chips carry, so the passive
  * category reads the same way in both views. */
 #tmt-layerlist .tmt-layerlist-counter[data-kind="milestones"] { border-radius: 0; }
+/* ⚖ AND SINCE U6 A COUNTER WEARS A COLOUR TOO (user, 2026-09-19) — green when the category is finished, red when
+ * there is nothing to do about it, the layer's own colour when there is (docs/mobile.md has the table). As with the
+ * chips, the colour itself is never in this file: layerlist.js writes it INLINE out of the GAME's own stylesheet,
+ * and `data-skin` records which of the three words it is. There is deliberately no rule here — a counter with no
+ * skin keeps the plain box it has always had. */
 
 /* ROW TWO — what you can act on. A box of its own: ⚖ the two rows wrap and fit INDEPENDENTLY (user, 2026-09-18),
  * so a card with several counters still gives its buttons the whole card width. */
@@ -271,6 +276,9 @@
  * `canAffordUpgrade` / `canAfford` decides. Which buttons exist, and where they sit, is decided without it. */
 #tmt-layerlist .tmt-layerlist-act[data-afford="no"] { opacity: .5; }
 #tmt-layerlist .tmt-layerlist-act[data-afford="yes"] { border-color: currentColor; }
+/* ⚠ (U6) AND THE BUTTON ALSO CARRIES `data-skin`, its chip's. The two attributes answer DIFFERENT questions —
+ * lit/grey is "can I press this right now", the skin is "what IS this" — and the collapsed card wants both, which
+ * is why the pair above survived the skin rather than being replaced by it. The colour is inline, like a chip's. */
 
 #tmt-layerlist .tmt-layerlist-chip,
 #tmt-layerlist .tmt-layerlist-act,

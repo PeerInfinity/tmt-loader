@@ -491,6 +491,69 @@
     return isAmount(c) && positiveAmt(c) ? c : null;
   }
 
+  // ---------------------------------------------------------------- U6: THE COUNTERS WEAR COLOURS TOO
+  // ⚖ "match what the main view already says" (user, 2026-09-19), who settled every case:
+  //
+  //   | counter      | GREEN          | RED                                       | the layer's own colour |
+  //   |--------------|----------------|-------------------------------------------|------------------------|
+  //   | milestones   | all earned     | any not yet earned                        | never                  |
+  //   | achievements | all earned     | any not yet earned                        | never                  |
+  //   | upgrades     | all bought     | none of the unbought is affordable        | otherwise              |
+  //   | challenges   | all completed  | any not completed                         | never                  |
+  //   | buyables     | never          | nothing in the category is BUYABLE now    | otherwise              |
+  //   | clickables   | never          | nothing is CLICKABLE now                  | otherwise              |
+  //
+  // ⚖ MILESTONES AND ACHIEVEMENTS ARE RED WHENEVER ONE IS UNEARNED — user, verbatim: "Unearned milestones and
+  // achievements are displayed in red in the main view and earned ones are displayed in green. And so we should use
+  // green and red, not layer colors." ⚠ This OVERTURNED the recommendation this slice was briefed with (layer
+  // colour, on the reasoning that red implies something actionable): the rule is the MAIN VIEW's rule, and the main
+  // view wins. ⚖ A BUYABLE IS NEVER GREEN — it holds an amount and is never "done", so "all earned" has no
+  // referent (user, 2026-09-18, which is also why its counter is a total and not an `x/y`).
+  // ⚠ CHALLENGES AND CLICKABLES WERE NOT NAMED BY THE USER. The two rows above apply the same principle by
+  // ANALOGY — a challenge is an earned/total category like a milestone, a clickable an owned one like a buyable —
+  // and they are recorded as an INFERENCE (docs/mobile.md) so they are cheap to correct.
+  //
+  // ⚠ THE COLOURS ARE THE GAME'S, read exactly as the chips' are (`engineBg`, and `tmp[l].color` for the layer's
+  // own): the category's OWN class first, so the counter matches the boxes it counts, and the family's bare
+  // `bought` / `locked` as the fallback — every one of the 171 declares those bare (measured, U5), so a fork that
+  // styles no `.milestoneDone` still gets a green rather than no colour at all.
+  // ⚠ A CHALLENGE COUNTER AND A CHALLENGE CHIP MAY LEGITIMATELY DIFFER. The engines paint a challenge on their own
+  // scale (`.hChallenge.canComplete` is amber, not the `.bought`/`.locked` pair); the counter answers the user's
+  // green/red question and the chip wears the engine's own control colour. That is not a disagreement to fix.
+  var COUNTER_SKIN = {
+    upgrades:     { done: 'upg bought',         no: 'upg locked',         layerClass: true, layerWhenAvailable: true },
+    buyables:     { done: null,                 no: 'buyable locked',     layerWhenAvailable: true },
+    clickables:   { done: null,                 no: 'upg locked',         layerWhenAvailable: true },
+    challenges:   { done: 'hChallenge done',    no: 'locked' },
+    milestones:   { done: 'milestoneDone',      no: 'milestone' },
+    achievements: { done: 'achievement bought', no: 'achievement locked', layerClass: true }
+  };
+  function counterBg(cls, fallback) { return (cls ? engineBg(cls) : '') || engineBg(fallback); }
+
+  /** IS THERE ANYTHING TO DO IN THIS CATEGORY RIGHT NOW — per component, the engine's own reading, and the same
+   *  one the action row's lit/grey asks (`affordable`) plus the same limit test its membership asks (`belowLimit`).
+   *  ⚠ A PSEUDO-UNLOCKED upgrade is not "available": it is the teaser you press to unlock rather than to buy, and
+   *  `canAffordUpgrade` is not the question its own button asks. ⚠ A clickable has no chip and no button, so this
+   *  is the ONLY place its `canClick` is read. */
+  function componentAvailable(kind, l, id, state) {
+    if (kind === 'upgrades') return state === 'open' && affordable({ kind: 'upgrades', layer: l, id: Number(id) });
+    if (kind === 'buyables') return belowLimit(l, id) && affordable({ kind: 'buyables', layer: l, id: id });
+    if (kind === 'clickables') return safe(function () { return !!tmp[l].clickables[id].canClick; }, false);
+    return false;
+  }
+
+  /** THE THREE-WAY READING for one COUNTER: `{ key, bg }`, in the same vocabulary the chips use — `bought` for a
+   *  finished category, `can` for one with something to do in it, `locked` for one with nothing. */
+  function counterSkin(l, g) {
+    var S = COUNTER_SKIN[g.kind];
+    if (!S) return { key: null, bg: '' };
+    var pfx = S.layerClass ? l + ' ' : '';
+    // an ACCUMULATING category is never finished, which is the whole reason its counter is a total and not an x/y
+    if (g.mode === 'ratio' && g.y > 0 && g.x >= g.y) return { key: 'bought', bg: counterBg(pfx + S.done, 'bought') };
+    if (S.layerWhenAvailable && g.available) return { key: 'can', bg: safe(function () { return str(tmp[l].color); }, '') };
+    return { key: 'locked', bg: counterBg(pfx + S.no, 'locked') };
+  }
+
   /** ONE COUNTER PER CATEGORY THE LAYER DRAWS, in the tab layout's own order (first appearance wins) — and only
    *  for a category that is non-empty after the three visibility rules, because `visibleSeq` never yields what the
    *  tab does not draw. A `ratio` counter's `y` is what the tab draws, so a player who has set `msDisplay` to
@@ -501,8 +564,11 @@
     visibleSeq(l).forEach(function (e) {
       var C = COUNTERS[e.kind];
       if (!C) return;
-      if (!by[e.kind]) { by[e.kind] = { kind: e.kind, label: C.label, name: C.name, mode: C.mode, x: 0, y: 0, total: null, any: false }; order.push(e.kind); }
+      if (!by[e.kind]) { by[e.kind] = { kind: e.kind, label: C.label, name: C.name, mode: C.mode, x: 0, y: 0, total: null, any: false, available: false }; order.push(e.kind); }
       var g = by[e.kind];
+      // (U6) … and whether there is anything to DO in this category, which is what decides the layer colour.
+      // Asked at most until the first yes: it is game code, once per drawn component, on the counters' own budget.
+      if (!g.available) g.available = componentAvailable(e.kind, e.layer, e.id, e.state);
       if (C.mode === 'ratio') { g.y++; if (e.state === 'done') g.x++; g.any = true; return; }
       var amt = ownedAmount(e.kind, e.layer, e.id);
       if (amt === null) return;
@@ -653,16 +719,22 @@
     return { key: 'locked', bg: S.no ? engineBg(pfx + S.no) : '' };
   }
 
-  /** Paint one chip. ⚠ APPEARANCE ONLY — U2's ruling stands: affordability moves with the engine's tick at 20/s and
-   *  may decide how a chip LOOKS, never where it sits or whether it is there (`signature()` carries no state). */
-  function paintChip(el, c) {
+  /** Paint one control that stands for a component. ⚠ APPEARANCE ONLY — U2's ruling stands: affordability moves
+   *  with the engine's tick at 20/s and may decide how a control LOOKS, never where it sits or whether it is there
+   *  (`signature()` carries no state).
+   *  ⚠ `memo` IS WHERE THE LAST ANSWER IS REMEMBERED, and it is a separate object per ELEMENT rather than per
+   *  component. Since U6 the same chip object backs two controls — the expanded view's chip and the collapsed
+   *  card's action button — and a memo shared between them would let whichever painted first swallow the other's
+   *  paint for good (the second call would read its own answer back as "unchanged" and write nothing). */
+  function paintSkin(el, c, memo) {
     var s = chipSkin(c);
-    if (c.skinKey === s.key && c.skinBg === s.bg) return false;
-    c.skinKey = s.key; c.skinBg = s.bg;
+    if (memo.skinKey === s.key && memo.skinBg === s.bg) return false;
+    memo.skinKey = s.key; memo.skinBg = s.bg;
     if (s.key) el.dataset.skin = s.key; else delete el.dataset.skin;
     el.style.backgroundColor = s.bg;
     return true;
   }
+  function paintChip(el, c) { return paintSkin(el, c, c); }
   /** The chips of one card, repainted. Rides the THROTTLED path with the counters and the action row's lit/grey:
    *  a colour is a readout, and `affordable()` is game code called once per chip. */
   function paintChips(rec) { rec.chips.forEach(function (c, i) { if (rec.chipEls[i]) paintChip(rec.chipEls[i], c); }); }
@@ -1151,7 +1223,7 @@
     actionBox = document.createElement('div');
     actionBox.className = 'tmt-layerlist-actions';
     el.appendChild(actionBox);
-    var rec = { el: el, head: head, name: name, amount: amount, reset: reset, chips: chips, more: more,
+    var rec = { el: el, layer: l, head: head, name: name, amount: amount, reset: reset, chips: chips, more: more,
       chipEls: chipBox ? [].slice.call(chipBox.querySelectorAll('.tmt-layerlist-chip')) : [],
       counterBox: counterBox, counterKeys: '', counterEls: [], reserved: Object.create(null),
       actionBox: actionBox, actionKeys: '', actionEls: [] };
@@ -1203,7 +1275,7 @@
       val.className = 'tmt-layerlist-counter-value';
       box.append(lab, val);
       rec.counterBox.appendChild(box);
-      return { kind: g.kind, box: box, val: val };
+      return { kind: g.kind, box: box, val: val };   // (U6) `skinKey` / `skinBg` are the paint memo, added on first paint
     });
     rec.counterKeys = counters.map(function (g) { return g.kind; }).join(' ');
     syncCounters(rec, counters);
@@ -1220,7 +1292,18 @@
       // is the jitter the reservation exists to prevent (see `chars` above, and `tabular-nums` in the CSS).
       var want = Math.max(g.chars, rec.reserved[g.kind] || 0);
       if (want !== rec.reserved[g.kind]) { rec.reserved[g.kind] = want; e.val.style.minWidth = want + 'ch'; }
+      paintCounter(rec.layer, e, g);   // (U6) and the counter's own colour, on the same budget as the digits
     });
+  }
+  /** (U6) Paint one counter. Same shape as `paintSkin`, and the memo is the counter's element record for the same
+   *  reason: one memo per ELEMENT, never per category. */
+  function paintCounter(l, e, g) {
+    var sk = counterSkin(l, g);
+    if (e.skinKey === sk.key && e.skinBg === sk.bg) return false;
+    e.skinKey = sk.key; e.skinBg = sk.bg;
+    if (sk.key) e.box.dataset.skin = sk.key; else delete e.box.dataset.skin;
+    e.box.style.backgroundColor = sk.bg;
+    return true;
   }
 
   /** Row two. Rebuilt when the SET changes — which affordability can never do; only a purchase, an unlock or a
@@ -1243,8 +1326,18 @@
     rec.actionKeys = actions.map(function (c) { return c.key; }).join(' ');
     syncActions(rec);
   }
+  /** ⚖ (U6) AN ACTION BUTTON WEARS THE SAME SKIN AS ITS CHIP (user, 2026-09-19): it stands for the same component,
+   *  so the collapsed card and the expanded one say the same thing about it. Until U6 the skin was applied where the
+   *  CHIPS are built and nowhere else, so the collapsed card was still on U2d's lit/grey alone — MEASURED on `ptr`,
+   *  same card: the action button read `skin=null bg=rgba(0, 0, 0, 0)` while its chip read `skin="locked"
+   *  bg=rgb(191, 143, 143)`.
+   *  ⚠ `data-afford` STAYS. The two attributes answer different questions — lit/grey is "can I press this right
+   *  now", the skin is "what IS this" — and the collapsed card wants both. */
   function syncActions(rec) {
-    rec.actionEls.forEach(function (a) { a.el.dataset.afford = affordable(a.chip) ? 'yes' : 'no'; });
+    rec.actionEls.forEach(function (a) {
+      a.el.dataset.afford = affordable(a.chip) ? 'yes' : 'no';
+      paintSkin(a.el, a.chip, a);   // the memo is the ACTION's own record, never the shared chip object
+    });
   }
 
   /** HOW MANY BUTTONS A ROW HOLDS — ⚖ measured at render, never a constant (user, 2026-09-18). Every candidate is
@@ -1445,10 +1538,28 @@
     requestAnimationFrame(function () { if (cameFrom !== null && currentTab() !== cameFrom) cameFrom = null; });
   }
 
+  // ⚖ (U6) PRESSING AN INACCESSIBLE LAYER DOES NOTHING AT ALL (user, 2026-09-19).
+  // ⚠ Nothing was broken in the ENGINE: every `showTab` begins `if (LAYERS.includes(name) && !layerunlocked(name))
+  // return` — a silent no-op. The list hid itself FIRST and asked afterwards, so the overlay closed, the tab did
+  // not change, and the player was left looking at whatever tab happened to be open. MEASURED on `ptr` at M05,
+  // pressing `t`: `open` true → false, `player.tab` 'none' → 'none', `cameFrom` null → 't'.
+  // ⚠ THE ENGINE'S OWN PREDICATE decides, where it has one. The card's greyed class reads `player[l].unlocked`
+  // (`refreshInner`), which is NOT the same question: ptr's `layerunlocked` also lets a layer you can reset into
+  // through. The one that decides whether the tab opens is the engine's, so that is the one asked; a game without
+  // it falls back to the card's own reading.
+  function reachable(l) {
+    var v = safe(function () { return typeof layerunlocked === 'function' ? !!layerunlocked(l) : null; }, null);
+    if (v !== null) return v;
+    return safe(function () { return !!(player[l] && player[l].unlocked); }, false);
+  }
   function openTab(l) {
+    // ⚠ BEFORE `hide()`, and with no `cameFrom` write either: U5's remembered view must not record a tab that
+    // never opened — a memory set here would send the next back press to the list from a tab the list never opened.
+    if (!reachable(l)) return false;
     hide();
     cameFrom = l;   // (U5) we are the view this tab was opened from
     try { showTab(l); } catch (e) { /* a game without showTab keeps the card inert rather than throwing */ }
+    return true;
   }
 
   // A chip in the `open` (or `active`) state ACTS; one that is `done`, or one whose category has no action at all
@@ -1540,6 +1651,9 @@
       // (U5) what the game paints this chip, and the engine's own word for the state — the list's own answer, which
       // the gate compares against an expectation it rebuilds from `tmp` / `player` itself.
       chipSkin: function (l) { return chipsOf(l).map(function (c) { var s = chipSkin(c); return { key: c.key, kind: c.kind, id: c.id, layer: c.layer, state: c.state, skin: s.key, bg: s.bg }; }); },
+      // (U6) the same for the COUNTERS, whose three-way reading is the user's rule rather than the component's:
+      // `available` is "is there anything to do in this category right now", which is what earns the layer colour.
+      counterSkin: function (l) { return countersOf(l).map(function (g) { var s = counterSkin(l, g); return { kind: g.kind, mode: g.mode, x: g.x, y: g.y, text: g.text, available: g.available, skin: s.key, bg: s.bg }; }); },
       // (U2e) THE TOOLTIP. The gate drives it through this rather than through a click wherever it is not the tap
       // itself that is under test, for the same reason `expand` exists: a click is not a neutral probe.
       tip: {
