@@ -151,6 +151,7 @@ other, never against a hand-written expectation.
 | URL overrides | for each flag, in BOTH directions: `?flag=1` over a stored `false` gives the flagged page; `?flag=0` over a stored `true` gives the PLAIN page — not merely a false in the loader's object |
 | the press | the DISCRIMINATOR. The real button is clicked, on a page rendering the other way: the page that comes back equals the `?flag=1` page for `mobile` and for `automation`, and a second press brings back the plain page exactly. `flagSource` is then `stored`, and the store is empty again after the second press |
 | a press over a parameter | starting from `?mobile=1`, a press comes back as the plain page **and** with no `mobile=` left in the address — the leg that catches "wrote a key, reloaded, nothing changed" |
+| the locked button | on a `?mobile=1` page the Nav bar button is drawn locked, says `ON (with the mobile layout)`, and `flagSource.navbar` is `implied`. ⛔ The press is MADE and the page measured across it: nothing navigates, the store stays empty, the address keeps its parameter and the section is still there. A locked control that merely swallowed a press would be the very thing this slice was told not to ship |
 
 Every page in every leg is drawn in its own browser context, because a stored preference is per browser and a leg
 that writes one must not reach the next leg's page. Page errors and blocked requests are collected across all of

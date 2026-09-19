@@ -2040,15 +2040,36 @@ async function gateOptions(browser, base, ids) {
       });
       row.pressOverUrlOk = optSame(row.pressOverUrl, row.plain) && !/mobile=/.test(row.pressOverUrl.search);
 
+      // --- leg 7: the ONE control that does not act says so on its face. `?mobile=1` has always implied the bar, so
+      // under the layout the Nav bar button is drawn LOCKED. ⛔ A locked button that merely swallowed the press
+      // would be the exact thing this slice was told not to ship, so the press is MADE and the page is measured
+      // across it: nothing navigates, nothing is stored, nothing renders differently.
+      row.locked = await draw('mobile=1', null, async (p) => {
+        await optOpenTab(p);
+        const before = await optFingerprint(p);
+        const label = await p.evaluate(() => {
+          const b = document.querySelector('#tmt-loader-options button[data-flag="navbar"]');
+          return { text: b.textContent, locked: b.classList.contains('locked'), title: b.title };
+        });
+        await p.click(`${OPT_SECTION} button[data-flag="navbar"]`);
+        await p.evaluate(() => new Promise((res) => requestAnimationFrame(() => requestAnimationFrame(res))));
+        const after = await optFingerprint(p);
+        return { label, sameAfterPress: optSame(before, after), stored: after.stored, url: after.search,
+          stillThere: after.section, source: before.flagSource.navbar };
+      });
+      row.lockedOk = !!(row.locked && row.locked.label.locked && /with the mobile layout/.test(row.locked.label.text)
+        && /ON/.test(row.locked.label.text) && row.locked.source === 'implied' && row.locked.sameAfterPress
+        && Object.keys(row.locked.stored).length === 0 && /mobile=1/.test(row.locked.url) && row.locked.stillThere);
+
     } catch (e) {
       row.exception = String((e && e.message) || e).slice(0, 300);
     }
     row.errors = errors.slice(0, 5);
     row.errorCount = errors.length;
     row.ok = !row.exception && !!(row.sectionOk && row.inertOk && row.sameOk && row.overrideOk && row.pressOk
-      && row.pressOverUrlOk && errors.length === 0);
+      && row.pressOverUrlOk && row.lockedOk && errors.length === 0);
     rows.push(row);
-    console.log(`O1 ${id}: ${row.ok ? 'GREEN' : 'RED'} section=${row.sectionOk} inert=${row.inertOk} same=${row.sameOk} override=${row.overrideOk} press=${row.pressOk} pressOverUrl=${row.pressOverUrlOk} errors=${row.errorCount}${row.exception ? ` exception=${row.exception}` : ''}`);
+    console.log(`O1 ${id}: ${row.ok ? 'GREEN' : 'RED'} section=${row.sectionOk} inert=${row.inertOk} same=${row.sameOk} override=${row.overrideOk} press=${row.pressOk} pressOverUrl=${row.pressOverUrlOk} locked=${row.lockedOk} errors=${row.errorCount}${row.exception ? ` exception=${row.exception}` : ''}`);
   }
   return rows;
 }
@@ -2190,10 +2211,10 @@ async function main() {
       code = rows.every((r) => r.ok) ? 0 : 1;
       console.log(`O1 options: ${rows.map((r) => `${r.id}=${r.ok ? 'GREEN' : 'RED'}`).join(' ')}`);
       const leg = (f) => `${rows.filter((r) => r[f]).length}/${rows.length}`;
-      console.log(`O1 legs: section ${leg('sectionOk')}, inertness ${leg('inertOk')}, stored \u2261 URL ${leg('sameOk')}, URL overrides ${leg('overrideOk')}, the PRESS changes the page ${leg('pressOk')}, a press over a parameter ${leg('pressOverUrlOk')}`);
+      console.log(`O1 legs: section ${leg('sectionOk')}, inertness ${leg('inertOk')}, stored \u2261 URL ${leg('sameOk')}, URL overrides ${leg('overrideOk')}, the PRESS changes the page ${leg('pressOk')}, a press over a parameter ${leg('pressOverUrlOk')}, the locked button ${leg('lockedOk')}`);
       const lbl = rows.map((r) => r.section && r.section.open && r.section.open.labels.join(' \u00b7 ')).filter(Boolean)[0];
       console.log(`O1 the section, as drawn: ${lbl || '\u2014'}${rows.some((r) => r.errorCount) ? `; \u26d4 ${rows.reduce((n, r) => n + r.errorCount, 0)} page error(s)/blocked request(s): ${rows.flatMap((r) => r.errors).slice(0, 4).join(' | ')}` : '; 0 page errors, 0 blocked requests'}`);
-      for (const r of rows.filter((x) => !x.ok)) console.log(`  ${r.id}: ${JSON.stringify({ section: r.section, same: r.same, override: r.override, press: r.press, pressOverUrl: r.pressOverUrl && { search: r.pressOverUrl.search, flags: optRender(r.pressOverUrl) }, errors: r.errors, exception: r.exception })}`);
+      for (const r of rows.filter((x) => !x.ok)) console.log(`  ${r.id}: ${JSON.stringify({ section: r.section, same: r.same, override: r.override, press: r.press, locked: r.locked, pressOverUrl: r.pressOverUrl && { search: r.pressOverUrl.search, flags: optRender(r.pressOverUrl) }, errors: r.errors, exception: r.exception })}`);
     } else {
       if (shard) throw new Error('--shard applies to --gate load / --gate mobile, not to a single-game run');
       const out = await runPage(browser, base, ids[0], { ticks: Number(a.ticks ?? 200), diff: Number(a.diff ?? 0.05), leg: a.leg || 'idle', until: a.until || null, stateOut: a['state-out'], playerOut: a['player-out'], loadFrom: a['load-from'] ? fs.readFileSync(a['load-from'], 'utf8') : null, profile: a.profile || null, exclude: a.exclude ? a.exclude.split(',') : [], autoOpt: a['auto-opt'] || null, automation: !a['no-automation'] });

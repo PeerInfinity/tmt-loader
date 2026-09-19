@@ -16,7 +16,7 @@ run() {  # run <name> <expected-red-legs…>
   local out; out="$(node tools/harness/page.mjs "$GAME" --gate options 2>&1 | grep -E "^O1 $GAME:" || true)"
   git checkout -- .
   local red=() ; local leg
-  for leg in section inert same override press pressOverUrl; do
+  for leg in section inert same override press pressOverUrl locked; do
     grep -q -- "$leg=true" <<<"$out" || red+=("$leg")
   done
   local got="${red[*]:-}" want="$*"
@@ -66,3 +66,11 @@ s=s.replace("    u.searchParams.delete(flag);","    /* mutant: the parameter sta
 open(p,'w').write(s)
 PY
 run "E the press leaves the parameter" pressOverUrl
+
+echo "mutant F — the locked button accepts the press anyway:"
+python3 - <<'PY'
+p='loader/options.js';s=open(p).read()
+s=s.replace("    if (b && b.classList.contains('locked')) return; // the label says why; nothing is written and nothing reloads","    /* mutant: the locked button acts */")
+open(p,'w').write(s)
+PY
+run "F the locked button acts" locked
