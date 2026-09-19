@@ -4151,7 +4151,7 @@ path a native `title` does not have.
 | M1 tooltip leg (U2e) | 1-clicker | same | GREEN | the `tooltip` FIELD path, naturally: **10 of its drawn controls declare one**, all 10 in the overlay, and the cost is still there beside it |
 | M1 tooltip leg (U2e) | create-incremental | same | GREEN | 6 declared tooltips, 6 shown; **6 controls whose own fields carry a tag, 0 overlays holding one** — the markup half is non-vacuous here |
 | M1 tooltip leg (U2e) | the-quantum-tree | same | GREEN | the game whose `Qc` prestige text formats a NaN at a fresh save — the tooltip path does not reach that string, which is what the roster measurement above says of every game |
-| M1 whole gate, the bounded local set | ptr, something, 1-clicker, create-incremental, the-quantum-tree | every leg | GREEN | 5/5; the roster is CI's |
+| M1 whole gate, the bounded local set | ptr, something, 1-clicker, create-incremental, the-quantum-tree | every leg | GREEN | 5/5 at `284daf76b`, after the battery: 46 cards, 165 chips; the tooltip leg **228 of 228 judged controls richer** out of 262 (168 chips, 60 buttons, 34 counters), **25 controls whose own fields carry a tag and 0 overlays holding one**, both tooltip paths exercised (`1-clicker` 10/10 declared, `create-incremental` 6/6), tap + hover + the NaN sweep + the constructed NaN + the constructed cost move green on all five. The roster is CI's |
 | unit tests (`npm run harness:test`) | — | — | GREEN | **60** tests (58 + the two new census ones) |
 | census-figures | — | — | GREEN | 9/9 documented figures = the tree (the new tooltip claim among them) |
 
