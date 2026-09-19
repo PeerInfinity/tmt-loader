@@ -210,6 +210,73 @@ export const U2_CHIPS = { ptr: 120, something: 70 };
  * tab, so a gate that only ever looks at a fresh page cannot see the layout this mode exists to fix: the split
  * column, the milestone rows and the achievement grid all appear only once a layer tab is open. */
 
+/**
+ * ⚠ U2c — THE LAYOUT AS THE DIGITS CHANGE, asked the only way that ISOLATES the question. The readouts on a card
+ * are the game's numbers, and the number a game shows grows by thousands of orders of magnitude over a save; the
+ * question is whether the card's boxes answer to the STRING. So nothing in the game is touched here: the probe
+ * writes each magnitude into `.tmt-layerlist-amount` itself and measures, which holds the layer set, the counters,
+ * the buttons and the chips exactly still while the only thing that moves is the readout.
+ *
+ * ⚠ WHY NOT "compare the fresh load against the deep one", which is the obvious reading. MEASURED on `ptr`: the
+ * fresh save has 2 cards against the deep save's 11, and of the two only `p` carries an amount (`0` → `3.93e541`)
+ * — whose meta column is sized by the resource NAME, 117.41 px, which is wider than either number. So that
+ * comparison does not move even on the unfixed build, while the two loads differ in card count, counter rows and
+ * button rows for reasons that have nothing to do with digits. It would have been a green that proved nothing.
+ * The magnitudes below ARE the two loads' own — `0` is the fresh save's and `9.88e3284` is the deep snapshot's
+ * order of magnitude — applied to every card instead of the one that happens to exist at both.
+ *
+ * `111` against `777` is the tabular-figures half (same length, different glyphs); the rest are the lengths
+ * `format()` reaches. The counters are verified the same way and in the same pass, against U2d's reservation
+ * rather than a new one: a value that gets SHORTER may not give width back, and one the same length in different
+ * glyphs may not change it either.
+ */
+const DIGITS_PROBE = `(${function () {
+  const panel = document.getElementById('tmt-layerlist');
+  if (!panel) return { why: 'no panel' };
+  const R = (e) => { if (!e) return null; const r = e.getBoundingClientRect(); return [+r.x.toFixed(2), +r.y.toFixed(2), +r.width.toFixed(2), +r.height.toFixed(2)]; };
+  const cards = [].slice.call(panel.querySelectorAll('.tmt-layerlist-card'));
+  const shot = () => cards.map((c) => ({
+    layer: c.dataset.layer, card: R(c), meta: R(c.querySelector('.tmt-layerlist-meta')),
+    name: R(c.querySelector('.tmt-layerlist-name')), amount: R(c.querySelector('.tmt-layerlist-amount')),
+    ctr: [].map.call(c.querySelectorAll('.tmt-layerlist-counter'), R),
+  }));
+  const amounts = [].slice.call(panel.querySelectorAll('.tmt-layerlist-amount'));
+  const ctrs = [].slice.call(panel.querySelectorAll('.tmt-layerlist-counter-value'));
+  const wasAmt = amounts.map((e) => e.textContent), wasCtr = ctrs.map((e) => e.textContent);
+  const STRINGS = ['0', '111', '777', '11,111', '1.11e10', '9.88e3284', '1.111e3,284'];
+  const MOVE = 0.5;   // a sub-pixel is layout noise; the unfixed build moves these boxes by 3 to 102 px
+  const cmp = (a, b, keys, label, into) => {
+    b.forEach((c, i) => {
+      const q = a[i];
+      if (!q || q.layer !== c.layer) return;
+      const box = (u, v, what) => { if (!u || !v) return; for (let f = 0; f < 4; f++) if (Math.abs(u[f] - v[f]) > MOVE) { into.push(`${c.layer}.${what}[${'xywh'[f]}] ${u[f]}→${v[f]} ${label}`); return; } };
+      keys.forEach((k) => {
+        // `ctr` is a LIST of boxes (one per counter on that card); every other key is one box
+        if (k === 'ctr') (c.ctr || []).forEach((r, j) => box((q.ctr || [])[j], r, `ctr#${j}`));
+        else box(q[k], c[k], k);
+      });
+    });
+  };
+  // 1. the amount readout, over every magnitude it reaches
+  amounts.forEach((e) => { e.textContent = STRINGS[0]; });
+  const base = shot(), moved = [];
+  for (let i = 1; i < STRINGS.length; i++) {
+    amounts.forEach((e) => { e.textContent = STRINGS[i]; });
+    cmp(base, shot(), ['card', 'meta', 'name', 'amount'], `at "${STRINGS[i]}"`, moved);
+  }
+  amounts.forEach((e, i) => { e.textContent = wasAmt[i]; });
+  // 2. U2d's counter reservation, VERIFIED: shorter, and the same length in wider glyphs
+  const cBase = shot(), counterMoved = [];
+  [['short', () => '1'], ['glyphs', (t) => t.replace(/[0-9]/g, '7')]].forEach(([label, f]) => {
+    ctrs.forEach((e, i) => { e.textContent = f(wasCtr[i]); });
+    cmp(cBase, shot(), ['ctr'], `(${label})`, counterMoved);
+  });
+  ctrs.forEach((e, i) => { e.textContent = wasCtr[i]; });
+  const restored = amounts.every((e, i) => e.textContent === wasAmt[i]) && ctrs.every((e, i) => e.textContent === wasCtr[i]);
+  return { cards: cards.length, amounts: amounts.length, counters: ctrs.length, magnitudes: STRINGS.length,
+    moved: moved.length, sample: moved.slice(0, 4), counterMoved: counterMoved.length, counterSample: counterMoved.slice(0, 4), restored };
+}})()`;
+
 /** Everything the mobile layout promises, measured in the page. Geometry only — it asserts nothing about the game. */
 const MOBILE_PROBE = `(${function () {
   const vw = document.documentElement.clientWidth;
@@ -1137,6 +1204,128 @@ async function gateMobile(browser, base, ids) {
         restored: rBack.chips === rBase.chips && !!rBack.seqOk && rBack.milestoneChips === rBase.milestoneChips,
       };
       row.rulesOk = !!(row.rules.restored && !/DISAGREES|STILL SHOWN|NOT MARKED|A BOX AT|NO BOX FOR|NOT RESTORED|VANISHED|DID NOT MOVE/.test(`${row.rules.ms.verdict} ${row.rules.pseudo.verdict} ${row.rules.clickable.verdict} ${row.rules.bigAmount.verdict}`));
+      // --- U2c leg E: THE LAYOUT HOLDS STILL AS THE DIGITS CHANGE ---------------------------------------------
+      // At BOTH widths and in BOTH states, because U2d's counters and the amount readout are different numbers on
+      // different rows and either can move the box. The probe writes the magnitudes itself (see DIGITS_PROBE for
+      // why the two LOADS cannot answer this) and puts every readout back; `restored` is what says it did.
+      const digitsAt = async (vp, label) => {
+        await page.setViewportSize(vp);
+        await page.waitForTimeout(150);
+        const collapsed = await page.evaluate(DIGITS_PROBE);
+        // the expanded state is toggled directly rather than clicked, for the same reason the divider check is
+        // (a click is not a neutral probe, and the expander's handler does nothing else this leg needs)
+        await page.evaluate(() => document.querySelectorAll('.tmt-layerlist-card').forEach((c) => c.classList.add('tmt-layerlist-expanded')));
+        const expanded = await page.evaluate(DIGITS_PROBE);
+        await page.evaluate(() => { document.querySelectorAll('.tmt-layerlist-card').forEach((c) => c.classList.remove('tmt-layerlist-expanded')); const ui = window.tmtLoader.layerListUI; if (ui) ui.refresh(); });
+        return { at: label, vw: vp.width, collapsed, expanded };
+      };
+      await page.evaluate(() => { const ui = window.tmtLoader.layerListUI; if (ui) ui.open(); });
+      const digits = [await digitsAt(PHONE, 'phone'), await digitsAt(DESKTOP, 'desktop')];
+      await page.setViewportSize(PHONE);
+      await page.waitForTimeout(150);
+      const dBad = digits.flatMap((d) => [d.collapsed, d.expanded].flatMap((x, i) => (x.moved || x.counterMoved ? (x.sample || []).concat(x.counterSample || []).map((m) => `${d.at}/${i ? 'expanded' : 'collapsed'} ${m}`) : [])));
+      row.digits = {
+        cards: digits[0].collapsed.cards, amounts: digits[0].collapsed.amounts, counters: digits[0].collapsed.counters,
+        magnitudes: digits[0].collapsed.magnitudes,
+        moved: digits.map((d) => `${d.at} ${d.collapsed.moved}/${d.expanded.moved}`).join(' '),
+        counterMoved: digits.map((d) => `${d.at} ${d.collapsed.counterMoved}/${d.expanded.counterMoved}`).join(' '),
+        bad: dBad.slice(0, 4),
+        restored: digits.every((d) => d.collapsed.restored && d.expanded.restored),
+        verdict: !digits[0].collapsed.amounts ? 'abstains (no card carries a readout)'
+          : dBad.length ? 'THE BOX MOVED WITH THE DIGITS'
+          : !digits.every((d) => d.collapsed.restored && d.expanded.restored) ? 'NOT RESTORED'
+          : 'unchanged over every magnitude, at both widths, in both states' };
+      row.digitsOk = !/MOVED|NOT RESTORED/.test(row.digits.verdict);
+
+      // --- U2c leg F: THE CARD THE PLAYER LEFT OPEN COMES BACK OPEN -------------------------------------------
+      // ⚠ THE DISCRIMINATOR. A card is CHANGED before the reload and a second one is left alone: asserting that a
+      // default-closed card is still closed passes with no persistence at all. The state is set through the API,
+      // which is the chevron's own path, because a click is not a neutral probe.
+      // The read-back is a SECOND PAGE in the same context rather than a reload of this one: same origin, same
+      // localStorage, same save — and this page's own request record (which the load verdict below judges) is left
+      // as the leg found it.
+      const pref0 = await page.evaluate(() => {
+        const ui = window.tmtLoader.layerListUI;
+        const raw = tmtLoader.storage.raw, keys = [];
+        for (let i = 0; i < raw.length.call(localStorage); i++) keys.push(raw.key.call(localStorage, i));
+        const withMore = [...document.querySelectorAll('.tmt-layerlist-card')].filter((c) => c.querySelector('.tmt-layerlist-more'));
+        // prefer a card whose action row the phone had to CUT: a card built OPEN hides that row, and a hidden row
+        // has no layout to measure, so it is the one that says whether the fit is paid when the card closes again
+        const cut = withMore.find((c) => c.querySelectorAll('.tmt-layerlist-act').length > c.querySelectorAll('.tmt-layerlist-act:not(.tmt-layerlist-nofit)').length);
+        const target = cut || withMore[0] || null;
+        const key = ui.prefKey ? ui.prefKey() : null;
+        return { key, stored: key ? raw.getItem.call(localStorage, key) : null, expanded: ui.expanded ? ui.expanded() : null,
+          keys, cards: withMore.length, cut: cut ? cut.dataset.layer : null,
+          target: target ? target.dataset.layer : null,
+          control: (withMore.find((c) => c !== target) || {}).dataset ? withMore.find((c) => c !== target).dataset.layer : null };
+      });
+      let persist = { cards: pref0.cards, target: pref0.target, control: pref0.control, cut: pref0.cut,
+        firstLoad: { stored: pref0.stored, expanded: pref0.expanded } };
+      if (!pref0.target) {
+        persist.verdict = 'abstains (no card on this game has an expander)';
+      } else {
+        const wrote = await page.evaluate((t) => {
+          const ui = window.tmtLoader.layerListUI, raw = tmtLoader.storage.raw;
+          const on = ui.expand(t, true), keys = [];
+          for (let i = 0; i < raw.length.call(localStorage); i++) keys.push(raw.key.call(localStorage, i));
+          return { on, keys, stored: ui.prefKey() ? raw.getItem.call(localStorage, ui.prefKey()) : null };
+        }, pref0.target);
+        // ⚠ THE SECOND MUTANT: a store keyed WITHOUT the game id. localStorage is per ORIGIN and every game is
+        // served from the same one, so the prefix is the only thing keeping two games apart — a key outside it is
+        // a key both games read. Asserted mechanically: every key this write added is in THIS game's namespace.
+        persist.wrote = { stored: wrote.stored, newKeys: wrote.keys.filter((k) => !pref0.keys.includes(k)) };
+        persist.keyOk = persist.wrote.newKeys.length > 0 && persist.wrote.newKeys.every((k) => k.startsWith(`tmt-loader:${id}:`));
+        const p2 = await context.newPage();
+        const readBack = async (vp, label) => {
+          await p2.setViewportSize(vp);
+          await p2.goto(url, { waitUntil: 'load' });
+          const rr = await waitReady(p2);
+          if (!rr.ready) return { at: label, ready: false };
+          const back = await p2.evaluate(([t, c]) => {
+            const ui = window.tmtLoader.layerListUI;
+            ui.open();
+            const card = document.querySelector(`.tmt-layerlist-card[data-layer="${t}"]`);
+            const chev = card && card.querySelector('.tmt-layerlist-more');
+            const ctl = c && document.querySelector(`.tmt-layerlist-card[data-layer="${c}"]`);
+            return { expanded: ui.expanded(), present: !!card,
+              open: !!card && card.classList.contains('tmt-layerlist-expanded'),
+              aria: chev ? chev.getAttribute('aria-expanded') : null,
+              controlOpen: !!ctl && ctl.classList.contains('tmt-layerlist-expanded'), controlPresent: !!ctl };
+          }, [pref0.target, pref0.control]);
+          // and closing it again pays the fit that a hidden row could not be measured for
+          const refit = await p2.evaluate((t) => {
+            const ui = window.tmtLoader.layerListUI;
+            ui.expand(t, false);
+            const c = document.querySelector(`.tmt-layerlist-card[data-layer="${t}"]`);
+            if (!c) return null;
+            const all = [...c.querySelectorAll('.tmt-layerlist-act')];
+            const vis = all.filter((e) => !e.classList.contains('tmt-layerlist-nofit'));
+            const lines = [...new Set(vis.map((e) => Math.round(e.getBoundingClientRect().top)))].length;
+            ui.expand(t, true);   // left open for the next width's read-back
+            return { offered: all.length, shown: vis.length, lines, prefix: vis.every((e, i) => e === all[i]) };
+          }, pref0.target);
+          return { at: label, ready: true, ...back, refit };
+        };
+        persist.back = [await readBack(PHONE, 'phone'), await readBack(DESKTOP, 'desktop')];
+        const cleared = await p2.evaluate((t) => {
+          const ui = window.tmtLoader.layerListUI, raw = tmtLoader.storage.raw;
+          ui.expand(t, false);
+          return { expanded: ui.expanded(), stored: ui.prefKey() ? raw.getItem.call(localStorage, ui.prefKey()) : null };
+        }, pref0.target);
+        persist.cleared = cleared;
+        await p2.close();
+        const okAt = (b) => !!(b.ready && b.present && b.open && b.aria === 'true' && !b.controlOpen
+          && (!b.refit || (b.refit.prefix && b.refit.lines <= 1)));
+        persist.verdict = !(pref0.stored === null && pref0.expanded && pref0.expanded.length === 0) ? 'A FIRST LOAD WAS NOT CLEAN'
+          : !persist.keyOk ? 'THE KEY IS NOT THIS GAME\'S'
+          : !persist.back.every((b) => b.ready) ? 'THE READ-BACK PAGE DID NOT LOAD'
+          : !persist.back.every(okAt) ? 'NOT RESTORED AFTER THE RELOAD'
+          : cleared.stored !== null ? 'THE KEY SURVIVED CLOSING THE LAST CARD'
+          : `restored at both widths (${pref0.target} open, ${pref0.control || 'no control card'} closed)`;
+      }
+      row.persist = persist;
+      row.persistOk = !/A FIRST LOAD|THE KEY|NOT RESTORED|DID NOT LOAD|SURVIVED/.test(persist.verdict);
+
       await page.evaluate(() => { const ui = window.tmtLoader.layerListUI; if (ui) ui.close(); });
       const llDesk = nb.layerList;
       // one card per shown layer, in the row the engine names, with distinct chips on each card and the button in
@@ -1182,7 +1371,8 @@ async function gateMobile(browser, base, ids) {
             cardsOffSourceOrder: llPhone.orderFromSource, orderMoved: llPhone.orderFromSource > 0 };
       row.layersOk = !!(row.layers.phoneOk && row.layers.desktopOk && row.layersInert.ok && row.resetVerdict !== 'NOT MOVED'
         && row.rulesOk && (!row.chipBaseline || (row.chipBaseline.fell && row.chipBaseline.orderMoved))
-        && row.fitOk && row.stabilityOk && row.throttleOk && row.counterVerdict !== 'NOT MOVED');
+        && row.fitOk && row.stabilityOk && row.throttleOk && row.counterVerdict !== 'NOT MOVED'
+        && row.digitsOk && row.persistOk);
       row.layersScreenshot = path.relative(REPO, llShot);
 
       const shot = path.join(REPO, `tools/harness/results/${id}-mobile.png`);
@@ -1304,6 +1494,19 @@ async function main() {
       console.log(`M1 layers throttle (${rows[0] && rows[0].throttle ? rows[0].throttle.throttleMs : '—'} ms): ${JSON.stringify(fv('throttle'))}`);
       const cmNo = rows.filter((r) => r.counterVerdict && r.counterVerdict.startsWith('no candidate')).map((r) => r.id);
       console.log(`M1 layers counter press: ${rows.filter((r) => r.counterVerdict === 'moved').length} moved a counter's x by buying through the card, ${rows.filter((r) => r.counterVerdict === 'NOT MOVED').length} did not, ${cmNo.length} abstained${cmNo.length ? ` (nothing affordable: ${cmNo.slice(0, 8).join(', ')}${cmNo.length > 8 ? `, …(${cmNo.length})` : ''})` : ''}`);
+      // ⚠ A LEG THAT NEVER RAN IS NOT A LEG THAT PASSED. `row.digits` is absent when the leg threw and the row went
+      // to the catch — and the first version of these two lines counted that as one of the greens, because it
+      // counted `rows.length` minus the REDS it could see. MEASURED: a build with no `layerListUI.expand` makes
+      // the persistence probe throw, and the summary read `1/1 restored` over a row that was red for an exception.
+      const dgNone = rows.filter((r) => !r.digits).map((r) => r.id);
+      const dgRed = rows.filter((r) => r.digits && !r.digitsOk).map((r) => r.id);
+      const dgAbst = rows.filter((r) => r.digits && /abstains/.test(r.digits.verdict)).map((r) => r.id);
+      const d0 = rows.find((r) => r.digits && r.digits.magnitudes);
+      console.log(`M1 layers digits (U2c — the readout's own string, ${d0 ? d0.digits.magnitudes : '—'} magnitudes, both widths, both states): ${rows.length - dgRed.length - dgAbst.length - dgNone.length}/${rows.length} held every box still over ${rows.reduce((n, r) => n + ((r.digits && r.digits.amounts) || 0), 0)} amount readout(s) and ${rows.reduce((n, r) => n + ((r.digits && r.digits.counters) || 0), 0)} counter(s)${dgAbst.length ? `, ${dgAbst.length} abstained` : ''}${dgNone.length ? `, ⛔ ${dgNone.length} NEVER RAN (the row threw: ${dgNone.slice(0, 6).join(', ')})` : ''}${dgRed.length ? ` (RED: ${dgRed.map((x) => `${x} ${JSON.stringify((rows.find((r) => r.id === x).digits || {}).bad)}`).join('; ')})` : ''}`);
+      const psNone = rows.filter((r) => !r.persist).map((r) => r.id);
+      const psRed = rows.filter((r) => r.persist && !r.persistOk).map((r) => r.id);
+      const psAbst = rows.filter((r) => r.persist && /abstains/.test(r.persist.verdict)).map((r) => r.id);
+      console.log(`M1 layers persistence (U2c — a card CHANGED before the load is read back on a second page, at both widths; a second card left closed is the control): ${rows.length - psRed.length - psAbst.length - psNone.length}/${rows.length} restored${psAbst.length ? `, ${psAbst.length} abstained (no card with an expander: ${psAbst.slice(0, 6).join(', ')}${psAbst.length > 6 ? `, …(${psAbst.length})` : ''})` : ''}${psNone.length ? `, ⛔ ${psNone.length} NEVER RAN (the row threw: ${psNone.slice(0, 6).join(', ')})` : ''}${psRed.length ? ` (RED: ${psRed.map((x) => `${x} ${(rows.find((r) => r.id === x).persist || {}).verdict}`).join('; ')})` : ''}; ${rows.filter((r) => r.persist && r.persist.cut).length} game(s) took a card whose action row the phone had CUT`);
       console.log(`M1 layers shape: tabFormat ${shp.array} array-form, ${shp.object} object/subtab-form, ${shp.none} none (engine default) over ${rows.length} games; ${ms} milestone chip(s), ${dv} divider(s); ${offSrc}/${withChips} card(s) with chips are NOT in source order; ${ps} pseudo-unlocked chip(s)${ps === 0 ? ' — visibility rule 2 is UNEXERCISED at these states (see docs/mobile.md)' : ''}`);
       console.log(`M1 layers discriminators: ${rows.filter((r) => r.chipBaseline).map((r) => `${r.id} ${r.chipBaseline.now} chips vs U2's ${r.chipBaseline.u2} (${r.chipBaseline.fell ? 'FELL' : 'DID NOT FALL'}, ${r.chipBaseline.milestones} of them milestones), ${r.chipBaseline.cardsOffSourceOrder} card(s) off source order (${r.chipBaseline.orderMoved ? 'MOVED' : 'UNMOVED'})`).join('; ') || 'no reference game in this run'}`);
       const vr = (f) => rows.reduce((o, r) => { const v = r.rules && r.rules[f] && r.rules[f].verdict; if (v) o[v] = (o[v] || 0) + 1; return o; }, {});
@@ -1312,7 +1515,7 @@ async function main() {
       console.log(`M1 layers inertness: ${rows.filter((r) => r.layersInert && r.layersInert.verdict === 'unchanged').length} unchanged state hash across opening the list, ${rows.filter((r) => r.layersInert && r.layersInert.verdict === 'MOVED').length} moved, ${llAbst.length} abstained${llAbst.length ? ` (the page does not repeat its own hash: ${llAbst.join(', ')})` : ''}`);
       const noCand = rows.filter((r) => r.resetVerdict && r.resetVerdict.startsWith('no candidate')).map((r) => r.id);
       console.log(`M1 layers reset press: ${rows.filter((r) => r.resetVerdict === 'moved').length} moved player[l].points, ${rows.filter((r) => r.resetVerdict === 'NOT MOVED').length} did not, ${noCand.length} abstained${noCand.length ? ` (nothing could reset: ${noCand.join(', ')})` : ''}`);
-      for (const r of rows.filter((x) => !x.ok)) console.log(`  ${r.id}: layers=${r.layersOk} fit=${r.fitOk}${r.fitWidths && !r.fitOk ? ' ' + JSON.stringify(r.fitWidths) : ''} stability=${r.stabilityOk}${r.stability && !r.stabilityOk ? ' ' + JSON.stringify(r.stability) : ''} throttle=${r.throttleOk}${r.throttle && !r.throttleOk ? ' ' + JSON.stringify(r.throttle) : ''} counter=${r.counterVerdict}${r.counterMove && r.counterVerdict === 'NOT MOVED' ? ' ' + JSON.stringify(r.counterMove) : ''}${r.chipBaseline && !(r.chipBaseline.fell && r.chipBaseline.orderMoved) ? ` chipBaseline=${JSON.stringify(r.chipBaseline)}` : ''}${r.layers && !r.layersOk ? ' ' + JSON.stringify(r.layers) : ''}${r.resetVerdict && r.resetVerdict !== 'moved' ? ` reset=${r.resetVerdict} ${JSON.stringify(r.reset)}` : ''} inert=${r.inertOk} both=${r.bothOk}${r.both ? ' ' + JSON.stringify(r.both) : ''} navbarOnly=${r.navbarOnlyOk}${r.navbarOnly && !r.navbarOnlyOk ? ' ' + JSON.stringify(r.navbarOnly) : ''} state=${r.stateVerdict}${r.state ? ` (plain ${r.state.plain} / control ${r.state.plainControl} / mobile ${r.state.mobile})` : ''} geometry=${r.geometryOk} nav=${r.navOk} load=${r.loadVerdict && r.loadVerdict.ok}${r.worst && r.worst.length ? ` worst=${JSON.stringify(r.worst)}` : ''}${r.exception ? ` exception=${r.exception}` : ''}`);
+      for (const r of rows.filter((x) => !x.ok)) console.log(`  ${r.id}: layers=${r.layersOk} digits=${r.digits ? r.digits.verdict : '—'}${r.digits && !r.digitsOk ? ' ' + JSON.stringify(r.digits) : ''} persist=${r.persist ? r.persist.verdict : '—'}${r.persist && !r.persistOk ? ' ' + JSON.stringify(r.persist) : ''} fit=${r.fitOk}${r.fitWidths && !r.fitOk ? ' ' + JSON.stringify(r.fitWidths) : ''} stability=${r.stabilityOk}${r.stability && !r.stabilityOk ? ' ' + JSON.stringify(r.stability) : ''} throttle=${r.throttleOk}${r.throttle && !r.throttleOk ? ' ' + JSON.stringify(r.throttle) : ''} counter=${r.counterVerdict}${r.counterMove && r.counterVerdict === 'NOT MOVED' ? ' ' + JSON.stringify(r.counterMove) : ''}${r.chipBaseline && !(r.chipBaseline.fell && r.chipBaseline.orderMoved) ? ` chipBaseline=${JSON.stringify(r.chipBaseline)}` : ''}${r.layers && !r.layersOk ? ' ' + JSON.stringify(r.layers) : ''}${r.resetVerdict && r.resetVerdict !== 'moved' ? ` reset=${r.resetVerdict} ${JSON.stringify(r.reset)}` : ''} inert=${r.inertOk} both=${r.bothOk}${r.both ? ' ' + JSON.stringify(r.both) : ''} navbarOnly=${r.navbarOnlyOk}${r.navbarOnly && !r.navbarOnlyOk ? ' ' + JSON.stringify(r.navbarOnly) : ''} state=${r.stateVerdict}${r.state ? ` (plain ${r.state.plain} / control ${r.state.plainControl} / mobile ${r.state.mobile})` : ''} geometry=${r.geometryOk} nav=${r.navOk} load=${r.loadVerdict && r.loadVerdict.ok}${r.worst && r.worst.length ? ` worst=${JSON.stringify(r.worst)}` : ''}${r.exception ? ` exception=${r.exception}` : ''}`);
     } else {
       if (shard) throw new Error('--shard applies to --gate load / --gate mobile, not to a single-game run');
       const out = await runPage(browser, base, ids[0], { ticks: Number(a.ticks ?? 200), diff: Number(a.diff ?? 0.05), leg: a.leg || 'idle', until: a.until || null, stateOut: a['state-out'], playerOut: a['player-out'], loadFrom: a['load-from'] ? fs.readFileSync(a['load-from'], 'utf8') : null, profile: a.profile || null, exclude: a.exclude ? a.exclude.split(',') : [], autoOpt: a['auto-opt'] || null, automation: !a['no-automation'] });

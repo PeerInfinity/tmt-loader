@@ -23,6 +23,16 @@
   text-align: left;
   box-sizing: border-box;
   transition-duration: 0s;
+  /* ⚠ TABULAR FIGURES FOR EVERY READOUT IN THE LIST (U2c), declared here rather than per element: the card carries
+   * several numbers on several rows — the amount, each counter, and the game's own prestige text — and in a face
+   * with PROPORTIONAL figures a `1` is narrower than a `7`, so a number that changes without changing length
+   * still shuffles the text around it. `font-feature-settings` is the same request for the older engines' fonts.
+   * ⚠ MEASURED, and the measurement is the point: on the two reference engines' own fonts this changes NOTHING —
+   * "111" and "777" are both 30.72 px in the amount readout with it and without it, because those fonts already
+   * default to tabular figures. It is declared for the games that ship a font that does not, and because a
+   * reservation in `ch` is only a fixed number of columns if a column is a fixed width. */
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum";
 }
 
 #tmt-layerlist {
@@ -101,6 +111,12 @@
   flex-direction: column;
   gap: 8px;
   min-width: 0; /* a grid item's default `min-width: auto` is what lets a long readout push a card past the screen */
+  /* (U2c) a card's insides are its own: a re-layout inside one card cannot reach the grid or its neighbours.
+   * ⚠ What this does NOT do, said out loud because the brief's wording invites the stronger reading: it is
+   * `layout`, not `size`, so the card's OWN height still answers to its content, and a card that really grows
+   * still moves the cards below it. That is content changing, not digits — the digits are held still by the
+   * reservation below. MEASURED: adding this moved no box on either reference game, at either width. */
+  contain: layout;
 }
 /* shown but not yet unlocked: the tree draws these too, and the reset button on one of them IS the unlock */
 #tmt-layerlist .tmt-layerlist-card.tmt-layerlist-locked { opacity: .62; }
@@ -155,7 +171,24 @@
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-#tmt-layerlist .tmt-layerlist-amount { font-size: 17px; font-weight: bold; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* ⚠ THE AMOUNT RESERVES ITS WIDTH (U2c). Without it the readout is sized by its own string, so the meta column —
+ * the resource name ABOVE it shares that column — is as wide as the number currently is, and every growth in the
+ * number resizes the name's box with it. MEASURED on the deep snapshot at 390 px, injecting nothing but the
+ * readout's string: `0` → `1.111e3,284` moved the meta column on TEN of ptr's ELEVEN cards (`q` 46.97 → 112.59 px,
+ * `a` 10.25 → 112.59), and `something`'s `primitive` 54.8 → 92.13. With the reservation: none of them, at either
+ * width, in either state.
+ * `12ch` because with tabular figures a `ch` is exactly one digit and TMT's `format()` caps the string near 10–12
+ * characters even at e3284 (the widest this slice measured is `1.111e3,284`, 11 characters); the existing ellipsis
+ * takes anything past it, which is what `max-width: 100%` leaves room for on a card too narrow to hold 12. */
+#tmt-layerlist .tmt-layerlist-amount {
+  font-size: 17px;
+  font-weight: bold;
+  width: 12ch;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 
 #tmt-layerlist .tmt-layerlist-reset {
   text-align: center;

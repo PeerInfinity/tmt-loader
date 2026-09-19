@@ -50,6 +50,48 @@
   // list lie right after the press that changed it.
   var COUNTER_MS = 250;
 
+  // ---------------------------------------------------------------- which cards are open, remembered
+  // ⚖ THE EXPANDER MUST NOT RESET ON EVERY LOAD (user, 2026-09-18), per layer and per game. The store is the
+  // loader's OWN namespace, `tmtLoader.storage` (loader/page.js), which is already keyed `tmt-loader:<id>:` — so
+  // two games cannot share a card's state, and this file invents no second store. One key holds the ids of the
+  // cards that are open; a card not named in it is closed, which is also what an absent key says.
+  // ⚠ IT IS WRITTEN THROUGH `storage.raw`, not through `localStorage` — the prefix shim would namespace it just the
+  // same, but going through the raw methods is what states WHICH namespace this key is in, and it keeps the list
+  // independent of a game that re-patches `Storage.prototype` after the shim.
+  // ⚠ A CONSEQUENCE, recorded rather than left to be discovered (docs/mobile.md): the key is inside what "clear
+  // this game's save" clears, because that namespace IS the thing it clears. A cleared game comes back with every
+  // card closed, which is exactly what a first load does.
+  // ⚠ STORAGE CAN THROW AND CAN COME BACK EMPTY — a private window, blocked site data, a quota. Every read and
+  // every write is wrapped, and a list with nothing stored renders exactly as it did before this existed.
+  var PREF_KEY = 'ui.layerlist.expanded';
+  var prefs = null;   // {layer: true}; null until the first read, an object forever after
+  function prefKey() {
+    var st = T.storage;
+    return st && st.prefix && st.raw ? st.prefix + PREF_KEY : null;
+  }
+  function prefRead() {
+    if (prefs) return prefs;
+    prefs = Object.create(null);
+    try {
+      var k = prefKey();
+      var raw = k && T.storage.raw.getItem.call(localStorage, k);
+      var list = raw ? JSON.parse(raw) : null;
+      if (list && typeof list.length === 'number') {
+        for (var i = 0; i < list.length; i++) if (typeof list[i] === 'string') prefs[list[i]] = true;
+      }
+    } catch (e) { /* no storage, or a value we did not write: the list renders with every card closed */ }
+    return prefs;
+  }
+  function prefWrite() {
+    try {
+      var k = prefKey();
+      if (!k) return;
+      var open = Object.keys(prefRead());
+      if (open.length) T.storage.raw.setItem.call(localStorage, k, JSON.stringify(open));
+      else T.storage.raw.removeItem.call(localStorage, k);   // nothing open is nothing to remember
+    } catch (e) { /* a full or read-only store costs the preference, never the list */ }
+  }
+
   // ---------------------------------------------------------------- reading the engine, never trusting it
   // Every read of game data goes through this: `tmp[l].foo` can throw (a getter a layer defines, a tmp entry the
   // engine has not built yet), and one layer's throw must not cost the list.
@@ -644,8 +686,12 @@
       // ⚠ NO DIGIT ON THE TOGGLE. U2's label was `+N`, the count hidden behind it; the counter row now states
       // every one of those totals outright, so a number here would be a second, shakier answer to a question the
       // row above has already answered — and one more number to hold still. A chevron says only "there is more".
-      setMore(more, false);
-      more.addEventListener('click', function () { setMore(more, el.classList.toggle('tmt-layerlist-expanded')); });
+      // the state this card was left in, LAST LOAD or last rebuild — the store is read here, once per card, which
+      // is also what makes a rebuild (an unlocked layer, a switched subtab) keep the card as the player left it.
+      var wasOpen = !!prefRead()[l];
+      if (wasOpen) el.classList.add('tmt-layerlist-expanded');
+      setMore(more, wasOpen);
+      more.addEventListener('click', function () { setExpanded(l, !cards[l].el.classList.contains('tmt-layerlist-expanded')); });
       head.appendChild(more);
     }
     // ---- the COLLAPSED view, row one: the counters
@@ -669,6 +715,24 @@
     drawCounters(rec, counters);
     drawActions(rec, actions);
     return el;
+  }
+
+  /** OPEN OR CLOSE ONE CARD — the button's own path, and the API's. Writes the store, and re-fits the action row
+   *  on the way back: a card built OPEN has its buttons in a `display: none` row, where `getBoundingClientRect()`
+   *  reports every one of them at the same zero top, so the fit pass at build time could not see where the browser
+   *  had wrapped them. `fitCards` skips an open card for that reason, and this is where the measurement it skipped
+   *  is paid. MEASURED on `the-unbalanced-tree`'s `i` without it: a card reopened from the store and then closed
+   *  showed all 10 of its buttons on TWO lines, 261 px tall, against the 7 on one line and 211 px it had before. */
+  function setExpanded(l, on) {
+    var rec = cards[l];
+    if (!rec || !rec.more) return false;
+    on = !!on;
+    rec.el.classList.toggle('tmt-layerlist-expanded', on);
+    setMore(rec.more, on);
+    if (on) prefRead()[l] = true; else delete prefRead()[l];
+    prefWrite();
+    if (!on) fitCards([l]);
+    return on;
   }
 
   function setMore(btn, expanded) {
@@ -749,6 +813,10 @@
     (list || Object.keys(cards)).forEach(function (l) {
       var rec = cards[l];
       if (!rec || !rec.actionBox || !rec.actionEls.length) return;
+      // ⚠ an OPEN card hides the whole action row, and a `display: none` row has no layout to measure — every
+      // button would report the same zero top and none would be marked as having wrapped. It is measured when the
+      // card closes again (`setExpanded`), which is the first moment the row has a box at all.
+      if (rec.el.classList.contains('tmt-layerlist-expanded')) return;
       rec.actionEls.forEach(function (a) { a.el.classList.remove('tmt-layerlist-nofit'); });
       boxes.push(rec);
     });
@@ -956,6 +1024,12 @@
       countersOf: countersOf,
       actionsOf: function (l) { return actionsOf(chipsOf(l)); },
       fit: function () { fitCards(null); },
+      // (U2c) which cards are OPEN, and the button's own path for opening one. The gate drives the list through
+      // this rather than through the chevron, because a click is not a neutral probe — some games count every
+      // click on the document (docs/mobile.md, "Two engine facts").
+      expanded: function () { return Object.keys(cards).filter(function (l) { return cards[l].el.classList.contains('tmt-layerlist-expanded'); }); },
+      expand: function (l, on) { return setExpanded(l, on === undefined ? true : on); },
+      prefKey: prefKey,
       stats: function () { return { refreshes: stats.refreshes, syncs: stats.syncs, throttled: stats.throttled, rebuilds: stats.rebuilds, fits: stats.fits, throttleMs: COUNTER_MS }; },
       cards: function () { return Object.keys(cards); }
     };
