@@ -896,7 +896,7 @@
       // buying it — so it makes that button's call, not the buy
       if (c.state === 'pseudo') { if (typeof unlockUpg === 'function') unlockUpg(c.layer, c.id); return; }
       // ⚠ THE ENGINE'S OWN NAME, WHICHEVER IT HAS. `buyUpgrade` is an ALIAS the TMT engines grew later: 169 of the
-      // 171 games define it, 170 define `buyUpg`, and TWO — `the-modding-tree` (2.0.5.1) and `the-burning-tree` —
+      // 171 games define it, ALL 171 define `buyUpg`, and TWO — `the-modding-tree` (2.0.5.1) and `the-burning-tree` —
       // define ONLY `buyUpg`, so a chip on those two called a function that does not exist and bought nothing.
       // MEASURED by U2d's counter-press leg, which is the first thing ever to drive a chip: the U2 gate pressed the
       // RESET button and nothing else, so a press that silently did nothing was green for two slices.

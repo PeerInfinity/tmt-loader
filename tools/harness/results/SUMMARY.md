@@ -3821,8 +3821,14 @@ checkmarks: nine were green and the tenth's failure is what carried it). The ver
 `0/1 → 0/1` on `p/11`.
 
 ⚠ **`buyUpgrade` is an ALIAS the TMT engines grew later.** Censused over the roster: **169 of 171 games define
-`buyUpgrade`, 170 define `buyUpg`, and exactly two — `the-modding-tree` (2.0.5.1) and `the-burning-tree` — define
-only `buyUpg`.** So since U2 a chip press on those two called a function that does not exist and bought nothing.
+`buyUpgrade`, ALL 171 define `buyUpg`, and exactly two — `the-modding-tree` (2.0.5.1) and `the-burning-tree` —
+define only `buyUpg`.**
+
+⚠ **That `171` read `170` until the launching session re-censused it, and the error is this slice's.** The first
+census was bounded to `games/*/js/`, and one game — `sorbet-s-convolution-mainframe` — keeps its engine under
+`Javascript/` instead. Worse, this slice HAD already found that game by hand while chasing the same question, and
+quoted the bounded figure as a roster-wide one anyway. The bound belonged in the sentence or the sweep. Nothing
+about the fix moves: the two games lacking the alias are the same two, found by the same leg. So since U2 a chip press on those two called a function that does not exist and bought nothing.
 It survived two slices because **no gate had ever DRIVEN a chip**: the layers leg pressed the reset button and
 nothing else, and a press that silently does nothing looks exactly like a press with nothing to do. U2d's counter
 press is the first leg that buys, and it is what turned the defect into a red.

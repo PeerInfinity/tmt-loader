@@ -165,7 +165,7 @@ here that evaluates game code is wrapped: a throw costs one card, never the list
   upgrade chip calls `unlockUpg` — which is what the engine's own second button on that upgrade calls — rather
   than `buyUpgrade`. There is no `locked` chip any more: a component the tab does not draw gets no chip at all.
   ⚠ **U2d found that the upgrade press had never worked on two games.** `buyUpgrade` is an ALIAS the TMT engines
-  grew later: **169 of the 171 games define it, 170 define `buyUpg`, and `the-modding-tree` (2.0.5.1) and
+  grew later: **169 of the 171 games define it, all 171 define `buyUpg`, and `the-modding-tree` (2.0.5.1) and
   `the-burning-tree` define ONLY `buyUpg`** — so on those two a chip press called a function that does not exist
   and bought nothing, silently, for two slices. It went unseen because the gate had never DRIVEN a chip: it pressed
   the reset button and nothing else. U2d's counter press is the first leg that buys, and it caught it on the first
