@@ -63,8 +63,12 @@ mutant m4-hold-clock-never-clears \
   $V2 --part 1
 
 # ---- a refused edit ------------------------------------------------------------------------------------------------
-mutant m5-refused-value-written-anyway \
-  "p='$AUTO';s=open(p).read();o='    if (why) return { ok: false, policy: policyOf(f), error: why };';assert o in s;s=s.replace(o,'    if (false && why) return { ok: false, policy: policyOf(f), error: why };');open(p,'w').write(s)" \
+# ⚠ AIMED AT THE GUARD, NOT AT THE MESSAGE. The first cut bypassed `setSavedParam`'s `checkParam` and came back
+# GREEN — correctly: the value is then formatted into `gain>=bananax` and handed to `setSavedPolicy`, whose
+# `policyOk` refuses it, so nothing is written and `ok` is still false. `checkParam` buys the sentence the player
+# reads; the GUARD is one layer down, and that is what a mutant has to remove for the leg to mean anything.
+mutant m5-refused-value-reaches-the-save \
+  "p='$AUTO';s=open(p).read();o='    if (typeof policy !== \'string\' || !policyOk(f.kind, policy)) return { ok: false, policy: policyOf(f), error:';assert o in s;s=s.replace(o,'    if (false) return { ok: false, policy: policyOf(f), error:');open(p,'w').write(s)" \
   $V2 --part 1
 
 # ---- the memory really is in runtimeState --------------------------------------------------------------------------

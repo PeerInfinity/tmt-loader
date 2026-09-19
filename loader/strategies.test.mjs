@@ -163,28 +163,42 @@ test('rate-peak@0/0 is the bare rule: it resets at the currency-per-second optim
 });
 
 test('the VALUE buffer delays the reset, and the TIME buffer delays it further — 0/0 is the control', () => {
+  // ⛔ STRICTLY FEWER, NOT "NO MORE THAN". MEASURED by the mutant round: with `<=` the leg was GREEN under
+  // "the value buffer is ignored" (`best × (1 − B)` → `best`), because a mutant that changes nothing satisfies
+  // equality perfectly. The weak form already ships; what has to be asserted is the DELTA.
   const gain = (t) => Math.min(1 + Math.floor(t / 20), 4);
   const run = (b, h) => { const ctx = boot({ a: layer('a', 1, 'normal', gain) }, { 'policy:reset:a': `rate-peak@${b}/${h}` }); tick(ctx, 600); return ctx.resets.length; };
-  const bare = run('0', '0');
+  const bare = run('0', '0'), valued = run('0.5', '0'), timed = run('0', '50'), both = run('0.5', '50');
   assert.ok(bare > 0, 'the control never reset');
-  assert.ok(run('0.5', '0') <= bare, `a value buffer did not delay: ${run('0.5', '0')} vs ${bare}`);
-  assert.ok(run('0', '50') < bare, `a time buffer did not delay: ${run('0', '50')} vs ${bare}`);
-  assert.ok(run('0.5', '50') <= run('0', '50'), 'the two together are not at least as slow as the time buffer alone');
+  assert.ok(valued < bare, `a value buffer did not delay: ${valued} vs the bare rule's ${bare}`);
+  assert.ok(timed < bare, `a time buffer did not delay: ${timed} vs the bare rule's ${bare}`);
+  assert.ok(both <= Math.min(valued, timed), `the two together are faster than either alone: ${both} vs ${valued} / ${timed}`);
 });
 
 test('the HOLD CLOCK returns to zero the moment the condition reads false', () => {
-  // a gain that STEPS UP after the condition has begun to hold: the step lifts the rate back over the threshold
+  // ⛔ THE CLOCK IS READ FROM `runtimeState()`, NOT FROM THE REASON. MEASURED by the mutant round: reading
+  // `last.values.held` left this leg GREEN under "the hold clock never clears", because the `!over` branch reports
+  // `held: 0` LITERALLY whether or not the clock was actually cleared — the readout says zero either way. The
+  // clock's own state is `rateHold`, and that is the thing the mutation moves.
   let step = 0;
   const gain = () => 2 + step;
   const ctx = boot({ a: layer('a', 1, 'normal', gain) }, { 'policy:reset:a': 'rate-peak@0/40' });
+  const clock = () => (ctx.tmtLoader.runtimeState().rateHold || {})['reset:a'];
   tick(ctx, 1);                    // the first reset (no cycle to compare against yet)
   tick(ctx, 20);                   // the condition begins to hold
-  const held1 = Number(rowOf(ctx, 'reset:a').last.values.held);
-  assert.ok(held1 > 0, `the hold clock never started: ${JSON.stringify(rowOf(ctx, 'reset:a').last.values)}`);
+  assert.ok(clock() !== undefined, 'the hold clock never started');
+  assert.ok(Number(rowOf(ctx, 'reset:a').last.values.held) > 0, 'the reason does not report the hold either');
   step = 40;                       // a step-up: the rate jumps back over the threshold
   tick(ctx, 1);
-  assert.equal(Number(rowOf(ctx, 'reset:a').last.values.held), 0, 'a step-up did not clear the hold clock');
+  assert.equal(clock(), undefined, 'a step-up did not clear the hold clock');
+  assert.equal(Number(rowOf(ctx, 'reset:a').last.values.held), 0);
+  // …and it starts again from zero rather than resuming where it was
+  step = 0;
+  tick(ctx, 5);
+  const restarted = clock();
+  assert.ok(restarted !== undefined && Number(player_time(ctx) - restarted) <= 5, `the clock resumed instead of restarting: ${restarted}`);
 });
+const player_time = (ctx) => Number(ctx.player.timePlayed);
 
 // ---------------------------------------------------------------------------------------------------------------
 // Leg 3 — the stall fallback
@@ -333,6 +347,11 @@ test('a value the strategy refuses leaves the previous one in force and SAYS why
   assert.ok(bad.error && bad.error.length > 3, 'the refusal said nothing');
   assert.equal(bad.policy, 'gain>=2x', 'the refused edit changed the policy anyway');
   assert.equal(T.features.find((x) => x.id === 'reset:a').policy, 'gain>=2x');
+  // ⛔ AND NOTHING REACHED THE SAVE. MEASURED by the mutant round: asserting only `ok === false` cannot tell the
+  // two layers apart — `setSavedParam`'s `checkParam` buys the MESSAGE, and `setSavedPolicy`'s `policyOk` is the
+  // guard. With the message layer bypassed the value still never lands, because the second layer refuses
+  // `gain>=bananax`; with the GUARD bypassed it does, and only this line sees that.
+  assert.equal(ctx.player.au.edits['reset:a'].policy, 'gain>=2x', 'a refused value reached the save');
   const good = T.setSavedParam('reset:a', 'n', '3');
   assert.equal(good.ok, true);
   assert.equal(good.policy, 'gain>=3x');
