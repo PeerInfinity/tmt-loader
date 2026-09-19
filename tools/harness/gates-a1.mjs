@@ -193,7 +193,11 @@ async function part2Page(id) {
 // `✗ Advanced renders` on a view that was rendering perfectly. A gate keyed to a display string is keyed to prose;
 // this one is at least keyed to the part of the prose that says what the view IS, which a later slice has no
 // reason to reword.
-const ADV_SENTINEL = 'What each feature decided';
+// ⛔ AND IT IS SPELLED OUT AT EACH USE, not hoisted into a constant: all three live inside a
+// `page.evaluate()`, which runs in the BROWSER, where a Node-side `const` is simply not in scope. The first cut
+// of this fix made it a constant and turned the red into `ReferenceError: ADV_SENTINEL is not defined` — a
+// different red, on the same leg, for a reason that had nothing to do with the view.
+const ADV_SENTINEL_NOTE = 'What each feature decided';   // the sentinel, for a reader grepping for it
 
 // ---- Part 2 (U4): MAY AUTOMATION BE ARMED FOR A FEATURE THAT IS NOT UNLOCKED YET? ----------------------------------
 // ⚖ user, 2026-09-19. The setting is `player.au.armLocked`, written by the `au` tab's own `toggle`; it lifts the two UI
@@ -429,7 +433,7 @@ async function part2Advanced(id) {
     const shape = await page.evaluate(() => ({ subs: Object.keys(tmp.au.tabFormat), sel: player.subtabs.au.mainTabs, features: tmtLoader.features.length }));
     check(JSON.stringify(shape.subs) === '["Simple","Advanced"]', `the au tab has exactly the subtabs ${JSON.stringify(shape.subs)}`);
     check(shape.sel === 'Simple', `a fresh boot selects ${shape.sel} — the tab every other leg of this file reads`);
-    const simple = await page.evaluate(() => ({ text: document.querySelector('#app').innerText, adv: (document.querySelector('#app').innerText || '').indexOf(ADV_SENTINEL) >= 0 }));
+    const simple = await page.evaluate(() => ({ text: document.querySelector('#app').innerText, adv: (document.querySelector('#app').innerText || '').indexOf('What each feature decided') >= 0 }));
     check(simple.text.includes('Automation Tools') && !simple.adv, 'Simple still renders the title, and none of the Advanced view');
 
     // run the game a little so there is something to say, then select Advanced the way the engine's button does
@@ -460,7 +464,7 @@ async function part2Advanced(id) {
       return { rows: rows.length, blocks: blocks.length, collapsed: collapsed.length, mismatches: mismatches.slice(0, 6),
         unknown: rows.filter((x) => x.last && x.last.code === 'unknown').map((x) => x.id),
         scrollX: document.documentElement.scrollWidth - document.documentElement.clientWidth,
-        rendered: text.indexOf(ADV_SENTINEL) >= 0, title: text.indexOf('Automation Tools') };
+        rendered: text.indexOf('What each feature decided') >= 0, title: text.indexOf('Automation Tools') };
     });
     check(adv.rendered, 'Advanced renders');
     check(adv.rows === shape.features + (Object.keys(await page.evaluate(() => window.tmtLoader.autoExcluded || {})).length), `explain() has one row per registered feature plus each excluded one (${adv.rows} rows, ${shape.features} features)`);
@@ -490,7 +494,7 @@ async function part2Advanced(id) {
     await page.evaluate(() => { delete window.tmtLoader.autoProvenance[window.tmtLoader.features[0].id]; player.subtabs[tmtLoader.auLayer].mainTabs = 'Simple'; });
     await redraw();
     await page.waitForTimeout(250);
-    const back = await page.evaluate(() => ({ buttons: [...document.querySelectorAll('#app button.upg')].length, text: (document.querySelector('#app').innerText || '').indexOf(ADV_SENTINEL) }));
+    const back = await page.evaluate(() => ({ buttons: [...document.querySelectorAll('#app button.upg')].length, text: (document.querySelector('#app').innerText || '').indexOf('What each feature decided') }));
     check(back.buttons === shape.features + 1, `back on Simple: ${back.buttons} clickable buttons (${shape.features} features + the master toggle)`);
     check(back.text < 0, 'and none of the Advanced view is left on screen');
     check(stats.pageErrors.length === 0 && stats.failed.length === 0 && stats.blocked.length === 0, `${stats.pageErrors.length} page errors, ${stats.failed.length} failed, ${stats.blocked.length} blocked`);

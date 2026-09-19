@@ -85,9 +85,19 @@ mutant m7-decision-path-ignores-the-save \
   "p='$AUTO';s=open(p).read();o='    var s = policyOf(f);\n    if (f.policyStr !== s)';assert o in s;s=s.replace(o,'    var s = f.policy0;\n    if (f.policyStr !== s)');open(p,'w').write(s)" \
   $V2 --part 4
 
-# The HOTKEY guard removed: typing into a field reaches the game's own document handler.
-mutant m8-hotkey-guard-removed \
-  "p='$AUTO';s=open(p).read();o=\" @keydown.stop=\\\"onKey\\\" @keyup.stop @keypress.stop>'\";assert o in s;s=s.replace(o,\" @keydown=\\\"onKey\\\">'\");open(p,'w').write(s)" \
+# ---- the HOTKEY guard: TWO mutants, because either half suffices on the two reference engines ---------------------
+# ⛔ MEASURED: removing ONLY the `.stop` modifiers is GREEN, and correctly so. `tmtl-number` also calls the engines'
+# own `focused(true)` on focus, and BOTH ptr and something honour `if (onFocused) return` in `document.onkeydown`
+# (ptr `js/utils.js:997-1012`, something `:308-322`) — so on these two games either half alone blocks the hotkey.
+# The `.stop` half is what covers a FORK that defines neither, which no game in this roster is.
+# So the pair: m8a shows the propagation half is sufficient ON ITS OWN (green is the RESULT, not an absence), and
+# m8b removes BOTH and must be RED — without m8b the leg would be one a mutant walks through.
+mutant m8a-focused-call-removed \
+  "p='$AUTO';s=open(p).read();o='this.editing = true; setFocused(true);';assert o in s;s=s.replace(o,'this.editing = true;');open(p,'w').write(s)" \
+  $V2 --part 4
+
+mutant m8b-BOTH-halves-removed \
+  "p='$AUTO';s=open(p).read();o='this.editing = true; setFocused(true);';assert o in s;s=s.replace(o,'this.editing = true;');o2=\" @keydown.stop=\\\"onKey\\\" @keyup.stop @keypress.stop>'\";assert o2 in s;s=s.replace(o2,\" @keydown=\\\"onKey\\\">'\");open(p,'w').write(s)" \
   $V2 --part 4
 
 # ---- the save key ------------------------------------------------------------------------------------------------
