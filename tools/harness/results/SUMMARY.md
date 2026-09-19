@@ -4192,3 +4192,31 @@ rounds were thrown away and the battery re-run serially. Same family as U2c's `g
 **a mutant reddening a check it cannot reach.** What caught it was this harness's own refusal to start on a dirty
 tree, firing because the *other* battery had a mutant applied. "I started it in the background" is not a guarantee
 that it ended — check by PID.
+
+### The CI verdict at `8fc3add7c` — the roster, read from the merge job's own output
+
+| gate | games | leg | result | notes |
+|---|---|---|---|---|
+| U2e CI sweep | — 171 games — | `--gate mobile --shard i/10` | **GREEN** | run `35422500449`. The merge job's output: `rows: 171/171 game(s); 0 RED; 6 abstained on the state leg` and `coverage: the 10 shard(s) cover all 171 game(s), each exactly once`. Shards 115–209 s (×1.82), serial 25.6 min, **wall clock 3.5 min** — the same as U2c's 25.8 / 3.5, so the tooltip leg's cost is inside the noise |
+
+**What the roster says about the tooltip, which the bounded set could not:**
+
+- **2,179 controls** measured (1,155 chips, 572 action buttons, 452 counters), and **1,725 of 1,725 judged controls
+  are richer than their own `title`**. 13 games abstain on richness at the phone width and 18 at the desktop one —
+  every one of them a game with nothing on the card but counters and titles the detail repeats.
+- **126 controls whose own fields carry a tag; 0 overlays holding one.** The markup half is exercised on the roster,
+  not only on `create-incremental`.
+- **NINE games DRAW a declared `tooltip` on a chipped component**, all shown, 51 declarations in total: `1-clicker`
+  10, `collection-of-everything` 15, `create-incremental` 6, `the-energy-factory` 6, `the-tree` 4,
+  `the-universal-tree-voidcons0le-is-dumb` 4, `the-yes-tree` 3, `sorbet-s-convolution-mainframe` 2,
+  `the-dingus-tree` 1. ⚠ The bounded local set found **two** of those nine, and the brief named a game
+  (`something`) that is not one of them.
+- **the tap path drove on 95 games** and abstained on 76 (no action button showing at that state); **the hover path
+  opened the richer tooltip on 145**, opened on a counter on 19 (where a card offers no button, so richness is not
+  judged there) and abstained on 7.
+- the **constructed** NaN cost and the **constructed** cost move under an open tooltip judged **138** games each and
+  abstained on 33 (no drawn upgrade with a numeric cost); one-at-a-time judged **139**; the throttle leg reported
+  `throttled` on **171/171** with a tooltip open.
+- ⚠ **the flag across opening EVERY tooltip on every card: `unchanged` on 171/171** — which is the brief's own
+  wording and, exactly as the pre-measurement predicted, tells us only that no game reaches the condition. The
+  wrapper is held by the constructed check, not by this one.
