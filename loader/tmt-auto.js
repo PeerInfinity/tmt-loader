@@ -1650,8 +1650,25 @@
   // where the game defines it, which is what its own input does. A fork that defines neither still cannot fire a
   // hotkey, because the event never reaches the document.
   function setFocused(on) { try { var f = new Function('return typeof focused === "function" ? focused : null')(); if (f) f(!!on); } catch (e) { /* a fork without it */ } }
-  var FIELD_STYLE = 'width:7.5em;max-width:40vw;margin:0 3px;padding:1px 3px;font-family:inherit;font-size:.9em';
-  var BTN_STYLE = 'margin:0 1px;padding:0 5px;font-family:inherit;font-size:.9em;cursor:pointer';
+  // ⚖ THE CONTROLS WEAR THE GAME'S OWN THEME (user, 2026-09-19: *"update the new edit, drop-down, and button
+  // controls to fit better with a dark theme — light text on a dark background"*). An `<input>`, a `<select>` and a
+  // `<button>` come with the BROWSER's colours — black on white — which is exactly wrong against a dark tree and
+  // was what the first screenshots showed.
+  // ⛔ AND THE COLOURS ARE THE GAME'S, NOT DARK ONES OF OUR OWN. Both engines paint the page from two CSS custom
+  // properties the THEME sets — `--color` and `--background` (ptr `style.css:16-20`) — and those are what the tab's
+  // own text is already inheriting. Censused over `games/`: **all 171 of 171 define both**. So the controls take
+  // `color: var(--color)` and a surface derived from `var(--background)`, which gives light-on-dark on a dark theme
+  // and dark-on-light on a light one, from ONE rule and with no theme sniffing anywhere (⚖ minimize hardcoding).
+  // The literals after the commas are the fallback for a fork that somehow defines neither, and they are the
+  // engines' own default theme values.
+  var THEMED = 'color:var(--color,#dfdfdf);background-color:var(--background,#0f0f0f)';
+  // ⚠ `color-scheme: dark` is what stops the BROWSER from drawing its own light chrome inside the control — the
+  // select's arrow, the field's caret and selection, the focus ring. Setting the background alone leaves a white
+  // arrow well on a dark field, which is the half-fix that looks worse than no fix.
+  var CONTROL = THEMED + ';color-scheme:dark;border:1px solid rgba(127,178,217,.45);border-radius:3px';
+  var FIELD_STYLE = CONTROL + ';width:7.5em;max-width:40vw;margin:0 3px;padding:1px 4px;font-family:inherit;font-size:.9em';
+  var SELECT_STYLE = CONTROL + ';max-width:min(100%,22em);padding:1px 4px;font-family:inherit;font-size:.9em';
+  var BTN_STYLE = CONTROL + ';margin:0 1px;padding:1px 6px;font-family:inherit;font-size:.9em;cursor:pointer';
 
   var COMPONENTS = {
     // ONE parameter. `data` = {fid, which, name, value, label, type, min, max}
@@ -1720,7 +1737,7 @@
         },
       },
       template: '<span style="display:inline-block;text-align:left">'
-        + '<select class="tmtl-select" :data-fid="data.fid" :value="data.value" style="max-width:min(100%,22em);font-family:inherit;font-size:.9em"'
+        + '<select class="tmtl-select" :data-fid="data.fid" :value="data.value" style="' + SELECT_STYLE + '"'
         + ' @change="onChange" @keydown.stop @keyup.stop>'
         + '<option v-for="o in data.options" :value="o.id" :disabled="!o.available">{{ o.label }}{{ o.available ? \'\' : \' — \' + o.why }}</option>'
         + '</select>'
