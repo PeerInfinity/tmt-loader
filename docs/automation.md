@@ -66,9 +66,24 @@ lifts exactly two UI predicates and reaches nothing else:
 | `active(f)` — whether it runs | unchanged | **unchanged** |
 
 **Where it lives.** `player.au.armLocked`, beside `player.au.disclosed` — the `au` layer's own non-feature UI state, and
-a store the save already carries. ⚠ It is **not** in the layer's `startData`: the S1 pins compare the FULL state hash,
-which includes `player.au`, so a key present from the first boot would move every pinned `want` hash for a setting
-nobody has touched. Absent reads false; the first press writes it.
+a store the save already carries. ⚠ It is **not** in the layer's `startData`: a key present from the first boot would
+move a recorded hash for a setting nobody has touched. Absent reads false; the first press writes it.
+
+⚠ **U6 corrected the reason this line used to give, by measuring it.** It said "the S1 pins compare the FULL state
+hash, which includes `player.au`". They do not: the S1 **pinned** rows compare ticks and `hashGame` — the state
+*without* `player.au` — and would never have seen the key. What a seeded key does move is the FULL hash, which
+`gates-p1a --part 0` pins for the frontier fixture. Measured on `ptr` at `2e0818811` with `armLocked: false` seeded
+into `startData`:
+
+| | without the key | with it |
+|---|---|---|
+| fresh boot, full hash | `6062b457fdb56dd6` | **`13cd6ddb1cd512a4`** |
+| `all/M09` at 0 ticks, full hash | `97d8593fb06c4537` | **`4c4937e5074ec391`** (the import re-adds it from `startData`) |
+| the same two, `--exclude au` (`hashGame`) | `8daecd949227c861` / `208197f46f08ed88` | **identical** |
+
+So seeding is free for S1 and costs one FULL-hash pin, which is a re-record the user decides. U6 took the route that
+moves neither: the key still does not exist until the player presses the button, and the press is routed through
+`tmtLoader.armLocked(on)` (below).
 
 **What it is made of.** A tabFormat `['row', [['display-text', …], ['toggle', ['au', 'armLocked']]]]` — the engine's own
 components, all three registered by all 171 games (measured over `Vue.component("…")` in `games/`, quote-agnostically).
@@ -79,8 +94,43 @@ both. The click runs the engine's own `toggleAuto(['au', 'armLocked'])`, which i
 `loader/tmt-auto.js` touching the DOM — it never has, and `docs/contract.md` says so.
 
 `tmtLoader.armLocked()` reads it and `tmtLoader.armLocked(on)` writes it (through `Vue.set`, because the key is absent
-until first written and 22 of the 171 engines' own `toggleAuto` assigns plainly). `featureState(id).armable` is the
+until first written and **22** of the 171 engines' own `toggleAuto` assigns plainly). `featureState(id).armable` is the
 predicate both toggles read: `unlocked || armLocked`.
+
+⛔ **AND THE BUTTON DID NOT CALL THAT SETTER — the U4 bug the user reported on 2026-09-19.** `Vue.set` was written
+here and the reactivity defect shipped anyway, because the `toggle` component's click is hardcoded to the engine's
+own `toggleAuto`: a careful reactive write on a path the UI never takes is not a reactive write. MEASURED on `ptr`:
+the button reads `OFF`, one press leaves the text `OFF` while `player.au.armLocked` becomes `true`. Vue 2 cannot
+observe a property ADDED to an object after creation, and ptr's `toggleAuto` is
+`player[t[0]][t[1]] = !player[t[0]][t[1]]` — **22 of the 171 assign plainly, 149 use `Vue.set`**, which is why the
+user could see it and a `Vue.set` engine would have hidden it.
+
+**The fix owns the click path and nothing else.** `toggleAuto` is wrapped for exactly `['au', 'armLocked']`; every
+other toggle in the game reaches the original by the same call, and that one path goes through `armLocked(on)`,
+whose `Vue.set` both creates the key and notifies `player.au`'s own observer — which is what re-renders the engine's
+button, its text and its colour.
+
+⚠ **That the wrapper can be reached at all is a census, not an assumption** — it depends on `toggleAuto` being a
+property of the global object and on the Vue instance not shadowing it, and both are the GAMES' business:
+**of the 171 games, 171 declare `function toggleAuto` at top level, 149 write the field through `Vue.set` and 22
+assign plainly, and 0 put `toggleAuto` in the Vue instance's `data`.** A top-level function declaration in a classic
+script IS a `globalThis` property (and the same holds in the harness's `vm.runInThisContext` context), and with
+nothing shadowing it the compiled template's `with(this)` falls through to exactly the property this replaces.
+⚠ **The scope of those four numbers is `loaded`, and the LAST declaration wins** — which is what makes 22 the
+answer rather than 24. TWO games declare `toggleAuto` in more than one file and the copies DISAGREE:
+`the-yes-tree` (`js/mod.js` plain at load index 2, `js/utils/options.js` through `Vue.set` at index 14) and
+`the-tree-emipiplu` (three copies, only the one under `js/` loaded). A first-match grep over the tree reports 24
+plain; the copy the click actually reaches is the last one loaded, so both are `Vue.set` games and the figure is
+22. The census brace-matches each declaration's body rather than windowing it, because a bounded window was
+measured running past the closing brace on two long bodies and finding a `Vue.set` further down the file.
+
+`tools/census-figures.mjs` checks all four numbers against that sentence, and `tmtLoader.armToggleOwned` says
+whether the wrapper was actually installed rather than leaving it to be guessed.
+
+⚠ **The gate asserts the RENDERED TEXT, not the flag.** The flag already changed on the build the user reported;
+that is the whole bug. `gates-a1 --part 2` presses the control three times and requires the button's own text to
+move, come back, and move again — on `ptr` (plain-assign) **and** on `something` (`Vue.set`), because a fix verified
+only on a `Vue.set` engine proves nothing.
 
 **The gate** is `node tools/harness/gates-a1.mjs --part 2`, one row per game: with the setting off a real press on a
 locked button changes nothing; with it on the feature arms, the flag survives a reload, and 200 ticks later it is still

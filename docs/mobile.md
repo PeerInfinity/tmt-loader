@@ -891,6 +891,90 @@ tree.
 ⚠ Three games also put `class="back"` on the HELP tab's own back button, which sets `tmp.helpTab = NaN` rather
 than navigating. It cannot match here, because that tab is not the layer the list opened.
 
+#### The collapsed card wears the colours too (U6)
+
+⚖ **"an action button stands for the same component as a chip, so it should wear the same skin"** (user,
+2026-09-19). U5 skinned the chips and stopped there, and the cause was scoping rather than logic: `chipSkin()` was
+applied where the CHIPS are built, while the action row only ever got `data-afford`. So the expanded view showed
+the game's red and the collapsed one did not — MEASURED on `ptr`, same card, 390×844:
+
+| control | `data-skin` | `data-afford` | computed background |
+|---|---|---|---|
+| collapsed action button | *none* | `no` | `rgba(0, 0, 0, 0)` |
+| expanded chip | `locked` | — | `rgb(191, 143, 143)` |
+
+⚠ **`data-afford` STAYS.** The two attributes answer different questions — U2d's lit/grey is "can I press this
+right now", the skin is "what IS this" — and the collapsed card wants both. An action button can only ever be
+`can` or `locked`, because the row's membership is "unlocked and not yet bought": a button is never `bought`.
+
+#### The counters wear colours too (U6)
+
+⚖ **"match what the main view already says"** (user, 2026-09-19), who settled every case:
+
+| counter | GREEN | RED | the layer's own colour |
+|---|---|---|---|
+| milestones | all earned | **any not yet earned** | never |
+| achievements | all earned | **any not yet earned** | never |
+| upgrades | all bought | none of the unbought is affordable | otherwise |
+| challenges | all completed | any not completed | never |
+| buyables | **never** | nothing in the category is buyable right now | otherwise |
+| clickables | **never** | nothing is clickable right now | otherwise |
+
+⚖ **Milestones and achievements are RED whenever one is unearned** — user, verbatim: *"Unearned milestones and
+achievements are displayed in red in the main view and earned ones are displayed in green. And so we should use
+green and red, not layer colors."* ⚠ That **overturned** the recommendation this slice was briefed with (the layer
+colour, on the reasoning that red implies something actionable). The rule is the main view's rule, and the main
+view wins. ⚖ A **buyable is never green**: it holds an amount and is never "done", so "all earned" has no referent
+— the same 2026-09-18 ruling that made its counter a total rather than an `x/y`.
+
+⚠ **Challenges and clickables were NOT named by the user.** Those two rows apply the same principle by analogy —
+a challenge is an earned/total category like a milestone, a clickable an owned one like a buyable — and they are
+recorded here as an **inference, not a ruling**, so they are cheap to correct.
+
+⚠ **The colours are the game's, resolved the same way the chips' are**: the category's own class first, so a
+counter matches the boxes it counts, and the family's bare `.bought` / `.locked` as the fallback — all 171 declare
+those bare (measured, U5), so a fork that styles no `.milestoneDone` still gets a green rather than no colour at
+all. The layer colour is `tmp[l].color`, straight off the CARD's layer, which is also what its badge reads.
+
+| counter | its green | its red |
+|---|---|---|
+| upgrades | `<layer> upg bought` | `<layer> upg locked` |
+| achievements | `<layer> achievement bought` | `<layer> achievement locked` |
+| milestones | `milestoneDone` | `milestone` |
+| challenges | `hChallenge done` | the bare `locked` |
+| buyables | — | `buyable locked` |
+| clickables | — | `upg locked` (what the engines' own clickable wears) |
+
+⚠ **A challenge counter and a challenge chip may legitimately differ**, and that is not a bug to fix: the engines
+paint a challenge on their own scale (`.hChallenge.canComplete` is amber `#ffbf00`, not the `.bought`/`.locked`
+pair), so the chip wears the engine's own control colour while the counter answers the user's green/red question.
+
+⚠ **"Is there anything to DO in this category" is asked per component, on the engine's own terms** —
+`canAffordUpgrade` for an upgrade, `tmp[l].buyables[id].canAfford` plus the `purchaseLimit` test for a buyable,
+`tmp[l].clickables[id].canClick` for a clickable, which is the **only** place a clickable's own predicate is read
+(it has no chip and no button). A **pseudo-unlocked** upgrade is not "available": it is the teaser you press to
+unlock rather than to buy. The walk stops asking at the first yes, and it rides the counters' own 250 ms throttle.
+
+#### Pressing an inaccessible layer does nothing (U6)
+
+⚖ **"it should do nothing"** (user, 2026-09-19).
+
+**Nothing was broken in the engine.** Every `showTab` begins `if (LAYERS.includes(name) && !layerunlocked(name))
+return` — a silent no-op. The list hid itself **first** and found out afterwards (`hide(); cameFrom = l; showTab(l)`),
+so the overlay closed, the tab did not change, and the player was left looking at whatever tab happened to be open.
+MEASURED on `ptr` at `all/M05`, pressing `t`: the overlay went open → closed, `player.tab` stayed `none`, and U5's
+remembered view moved to `t` — a tab that never opened.
+
+So accessibility is tested **before** anything happens, and a refusal does nothing at all: no `hide()`, no
+`showTab`, and no `cameFrom` write.
+
+⚠ **The ENGINE's own predicate decides, where it has one.** `layerunlocked(name)` is what the engine's `showTab`
+consults; the card's greyed class reads `player[l].unlocked`, which is **not the same question** — ptr's
+`layerunlocked` also lets a layer you can reset into through. The one that decides whether the tab opens is the
+engine's, so that is the one asked, wrapped; a game without it falls back to the card's own reading.
+
+⚠ The card press and the card's open **button** are both paths into `openTab`, so the test is in the function.
+
 ### Reading a card can make the ENGINE write `player`
 
 The list assigns nothing to `player`. That is not the same as the state not moving, and two measured cases say why:
@@ -1504,6 +1588,49 @@ claim is about what a press does, and the tree route clicks the node where the e
 to `showTab` — the same call the node makes — naming which route it took, because a layer's `onClick` is the
 game's and need not open a tab. It runs **last**, after the persistence leg: it navigates away from the list, and
 every leg above reads the card the list draws.
+
+#### What U6 added to the leg
+
+**Three assertions over the roster, two constructions, and one leg whose discriminator is not the obvious one.**
+
+**1. Every ACTION BUTTON's computed background, against the SAME rebuild the chips are judged by.** That is the
+whole claim of the fix — the two controls stand for one component and must say the same thing about it — and it
+costs the probe nothing beyond running `skinExpect` over the action row as well. `data-afford` keeps its own,
+separate assertion.
+
+**2. Every COUNTER's computed background, against a THIRD independent rebuild** (`ctrSkinExpect`), which re-derives
+the user's table out of `player` / `tmp` and the game's stylesheet rather than asking the list. A counter compared
+against the list's own `counterSkin` would assert nothing at all.
+
+**3. The counter's three states, CONSTRUCTED on one card** — the same lesson U5 paid for. No state of any game on
+the roster shows an upgrades counter green, red and layer-coloured at once, so a check that only asked "does the
+counter have a colour" would pass a build that painted every counter the layer colour. The leg forces all three
+with the two levers leg I already uses — every declared upgrade bought (green), none bought and
+`canAffordUpgrade` saying no to everything (red), none bought and exactly one affordable (the layer's colour) —
+and in the third configuration it also reads the ACTION ROW, where the affordable button must be lit and wear the
+layer's colour while another is grey and wears the game's `locked` red. It abstains, naming why, where the engine
+keeps `canAffordUpgrade` off `window`, where no card draws an upgrades counter over two or more unlocked upgrade
+chips, or where the game does not paint the three states three colours.
+
+**4. A MILESTONE counter red and green, constructed.** ⚖ The user's rule is the RED one, so both halves are
+driven: the engine's own `hasMilestone` is replaced with one that says yes to everything (the counter must be the
+game's `.milestoneDone`) and then no to everything (it must be `.milestone`). A build that painted a milestone
+counter the layer colour would be green on any check that only looked at the all-earned case.
+
+**5. The inaccessible press — and ⛔ the discriminator is the OVERLAY, not the tab.** `showTab` already refuses a
+locked layer on every engine, so "`player.tab` did not move" is green on the *unfixed* build and asserts nothing.
+The leg presses a shown-but-inaccessible layer's open button for real and asserts the overlay is **still open**,
+that `player.tab` did not move, and that `cameFrom` did not move — plus a CONTROL on the same page through the
+same button: a reachable layer must still open, or a build whose open button did nothing at all would pass. It
+abstains where no shown layer is inaccessible at this state — and, since the two games with deep snapshots are
+swept AT them, where nothing is inaccessible, it CONSTRUCTS one there by replacing the engine's own
+`layerunlocked` for a single layer. It runs after leg J, which is the leg that leaves the page on the tree with the
+memory clear.
+
+⚠ **The press is bounded to 5 s and a failed press is an abstention that names why.** MEASURED on
+`the-shenanigans-tree-rewritten`, whose own "Achievement Gotten!" toast sits over the overlay and intercepts
+pointer events: an unbounded `page.click` spent 30 s and threw, and the row lost every leg after this one. A leg
+that could not press anything must not pass either, so it says so.
 
 ### The state leg needs a control
 

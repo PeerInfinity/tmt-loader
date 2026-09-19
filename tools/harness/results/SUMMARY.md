@@ -4508,3 +4508,102 @@ judge of the three-way reading that exists.
 - the chip keeps `color: inherit` on its new background, which is what the engines' own controls do (their
   buttons declare no colour and inherit the page's). On a dark theme that is light text on the green. Nobody has
   looked at whether the card wants the contrast the reset button's `.can { color: #000 }` takes.
+
+## 2026-09-19 — U6: the collapsed card's colours, the counters' own rule, the arming toggle's click path, and the inaccessible press — commit `12eadb767`
+
+⚖ user, 2026-09-19, four items. Three of the four were MEASURED before anything was touched, and all three
+reproduced exactly as briefed.
+
+### What reproduced, and the numbers
+
+| item | reproduction, on `ptr` |
+|---|---|
+| 1. the collapsed card never got U5's colours | at `all/M16`, same card: action button `skin=null afford=no bg=rgba(0, 0, 0, 0)` against its chip's `skin="locked" bg=rgb(191, 143, 143)` |
+| 2. the counters had no colour at all | every counter on every card: `skin=null bg=rgba(0, 0, 0, 0)` |
+| 3. the au tab's ON/OFF button is stuck | before: text `OFF`, `player.au.armLocked` **absent**; after one real click: text **still `OFF`**, flag `true` |
+| 4. pressing an inaccessible layer | at `all/M05`, pressing `t`: overlay open → **closed**, `player.tab` `none` → `none`, `cameFrom` `null` → **`t`** |
+
+### ⛔ The item-3 tension, resolved by measurement rather than by preference
+
+The brief asked which hash the S1 pins compare before deciding whether to seed `armLocked` into the `au` layer's
+`startData`. Measured on `ptr` at `2e0818811`, with and without `armLocked: false` seeded:
+
+| | without the key | with it |
+|---|---|---|
+| fresh boot, FULL hash | `6062b457fdb56dd6` | **`13cd6ddb1cd512a4`** |
+| `all/M09` at 0 ticks, FULL hash | `97d8593fb06c4537` | **`4c4937e5074ec391`** |
+| the same two with `--exclude au` (`hashGame`) | `8daecd949227c861` / `208197f46f08ed88` | **identical** |
+
+- ✅ **The S1 pins do NOT see it.** `gates-s1.mjs` compares `x.ticks === wt && x.hashGame === y.hashGame` for
+  every pinned row, and its baseline rows re-run the OLD commit in a throwaway worktree. The note in
+  `tmt-auto.js` and the row in `docs/contract.md` both said the S1 pins compare the FULL hash. **They do not**, and
+  both have been corrected.
+- ⚠ **But another pin does.** `gates-p1a --part 0` pins the FULL hash of the frontier fixture
+  (`FRONTIER_PIN.hash`, `63f28e099536a119`) and its `--from-snapshot` round-trip against the same constant — and
+  the import re-adds the key from `startData`, so seeding would red both. A pin move is a re-record the user
+  decides, so **U6 took the route that moves nothing**: the key still does not exist until the player presses the
+  button, and the press is routed through `tmtLoader.armLocked(on)`, whose `Vue.set` both creates the key and
+  notifies `player.au`'s own observer. Seeding remains available at the cost of exactly one re-record.
+
+**Why the careful `Vue.set` U4 already wrote did not help:** the `toggle` component's click is hardcoded to the
+engine's own `toggleAuto`, so the reactive write sat on a path the UI never takes. **22 of the 171 engines assign
+plainly** (`player[t[0]][t[1]] = !player[t[0]][t[1]]`) and 149 use `Vue.set`; `ptr` is one of the 22, which is why
+the user could see it. `toggleAuto` is now wrapped for **exactly** `['au', 'armLocked']` — measured over all 171:
+every one declares `function toggleAuto` at top level, and **none** puts it in the Vue instance's `data`, so the
+compiled template's `with(this)` falls through to the property that is replaced.
+
+### ⛔ A figure this slice got wrong first, and the gate that now holds it
+
+The `toggleAuto` split was quoted as **24 plain / 147 `Vue.set`** through most of this slice — from a first-match
+grep over each game's concatenated sources. The right answer is **22 / 149**, which is what U4's original note said.
+TWO games declare `function toggleAuto` in more than one file and the copies DISAGREE: `the-yes-tree`
+(`js/mod.js` plain at load index **2**, `js/utils/options.js` through `Vue.set` at index **14**) and
+`the-tree-emipiplu` (three copies; only the one under `js/` is loaded). Which one the click reaches is decided by
+LOAD ORDER, so the question is only answerable over the manifest's own list, in the manifest's own order, taking
+the LAST — and both of those games are `Vue.set` games.
+
+⚠ A second instrument bug on the way: the first census implementation windowed the body as
+`[\s\S]{0,800}?\n\}`, which ran past the closing brace on two long bodies and found a `Vue.set` further down the
+file. The body is now BRACE-MATCHED, `loader/census.test.mjs` drives that shape directly, and all four numbers are
+a `tools/census-figures.mjs` claim anchored on the sentence in `docs/automation.md` that states them — the
+thirteenth such claim.
+
+### ⚖ One ruling that overturned the brief's own recommendation
+
+The launching session recommended the LAYER colour for milestone and achievement counters, on the reasoning that
+red implies something actionable. The user overruled it, verbatim: *"Unearned milestones and achievements are
+displayed in red in the main view and earned ones are displayed in green. And so we should use green and red, not
+layer colors."* The rule is the main view's rule. ⚠ **Challenges and clickables were not named by the user** —
+their rows apply the same principle by analogy and are recorded as an **inference**, in `docs/mobile.md`, in
+`loader/layerlist.js` and here, so they are cheap to correct.
+
+| gate | game | leg | result | notes |
+|---|---|---|---|---|
+| M1 action-button skin (U6) | ptr, something | every action button's COMPUTED background vs the same rebuild the chips are judged by | **GREEN** | ptr 8 buttons phone / 12 desktop, all `locked`; `data-afford` keeps its own separate assertion |
+| M1 counter skin (U6) | ptr, something | every counter's COMPUTED background vs a THIRD independent rebuild of the user's table | **GREEN** | ptr: `upgrades:bought` 6, `milestones:bought` 5, `buyables:locked` 4, `milestones:locked` 1, `achievements:locked` 1. ⚠ **No `can` counter occurs naturally at either game's recorded state** — which is why leg I2 exists |
+| M1 leg I2 (U6) — CONSTRUCTED | ptr | the counter's three states forced on one card, and the action row's two | **GREEN** | `p`: green `rgb(119,191,95)` at 9/9, red `rgb(191,143,143)` at 0/9 with nothing affordable, layer `rgb(49,174,176)` at 0/9 with one affordable; the action row lit `rgb(49,174,176)` / grey `rgb(191,143,143)`; restored |
+| M1 leg I2 (U6) | something | same | **GREEN** | |
+| M1 leg I3 (U6) — CONSTRUCTED | ptr, something | a milestone counter RED with one unearned and GREEN with all earned | **GREEN** | ptr `b`: `rgb(119,191,95)` at 2/2, `rgb(191,143,143)` at 0/2, restored |
+| M1 leg K (U6) — CONSTRUCTED | ptr, something | press an INACCESSIBLE layer: the overlay STAYS OPEN, `player.tab` and `cameFrom` do not move, and a reachable layer still opens | **GREEN** | ⚠ it had to be constructed: both games are swept AT their deepest snapshot, where **nothing is inaccessible**, so the leg would have abstained on exactly the two games a bounded set runs. `layerunlocked` — the predicate the engine's own `showTab` consults — is replaced for one layer and restored |
+| A1 part 2 (U6) | ptr (**plain-assign**), something (**`Vue.set`**) | the setting's own button's RENDERED TEXT across three presses | **24/24 GREEN** | `"OFF"` → `"ON"` → `"OFF"` → `"ON"`, `armToggleOwned` true on both |
+| M1 whole gate, bounded local set | ptr, something | every leg | **2/2 GREEN** | |
+| M1 whole gate, a ROSTER SAMPLE | shard 3/10 (15 games) | every leg | **15/15 GREEN** | leg K judged **14** of them on a NATURAL inaccessible layer and abstained once, named; leg I2 judged 4 (`p`, `c`, `l`, `r`), leg I3 5; counter states seen across the sample: `upgrades:locked` 15, `achievements:locked` 8, `milestones:locked` 4, **`upgrades:can` 2**, `buyables:locked` 1 |
+| ⚠ the sample's one RED, and what it taught | the-shenanigans-tree-rewritten | leg K's press | **FIXED, then GREEN** | the game's own "Achievement Gotten!" toast sits over the overlay and intercepts pointer events: an unbounded `page.click` spent 30 s and THREW, and the row lost every leg after it. The press is now bounded to 5 s and a failed press is an **abstention that names the interception** — it must not pass either, because nothing was pressed |
+| unit tests (`npm run harness:test`) | — | — | GREEN | **82** (79 + three new census ones) |
+| census-figures | — | — | GREEN | **13/13** documented figures = the tree (the new `toggleAuto` claim among them) |
+| games-table `--check` | — 171 games — | — | GREEN | no game's tree touched |
+
+### The mutants
+
+Five, each run on `ptr`, the work restored from a COPY taken before any mutation (`diff` against it after every
+run: IDENTICAL). ⚠ Each reddened its own leg and **nothing else**, which is the tell that the run was not
+contaminated.
+
+| mutant | red | verdict it printed |
+|---|---|---|
+| (a) the skin applied to chips but not to actions — **today's bug** | `actSkinOk` + leg I2's action half; `ctrSkin`, I3, K untouched | `THE AFFORDABLE ACTION BUTTON IS NOT THE LAYER'S OWN COLOUR ( rgba(0, 0, 0, 0) afford=yes)`, and `t/buyables/11 want locked, got ""` |
+| (b) the counter rule collapsed to two colours (no layer colour) | **leg I2 only** | `SOMETHING AFFORDABLE IS NOT THE LAYER'S OWN COLOUR (locked rgb(191,143,143) != rgb(49,174,176), text 0/9)`. ⛔ **The roster-wide counter check stayed GREEN on it** — ptr shows no `can` counter at `M16` — which is exactly the vacuity the constructed leg was written for |
+| (c) milestones forced red | `ctrSkinOk` + leg I3 | `ALL EARNED IS NOT GREEN (locked rgb(191,143,143) != rgb(119,191,95), text 2/2)` |
+| (d) the reactivity fix reverted (`armToggleOwned = false`) | A1 part 2, **11/12** | `the setting's own button RE-RENDERED on the press ("OFF" → "OFF")` — the flag still flipped, which is the whole bug |
+| (e) `openTab` hides before it asks — **today's bug** | leg K only | `THE OVERLAY CLOSED ON AN INACCESSIBLE LAYER` |
+

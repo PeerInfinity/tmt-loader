@@ -158,7 +158,7 @@ drove a chip**. ⛔ A check nobody runs is not a check.
 
 | check | where it runs now | cost |
 |---|---|---|
-| unit tests (`npm run harness:test`) | CI, the **fast** job — and everything else `needs:` it | 79 tests, 8.4 s, no browser (⚠ it read `46 tests` and then `75`, both stale until U3, which was stale by fourteen tests before U3 added fifteen — a count in prose that no gate reads) |
+| unit tests (`npm run harness:test`) | CI, the **fast** job — and everything else `needs:` it | 82 tests, no browser (⚠ it read `46 tests` and then `75`, both stale until U3, which was stale by fourteen tests before U3 added fifteen — a count in prose that no gate reads; U6 took it 79 → 82) |
 | G6 roster doc + G7 declined list (`games-table.mjs --check`) | CI, the fast job | 0.13 s |
 | roster FIGURES census (`census-figures.mjs`) | CI, the fast job | 1.2 s |
 | M1 mobile sweep (`--gate mobile`) | CI, ten shards + a merge | ~3 min end to end; 32–46 min locally |
