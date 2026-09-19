@@ -200,6 +200,48 @@ async function part3() {
     ticks: A.ticks, hash: A.hashGame, notes: `decisions ${st.decisions}, formats ${st.formats}, texts ${st.texts}; ${((A.ticks_ms || 0) / (A.ticks || 1)).toFixed(1)} ms/tick` });
 }
 
+// ---- Part 3, the page half: WHERE THE LAZY GUARD ACTUALLY WORKS ---------------------------------------------------
+// ⛔⛔ THE BRIEF HAD THIS BACKWARDS, AND THE HEADLESS ZERO DOES NOT TEST IT. The brief (and the planner's own
+// "measured after it was written" addendum) said ptr's `temp.js` has NO special case for `tabFormat`, so its
+// `display-text` functions run every tick whether the tab is open or not, and 2.7's only when needed. Measured:
+//   · **2.2.1 (`ptr`) DOES special-case it** — `updateTempData` (`js/technical/temp.js:96`) skips any key whose
+//     name contains `tabformat` / `display` / `description` **whenever `player.tab != layer`**;
+//   · **2.7 (`something`) skips `tabFormat` and `content` unconditionally** in `updateTempData` (`:127`) and lists
+//     both in `activeFunctions` (`:12`) — they move only through `updateTabFormats()`.
+// So in NODE, where the `au` tab is never open, NEITHER engine ever calls the Advanced content function. The
+// headless `formats === 0` row is TRUE and is guaranteed by the ENGINES — it says nothing about the guard.
+// MEASURED as a mutant: the lazy guard removed leaves `gates-v1 --part 3` at **2/2 green, formats 0**.
+//
+// The guard's real job is the case the engines do NOT cover: the `au` tab IS the open tab and `Simple` is what the
+// player is looking at. ptr then walks the WHOLE `tabFormat` object every `updateTemp()` — both subtabs — so
+// `advancedHTML()` is called on every tick of a tab the player is not looking at. That is what this pair measures,
+// and it is PAIRED: the same spin with `Advanced` selected MUST format, or the zero above is "nothing ever calls
+// it" rather than "the guard works".
+const SPIN = (n) => `(function(){ for (var i = 0; i < ${n}; i++) { tmtLoader.tick(1, 10); updateTemp(); if (typeof updateTabFormats === 'function') updateTabFormats(); } return tmtLoader.explainStats().formats; })()`;
+async function part3page(browser, base) {
+  for (const id of ['ptr', 'something']) {
+    const notes = [];
+    let ok = true;
+    const check = (c, w) => { if (!c) ok = false; notes.push(`${c ? '\u2713' : '\u2717'} ${w}`); };
+    const { context, page } = await openGamePage(browser, base, id, '&profile=all');
+    try {
+      await page.evaluate(() => { showTab('au'); });
+      await redraw(page);
+      const f = () => page.evaluate(() => tmtLoader.explainStats().formats);
+      const a0 = await f(); await page.evaluate(SPIN(20)); const a1 = await f();
+      check(a1 - a0 === 0, `au tab OPEN on Simple, 200 ticks with a redraw every 10: ${a1 - a0} format(s) — the Advanced content must not run for a tab nobody is looking at`);
+      await selectSub(page, 'Advanced');
+      const b0 = await f(); await page.evaluate(SPIN(20)); const b1 = await f();
+      check(b1 - b0 > 0, `and with Advanced SELECTED the same spin formats ${b1 - b0} time(s) — so the zero above is the guard, not an absence of callers`);
+      await page.evaluate(() => { showTab('none'); });
+      const c0 = await f(); await page.evaluate(SPIN(20)); const c1 = await f();
+      check(c1 - c0 === 0, `and with the au tab CLOSED (Advanced still selected): ${c1 - c0} format(s)`);
+    } catch (e) { ok = false; notes.push('EXCEPTION ' + String((e && e.stack) || e).slice(0, 300)); }
+    finally { await context.close(); }
+    row({ gate: 'V1-3 (page) the lazy guard: the Advanced content runs ONLY when it is on screen', id, leg: 'au tab open, Simple vs Advanced vs closed', ok, notes: notes.join('; ') });
+  }
+}
+
 // ---- the page --------------------------------------------------------------------------------------------------
 async function openGamePage(browser, base, id, q = '') {
   const context = await browser.newContext();
@@ -387,11 +429,12 @@ let browser = null, server = null;
 try {
   if (PART === '1') await part1();
   else if (PART === '2') await part2();
-  else if (PART === '3') await part3();
+  else if (PART === '3') await part3();   // the node half; `--part 3p` is the page half, where the guard lives
   else {
     browser = await chromium.launch();
     server = await startServer(REPO);
-    if (PART === '4') { await part4node(); await part4page(browser, server.url); }
+    if (PART === '3p') await part3page(browser, server.url);
+    else if (PART === '4') { await part4node(); await part4page(browser, server.url); }
     else if (PART === '6') {
       let ids = a._.length ? a._ : GAMES();
       if (a.shard) { const { i, n } = parseShard(a.shard); ids = assignShards(GAMES(), n)[i - 1]; }

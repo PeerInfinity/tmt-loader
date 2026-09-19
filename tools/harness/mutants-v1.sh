@@ -14,7 +14,8 @@
 #   bash tools/harness/mutants-v1.sh <out-dir>
 set -uo pipefail
 cd "$(dirname "$0")/../.."
-OUT="${1:?usage: mutants-v1.sh <out-dir>}"
+OUT="${1:?usage: mutants-v1.sh <out-dir> [name-filter]}"
+ONLY="${2:-}"
 mkdir -p "$OUT"
 if [ -n "$(git status --porcelain)" ]; then echo "REFUSING: the tree is dirty. Commit first — a mutant round restores over whatever is here."; exit 1; fi
 AUTO=loader/tmt-auto.js
@@ -25,6 +26,7 @@ trap restore EXIT
 # $1 = name, $2 = python mutation, $3.. = the command whose RED is the claim
 mutant() {
   local name="$1" mut="$2"; shift 2
+  if [ -n "$ONLY" ] && [[ "$name" != *"$ONLY"* ]]; then return 0; fi
   restore
   python3 -c "$mut" || { echo "$name: THE MUTATION DID NOT APPLY"; return 1; }
   echo "=== $name ==="
@@ -49,9 +51,12 @@ mutant m2-reason-says-acted \
   $V1 --part 2
 
 # ---- leg 3 (the cost counter): the lazy guard removed -------------------------------------------------------------
+# ⚠ AGAINST `--part 3p`, NOT `--part 3`. MEASURED: with the guard removed, the NODE leg stays green at formats 0,
+# because neither engine evaluates a tabFormat for a tab that is not open — the headless zero is the engines', not
+# the guard's. The page leg is where the guard works, and it is paired.
 mutant m3-lazy-guard-removed \
   "p='$AUTO';s=open(p).read();o='    if (!advancedShown()) return \x27\x27;';assert o in s;s=s.replace(o,'    if (false && !advancedShown()) return \x27\x27;');open(p,'w').write(s)" \
-  $V1 --part 3
+  $V1 --part 3p
 
 # ---- leg 4 (T1): the subtab normalisation removed ------------------------------------------------------------------
 mutant m4-subtab-normalisation-removed \

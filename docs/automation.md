@@ -70,11 +70,18 @@ subtab bar itself, with `tab-buttons`. Censused quote-agnostically over `games/`
 the component and still fail to draw the tab — so it is only the premise; `gates-v1 --part 6` opens the Advanced
 subtab on every game and is the witness.
 
-⛔ **It is lazy, and written for the worse engine.** PTR's `temp.js` has no special case for `tabFormat`: every
-function in a layer's data that is not in `activeFunctions` is evaluated into `tmp` on EVERY tick, open tab or not
-(`setupTempData` / `updateTempData`). 2.7's lists `"tabFormat"` and `"content"` among the things "only updated when
-needed" (`temp.js:12`, `:127`). So the Advanced content function returns `''` unless the `au` tab is on screen AND
-`Advanced` is the selected subtab — which is why a headless run never formats a single number (below).
+⛔ **It is lazy — and where that matters is not where it looks.** Both engines already refuse to evaluate a
+`tabFormat` they are not showing: 2.2.1 (`ptr`) skips any key whose name contains `tabformat` / `display` /
+`description` whenever `player.tab != layer` (`js/technical/temp.js:96`), and 2.7 (`something`) skips `tabFormat`
+and `content` outright (`temp.js:127`, with both in `activeFunctions` at `:12`), moving them only through
+`updateTabFormats()`. So in **Node**, where the `au` tab is never open, neither engine ever calls the Advanced
+content function at all — the headless `formats === 0` below is true, and the ENGINES guarantee it.
+
+What the guard actually prevents is the case they do not cover: **the `au` tab is open and `Simple` is what the
+player is looking at.** ptr then walks the whole `tabFormat` object on every `updateTemp()` — *both* subtabs — so
+the Advanced content would be rebuilt on every tick of a tab nobody is looking at. Measured over 200 ticks with a
+redraw every 10 (`gates-v1 --part 3p`): **0 formats on Simple against 2721 with `Advanced` selected** on ptr, and
+**0 against 98** on something; with the tab closed, 0 on both.
 
 ⛔ **The selected subtab is NOT game state.** Both engines keep it in `player.subtabs.au.mainTabs`, a top-level
 `player` key — so giving this tab subtabs would have moved every pinned `hashGame` in the repo, and a player

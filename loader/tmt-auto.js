@@ -960,12 +960,20 @@
   // rows the headless API returns, which is why `render ≡ headless` (gates-v1 leg 5) is a comparison rather than
   // two implementations hoping to agree — and why every reason in this tab is testable in Node with no browser.
   //
-  // ⛔ AND IT IS LAZY, WRITTEN FOR THE WORSE ENGINE. ptr's `temp.js` has no special case for `tabFormat`: every
-  // function in a layer's data that is not in `activeFunctions` is evaluated into `tmp` on EVERY tick, open tab or
-  // not (`setupTempData` / `updateTempData`). 2.7's lists `"tabFormat", "content"` among the things "only updated
-  // when needed" (`temp.js:12`, `:127`). So this returns '' unless the `au` tab is on screen AND `Advanced` is the
-  // selected subtab — and in Node, where no tab is ever open, it never runs at all. That is what makes
-  // `explainStats().formats === 0` after a headless run a real claim about the cost (gates-v1 leg 3).
+  // ⛔ AND IT IS LAZY. ⚠ MEASURED, because the brief had the engines the wrong way round and the correction is what
+  // says where this guard earns its keep:
+  //   · **2.2.1 (ptr) DOES special-case `tabFormat`** — `updateTempData` (`js/technical/temp.js:96`) skips any key
+  //     whose name contains `tabformat` / `display` / `description` **whenever `player.tab != layer`**;
+  //   · **2.7 (something) skips `tabFormat` and `content` unconditionally** (`temp.js:127`) and lists both in
+  //     `activeFunctions` (`:12`); they move only through `updateTabFormats()`.
+  // So in NODE, where the `au` tab is never open, neither engine ever calls this — `explainStats().formats === 0`
+  // after a headless run is true, and it is the ENGINES that guarantee it, not this line (measured: removing the
+  // guard leaves `gates-v1 --part 3` green at formats 0).
+  // ⛔ WHAT THIS LINE ACTUALLY PREVENTS is the case the engines do not cover: the `au` tab IS open and `Simple` is
+  // what the player is looking at. ptr then walks the WHOLE tabFormat object every `updateTemp()` — BOTH subtabs —
+  // so this function is called on every tick of a tab nobody is looking at. MEASURED over 200 ticks with a redraw
+  // every 10 (gates-v1 --part 3p): **0** formats on Simple against **2721** with Advanced selected on ptr, and
+  // **0** against **98** on something.
   //
   // ⚠ ENGINE COMPONENTS ONLY, and `loader/tmt-auto.js` still never touches the DOM (docs/contract.md). This builds
   // a STRING that the engines' own `display-text` renders; it queries no element and holds no reference to one.
