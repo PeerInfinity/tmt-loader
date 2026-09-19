@@ -793,13 +793,17 @@ const TIP_PROBE = `(${function () {
     const kind = el.dataset.kind || '', id = el.dataset.cid, layer = el.dataset.layer || cardLayer;
     const title = strip(el.getAttribute('title'));
     const opened = ui.tip.show(el);
-    const tipTitle = strip(ui.tip.title()), body = strip(ui.tip.body());
+    // ⚠ THE RAW BODY IS KEPT AS WELL AS THE STRIPPED ONE. `strip()` normalises what it is judging, so a build that
+    // injected the game's markup verbatim would compare EQUAL to the witness and the richness test would pass it —
+    // measured, on the mutant that leaves the tags in. The markup test has to read the text the overlay really holds.
+    const raw = String(ui.tip.body() == null ? '' : ui.tip.body());
+    const tipTitle = strip(ui.tip.title()), body = strip(raw);
     const w = role === 'counter' ? { parts: [], declared: null } : witness(kind, layer, id);
     // a witness the TITLE already states cannot discriminate this build from the one that only had `title`
     const usable = w.parts.filter((x) => title.indexOf(x.s) < 0);
     const missed = usable.filter((x) => body.indexOf(x.s) < 0);
     const r = tipEl.getBoundingClientRect(), a = el.getBoundingClientRect();
-    rows.push({ card: cardLayer, role, kind, id: id === undefined ? null : String(id), opened,
+    rows.push({ card: cardLayer, layer, role, kind, id: id === undefined ? null : String(id), opened,
       titleIsFirstLine: tipTitle === title,
       judged: usable.length > 0,
       // ⚠ NOT a length comparison. `something`'s `primitive/milestones/1` reads "1: 10 Numbers" as its title and
@@ -812,6 +816,8 @@ const TIP_PROBE = `(${function () {
       // which is what says the field is ADDITIVE rather than a substitute for the composition
       declared: w.declared ? w.declared.slice(0, 40) : null,
       declaredShown: w.declared ? body.indexOf(w.declared) >= 0 : null,
+      // the game's own fields are HTML; ours is text. A tag left in is game markup in our overlay.
+      markup: /<[a-z!/][^>]*>/i.test(raw),
       escapes: r.width > 0 && (r.left < -1 || r.top < -1 || r.right > vw + 1 || r.bottom > vh + 1),
       rect: [Math.round(r.x), Math.round(r.y), Math.round(r.width), Math.round(r.height)],
       anchorShown: a.width > 0 && a.height > 0,
@@ -958,6 +964,11 @@ const TIP_PROBE = `(${function () {
     declared: declRows.length, declaredShown: declRows.filter((x) => x.declaredShown).length,
     declaredBad: declRows.filter((x) => !x.declaredShown).slice(0, 3),
     escaping: rows.filter((x) => x.escapes).slice(0, 3),
+    // ⚠ and how many controls COULD have shown markup, so a game where no field carries a tag abstains on it rather
+    // than reading as a pass: `markupSource` counts the components whose own fields do contain one.
+    markup: rows.filter((x) => x.markup).slice(0, 3),
+    markupSource: rows.filter((x) => x.role !== 'counter'
+      && ((PROSE[x.kind] || []).concat(['tooltip'])).some((f) => /<[a-z!/][^>]*>/i.test(String(read(x.kind, x.layer, x.id, f) == null ? '' : read(x.kind, x.layer, x.id, f))))).length,
     samples: judgedRows.slice(0, 3).map((x) => x.role + ' ' + x.card + '/' + x.kind + '/' + x.id + ': ' + x.sample),
     exclusive, nan, live,
     stats: S(() => ui.stats(), null),
@@ -1458,6 +1469,7 @@ async function gateMobile(browser, base, ids) {
       const tipVerdict = (t) => !t || t.why ? `abstains (${(t && t.why) || 'no probe'})`
         : !t.titleFirst ? 'THE FIRST LINE IS NOT THE ELEMENT\'S OWN title'
         : t.escaping.length ? 'A TOOLTIP ESCAPED THE VIEWPORT'
+        : t.markup.length ? 'THE OVERLAY HOLDS THE GAME\'S OWN MARKUP'
         : /RAISED|LOWERED/.test(t.nan.verdict) ? t.nan.verdict
         : /THE FIRST|MORE THAN ONE/.test(t.exclusive.verdict) ? t.exclusive.verdict
         : /CLOSED|DID NOT|WOULD NOT OPEN/.test(t.live.verdict) ? t.live.verdict
@@ -1468,7 +1480,7 @@ async function gateMobile(browser, base, ids) {
         : `richer than the title on ${t.richer}/${t.judged} control(s)`;
       row.tips.phoneVerdict = tipVerdict(tipPhone);
       row.tips.desktopVerdict = tipVerdict(nb.tips);
-      const tipBad = (v) => /THE FIRST|ESCAPED|RAISED|LOWERED|MORE THAN ONE|DECLARED|NO RICHER|no probe|CLOSED|DID NOT|WOULD NOT OPEN/.test(v);
+      const tipBad = (v) => /THE FIRST|ESCAPED|RAISED|LOWERED|MORE THAN ONE|DECLARED|NO RICHER|no probe|CLOSED|DID NOT|WOULD NOT OPEN|MARKUP/.test(v);
       row.tipsOk = !tipBad(row.tips.phoneVerdict) && !tipBad(row.tips.desktopVerdict)
         && !/A TAP OPENED|DID NOT REACH/.test(row.tips.tap.verdict) && !/NOT OPEN|NOT RICHER/.test(row.tips.hover.verdict);
       // --- and the two VISIBILITY RULES the roster's recorded states cannot exercise on their own.
@@ -1945,7 +1957,7 @@ async function main() {
       const tvNan = rows.reduce((o, r) => { const v = r.tips && r.tips.phone && r.tips.phone.nan && r.tips.phone.nan.verdict; if (v) { const k = v.replace(/\(.*/, '(…)'); o[k] = (o[k] || 0) + 1; } return o; }, {});
       const tvTap = rows.reduce((o, r) => { const v = r.tips && r.tips.tap && r.tips.tap.verdict; if (v) { const k = v.replace(/\(.*/, '(…)').replace(/ \(buy.*/, ''); o[k] = (o[k] || 0) + 1; } return o; }, {});
       const tvHov = rows.reduce((o, r) => { const v = r.tips && r.tips.hover && r.tips.hover.verdict; if (v) { const k = v.replace(/\(.*/, '(…)'); o[k] = (o[k] || 0) + 1; } return o; }, {});
-      console.log(`M1 layers tooltip (U2e — STRICTLY RICHER than the element's own \`title\`, which U2d already set on every control): ${rows.length - tpRed.length - tpAbst.length - tpNone.length}/${rows.length} green over ${tpSum('richer')} of ${tpSum('judged')} judged control(s) out of ${tpSum('controls')} (${tpSum('chips')} chip(s), ${tpSum('acts')} button(s), ${tpSum('counters')} counter(s))${tpAbst.length ? `, ${tpAbst.length} abstained: ${tpAbst.slice(0, 6).map((x) => `${x} ${(rows.find((r) => r.id === x).tips || {}).phoneVerdict}`).join('; ')}` : ''}${tpNone.length ? `, ⛔ ${tpNone.length} NEVER RAN (the row threw: ${tpNone.slice(0, 6).join(', ')})` : ''}${tpRed.length ? ` (RED: ${tpRed.map((x) => `${x} ${(rows.find((r) => r.id === x).tips || {}).phoneVerdict} / desktop ${(rows.find((r) => r.id === x).tips || {}).desktopVerdict}`).join('; ')})` : ''}`);
+      console.log(`M1 layers tooltip (U2e — STRICTLY RICHER than the element's own \`title\`, which U2d already set on every control): ${rows.length - tpRed.length - tpAbst.length - tpNone.length}/${rows.length} green over ${tpSum('richer')} of ${tpSum('judged')} judged control(s) out of ${tpSum('controls')} (${tpSum('chips')} chip(s), ${tpSum('acts')} button(s), ${tpSum('counters')} counter(s)); ${tpSum('markupSource')} control(s) whose OWN fields carry a tag, ${rows.reduce((n, r) => n + (((r.tips && r.tips.phone && r.tips.phone.markup) || []).length), 0)} overlay(s) holding one${tpAbst.length ? `, ${tpAbst.length} abstained: ${tpAbst.slice(0, 6).map((x) => `${x} ${(rows.find((r) => r.id === x).tips || {}).phoneVerdict}`).join('; ')}` : ''}${tpNone.length ? `, ⛔ ${tpNone.length} NEVER RAN (the row threw: ${tpNone.slice(0, 6).join(', ')})` : ''}${tpRed.length ? ` (RED: ${tpRed.map((x) => `${x} ${(rows.find((r) => r.id === x).tips || {}).phoneVerdict} / desktop ${(rows.find((r) => r.id === x).tips || {}).desktopVerdict}`).join('; ')})` : ''}`);
       console.log(`M1 layers tooltip paths: a DECLARED \`tooltip\` field is drawn on ${tpDecl.length} game(s)${tpDecl.length ? ` (${tpDecl.slice(0, 8).join(', ')}${tpDecl.length > 8 ? `, …(${tpDecl.length})` : ''})` : ' — every other game reaches the tooltip by COMPOSITION alone'}; tap on touch → ${JSON.stringify(tvTap)}; hover on a pointer → ${JSON.stringify(tvHov)}; a CONSTRUCTED NaN cost → ${JSON.stringify(tvNan)}; a CONSTRUCTED cost move under an OPEN tooltip → ${JSON.stringify(rows.reduce((o, r) => { const v = r.tips && r.tips.phone && r.tips.phone.live && r.tips.phone.live.verdict; if (v) { const k = v.replace(/\(.*/, '(…)'); o[k] = (o[k] || 0) + 1; } return o; }, {}))}`);
       const psNone = rows.filter((r) => !r.persist).map((r) => r.id);
       const psRed = rows.filter((r) => r.persist && !r.persistOk).map((r) => r.id);
