@@ -636,7 +636,13 @@ const LAYERLIST_PROBE = `(${function () {
     if (!was) c.classList.remove('tmt-layerlist-expanded');
     const got = box ? [...box.querySelectorAll('.tmt-layerlist-chip')].map(chipKey) : [];
     const skinBad = skins.filter((x) => x.got !== x.want || x.gotKey !== x.wantKey);
-    // the vector the no-hop leg watches for a FLIP, and the chip ORDER it asserts held byte-for-byte while it did
+    // the vector the no-hop leg watches for a FLIP, and the ROW ORDER it asserts held byte-for-byte while it did.
+    // ⚠ THE DIVIDERS ARE IN IT. A chip-only order string misses a build that moves the chips relative to the
+    // dividers between the categories — MEASURED: the reordering mutant appended every chip to the end of the box,
+    // which put them all after the dividers, and the chip-only string did not move at all (on that card the
+    // affordable chips already led the row). The row a finger sees is the box's children, so that is what is held.
+    const rowOrder = [...(box ? box.children : [])]
+      .map((e) => (e.classList.contains('tmt-layerlist-divider') ? '|' : chipKey(e))).join(' ');
     const skinVec = skins.map((x) => SKINMARK[x.gotKey] || '?').join('');
     const skinSet = [...new Set(skins.map((x) => x.wantKey))];
     const divBad = [...divProblems(collapsed).map((x) => `collapsed: ${x}`), ...divProblems(expanded).map((x) => `expanded: ${x}`)];
@@ -679,7 +685,7 @@ const LAYERLIST_PROBE = `(${function () {
       // build too. This one would not.
       twoRowWitness: !!(collShape.counters >= 2 && collShape.acts >= 2),
       // --- U5 ---
-      skins, skinBad, skinVec, skinSet, skinOk: skinBad.length === 0,
+      skins, skinBad, skinVec, skinSet, rowOrder, skinOk: skinBad.length === 0,
       // ⚠ THE DISCRIMINATOR: a card showing ALL THREE of the engine's states at once. A two-state check
       // (bought / not) passes on a build that never renders red, which is what the build before U5 was.
       threeStates: skinSet.filter((k) => k !== 'pseudo').length >= 3,
@@ -777,7 +783,7 @@ const LAYERLIST_PROBE = `(${function () {
       // (U5) the chips' colour vector, the chip row's own `layer/kind/id` sequence, and — rebuilt in this probe
       // and NOT asked of the list — the sequence that row is SUPPOSED to hold, so a leg watching the colours can
       // tell a repaint from a legitimate membership change (an upgrade unlocking) the way the button row does
-      skins: x.skinVec, chipOrder: x.got.join(' '), chipWant: x.want.join(' ') })),
+      skins: x.skinVec, chipOrder: x.rowOrder, chipWant: x.want.join(' ') })),
     throttle: S(() => window.tmtLoader.layerListUI.stats(), null),
   };
 }})()`;
