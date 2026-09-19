@@ -158,7 +158,7 @@ drove a chip**. ⛔ A check nobody runs is not a check.
 
 | check | where it runs now | cost |
 |---|---|---|
-| unit tests (`npm run harness:test`) | CI, the **fast** job — and everything else `needs:` it | 75 tests, 8.3 s, no browser (⚠ it read `46 tests, 3.5 s` until U3, which was stale by fourteen tests before U3 added fifteen — a count in prose that no gate reads) |
+| unit tests (`npm run harness:test`) | CI, the **fast** job — and everything else `needs:` it | 79 tests, 8.4 s, no browser (⚠ it read `46 tests` and then `75`, both stale until U3, which was stale by fourteen tests before U3 added fifteen — a count in prose that no gate reads) |
 | G6 roster doc + G7 declined list (`games-table.mjs --check`) | CI, the fast job | 0.13 s |
 | roster FIGURES census (`census-figures.mjs`) | CI, the fast job | 1.2 s |
 | M1 mobile sweep (`--gate mobile`) | CI, ten shards + a merge | ~3 min end to end; 32–46 min locally |
@@ -166,6 +166,7 @@ drove a chip**. ⛔ A check nobody runs is not a check.
 | S1 part 1 — the automation anchors | CI, its own job beside the matrix | 52 checks, 197 s locally |
 | G5 (`check-pages.mjs`) | **the deploy**, `pages.yml`, after the site is published | ~100 s+ |
 | O1 options (`--gate options`) | a slice, on a bounded set; not sharded | ~19 page loads per game, ~1 min/game locally |
+| A1 part 2 — the `au` tab's own page checks, including the U4 arming flow | ⛔ **nowhere in CI** — a slice runs it by hand on `ptr` + `something` | 24 checks, ~3 min locally |
 | the M1 sweep on a bounded local set | a slice, before it pushes | minutes |
 
 ⚠ The numbers above are local wall clock on one workstation unless they say CI; CI runs this kind of work about

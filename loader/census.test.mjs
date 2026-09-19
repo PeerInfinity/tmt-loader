@@ -82,6 +82,11 @@ for (const [claim, from, to] of [
   // worthless). The digit moved here is the games count, which is what decides whether the field path is worth
   // preferring at all.
   ['the tooltip census', '**140 games declare one on a chipped category**', '**141 games declare one on a chipped category**'],
+  // ⚠ U5: the two figures the chip colours and the Back memory rest on. The first decides whether the layer list
+  // can resolve a colour off an element that is NOT inside the game's own markup; the second, whether it can find
+  // the back control by class alone.
+  ['a bare `.bought`', 'a bare `.locked` rule (171 and 171)**, and **4**', 'a bare `.locked` rule (171 and 170)**, and **4**'],
+  ['the back control', '(171), and 166 of', '(171), and 162 of'],
 ]) {
   test(`a wrong figure in the prose is caught: ${claim}`, () => {
     const text = read(MOBILE);
@@ -107,6 +112,26 @@ test('the tooltip census separates the chipped declarations from the achievement
   // and the scanner itself, on text whose braces it has to follow rather than grep past
   const by = tooltipsByKind('{ tooltip: "layer", upgrades: { 11: { tooltip: "u" } }, achievements: { 11: { tooltip: "a" }, 12: { tooltip: "a2" } } }');
   assert.deepEqual([by.layer, by.upgrades, by.achievements, by.milestones], [1, 1, 2, 0]);
+});
+
+test('U5 — the off-palette games are checked by NAME, not just counted', () => {
+  // ⛔ The four are the reason the chip colours are asked of the stylesheet instead of hardcoded, so naming the
+  // wrong four is the failure that matters: a count of 4 is right for any four ids.
+  const text = read(MOBILE);
+  const r = judge({ [MOBILE]: text.replace('`the-congratulations-tree` (`hsl()`)', '`ptr` (`hsl()`)') });
+  assert.equal(row(r, 'a bare `.bought`').ok, false, '`ptr` uses the family palette — naming it should fail');
+});
+
+test('U5 — the bare-rule scan is not fooled by a comment above the rule', () => {
+  // MEASURED on `something`, and it cost 148 of the 171 games: `general-style.css` writes
+  // `/* … versions with .c.locked, for example */` on the line above the bare `.locked {`, the comment lands in
+  // the selector capture, and splitting it on its comma yields neither `.locked` nor anything like it. A scan that
+  // reported 23 of 171 would have read like a finding about the roster rather than like a bug in the scan.
+  assert.equal(sub.boughtBare, GAMES().length, 'every game declares a bare `.bought` rule');
+  assert.equal(sub.lockedBare, GAMES().length, 'every game declares a bare `.locked` rule');
+  assert.equal(sub.backClass, GAMES().length, 'every game draws a back control by class');
+  assert.ok(sub.backGoBack > 0 && sub.backGoBack < GAMES().length,
+    `a figure that said all or none would not be telling the two wirings apart: ${sub.backGoBack}`);
 });
 
 test('the named games are checked, not just the counts', () => {

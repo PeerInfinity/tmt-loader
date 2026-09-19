@@ -78,6 +78,23 @@
   overflow-x: hidden;
   -webkit-overflow-scrolling: touch;
   padding: 8px 12px calc(12px + env(safe-area-inset-bottom, 0px));
+  /* ⚠ THE LIST USED TO DRIFT DOWN WHILE YOU READ IT, and this one line is the fix (U4).
+   * The cause is the browser's own SCROLL ANCHORING, not anything this file's JavaScript does. `refresh()` rewrites
+   * a card's live text 20x/s — the prestige button's string, a counter's digits — and a card's content height moves
+   * with it by a few pixels; the browser then adjusts `scrollTop` to keep the anchor element it chose visually
+   * still, and that adjustment IS the drift. MEASURED on `the-yes-tree` at 390px through the card's own reset
+   * button: scrollTop 2275 -> 2272 while scrollHeight 5287 -> 5283 (the list got 4px SHORTER and the offset
+   * followed it). ⚠ It is NOT `rebuildInner`'s `body.textContent = ''`: a reset does not change MEMBERSHIP, so no
+   * rebuild runs, and a forced membership change measures Δ 0 because the wipe and the refill happen inside one
+   * task with no layout between them.
+   * ⚠ WHO CAN WITNESS IT DEPENDS ON THE STATE, so a bare count is not reproducible: 44 of the 171 games at a fresh
+   * save (deep snapshot where one exists, measured at d7cd5c185) and 49 at the state gate M1 reaches them in
+   * (3,000 ticks, a reset press and a purchase past that; CI at ccb0ed08a). The rest cannot — their list does not
+   * scroll at 390x844. `ptr` and `something` are witnesses ONCE THEIR DEEP SNAPSHOT IS LOADED; at a fresh save
+   * ptr's list fits the viewport exactly (737/737).
+   * ⛔ The gate's discriminator is NOT "scrollTop did not move": a build that stopped the content height moving at
+   * all would pass that while proving nothing about anchoring. It asserts Δ scrollTop === 0 WHILE Δ height ≠ 0. */
+  overflow-anchor: none;
 }
 
 #tmt-layerlist .tmt-layerlist-row { margin: 0 0 14px; }
@@ -271,12 +288,22 @@
   cursor: pointer;
   transition-duration: 0s;
 }
-#tmt-layerlist .tmt-layerlist-chip[data-state="done"] { opacity: .45; }
+/* ⚖ A CHIP WEARS THE GAME'S OWN COLOURS (user, 2026-09-19) — purchased, affordable, unaffordable. The COLOUR
+ * itself is never here: layerlist.js writes it INLINE, resolved out of the game's own stylesheet (`engineBg`) or
+ * straight off `tmp[l].color`, and `data-skin` says which of the engine's three words it is. Naming the colours in
+ * this file would be wrong on the seven games that do not use the family's `#77bf5f`/`#bf8f8f` and would go stale
+ * on the rest. ⛔ `locked` here is the ENGINE's word and means CANNOT AFFORD, never "not unlocked".
+ * ⚠ The inline background beats this file's own `background: transparent` above, which is what a chip with no
+ * skin (a category the engine gives no colour of its own) keeps. */
 #tmt-layerlist .tmt-layerlist-chip[data-state="active"] { border-color: currentColor; border-width: 2px; }
+/* … and the two states that used to be told apart by DIMMING alone now carry a real colour, so the dimming is kept
+ * only where there is no colour to carry it. A 45%-opaque green is not the green the game paints. */
+#tmt-layerlist .tmt-layerlist-chip[data-state="done"]:not([data-skin]) { opacity: .45; }
 /* the engines' SECOND upgrade button — the teaser you press to unlock an upgrade rather than to buy it. It is a
  * real control on the tab, so it is a real chip here, and it says so. (There is no `locked` state any more: since
  * U2b a component the tab does not draw gets no chip at all, rather than a greyed one.) */
-#tmt-layerlist .tmt-layerlist-chip[data-state="pseudo"] { opacity: .6; border-style: dashed; }
+#tmt-layerlist .tmt-layerlist-chip[data-state="pseudo"] { border-style: dashed; }
+#tmt-layerlist .tmt-layerlist-chip[data-state="pseudo"]:not([data-skin]) { opacity: .6; }
 
 /* ⚖ MILESTONES GET SQUARE CORNERS (user, 2026-09-18) — the one thing that tells a passive milestone chip apart
  * from an upgrade you can press, at a glance and without colour. Round stays for every other category. */
