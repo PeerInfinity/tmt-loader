@@ -1,0 +1,64 @@
+#!/usr/bin/env bash
+# The V1 mutant round. Each mutation must redden ITS OWN leg and leave the others alone.
+#
+# ⛔ RESTORED FROM A COPY, NEVER FROM GIT. A harness that restores with `git checkout` restores over uncommitted
+# work; this repo has lost mutants that way before. The copy is taken first, the tree is restored from it after
+# every run, and the script refuses to start on a dirty tree — because a dirty tree is the case where the copy is
+# the ONLY thing standing between the mutation and the work.
+#
+#   bash tools/harness/mutants-v1.sh <out-dir>
+set -uo pipefail
+cd "$(dirname "$0")/../.."
+OUT="${1:?usage: mutants-v1.sh <out-dir>}"
+mkdir -p "$OUT"
+if [ -n "$(git status --porcelain)" ]; then echo "REFUSING: the tree is dirty. Commit first — a mutant round restores over whatever is here."; exit 1; fi
+AUTO=loader/tmt-auto.js
+cp "$AUTO" "$OUT/tmt-auto.js.orig"
+restore() { cp "$OUT/tmt-auto.js.orig" "$AUTO"; }
+trap restore EXIT
+
+# $1 = name, $2 = python mutation, $3.. = the command whose RED is the claim
+mutant() {
+  local name="$1" mut="$2"; shift 2
+  restore
+  python3 -c "$mut" || { echo "$name: THE MUTATION DID NOT APPLY"; return 1; }
+  echo "=== $name ==="
+  git --no-pager diff --stat -- "$AUTO"
+  "$@" > "$OUT/$name.log" 2>&1
+  echo "$name: exit $? — $(grep -cE '^RED' "$OUT/$name.log") RED row(s), $(grep -cE '^GREEN' "$OUT/$name.log") green"
+  grep -E '^RED' "$OUT/$name.log" | cut -c1-220
+  restore
+  git --no-pager diff --stat -- "$AUTO" | grep . && echo "!! NOT RESTORED" || echo "restored: diff is empty"
+}
+
+A1="node tools/harness/gates-a1.mjs --part 2 --no-summary --assert"
+V1="node tools/harness/gates-v1.mjs --no-summary"
+
+# ---- leg 2 (reason ≡ decision): two mutants, from the two directions a reason can lie -----------------------------
+mutant m1-reason-says-not-acted \
+  "import re,io;p='$AUTO';s=open(p).read();a=\"code: 'acted:upgrades', values: { n: n, ids: bought } };\n      // ⚠\";assert s.count(\"{ act: true, n: n, code: 'acted:upgrades', values: { n: n, ids: bought } };\")==2;s=s.replace(\"{ act: true, n: n, code: 'acted:upgrades', values: { n: n, ids: bought } };\",\"{ act: true, n: n, code: 'nothing-affordable', values: { kind: 'upgrade', id: 0, cost: 0 } };\");open(p,'w').write(s)" \
+  $V1 --part 2
+
+mutant m2-reason-says-acted \
+  "p='$AUTO';s=open(p).read();o=\"return { act: false, code: 'waiting:gain-x', values: { gain: tmp[l].resetGain, need: needX, n: Number(m[1]), have: player[l].points } };\";assert o in s;s=s.replace(o,\"return { act: false, code: 'acted:reset', values: { layer: l, gain: tmp[l].resetGain } };\");open(p,'w').write(s)" \
+  $V1 --part 2
+
+# ---- leg 3 (the cost counter): the lazy guard removed -------------------------------------------------------------
+mutant m3-lazy-guard-removed \
+  "p='$AUTO';s=open(p).read();o='    if (!advancedShown()) return \x27\x27;';assert o in s;s=s.replace(o,'    if (false && !advancedShown()) return \x27\x27;');open(p,'w').write(s)" \
+  $V1 --part 3
+
+# ---- leg 4 (T1): the subtab normalisation removed ------------------------------------------------------------------
+mutant m4-subtab-normalisation-removed \
+  "p='$AUTO';s=open(p).read();o='      if (subs && this === subs && excl.indexOf(k) >= 0) return undefined;\n';assert o in s;s=s.replace(o,'');open(p,'w').write(s)" \
+  $V1 --part 4
+
+# …and the SAME mutation against the L1 anchors, which is the other half of its claim
+mutant m4b-normalisation-removed-vs-anchors \
+  "p='$AUTO';s=open(p).read();o='      if (subs && this === subs && excl.indexOf(k) >= 0) return undefined;\n';assert o in s;s=s.replace(o,'');open(p,'w').write(s)" \
+  $A1 ptr
+
+# ---- the wrapper removal's own condition: UNSEEDED and UNWRAPPED is U6's original bug ------------------------------
+mutant m5-unseeded-and-unwrapped \
+  "p='$AUTO';s=open(p).read();o=', disclosed: false, armLocked: false };';assert o in s;s=s.replace(o,', disclosed: false };');open(p,'w').write(s)" \
+  $A1 ptr

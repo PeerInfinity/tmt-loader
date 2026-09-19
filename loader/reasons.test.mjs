@@ -313,6 +313,32 @@ test('the reason and the decision cannot disagree: `act` moves with the action c
   }
 });
 
+test('a NaN is never handed to the GAME\'s own format() — it logs and raises player.hasNaN', () => {
+  // ⛔ WHY THIS EXISTS, AND WHAT IT DOES NOT CLAIM. Every TMT `format()` begins
+  // `if (isNaN(sign) || isNaN(layer) || isNaN(mag)) { player.hasNaN = true; console.error('We meet an NaN at ' + d) }`
+  // — so a READOUT that formats a NaN sets off the game's own alarm and writes to its console just by describing a
+  // state the game is already in. ⚠ MEASURED over the whole roster (gates-v1 --part 6): NO game's `explain()`
+  // reaches such a value — `arctree` logs that line 68 times during its own load and once per `updateTemp()`, and
+  // `tmtLoader.explain()` adds ZERO with the guard in place AND with it removed. So this is a precaution nothing
+  // on the roster exercises, and it is driven HERE rather than left as an untested claim in the source.
+  const ctx = boot();
+  const T = ctx.tmtLoader;
+  const nan = { code: 'waiting:gain', values: { gain: new Decimal(NaN), need: new Decimal(NaN) } };
+  const ok = { code: 'waiting:gain', values: { gain: new Decimal(7), need: new Decimal(9) } };
+  const b0 = ctx.fired.format;
+  const t = T.reasonText(nan);
+  assert.match(t, /NaN/, 'the NaN is not on screen at all — then the guard is not what is being tested');
+  assert.equal(ctx.fired.format, b0, "the game's own format() was called on a NaN");
+  // …and the SAME code with finite numbers DOES go through format(), so the guard is not formatting off entirely
+  const b1 = ctx.fired.format;
+  assert.match(T.reasonText(ok), /7/);
+  assert.equal(ctx.fired.format - b1, 2, 'both quantities of the same code should have been formatted');
+  // …and a NaN reached through a real decision reads as NaN rather than as a wrong number
+  ctx.player.points = new Decimal(NaN);
+  tick(ctx, 1);
+  assert.match(rowOf(ctx, 'reset:a').last.text, /NaN/);
+});
+
 test('every table string the tab renders is ESCAPED', () => {
   const ctx = boot({ autoTable: { off: { 'buyables:a': '<img src=x onerror="alert(1)">' } } });
   const esc = ctx.tmtLoader.escapeText('<img src=x onerror="alert(1)">');

@@ -247,11 +247,18 @@
     if (v === null || v === undefined) return '';
     if (Array.isArray(v)) return v.join(', ');
     if (typeof v === 'string' || typeof v === 'boolean') return String(v);
+    var raw = String(v);
+    // ⛔ NEVER `format()` A NaN. TMT's own formatter does not just return something odd — it logs
+    // "We meet an NaN at (e^NaN)NaN" to the console AND sets `player.hasNaN`, which is the game's own panic flag.
+    // MEASURED over the roster (gates-v1 --part 6): `arctree` holds such a value at a fresh save, and simply
+    // DESCRIBING it set the alarm off. A readout must not do that, and the raw string is the more honest answer
+    // anyway. (`withoutRaisingNaN` below still guards the flag for everything else, but it cannot un-log a line.)
+    if (raw.indexOf('NaN') >= 0) return raw;
     if (GAME_FORMAT && (typeof v === 'number' || (NUMBER && v instanceof NUMBER))) {
       var s = withoutRaisingNaN(function () { try { return GAME_FORMAT(v); } catch (e) { return null; } });
       if (s !== null && s !== undefined) return String(s);
     }
-    return String(v);
+    return raw;
   }
   function codeText(code, values) {
     explainStats.texts++;

@@ -17,7 +17,9 @@ const REPO = path.resolve(new URL('..', import.meta.url).pathname);
 
 /** The smallest big-number type with the methods the registry calls. Values are ordinary JS numbers. */
 export class Decimal {
-  constructor(v) { this.v = v instanceof Decimal ? v.v : (typeof v === 'string' ? Number(v) : Number(v || 0)); }
+  // ⚠ NOT `Number(v || 0)`: NaN is falsy, so that quietly turned every NaN into 0 — and a stub that cannot hold
+  // a NaN cannot drive the guard that exists for NaNs.
+  constructor(v) { this.v = v instanceof Decimal ? v.v : Number(v === undefined || v === null ? 0 : v); }
   gte(o) { return this.v >= new Decimal(o).v; }
   gt(o) { return this.v > new Decimal(o).v; }
   lte(o) { return this.v <= new Decimal(o).v; }

@@ -137,8 +137,20 @@ async function codeTable() {
 // ⛔ CHECKED INSIDE THE RUN, TICK BY TICK. The end state cannot answer this: `f.last` holds ONE decision, and a
 // disagreement four thousand ticks ago leaves no trace in it. `--until` runs after every tick, so the comparison
 // runs there and LATCHES — the run stops on the first violation and `__v1` carries what it was.
+// ⛔ AND ITS BASELINE IS SAMPLED BEFORE THE FIRST TICK, NOT ON THE FIRST CHECK. The first cut let `prev` start
+// empty, which is right for a fresh game and WRONG for a resumed one: `restoreRuntime` brings the snapshot's action
+// counts back, so on tick 1 every restored counter reads as "it rose" against an empty baseline. Measured: the
+// M15 → M16 leg went red at its very first tick on `reset:sb` (`before: 0, after: 1`) — an artifact of the probe,
+// not a disagreement in the code. `--predicates` runs once after `load()` and after the runtime restore, which is
+// exactly the hook a baseline needs; `seeded` is asserted in the row so a run where it did not happen cannot pass.
+const EQUIV_SEED = `(function(){
+  var a = tmtLoader.hookStats().actions, p = {};
+  for (var k in a) p[k] = a[k];
+  globalThis.__v1 = { prev: p, checked: 0, ticks: 0, bad: null, seeded: true, base: JSON.parse(JSON.stringify(p)) };
+  return true;
+})()`;
 const EQUIV_SRC = `(function(){
-  var T = tmtLoader, g = globalThis.__v1 || (globalThis.__v1 = { prev: {}, checked: 0, ticks: 0, bad: null });
+  var T = tmtLoader, g = globalThis.__v1 || (globalThis.__v1 = { prev: {}, checked: 0, ticks: 0, bad: null, seeded: false });
   var acts = T.hookStats().actions;
   g.ticks++;
   for (var i = 0; i < T.features.length; i++) {
@@ -158,12 +170,18 @@ const EQUIV_LEGS = [
   { key: 'something fresh 3000×1', id: 'something', o: { profile: 'all', diff: 1, ticks: 3000 } },
 ];
 async function part2() {
-  const out = await Promise.all(EQUIV_LEGS.map((L) => job(L.id, { ...L.o, until: EQUIV_SRC, eval: 'globalThis.__v1' }).then((r) => ({ L, r }))));
+  const seed = path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'tmt-loader-v1-seed-')), 'predicates.json');
+  fs.writeFileSync(seed, JSON.stringify([['v1-equiv-baseline', EQUIV_SEED]]));
+  const out = await Promise.all(EQUIV_LEGS.map((L) => job(L.id, { ...L.o, predicates: seed, until: EQUIV_SRC, eval: 'globalThis.__v1' }).then((r) => ({ L, r }))));
   for (const { L, r } of out) {
     const g = r.eval || {};
-    const ok = !!r.ok && r.until && r.until.met === false && r.until.errors === 0 && !g.bad && g.checked > 0;
+    // ⚠ `g.ticks` counts the ticks THIS leg ran; `r.ticks` continues from the snapshot's count on a resumed leg, so
+    // they are equal only for a fresh game. What must hold on both is that every feature was compared on every tick.
+    const feats = (r.features || []).length;
+    const ok = !!r.ok && r.until && r.until.met === false && r.until.errors === 0 && !g.bad
+      && g.seeded === true && g.ticks > 0 && feats > 0 && g.checked === g.ticks * feats;
     row({ gate: 'V1-2 reason ≡ decision (every feature, every tick)', id: L.id, leg: L.key, ok, ticks: r.ticks, hash: r.hashGame,
-      notes: `${g.checked} feature-ticks compared over ${g.ticks} ticks; violation ${JSON.stringify(g.bad)}; predicate errors ${r.until?.errors}; actions ${JSON.stringify(r.hook?.actions)}` });
+      notes: `${g.checked} feature-ticks = ${g.ticks} tick(s) × ${feats} features (run ended at tick ${r.ticks}); baseline seeded before tick 1: ${g.seeded}, from ${JSON.stringify(g.base)}; violation ${JSON.stringify(g.bad)}; predicate errors ${r.until?.errors}; actions ${JSON.stringify(r.hook?.actions)}` });
   }
 }
 
@@ -200,35 +218,106 @@ const redraw = (page) => page.evaluate(() => { updateTemp(); if (typeof updateTa
 const selectSub = async (page, name) => { await page.evaluate((n) => { player.subtabs[tmtLoader.auLayer].mainTabs = n; }, name); await redraw(page); await page.waitForTimeout(120); };
 
 // ---- Part 4: T1 — the subtab is NOT game state -------------------------------------------------------------------
-// ⛔ THE TRAP THIS ROW EXISTS FOR. The engine keeps the selected subtab in `player.subtabs[layer].mainTabs`, a
+// ⛔ THE TRAP THIS ROW EXISTS FOR. The engines keep the selected subtab in `player.subtabs[layer].mainTabs`, a
 // TOP-LEVEL player key that `hashGame` did not exclude. Giving the `au` tab subtabs therefore moved every pinned
-// `hashGame` in the repo — and a player switching subtab mid-run would move it again. The fix is one shared
-// definition (`tmtLoader.gameState`); this row is what says the fix works, from the PLAYER's side rather than the
-// definition's: a run that switches Simple → Advanced → Simple must end where one that never switched ends.
-async function part4(browser, base) {
+// `hashGame` in the repo — and a player switching subtab would move it again mid-run. The fix is one shared
+// definition (`tmtLoader.gameState`); this part is what says the fix works, from the PLAYER's side.
+//
+// ⛔⛔ AND IT IS MEASURED IN NODE, NOT ACROSS TWO PAGE LOADS — MEASURED, after the first cut did it the obvious way
+// and went red on both engines. **A page's `hashGame` is not reproducible across two page loads at all.** The
+// engines' own interval runs between `load()` and `tmtLoader.pause()`, and what it leaves behind is in `player`:
+// on ptr every layer's `first` differed (`p.first` 0.434 against 0.394), on something `timePlayed` (300.292
+// against 300.324), `resetTime` and, through them, `points`. A control arm that only REDREW — same ticks, no
+// subtab touched — came back different from the plain arm too, which is the tell: the instrument was measuring
+// page-load timing, and a subtab could have moved anything at all without being visible in it.
+//
+// So the A/B runs in Node, where the tick loop is the only clock, and the PAGE gets the one question a single page
+// can answer without a second load: does selecting a subtab, with no ticks in between, move `hashGame`?
+const SUB_SET = (n, at) => `(function(){
+  if (tmtLoader.ticks === ${at}) player.subtabs[tmtLoader.auLayer].mainTabs = ${JSON.stringify(n)};
+  return false;
+})()`;
+const SUB_BOTH = `(function(){
+  var k = tmtLoader.auLayer;
+  if (tmtLoader.ticks === 100) player.subtabs[k].mainTabs = 'Advanced';
+  if (tmtLoader.ticks === 200) player.subtabs[k].mainTabs = 'Simple';
+  return false;
+})()`;
+async function part4node() {
+  for (const id of ['ptr', 'something']) {
+    const base = { profile: 'all', diff: 1, ticks: 300 };
+    const ev = "({ sub: player.subtabs[tmtLoader.auLayer].mainTabs })";
+    const [ctl, adv, both] = await Promise.all([
+      job(id, { ...base, eval: ev }),
+      job(id, { ...base, until: SUB_SET('Advanced', 100), eval: ev }),
+      job(id, { ...base, until: SUB_BOTH, eval: ev }),
+    ]);
+    const notes = [];
+    let ok = true;
+    const check = (c, w) => { if (!c) ok = false; notes.push(`${c ? '✓' : '✗'} ${w}`); };
+    check(ctl.ticks === 300 && adv.ticks === 300 && both.ticks === 300, `all three arms ran 300 ticks (${ctl.ticks}/${adv.ticks}/${both.ticks})`);
+    check(adv.eval?.sub === 'Advanced' && both.eval?.sub === 'Simple' && ctl.eval?.sub === 'Simple',
+      `the arms ended on the subtabs they were driven to (control ${ctl.eval?.sub}, switched ${adv.eval?.sub}, round trip ${both.eval?.sub})`);
+    check(ctl.hashGame === adv.hashGame && ctl.hashGame === both.hashGame,
+      `hashGame is the SAME in all three: ${ctl.hashGame} / ${adv.hashGame} / ${both.hashGame}`);
+    // ⛔ and the row is not vacuous: leaving the tab on Advanced really did write the save.
+    check(ctl.hash !== adv.hash, `the FULL hash DOES move when the tab is left on Advanced (${ctl.hash} → ${adv.hash}) — so the subtab is genuinely in the save, and the equality above is a result`);
+    check(ctl.hash === both.hash, `…and comes back when the player switches back (round trip ${both.hash} = control ${ctl.hash})`);
+    row({ gate: 'V1-4 (node) switching subtab does not move hashGame', id, leg: '300×1, profile all, three arms', ok, ticks: ctl.ticks, hash: ctl.hashGame, notes: notes.join('; ') });
+  }
+}
+// The page's half: ONE page, ONE state, the subtab selected by a REAL CLICK on the engine's own subtab button, and
+// the two hashes read with NOTHING in between.
+//
+// ⛔⛔ AND NOTHING MEANS NOTHING — NOT EVEN A REDRAW. MEASURED on `something`, after the first cut called
+// `updateTemp()` around each selection the way the rest of this file does: `updateTemp()` IS NOT INERT on that
+// engine. Setting `player.subtabs.au.mainTabs` alone moves **nothing at all** in the game state (the exclusion
+// works); the very next `updateTemp(); updateTabFormats()` moves **`player.unlock.nextLayerProgress`**
+// (0.4894316062684439 → 0.4930765702896837). That is this repo's standing "no `updateTemp()` between ticks"
+// constraint showing up in a new place, and it is exactly the shape of a probe that perturbs what it measures: the
+// leg reads red, the subtab is innocent, and the instrument wrote the difference. The floor itself is stable —
+// four reads 150 ms apart with no switch at all give ONE hash on both engines — so once the redraws are gone the
+// comparison is a real one. Whether the tab RENDERS is a different question, and `gates-a1 --part 2` answers it.
+async function part4page(browser, base) {
   for (const id of ['ptr', 'something']) {
     const notes = [];
     let ok = true;
     const check = (c, w) => { if (!c) ok = false; notes.push(`${c ? '✓' : '✗'} ${w}`); };
-    const end = async (switching) => {
-      const { context, page, errs } = await openGamePage(browser, base, id, '&profile=all');
-      try {
-        await page.evaluate(() => { showTab('au'); });
-        await redraw(page);
-        await page.evaluate(() => tmtLoader.tick(1, 100));
-        if (switching) { await selectSub(page, 'Advanced'); await page.evaluate(() => tmtLoader.tick(1, 100)); await selectSub(page, 'Simple'); }
-        else await page.evaluate(() => tmtLoader.tick(1, 100));
-        await page.evaluate(() => tmtLoader.tick(1, 100));
-        return await page.evaluate(async () => ({ hashGame: await tmtLoader.hash(tmtLoader.gameState), hash: await tmtLoader.hash(), ticks: tmtLoader.ticks, sub: player.subtabs.au.mainTabs, errs: 0 }));
-      } finally { await context.close(); }
-    };
-    const plain = await end(false);
-    const switched = await end(true);
-    check(plain.ticks === switched.ticks, `both runs ticked ${plain.ticks} / ${switched.ticks} times`);
-    check(plain.hashGame === switched.hashGame, `hashGame equal: never-switched ${plain.hashGame} vs switched ${switched.hashGame}`);
-    check(plain.hash !== switched.hash, `and the FULL hash DOES differ (${plain.hash} vs ${switched.hash}) — so the subtab really was written to the save, and the row is not vacuous`);
-    check(switched.sub === 'Simple' && plain.sub === 'Simple', `both end on the Simple subtab (${plain.sub} / ${switched.sub})`);
-    row({ gate: 'V1-4 switching Simple → Advanced → Simple does not move hashGame', id, leg: '300 ticks at diff 1, profile all', ok, ticks: plain.ticks, hash: plain.hashGame, notes: notes.join('; ') });
+    const { context, page } = await openGamePage(browser, base, id, '&profile=all');
+    try {
+      await page.evaluate(() => { showTab('au'); });
+      await redraw(page);
+      await page.evaluate(() => tmtLoader.tick(1, 200));
+      const read = () => page.evaluate(async () => ({ g: await tmtLoader.hash(tmtLoader.gameState), f: await tmtLoader.hash(), sub: player.subtabs[tmtLoader.auLayer].mainTabs }));
+      // the CONTROL first: two reads with nothing between them. A leg that compares two reads has to know its floor.
+      const z0 = await read();
+      await page.waitForTimeout(200);
+      const z1 = await read();
+      check(z0.g === z1.g && z0.f === z1.f, `the floor is still: two reads 200 ms apart with no switch give ${z0.g} / ${z1.g}`);
+      // ⚠ THE PRESS IS BOUNDED AND IT SAYS WHICH PATH IT TOOK. The subtab buttons are `button.tabButton` and are
+      // VISIBLE on both engines (measured), but Playwright's actionability wait timed out on `something` — the same
+      // shape U6 met on `the-shenanigans-tree-rewritten`, where a toast intercepts pointer events and an unbounded
+      // click spent 30 s and then threw. So: a real click, bounded; on a timeout, the same element's own click
+      // handler dispatched directly, which is still the ENGINE's handler and not a state poke. The note records it.
+      const how = [];
+      const clickSub = async (name) => {
+        const b = page.locator('#app button.tabButton').filter({ hasText: new RegExp(`^\\s*${name}\\s*$`) }).first();
+        try { await b.click({ timeout: 4000 }); how.push(`${name}: click`); }
+        catch (e) { await b.dispatchEvent('click'); how.push(`${name}: dispatched (the real click did not land: ${String(e.message).split('\n')[0].slice(0, 60)})`); }
+        await page.waitForTimeout(200);
+      };
+      const a = await read();
+      await clickSub('Advanced');
+      const b = await read();
+      await clickSub('Simple');
+      const c = await read();
+      check(a.sub === 'Simple' && b.sub === 'Advanced' && c.sub === 'Simple', `the engine's own subtab buttons took the tab ${a.sub} → ${b.sub} → ${c.sub} (${how.join('; ')})`);
+      check(a.g === b.g && a.g === c.g, `hashGame unmoved across the whole switch: ${a.g} / ${b.g} / ${c.g}`);
+      check(a.f !== b.f, `the FULL hash moved on the way in (${a.f} → ${b.f}) — the engine really wrote the selection, so the equality above is a result`);
+      check(a.f === c.f, `and came back on the way out (${c.f})`);
+    } catch (e) { ok = false; notes.push('EXCEPTION ' + String((e && e.stack) || e).slice(0, 300)); }
+    finally { await context.close(); }
+    row({ gate: 'V1-4 (page) a real subtab click does not move hashGame', id, leg: 'one page, 200 ticks, no updateTemp between the reads', ok, notes: notes.join('; ') });
   }
 }
 
@@ -248,6 +337,22 @@ async function part6(browser, base, ids) {
         await page.evaluate(() => { showTab('au'); });
         await redraw(page);
         await page.evaluate(() => tmtLoader.tick(1, 60));
+        // ⛔ THE ERROR CHECK IS PAIRED, NOT ABSOLUTE — and the first two cuts of it were both wrong, in different
+        // ways, which is why it is spelled out.
+        //   (i) ABSOLUTE was wrong: `the-pro-tree` reds on its own 404s and `bobbit-s-tech-tree` on its own
+        //       `player is not defined`. G1 and M1 carry the manifest's `load.known` allowances for exactly that
+        //       noise; a new gate that forgets them re-discovers it as its own failure.
+        //   (ii) A BASELINE TAKEN BEFORE THE SELECTION was also wrong, because selecting a subtab COSTS A REDRAW
+        //       and a redraw is not free on every game. MEASURED on `arctree`: it logs "We meet an NaN at
+        //       (e^NaN)NaN" 68 times during its own load and ONE MORE on every `updateTemp()` — while still on
+        //       Simple, with nothing of ours involved. `tmtLoader.explain()` on its own adds ZERO.
+        // So the control is a redraw that changes nothing, taken on the same page immediately before: the Advanced
+        // selection must cost no more console noise than a plain redraw already does. Both numbers are recorded.
+        const b0 = errs.length;
+        await redraw(page);
+        await page.waitForTimeout(80);
+        const perRedraw = errs.length - b0;
+        const before = errs.length;
         await selectSub(page, 'Advanced');
         r = await page.evaluate(() => {
           const T = window.tmtLoader, rows = T.explain();
@@ -259,17 +364,21 @@ async function part6(browser, base, ids) {
             sub: player.subtabs.au.mainTabs, subs: Object.keys(tmp.au.tabFormat), rendered: text.indexOf('Read-only.') >= 0, len: text.length,
             scrollX: document.documentElement.scrollWidth > document.documentElement.clientWidth };
         });
-        r.errs = errs.slice(0, 3);
+        r.errsBefore = b0;
+        r.perRedraw = perRedraw;
+        r.newErrs = errs.slice(before, before + 3);
+        r.extra = (errs.length - before) - perRedraw;   // what the SUBTAB cost beyond a plain redraw
+        r.errs = errs.slice(0, 2);
       } finally { await context.close(); }
     } catch (e) { abstained.push(`${id}: ${String(e.message).slice(0, 90)}`); continue; }
     const ok = r.rendered && r.sub === 'Advanced' && JSON.stringify(r.subs) === '["Simple","Advanced"]'
-      && r.blocks === r.rows - r.collapsed && r.unknown.length === 0 && r.errs.length === 0;
+      && r.blocks === r.rows - r.collapsed && r.unknown.length === 0 && r.extra <= 0 && r.scrollX === false;
     judged.push({ id, ok, r });
     if (!ok) row({ gate: 'V1-6 roster: the Advanced subtab', id, leg: 'profile all, 60 ticks', ok: false, notes: JSON.stringify(r) });
   }
   const red = judged.filter((x) => !x.ok);
   row({ gate: 'V1-6 the ROSTER: every game\'s Advanced subtab renders its own features', id: `${judged.length} judged`, leg: `${ids.length} assigned`, ok: red.length === 0 && judged.length > 0,
-    notes: `judged ${judged.length}, RED ${red.length} (${red.map((x) => x.id).join(', ') || 'none'}), abstained ${abstained.length}${abstained.length ? ': ' + abstained.join(' · ') : ''}; total feature rows ${judged.reduce((s, x) => s + x.r.rows, 0)}; blocks ${judged.reduce((s, x) => s + x.r.blocks, 0)}` });
+    notes: `judged ${judged.length}, RED ${red.length} (${red.map((x) => x.id).join(', ') || 'none'}), abstained ${abstained.length}${abstained.length ? ': ' + abstained.join(' · ') : ''}; total feature rows ${judged.reduce((s, x) => s + x.r.rows, 0)}, blocks ${judged.reduce((s, x) => s + x.r.blocks, 0)}, collapsed ${judged.reduce((s, x) => s + x.r.collapsed, 0)}; games carrying errors of their OWN before the subtab was touched: ${judged.filter((x) => x.r.errsBefore > 0).length}, and ${judged.filter((x) => x.r.perRedraw > 0).length} that log on EVERY redraw — the paired control is what keeps those off this leg` });
   writeJSON(path.join(REPO, `tools/harness/results/tmp/gates-v1-part6${a.shard ? '-' + String(a.shard).replace('/', 'of') : ''}.json`), { commit, dirty, assigned: ids, judged: judged.map((x) => ({ id: x.id, ok: x.ok, ...x.r })), abstained });
 }
 
@@ -282,7 +391,7 @@ try {
   else {
     browser = await chromium.launch();
     server = await startServer(REPO);
-    if (PART === '4') await part4(browser, server.url);
+    if (PART === '4') { await part4node(); await part4page(browser, server.url); }
     else if (PART === '6') {
       let ids = a._.length ? a._ : GAMES();
       if (a.shard) { const { i, n } = parseShard(a.shard); ids = assignShards(GAMES(), n)[i - 1]; }
