@@ -260,9 +260,17 @@ The walker also follows `["layer-proxy", [otherLayer, content]]`, which draws **
 this tab — so a chip carries its own layer rather than the card's, and acts on that one.
 
 Measured over the roster at the gate's own states, counting the layers that get a card: **420 array-form, 271
-object/subtab-form and 283 declaring no `tabFormat` at all**. (The brief carried 1069 / 621 "in 170 of 171 games",
-which is a count of DECLARATIONS in the sources rather than of shown layers — a static scan does corroborate that
-170 of the 171 games declare a `tabFormat` somewhere.)
+object/subtab-form and 283 declaring no `tabFormat` at all**.
+
+⚠ **A static declaration count is a different quantity, and the one previously recorded here was WRONG.** The
+brief carried 1069 / 621 "in 170 of 171 games" and this section corroborated it. Re-measured 2026-09-19: the true
+static counts are **1211 array-form and 641 object-form, in 171 of 171 games**. Both the original figure and the
+"corroboration" swept `games/*/js/**`, and `sorbet-s-convolution-mainframe` keeps its engine under `Javascript/`
+— so the same bound produced the same undercount twice, and agreement between two sessions who share a blind spot
+is not corroboration. The "170 of 171" was never a real finding about one holdout game; it was the bound.
+
+(Same root cause as the `buyUpg` miscount recorded below. Two numbers in this document came from a glob that
+silently excluded one game; if you add a third census, do not bound it to `js/`.)
 
 ⚠ **Read `tabFormat` from `tmp`, never from `layers`.** A layer may declare `tabFormat()` as a function (PTR has
 one); the engine's own `updateTemp` evaluates it into `tmp`, and that result is what the tab renders.
