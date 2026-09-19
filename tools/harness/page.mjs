@@ -939,6 +939,7 @@ async function gateMobile(browser, base, ids) {
       const llShot = path.join(REPO, `tools/harness/results/${id}-layers.png`);
       await page.screenshot({ path: llShot, fullPage: false });
 
+
       // --- U2d leg A: HOW MANY BUTTONS A ROW HOLDS IS MEASURED, and it survives a resize -----------------------
       // ⚖ "as many as the row holds, measured at render, not a constant" (user, 2026-09-18). Measured on THIS page
       // at two widths rather than against the desktop page of leg 5: those are two different browsing contexts at
@@ -1237,7 +1238,17 @@ async function gateMobile(browser, base, ids) {
           : 'unchanged over every magnitude, at both widths, in both states' };
       row.digitsOk = !/MOVED|NOT RESTORED/.test(row.digits.verdict);
 
+
       // --- U2c leg F: THE CARD THE PLAYER LEFT OPEN COMES BACK OPEN -------------------------------------------
+      // ⚠ IT RUNS LAST, AFTER EVERYTHING THAT MOVES THE GAME, and that is a MEASURED choice rather than an
+      // accident of where it was written. The leg needs a card with an expander to change, and a card only has one
+      // once its layer draws something: run before the 3,000 ticks and the reset press, this leg ABSTAINS on 5 of
+      // the 10 games this slice drove (`layer-tree`, `the-numbruh-tree`, `the-tearonq-…`, `the-burning-tree`,
+      // `the-mana-tree` — every one of them a fresh save with nothing unlocked yet), and it judges all 10 here.
+      // ⚠ The cost is that the save it writes is a MID-GAME one, and one game cannot read its own: MEASURED on
+      // `the-broken-tree`, whose `load()` dies with `points is not defined` in its own `js/mod.js` from this
+      // state, although it boots the save it writes three ticks in. That is the GAME's, not the mode's, so a
+      // read-back page whose LOADER reports an error abstains, naming the message, instead of reddening.
       // ⚠ THE DISCRIMINATOR. A card is CHANGED before the reload and a second one is left alone: asserting that a
       // default-closed card is still closed passes with no persistence at all. The state is set through the API,
       // which is the chevron's own path, because a click is not a neutral probe.
@@ -1285,12 +1296,28 @@ async function gateMobile(browser, base, ids) {
         // already written it. The game's own `save()` is what makes the two pages the same game.
         persist.saved = await page.evaluate(() => { try { window.tmtLoader.save(); return true; } catch (e) { return false; } });
         const p2 = await context.newPage();
+        // ⚠ A PROBE ON THE READ-BACK PAGE MAY NOT THROW THE WHOLE ROW. MEASURED on `the-broken-tree`: one
+        // evaluate died with `layerListUI` undefined, the row went to the catch as an exception, and it lost
+        // `geometryOk`, `navOk` and its load verdict — results it had ALREADY EARNED — to a leg that runs after
+        // all of them. A probe that fails is a verdict about the probe, never an erasure of the row.
+        const probe2 = async (fn, arg) => {
+          try { return await p2.evaluate(fn, arg); } catch (e) {
+            const why = String((e && e.message) || e).split('\n')[0].slice(0, 160);
+            let diag = null;
+            try {
+              diag = await p2.evaluate(() => ({ ready: tmtLoader.ready, step: tmtLoader.step, navbar: tmtLoader.navbar,
+                error: tmtLoader.error, ui: !!tmtLoader.layerListUI, panel: !!document.getElementById('tmt-layerlist'),
+                loaded: tmtLoader.loaded.length, url: location.href.slice(-60), pageErrors: tmtLoader.pageErrors.slice(-2) }));
+            } catch (e2) { diag = { unreachable: String((e2 && e2.message) || e2).slice(0, 120) }; }
+            return { probeError: why, diag };
+          }
+        };
         const readBack = async (vp, label) => {
           await p2.setViewportSize(vp);
           await p2.goto(url, { waitUntil: 'load' });
           const rr = await waitReady(p2);
-          if (!rr.ready) return { at: label, ready: false };
-          const back = await p2.evaluate(([t, c]) => {
+          if (!rr.ready) return { at: label, ready: false, error: rr.error || null };
+          const back = await probe2(([t, c]) => {
             const ui = window.tmtLoader.layerListUI;
             ui.open();
             const card = document.querySelector(`.tmt-layerlist-card[data-layer="${t}"]`);
@@ -1302,7 +1329,7 @@ async function gateMobile(browser, base, ids) {
               controlOpen: !!ctl && ctl.classList.contains('tmt-layerlist-expanded'), controlPresent: !!ctl };
           }, [pref0.target, pref0.control]);
           // and closing it again pays the fit that a hidden row could not be measured for
-          const refit = await p2.evaluate((t) => {
+          const refit = await probe2((t) => {
             const ui = window.tmtLoader.layerListUI;
             ui.expand(t, false);
             const c = document.querySelector(`.tmt-layerlist-card[data-layer="${t}"]`);
@@ -1316,7 +1343,7 @@ async function gateMobile(browser, base, ids) {
           return { at: label, ready: true, ...back, refit };
         };
         persist.back = [await readBack(PHONE, 'phone'), await readBack(DESKTOP, 'desktop')];
-        const cleared = await p2.evaluate((t) => {
+        const cleared = await probe2((t) => {
           const ui = window.tmtLoader.layerListUI, raw = tmtLoader.storage.raw;
           ui.expand(t, false);
           return { expanded: ui.expanded(), stored: ui.prefKey() ? raw.getItem.call(localStorage, ui.prefKey()) : null };
@@ -1330,21 +1357,31 @@ async function gateMobile(browser, base, ids) {
         // about is the card's expander, and a card that is absent — or present with nothing to expand, which is
         // what a layer with no drawn component is — carries no such state for the leg to read back. Judging it
         // would be blaming the persistence for the game. The CONTROL is still judged wherever it is drawn.
-        const judged = (b) => b.present && b.expander;
+        const judged = (b) => b.present && b.expander && !b.probeError;
+        const probeErrors = [...persist.back.filter((b) => b.probeError), cleared.probeError ? cleared : null]
+          .filter(Boolean).map((b) => ({ at: b.at || 'close', why: b.probeError, diag: b.diag }));
+        if (probeErrors.length) persist.probeErrors = probeErrors;
         const restoredAt = (b) => !!(b.open && b.aria === 'true' && !b.controlOpen);
         const fittedAt = (b) => !b.refit || (b.refit.prefix && b.refit.lines <= 1);
         persist.judged = persist.back.filter(judged).map((b) => b.at);
         persist.verdict = !(pref0.stored === null && pref0.expanded && pref0.expanded.length === 0) ? 'A FIRST LOAD WAS NOT CLEAN'
           : !persist.keyOk ? 'THE KEY IS NOT THIS GAME\'S'
-          : !persist.back.every((b) => b.ready) ? 'THE READ-BACK PAGE DID NOT LOAD'
+          : !persist.back.every((b) => b.ready) ? (persist.back.find((b) => !b.ready && b.error)
+              ? `abstains (the game does not boot the save this state writes: ${String((persist.back.find((b) => !b.ready && b.error).error || {}).message).slice(0, 80)})`
+              : 'THE READ-BACK PAGE DID NOT LOAD')
+          : probeErrors.length ? `THE READ-BACK PAGE LOST ITS LIST (${probeErrors[0].at}: ${probeErrors[0].why})`
           : !persist.back.some(judged) ? `abstains (the read-back page draws no expander on ${pref0.target})`
           : !persist.back.every((b) => !judged(b) || restoredAt(b)) ? 'NOT RESTORED AFTER THE RELOAD'
           : !persist.back.every((b) => !judged(b) || fittedAt(b)) ? 'THE REOPENED CARD\'S ACTION ROW WAS NEVER MEASURED'
           : cleared.stored !== null ? 'THE KEY SURVIVED CLOSING THE LAST CARD'
           : `restored at both widths (${pref0.target} open, ${pref0.control || 'no control card'} closed)`;
       }
+      // ⚠ AND THE MAIN PAGE IS PUT BACK. The leg opens a card on THIS page to write the preference; every leg
+      // after it reads the collapsed card (the fit pass skips an open one, and the two-row check judges rows an
+      // open card hides), so a card left open here would silently change what they measure.
+      if (pref0.target) await page.evaluate((t) => { const ui = window.tmtLoader.layerListUI; if (ui && ui.expand) ui.expand(t, false); }, pref0.target);
       row.persist = persist;
-      row.persistOk = !/A FIRST LOAD|THE KEY|NOT RESTORED|DID NOT LOAD|SURVIVED|NEVER MEASURED/.test(persist.verdict);
+      row.persistOk = !/A FIRST LOAD|THE KEY|NOT RESTORED|DID NOT LOAD|SURVIVED|NEVER MEASURED|LOST ITS LIST/.test(persist.verdict);
 
       await page.evaluate(() => { const ui = window.tmtLoader.layerListUI; if (ui) ui.close(); });
       const llDesk = nb.layerList;
@@ -1526,7 +1563,7 @@ async function main() {
       const psNone = rows.filter((r) => !r.persist).map((r) => r.id);
       const psRed = rows.filter((r) => r.persist && !r.persistOk).map((r) => r.id);
       const psAbst = rows.filter((r) => r.persist && /abstains/.test(r.persist.verdict)).map((r) => r.id);
-      console.log(`M1 layers persistence (U2c — a card CHANGED before the load is read back on a second page, at both widths; a second card left closed is the control): ${rows.length - psRed.length - psAbst.length - psNone.length}/${rows.length} restored${psAbst.length ? `, ${psAbst.length} abstained (no card with an expander: ${psAbst.slice(0, 6).join(', ')}${psAbst.length > 6 ? `, …(${psAbst.length})` : ''})` : ''}${psNone.length ? `, ⛔ ${psNone.length} NEVER RAN (the row threw: ${psNone.slice(0, 6).join(', ')})` : ''}${psRed.length ? ` (RED: ${psRed.map((x) => `${x} ${(rows.find((r) => r.id === x).persist || {}).verdict}`).join('; ')})` : ''}; ${rows.filter((r) => r.persist && r.persist.cut).length} game(s) took a card whose action row the phone had CUT`);
+      console.log(`M1 layers persistence (U2c — a card CHANGED before the load is read back on a second page, at both widths; a second card left closed is the control): ${rows.length - psRed.length - psAbst.length - psNone.length}/${rows.length} restored${psAbst.length ? `, ${psAbst.length} abstained — ⚠ each with its OWN reason, not a shared one: ${psAbst.slice(0, 6).map((x) => `${x} ${(rows.find((r) => r.id === x).persist || {}).verdict}`).join('; ')}${psAbst.length > 6 ? `, …(${psAbst.length})` : ''}` : ''}${psNone.length ? `, ⛔ ${psNone.length} NEVER RAN (the row threw: ${psNone.slice(0, 6).join(', ')})` : ''}${psRed.length ? ` (RED: ${psRed.map((x) => `${x} ${(rows.find((r) => r.id === x).persist || {}).verdict}`).join('; ')})` : ''}; ${rows.filter((r) => r.persist && r.persist.cut).length} game(s) took a card whose action row the phone had CUT`);
       console.log(`M1 layers shape: tabFormat ${shp.array} array-form, ${shp.object} object/subtab-form, ${shp.none} none (engine default) over ${rows.length} games; ${ms} milestone chip(s), ${dv} divider(s); ${offSrc}/${withChips} card(s) with chips are NOT in source order; ${ps} pseudo-unlocked chip(s)${ps === 0 ? ' — visibility rule 2 is UNEXERCISED at these states (see docs/mobile.md)' : ''}`);
       console.log(`M1 layers discriminators: ${rows.filter((r) => r.chipBaseline).map((r) => `${r.id} ${r.chipBaseline.now} chips vs U2's ${r.chipBaseline.u2} (${r.chipBaseline.fell ? 'FELL' : 'DID NOT FALL'}, ${r.chipBaseline.milestones} of them milestones), ${r.chipBaseline.cardsOffSourceOrder} card(s) off source order (${r.chipBaseline.orderMoved ? 'MOVED' : 'UNMOVED'})`).join('; ') || 'no reference game in this run'}`);
       const vr = (f) => rows.reduce((o, r) => { const v = r.rules && r.rules[f] && r.rules[f].verdict; if (v) o[v] = (o[v] || 0) + 1; return o; }, {});

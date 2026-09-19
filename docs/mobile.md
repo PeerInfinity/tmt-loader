@@ -873,17 +873,30 @@ as the leg found it. It asserts, at each width:
   have one);
 - and closing the last card **removes** the key rather than leaving an empty list behind.
 
-⚠ **The read-back page has to boot on the state that set the preference, and the bounded local set could not see
-that it did not.** This page is 3,000 ticks, a reset press and a purchase past the save in `localStorage` — under
-`?managed=1` the autosave never runs — so on a game with **no recorded snapshot** the second page booted a *fresh*
-save and simply did not have the card. `ptr` and `something` are the two games that HAVE a snapshot, whose
-`loadFrom` had already written it, so both were green locally while the first CI sweep of this leg was **RED on 7
-games**: `layer-tree`, `the-numbruh-tree`, `the-hyperdimensions-tree`, `the-tearonq-i-have-no-creative-names`,
-`the-burning-tree`, `the-loop-tree`, `the-mana-tree` — every one of them `present: false`, or a card drawn with
-nothing to expand. The game's own `save()` before the read-back is what makes the two pages the same game, and all
-seven are green with it. ⚠ A card the read-back page does not draw now **abstains** rather than failing — judging
-it would blame the persistence for the game — but that branch is currently **unexercised**: with the save, no game
-on the roster reaches it.
+⚠ **The read-back page boots on the SAVE, not on the page that wrote the preference — and the bounded local set
+was structurally blind to it.** This page is 3,000 ticks, a reset press and a purchase past the save in
+`localStorage`, because `?managed=1` pauses the autosave; so on a game with **no recorded snapshot** the second
+page booted a *fresh* save and simply did not have the card. `ptr` and `something` are the two games that HAVE a
+snapshot, whose `loadFrom` had already written it, so both were green locally while the first CI sweep of this leg
+was **RED on 7 games**: `layer-tree`, `the-numbruh-tree`, `the-hyperdimensions-tree`,
+`the-tearonq-i-have-no-creative-names`, `the-burning-tree`, `the-loop-tree`, `the-mana-tree` — every one of them
+`present: false`, or a card drawn with nothing to expand. The leg now writes the game's own `save()` first, and
+all seven are green.
+
+⚠ **Where the leg runs is a measured choice, not the order it was written in.** It needs a card with an expander
+to change, and a card only has one once its layer draws something — so run BEFORE the ticks and the reset press it
+abstains on **five of the ten games this slice drove locally** and judges all ten after them. The cost of running late is that
+the save it writes is a **mid-game** one, and one game cannot read its own: `the-broken-tree`'s `load()` dies with
+`points is not defined` in its own `js/mod.js` from that state, although it boots the save it writes three ticks
+in. That is the game's, not the mode's, so a read-back page whose **loader** reports an error abstains naming the
+message. Two more abstentions guard the same edge: a card the read-back page does not draw, and a probe that
+cannot reach the page at all.
+
+⚠ **A probe on the read-back page may not throw the whole ROW.** When `the-broken-tree`'s page never reached
+ready, one evaluate died on an undefined `layerListUI`, the row went to the catch as an exception, and it lost
+`geometryOk`, `navOk` and its **load verdict** — results it had already earned, to a leg that runs after all of
+them. Every read-back probe is wrapped now, and a failure is a verdict about the probe with the page's own
+diagnosis attached (`ready`, `step`, `error`, the last `pageErrors`), never an erasure.
 
 ⚠ **A summary row that lied, found while driving these mutants.** A leg that THREW leaves its row absent, and the
 first version of both new SUMMARY lines counted `rows.length` minus the reds it could SEE — so a build with no

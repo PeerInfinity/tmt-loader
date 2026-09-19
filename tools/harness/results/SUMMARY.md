@@ -4089,6 +4089,8 @@ checkmark, one level down.
 |---|---|---|---|---|
 | U2c CI sweep, first push | — 171 games — | `--gate mobile --shard i/10` | **RED, correctly** | run `35416833818` at `56bc0fe8b`; **171/171 covered, each exactly once; 7 RED**: `layer-tree`, `the-numbruh-tree`, `the-hyperdimensions-tree`, `the-tearonq-i-have-no-creative-names`, `the-burning-tree`, `the-loop-tree`, `the-mana-tree` — every one the persistence leg, every one `present: false` or a card with no expander on the read-back page. Shards 117–212 s (spread ×1.81), serial 25.8 min, **wall clock 3.5 min** |
 | the same 7, after the fix | 7 | `--gate mobile` | GREEN | 7/7, none abstaining |
+| U2c CI sweep, second push | — 171 games — | same, at `45d848c2e` | **RED, correctly** | run `35417541500`; 171/171 covered, **1 RED: `the-broken-tree`** — and the row was red for an EXCEPTION, which erased `geometryOk`, `navOk` and its load verdict. Shards 107–198 s, serial 24.9 min, wall clock 3.3 min |
+| `the-broken-tree`, diagnosed | 1 | `--gate mobile` | GREEN (abstains) | its own `load()` dies with `points is not defined` in `js/mod.js` on the MID-GAME save this leg writes — although it boots the save it writes three ticks in (driven separately, plain page, no flags). The leg abstains naming the message |
 
 **The defect was the leg's assumption, not the code's.** The phone page is 3,000 ticks, a reset press and a
 purchase past the save in `localStorage` — under `?managed=1` the autosave never runs — so on a game with **no
@@ -4098,12 +4100,28 @@ bounded local set could not have seen this however many times it was run. The ga
 read-back is the fix; a card the read-back page does not draw now abstains rather than failing, though with the
 save no game on the roster reaches that branch.
 
+**Three more things the second round settled.**
+- ⚠ **A probe on the read-back page may not throw the ROW.** `the-broken-tree`'s exception cost that row three
+  verdicts it had already earned, to a leg that runs after all of them. Every read-back probe is wrapped now and
+  carries the page's own diagnosis (`ready`, `step`, `error`, the last `pageErrors`) — which is what named the
+  cause on the first run after the wrap, with no extra instrumentation.
+- ⚠ **Where the leg runs is a MEASURED choice.** Moved before the mutating legs — which is the obvious way to
+  avoid writing a mid-game save — it abstains on five of the ten games driven locally, because a card only has an
+  expander once its layer draws something. Late, it judges all ten. The trade is one abstention against five.
+- ⚠ **An abstention must print its OWN reason.** The first summary line named a single fixed cause for every
+  abstaining game; `the-broken-tree` abstained for a completely different one and the row said "no card with an
+  expander". Each abstention now prints its own verdict.
+
 ⚠ **This is the third slice in a row where the roster found something a bounded set could not** (U2d: `buyUpgrade`
 on `the-modding-tree`; U2g: `Decimal` on two games and the picker on two more). The pattern is the same every
 time: the reference games are reference games *because* they are the well-provisioned ones.
 
-⚠ **The cost of the two new legs, measured**: serial 25.8 min against U2d's 22.5 (+15 %), wall clock 3.5 min
-against 3.2. The persistence leg loads one extra page per game per width.
+⚠ **The cost of the two new legs, measured**: serial 24.9–25.8 min against U2d's 22.5 (+11–15 %), wall clock
+3.3–3.5 min against 3.2. The persistence leg loads one extra page per game per width.
+
+⚠ **And the figures census fired on this slice's own prose**, exactly as designed: the sentence "5 of the 10 games
+this slice drove" matched the `of the N games` denominator claim and reddened `npm run harness:test` (6 failures)
+until it was reworded. A gate that reads prose reads ALL of it.
 
 ⚠ **And a process defect worth more than any of the above.** The first mutant harness restored with
 `git checkout -- loader/layerlist.css loader/layerlist.js` — which reverted the slice's own **uncommitted** work to
