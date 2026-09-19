@@ -138,6 +138,122 @@
     challenges: ['sequential', 'off'],
     clickables: ['when', 'off'],
   };
+  // ---- the reason vocabulary (V1; docs/automation.md) ----------------------------------------------------------------
+  // ⛔ A REASON IS THE DECISION'S OWN RETURN VALUE, never a second opinion about it. Every exit of every kind's
+  // decision path yields one of the codes below together with the raw numbers it compared; the caller takes `.act`,
+  // and the feature keeps the last one in `f.last`. An explainer that RE-DERIVED "why it did not act" from the
+  // predicates would be a second implementation of them, free to disagree with the decision it describes, with
+  // nothing able to notice — so there is exactly ONE implementation and the readout is its output.
+  //
+  // The table is DATA: code → the template its text is built from, and the `values` keys that template consumes.
+  // `{x}` is replaced by `values.x`, formatted by the GAME's own `format()` where it has one (`fmt` below). An exit
+  // that reaches none of these is `unknown`, and `unknown` is a GATE FAILURE (gates-v1 leg 1), never a display string.
+  //
+  // ⛔ NO FREE-TEXT VALUE. Every `values` entry is a number, a Decimal, a layer id, a numeric item id or a list of
+  // them — a display string in a value would be this table's vocabulary leaking back out of it, and a code whose
+  // text came from its caller could not be enumerated, witnessed or translated.
+  //
+  // `quantities` names the value keys that are QUANTITIES OF THE GAME — those and only those go through the game's
+  // own `format()`. An id is not a quantity: the first cut ran every value through it and the tab read "the
+  // cheapest upgrade is 21.00 at 20.00", with the upgrade's id formatted as a number.
+  var CODES = {
+    // not running at all
+    locked:               { text: 'Locked',                                                       values: [] },
+    armed:                { text: 'Armed — waiting for the unlock',                               values: [] },
+    off:                  { text: 'Off',                                                          values: [] },
+    'off:policy':         { text: 'Off — the policy is {policy}',                                 values: ['policy'] },
+    'off:excluded':       { text: 'Off — excluded from this game: {reason}',                      values: ['reason'] },
+    // running, and something else says no
+    'blocked:gate':       { text: 'Blocked — the gate {gate} is false',                           values: ['gate'] },
+    'blocked:after':      { text: 'Blocked — waiting for {sibling} to unlock first',              values: ['sibling'] },
+    'blocked:enter':      { text: 'Blocked — the game will not enter challenge {id}',             values: ['id'] },
+    'blocked:exit':       { text: 'Blocked — the game will not exit challenge {id} yet',          values: ['id'] },
+    'yielding:native':    { text: "Yielding — the game's own auto-reset is resetting {layer}",     values: ['layer'] },
+    'cannot-reset':       { text: 'Cannot reset — {have} of {need}',                              values: ['have', 'need'], quantities: ['have', 'need'] },
+    'in-challenge':       { text: 'In challenge {id} — not completable yet',                      values: ['id'] },
+    // running, and the policy says not yet
+    'waiting:gain':       { text: 'Waiting — gain {gain} of {need}',                              values: ['gain', 'need'], quantities: ['gain', 'need'] },
+    'waiting:gain-x':     { text: 'Waiting — gain {gain} of {need} ({n}× the {have} held)',        values: ['gain', 'need', 'n', 'have'], quantities: ['gain', 'need', 'have'] },
+    'waiting:interval':   { text: 'Waiting — {elapsed} s of {need} s since the last reset',        values: ['elapsed', 'need'] },
+    'waiting:milestone':  { text: 'Waiting — milestone {id} of {layer} is not held',              values: ['layer', 'id'] },
+    'waiting:purchase':   { text: 'Waiting — the reset would still afford nothing',               values: [] },
+    'waiting:when':       { text: 'Waiting — no clickable of {layer} is ready',                   values: ['layer'] },
+    'holding:reserve':    { text: 'Holding — {have} under the reserve {reserve}',                 values: ['have', 'reserve'], quantities: ['have', 'reserve'] },
+    'holding:saving':     { text: 'Holding — {have} while upgrade {id} costs {cost}',             values: ['have', 'id', 'cost'], quantities: ['have', 'cost'] },
+    // running, and there is nothing to act on
+    'nothing-affordable': { text: 'Nothing affordable — the cheapest {kind} is {id} at {cost}',   values: ['kind', 'id', 'cost'], quantities: ['cost'] },
+    'nothing-to-do':      { text: 'Nothing to do — {kind} of {layer}: nothing is unlocked and unowned', values: ['kind', 'layer'] },
+    // it acted — one code per kind, so `acted` is as enumerable as every refusal
+    'acted:reset':              { text: 'Reset {layer} for {gain}',                               values: ['layer', 'gain'], quantities: ['gain'] },
+    'acted:upgrades':           { text: 'Bought {n} upgrade(s): {ids}',                           values: ['n', 'ids'] },
+    'acted:buyables':           { text: 'Bought {n} buyable(s): {ids}',                           values: ['n', 'ids'] },
+    'acted:toggles':            { text: "Turned on {n} of the game's own toggle(s)",              values: ['n'] },
+    'acted:challenge-enter':    { text: 'Entered challenge {id}',                                 values: ['id'] },
+    'acted:challenge-exit':     { text: 'Completed and left challenge {id}',                      values: ['id'] },
+    'acted:clickables':         { text: 'Clicked {n} clickable(s): {ids}',                        values: ['n', 'ids'] },
+    unknown:              { text: 'UNKNOWN — an exit of the decision path that no code names',    values: [] },
+  };
+  T.reasonCodes = function () { var o = {}; for (var k in CODES) o[k] = { text: CODES[k].text, values: CODES[k].values.slice() }; return o; };
+
+  // ⚠ The GAME's own `format()`, captured once (this file runs after every game script). A fork may not have one.
+  var GAME_FORMAT = (function () { try { return new Function('return typeof format === "function" ? format : null')(); } catch (e) { return null; } })();
+  // TMT's `format()` sets `player.hasNaN` when it meets a NaN, and the automation must not raise the game's own
+  // panic flag just by DESCRIBING a state (loader/layerlist.js carries the same guard for the same reason).
+  function withoutRaisingNaN(fn) {
+    var had;
+    try { had = player.hasNaN; } catch (e) { return fn(); }
+    try { return fn(); } finally { try { if (had === false && player.hasNaN === true) player.hasNaN = false; } catch (e2) { /* not this engine's flag */ } }
+  }
+  // ⛔ THE COUNTER IS THE COST GATE. A leg is ~13.5 ms/tick and the harness runs hundreds of thousands of ticks, so
+  // a string built per feature per tick is not acceptable. `f.last` is a code plus raw numbers; this is the ONLY
+  // place a number becomes text, and `tmtLoader.explainStats().formats` must be **0** after a headless run that
+  // never opened the tab (gates-v1 leg 3). An absolute zero is not something a mutant can satisfy by moving both
+  // sides of a comparison.
+  //
+  // ⚠ `codes` is a CENSUS OF THE RUN, not of its last tick. `f.last` holds one decision, so a run that witnessed
+  // `yielding:native` for 400 ticks and then acted has no trace of it at the stop — and "every code witnessed on a
+  // real fixture" (gates-v1 leg 1) is a claim about the RUN. One interned-literal key and an increment per
+  // decision; it is also where `unknown` would show up, and `unknown` at any count above 0 fails the gate.
+  var explainStats = { decisions: 0, formats: 0, texts: 0, codes: {} };
+  T.explainStats = function () { return { decisions: explainStats.decisions, formats: explainStats.formats, texts: explainStats.texts, codes: Object.assign({}, explainStats.codes) }; };
+  function fmt(v) {
+    explainStats.formats++;
+    if (v === null || v === undefined) return '';
+    if (Array.isArray(v)) return v.join(', ');
+    if (typeof v === 'string' || typeof v === 'boolean') return String(v);
+    if (GAME_FORMAT && (typeof v === 'number' || (NUMBER && v instanceof NUMBER))) {
+      var s = withoutRaisingNaN(function () { try { return GAME_FORMAT(v); } catch (e) { return null; } });
+      if (s !== null && s !== undefined) return String(s);
+    }
+    return String(v);
+  }
+  function codeText(code, values) {
+    explainStats.texts++;
+    var C = CODES[code] || CODES.unknown;
+    var q = C.quantities || [];
+    return C.text.replace(/\{(\w+)\}/g, function (_, k) {
+      if (!values || values[k] === undefined || values[k] === null) return '?';
+      return q.indexOf(k) >= 0 ? fmt(values[k]) : plain(values[k]);
+    });
+  }
+  function plain(v) { return Array.isArray(v) ? v.join(', ') : String(v); }
+  T.reasonText = function (last) { return last ? codeText(last.code, last.values) : ''; };
+
+  // `f.last` — the last decision. OUTSIDE `player` (it is not the player's game) and OUTSIDE `runtimeState()` (it
+  // is a READOUT, recomputed on the next tick; recording it there would change the `runtime` block of every
+  // committed snapshot and invalidate all of them).
+  function say(f, code, values) {
+    explainStats.decisions++;
+    explainStats.codes[code] = (explainStats.codes[code] || 0) + 1;
+    f.last = { code: code, values: values === undefined ? null : values, tick: T.ticks, at: Number(player.timePlayed) || 0 };
+    return f.last;
+  }
+  // HTML escaping for every string the au tab renders through `display-text` (which is `v-html` in both engines):
+  // a table's provenance line, an `off` reason and a gate predicate are AUTHOR-WRITTEN TEXT, and a layer's `name`
+  // is the GAME's. None of them is markup.
+  function esc(s) { return String(s === null || s === undefined ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;'); }
+  T.escapeText = esc;
+
   var KINDS_ALL = ['toggles', 'upgrades', 'buyables', 'challenges', 'clickables', 'reset'];
   var features = [];
   var byId = {};
@@ -283,24 +399,63 @@
   // the only costs `unlocks-purchase` can compare against the layer's points without reading the item's own code.
   function ownCurrency(def) { return def && def.currencyInternalName === undefined && def.currencyLocation === undefined && def.currencyLayer === undefined; }
 
-  function wantsReset(f) {
+  // ⛔ WHICH TWO NUMBERS A REFUSED RESET SHOWS — MEASURED, AND THE FIRST CUT OF V1 GOT IT WRONG. A **static**
+  // layer's `canReset` compares `baseAmount` against **`nextAt`**, not `requires`: `requires` is the FIRST
+  // threshold and stops moving, so ptr's `g` read "Cannot reset — 458.60 of 200.00" while the engine was refusing
+  // (its `nextAt` was 9193). Both engines, in their own words: ptr `js/game.js:116-119`, something
+  // `js/game.js:121-124`. A **normal** layer compares against `requires` (ptr also requires `getResetGain() > 0`).
+  // ⚠ 2.7 lets a layer declare its own `canReset()`, and a `custom` layer ends in the layer's own method — there
+  // neither number is the criterion and the pair is indicative. ⛑ The DECISION never uses this: it reads
+  // `tmp[l].canReset`, the engine's own answer, so a wrong pair here misleads a reader and cannot move a game.
+  function resetThreshold(l) {
+    var t = tmp[l] || {};
+    var need = t.type === 'static' ? t.nextAt : t.requires;
+    if (need === undefined) need = t.requires === undefined ? t.nextAt : t.requires;
+    return need === undefined ? null : need;
+  }
+
+  // ⚠ THIS FUNCTION USED TO RETURN A BOOLEAN (`wantsReset`). It now returns `{act, code, values}` — the SAME
+  // predicate, with the exit it took named. Every `return false` above became a code, which is the whole of V1:
+  // the reason is not computed beside the decision, it IS the decision. The caller reads `.act`.
+  function decideReset(f) {
     var l = f.layer;
-    if (!tmp[l] || tmp[l].canReset !== true) return false;
+    if (!tmp[l] || tmp[l].canReset !== true) {
+      // the engine's own refusal, with the two numbers it has WHERE it has them: `tmp[l].baseAmount` against
+      // `tmp[l].requires` is what 2.2.1's and 2.7's own `canReset` compare for a normal / static layer. A `custom`
+      // layer answers with its own `canReset()` and need not publish either, so both may be absent.
+      var t = tmp[l] || {};
+      return { act: false, code: 'cannot-reset', values: { have: t.baseAmount === undefined ? null : t.baseAmount, need: resetThreshold(l) } };
+    }
     // yield to native: while the game's own auto-reset predicate holds, gameLoop resets this layer itself
-    if (tmp[l].autoPrestige) return false;
-    for (var i = 0; i < f.after.length; i++) if (!player[f.after[i]] || !player[f.after[i]].unlocked) return false;
+    if (tmp[l].autoPrestige) return { act: false, code: 'yielding:native', values: { layer: l } };
+    for (var i = 0; i < f.after.length; i++) if (!player[f.after[i]] || !player[f.after[i]].unlocked) return { act: false, code: 'blocked:after', values: { sibling: f.after[i] } };
     var p = f.policy, m;
-    if (p === 'always') return true;
+    if (p === 'always') return { act: true };
     // gain>=Nx: the gain is at least N × the points held (dimensionless); gain>=N: the gain is at least N
-    if ((m = /^gain>=(.*)x$/.exec(p))) return D(tmp[l].resetGain).gte(D(player[l].points).times(Number(m[1])));
-    if ((m = /^gain>=(.*)$/.exec(p))) return D(tmp[l].resetGain).gte(D(m[1]));   // Decimal: the threshold may be 1e276
-    if (p === 'keepsUpgrades') return hasMilestone(f.keepMilestone.layer, f.keepMilestone.id);
+    if ((m = /^gain>=(.*)x$/.exec(p))) {
+      var have = D(player[l].points), needX = have.times(Number(m[1]));
+      if (D(tmp[l].resetGain).gte(needX)) return { act: true };
+      return { act: false, code: 'waiting:gain-x', values: { gain: tmp[l].resetGain, need: needX, n: Number(m[1]), have: player[l].points } };
+    }
+    if ((m = /^gain>=(.*)$/.exec(p))) {
+      if (D(tmp[l].resetGain).gte(D(m[1]))) return { act: true };   // Decimal: the threshold may be 1e276
+      return { act: false, code: 'waiting:gain', values: { gain: tmp[l].resetGain, need: D(m[1]) } };
+    }
+    if (p === 'keepsUpgrades') {
+      if (hasMilestone(f.keepMilestone.layer, f.keepMilestone.id)) return { act: true };
+      return { act: false, code: 'waiting:milestone', values: { layer: f.keepMilestone.layer, id: f.keepMilestone.id } };
+    }
     if ((m = /^interval>=(.*)$/.exec(p))) {
       var now = Number(player.timePlayed) || 0;
-      return lastReset[f.id] === undefined || now - lastReset[f.id] >= Number(m[1]);
+      if (lastReset[f.id] === undefined || now - lastReset[f.id] >= Number(m[1])) return { act: true };
+      return { act: false, code: 'waiting:interval', values: { elapsed: Math.round((now - lastReset[f.id]) * 10) / 10, need: Number(m[1]) } };
     }
-    if (p === 'unlocks-purchase') return resetBuysSomething(l);
-    return false;
+    if (p === 'unlocks-purchase') {
+      if (resetBuysSomething(l)) return { act: true };
+      return { act: false, code: 'waiting:purchase', values: null };
+    }
+    // ⛔ the only way to reach this line is a policy the validator accepted and this switch does not implement.
+    return { act: false, code: 'unknown', values: null };
   }
   // unlocks-purchase: the points after this reset (held + resetGain) afford the cheapest unowned unlocked upgrade of the
   // layer, or the next level of one of its unlocked buyables — both only where costed in the layer's own points.
@@ -324,15 +479,18 @@
     return false;
   }
 
-  function savingFor(l) {
+  // ⚠ `savingFor` used to answer a BOOLEAN. It now names the upgrade it is saving for, because `buy-unless-saving`'s
+  // refusal is only legible with that number in it — the same loop, one more field.
+  function savingForWhat(l) {
     var L = layers[l];
-    if (!L.upgrades) return false;
+    if (!L.upgrades) return null;
     var ids = numIds(L.upgrades), held = D(player[l].points);
     for (var i = 0; i < ids.length; i++) {
       if (!buyableUpgrade(l, ids[i]) || !ownCurrency(L.upgrades[ids[i]])) continue;
-      if (D(tmp[l].upgrades[ids[i]].cost).gt(held)) return true;
+      var c = D(tmp[l].upgrades[ids[i]].cost);
+      if (c.gt(held)) return { id: ids[i], cost: c };
     }
-    return false;
+    return null;
   }
   // The cheapest unowned, unlocked upgrade of the layer costed in the layer's OWN points, as a Decimal — or null when
   // there is none. `reserve>=next-upgrade` is exactly this number: the reserve a purchase feature must leave standing
@@ -357,29 +515,41 @@
   }
   function byCost(l) { var U = tmp[l].upgrades; return function (a, b) { var c = D(U[a].cost).cmp(D(U[b].cost)); return c !== 0 ? c : a - b; }; }
 
+  // ⚠ EVERY MEMBER USED TO RETURN A COUNT. It now returns `{act, n, code, values}` — the same actions in the same
+  // order, with the exit named. `n` is the count the caller adds to `stats.actions`; `act` is `n > 0` and is what
+  // gates-v1 leg 2 compares against the action counter, tick by tick. No branch was added or removed: every
+  // `return 0` of the previous version became a code, and every `return n` an `acted:` one.
   var EXEC = {
     reset: function (f) {
-      if (!wantsReset(f)) return 0;
+      var d = decideReset(f);
+      if (!d.act) return d;
+      var gain = tmp[f.layer] ? tmp[f.layer].resetGain : null;
       doReset(f.layer);
       lastReset[f.id] = Number(player.timePlayed) || 0;
-      return 1;
+      return { act: true, n: 1, code: 'acted:reset', values: { layer: f.layer, gain: gain } };
     },
     // cheapest-first: unlocked, unowned upgrades sorted by tmp cost (ties by id); buy each one affordable, in order.
     // order: the table's order[] only. order-then-cheapest: order[] first (each affordable one, in order), then
     // cheapest-first over the upgrades not in order[]. Pseudo-upgrades (a `pseudoUnl`, PTR) are never bought.
     upgrades: function (f) {
       var l = f.layer, L = layers[l];
-      if (!L.upgrades || !(tmp[l] && tmp[l].upgrades) || !player[l].unlocked) return 0;
-      var n = 0, i;
+      if (!L.upgrades || !(tmp[l] && tmp[l].upgrades) || !player[l].unlocked) return { act: false, code: 'nothing-to-do', values: { kind: 'upgrades', layer: l } };
+      var n = 0, i, bought = [];
+      var buy = function (id) { var k = buyUpgradeCounted(l, id); if (k) { n += k; bought.push(id); } };
+      var ordered = null;
       if (f.policy === 'order' || f.policy === 'order-then-cheapest') {
-        var first = (f.order || []).filter(function (id) { return buyableUpgrade(l, id); });
-        for (i = 0; i < first.length; i++) n += buyUpgradeCounted(l, first[i]);
-        if (f.policy === 'order') return n;
+        ordered = (f.order || []).filter(function (id) { return buyableUpgrade(l, id); });
+        for (i = 0; i < ordered.length; i++) buy(ordered[i]);
+        if (f.policy === 'order') return n ? { act: true, n: n, code: 'acted:upgrades', values: { n: n, ids: bought } } : nothingBought(l, 'upgrade', ordered.sort(byCost(l)));
       }
       var rest = numIds(L.upgrades).filter(function (id) { return buyableUpgrade(l, id) && !(f.policy === 'order-then-cheapest' && f.order && f.order.indexOf(id) >= 0); });
       rest.sort(byCost(l));
-      for (i = 0; i < rest.length; i++) n += buyUpgradeCounted(l, rest[i]);
-      return n;
+      for (i = 0; i < rest.length; i++) buy(rest[i]);
+      if (n) return { act: true, n: n, code: 'acted:upgrades', values: { n: n, ids: bought } };
+      // ⚠ `rest` IS the candidate list, already sorted by cost — the cheapest unowned unlocked upgrade is rest[0],
+      // at no extra cost to the tick. An empty `rest` (plus an empty `ordered`) means there is nothing to buy at all,
+      // which is a different answer from "nothing is affordable" and reads very differently in the tab.
+      return nothingBought(l, 'upgrade', ordered && ordered.length ? ordered.concat(rest).sort(byCost(l)) : rest);
     },
     // buyMax: each unlocked buyable (id order or order[]): the engine's buyMaxBuyable where the buyable has a buyMax,
     // else buyBuyable until the amount stops moving (bounded).
@@ -392,8 +562,11 @@
     // one currency both an upgrade (no currencyInternalName/Location/Layer) and the reserve can be read in generically.
     buyables: function (f) {
       var l = f.layer, L = layers[l], B = tmp[l] && tmp[l].buyables;
-      if (!L.buyables || !B || !player[l].unlocked) return 0;
-      if (f.policy === 'buy-unless-saving' && savingFor(l)) return 0;
+      if (!L.buyables || !B || !player[l].unlocked) return { act: false, code: 'nothing-to-do', values: { kind: 'buyables', layer: l } };
+      if (f.policy === 'buy-unless-saving') {
+        var sv = savingForWhat(l);
+        if (sv) return { act: false, code: 'holding:saving', values: { have: player[l].points, id: sv.id, cost: sv.cost } };
+      }
       // reserve>=N: hold N of the LAYER'S OWN points back — nothing is bought while the layer holds no more than N.
       // The layer's points is the one currency a generic reserve can read (the same reasoning as buy-unless-saving);
       // a buyable costed in another layer's currency is still gated on THIS layer's points, so the chooser only picks
@@ -410,20 +583,24 @@
       var lim = null;
       if (rsv) {
         lim = rsv[1] === 'next-upgrade' ? cheapestOwnUpgradeCost(l) : D(rsv[1]);
-        if (lim !== null && D(player[l].points).lte(lim)) return 0;
+        if (lim !== null && D(player[l].points).lte(lim)) return { act: false, code: 'holding:reserve', values: { have: player[l].points, reserve: lim } };
       }
       var reserved = function () { return lim !== null && D(player[l].points).lte(lim); };
       var ids = f.order ? f.order.slice() : numIds(L.buyables);
       if (f.policy === 'highest-first' && !f.order) ids.reverse();
-      var n = 0;
+      var n = 0, bought = [], held = false, seen = 0, minC = null, minId = null;
       for (var i = 0; i < ids.length; i++) {
         var id = ids[i];
         if (!B[id] || !B[id].unlocked) continue;
-        if (reserved()) break;
+        seen++;
+        if (reserved()) { held = true; break; }
+        // ⚠ the cheapest UNBOUGHT candidate, tracked only while nothing has been bought — once something has, the
+        // answer is `acted:` and this costs nothing more.
+        if (n === 0 && B[id].cost !== undefined) { try { var c = D(B[id].cost); if (minC === null || c.lt(minC)) { minC = c; minId = id; } } catch (e) { /* a cost this engine will not compare */ } }
         if (f.policy === 'buyMax' && L.buyables[id].buyMax && typeof buyMaxBuyable === 'function') {
           var b0 = String(player[l].buyables[id]);
           buyMaxBuyable(l, id);
-          if (String(player[l].buyables[id]) !== b0) n++;
+          if (String(player[l].buyables[id]) !== b0) { n++; bought.push(id); }
           continue;
         }
         for (var k = 0; k < 1000; k++) {
@@ -431,30 +608,39 @@
           buyBuyable(l, id);
           if (String(player[l].buyables[id]) === before) break;
           n++;
-          if (reserved()) break;
+          if (bought[bought.length - 1] !== id) bought.push(id);
+          if (reserved()) { held = true; break; }
         }
+        if (held) break;
       }
-      return n;
+      if (n) return { act: true, n: n, code: 'acted:buyables', values: { n: n, ids: bought } };
+      if (held) return { act: false, code: 'holding:reserve', values: { have: player[l].points, reserve: lim } };
+      if (!seen) return { act: false, code: 'nothing-to-do', values: { kind: 'buyables', layer: l } };
+      return { act: false, code: 'nothing-affordable', values: { kind: 'buyable', id: minId, cost: minC } };
     },
     // on: for each milestone of the layer that declares `toggles: [[layer, field], …]` and is held, set every such
     // player[layer][field] that is `false` to `true` — what the game's own toggle button does (toggleAuto flips it).
     // The 2.2.1 'multi' form {layer, varName, options} cycles a string, not an on/off: skipped (counted at derivation).
     toggles: function (f) {
-      var n = 0;
+      var n = 0, pending = null;
       for (var i = 0; i < f.toggleList.length; i++) {
         var t = f.toggleList[i];
-        if (!hasMilestone(f.layer, t.ms)) continue;
+        if (!hasMilestone(f.layer, t.ms)) { if (pending === null) pending = t; continue; }
         if (player[t.layer] && player[t.layer][t.field] === false) { player[t.layer][t.field] = true; n++; }
       }
-      return n;
+      if (n) return { act: true, n: n, code: 'acted:toggles', values: { n: n } };
+      // a milestone that is not held yet is the reason the toggle it grants is not on; otherwise every toggle the
+      // held milestones grant is already true, which is this feature's finished state.
+      if (pending) return { act: false, code: 'waiting:milestone', values: { layer: f.layer, id: pending.ms } };
+      return { act: false, code: 'nothing-to-do', values: { kind: 'toggles', layer: f.layer } };
     },
     // sequential: the first challenge (order[] else id order) that is unlocked and below its completion limit — enter it
     // when no challenge of the layer is active; while it is active, exit-and-complete once it can be completed. A
     // challenge the feature did not choose (entered by hand) is left alone.
     challenges: function (f) {
-      if (f.policy !== 'sequential') return 0;
+      if (f.policy !== 'sequential') return { act: false, code: 'off:policy', values: { policy: f.policy } };
       var l = f.layer, C = tmp[l] && tmp[l].challenges;
-      if (!C || !player[l].unlocked) return 0;
+      if (!C || !player[l].unlocked) return { act: false, code: 'nothing-to-do', values: { kind: 'challenges', layer: l } };
       var ids = f.order ? f.order.slice() : numIds(layers[l].challenges);
       var pick = null;
       for (var i = 0; i < ids.length; i++) {
@@ -466,33 +652,41 @@
       var cs = stats.challenges[f.id] || (stats.challenges[f.id] = { enter: 0, exit: 0 });
       var act = player[l].activeChallenge;
       if (act !== null && act !== undefined && act !== 0 && act !== false) {
-        if (pick === null || Number(act) !== pick) return 0;
-        if (!canCompleteChallenge(l, pick)) return 0;
-        if (typeof canExitChallenge === 'function' && !canExitChallenge(l, pick)) return 0;
+        if (pick === null || Number(act) !== pick) return { act: false, code: 'in-challenge', values: { id: Number(act) } };
+        if (!canCompleteChallenge(l, pick)) return { act: false, code: 'in-challenge', values: { id: pick } };
+        if (typeof canExitChallenge === 'function' && !canExitChallenge(l, pick)) return { act: false, code: 'blocked:exit', values: { id: pick } };
         startChallenge(l, pick);
         cs.exit++;
-        return 1;
+        return { act: true, n: 1, code: 'acted:challenge-exit', values: { id: pick } };
       }
-      if (pick === null) return 0;
-      if (typeof canEnterChallenge === 'function' && !canEnterChallenge(l, pick)) return 0;
+      if (pick === null) return { act: false, code: 'nothing-to-do', values: { kind: 'challenges', layer: l } };
+      if (typeof canEnterChallenge === 'function' && !canEnterChallenge(l, pick)) return { act: false, code: 'blocked:enter', values: { id: pick } };
       startChallenge(l, pick);
-      if (Number(player[l].activeChallenge) === pick) { cs.enter++; return 1; }
-      return 0;
+      if (Number(player[l].activeChallenge) === pick) { cs.enter++; return { act: true, n: 1, code: 'acted:challenge-enter', values: { id: pick } }; }
+      return { act: false, code: 'blocked:enter', values: { id: pick } };
     },
     // when: the table's {id, when} list for the layer: click when the clickable is unlocked, canClick, and `when` holds.
     clickables: function (f) {
-      if (f.policy !== 'when') return 0;
-      var l = f.layer, C = tmp[l] && tmp[l].clickables, n = 0;
-      if (!C || !player[l].unlocked) return 0;
+      if (f.policy !== 'when') return { act: false, code: 'off:policy', values: { policy: f.policy } };
+      var l = f.layer, C = tmp[l] && tmp[l].clickables, n = 0, clicked = [];
+      if (!C || !player[l].unlocked) return { act: false, code: 'nothing-to-do', values: { kind: 'clickables', layer: l } };
       for (var i = 0; i < f.clickList.length; i++) {
         var c = f.clickList[i], tc = C[c.id];
         if (!tc || tc.unlocked === false || !tc.canClick || !holds(c.when)) continue;
         clickClickable(l, c.id);
+        clicked.push(c.id);
         n++;
       }
-      return n;
+      if (n) return { act: true, n: n, code: 'acted:clickables', values: { n: n, ids: clicked } };
+      return { act: false, code: 'waiting:when', values: { layer: l } };
     },
   };
+  // "nothing was bought" told apart: an empty candidate list is `nothing-to-do`, a non-empty one names its cheapest.
+  function nothingBought(l, kind, candidates) {
+    if (!candidates || !candidates.length) return { act: false, code: 'nothing-to-do', values: { kind: kind + 's', layer: l } };
+    var id = candidates[0];
+    return { act: false, code: 'nothing-affordable', values: { kind: kind, id: id, cost: tmp[l].upgrades[id] ? tmp[l].upgrades[id].cost : null } };
+  }
 
   function runLayer(l, via) {
     if (ranAt[l] === loopNo) stats.doubles++;
@@ -502,10 +696,21 @@
     if (T.profileName === 'off') return;
     for (var i = 0; i < features.length; i++) {
       var f = features[i];
-      if (f.layer !== l || !active(f)) continue;
-      if (f.gate && !holds(f.gate)) continue;   // a table gate: the feature does nothing while its predicate is false
-      var n = EXEC[f.kind](f);
-      if (n) stats.actions[f.id] = (stats.actions[f.id] || 0) + n;
+      if (f.layer !== l) continue;
+      // ⚠ EVERY exit records, including the ones that do nothing: a feature the player can see in the tab and that
+      // is not running has a reason too, and `off` / `locked` / `armed` are the three the tab shows most often.
+      if (!active(f)) { say(f, featureUnlocked(f) ? 'off' : (isOnSaved(f) ? 'armed' : 'locked'), null); f.onSince = null; continue; }
+      // `onSince`: when this feature last became ELIGIBLE (on, unlocked, under a profile that runs it) with nothing
+      // done since. It is what `neverFired` is measured over, and it lives outside `player` like `f.last`.
+      if (f.onSince === null) f.onSince = Number(player.timePlayed) || 0;
+      if (f.gate && !holds(f.gate)) { say(f, 'blocked:gate', { gate: f.gateSrc }); continue; }   // a table gate: the feature does nothing while its predicate is false
+      var r = EXEC[f.kind](f);
+      say(f, r.code, r.values);
+      if (r.n) {
+        stats.actions[f.id] = (stats.actions[f.id] || 0) + r.n;
+        f.lastActedAt = Number(player.timePlayed) || 0;
+        f.onSince = f.lastActedAt;
+      }
     }
   }
 
@@ -608,6 +813,8 @@
       unlocked: typeof def.unlocked === 'function' ? def.unlocked : function () { return true; },
       default: false,
       policies: Array.isArray(def.policies) ? def.policies.slice() : [def.policy],
+      policyTable: def.policyTable === undefined ? null : def.policyTable,
+      policyDerived: def.policyDerived === undefined ? null : def.policyDerived,
       keepMilestone: def.keepMilestone || null,
       order: def.order ? def.order.map(Number) : null,
       after: Array.isArray(def.after) ? def.after.slice() : [],
@@ -617,6 +824,10 @@
       multiSkipped: def.multiSkipped || 0,
       clickList: (def.clickList || []).map(function (c) { return { id: Number(c.id), whenSrc: c.when, when: T.predicate(c.when) }; }),
       derived: !!def.derived,
+      // V1's readout memory, all OUTSIDE `player` and outside runtimeState(): the last decision, when this feature
+      // last became eligible with nothing done since, and when it last acted. Recomputed on the next tick, so a
+      // resumed process simply starts describing again — the ACTION COUNTS it is read beside are in runtimeState().
+      last: null, onSince: null, lastActedAt: null,
     };
     features.push(f);
     byId[f.id] = f;
@@ -631,6 +842,78 @@
     if (!policyOk(f.kind, policy)) throw new Error('policy "' + policy + '" is not a ' + f.kind + ' policy');
     f.policy = policy;
     return policy;
+  };
+
+  // ---- T.explain() — the readout, headless first (V1) -----------------------------------------------------------------
+  // ⛔ THE PAGE RENDERS THIS, it does not compute its own. One row per registered feature, in the same order the
+  // tab draws them, plus one per feature the table EXCLUDED (which is never registered and would otherwise have no
+  // way to say why it is missing). Every reason in the tab is therefore testable in Node with no browser, and the
+  // `render ≡ headless` leg of gates-v1 is a comparison rather than two implementations hoping to agree.
+  //
+  // ⚠ `neverFired` is measured in GAME-SECONDS, not in loops — the brief said loops, and a loop count means
+  // different things in a diff-0.05 census run and a diff-1 ladder leg, so the same flag would fire at 150 game-s
+  // in one and 3000 in the other. The default 3000 game-seconds is justified against the rarest ACTING feature
+  // this repo has measured: R1′'s `reset:sb` fired 13 times over a 24179 game-second leg (plan §14d), i.e. about
+  // one action per 1860 game-seconds, so anything under that would flag a feature that is working. 3000 is ~1.6×
+  // that gap. `?autoOpt=neverFiredSeconds=<n>` moves it.
+  var NEVER_FIRED_SECONDS = 3000;
+  function neverFiredLimit() {
+    var v = T.autoOptions && T.autoOptions.neverFiredSeconds;
+    var n = v === undefined ? NaN : Number(v);
+    return isFinite(n) && n > 0 ? n : NEVER_FIRED_SECONDS;
+  }
+  // a `values` entry as JSON: a Decimal is not serialisable, and its own `toString` is the lossless form every
+  // consumer of this API (the gate, --explain, the page) can read back.
+  function jsonValue(v) {
+    if (v === null || v === undefined) return null;
+    if (Array.isArray(v)) return v.map(jsonValue);
+    if (typeof v === 'number' || typeof v === 'string' || typeof v === 'boolean') return v;
+    return String(v);
+  }
+  function jsonValues(values) {
+    if (!values) return null;
+    var o = {};
+    for (var k in values) o[k] = jsonValue(values[k]);
+    return o;
+  }
+  function featureStateWord(f) {
+    if (active(f)) return 'on';
+    if (!featureUnlocked(f)) return isOnSaved(f) ? 'armed' : 'locked';
+    return 'off';
+  }
+  T.explain = function () {
+    var out = [], now = Number(player.timePlayed) || 0, limit = neverFiredLimit();
+    for (var i = 0; i < features.length; i++) {
+      var f = features[i];
+      var acted = stats.actions[f.id] || 0;
+      out.push({
+        id: f.id, title: f.title, layer: f.layer, kind: f.kind,
+        state: featureStateWord(f),
+        policy: { inForce: f.policy, table: f.policyTable, derived: f.policyDerived, alternatives: f.policies.slice(1) },
+        last: f.last ? { code: f.last.code, text: codeText(f.last.code, f.last.values), values: jsonValues(f.last.values), tick: f.last.tick, at: f.last.at } : null,
+        acted: acted, lastActedAt: f.lastActedAt,
+        // on + unlocked for long enough, and it has still never done anything. A configuration that CANNOT fire is
+        // survey §4.6, and it is the one thing a list of reasons cannot say by itself: every individual reason is
+        // reasonable, and the feature is dead anyway.
+        neverFired: acted === 0 && f.onSince !== null && (now - f.onSince) >= limit,
+        eligibleFor: f.onSince === null ? null : Math.round((now - f.onSince) * 10) / 10,
+        gate: f.gateSrc, after: f.after.slice(),
+        provenance: (T.autoProvenance && T.autoProvenance[f.id]) || null,
+      });
+    }
+    for (var id in (T.autoExcluded || {})) {
+      var c = id.indexOf(':');
+      out.push({
+        id: id, title: id, layer: id.slice(c + 1), kind: id.slice(0, c),
+        state: 'excluded',
+        policy: { inForce: null, table: null, derived: null, alternatives: [] },
+        last: { code: 'off:excluded', text: codeText('off:excluded', { reason: T.autoExcluded[id] }), values: { reason: T.autoExcluded[id] }, tick: T.ticks, at: now },
+        acted: 0, lastActedAt: null, neverFired: false, eligibleFor: null,
+        gate: null, after: [],
+        provenance: (T.autoProvenance && T.autoProvenance[id]) || null,
+      });
+    }
+    return out;
   };
 
   // ---- profiles ------------------------------------------------------------------------------------------------------
@@ -714,7 +997,7 @@
 
   // ---- derivation: features from the engine's own data + the per-game DATA table ------------------------------------------
   // tmtLoader.autoTable (games-auto/<id>.js, inserted BEFORE this file; absent = `{}`) — every key in docs/automation.md.
-  var TABLE_KEYS = ['id', 'unlockOrder', 'policies', 'alternatives', 'order', 'gates', 'off', 'keep', 'clickables', 'options', 'kindOrder'];
+  var TABLE_KEYS = ['id', 'unlockOrder', 'policies', 'alternatives', 'order', 'gates', 'off', 'keep', 'clickables', 'options', 'kindOrder', 'provenance'];
   var KIND_LABEL = { toggles: 'milestone toggles', upgrades: 'upgrades', buyables: 'buyables', challenges: 'challenges', clickables: 'clickables', reset: 'reset' };
   function hasNumIds(obj) { return !!obj && typeof obj === 'object' && numIds(obj).length > 0; }
   function isTreeLayer(l) { var L = layers[l]; return !!L && !L.tmtLoaderLayer && L.row !== undefined && L.row !== null && L.row !== '' && !isNaN(L.row); }
@@ -781,11 +1064,18 @@
     var candById = {};
     cands.forEach(function (c) { candById[c.id] = c; });
     var known = function (where, id) { if (!candById[id]) throw new Error(src + ': ' + where + ' names "' + id + '", which is not a derived feature of this game'); };
-    ['policies', 'alternatives', 'order', 'gates', 'off', 'keep'].forEach(function (k) {
+    ['policies', 'alternatives', 'order', 'gates', 'off', 'keep', 'provenance'].forEach(function (k) {
       if (table[k] === undefined) return;
       if (typeof table[k] !== 'object' || Array.isArray(table[k])) throw new Error(src + ': ' + k + ' must be an object keyed by feature id');
       for (var id in table[k]) known(k, id);
     });
+    // `provenance` (V1): ONE line per feature saying WHERE its entry in this table came from — the SUMMARY row or
+    // the plan § that measured it. ⚖ minimize hardcoding already required that as a source comment; this makes it
+    // DATA, so the au tab's Advanced view can show the player why a default is what it is instead of leaving it in
+    // a file nobody reading the game will open. Unknown feature ids throw, exactly as `off` does — and an id the
+    // table EXCLUDES is still a derived candidate, so an exclusion may carry its provenance too.
+    for (var pk in (table.provenance || {})) if (typeof table.provenance[pk] !== 'string' || !table.provenance[pk]) throw new Error(src + ': provenance.' + pk + ' needs a non-empty one-line string');
+    T.autoProvenance = Object.assign({}, table.provenance || {});
     var clk = table.clickables || {};
     for (var cl in clk) {
       known('clickables', 'clickables:' + cl);
@@ -855,10 +1145,15 @@
         if (order.some(function (n) { return !isFinite(n); })) throw new Error(src + ': option order:' + id + ' must be a comma-separated list of numeric ids');
         if (!order.length) order = undefined;
       }
-      var policy = table.policies && table.policies[id];
-      if (policy === undefined) policy = defaultPolicy(c.kind, l, !!order, !!clk[l]);
+      // BOTH answers are kept, not just the winner: the Advanced view shows the table's entry and the generic
+      // derivation's beside what is in force, which is survey §4.5 ("default and current effective value side by
+      // side") and the one readout that makes a table entry's cost visible at all.
+      var policyDerived = defaultPolicy(c.kind, l, !!order, !!clk[l]);
+      var policyTable = table.policies && table.policies[id];
+      var policy = policyTable === undefined ? policyDerived : policyTable;
       var def = {
         id: id, layer: l, kind: c.kind, policy: policy, default: false, derived: true,
+        policyTable: policyTable === undefined ? null : policyTable, policyDerived: policyDerived,
         title: titleOf(l) + ' ' + KIND_LABEL[c.kind],
         unlocked: derivedUnlocked(c.kind, l),
         policies: [policy].concat((table.alternatives && table.alternatives[id]) || []),

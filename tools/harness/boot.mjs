@@ -9,7 +9,10 @@
 //                      [--stop-mark <name>] [--snapshots] [--runtime runtime.json] [--predicates list.json] [--eval "<js>"]
 //                      [--planner | --planner=auto|suggest] [--planner-mode auto|suggest|off] [--planner-opt "k=v;k2=v2"]
 //                      [--planner-ladder ladder.json] [--planner-script f.js] [--knowledge-out f] [--goals-out f] [--rounds-out f]
-//                      [--stop-snapshot]
+//                      [--stop-snapshot] [--explain]
+//   --explain: `tmtLoader.explain()` at the stop (R.explain) — one row per feature with the reason its last decision
+//   returned (docs/automation.md). R.explain_stats is recorded on EVERY automation run and BEFORE that dump, because
+//   `formats` must be 0 for a run that never opened the tab.
 //   --planner: loader/tmt-planner.js is run AFTER tmt-auto.js (the advanced system, P1a/P1b — harness only; the page
 //   never fetches it). --planner=auto (or --planner-mode auto) DRIVES it: tmtLoader.planner.beforeTick() runs between
 //   ticks and commits one configuration of the simple system per epoch (P1b, docs/planner.md); `suggest` plans and logs
@@ -46,7 +49,7 @@ for (let i = 0; i < argv.length; i++) {
   const a = argv[i];
   if (!a.startsWith('--')) A._.push(a);
   else if (a.indexOf('=') > 2) A[a.slice(2, a.indexOf('='))] = a.slice(a.indexOf('=') + 1);   // --planner=auto
-  else if (['save', 'census', 'no-auto', 'no-automation', 'marks-continue', 'stall-seen', 'snapshots', 'planner', 'stop-snapshot'].includes(a.slice(2))) A[a.slice(2)] = true;
+  else if (['save', 'census', 'no-auto', 'no-automation', 'marks-continue', 'stall-seen', 'snapshots', 'planner', 'stop-snapshot', 'explain'].includes(a.slice(2))) A[a.slice(2)] = true;
   else A[a.slice(2)] = argv[++i];
 }
 const ID = A._[0];
@@ -335,6 +338,10 @@ try {
   R.hook = run('tmtLoader.hookStats ? tmtLoader.hookStats() : null', 'x');
   R.features = run('(tmtLoader.features || []).map(f => f.id)', 'x');
   R.featureStates = run('(tmtLoader.features || []).map(f => { const s = tmtLoader.featureState(f.id); return [f.id, s.unlocked, s.policy]; })', 'x');
+  // V1 — the readout. ⛔ THE COUNTER IS READ FIRST, BEFORE anything asks for text: `tmtLoader.explain()` is the
+  // one caller that formats on purpose, so reading it after the dump would measure this line rather than the run.
+  R.explain_stats = run('tmtLoader.explainStats ? tmtLoader.explainStats() : null', 'x');
+  if (A.explain) R.explain = run('tmtLoader.explain ? JSON.parse(JSON.stringify(tmtLoader.explain())) : null', 'explain');
   R.derivation = run('tmtLoader.autoDerivation || null', 'x');
   R.excluded = run('tmtLoader.autoExcluded || null', 'x');
   R.state_paths = {};

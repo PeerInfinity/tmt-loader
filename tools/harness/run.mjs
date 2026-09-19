@@ -6,7 +6,7 @@
 //                     [--storage in.json] [--load-from player.json] [--save --save-storage out.json]
 //                     [--state-out f] [--player-out f] [--ids-out f]
 //                     [--ladder ladder.json [--from <mark>] [--to <mark>]] [--snapshots <dir>] [--from-snapshot <file>]
-//                     [--predicates list.json] [--eval "<js>"]
+//                     [--predicates list.json] [--eval "<js>"] [--explain]
 //                     [--planner | --planner=auto|suggest] [--planner-mode m] [--planner-opt "k=v"] [--planner-ladder ladder.json]
 //                     [--planner-script f.js] [--knowledge-out f] [--goals-out f] [--rounds-out f]
 //                     [--stop-snapshot <dir> [--stop-snapshot-name <name>]]  — a snapshot of the STOP (stall / wall /
@@ -145,6 +145,7 @@ function runNodeRaw(id, o) {
   if (o['wall-ms']) args.push('--wall-ms', String(o['wall-ms']));
   if (o['stop-mark']) args.push('--stop-mark', String(o['stop-mark']));
   if (o.snapshots) args.push('--snapshots');
+  if (o.explain) args.push('--explain');
   if (o.runtime) args.push('--runtime', path.resolve(String(o.runtime)));
   if (o.predicates) args.push('--predicates', path.resolve(String(o.predicates)));
   if (o.eval != null) args.push('--eval', String(o.eval));
@@ -183,7 +184,7 @@ function runNodeRaw(id, o) {
 }
 
 async function main() {
-  const a = parseArgs(process.argv.slice(2), ['save', 'no-auto', 'no-automation', 'marks-continue', 'stall-seen', 'no-runtime', 'until-all', 'planner']);
+  const a = parseArgs(process.argv.slice(2), ['save', 'no-auto', 'no-automation', 'marks-continue', 'stall-seen', 'no-runtime', 'until-all', 'planner', 'explain']);
   const id = a._[0];
   if (!id) { console.error('usage: node run.mjs <id> [--ticks N] [--diff d] [--until "<js>"] [--json out] …'); process.exit(2); }
   const res = runNode(id, a);

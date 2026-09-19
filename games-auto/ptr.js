@@ -80,4 +80,20 @@ tmtLoader.autoTable = {
   // (`(TE+1)^1.2`) rising 36,248 → ~1.9e11. The game itself grants this autobuyer later (`ab` 14 / `player.t.autoExt`
   // at q milestone 1, layers.js:1007) — the exclusion was early, not wrong in kind.
   off: {},
+  // ⚖ MINIMIZE HARDCODING has always required that a number or an order in a table carry its provenance in a
+  // COMMENT. V1 makes it DATA as well: one line per entry, naming the gate row that measured it, so the au tab's
+  // Advanced view can tell a player why a default is what it is instead of leaving the answer in a file nobody
+  // playing the game will open (survey §4.11). The long comments above stay exactly where they are — this is the
+  // one line each of them would give a reader who is looking at the tab, not at the source.
+  // ⚠ Author-written text rendered through `display-text`, which is `v-html`: the loader escapes it (`escapeText`).
+  provenance: {
+    'reset:p': "R1′ (SUMMARY gate R1′-2.3, and S1-2's sweep): `gain>=2x` reached A1-3's three marks at 918 / 1627 / 2112 game-s against `interval>=10`'s 1361 / 2360 / 2936, and M11 at 15582 against 15782 — the target-driven rule ⚖ 13d.2 asks for.",
+    'reset:b': "A1 table (SUMMARY gate A1-3): a static layer's gain is 1 per reset and its requirement paces it, so b resets whenever it can.",
+    'reset:g': "A1 table (SUMMARY gate A1-3): as `reset:b`; `unlockOrder [g, b]` puts g first — 1361 / 2360 / 2936 game-s against b-first's 1532 / 2491 / 3067, ahead at every p interval tried.",
+    'reset:t': "A2-3, re-measured at the frontier (SUMMARY gate R1′-2.3): `always` reaches M16 at 24212 against `interval>=5`'s 24236 — a tie to within 0.1 %, and constant-free.",
+    'reset:s': "A2-3, re-measured at the frontier (SUMMARY gate R1′-2.3): `always` reaches M16 at 24203 against `interval>=5`'s 24236 — the same tie.",
+    'reset:e': "R1′ (SUMMARY gate R1′-2.3): e is row 2's only NORMAL layer, so its gain follows how high points climbed and an interval reset spends that climb every 5 s. `gain>=2x` reaches every remaining mark of the rung (M11 14745 · M12 14909 · M15 16048 · M16 24179); `interval>=5` and `always` reach none of them.",
+    'buyables:e': "R1′ (SUMMARY gate R1′-2.2): the reserve is READ from the game, never written here. `reserve>=next-upgrade` ends 47 EP held with 3 Enhancers against `buy`'s 11 EP with 4 — and a literal `reserve>=25` is byte-identical to `buy`, because once e11 is owned the next upgrade costs 400.",
+    'buyables:t': "R1′ (SUMMARY gate R1′-2.4) LIFTED the exclusion this table used to carry. With it: t upgrades [11], Time Energy 6300 at its cap, `t.unlockOrder` 1. Without it: 11 Extra Time Capsules, cap 2.49e9, t upgrades [11,12,13,14,15,23] and `t.unlockOrder` 0 — the t half of M12.",
+  },
 };
