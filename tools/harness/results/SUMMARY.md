@@ -4100,6 +4100,8 @@ bounded local set could not have seen this however many times it was run. The ga
 read-back is the fix; a card the read-back page does not draw now abstains rather than failing, though with the
 save no game on the roster reaches that branch.
 
+| U2c CI sweep, third push | — 171 games — | same, at `ca3401b60` | **GREEN** | run `35418820884`; **171/171 covered, each exactly once; 0 RED**, read from the merge job's own output. The digits leg: `unchanged over every magnitude, at both widths, in both states` on **171/171**, over **995 amount readouts and 452 counters**. The persistence leg: **157 restored, 14 abstained** — 13 of them "no card on this game has an expander" and one `the-broken-tree`, whose reason is its own. **17 games** took a card whose action row the phone had CUT, so the re-fit half is non-vacuous on seventeen of them. Shards 140–207 s (spread ×1.48), serial 26.7 min, wall clock 3.5 min |
+
 **Three more things the second round settled.**
 - ⚠ **A probe on the read-back page may not throw the ROW.** `the-broken-tree`'s exception cost that row three
   verdicts it had already earned, to a leg that runs after all of them. Every read-back probe is wrapped now and

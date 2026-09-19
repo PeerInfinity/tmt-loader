@@ -924,6 +924,12 @@ digits do" above, and the honest statement is that **the reservation is what the
 two rules. A later slice that deletes either will see no red — which is exactly why the measurement is written
 down here instead of being inferred from a green run.
 
+**Over the roster** (the sweep at `ca3401b60`, 171/171 covered, 0 red): the digits leg reads *unchanged over
+every magnitude, at both widths, in both states* on every game, over **995 amount readouts and 452 counters**; the
+persistence leg restores on **157** and abstains on **14** — thirteen because no card on that game has an
+expander at all, and `the-broken-tree` for the reason above. **17** games take a card whose action row the phone
+had to cut, so the re-fit half is exercised on seventeen of them rather than inferred.
+
 ⚠ **The two persistence failures are named apart.** A card that came back closed and a card that came back open
 with an unmeasured action row are different defects — the first is the persistence, the second is the fit pass the
 persistence broke — and the first version of the verdict called both `NOT RESTORED`, which would have sent the
