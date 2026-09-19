@@ -97,6 +97,14 @@ four components, namespaced so nothing can collide:
 | `tmtl-select` | the strategy picker (a `<select>`) |
 | `tmtl-number` | one parameter: a text field with `−` / `+` steps, bound to LOCAL state and committed on change / Enter / blur |
 
+⚖ **They wear the GAME's theme, not the browser's** (user, 2026-09-19: *"light text on a dark background"*). An
+`<input>`, a `<select>` and a `<button>` come with the browser's own colours — black on white — which is wrong
+against a dark tree. The controls take `color: var(--color)` and `background-color: var(--background)`, the two CSS
+custom properties the THEME sets (ptr `style.css:16-20`), so they follow whatever theme the player picked rather
+than hardcoding a dark one. Censused: **all 171 of the 171 games define `--color` and `--background`**. ⚠ Plus
+`color-scheme: dark`, without which the browser goes on drawing its own light chrome INSIDE the control — the
+select's arrow, the caret, the selection, the focus ring.
+
 ⛔ **`loader/tmt-auto.js` still never touches the DOM** (`docs/contract.md`). These are component *definitions* handed
 to the engine's own Vue; Vue does every bit of the rendering. Nothing queries an element or holds a reference to one,
 and no file under `games/` changes. ⚠ **Registration is in automation mode only** — the definitions live below the
