@@ -4328,3 +4328,72 @@ which is U2d's fit rule exercised on a card nobody had driven before. The roster
 | A1-2 au layer in the page | something | — | 0 | 0 | — | — | GREEN | tmp.au true; row side; doReset false; player.au.features {}; disclosed false; managed profile off; 38 features; `#app .smallNode.au` × 1; 0 page errors, 0 failed, 0 blocked |
 | A1-2 au tab (page) | something | — | 0 | 0 | — | — | GREEN | ✓ unmanaged default profile = saved; ✓ 38 feature toggles; ✓ fresh boot: every toggle Off/Locked (Off, Locked); ✓ au tab renders its title; ✓ no disclosure before any click; ✓ ?profile=all: toggles On (On (profile all), Locked); ✓ ?profile=all did not write the save (saved au.features {}); ✓ reload without ?profile: Off again; ✓ an unlocked feature to click (Unlock reset); ✓ click turned "Unlock reset" on; ✓ disclosure line after the first click; ✓ save namespaced (2 keys under tmt-loader:something:); ✓ toggle persists across reload (On); ✓ 0 page errors, 0 failed, 0 blocked; screenshots results/something-au-{off,all,toggled}.png |
 | A1-2 arming a locked feature (page) | something | — | 0 | 0 | — | — | GREEN | candidate upgrades:fundamental (upgrades on fundamental), 36/38 features locked; ✓ default: armLocked off and NOT in the save (player.au.armLocked undefined); ✓ default: the toggle refuses (canClick false, display "Locked"); ✓ default: a real press on the locked button changed nothing (saved false); ✓ default: *All features* turned 2/38 on and did NOT arm the locked upgrades:fundamental; ✓ *All features* pressed again cleared the 2 it set (0 on); ✓ the au tab's own toggle wrote player.au.armLocked = true; ✓ with it on, the locked button accepts a press (canClick true); ✓ with it on, *All features* armed everything including the locked (38/38 on); ✓ and cleared them again (0 on) — so the per-feature press below stands alone; ✓ armed by a real press (player.au.features["upgrades:fundamental"] = true); ✓ the button says so ("Armed / locked"); ✓ armed but locked: unlocked false, active false; ✓ 200 ticks armed-and-locked: active false, actions 0; ✓ after a reload: armLocked true, armed true, running false; unlocked by: doReset('fundamental') then player.fundamental.unlocked = true then the feature's derived unlocked() replaced with one that says yes (the engine put its own flag back, so the predicate was constructed); ✓ the moment it unlocked it went active, with NO further press (active true); — the action half ABSTAINS: only the derived predicate could be constructed, so the engine still gates every purchase on its own player.fundamental.unlocked (0 action(s) after player.fundamental.points 1 -> 1e30); ✓ and the button now reads "On / cheapest-first"; ✓ 0 page errors, 0 failed, 0 blocked |
+
+## 2026-09-19 — U5: the chips wear the game's own colours, and Back returns to the view you came from — commit `1aa354580`
+
+⚖ user, 2026-09-19, two requests. ⛔ **The trap in the first is the VOCABULARY.** The engines' `.locked` class
+means **cannot afford**; it does *not* mean "not unlocked", which is what `locked` meant in `layerlist.js` until
+U2b deleted that state. Red is for unaffordable, never for absent. ⛔ **The trap in the second is that a memory set
+unconditionally passes half the test**: a layer opened from the TREE must still come back to the tree.
+
+### Premises the brief carried that do not reproduce
+
+| the brief said | measured |
+|---|---|
+| "the engine's `goBack()` is `showTab("none")` (`games/ptr/js/utils.js:872`), **hardcoded to the tree**" | ⚠ **Neither half holds.** PTR's is a two-branch `goBack()` — `player.navTab !== "none" ? showTab("none") : showTab(player.lastSafeTab)` — and it is the MINORITY form: **154 of the 171 games** call `goBack(player.navTab == 'none' ? player.tab : player.navTab)`, whose 2.7 body reads a per-layer **`player[layer].prevTab`** and only falls back to the tree. The engines already remember where you came from, in the save; 8 have PTR's arg-less form and 9 wire the control straight to `showTab('tree'\|'none')`. This is the whole reason the list does **not** intercept the click |
+| "`navbar.js` already touches `.back` and `showTab('none')` — read what it does there" | ⚠ **Half.** `loader/navbar.js` calls `showTab('none')` (its Tree button's `onTree`); it never mentions `.back`. The only `.back` in the loader is in `loader/mobile.css`, which styles the engine's own control |
+| "`.bought` → `#77bf5f`, `.locked` → `#bf8f8f` — the engine's classes" (offered as one game's measurement) | confirmed for 167 of 171, and the brief was right to flag it as one game's: **4 games paint one of the two differently** — `the-congratulations-tree` (`hsl()`), `the-rainbow-void-tree`, `the-factoree` (8-digit hex, so the chips come out `rgba()` with alpha) and `the-prestige-tree` (`var(--boughtcolor)`, re-pointed at the current tab's layer colour by its own `game.js`) |
+
+### The implementation, and the two things that decided its shape
+
+- **The engine's CLASSES cannot be put on the chip.** They carry geometry as well as colour — `.upg` is 120×120 in
+  PTR, `.milestone` is `width: 100%; height: 75px`, `.hChallenge` is 300×300 — so a chip wearing them would blow up
+  the 44 px tap target and the measured action-row fit. Only the colour is taken, off an off-screen probe.
+- **The probe sits on `document.body`, not `#app`** — and that is the U4 rule applied to a new instrument. The
+  engines set their theme custom properties **on `document.body`**, so the variables resolve there; `#app` is what
+  both of the loader's MutationObservers watch **and** what the gate's own geometry probe enumerates through
+  `#app .upg`. A probe parked in `#app` would have been measured *by our own gate* as an undersized tap target.
+  `visibility: hidden` rather than `display: none`, because a display-none element has no used value.
+
+| gate | game | leg | result | notes |
+|---|---|---|---|---|
+| ⛔ PRE-MEASUREMENT — can the roster witness the three-way reading on its own? | ptr | deepest snapshot `M16` + 0 / 500 / 6,000 ticks | **NO CARD, at any of the three** | 70 `bought`, 13 `locked`, **0 `can`**: everything unbought there is also unaffordable, and a fresh save draws ONE chip in total. This is why the discriminator is CONSTRUCTED |
+| ⛔ PRE-MEASUREMENT — is the colour reachable from outside the game's markup? | — 171 games — | a BARE `.bought` / `.locked` rule | **171 and 171** | so an off-screen probe anywhere in the document resolves it. ⚠ The first scan said **23** for `.locked`: `something`'s `general-style.css` writes `/* … versions with .c.locked, for example */` on the line above the rule, the comment lands inside the selector capture, and splitting it on its comma yields neither `.locked` nor anything like it. One comment, 148 of the 171 games, and it would have read as a finding about the roster |
+| ⛔ PRE-MEASUREMENT — how is the back control drawn? | — 171 games — | `class="back"` / `"other-back"`, and what it calls | **171 by class, 166 through `goBack`** | which is what lets the list find it without knowing any game. Both figures are now checked by `census-figures.mjs` against the sentence in `docs/mobile.md` that states them |
+| M1 colours leg (U5) | ptr, something, the-rainbow-void-tree, the-congratulations-tree, the-factoree, the-prestige-tree | every chip's COMPUTED background vs an expectation the probe rebuilds itself | **6/6 GREEN** | 137 chips, 77 `bought` + 60 `locked`; `data-skin` checked beside the colour, so a build that painted the right pixel under the wrong word still reds. **0 games show all three on one card** — reported as an ABSTENTION, never a pass |
+| M1 three-way leg (U5) — CONSTRUCTED | ptr | one card's three upgrade chips forced bought / affordable / unaffordable | **GREEN** | `p`: `rgb(119,191,95)` / `rgb(49,174,176)` / `rgb(191,143,143)`, restored |
+| M1 three-way leg (U5) | something | same | **GREEN** | `unlock`, affordable `rgb(128,0,255)` |
+| M1 three-way leg (U5) | the-rainbow-void-tree | same | **GREEN** | its own pair: `rgb(107,207,77)` / `rgb(0,107,247)` / `rgb(207,137,137)` |
+| M1 three-way leg (U5) | the-congratulations-tree | same | **GREEN** | `hsl()` resolved: `rgb(64,191,64)` / `rgb(221,46,68)` / `rgb(191,64,64)` |
+| M1 three-way leg (U5) | the-factoree | same | **GREEN** | 8-digit hex with real alpha: **`rgba(0,255,0,0.267)`** and **`rgba(255,51,51,0.4)`** |
+| M1 three-way leg (U5) | the-prestige-tree | same | **ABSTAINS, named** | `.bought` and `.locked` are *both* `var(--boughtcolor)`: `rgb(255,136,136)` / `rgb(255,153,153)` / `rgb(255,136,136)`. A game that paints bought and unaffordable the same cannot judge a build that does — so the leg says so rather than passing |
+| M1 stability leg (U2d + U5) | something | the chip ROW across a window in which affordability flips | **GREEN, and JUDGED** | six chips went `locked` → `can` (`lllllllllbllll` → `cccccclllbllll`) with `lit` `0000000000000` → `1111110000000`, and the row byte-identical. ⚠ A colour change only counts where the row's own INDEPENDENT expectation held: on `ptr` two cards gained a chip over 250 ticks (`b` and `g`, 10 → 11) with nothing having flipped — a legitimate membership change, and the same abstention the button row already gets |
+| M1 Back leg (U5) | all six | list → back → list; tree → back → tab | **6/6 GREEN** | tree route: the engine's own node, on all six. `cameFrom` `p` → `null` across the press, `null` after leaving by the nav bar's Tree button, `null` after a tree open |
+| M1 whole gate, the bounded local set | the same six | every leg | **6/6 GREEN** at `1aa354580` | 36 cards, 137 chips; tooltip 182 of 182 judged; drift 2/2 judged (4 abstained — their list does not scroll at 390 px) |
+| unit tests (`npm run harness:test`) | — | — | GREEN | **64** (60 + four new census ones) |
+| census-figures | — | — | GREEN | **11/11** documented figures = the tree (the two new U5 claims among them) |
+| check-manifest, games-table `--check` | — 171 games — | — | GREEN | no game's tree touched |
+
+### The mutants
+
+Each on a game that can see it, the work **COMMITTED before the battery ran**, and `loader/layerlist.js` restored
+by name after each one.
+
+| # | the mutant | seen on | how it reds |
+|---|---|---|---|
+| A | ⛔ **the vocabulary trap**: red wired to "not drawn" (`unlocked`) rather than "cannot afford" | `ptr` | BOTH legs. The colours leg: `t/buyables/11` `wantKey locked gotKey can`, `rgb(191,143,143)` vs `rgb(0,102,9)` — an unlocked-but-unaffordable buyable painted the layer's colour. The constructed leg: `THE UNAFFORDABLE CHIP IS NOT THE GAME'S LOCKED COLOUR (can rgb(49,174,176) != rgb(191,143,143))` |
+| B | affordability allowed to REORDER the chip row | `something` | `THE CHIP ROW MOVED`, on the leg that carries ⚖ U2's ruling |
+| B₀ | ⚠ **the same mutant, written the obvious way, RED THE WRONG LEG** | `something` | It appended every chip to the end of the box — which put them all *after the dividers* — and the chip-only order string **did not move at all**, because on that card the affordable chips already led the row. The DIVIDER check caught it; the stability leg reported "the set and the chip row held". Fixed on both sides: `chipOrder` is now the box's CHILDREN, dividers included (what moves under a finger is the row, not the chips), and the mutant now sorts the affordable ones to the END |
+| C | Back ALWAYS returns to the list | `ptr` | `BACK FROM A LAYER OPENED IN THE TREE RETURNED TO THE LIST` — the precise half a memory set unconditionally fails |
+| C₀ | ⚠ the first version of C also dropped the `cameFrom = null` | `ptr` | reddened at step ONE (`THE MEMORY SURVIVED THE BACK PRESS`) and never reached the half it was written for. A mutant that dies early proves the early check, not the one it was aimed at |
+| D | the layer's colour replaced by a constant | `ptr` | `THE AFFORDABLE CHIP IS NOT THE LAYER'S OWN COLOUR (can rgb(119,191,95) != rgb(49,174,176))`. ⚠ **The colours leg is GREEN on it** — `ptr` draws no affordable chip at that state, so the constructed leg is the only thing that sees it. That is the whole argument for building it |
+
+### What this leaves open
+
+- the **natural** three-state witness is still 0 on all six games driven here. CI's 171 will say whether any game
+  on the roster shows all three at a recorded state; if none does, the constructed leg is the only judge there is;
+- `pseudo` chips now carry the engines' own `.pseudo` / `.plocked` colours, and **no game on the roster draws one
+  at any recorded state** — the same gap U2b recorded, inherited rather than closed;
+- the chip keeps `color: inherit` on its new background, which is what the engines' own controls do (their
+  buttons declare no colour and inherit the page's). On a dark theme that is light text on the green. Nobody has
+  looked at whether the card wants the contrast the reset button's `.can { color: #000 }` takes.
