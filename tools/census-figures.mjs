@@ -41,6 +41,28 @@ const walkJS = (dir) => (fs.existsSync(dir)
   ? fs.readdirSync(dir, { withFileTypes: true }).flatMap((e) => (e.isDirectory() ? walkJS(path.join(dir, e.name)) : e.isFile() && /\.js$/i.test(e.name) ? [path.join(dir, e.name)] : []))
   : []);
 
+// ⚠ U5 — THE TWO FIGURES BELOW ARE NOT ABOUT `*.js`, so they do not take the `bound`. The chip colours live in
+// each game's STYLESHEET and the back control in its MARKUP, and neither has ever had a `js/`-shaped bug to
+// reproduce. They keep the other half of the rule that matters: a game whose files cannot be found is a REFUSAL,
+// never a zero.
+const walkExt = (dir, re) => (fs.existsSync(dir)
+  ? fs.readdirSync(dir, { withFileTypes: true }).flatMap((e) => (e.isDirectory() ? walkExt(path.join(dir, e.name), re) : e.isFile() && re.test(e.name) ? [path.join(dir, e.name)] : []))
+  : []);
+/** Every stylesheet in one game's subtree. */
+export function stylesOf(id, root = REPO) {
+  const dir = path.join(root, 'games', id);
+  if (!fs.existsSync(dir)) return { files: [], missing: `games/${id}/ does not exist` };
+  const files = walkExt(dir, /\.css$/i);
+  return { files, missing: files.length ? null : `games/${id}/ holds no .css file at all` };
+}
+/** Every document and script in one game's subtree — the back control is written in both. */
+export function markupOf(id, root = REPO) {
+  const dir = path.join(root, 'games', id);
+  if (!fs.existsSync(dir)) return { files: [], missing: `games/${id}/ does not exist` };
+  const files = walkExt(dir, /\.(html?|js)$/i);
+  return { files, missing: files.length ? null : `games/${id}/ holds no .html or .js file at all` };
+}
+
 /**
  * One game's source files under `bound`, plus the reason they could not be found.
  * ⛔ `missing` is what keeps a dropped game from reading as a zero.
@@ -101,6 +123,37 @@ export function tooltipsByKind(text) {
   return out;
 }
 
+// ⚠ U5 — A BARE RULE, not "the word appears". `.bought` is in every tree (`.achievement.bought`,
+// `.hn.grad:not(.bought)`), and only a BARE `.bought { … }` is reachable from an element that is not inside the
+// game's own markup — which is exactly what the layer list's off-screen colour probe is. The selector may be part
+// of a group (`.bought, .x {`), so the scan is over comma-separated selectors, not over whole rules.
+// ⚠ `[^{}]+` for BOTH halves, and no anchor on the left: a selector cannot contain a brace, so this walks the
+// rules of a flat stylesheet and of the ones nested in an `@media` block alike — and an anchor on the preceding
+// `}` would match only every OTHER rule, because `matchAll` resumes after the brace the last match consumed.
+// MEASURED: with the anchor this reported 16 of 171 games as declaring `.bought`, against 171 without it.
+const bareRule = (raw, cls) => {
+  // ⚠ COMMENTS OUT FIRST. MEASURED on `something`, whose `general-style.css` writes
+  // `/* … versions with .c.locked, for example */` immediately above the bare `.locked {` rule: the comment lands
+  // inside the selector capture, splitting on its comma gives `… .c.locked` and `for example */ .locked`, and
+  // neither is `.locked`. That one comment cost 148 of the 171 games — reported as 23 declaring the rule, which
+  // would have read like a finding about the roster rather than like a bug in the scan.
+  const text = String(raw).replace(/\/\*[\s\S]*?\*\//g, ' ');
+  for (const m of text.matchAll(/([^{}]+)\{([^{}]*)\}/g)) {
+    const sels = m[1].split(',').map((x) => x.trim()).map((x) => x.slice(x.lastIndexOf('}') + 1).trim());
+    if (!sels.some((x) => x === '.' + cls)) continue;
+    const bg = /background(?:-color)?\s*:\s*([^;}]+)/i.exec(m[2]);
+    return { bare: true, value: bg ? bg[1].replace(/!important/i, '').trim().toLowerCase() : null };
+  }
+  return { bare: false, value: null };
+};
+// the family's own two, which 167 and 164 of the roster use unchanged — measured, never assumed (see `claims`)
+const FAMILY = { bought: '#77bf5f', locked: '#bf8f8f' };
+// ⚠ The back control is `class="back"` / `class="other-back"` in the markup and
+// `v-bind:class="back == 'big' ? 'other-back' : 'back'"` in the engines' own `layer-tab` component. Both forms, and
+// nothing else: a word `back` anywhere in a file is not a control.
+const RE_BACK_CLASS = /<button[^>]{0,400}?class="[^"]{0,120}?\bother-back\b[^"]{0,120}?"|<button[^>]{0,400}?class="[^"]{0,120}?\bback\b[^"]{0,120}?"|back\s*==\s*'big'\s*\?\s*'other-back'\s*:\s*'back'/;
+const RE_BACK_GOBACK = /goBack\s*\(/;
+
 const RE = {
   buyUpg: /function\s+buyUpg\s*\(/,
   buyUpgrade: /function\s+buyUpgrade\s*\(/,
@@ -121,7 +174,8 @@ export function measure({ bound = 'subtree', root = REPO } = {}) {
   for (const id of ids) {
     const { files, missing } = sourcesOf(id, bound, root);
     if (missing) problems.push(`${id}: ${missing}`);
-    const g = { files: files.length, buyUpg: false, buyUpgrade: false, tabArray: 0, tabObject: 0, purchaseLimit: false, purchaseLimitInLayerSupport: false, pseudoUnlGlobal: false, pseudoUnlComponent: false, tooltipAny: false, tooltipChipped: 0, tooltipAchievement: 0 };
+    const g = { files: files.length, buyUpg: false, buyUpgrade: false, tabArray: 0, tabObject: 0, purchaseLimit: false, purchaseLimitInLayerSupport: false, pseudoUnlGlobal: false, pseudoUnlComponent: false, tooltipAny: false, tooltipChipped: 0, tooltipAchievement: 0,
+      boughtBare: false, lockedBare: false, boughtValue: null, lockedValue: null, backClass: false, backGoBack: false };
     for (const f of files) {
       // latin1: these are third-party trees and some are not valid UTF-8; every pattern here is ASCII.
       const text = fs.readFileSync(f, 'latin1');
@@ -145,6 +199,22 @@ export function measure({ bound = 'subtree', root = REPO } = {}) {
         const c = text[m.index + m[0].length];
         if (c === '[') g.tabArray++; else if (c === '{') g.tabObject++;
       }
+    }
+    // ---- U5: the chip colours (stylesheets) and the back control (markup), both over the whole subtree --------
+    const st = stylesOf(id, root);
+    if (st.missing) problems.push(`${id}: ${st.missing}`);
+    for (const f of st.files) {
+      const text = fs.readFileSync(f, 'latin1');
+      if (!g.boughtBare) { const r = bareRule(text, 'bought'); if (r.bare) { g.boughtBare = true; g.boughtValue = r.value; } }
+      if (!g.lockedBare) { const r = bareRule(text, 'locked'); if (r.bare) { g.lockedBare = true; g.lockedValue = r.value; } }
+    }
+    const mk = markupOf(id, root);
+    if (mk.missing) problems.push(`${id}: ${mk.missing}`);
+    for (const f of mk.files) {
+      if (g.backClass && g.backGoBack) break;
+      const text = fs.readFileSync(f, 'latin1');
+      if (!g.backClass && RE_BACK_CLASS.test(text)) g.backClass = true;
+      if (!g.backGoBack && RE_BACK_GOBACK.test(text)) g.backGoBack = true;
     }
     per[id] = g;
   }
@@ -171,6 +241,15 @@ export function measure({ bound = 'subtree', root = REPO } = {}) {
     tooltipChippedGames: ids.filter((id) => per[id].tooltipChipped > 0).length,
     tooltipChipped: sum('tooltipChipped'),
     tooltipAchievement: sum('tooltipAchievement'),
+    // --- U5 (subtree, and NOT subject to `bound`: these are .css / .html, not .js) ---
+    boughtBare: where('boughtBare').length,
+    lockedBare: where('lockedBare').length,
+    // the games that paint either state something other than the family's own pair — the reason the layer list
+    // asks the stylesheet instead of carrying a table of hex values
+    offPalette: ids.filter((id) => (per[id].boughtValue && per[id].boughtValue !== FAMILY.bought)
+      || (per[id].lockedValue && per[id].lockedValue !== FAMILY.locked)),
+    backClass: where('backClass').length,
+    backGoBack: where('backGoBack').length,
   };
 }
 
@@ -271,6 +350,32 @@ export function claims(sub, load) {
         return [ok, `doc: ${m[1]}/${m[2]} mention it, ${m[3]} games declare one on a chipped category, ${m[4]} against ${m[5]} on achievements`];
       },
       measured: `${sub.tooltipAny}/${N} mention it, ${sub.tooltipChippedGames} games declare one on a chipped category, ${sub.tooltipChipped} against ${sub.tooltipAchievement} on achievements`,
+    },
+    {
+      // U5 — the figure the layer list's chip colours rest on. If it ever stops being "every game", the probe that
+      // resolves the colour off a `document.body` element stops being reachable for whichever game broke it, and
+      // that game's chips go transparent with no gate to say so.
+      name: 'a bare `.bought` / `.locked` rule, and the games off the family palette (U5)',
+      doc: 'docs/mobile.md',
+      re: /\*\*every one of the (\d+) games declares a bare `\.bought` rule and a bare `\.locked` rule \((\d+) and (\d+)\)\*\*, and \*\*(\d+)\*\* of them — ([^—]*) — paint/,
+      expect: (m) => {
+        const named = ids(m[5]);
+        const ok = num(m[1]) === N && num(m[2]) === sub.boughtBare && num(m[3]) === sub.lockedBare
+          && num(m[4]) === sub.offPalette.length && setEq(named, sub.offPalette);
+        return [ok, `doc: ${m[2]} bare .bought, ${m[3]} bare .locked of ${m[1]}; ${m[4]} off-palette (${named.join(', ')})`];
+      },
+      measured: `${sub.boughtBare} bare .bought, ${sub.lockedBare} bare .locked of ${N}; ${sub.offPalette.length} off-palette (${sub.offPalette.join(', ')})`,
+    },
+    {
+      // U5 — the figure the Back memory rests on: the list finds the control by CLASS and never by game.
+      name: 'the back control, by class and by what it calls (U5)',
+      doc: 'docs/mobile.md',
+      re: /\*\*every one of the (\d+) games draws its back control with the class `back` or `other-back` \((\d+)\), and (\d+) of them route it through `goBack`\*\*/,
+      expect: (m) => {
+        const ok = num(m[1]) === N && num(m[2]) === sub.backClass && num(m[3]) === sub.backGoBack;
+        return [ok, `doc: ${m[2]} of ${m[1]} draw it by class, ${m[3]} route it through goBack`];
+      },
+      measured: `${sub.backClass} of ${N} draw it by class, ${sub.backGoBack} route it through goBack`,
     },
     {
       name: 'pseudoUnl — the global, and the game that has only the component',

@@ -798,6 +798,99 @@ MEASURED on `something`, whose rows hold one card each so the first card *is* an
 spacer at the top of the same body gave **40 / 40**. A probe built the first way would have certified the fix before
 anything was fixed.
 
+#### The chips wear the game's own colours (U5)
+
+⚖ **"purchased, affordable, unaffordable — the game's own three-way reading"** (user, 2026-09-19). Until U5 a chip
+carried no affordability at all: `data-state="done"` was `opacity: .45` and that was the whole scheme.
+
+⛔ **THE VOCABULARY TRAP.** The engines' `.locked` class means **cannot afford**. It does *not* mean "not unlocked"
+— which is what `locked` meant *in this file* until U2b removed that state. Red is for **unaffordable**, never for
+absent, and since U2b there is no "absent" state left to confuse it with: a component the tab does not draw gets no
+chip at all.
+
+**There is nothing to choose about the three colours**, which is the whole point — they are the game's:
+
+| the chip is | it wears | because the engine's own control does |
+|---|---|---|
+| purchased | `.bought` (`.milestoneDone`, `.hChallenge.done`) | the upgrade button's own `bought` class |
+| affordable | **the LAYER's own `tmp[l].color`** | `v-bind:style="[canAfford ? {'background-color': tmp[layer].color} : {}]"` — `.can` declares no background in any engine on the roster |
+| unaffordable | `.locked` (a milestone: the bare `.milestone`) | the upgrade and buyable buttons' own `locked` class |
+
+A milestone is **passive**: there is nothing to afford, so it is never `can`. Earned it is the engine's
+`.milestoneDone` green, unearned the bare `.milestone`, which in every engine on the roster is the same red as
+`.locked`. A **challenge** is the other way round: the control you press is its *start button*, `{longUpg, can,
+[layer]}` with the layer's colour inline in every state, because starting one costs nothing — only "completed" has
+a colour of its own.
+
+⚠ **THE COLOUR IS ASKED OF THE GAME'S STYLESHEET, never carried as a table of hex values.**
+**every one of the 171 games declares a bare `.bought` rule and a bare `.locked` rule (171 and 171)**, and **4** of
+them — `the-congratulations-tree` (`hsl()`), `the-rainbow-void-tree` (its own pair), `the-factoree` (8-digit hex,
+so the chips come out `rgba()` with real alpha) and `the-prestige-tree` (`var(--boughtcolor)`, which its own
+`game.js` re-points at the current tab's layer colour on every tab change) — paint one of the two something other
+than the family's `#77bf5f` / `#bf8f8f`. A hardcoded pair would be wrong on those four and would go stale on the
+rest. `tools/census-figures.mjs` checks both numbers against this sentence.
+
+⚠ **The classes are NOT put on the chip.** They carry geometry as well as colour — `.upg` is 120×120 in PTR,
+`.milestone` is `width: 100%; height: 75px`, `.hChallenge` is 300×300 — and a chip wearing them would blow up the
+44 px tap target and the measured action-row fit. Only the colour is taken, off an off-screen probe, and written
+inline; `data-skin` on the chip records which of the engine's words it is.
+
+⚠ **Where the probe sits, and why it is not inside the mechanism it measures** (U4's rule, applied to a new
+instrument):
+
+- **`document.body`, not `#app`.** The engines set their theme custom properties *on `document.body`*
+  (`document.body.style.setProperty('--boughtcolor', …)`), so the variables resolve — while `#app` is what both of
+  the loader's MutationObservers watch *and* what the gate's own geometry probe reads through `#app .upg`. A probe
+  parked in `#app` would have been measured by our own gate as an undersized tap target.
+- **`visibility: hidden` and off-screen, never `display: none`.** A display-none element has no used value, and any
+  rule keyed on rendering would drop silently out of the answer.
+- **Inserted and removed inside one synchronous block**, so no frame and no geometry probe can see it.
+
+⚠ **The palette is read when the list OPENS**, and cached until it opens again. It cannot go stale under the
+player: a theme is changed on the game's own Options tab, and reaching that tab closes the overlay. Reading it per
+refresh would insert an element into the document four times a second for a value that does not move.
+
+⚠ **Repainting rides the counters' throttle**, not the frame: `affordable()` is game code, called once per chip.
+⚖ U2's ruling still binds and is now gateable — affordability may decide **appearance** and never order or
+membership. The gate asserts the chip row is byte-identical across a window in which the colours flip.
+
+**MEASURED, and it is why the gate's discriminator is constructed.** At `ptr`'s deepest snapshot plus 6,000 ticks
+**not one card shows all three states at once**: everything unbought there is also unaffordable (70 `bought`, 13
+`locked`, no `can`), and a fresh save draws one chip in total. A two-state check would pass on the build that has
+no red at all.
+
+#### Back returns to the view you came from (U5)
+
+⚖ **"open a layer from the Layers list and Back should return you to the LIST, not the tree"** (user, 2026-09-19).
+
+**SESSION-ONLY, and that is a decision rather than an omission.** The memory is one variable in `layerlist.js`'s
+closure: nothing in `player`, and — unlike the expander's preference — nothing in storage either. A remembered view
+that outlived a reload would open the overlay over a layer tab nobody remembers choosing, and the engines already
+keep their own per-layer `prevTab` *in the save*; a second, longer-lived memory of ours beside it is the one that
+would disagree with it.
+
+⚠ **It is NOT an intercept, and that is measured rather than tidy-mindedness.** `goBack` is not "hardcoded to the
+tree": **every one of the 171 games draws its back control with the class `back` or `other-back` (171), and 166 of
+them route it through `goBack`**, but what `goBack` then does differs — 154 are called as
+`goBack(player.navTab == 'none' ? player.tab : player.navTab)` and read a per-layer `player[layer].prevTab` this
+loader knows nothing about; 8 are the arg-less two-branch form
+(`player.navTab !== 'none' ? showTab('none') : showTab(player.lastSafeTab)`, PTR's shape); and the rest go straight
+to `showTab('tree')` or `showTab('none')`. Swallowing the click would replace every one of those answers with ours.
+So the engine's own handler runs untouched and the **list is opened over whatever it navigated to** — which is what
+the overlay is: a view over a tab, never a tab of its own. Nothing calls `preventDefault` or `stopPropagation`
+(U1's rule, and U2e's measurement that a `stopPropagation` in a capture handler is exactly what swallows a
+control's own click).
+
+⚠ **The memory is only about the tab on screen.** It is set when the list opens a tab, read in the **capture**
+phase (where the tab the press is leaving is still the tab on screen) and used on the next **frame** — after the
+whole dispatch, which a microtask would not be, and a frame rather than a timeout because this file registers no
+timer. Any click that moved the tab drops it. That last clause is the half a build with an unconditional memory
+fails: a layer opened from the list, left by the nav bar, and reached again **from the tree** must come back to the
+tree.
+
+⚠ Three games also put `class="back"` on the HELP tab's own back button, which sets `tmp.helpTab = NaN` rather
+than navigating. It cannot match here, because that tab is not the layer the list opened.
+
 ### Reading a card can make the ENGINE write `player`
 
 The list assigns nothing to `player`. That is not the same as the state not moving, and two measured cases say why:
@@ -1359,6 +1452,52 @@ so the FULL state hash is too. Measured in a throwaway worktree at `d7cd5c185` a
 `6062b457fdb56dd6`, 200 ticks `714a8562c80f38ce`; `something` 0 / 200 / 1000 ticks `87a27eed58b62fee` /
 `a716a598351c179c` / `0c459f705233fbf2` — every one equal on both sides. That is the whole reason the arming flag is
 not in the layer's `startData`.
+
+#### What U5 added to the leg
+
+**Three things, and one of them had to be constructed.**
+
+**1. Every chip's computed background, against an expectation the probe rebuilds itself.** A fourth independent
+rebuild beside the sequence, the counters and the button set: `skinExpect` reads `player` / `tmp` and resolves the
+game's own stylesheet through a probe element of its own, so a colour compared against the list's `chipSkin` would
+assert nothing. It carries the same two rules the list's probe does — `visibility: hidden` rather than
+`display: none` (a display-none element has no used value), and inserted and removed inside one synchronous block.
+`data-skin` is checked beside the colour, so a build that painted the right pixel under the wrong word still reds.
+
+**2. The DISCRIMINATOR, constructed: all three states on one card.** One card's three upgrade chips are forced
+bought / affordable / unaffordable — `player[l].upgrades` for the first and the engine's own `canAffordUpgrade`
+replaced with one that says yes to exactly one id, the same shape as the `pseudoUnl` and `msDisplay` constructions.
+Everything is restored and the restoration is asserted.
+
+⚠ It abstains, naming why, on three separable grounds, and each is a real case on the roster:
+- the game keeps `canAffordUpgrade` off `window`, so the replacement never reaches the list (it is read as a bare
+  identifier — the caveat the tooltip tap leg measured);
+- no card draws three unlocked upgrade chips at this state;
+- **the game does not paint the three states three colours.** MEASURED on `the-prestige-tree`, whose `.bought` and
+  `.locked` are *both* `var(--boughtcolor)`: `rgb(255, 136, 136)` / `rgb(255, 153, 153)` / `rgb(255, 136, 136)`. A
+  game that paints bought and unaffordable the same cannot judge a build that does.
+
+✅ Green on four palettes that are not PTR's: `the-rainbow-void-tree` `rgb(107,207,77)` / `rgb(0,107,247)` /
+`rgb(207,137,137)`; `the-congratulations-tree` (`hsl()`) `rgb(64,191,64)` / `rgb(221,46,68)` / `rgb(191,64,64)`;
+`the-factoree`, whose 8-digit hex comes through as **`rgba(0,255,0,0.267)`** and **`rgba(255,51,51,0.4)`** with
+real alpha; and `something`'s `rgb(128,0,255)` for the affordable one.
+
+**3. ⚖ The no-hop ruling, now gateable.** U2d's stability leg opened its window on the action row's lit/grey
+vector alone; it now opens on **either** that or the chips' `data-skin` vector, and asserts the chip row's own
+`layer/kind/id` sequence is **byte-identical** across it — position and membership in one string. ⚠ A colour change
+only counts where the row's own **independent** expectation held: MEASURED on `ptr`, two cards gained a chip over
+250 ticks (`b` and `g`, 10 → 11) with no affordability having flipped, which is a legitimate membership change and
+the same abstention the button row's `want` already gets. `something` is where it judges: six chips went
+`locked` → `can` (`lllllllllbllll` → `cccccclllbllll`) with the order unchanged.
+
+**4. Back, in three steps, on real clicks.** Open the layer from the LIST and press the game's own back control →
+the list must be showing. Open it from the list again and leave by the nav bar's **Tree** button → the memory must
+be gone. Open the **same** layer from the tree and press back → the list must **not** be showing. The second and
+third steps are the half a build with an unconditional memory fails; the first two run on real clicks because the
+claim is about what a press does, and the tree route clicks the node where the engine gives it an id and falls back
+to `showTab` — the same call the node makes — naming which route it took, because a layer's `onClick` is the
+game's and need not open a tab. It runs **last**, after the persistence leg: it navigates away from the list, and
+every leg above reads the card the list draws.
 
 ### The state leg needs a control
 

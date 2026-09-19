@@ -536,6 +536,55 @@ const LAYERLIST_PROBE = `(${function () {
     return false;                                                  // clickables, achievements: counted, never pressed
   });
 
+  // ---- U5: THE COLOUR A CHIP SHOULD WEAR, rebuilt here out of the engine -----------------------------------
+  // ⚠ A THIRD independent rebuild, for the same reason as the sequence and the counters above: a colour compared
+  // against the list's own `chipSkin` would assert nothing at all. This one asks the GAME's stylesheet through a
+  // probe element of its own, and reads `player` / `tmp` itself to decide which of the engine's three words the
+  // component is in.
+  // ⚠ `visibility: hidden` and off-screen, NEVER `display: none`: a display-none element has no used value, so a
+  // rule keyed on rendering would drop silently out of the answer — this instrument's own version of U4's
+  // suppression trigger, checked rather than assumed.
+  // ⛔ `locked` is the ENGINE's word and means CANNOT AFFORD. A build that wired red to "not drawn" instead must
+  // RED here, which is what the constructed three-state leg below is for.
+  const NOBG = 'rgba(0, 0, 0, 0)';
+  const bgCache = Object.create(null);
+  const measure = (fn) => {
+    try {
+      const e = document.createElement('span');
+      e.style.cssText = 'position:absolute;left:-9999px;top:0;width:1px;height:1px;visibility:hidden';
+      fn(e);
+      document.body.appendChild(e);
+      const v = String(getComputedStyle(e).backgroundColor || '');
+      document.body.removeChild(e);
+      return v || NOBG;
+    } catch (err) { return NOBG; }
+  };
+  const bgOf = (cls) => {
+    if (cls in bgCache) return bgCache[cls];
+    return (bgCache[cls] = measure((e) => { e.className = cls; }));
+  };
+  const bgOfValue = (css) => (css ? measure((e) => { e.style.backgroundColor = css; }) : NOBG);
+  const canAfford = (kind, l, id) => {
+    if (kind === 'upgrades') return S(() => typeof canAffordUpgrade === 'function' ? !!canAffordUpgrade(l, Number(id)) : true, true);
+    if (kind === 'buyables') return S(() => !!tmp[l].buyables[id].canAfford, true);
+    return true;                                     // starting a challenge costs nothing in either engine
+  };
+  const skinExpect = (kind, l, id) => {
+    const unl = S(() => { const u = tmp[l][kind][id].unlocked; return u === undefined ? true : !!u; }, true);
+    if (kind === 'upgrades' && !unl) {               // the engines' SECOND upgrade button, `{pseudo, plocked|can}`
+      const pc = S(() => !!tmp[l].upgrades[id].pseudoCan, false);
+      return { key: 'pseudo', bg: bgOf(`${l} upg pseudo ${pc ? 'can' : 'plocked'}`) };
+    }
+    if (earned(kind, l, id)) return { key: 'bought', bg: kind === 'upgrades' ? bgOf(`${l} upg bought`)
+      : kind === 'challenges' ? bgOf('hChallenge done') : kind === 'milestones' ? bgOf('milestoneDone') : NOBG };
+    // a MILESTONE is passive — there is nothing to afford, and the engines paint an unearned one the same red as
+    // `.locked` on its own tab (`.milestone`)
+    if (kind === 'milestones') return { key: 'locked', bg: bgOf('milestone') };
+    if (canAfford(kind, l, id)) return { key: 'can', bg: bgOfValue(S(() => String(tmp[l].color), '')) };
+    return { key: 'locked', bg: kind === 'upgrades' ? bgOf(`${l} upg locked`) : kind === 'buyables' ? bgOf('buyable locked') : NOBG };
+  };
+  const SKINMARK = { bought: 'b', can: 'c', locked: 'l', pseudo: 'p' };
+
   const chipKey = (e) => `${e.dataset.layer}/${e.dataset.kind}/${e.dataset.cid}`;
   const onScreen = (e) => e.getClientRects().length > 0;   // ⚠ NOT computed `display`: a child of a hidden row keeps its own
   // a divider at every category change and at NEITHER END, over one RENDERED sequence of marks
@@ -575,8 +624,21 @@ const LAYERLIST_PROBE = `(${function () {
     const collapsed = render(), collShape = shape();
     c.classList.add('tmt-layerlist-expanded');
     const expanded = render(), expShape = shape();
+    // ---- U5: what each chip is PAINTED, against the expectation rebuilt above. Read while the card is EXPANDED,
+    // which is the state the chip row is rendered in — the same reason the divider marks are read here.
+    const chipEls = box ? [...box.querySelectorAll('.tmt-layerlist-chip')] : [];
+    const skins = chipEls.map((e) => {
+      const kind = e.dataset.kind, ll = e.dataset.layer || l, id = e.dataset.cid;
+      const w = skinExpect(kind, ll, id);
+      return { key: `${ll}/${kind}/${id}`, wantKey: w.key, gotKey: e.dataset.skin || '',
+        want: w.bg, got: String(getComputedStyle(e).backgroundColor || '') };
+    });
     if (!was) c.classList.remove('tmt-layerlist-expanded');
     const got = box ? [...box.querySelectorAll('.tmt-layerlist-chip')].map(chipKey) : [];
+    const skinBad = skins.filter((x) => x.got !== x.want || x.gotKey !== x.wantKey);
+    // the vector the no-hop leg watches for a FLIP, and the chip ORDER it asserts held byte-for-byte while it did
+    const skinVec = skins.map((x) => SKINMARK[x.gotKey] || '?').join('');
+    const skinSet = [...new Set(skins.map((x) => x.wantKey))];
     const divBad = [...divProblems(collapsed).map((x) => `collapsed: ${x}`), ...divProblems(expanded).map((x) => `expanded: ${x}`)];
     const src = sourceOrder(l);
     // ---- U2d: row one, the counters -------------------------------------------------------------------------
@@ -616,6 +678,11 @@ const LAYERLIST_PROBE = `(${function () {
       // ⚠ the DISCRIMINATING card for that check: one counter and two buttons would look right under a single-row
       // build too. This one would not.
       twoRowWitness: !!(collShape.counters >= 2 && collShape.acts >= 2),
+      // --- U5 ---
+      skins, skinBad, skinVec, skinSet, skinOk: skinBad.length === 0,
+      // ⚠ THE DISCRIMINATOR: a card showing ALL THREE of the engine's states at once. A two-state check
+      // (bought / not) passes on a build that never renders red, which is what the build before U5 was.
+      threeStates: skinSet.filter((k) => k !== 'pseudo').length >= 3,
       cardWidth: Math.round(cardR.width) };
   });
   const seqBad = perCard.filter((x) => !x.ok).map((x) => ({ layer: x.layer, got: x.got.slice(0, 12), want: x.want.slice(0, 12) }));
@@ -696,8 +763,21 @@ const LAYERLIST_PROBE = `(${function () {
     // a milestone counter's corners are not an upgrade counter's, where the page has both
     counterRadius: { milestone: rad('.tmt-layerlist-counter[data-kind="milestones"]'),
       other: rad('.tmt-layerlist-counter[data-kind="upgrades"], .tmt-layerlist-counter[data-kind="buyables"], .tmt-layerlist-counter[data-kind="challenges"], .tmt-layerlist-counter[data-kind="achievements"], .tmt-layerlist-counter[data-kind="clickables"]') },
+    // --- U5: THE CHIP WEARS THE GAME'S OWN COLOURS ---------------------------------------------------------
+    // every chip's computed background against the expectation rebuilt in this probe, and the engine's own word
+    // for the state against the `data-skin` the list wrote
+    skinOk: perCard.every((x) => x.skinOk),
+    skinBad: perCard.filter((x) => !x.skinOk).slice(0, 3).map((x) => ({ layer: x.layer, bad: x.skinBad.slice(0, 3) })),
+    skinCounts: perCard.reduce((o, x) => { x.skins.forEach((y) => { o[y.wantKey] = (o[y.wantKey] || 0) + 1; }); return o; }, {}),
+    // ⚠ how many cards a build could be JUDGED on at this state, and how many show all three at once. `0` is an
+    // ABSTENTION on the three-way reading, never a pass — the constructed leg is what makes the claim non-vacuous.
+    threeStateCards: perCard.filter((x) => x.threeStates).map((x) => x.layer),
     // per-card detail the legs below compare across ticks and across widths
-    cardRows: perCard.map((x) => ({ layer: x.layer, w: x.cardWidth, counters: x.counters, acts: x.acts, want: x.wantActs, fit: x.actsFit, lit: x.lit })),
+    cardRows: perCard.map((x) => ({ layer: x.layer, w: x.cardWidth, counters: x.counters, acts: x.acts, want: x.wantActs, fit: x.actsFit, lit: x.lit,
+      // (U5) the chips' colour vector, the chip row's own `layer/kind/id` sequence, and — rebuilt in this probe
+      // and NOT asked of the list — the sequence that row is SUPPOSED to hold, so a leg watching the colours can
+      // tell a repaint from a legitimate membership change (an upgrade unlocking) the way the button row does
+      skins: x.skinVec, chipOrder: x.got.join(' '), chipWant: x.want.join(' ') })),
     throttle: S(() => window.tmtLoader.layerListUI.stats(), null),
   };
 }})()`;
@@ -1318,6 +1398,9 @@ async function gateMobile(browser, base, ids) {
       // to be asserted rather than merely implied: tick until the lit/grey vector moves, and the SET must not have.
       // A card whose INDEPENDENT expectation moved in the same window (an upgrade unlocked, a challenge completed)
       // abstains for that card — the leg cannot tell a legitimate membership change from affordability there.
+      // ⚖ (U5) AND THE CHIPS' OWN COLOUR IS APPEARANCE TOO (user, 2026-09-19, the same ruling): the window is
+      // opened on EITHER vector moving — the action row's lit/grey or the chips' three-way `data-skin` — and the
+      // chip ORDER is asserted byte-identical across it beside the button set.
       const before = await page.evaluate(LAYERLIST_PROBE);
       let litMoved = false, ticked = 0, after = before;
       for (let i = 0; i < 4 && !litMoved; i++) {
@@ -1325,7 +1408,11 @@ async function gateMobile(browser, base, ids) {
         ticked += 250;
         after = await page.evaluate(LAYERLIST_PROBE);
         const a0 = byLayer({ rows: after.cardRows });
-        litMoved = before.cardRows.some((r) => a0[r.layer] && r.lit !== a0[r.layer].lit);
+        // ⚠ A COLOUR CHANGE ONLY COUNTS WHERE THE CHIP ROW'S OWN EXPECTATION HELD. MEASURED on `ptr`: over 250
+        // ticks two cards gained a chip (`b` and `g`, 10 → 11), which moves the vector and the order without any
+        // affordability having flipped — a legitimate membership change, and the same abstention the button row's
+        // `want` already gets below.
+        litMoved = before.cardRows.some((r) => { const n = a0[r.layer]; return n && (r.lit !== n.lit || (r.chipWant === n.chipWant && r.skins !== n.skins)); });
       }
       const bMap = before.cardRows.reduce((o, r) => { o[r.layer] = r; return o; }, {});
       const moved = [], held = [], skipped = [];
@@ -1339,11 +1426,21 @@ async function gateMobile(browser, base, ids) {
         (b.acts.join(' ') === r.acts.join(' ') ? held : moved).push(r.layer);
       });
       const litChanged = after.cardRows.filter((r) => bMap[r.layer] && bMap[r.layer].lit !== r.lit).map((r) => r.layer);
-      row.stability = { ticks: ticked, litChanged, held: held.length, moved, abstained: skipped,
+      // (U5) the same window, judged on the CHIPS: which cards repainted, and whether any of them also reordered
+      // or changed membership. `chipOrder` is the chip row's own `layer/kind/id` sequence, so "byte-identical"
+      // covers position AND membership in one string.
+      const chipHeld = (r) => bMap[r.layer] && bMap[r.layer].chipWant === r.chipWant;   // the expectation itself did not move
+      const skinChanged = after.cardRows.filter((r) => chipHeld(r) && bMap[r.layer].skins !== r.skins).map((r) => r.layer);
+      const chipMoved = after.cardRows.filter((r) => chipHeld(r) && bMap[r.layer].chipOrder !== r.chipOrder).map((r) => r.layer);
+      const chipAbstained = after.cardRows.filter((r) => bMap[r.layer] && !chipHeld(r)).map((r) => r.layer);
+      row.stability = { ticks: ticked, litChanged, skinChanged, chipMoved, chipAbstained, held: held.length, moved, abstained: skipped,
         sample: litChanged.length ? { layer: litChanged[0], lit: [bMap[litChanged[0]].lit, after.cardRows.find((r) => r.layer === litChanged[0]).lit], set: bMap[litChanged[0]].acts.length } : null,
-        verdict: !litChanged.length ? `abstains (affordability did not move in ${ticked} ticks)`
-          : moved.length ? 'THE SET MOVED' : 'the set held while lit/grey moved' };
-      row.stabilityOk = !/THE SET MOVED/.test(row.stability.verdict);
+        skinSample: skinChanged.length ? { layer: skinChanged[0], skins: [bMap[skinChanged[0]].skins, after.cardRows.find((r) => r.layer === skinChanged[0]).skins] } : null,
+        verdict: !litChanged.length && !skinChanged.length ? `abstains (affordability did not move in ${ticked} ticks)`
+          : moved.length ? 'THE SET MOVED'
+          : chipMoved.length ? 'THE CHIP ROW MOVED'
+          : `the set and the chip row held while ${[litChanged.length ? 'lit/grey' : null, skinChanged.length ? 'the chips\' colour' : null].filter(Boolean).join(' and ')} moved` };
+      row.stabilityOk = !/THE SET MOVED|THE CHIP ROW MOVED/.test(row.stability.verdict);
 
       // --- U2d leg C: the counters are THROTTLED ---------------------------------------------------------------
       // Driven, not declared: mutate `#app` once per animation frame and count how many times the list actually
@@ -1691,6 +1788,82 @@ async function gateMobile(browser, base, ids) {
         restored: rBack.chips === rBase.chips && !!rBack.seqOk && rBack.milestoneChips === rBase.milestoneChips,
       };
       row.rulesOk = !!(row.rules.restored && !/DISAGREES|STILL SHOWN|NOT MARKED|A BOX AT|NO BOX FOR|NOT RESTORED|VANISHED|DID NOT MOVE/.test(`${row.rules.ms.verdict} ${row.rules.pseudo.verdict} ${row.rules.clickable.verdict} ${row.rules.bigAmount.verdict}`));
+
+      // --- U5 leg I: THE THREE-WAY READING, ON ONE CARD, CONSTRUCTED -------------------------------------------
+      // ⚖ "purchased, affordable, unaffordable — the game's own three-way reading" (user, 2026-09-19).
+      // ⚠ THE DISCRIMINATOR, and it has to be CONSTRUCTED. A two-state check (bought / not) passes on a build that
+      // never renders red — which is the build before U5. MEASURED on `ptr` at its deepest snapshot plus 6,000
+      // ticks: not ONE card shows all three at once, because everything unbought there is also unaffordable, and a
+      // fresh save draws one chip in total. `threeStateCards` above reports the natural witnesses and is an
+      // ABSTENTION at 0, never a pass.
+      // So one card's three upgrade chips are forced into the three states, the same way the `pseudoUnl` and
+      // `msDisplay` conditions above are: `player[l].upgrades` decides the bought one, and the engine's own
+      // `canAffordUpgrade` is replaced with one that says yes to exactly one id.
+      // ⚠ The replacement only reaches the list where the game declared `canAffordUpgrade` as a FUNCTION
+      // DECLARATION — the list reads it as a bare identifier — which is the caveat the tooltip tap leg measured.
+      // `visible` says whether it did, and the leg ABSTAINS rather than passing where it did not.
+      // ⚠ The three expectations are resolved HERE, off the game's own stylesheet and off `tmp[l].color`, and they
+      // must be THREE DISTINCT colours or the leg abstains: a game that paints all three the same cannot judge a
+      // build that paints all three the same either.
+      row.threeWay = await page.evaluate(() => {
+        const ui = window.tmtLoader.layerListUI;
+        if (!ui) return { verdict: 'abstains (no layerListUI)' };
+        ui.open();
+        const NOBG = 'rgba(0, 0, 0, 0)';
+        const measure = (fn) => {
+          try {
+            const e = document.createElement('span');
+            e.style.cssText = 'position:absolute;left:-9999px;top:0;width:1px;height:1px;visibility:hidden';
+            fn(e);
+            document.body.appendChild(e);
+            const v = String(getComputedStyle(e).backgroundColor || '');
+            document.body.removeChild(e);
+            return v || NOBG;
+          } catch (err) { return NOBG; }
+        };
+        const chipsOfCard = (l) => [...document.querySelectorAll(`.tmt-layerlist-card[data-layer="${l}"] .tmt-layerlist-chip[data-kind="upgrades"]`)]
+          .filter((e) => (e.dataset.layer || l) === l && e.dataset.state !== 'pseudo');
+        let target = null;
+        for (const l of ui.cards()) { const cs = chipsOfCard(l); if (cs.length >= 3) { target = { l, ids: cs.slice(0, 3).map((e) => e.dataset.cid) }; break; } }
+        if (!target) return { verdict: 'abstains (no card draws three unlocked upgrade chips at this state)' };
+        const l = target.l, [A, B, C] = target.ids;
+        const visible = (() => { try { return new Function('return typeof canAffordUpgrade === "function" && canAffordUpgrade === window.canAffordUpgrade')(); } catch (e) { return false; } })();
+        if (!visible) return { layer: l, ids: target.ids, visible,
+          verdict: 'abstains (the engine keeps canAffordUpgrade off `window`, so affordability cannot be constructed)' };
+        const had = (player[l].upgrades || []).slice();
+        const orig = window.canAffordUpgrade;
+        const before = chipsOfCard(l).map((e) => e.dataset.skin || '');
+        let out;
+        try {
+          player[l].upgrades = had.filter((x) => String(x) !== String(B) && String(x) !== String(C)).concat([Number(A)]);
+          window.canAffordUpgrade = function (ll, id) { return String(ll) === String(l) && String(id) === String(B); };
+          ui.refresh();
+          const bg = (id) => { const e = document.querySelector(`.tmt-layerlist-card[data-layer="${l}"] .tmt-layerlist-chip[data-kind="upgrades"][data-cid="${id}"]`);
+            return e ? { bg: String(getComputedStyle(e).backgroundColor || ''), skin: e.dataset.skin || '', state: e.dataset.state || '' } : null; };
+          const want = { bought: measure((e) => { e.className = `${l} upg bought`; }),
+            can: measure((e) => { e.style.backgroundColor = String(tmp[l].color || ''); }),
+            locked: measure((e) => { e.className = `${l} upg locked`; }) };
+          out = { layer: l, ids: target.ids, visible, want,
+            got: { bought: bg(A), can: bg(B), locked: bg(C) } };
+        } finally {
+          player[l].upgrades = had;
+          window.canAffordUpgrade = orig;
+          ui.refresh();
+        }
+        out.restored = chipsOfCard(l).map((e) => e.dataset.skin || '').join(' ') === before.join(' ');
+        const w = out.want, g = out.got;
+        const distinct = new Set([w.bought, w.can, w.locked]).size === 3;
+        const ok = (k) => g[k] && g[k].skin === k && g[k].bg === w[k];
+        out.verdict = !g.bought || !g.can || !g.locked ? 'A CHIP VANISHED UNDER THE CONSTRUCTION'
+          : !distinct ? `abstains (the game paints the three states ${JSON.stringify([w.bought, w.can, w.locked])} — not three colours)`
+          : !ok('bought') ? `THE PURCHASED CHIP IS NOT THE GAME'S BOUGHT COLOUR (${g.bought.skin} ${g.bought.bg} != ${w.bought})`
+          : !ok('can') ? `THE AFFORDABLE CHIP IS NOT THE LAYER'S OWN COLOUR (${g.can.skin} ${g.can.bg} != ${w.can})`
+          : !ok('locked') ? `THE UNAFFORDABLE CHIP IS NOT THE GAME'S LOCKED COLOUR (${g.locked.skin} ${g.locked.bg} != ${w.locked})`
+          : !out.restored ? 'NOT RESTORED'
+          : `all three on ${l}: ${w.bought} / ${w.can} / ${w.locked}`;
+        return out;
+      });
+      row.threeWayOk = !/IS NOT|VANISHED|NOT RESTORED/.test(row.threeWay.verdict);
       // --- U2c leg E: THE LAYOUT HOLDS STILL AS THE DIGITS CHANGE ---------------------------------------------
       // At BOTH widths and in BOTH states, because U2d's counters and the amount readout are different numbers on
       // different rows and either can move the box. The probe writes the magnitudes itself (see DIGITS_PROBE for
@@ -1869,6 +2042,88 @@ async function gateMobile(browser, base, ids) {
       row.persist = persist;
       row.persistOk = !/A FIRST LOAD|THE KEY|NOT RESTORED|DID NOT LOAD|SURVIVED|NEVER MEASURED|LOST ITS LIST/.test(persist.verdict);
 
+      // --- U5 leg J: BACK RETURNS TO THE VIEW YOU CAME FROM -----------------------------------------------------
+      // ⚖ "open a layer from the Layers list and Back should return you to the LIST, not the tree" (user,
+      // 2026-09-19). Three steps, and the SECOND HALF is the one that fails on a build that sets the memory
+      // unconditionally or never clears it:
+      //   1. open the layer from the LIST, press the game's own back control → the list must be showing;
+      //   2. open it from the list again and leave by the nav bar's TREE button → the memory must be gone;
+      //   3. open the SAME layer from the TREE and press back → the list must NOT be showing.
+      // ⚠ REAL CLICKS on the two controls that are under test (the card's open button and the engine's back), for
+      // the same reason the tooltip tap leg uses a real tap: the claim is about what a press does. The tree node is
+      // clicked where the engine gives it an id, and falls back to `showTab` — which is the same call the node
+      // makes — naming which route it took, because a layer's `onClick` is the GAME's and need not open a tab.
+      // ⚠ IT RUNS LAST, after the persistence leg: it navigates away from the list and changes `player.tab`, and
+      // every leg above reads the card the list draws.
+      row.back = await (async () => {
+        const setup = await page.evaluate(() => {
+          const ui = window.tmtLoader.layerListUI;
+          if (!ui || !ui.cameFrom) return { candidate: null, why: 'the list does not expose cameFrom()' };
+          ui.open();
+          for (const l of ui.cards()) {
+            if (document.querySelector(`.tmt-layerlist-card[data-layer="${l}"] .tmt-layerlist-open`)) return { candidate: l, tab0: String(player.tab), cameFrom0: ui.cameFrom() };
+          }
+          return { candidate: null, why: 'no card has an open button' };
+        });
+        if (!setup.candidate) return { ...setup, verdict: `abstains (${setup.why})` };
+        const L = setup.candidate;
+        const look = () => page.evaluate(() => ({ tab: String(player.tab), open: window.tmtLoader.layerListUI.isOpen(), cameFrom: window.tmtLoader.layerListUI.cameFrom() }));
+        const openFromList = async () => {
+          await page.click(`.tmt-layerlist-card[data-layer="${L}"] .tmt-layerlist-open`);
+          await page.waitForTimeout(120);
+          return look();
+        };
+        // the engine's own back control, whichever of the two names this game draws
+        const pressBack = async () => {
+          const sel = ['#app .back', '#app .other-back'];
+          for (const x of sel) {
+            const loc = page.locator(`${x}:visible`).first();
+            if (await loc.count()) { await loc.click(); await page.waitForTimeout(150); return { pressed: x }; }
+          }
+          return { pressed: null };
+        };
+        const fromList = await openFromList();
+        if (fromList.tab !== L) return { candidate: L, fromList, verdict: `abstains (the card's open button did not open ${L}: player.tab is ${fromList.tab})` };
+        const pressed1 = await pressBack();
+        if (!pressed1.pressed) return { candidate: L, fromList, verdict: 'abstains (the game draws no visible back control on this tab)' };
+        const afterList = await look();
+
+        // step 2: armed again, then left by the nav bar's Tree button — which is not a back press
+        await page.evaluate(() => { const ui = window.tmtLoader.layerListUI; if (!ui.isOpen()) ui.open(); });
+        const armed = await openFromList();
+        await page.click('#tmt-navbar button[data-key="tree"]');
+        await page.waitForTimeout(120);
+        const afterTree = await look();
+
+        // step 3: the SAME layer, opened from the tree
+        const route = await page.evaluate((l) => {
+          const app = document.getElementById('app');
+          const el = document.getElementById(l);
+          if (el && app && app.contains(el) && el.tagName === 'BUTTON') { try { el.click(); } catch (e) { /* the game's own onClick */ } }
+          if (String(player.tab) !== String(l)) { try { showTab(l); return 'showTab'; } catch (e) { return 'unreachable'; } }
+          return 'node';
+        }, L);
+        await page.waitForTimeout(120);
+        const fromTree = await look();
+        let afterTreeBack = null, pressed2 = { pressed: null };
+        if (fromTree.tab === L) { pressed2 = await pressBack(); afterTreeBack = await look(); }
+        // put the page back where the leg found it
+        await page.evaluate(() => { const ui = window.tmtLoader.layerListUI; if (ui.isOpen()) ui.close(); try { showTab('none'); } catch (e) {} });
+        const r = { candidate: L, route, pressed: [pressed1.pressed, pressed2.pressed],
+          fromList, afterList, armed, afterTree, fromTree, afterTreeBack };
+        r.verdict = !afterList.open ? 'BACK FROM A LAYER OPENED IN THE LIST DID NOT RETURN TO THE LIST'
+          : afterList.cameFrom !== null ? 'THE MEMORY SURVIVED THE BACK PRESS'
+          : armed.cameFrom !== L ? `abstains (the second open did not re-arm the memory: ${armed.cameFrom})`
+          : afterTree.cameFrom !== null ? 'THE MEMORY SURVIVED LEAVING BY THE TREE BUTTON'
+          : fromTree.tab !== L ? `abstains (the tree route did not open ${L}: player.tab is ${fromTree.tab})`
+          : fromTree.cameFrom !== null ? 'OPENING FROM THE TREE SET THE MEMORY'
+          : !pressed2.pressed ? 'abstains (no visible back control after the tree route)'
+          : afterTreeBack.open ? 'BACK FROM A LAYER OPENED IN THE TREE RETURNED TO THE LIST'
+          : `the list after a list open, the tab (${afterTreeBack.tab}) after a tree open`;
+        return r;
+      })();
+      row.backOk = !/DID NOT RETURN|SURVIVED|RETURNED TO THE LIST|OPENING FROM THE TREE SET/.test(row.back.verdict);
+
       await page.evaluate(() => { const ui = window.tmtLoader.layerListUI; if (ui) ui.close(); });
       const llDesk = nb.layerList;
       // one card per shown layer, in the row the engine names, with distinct chips on each card and the button in
@@ -1888,7 +2143,8 @@ async function gateMobile(browser, base, ids) {
       const listOk = (L) => !!(L && L.present && L.open && L.hasCss && L.hasUI && L.buttonLeftOfTree
         && sameSet(L.cards, L.expect) && L.misrowed.length === 0 && L.dupeChips.length === 0
         && L.seqOk && L.dividerOk && L.radiusOk
-        && L.countersOk && L.actionsOk && L.fitOk && L.twoRowsOk && L.statesOk && ctrRadOk(L));
+        && L.countersOk && L.actionsOk && L.fitOk && L.twoRowsOk && L.statesOk && ctrRadOk(L)
+        && L.skinOk);
       // GEOMETRY, at each width on that width's own terms: the phone demands nothing escapes and nothing is under
       // 44 px (the same bar the other phone views are held to); the desktop is judged against the PLAIN desktop
       // page, which is the layout this game's author shipped (leg 5's rule).
@@ -1916,7 +2172,8 @@ async function gateMobile(browser, base, ids) {
         && row.rulesOk && (!row.chipBaseline || (row.chipBaseline.fell && row.chipBaseline.orderMoved))
         && row.fitOk && row.stabilityOk && row.throttleOk && row.counterVerdict !== 'NOT MOVED'
         && row.digitsOk && row.persistOk && row.tipsOk
-        && row.anchorOk && !/DRIFTED/.test(row.resetDrift.verdict));
+        && row.anchorOk && !/DRIFTED/.test(row.resetDrift.verdict)
+        && row.threeWayOk && row.backOk);
       row.layersScreenshot = path.relative(REPO, llShot);
 
       const shot = path.join(REPO, `tools/harness/results/${id}-mobile.png`);
@@ -2035,6 +2292,13 @@ async function main() {
       const widen = rows.filter((r) => r.fitWidths && r.fitWidths.grew.length).map((r) => `${r.id} ${r.fitWidths.grew.join('/')}`);
       console.log(`M1 layers fit (MEASURED at 390px and at 1280px on the same page and state): card ${rows.filter((r) => r.fitWidths).map((r) => `${r.fitWidths.cardWidth.phone}→${r.fitWidths.cardWidth.desktop}px`)[0] || '—'}; ${JSON.stringify(fv('fitWidths'))}; ${widen.length} game(s) held MORE buttons at 1280${widen.length ? `: ${widen.slice(0, 6).join(', ')}` : ''}; ${rows.filter((r) => r.fitWidths && !r.fitWidths.restored).length} did not come back at 390`);
       console.log(`M1 layers stability (the SET against affordability): ${JSON.stringify(fv('stability'))}; ${rows.filter((r) => r.stability && r.stability.litChanged.length).length} game(s) saw lit/grey move`);
+      // --- U5: the chips' own colours, and Back --------------------------------------------------------------
+      const skRed = rows.filter((r) => ll(r) && !ll(r).skinOk).map((r) => r.id);
+      const skCounts = rows.reduce((o, r) => { const L = ll(r); if (L) Object.entries(L.skinCounts || {}).forEach(([k, v]) => { o[k] = (o[k] || 0) + v; }); return o; }, {});
+      const sk3 = rows.filter((r) => ll(r) && ll(r).threeStateCards.length).map((r) => `${r.id}/${ll(r).threeStateCards.join('+')}`);
+      console.log(`M1 layers colours (U5 — every chip's COMPUTED background against the game's own stylesheet, rebuilt in the probe): ${rows.length - skRed.length}/${rows.length}${skRed.length ? ` (RED: ${skRed.map((x) => `${x} ${JSON.stringify(ll(rows.find((r) => r.id === x)).skinBad)}`).join('; ')})` : ''}; ${JSON.stringify(skCounts)}; ${sk3.length} game(s) show all three on ONE card at their own state${sk3.length ? `: ${sk3.slice(0, 6).join(', ')}` : ' — which is an ABSTENTION, and why the CONSTRUCTED leg below exists'}`);
+      console.log(`M1 layers three-way (U5 — CONSTRUCTED: one card's three upgrade chips forced bought / affordable / unaffordable): ${JSON.stringify(fv('threeWay'))}${rows.filter((r) => r.threeWay && /IS NOT|VANISHED|NOT RESTORED/.test(r.threeWay.verdict)).map((r) => ` — ${r.id}: ${r.threeWay.verdict}`).join('')}`);
+      console.log(`M1 layers Back (U5 — opened from the LIST returns to the list, opened from the TREE returns to the tab): ${JSON.stringify(fv('back'))}; tree route: ${JSON.stringify(rows.reduce((o, r) => { if (r.back && r.back.route) o[r.back.route] = (o[r.back.route] || 0) + 1; return o; }, {}))}${rows.filter((r) => r.back && !r.backOk).map((r) => ` — ${r.id}: ${r.back.verdict}`).join('')}`);
       console.log(`M1 layers throttle (${rows[0] && rows[0].throttle ? rows[0].throttle.throttleMs : '—'} ms): ${JSON.stringify(fv('throttle'))}`);
       const cmNo = rows.filter((r) => r.counterVerdict && r.counterVerdict.startsWith('no candidate')).map((r) => r.id);
       console.log(`M1 layers counter press: ${rows.filter((r) => r.counterVerdict === 'moved').length} moved a counter's x by buying through the card, ${rows.filter((r) => r.counterVerdict === 'NOT MOVED').length} did not, ${cmNo.length} abstained${cmNo.length ? ` (nothing affordable: ${cmNo.slice(0, 8).join(', ')}${cmNo.length > 8 ? `, …(${cmNo.length})` : ''})` : ''}`);

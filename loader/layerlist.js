@@ -35,6 +35,18 @@
 // the no-JS fallback, and reading the overlay's first line off them is what makes it impossible for the two to
 // disagree. See `DETAIL` and `tipDetail` below.
 //
+// SINCE U5, A CHIP WEARS THE GAME'S OWN COLOURS (⚖ user, 2026-09-19) — purchased, affordable, unaffordable, in
+// the engine's own three-way reading rather than U2b's single `opacity: .45`. The colours are never ours: they are
+// resolved by the GAME's stylesheet through `engineBg`, and the affordable one is the LAYER's own `tmp[l].color`,
+// which is exactly what the engines' own upgrade and buyable buttons take inline. See `SKIN` and `chipSkin`.
+// ⛔ VOCABULARY: the engines' `.locked` means CANNOT AFFORD. It does NOT mean "not unlocked" — which is what
+// `locked` meant in this file until U2b deleted that state. Red is for unaffordable, never for absent.
+//
+// AND SINCE U5, BACK RETURNS TO THE VIEW YOU CAME FROM (⚖ user, 2026-09-19): a layer opened FROM THIS LIST comes
+// back to the list, one opened from the tree comes back to the tree. The memory is one variable in this closure —
+// SESSION-ONLY, nothing in `player`, nothing in storage — and it never swallows the engine's own back handler.
+// See `cameFrom` and `onDocClick`.
+//
 // ENGINE-GENERIC BY CONSTRUCTION. It knows no layer, no upgrade and no game: every value comes from `tmp[l]` /
 // `player[l]` / `layers[l]`, and anything that evaluates game code is wrapped — a throw costs one card, never the
 // list. In particular it NEVER calls the global `canReset(layer)`: that function ends in
@@ -548,6 +560,113 @@
   }
   function actionsOf(chips) { return chips.filter(actionable); }
 
+  // ---------------------------------------------------------------- U5: THE CHIP WEARS THE GAME'S OWN COLOURS
+  // ⚖ "purchased, affordable, unaffordable — the game's own three-way reading" (user, 2026-09-19). Until U5 a chip
+  // carried no affordability at all: `done` was `opacity: .45` and that was the whole scheme.
+  //
+  // ⛔ THE VOCABULARY TRAP, and it wires the colours backwards if it is missed. The engines' `.locked` class means
+  // **cannot afford**. It does NOT mean "not unlocked" — which is what `locked` meant in this file until U2b removed
+  // that state, and since U2b a component the tab does not draw gets NO CHIP AT ALL rather than a greyed one. So red
+  // is for unaffordable, never for absent, and there is no state left for "absent" to be confused with.
+  //
+  // ⚠ THERE IS NOTHING TO CHOOSE HERE. The three colours are the GAME's, not a palette of ours:
+  //  · purchased  — whatever the game paints its own bought control (`.bought` / `.milestoneDone` / `.done`);
+  //  · affordable — the LAYER'S OWN `tmp[l].color`, which is what the engines' upgrade and buyable buttons take
+  //    inline (`v-bind:style="[canAfford ? {'background-color': tmp[layer].color} : {}]"`) and is also what the card
+  //    already reads for its badge. `.can` declares NO background of its own in any engine on the roster;
+  //  · unaffordable — whatever the game paints `.locked` (or `.milestone`, the unearned milestone's own box).
+  // MEASURED over all 171 games (2026-09-19): every one declares a BARE `.bought` and a BARE `.locked` rule, so the
+  // colour is reachable from anywhere in the document, and four games do NOT use the family's `#77bf5f`/`#bf8f8f`
+  // (`the-congratulations-tree` hsl(), `the-factoree` 8-digit hex, `the-prestige-tree` `var(--boughtcolor)`,
+  // `the-rainbow-void-tree` its own pair), while three put `!important` on `.locked`. A table of hex values here
+  // would be wrong on those seven and would go stale on the rest; asking the stylesheet is right on all 171.
+  //
+  // ⚠ THE CLASSES ARE NOT PUT ON THE CHIP. They carry GEOMETRY as well as colour — `.upg` is 120x120 in PTR,
+  // `.milestone` is `width: 100%; height: 75px`, `.hChallenge` is 300x300 — and a chip wearing them would blow up
+  // the 44 px tap target and the measured action-row fit. Only the COLOUR is taken, off an off-screen probe.
+  //
+  // ⚠ WHERE THE PROBE SITS, and why it is not inside the mechanism it measures (U4's rule):
+  //  · `document.body`, not `#app` — the engines set their theme custom properties ON `document.body`
+  //    (`document.body.style.setProperty('--boughtcolor', …)` in the-prestige-tree), so the variables resolve, while
+  //    `#app` is what BOTH our MutationObservers watch and what MOBILE_PROBE's `#app .upg` geometry selector reads.
+  //    A probe parked in `#app` would have been measured as an undersized tap target by our own gate.
+  //  · `visibility: hidden` and off-screen, NEVER `display: none`: a display-none element has no used value and any
+  //    rule keyed on rendering would drop out — that is this instrument's version of U4's suppression trigger.
+  //  · inserted and removed inside one synchronous block, so no frame and no geometry probe can ever see it.
+  var SKIN = {
+    // the classes the ENGINE's own control wears, read out of both reference engines' `components.js`:
+    //  · upgrade   `{[layer]: true, upg: true, bought|locked|can}` — the layer class is part of it, because the
+    //    engines key gradient rules on it (`.hn.grad:not(.locked):not(.bought)`);
+    //  · buyable   `{buyable: true, can|locked}` — a buyable is bought repeatedly and is never `bought`;
+    //  · challenge — the control you PRESS is its start button, `{longUpg, can, [layer]}` with the layer's colour
+    //    inline in every state, because starting a challenge costs nothing. Only "completed" has a colour of its
+    //    own, the challenge box's `.hChallenge.done`;
+    //  · milestone — has no control to press at all, so its chip stands for the BOX: `.milestoneDone` or the bare
+    //    `.milestone`, which in every engine on the roster is the SAME red as `.locked`.
+    upgrades:   { done: 'upg bought',      no: 'upg locked',    layerClass: true },
+    buyables:   { done: '',                no: 'buyable locked' },
+    challenges: { done: 'hChallenge done', no: '' },
+    milestones: { done: 'milestoneDone',   no: 'milestone' }
+  };
+  // ⚠ THE PALETTE IS READ WHEN THE LIST OPENS, and cached until it opens again. It cannot go stale under the
+  // player: a theme is changed on the game's own Options tab, and reaching that tab closes this overlay. Reading it
+  // per refresh instead would insert an element into the document 4x a second for a value that does not move.
+  var skinCache = null;
+  function engineBg(cls) {
+    if (!skinCache) skinCache = Object.create(null);
+    if (cls in skinCache) return skinCache[cls];
+    var v = '';
+    try {
+      var el = document.createElement('span');
+      el.className = cls;
+      el.style.cssText = 'position:absolute;left:-9999px;top:0;width:1px;height:1px;visibility:hidden';
+      document.body.appendChild(el);
+      v = str(getComputedStyle(el).backgroundColor);
+      document.body.removeChild(el);
+    } catch (e) { v = ''; }
+    // a fully transparent answer is NO answer (an undefined `var()`, a class this engine does not style): the chip
+    // keeps its own plain box rather than being painted `rgba(0, 0, 0, 0)` and claiming it wore the game's colour
+    if (!v || v === 'transparent' || /^rgba\(\s*0,\s*0,\s*0,\s*0\s*\)$/.test(v)) v = '';
+    skinCache[cls] = v;
+    return v;
+  }
+
+  /** THE THREE-WAY READING for one chip: `{ key, bg }`, where `key` is the engine's own word for the state
+   *  (`bought` / `can` / `locked`, plus `pseudo` for the engines' second upgrade button) and `bg` is the colour
+   *  the game paints it. `bg` is '' where the engine gives that component no background of its own. */
+  function chipSkin(c) {
+    var S = SKIN[c.kind];
+    if (!S) return { key: null, bg: '' };
+    var pfx = S.layerClass ? c.layer + ' ' : '';
+    if (c.state === 'pseudo') {
+      // the engines' SECOND upgrade button — the teaser you press to unlock rather than to buy. Its own classes are
+      // `{[layer], upg, pseudo, plocked|can}` and it takes NO inline colour, so the whole answer is in the sheet.
+      var pc = safe(function () { return !!tmp[c.layer].upgrades[c.id].pseudoCan; }, false);
+      return { key: 'pseudo', bg: engineBg(pfx + 'upg pseudo ' + (pc ? 'can' : 'plocked')) };
+    }
+    if (c.state === 'done') return { key: 'bought', bg: S.done ? engineBg(pfx + S.done) : '' };
+    // ⚠ A PASSIVE COMPONENT IS NEVER "AFFORDABLE" — there is nothing to buy. `affordable()` answers `true` for
+    // everything it has no cost for, which is right for its OTHER caller (an action button is lit or grey, and a
+    // milestone never gets one) and wrong here: an unearned milestone is red on the game's own tab. So the passive
+    // case is decided BEFORE affordability is asked, rather than by writing a second affordability reader.
+    if (c.act !== null && affordable(c)) return { key: 'can', bg: safe(function () { return str(tmp[c.layer].color); }, '') };
+    return { key: 'locked', bg: S.no ? engineBg(pfx + S.no) : '' };
+  }
+
+  /** Paint one chip. ⚠ APPEARANCE ONLY — U2's ruling stands: affordability moves with the engine's tick at 20/s and
+   *  may decide how a chip LOOKS, never where it sits or whether it is there (`signature()` carries no state). */
+  function paintChip(el, c) {
+    var s = chipSkin(c);
+    if (c.skinKey === s.key && c.skinBg === s.bg) return false;
+    c.skinKey = s.key; c.skinBg = s.bg;
+    if (s.key) el.dataset.skin = s.key; else delete el.dataset.skin;
+    el.style.backgroundColor = s.bg;
+    return true;
+  }
+  /** The chips of one card, repainted. Rides the THROTTLED path with the counters and the action row's lit/grey:
+   *  a colour is a readout, and `affordable()` is game code called once per chip. */
+  function paintChips(rec) { rec.chips.forEach(function (c, i) { if (rec.chipEls[i]) paintChip(rec.chipEls[i], c); }); }
+
   // ---------------------------------------------------------------- the card's own readouts
   // 2.2.1 computes `tmp[l].prestigeButtonText` in `updateTemp` and its component reads it; 2.7 has no such tmp key
   // and its component calls the GLOBAL `prestigeButtonText(layer)`. Read the tmp copy where the engine keeps one,
@@ -1000,6 +1119,7 @@
         b.dataset.layer = c.layer;     // a `layer-proxy` chip acts on ANOTHER layer than the card it sits on
         b.textContent = c.chip;
         b.title = c.title;
+        paintChip(b, c);               // (U5) the game's own colour for this component in this state
         b.addEventListener('click', function () { chipPressed(c); });
         chipBox.appendChild(b);
       });
@@ -1256,6 +1376,7 @@
       if (ck !== rec.counterKeys) { drawCounters(rec, cs); refit.push(l); } else syncCounters(rec, cs);
       var as = actionsOf(rec.chips), ak = as.map(function (c) { return c.key; }).join(' ');
       if (ak !== rec.actionKeys) { drawActions(rec, as); refit.push(l); } else syncActions(rec);
+      paintChips(rec);   // (U5) and the chips' own three-way colour, on the same budget as the lit/grey above
     });
     if (refit.length) fitCards(refit);
     // an open tooltip is re-read and re-anchored HERE, so it rides the counters' own throttle rather than the frame
@@ -1276,8 +1397,57 @@
     refresh();
   }
 
+  // ---------------------------------------------------------------- U5: BACK RETURNS TO THE VIEW YOU CAME FROM
+  // ⚖ "open a layer from the Layers list and Back should return you to the LIST, not the tree" (user, 2026-09-19).
+  //
+  // ⛔ THE LIST STILL WRITES NOTHING TO `player`, and this memory is not in storage either: it is ONE VARIABLE in
+  // this closure. SESSION-ONLY BY DECISION (docs/mobile.md): a remembered view that outlived a reload would open the
+  // overlay over a layer tab nobody remembers choosing, and the engines already keep their OWN per-layer `prevTab`
+  // in the save — a second, longer-lived memory of ours beside it is the one that would disagree with it.
+  //
+  // ⚠ IT IS NOT AN INTERCEPT, and that is measured rather than tidy-mindedness. `goBack` is NOT "hardcoded to the
+  // tree": over the 171 games (2026-09-19) 154 wire their back control to
+  // `goBack(player.navTab == 'none' ? player.tab : player.navTab)`, whose 2.7 body reads a per-layer
+  // `player[layer].prevTab` this file knows nothing about; 8 call a two-branch `goBack()`
+  // (`player.navTab !== 'none' ? showTab('none') : showTab(player.lastSafeTab)`, PTR's shape); and 9 go straight to
+  // `showTab('tree'|'none')`. Swallowing the click would replace every one of those answers with ours. So the
+  // engine's own handler runs untouched and the LIST is opened over whatever it navigated to — which is what the
+  // overlay is: a view over a tab, never a tab of its own.
+  //
+  // ⚠ THE CONTROL IS FOUND BY CLASS, and the two names cover the roster: every game's back button is
+  // `class="back"` or `class="other-back"` (measured over all 171 `index.html` plus each engine's `layer-tab`
+  // component, which writes `back == 'big' ? 'other-back' : 'back'`). Three games also put `class="back"` on the
+  // HELP tab's own back — it cannot match here, because that tab is not the layer the list opened.
+  var cameFrom = null;   // the layer tab THIS LIST opened, for as long as it is still the tab on screen
+  function currentTab() { return safe(function () { return str(player.tab); }, ''); }
+  function backControlOf(node) {
+    for (var el = node; el && el !== document; el = el.parentElement) {
+      if (el.classList && (el.classList.contains('back') || el.classList.contains('other-back'))) return el;
+    }
+    return null;
+  }
+  // ⚠ CAPTURE, because the condition is about the tab that is on screen NOW and the engine's own handler is about
+  // to change it. The list is opened on the next FRAME instead, which is after the whole dispatch — a microtask
+  // would run between the capture listener and the target's own one, i.e. before the engine had navigated. A frame,
+  // not a timeout: this file registers no timer (see `start`).
+  // ⚠ NOTHING HERE CALLS `preventDefault` OR `stopPropagation` (U1's rule, and U2e's measurement that a
+  // `stopPropagation` in a capture handler is exactly what swallows a control's own click).
+  function onDocClick(ev) {
+    if (cameFrom === null) return;
+    if (backControlOf(ev.target) && currentTab() === cameFrom) {
+      cameFrom = null;
+      requestAnimationFrame(function () { show(); });
+      return;
+    }
+    // ⚠ THE MEMORY IS ONLY ABOUT THE TAB ON SCREEN, and this is the half that fails if it is set unconditionally:
+    // a layer opened from the list, left by the nav bar, and reached again FROM THE TREE must come back to the tree.
+    // Any click that moved the tab drops it.
+    requestAnimationFrame(function () { if (cameFrom !== null && currentTab() !== cameFrom) cameFrom = null; });
+  }
+
   function openTab(l) {
     hide();
+    cameFrom = l;   // (U5) we are the view this tab was opened from
     try { showTab(l); } catch (e) { /* a game without showTab keeps the card inert rather than throwing */ }
   }
 
@@ -1304,6 +1474,9 @@
 
   function show() {
     build();
+    // (U5) the game's palette is read HERE and cached until the list opens again: a theme is changed on the game's
+    // own Options tab, and reaching that tab closes this overlay, so there is no path by which it can go stale.
+    skinCache = null;
     open = true;
     panel.hidden = false;
     rebuild();
@@ -1332,6 +1505,9 @@
     });
     var app = document.getElementById('app');
     if (app) obs.observe(app, { childList: true, subtree: true, characterData: true });
+    // (U5) Back returns to the view you came from. On the DOCUMENT, because the control belongs to the game and is
+    // re-rendered with every tab; in the capture phase, because the condition is about the tab it is leaving.
+    document.addEventListener('click', onDocClick, true);
     // ⚖ THE FIT MUST SURVIVE A RESIZE (user, 2026-09-18). A resize moves no game DOM, so the observer above never
     // sees it; the row is simply re-measured. Still no timer of ours, and still nothing written to `player`.
     var rq = false;
@@ -1358,6 +1534,12 @@
       expanded: function () { return Object.keys(cards).filter(function (l) { return cards[l].el.classList.contains('tmt-layerlist-expanded'); }); },
       expand: function (l, on) { return setExpanded(l, on === undefined ? true : on); },
       prefKey: prefKey,
+      // (U5) the view a layer tab was opened FROM, for as long as it is the tab on screen — `null` for one opened
+      // from the tree, which is the half of the ruling a memory set unconditionally would break. Read-only.
+      cameFrom: function () { return cameFrom; },
+      // (U5) what the game paints this chip, and the engine's own word for the state — the list's own answer, which
+      // the gate compares against an expectation it rebuilds from `tmp` / `player` itself.
+      chipSkin: function (l) { return chipsOf(l).map(function (c) { var s = chipSkin(c); return { key: c.key, kind: c.kind, id: c.id, layer: c.layer, state: c.state, skin: s.key, bg: s.bg }; }); },
       // (U2e) THE TOOLTIP. The gate drives it through this rather than through a click wherever it is not the tap
       // itself that is under test, for the same reason `expand` exists: a click is not a neutral probe.
       tip: {
