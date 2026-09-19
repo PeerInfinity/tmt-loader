@@ -1275,6 +1275,15 @@ async function gateMobile(browser, base, ids) {
         // a key both games read. Asserted mechanically: every key this write added is in THIS game's namespace.
         persist.wrote = { stored: wrote.stored, newKeys: wrote.keys.filter((k) => !pref0.keys.includes(k)) };
         persist.keyOk = persist.wrote.newKeys.length > 0 && persist.wrote.newKeys.every((k) => k.startsWith(`tmt-loader:${id}:`));
+        // ⚠ THE READ-BACK PAGE MUST BOOT ON THE STATE THAT SET THE PREFERENCE. This page is 3,000 ticks, a reset
+        // press and a purchase past the save in `localStorage` — under `?managed=1` the autosave never ran — so on
+        // a game with no recorded snapshot the second page booted a FRESH save and simply did not have the card.
+        // MEASURED: the first CI sweep of this leg was RED on 7 games for exactly that (`layer-tree`,
+        // `the-numbruh-tree`, `the-hyperdimensions-tree`, `the-tearonq-…`, `the-burning-tree`, `the-loop-tree`,
+        // `the-mana-tree` — every one `present: false` or a card with no expander), and the bounded local set could
+        // not see it because `ptr` and `something` are the two games that HAVE a snapshot, whose `loadFrom` had
+        // already written it. The game's own `save()` is what makes the two pages the same game.
+        persist.saved = await page.evaluate(() => { try { window.tmtLoader.save(); return true; } catch (e) { return false; } });
         const p2 = await context.newPage();
         const readBack = async (vp, label) => {
           await p2.setViewportSize(vp);
@@ -1287,7 +1296,7 @@ async function gateMobile(browser, base, ids) {
             const card = document.querySelector(`.tmt-layerlist-card[data-layer="${t}"]`);
             const chev = card && card.querySelector('.tmt-layerlist-more');
             const ctl = c && document.querySelector(`.tmt-layerlist-card[data-layer="${c}"]`);
-            return { expanded: ui.expanded(), present: !!card,
+            return { expanded: ui.expanded(), present: !!card, expander: !!chev,
               open: !!card && card.classList.contains('tmt-layerlist-expanded'),
               aria: chev ? chev.getAttribute('aria-expanded') : null,
               controlOpen: !!ctl && ctl.classList.contains('tmt-layerlist-expanded'), controlPresent: !!ctl };
@@ -1317,13 +1326,20 @@ async function gateMobile(browser, base, ids) {
         // ⚠ THE TWO FAILURES ARE NAMED APART. A card that came back closed and a card that came back open with an
         // unmeasured action row are different defects — the first is the persistence, the second is the fit pass
         // it broke — and a verdict that called both "NOT RESTORED" would send the next reader to the wrong file.
-        const restoredAt = (b) => !!(b.present && b.open && b.aria === 'true' && !b.controlOpen);
+        // ⚠ A CARD THE READ-BACK PAGE DOES NOT DRAW IS AN ABSTENTION, NOT A FAILURE. The state a preference is
+        // about is the card's expander, and a card that is absent — or present with nothing to expand, which is
+        // what a layer with no drawn component is — carries no such state for the leg to read back. Judging it
+        // would be blaming the persistence for the game. The CONTROL is still judged wherever it is drawn.
+        const judged = (b) => b.present && b.expander;
+        const restoredAt = (b) => !!(b.open && b.aria === 'true' && !b.controlOpen);
         const fittedAt = (b) => !b.refit || (b.refit.prefix && b.refit.lines <= 1);
+        persist.judged = persist.back.filter(judged).map((b) => b.at);
         persist.verdict = !(pref0.stored === null && pref0.expanded && pref0.expanded.length === 0) ? 'A FIRST LOAD WAS NOT CLEAN'
           : !persist.keyOk ? 'THE KEY IS NOT THIS GAME\'S'
           : !persist.back.every((b) => b.ready) ? 'THE READ-BACK PAGE DID NOT LOAD'
-          : !persist.back.every(restoredAt) ? 'NOT RESTORED AFTER THE RELOAD'
-          : !persist.back.every(fittedAt) ? 'THE REOPENED CARD\'S ACTION ROW WAS NEVER MEASURED'
+          : !persist.back.some(judged) ? `abstains (the read-back page draws no expander on ${pref0.target})`
+          : !persist.back.every((b) => !judged(b) || restoredAt(b)) ? 'NOT RESTORED AFTER THE RELOAD'
+          : !persist.back.every((b) => !judged(b) || fittedAt(b)) ? 'THE REOPENED CARD\'S ACTION ROW WAS NEVER MEASURED'
           : cleared.stored !== null ? 'THE KEY SURVIVED CLOSING THE LAST CARD'
           : `restored at both widths (${pref0.target} open, ${pref0.control || 'no control card'} closed)`;
       }

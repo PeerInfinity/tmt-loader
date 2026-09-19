@@ -4047,7 +4047,7 @@ most are the PRE-FIX ones, because a stability assertion proves nothing until th
 | gate | game | leg | ticks | gameSeconds | diff | hash | result | notes |
 |---|---|---|---|---|---|---|---|---|
 | ⛔ PRE-FIX — the readout's string alone | ptr | digits, 390 px, deep snapshot | 0 | 0 | — | — | **MOVED** | `0` → `1.111e3,284`, nothing in the game touched: the meta column moved on **10 of ptr's 11 cards** — `q` 46.97 → 112.59 px, `a` 10.25 → 112.59, `b` 62.63 → 112.59, and `sb`/`t`/`e`/`s` at the widest string. `111` vs `777` moved nothing (those fonts are already tabular) |
-| ⛔ PRE-FIX — the same on the other engine | something | digits, 390 px, deep snapshot | 0 | 0 | — | — | **MOVED** | 8 of 8 cards at `1.111e3,284`; `primitive` 54.8 → 112.59 px, `savebank` 62.63 → 112.59 |
+| ⛔ PRE-FIX — the same on the other engine | something | digits, 390 px, deep snapshot | 0 | 0 | — | — | **MOVED** | 8 of 8 cards at `1.111e3,284`; `primitive` 54.8 → 112.59 px, `unlock` 101.75 → 112.59; at `9.88e3284` 4 of 8, `savebank` 62.63 → 92.13 |
 | ⛔ PRE-FIX — the card's own box | ptr, something | fresh load vs deep snapshot | — | — | — | — | **did NOT move** | ⚠ the comparison the brief asked for, and it cannot discriminate: the card is grid-sized, so its WIDTH never answers to its contents, and ptr's fresh save has 2 cards against the deep save's 11 with only `p` carrying an amount — whose column is sized by the resource NAME (117.41 px), wider than `0` or `3.93e541`. The leg injects the magnitudes instead |
 | ⛔ PRE-FIX — a card reopened from the store | the-unbalanced-tree | the fit pass | — | — | — | — | **10 buttons on 2 lines** | the defect the persistence introduced: a card BUILT OPEN hides its action row, a `display: none` row has no layout, so the build-time fit marked none as wrapped. Closed again: 10 of 10 shown, two lines, card 261 px — against 7 on one line and 211 px before the reload |
 | M1 digits leg (U2c) | ptr | 390 + 1280, collapsed + expanded | — | — | — | — | GREEN | 7 magnitudes over 11 readouts and 17 counters; every card, meta, name and amount box unchanged, every readout restored |
@@ -4082,6 +4082,28 @@ version of both new summary lines counted `rows.length` minus the reds it could 
 `layerListUI.expand`, where the probe throws and the row goes to the catch as an exception, printed `1/1 restored`
 over a RED row. A row with no leg is now named as never having run. Same shape as a dead shard behind a green
 checkmark, one level down.
+
+### The first CI sweep of this leg was RED on 7 games, and the bounded local set was structurally blind to it
+
+| gate | games | leg | result | notes |
+|---|---|---|---|---|
+| U2c CI sweep, first push | — 171 games — | `--gate mobile --shard i/10` | **RED, correctly** | run `35416833818` at `56bc0fe8b`; **171/171 covered, each exactly once; 7 RED**: `layer-tree`, `the-numbruh-tree`, `the-hyperdimensions-tree`, `the-tearonq-i-have-no-creative-names`, `the-burning-tree`, `the-loop-tree`, `the-mana-tree` — every one the persistence leg, every one `present: false` or a card with no expander on the read-back page. Shards 117–212 s (spread ×1.81), serial 25.8 min, **wall clock 3.5 min** |
+| the same 7, after the fix | 7 | `--gate mobile` | GREEN | 7/7, none abstaining |
+
+**The defect was the leg's assumption, not the code's.** The phone page is 3,000 ticks, a reset press and a
+purchase past the save in `localStorage` — under `?managed=1` the autosave never runs — so on a game with **no
+recorded snapshot** the second page booted a *fresh* save and did not have the card whose state had just been set.
+`ptr` and `something` are the two games that HAVE a snapshot, whose `loadFrom` had already written it, so the
+bounded local set could not have seen this however many times it was run. The game's own `save()` before the
+read-back is the fix; a card the read-back page does not draw now abstains rather than failing, though with the
+save no game on the roster reaches that branch.
+
+⚠ **This is the third slice in a row where the roster found something a bounded set could not** (U2d: `buyUpgrade`
+on `the-modding-tree`; U2g: `Decimal` on two games and the picker on two more). The pattern is the same every
+time: the reference games are reference games *because* they are the well-provisioned ones.
+
+⚠ **The cost of the two new legs, measured**: serial 25.8 min against U2d's 22.5 (+15 %), wall clock 3.5 min
+against 3.2. The persistence leg loads one extra page per game per width.
 
 ⚠ **And a process defect worth more than any of the above.** The first mutant harness restored with
 `git checkout -- loader/layerlist.css loader/layerlist.js` — which reverted the slice's own **uncommitted** work to

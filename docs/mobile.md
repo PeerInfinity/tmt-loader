@@ -873,6 +873,18 @@ as the leg found it. It asserts, at each width:
   have one);
 - and closing the last card **removes** the key rather than leaving an empty list behind.
 
+⚠ **The read-back page has to boot on the state that set the preference, and the bounded local set could not see
+that it did not.** This page is 3,000 ticks, a reset press and a purchase past the save in `localStorage` — under
+`?managed=1` the autosave never runs — so on a game with **no recorded snapshot** the second page booted a *fresh*
+save and simply did not have the card. `ptr` and `something` are the two games that HAVE a snapshot, whose
+`loadFrom` had already written it, so both were green locally while the first CI sweep of this leg was **RED on 7
+games**: `layer-tree`, `the-numbruh-tree`, `the-hyperdimensions-tree`, `the-tearonq-i-have-no-creative-names`,
+`the-burning-tree`, `the-loop-tree`, `the-mana-tree` — every one of them `present: false`, or a card drawn with
+nothing to expand. The game's own `save()` before the read-back is what makes the two pages the same game, and all
+seven are green with it. ⚠ A card the read-back page does not draw now **abstains** rather than failing — judging
+it would blame the persistence for the game — but that branch is currently **unexercised**: with the save, no game
+on the roster reaches it.
+
 ⚠ **A summary row that lied, found while driving these mutants.** A leg that THREW leaves its row absent, and the
 first version of both new SUMMARY lines counted `rows.length` minus the reds it could SEE — so a build with no
 `layerListUI.expand`, where the probe throws and the row goes to the catch as an exception, printed
