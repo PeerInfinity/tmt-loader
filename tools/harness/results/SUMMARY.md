@@ -3930,3 +3930,21 @@ Reading this section: pinned rows compare TICKS and the game state without playe
 |---|---|---|---|---|---|---|---|---|
 | G6 games doc | — | — | 0 | 0 | — | — | GREEN | docs/games.md: 171 games in manifests/index.json, generator built 171, 171 listed in that order, file byte-equal to the generator's output |
 | G7 declined list | — | — | 0 | 0 | — | — | GREEN | manifests/declined.json: 12 games declined with a reason, none of them hosted |
+
+### A THIRD instance of the same bound, audited out of this slice's own record
+
+Prompted by the launching session finding the `tabFormat` figure had the identical defect, this slice re-checked
+its OTHER census-shaped claim and it was wrong too: **"only TMT 2.7 declares `purchaseLimit`; 2.2.1 has no such
+concept"** came from a grep over two games — `ptr` and `something` — stated as an engine-version fact. Re-censused
+unbounded: **155 of the 171 games carry `purchaseLimit`, 154 defaulting it in their own layer support; 16 do
+not**, and `ptr`, `the-modding-tree` and `the-burning-tree` are among the 16 — which is exactly why a two-game
+sample read as two engine generations.
+
+The code was never affected: `belowLimit` reads the field where it exists and treats its absence as unlimited,
+correct for all 171. The claim beside it was the sample.
+
+⚠ **Three instances now, and none of them was caught by the sweep** — the gate drives games, and none of these
+numbers is a gate output. `buyUpg` was caught by a peer re-censusing; `tabFormat` by that peer generalising the
+first correction; `purchaseLimit` by this slice auditing itself afterwards. A prose census in these docs has no
+gate behind it, and that is the property to fix if a fourth turns up: the figures that matter should come from a
+script the roster runs, not from a grep quoted once.

@@ -469,9 +469,10 @@
    *     the upgrade rather than to buy it), but the rule says unlocked, so it stays in the expanded chip row;
    *   · a BUYABLE is bought REPEATEDLY, so "not yet bought" cannot mean what it means for an upgrade. It qualifies
    *     while it can still be bought AT ALL — below its `purchaseLimit` where one is declared, and never on
-   *     affordability. ⚠ Only TMT 2.7 declares that field (it defaults it to `Decimal(Infinity)` in
-   *     `layerSupport.js:127`); 2.2.1 has no such concept, so there the test is vacuous and a buyable always
-   *     qualifies — which is exactly what that engine's own button does.
+   *     affordability. ⚠ 155 of the 171 games carry `purchaseLimit` (154 defaulting it to `Decimal(Infinity)` in
+   *     their own `layerSupport.js`); on the 16 that do not — `ptr` among them — the test is vacuous and a buyable
+   *     always qualifies, which is exactly what those engines' own buttons do. ⚠ NOT a 2.7-versus-2.2.1 split:
+   *     that was this file's first reading, from a grep over two games, and the census says otherwise.
    *  A CHALLENGE qualifies while it is not completed, active or not: `startChallenge` is what its own button calls
    *  in both states.
    *  ⚠ Clickables and achievements are walked for their COUNTERS but never get a button: an achievement is not

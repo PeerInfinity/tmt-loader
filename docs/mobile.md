@@ -396,9 +396,15 @@ Three readings that phrase leaves open, decided here:
   it is the one reading where "what you can act on" and "unlocked and not yet bought" genuinely disagree;
 - a **buyable** is bought repeatedly, so "not yet bought" cannot mean for it what it means for an upgrade. It
   qualifies while it can still be bought **at all** — below its `purchaseLimit` where one is declared, and never on
-  affordability. ⚠ Only TMT 2.7 declares that field (it defaults it to `Decimal(Infinity)`,
-  `games/something/js/technical/layerSupport.js:127`); 2.2.1 has no such concept, so there the test is vacuous and
-  a buyable always qualifies — which is what that engine's own button does anyway.
+  affordability. Where the engine has no such field the test is vacuous and a buyable always qualifies, which is
+  what that engine's own button does anyway.
+  ⚠ **This slice first wrote "only TMT 2.7 declares that field; 2.2.1 has no such concept", and that is FALSE.**
+  It generalised from a two-file grep — `ptr` versus `something` — to a claim about engine versions. Re-censused
+  unbounded: **155 of the 171 games carry `purchaseLimit`, 154 of them defaulting it in their own layer support**
+  (`games/something/js/technical/layerSupport.js:127` is one of those 154). The **16** that do not happen to
+  include `ptr`, `the-modding-tree` and `the-burning-tree`, which is why two reference games looked like two
+  engine generations. The CODE was never affected — it reads the field where it exists and treats its absence as
+  unlimited, which is correct for all 171 — but the explanation beside it was a sample of two.
 
 A **challenge** qualifies while it is not completed, active or not: `startChallenge` is what its own button calls
 in both states.
