@@ -1119,16 +1119,43 @@ async function gateMobile(browser, base, ids) {
             const rows = [...document.querySelectorAll('.col.right .upgRow')].filter((e) => e.querySelector('button.upg'));
             return { rows: rows.length, contents: rows.filter((e) => getComputedStyle(e).display === 'contents').length };
           });
+          // (U4) AND THE ARMING SETTING IS OFF, on the page the whole roster's CI actually runs. The full arming
+          // flow is `gates-a1.mjs --part 2`, which CI does not run; this is the half that protects every existing
+          // row — the setting is opt-in, so a locked feature's toggle must still refuse by default — plus the two
+          // structural facts: the control is there, and it is a tabFormat `toggle`, never a clickable (a twelfth
+          // clickable would shift every feature button's id by one and join the flatten measured just above, so
+          // `clickables === features + 1` is what says it stayed out of the grid).
+          auTab.arm = await both.evaluate(() => {
+            const T = window.tmtLoader, AU = T.auLayer;
+            const ids = Object.keys(layers[AU].clickables).filter((k) => !isNaN(k));
+            const locked = ids.filter((k) => layers[AU].clickables[k].tmtFeature && !T.featureState(layers[AU].clickables[k].tmtFeature).unlocked);
+            return { off: T.armLocked() === false, stored: player[AU].armLocked,
+              refusing: locked.filter((k) => layers[AU].clickables[k].canClick() === false).length, locked: locked.length,
+              clickables: ids.length, features: T.features.length,
+              control: document.querySelectorAll('#app button.smallUpg').length,
+              label: document.querySelector('#app').innerText.includes('Arm features that are not unlocked yet') };
+          });
         }
         await both.close();
         const fits = (m) => m && m.escaping.length === 0 && m.tooSmall.length === 0 && m.docScrollWidth <= m.vw + 1;
         const fl = (auTab && auTab.flattened) || { rows: 0, contents: 0 };
         const evenRows = fl.rows > 0 && fl.contents === fl.rows;   // every clickable row box flattened
+        const arm = (auTab && auTab.arm) || null;
+        const armOk = !!(arm && arm.off && arm.stored === undefined && arm.label && arm.control >= 1
+          && arm.clickables === arm.features + 1 && arm.refusing === arm.locked);
         row.both = tree && { auNodes: tree.auNodes, features: tree.features, navOnTree: tree.navButtons.length,
           treeFits: fits(tree), auTabFits: fits(auTab), auTab: auTab && auTab.tab, flattened: fl, evenRows,
+          arm, armOk,
+          armVerdict: !arm ? 'no au tab probe'
+            : !arm.off || arm.stored !== undefined ? 'THE ARMING SETTING IS NOT OFF BY DEFAULT'
+            : !arm.label || !arm.control ? 'THE ARMING CONTROL IS NOT IN THE au TAB'
+            : arm.clickables !== arm.features + 1 ? `THE SETTING JOINED THE CLICKABLE GRID (${arm.clickables} boxes for ${arm.features} features)`
+            : arm.refusing !== arm.locked ? `A LOCKED TOGGLE ACCEPTS A PRESS WITH THE SETTING OFF (${arm.locked - arm.refusing} of ${arm.locked})`
+            : !arm.locked ? `off by default, outside the grid (abstains on the refusal: no locked feature here)`
+            : `off by default, outside the grid, and all ${arm.locked} locked toggles refuse`,
           worst: [...(tree.escaping || []).slice(0, 2), ...((auTab && auTab.escaping) || []).slice(0, 2)] };
         row.bothOk = !!(rb.ready && tree && tree.auNodes === 1 && tree.features > 0 && tree.navButtons.length >= 1
-          && fits(tree) && fits(auTab) && evenRows);
+          && fits(tree) && fits(auTab) && evenRows && armOk);
       } else { row.both = null; row.bothOk = true; }
 
       // --- leg 5: `?navbar=1` ALONE, at a DESKTOP viewport. The bar is the half of the mobile mode that is wanted
@@ -1388,11 +1415,68 @@ async function gateMobile(browser, base, ids) {
         if (!l) return { candidate: null, ticks, why: 'no layer both canReset and has a resetGain above 0' };
         const btn = document.querySelector(`.tmt-layerlist-card[data-layer="${l}"] .tmt-layerlist-reset`);
         const before = String(player[l].points);
+        // (U4) AND THE LIST MAY NOT DRIFT UNDER THE PRESS. The press is the real thing that used to move it: the
+        // refresh it triggers rewrites the prestige string and the counters, the card's content height moves by a
+        // few pixels, and the browser's scroll anchoring adjusted `scrollTop` to keep its anchor still. So the
+        // scroller is put at a real mid-list offset first and both numbers are read either side.
+        const b = document.querySelector('#tmt-layerlist .tmt-layerlist-body');
+        const room = b ? b.scrollHeight - b.clientHeight : 0;
+        let scroll = null;
+        if (b && room >= 80) { b.scrollTop = Math.floor(room / 2); void b.scrollTop; scroll = { anchor: getComputedStyle(b).overflowAnchor, room, top: b.scrollTop, height: b.scrollHeight }; }
         btn.click();
-        return { candidate: l, ticks, before, after: String(player[l].points), text: btn.textContent.slice(0, 80) };
+        if (scroll) { void b.scrollHeight; scroll.dTop = b.scrollTop - scroll.top; scroll.dHeight = b.scrollHeight - scroll.height; b.scrollTop = 0; }
+        return { candidate: l, ticks, before, after: String(player[l].points), text: btn.textContent.slice(0, 80), scroll, room };
       });
       row.resetVerdict = !row.reset.candidate ? 'no candidate (the leg abstains)'
         : row.reset.after !== row.reset.before ? 'moved' : 'NOT MOVED';
+      // ⚠ THE DISCRIMINATOR IS NOT "scrollTop did not move". A build whose cards stopped changing height would pass
+      // that while proving nothing about anchoring, so the height has to have MOVED for this half to judge at all.
+      // MEASURED both ways on `ptr` (deep snapshot, 390px): with `overflow-anchor: auto` the press gives
+      // scrollTop -3 / height -3; with `none`, 0 / -3.
+      row.resetDrift = !row.reset.scroll ? { verdict: `abstains (${row.reset.candidate ? `the list is not scrollable here (${row.reset.room} px of room)` : 'no reset candidate'})` }
+        : { ...row.reset.scroll,
+            verdict: row.reset.scroll.dHeight === 0 ? 'abstains (the press did not move the content height)'
+              : row.reset.scroll.dTop !== 0 ? 'THE LIST DRIFTED UNDER THE PRESS' : 'held while the height moved' };
+
+      // --- U4 leg H: THE LIST DOES NOT DRIFT WHEN THE CONTENT ABOVE IT CHANGES HEIGHT -------------------------
+      // ⚖ "the Layers view drifts down on a reset" (user, 2026-09-19). The reset press above measures the REAL
+      // thing, and abstains on a game whose press happens not to move the height — which is most of them. This half
+      // CONSTRUCTS the height change so the claim is judged wherever the list scrolls at all: a 40 px spacer as the
+      // body's FIRST child, which moves every anchor candidate below it.
+      // ⚠ WHY A SPACER AND NOT `marginTop` ON THE FIRST CARD. A computed-style change to `margin` / `padding` /
+      // `height` on the anchor node OR ANY OF ITS ANCESTORS up to the scroller is a SUPPRESSION TRIGGER in the
+      // scroll-anchoring spec: the browser declines to adjust, and the probe reads Δ 0 with anchoring fully on.
+      // MEASURED on `something`, whose rows hold one card each so the first card IS an ancestor of the anchor:
+      // `marginTop` +40 gave dTop 0 / dHeight 40 while a spacer at the top of the same body gave 40 / 40. A probe
+      // built the first way would have called the defect fixed before anything was.
+      // ⚠ 127 of the 171 games cannot witness this at all — their list is not scrollable at 390x844 — so the
+      // abstention names the room it found rather than passing quietly. 44 do, `ptr` and `something` among them.
+      row.anchorDrift = await page.evaluate(() => {
+        const ui = window.tmtLoader.layerListUI;
+        if (!ui) return { verdict: 'abstains (no layerListUI)' };
+        ui.open();
+        const b = document.querySelector('#tmt-layerlist .tmt-layerlist-body');
+        if (!b) return { verdict: 'abstains (no scroller)' };
+        const anchor = getComputedStyle(b).overflowAnchor;
+        const room = b.scrollHeight - b.clientHeight;
+        if (room < 80) return { anchor, room, verdict: `abstains (the list is not scrollable at this width: ${room} px of room)` };
+        b.scrollTop = Math.floor(room / 2);
+        void b.scrollTop;
+        const t0 = b.scrollTop, h0 = b.scrollHeight;
+        const spacer = document.createElement('div');
+        spacer.style.cssText = 'height:40px';
+        b.insertBefore(spacer, b.firstChild);
+        void b.scrollHeight;
+        const dTop = b.scrollTop - t0, dHeight = b.scrollHeight - h0;
+        b.removeChild(spacer);
+        void b.scrollHeight;
+        const back = b.scrollTop;
+        b.scrollTop = 0;   // put the scroller back where the leg found it: every leg after this one measures boxes
+        return { anchor, room, top: t0, height: h0, dTop, dHeight, back,
+          verdict: dHeight === 0 ? 'abstains (the construction did not move the content height)'
+            : dTop !== 0 ? 'THE LIST DRIFTED' : 'held while the height moved' };
+      });
+      row.anchorOk = !/DRIFTED/.test(row.anchorDrift.verdict);
 
       // --- U2d leg D: A COUNTER'S `x` MOVES WHEN THE THING IS EARNED -------------------------------------------
       // Driven by a real purchase through the card's own button — the one claim a rendering test cannot fake — and
@@ -1831,7 +1915,8 @@ async function gateMobile(browser, base, ids) {
       row.layersOk = !!(row.layers.phoneOk && row.layers.desktopOk && row.layersInert.ok && row.resetVerdict !== 'NOT MOVED'
         && row.rulesOk && (!row.chipBaseline || (row.chipBaseline.fell && row.chipBaseline.orderMoved))
         && row.fitOk && row.stabilityOk && row.throttleOk && row.counterVerdict !== 'NOT MOVED'
-        && row.digitsOk && row.persistOk && row.tipsOk);
+        && row.digitsOk && row.persistOk && row.tipsOk
+        && row.anchorOk && !/DRIFTED/.test(row.resetDrift.verdict));
       row.layersScreenshot = path.relative(REPO, llShot);
 
       const shot = path.join(REPO, `tools/harness/results/${id}-mobile.png`);
@@ -1987,7 +2072,19 @@ async function main() {
       console.log(`M1 layers inertness: ${rows.filter((r) => r.layersInert && r.layersInert.verdict === 'unchanged').length} unchanged state hash across opening the list, ${rows.filter((r) => r.layersInert && r.layersInert.verdict === 'MOVED').length} moved, ${llAbst.length} abstained${llAbst.length ? ` (the page does not repeat its own hash: ${llAbst.join(', ')})` : ''}`);
       const noCand = rows.filter((r) => r.resetVerdict && r.resetVerdict.startsWith('no candidate')).map((r) => r.id);
       console.log(`M1 layers reset press: ${rows.filter((r) => r.resetVerdict === 'moved').length} moved player[l].points, ${rows.filter((r) => r.resetVerdict === 'NOT MOVED').length} did not, ${noCand.length} abstained${noCand.length ? ` (nothing could reset: ${noCand.join(', ')})` : ''}`);
-      for (const r of rows.filter((x) => !x.ok)) console.log(`  ${r.id}: layers=${r.layersOk} digits=${r.digits ? r.digits.verdict : '—'}${r.digits && !r.digitsOk ? ' ' + JSON.stringify(r.digits) : ''} tips=${r.tips ? `${r.tips.phoneVerdict} / desktop ${r.tips.desktopVerdict} / tap ${r.tips.tap.verdict} / hover ${r.tips.hover.verdict}` : '—'}${r.tips && !r.tipsOk ? ' ' + JSON.stringify(r.tips) : ''} persist=${r.persist ? r.persist.verdict : '—'}${r.persist && !r.persistOk ? ' ' + JSON.stringify(r.persist) : ''} fit=${r.fitOk}${r.fitWidths && !r.fitOk ? ' ' + JSON.stringify(r.fitWidths) : ''} stability=${r.stabilityOk}${r.stability && !r.stabilityOk ? ' ' + JSON.stringify(r.stability) : ''} throttle=${r.throttleOk}${r.throttle && !r.throttleOk ? ' ' + JSON.stringify(r.throttle) : ''} counter=${r.counterVerdict}${r.counterMove && r.counterVerdict === 'NOT MOVED' ? ' ' + JSON.stringify(r.counterMove) : ''}${r.chipBaseline && !(r.chipBaseline.fell && r.chipBaseline.orderMoved) ? ` chipBaseline=${JSON.stringify(r.chipBaseline)}` : ''}${r.layers && !r.layersOk ? ' ' + JSON.stringify(r.layers) : ''}${r.resetVerdict && r.resetVerdict !== 'moved' ? ` reset=${r.resetVerdict} ${JSON.stringify(r.reset)}` : ''} inert=${r.inertOk} both=${r.bothOk}${r.both ? ' ' + JSON.stringify(r.both) : ''} navbarOnly=${r.navbarOnlyOk}${r.navbarOnly && !r.navbarOnlyOk ? ' ' + JSON.stringify(r.navbarOnly) : ''} state=${r.stateVerdict}${r.state ? ` (plain ${r.state.plain} / control ${r.state.plainControl} / mobile ${r.state.mobile})` : ''} geometry=${r.geometryOk} nav=${r.navOk} load=${r.loadVerdict && r.loadVerdict.ok}${r.worst && r.worst.length ? ` worst=${JSON.stringify(r.worst)}` : ''}${r.exception ? ` exception=${r.exception}` : ''}`);
+      // (U4) THE DRIFT. Two halves with one rule: a game only JUDGES where the content height actually moved, because
+      // "scrollTop did not move" is free on a build whose cards stopped changing height.
+      const adJ = rows.filter((r) => r.anchorDrift && !/abstains/.test(r.anchorDrift.verdict));
+      const adRed = adJ.filter((r) => /DRIFTED/.test(r.anchorDrift.verdict)).map((r) => r.id);
+      const adRoom = rows.filter((r) => r.anchorDrift && /not scrollable/.test(r.anchorDrift.verdict)).map((r) => r.id);
+      const adNone = rows.filter((r) => !r.anchorDrift).map((r) => r.id);
+      const rdJ = rows.filter((r) => r.resetDrift && !/abstains/.test(r.resetDrift.verdict));
+      const rdRed = rdJ.filter((r) => /DRIFTED/.test(r.resetDrift.verdict)).map((r) => r.id);
+      const anch = [...new Set(rows.map((r) => (r.anchorDrift && r.anchorDrift.anchor) || (r.resetDrift && r.resetDrift.anchor)).filter(Boolean))];
+      console.log(`M1 layers drift (U4 — the scroller's \`overflow-anchor\` is ${anch.join('/') || '—'}): CONSTRUCTED height change above the offset, ${adJ.length - adRed.length}/${adJ.length} judged game(s) held scrollTop still while the height moved${adRed.length ? ` (DRIFTED: ${adRed.map((x) => `${x} ${JSON.stringify(rows.find((r) => r.id === x).anchorDrift)}`).join('; ')})` : ''}, ${adRoom.length} abstained for a list that does not scroll at 390px${adNone.length ? `, ⛔ ${adNone.length} NEVER RAN (the row threw: ${adNone.slice(0, 6).join(', ')})` : ''}; the REAL reset press, ${rdJ.length - rdRed.length}/${rdJ.length} judged${rdRed.length ? ` (DRIFTED: ${rdRed.map((x) => `${x} ${JSON.stringify(rows.find((r) => r.id === x).resetDrift)}`).join('; ')})` : ''}, ${rows.filter((r) => r.resetDrift && /abstains/.test(r.resetDrift.verdict)).length} abstained (no room, or the press did not move the height)`);
+      const armRows = rows.filter((r) => r.both && r.both.arm);
+      if (armRows.length) console.log(`M1 au arming setting (U4 — the DEFAULT half; the arming flow itself is gates-a1.mjs --part 2): ${armRows.filter((r) => r.both.armOk).length}/${armRows.length} green over ${armRows.map((r) => `${r.id}: ${r.both.armVerdict}`).join('; ')}`);
+      for (const r of rows.filter((x) => !x.ok)) console.log(`  ${r.id}: layers=${r.layersOk} digits=${r.digits ? r.digits.verdict : '—'}${r.digits && !r.digitsOk ? ' ' + JSON.stringify(r.digits) : ''} tips=${r.tips ? `${r.tips.phoneVerdict} / desktop ${r.tips.desktopVerdict} / tap ${r.tips.tap.verdict} / hover ${r.tips.hover.verdict}` : '—'}${r.tips && !r.tipsOk ? ' ' + JSON.stringify(r.tips) : ''} persist=${r.persist ? r.persist.verdict : '—'}${r.persist && !r.persistOk ? ' ' + JSON.stringify(r.persist) : ''} fit=${r.fitOk}${r.fitWidths && !r.fitOk ? ' ' + JSON.stringify(r.fitWidths) : ''} stability=${r.stabilityOk}${r.stability && !r.stabilityOk ? ' ' + JSON.stringify(r.stability) : ''} throttle=${r.throttleOk}${r.throttle && !r.throttleOk ? ' ' + JSON.stringify(r.throttle) : ''} counter=${r.counterVerdict}${r.counterMove && r.counterVerdict === 'NOT MOVED' ? ' ' + JSON.stringify(r.counterMove) : ''}${r.chipBaseline && !(r.chipBaseline.fell && r.chipBaseline.orderMoved) ? ` chipBaseline=${JSON.stringify(r.chipBaseline)}` : ''}${r.layers && !r.layersOk ? ' ' + JSON.stringify(r.layers) : ''}${r.resetVerdict && r.resetVerdict !== 'moved' ? ` reset=${r.resetVerdict} ${JSON.stringify(r.reset)}` : ''} drift=${r.anchorDrift ? r.anchorDrift.verdict : '—'}${r.anchorDrift && !r.anchorOk ? ' ' + JSON.stringify(r.anchorDrift) : ''} resetDrift=${r.resetDrift ? r.resetDrift.verdict : '—'}${r.resetDrift && /DRIFTED/.test(r.resetDrift.verdict) ? ' ' + JSON.stringify(r.resetDrift) : ''} inert=${r.inertOk} both=${r.bothOk}${r.both ? ' ' + JSON.stringify(r.both) : ''} navbarOnly=${r.navbarOnlyOk}${r.navbarOnly && !r.navbarOnlyOk ? ' ' + JSON.stringify(r.navbarOnly) : ''} state=${r.stateVerdict}${r.state ? ` (plain ${r.state.plain} / control ${r.state.plainControl} / mobile ${r.state.mobile})` : ''} geometry=${r.geometryOk} nav=${r.navOk} load=${r.loadVerdict && r.loadVerdict.ok}${r.worst && r.worst.length ? ` worst=${JSON.stringify(r.worst)}` : ''}${r.exception ? ` exception=${r.exception}` : ''}`);
     } else {
       if (shard) throw new Error('--shard applies to --gate load / --gate mobile, not to a single-game run');
       const out = await runPage(browser, base, ids[0], { ticks: Number(a.ticks ?? 200), diff: Number(a.diff ?? 0.05), leg: a.leg || 'idle', until: a.until || null, stateOut: a['state-out'], playerOut: a['player-out'], loadFrom: a['load-from'] ? fs.readFileSync(a['load-from'], 'utf8') : null, profile: a.profile || null, exclude: a.exclude ? a.exclude.split(',') : [], autoOpt: a['auto-opt'] || null, automation: !a['no-automation'] });

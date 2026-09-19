@@ -105,7 +105,7 @@ try {
         row({ gate: `${tag} au layer in the page`, id, ok, ticks: 0, gameSeconds: 0, diff: null, hash: null, notes: `tmp.au ${info.tmpAu}; row ${info.row}; doReset ${info.doReset}; player.au.features ${info.features}; disclosed ${info.disclosed}; managed profile ${info.profile}; ${info.registered} features; \`${AU_NODE_SELECTOR}\` × ${nodes}; ${stats.pageErrors.length} page errors, ${stats.failed.length} failed, ${stats.blocked.length} blocked` });
       } finally { await context.close(); }
     }
-    if (!noAuto) await part2Page(id);
+    if (!noAuto) { await part2Page(id); await part2Arm(id); }
   }
 } finally {
   await browser.close();
@@ -185,6 +185,181 @@ async function part2Page(id) {
   } catch (e) { ok = false; notes.push('EXCEPTION ' + String(e && e.stack || e).slice(0, 400)); }
   finally { await context.close(); }
   row({ gate: 'A1-2 au tab (page)', id, ok, ticks: 0, gameSeconds: 0, diff: null, hash: null, notes: notes.join('; ') + `; screenshots results/${id}-au-{off,all,toggled}.png` });
+}
+
+// ---- Part 2 (U4): MAY AUTOMATION BE ARMED FOR A FEATURE THAT IS NOT UNLOCKED YET? ----------------------------------
+// ⚖ user, 2026-09-19. The setting is `player.au.armLocked`, written by the `au` tab's own `toggle`; it lifts the two UI
+// predicates that refuse a press on a locked feature's button and NOTHING ELSE.
+//
+// The whole claim, and the order it has to be driven in:
+//   1. with the setting OFF the button still refuses — the behaviour every earlier row was measured against is the
+//      DEFAULT, so this half is what says the change is opt-in;
+//   2. with it ON the feature can be armed and the flag PERSISTS across a reload;
+//   3. and it DOES NOT RUN while it is locked — `active()` is untouched, and every one of its branches already ANDs
+//      with `featureUnlocked`, which is exactly what makes arming safe rather than a foot-gun;
+//   4. ⚠ AND THEN IT STARTS BY ITSELF. This is the step the leg exists for: storing a flag proves nothing a
+//      `localStorage` write would not. The feature is unlocked IN THE SAME PAGE and must go `active` and ACT with no
+//      further press. The mutant that relaxes `active()` to drop its `featureUnlocked` reds step 3; a build that
+//      ignored the setting in either toggle reds step 1 or 2.
+//
+// The unlock is the engine's OWN where the engine allows it, and the row says which path it took: `doReset(l)` on the
+// candidate's layer, then the `player[l].unlocked` flag. ⚠ Neither sticks on every engine — MEASURED on Something
+// Tree, whose `unlock.update()` recomputes `player.fundamental.unlocked` every tick and puts it straight back — so
+// the fallback replaces the FEATURE's own derived predicate with one that says yes, which is the same construction
+// the mobile gate uses for `pseudoUnl`. On ptr the engine's own `doReset('p')` is enough.
+async function part2Arm(id) {
+  const { context, stats } = await openContext(browser);
+  const notes = [];
+  let ok = true;
+  const check = (cond, what) => { if (!cond) ok = false; notes.push(`${cond ? '\u2713' : '\u2717'} ${what}`); };
+  try {
+    const page = await context.newPage();
+    const url = new URL(`index.html?mod=${encodeURIComponent(id)}&automation=1`, base).href;
+    const open = async () => {
+      await page.goto(url, { waitUntil: 'load' });
+      await page.waitForFunction(() => window.tmtLoader && (tmtLoader.ready || tmtLoader.error), null, { timeout: 30000 });
+      await page.evaluate(() => tmtLoader.pause());
+      await page.evaluate(() => showTab('au'));
+      await page.waitForTimeout(300);
+    };
+    // the page is paused, so tmp and 2.7's tab formats are refreshed by hand — the engines do both in their own
+    // interval, not in gameLoop (the same reason part2Page does it)
+    const redraw = () => page.evaluate(() => { updateTemp(); if (typeof updateTabFormats === 'function') updateTabFormats(); });
+    const state = (k) => page.evaluate((kk) => {
+      const T = window.tmtLoader, AU = T.auLayer, c = layers[AU].clickables[kk], s = T.featureState(c.tmtFeature);
+      return { armLocked: T.armLocked(), stored: player[AU].armLocked, canClick: c.canClick(), display: c.display(),
+        saved: s.saved, unlocked: s.unlocked, active: s.active, armable: s.armable,
+        actions: T.hookStats().actions[c.tmtFeature] || 0 };
+    }, k);
+
+    await open();
+    await page.evaluate(() => tmtLoader.storage.clear());
+    await open();
+    // A LOCKED CANDIDATE, and a purchase kind by preference: a purchase kind's derived `unlocked()` IS
+    // `player[l].unlocked`, which is the flag an unlock can be driven through. A `reset` feature's is the layer's
+    // `layerShown`, which is the game's own function and not a value.
+    const pick = await page.evaluate(() => {
+      const T = window.tmtLoader, AU = T.auLayer;
+      const st = T.features.map((f) => T.featureState(f.id));
+      const cand = st.find((x) => !x.unlocked && x.kind !== 'reset' && player[x.layer] && player[x.layer].unlocked === false)
+        || st.find((x) => !x.unlocked);
+      if (!cand) return { locked: 0, features: st.length };
+      for (const k in layers[AU].clickables) if (layers[AU].clickables[k].tmtFeature === cand.id) {
+        return { k, id: cand.id, layer: cand.layer, kind: cand.kind, title: layers[AU].clickables[k].title,
+          locked: st.filter((x) => !x.unlocked).length, features: st.length };
+      }
+      return { locked: st.filter((x) => !x.unlocked).length, features: st.length };
+    });
+    if (!pick.k) {
+      notes.push(`abstains: no locked feature at a fresh save (${pick.locked}/${pick.features} locked)`);
+      row({ gate: 'A1-2 arming a locked feature (page)', id, ok: true, ticks: 0, gameSeconds: 0, diff: null, hash: null, notes: notes.join('; ') });
+      return;
+    }
+    notes.push(`candidate ${pick.id} (${pick.kind} on ${pick.layer}), ${pick.locked}/${pick.features} features locked`);
+    const press = async () => { await page.locator('#app button.upg').filter({ hasText: pick.title }).first().click(); await redraw(); };
+    const master = async () => { await page.locator('#app button.upg').filter({ hasText: 'All features' }).first().click(); await redraw(); };
+    const setting = async () => { await page.locator('#app button.smallUpg').first().click(); await redraw(); };
+    // how many features the save says are on, and whether OUR candidate is one of them — the master toggle is judged
+    // on both, because "it armed nothing" and "it turned nothing on at all" are different defects
+    const tally = () => page.evaluate((fid) => {
+      const T = window.tmtLoader, AU = T.auLayer, f = player[AU].features || {};
+      return { on: Object.keys(f).filter((k) => f[k]).length, cand: !!f[fid], features: T.features.length };
+    }, pick.id);
+
+    // ---- 1. THE DEFAULT: the setting is off and the button refuses ------------------------------------------------
+    const s0 = await state(pick.k);
+    check(s0.armLocked === false && s0.stored === undefined, `default: armLocked off and NOT in the save (player.au.armLocked ${s0.stored})`);
+    check(s0.canClick === false && s0.display === 'Locked' && s0.armable === false, `default: the toggle refuses (canClick ${s0.canClick}, display "${s0.display}")`);
+    await press();
+    const s1 = await state(pick.k);
+    check(s1.saved === false, `default: a real press on the locked button changed nothing (saved ${s1.saved})`);
+    // …and the MASTER toggle refuses it too, which is a predicate of its own and therefore a mutant of its own.
+    // ⚠ Judged on TWO numbers: the locked candidate must stay off AND the unlocked features must have come on, or a
+    // master toggle that did nothing at all would pass the half that matters here.
+    await master();
+    const m1 = await tally();
+    check(m1.cand === false && m1.on > 0, `default: *All features* turned ${m1.on}/${m1.features} on and did NOT arm the locked ${pick.id}`);
+    await master();   // every armable one is on now, so the second press clears them all — back to a clean slate
+    const m1b = await tally();
+    check(m1b.on === 0, `*All features* pressed again cleared the ${m1.on} it set (${m1b.on} on)`);
+
+    // ---- 2. THE SETTING ON, through its own control ---------------------------------------------------------------
+    await setting();
+    const s2 = await state(pick.k);
+    check(s2.armLocked === true && s2.stored === true, `the au tab's own toggle wrote player.au.armLocked = ${s2.stored}`);
+    check(s2.canClick === true && s2.armable === true, `with it on, the locked button accepts a press (canClick ${s2.canClick})`);
+    // ⚖ and *All features* arms the locked ones too (decided in U4, docs/automation.md)
+    await master();
+    const m2 = await tally();
+    check(m2.cand === true && m2.on === m2.features, `with it on, *All features* armed everything including the locked (${m2.on}/${m2.features} on)`);
+    await master();
+    const m2b = await tally();
+    check(m2b.on === 0, `and cleared them again (${m2b.on} on) — so the per-feature press below stands alone`);
+    await press();
+    const s3 = await state(pick.k);
+    check(s3.saved === true, `armed by a real press (player.au.features["${pick.id}"] = ${s3.saved})`);
+    check(s3.display.startsWith('Armed'), `the button says so ("${s3.display.replace(/<br>/g, ' / ')}")`);
+    // ---- 3. AND IT DOES NOT RUN --------------------------------------------------------------------------------
+    check(s3.unlocked === false && s3.active === false, `armed but locked: unlocked ${s3.unlocked}, active ${s3.active}`);
+    await page.evaluate(() => window.tmtLoader.tick(0.05, 200));
+    await redraw();
+    const s4 = await state(pick.k);
+    check(s4.active === false && s4.actions === 0, `200 ticks armed-and-locked: active ${s4.active}, actions ${s4.actions}`);
+
+    // ---- and it PERSISTS ------------------------------------------------------------------------------------------
+    await page.evaluate(() => save());
+    await open();
+    const s5 = await state(pick.k);
+    check(s5.stored === true && s5.saved === true && s5.active === false,
+      `after a reload: armLocked ${s5.stored}, armed ${s5.saved}, running ${s5.active}`);
+
+    // ---- 4. UNLOCK IT IN THE SAME PAGE, with no further press ----------------------------------------------------
+    const unlock = await page.evaluate(([l, fid]) => {
+      const T = window.tmtLoader, f = T.features.find((x) => x.id === fid);
+      const how = [];
+      try { if (tmp[l] && tmp[l].canReset) { doReset(l); how.push("doReset('" + l + "')"); } } catch (e) { how.push('doReset threw: ' + String(e.message).slice(0, 60)); }
+      T.tick(0.05, 1);
+      if (!T.featureState(fid).unlocked && player[l]) { player[l].unlocked = true; T.tick(0.05, 1); how.push('player.' + l + '.unlocked = true'); }
+      let engine = T.featureState(fid).unlocked;
+      if (!engine) { f.unlocked = () => true; how.push("the feature's derived unlocked() replaced with one that says yes"); }
+      return { engine, how: how.join(' then '), unlocked: T.featureState(fid).unlocked, active: T.featureState(fid).active };
+    }, [pick.layer, pick.id]);
+    notes.push(`unlocked by: ${unlock.how}${unlock.engine ? '' : ' (the engine put its own flag back, so the predicate was constructed)'}`);
+    check(unlock.unlocked === true && unlock.active === true, `the moment it unlocked it went active, with NO further press (active ${unlock.active})`);
+    // ---- AND IT ACTS. `active` is a predicate; an action is the thing a flag write could not fake. If nothing is
+    // affordable the layer is GIVEN currency — constructed, and the note says when that was needed.
+    // ⚠ JUDGED ONLY WHERE THE UNLOCK WAS THE ENGINE'S OWN, and that is not fastidiousness. Every action the registry
+    // takes goes through the engine (`buyUpgrade`, `doReset`, …) and the engine gates each of them on ITS OWN
+    // `player[l].unlocked`, not on the registry's predicate — so where only the derived predicate could be
+    // constructed, the engine still refuses every purchase and an action is impossible for a reason that has nothing
+    // to do with arming. MEASURED on Something Tree: `active` flips, `tmp.fundamental.upgrades` stay locked, and
+    // 400 ticks with 1e30 points buy nothing. Reddening there would be blaming the setting for the engine, and
+    // passing there would be worse. ptr carries this half, through a real `doReset('p')`.
+    const acted = await page.evaluate(async ([l, fid]) => {
+      const T = window.tmtLoader;
+      const n = () => T.hookStats().actions[fid] || 0;
+      T.tick(0.05, 200);
+      if (n() > 0) return { actions: n(), gift: null };
+      const was = player[l].points;
+      const C = [];
+      for (const nm of ['Decimal', 'ExpantaNum', 'OmegaNum']) { try { const c = new Function('return typeof ' + nm + ' !== "undefined" ? ' + nm + ' : null')(); if (c) C.push(c); } catch (e) { /* not this one */ } }
+      player[l].points = C.length ? new C[0]('1e30') : 1e30;
+      T.tick(0.05, 200);
+      return { actions: n(), gift: `player.${l}.points ${String(was)} -> 1e30` };
+    }, [pick.layer, pick.id]);
+    await redraw();
+    const s6 = await state(pick.k);
+    if (!unlock.engine) {
+      notes.push(`\u2014 the action half ABSTAINS: only the derived predicate could be constructed, so the engine still gates every purchase on its own player.${pick.layer}.unlocked (${acted.actions} action(s) after ${acted.gift})`);
+    } else {
+      check(acted.actions > 0, `it ACTED on its own: ${acted.actions} action(s)${acted.gift ? ` (after ${acted.gift} — nothing was affordable at the state the unlock left)` : ' with no help at all'}`);
+    }
+    check(s6.display.startsWith('On'), `and the button now reads "${s6.display.replace(/<br>/g, ' / ')}"`);
+    await page.evaluate(() => tmtLoader.storage.clear());
+    check(stats.pageErrors.length === 0 && stats.failed.length === 0 && stats.blocked.length === 0, `${stats.pageErrors.length} page errors, ${stats.failed.length} failed, ${stats.blocked.length} blocked`);
+  } catch (e) { ok = false; notes.push('EXCEPTION ' + String((e && e.stack) || e).slice(0, 400)); }
+  finally { await context.close(); }
+  row({ gate: 'A1-2 arming a locked feature (page)', id, ok, ticks: 0, gameSeconds: 0, diff: null, hash: null, notes: notes.join('; ') });
 }
 
 // ---- Part 3 --------------------------------------------------------------------------------------------------------

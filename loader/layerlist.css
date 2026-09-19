@@ -78,6 +78,21 @@
   overflow-x: hidden;
   -webkit-overflow-scrolling: touch;
   padding: 8px 12px calc(12px + env(safe-area-inset-bottom, 0px));
+  /* ⚠ THE LIST USED TO DRIFT DOWN WHILE YOU READ IT, and this one line is the fix (U4).
+   * The cause is the browser's own SCROLL ANCHORING, not anything this file's JavaScript does. `refresh()` rewrites
+   * a card's live text 20x/s — the prestige button's string, a counter's digits — and a card's content height moves
+   * with it by a few pixels; the browser then adjusts `scrollTop` to keep the anchor element it chose visually
+   * still, and that adjustment IS the drift. MEASURED on `the-yes-tree` at 390px through the card's own reset
+   * button: scrollTop 2275 -> 2272 while scrollHeight 5287 -> 5283 (the list got 4px SHORTER and the offset
+   * followed it). ⚠ It is NOT `rebuildInner`'s `body.textContent = ''`: a reset does not change MEMBERSHIP, so no
+   * rebuild runs, and a forced membership change measures Δ 0 because the wipe and the refill happen inside one
+   * task with no layout between them.
+   * ⚠ 44 of the 171 games witness it and 127 cannot — their list is not scrollable at 390x844 (measured over the
+   * whole roster at d7cd5c185). `ptr` and `something` are both witnesses ONCE THEIR DEEP SNAPSHOT IS LOADED, which
+   * is the state gate M1 reaches them in; at a fresh save ptr's list fits the viewport exactly (737/737).
+   * ⛔ The gate's discriminator is NOT "scrollTop did not move": a build that stopped the content height moving at
+   * all would pass that while proving nothing about anchoring. It asserts Δ scrollTop === 0 WHILE Δ height ≠ 0. */
+  overflow-anchor: none;
 }
 
 #tmt-layerlist .tmt-layerlist-row { margin: 0 0 14px; }

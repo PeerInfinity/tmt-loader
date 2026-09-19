@@ -162,6 +162,29 @@
 
   function isOnSaved(f) { return !!(player[AU] && player[AU].features && player[AU].features[f.id]); }
   function featureUnlocked(f) { try { return !!f.unlocked(); } catch (e) { return false; } }
+  // ⚖ MAY AUTOMATION BE ARMED FOR A FEATURE THAT IS NOT UNLOCKED YET? (user, 2026-09-19). Off by default, so the
+  // behaviour every earlier row was measured against is the default. It is a SETTING of the `au` layer, and it lives
+  // in `player[AU]` beside `disclosed` — the layer's own non-feature UI state, and the one store a save already
+  // carries. ⚠ It is NOT in `startData`: the S1 pins compare the FULL state hash, which includes `player.au`, so a
+  // key present from the first boot would move every pinned `want` hash for a setting nobody touched. Absent reads
+  // false, `toggleAuto` writes it on the first press, and the pins keep running in the state they were recorded in.
+  //
+  // ⛔ IT DOES NOT REACH `active()`, and that is the whole reason arming is SAFE rather than a foot-gun. Every branch
+  // of `active()` already ANDs with `featureUnlocked(f)`, and `isOnSaved` is stored per id independently of unlock
+  // state — so a feature armed while locked simply does not run, and `active()` turns it on BY ITSELF the moment the
+  // feature unlocks, with no further press. The setting only lifts the two UI predicates that refuse the press.
+  function armLocked() { return !!(player[AU] && player[AU].armLocked); }
+  // `armable(f)`: may the player's press change this feature's saved flag? The one predicate both toggles read.
+  function armable(f) { return featureUnlocked(f) || armLocked(); }
+  T.armLocked = function (on) {
+    if (on === undefined) return armLocked();
+    if (!player[AU]) throw new Error('armLocked: no player.' + AU + ' (the au layer is not in this save yet)');
+    // Vue.set, not a plain assignment: the key is absent until it is first written (see above), and 22 of the 171
+    // engines' own `toggleAuto` assigns plainly — a new key written that way is not observed at all.
+    if (G.Vue && typeof G.Vue.set === 'function') G.Vue.set(player[AU], 'armLocked', !!on);
+    else player[AU].armLocked = !!on;
+    return !!on;
+  };
   // A RUNTIME enable override (never saved, never a default): the advanced planner commits a configuration for an epoch
   // by switching individual features on and off under whatever profile is running — `off` is not a policy of every
   // kind, and writing player.au.features would put a planner decision into the player's save. Part of runtimeState(),
@@ -184,7 +207,7 @@
   T.featureState = function (id) {
     var f = byId[id];
     if (!f) throw new Error('no feature "' + id + '"');
-    return { id: id, layer: f.layer, kind: f.kind, policy: f.policy, policies: f.policies.slice(), saved: isOnSaved(f), unlocked: featureUnlocked(f), active: active(f),
+    return { id: id, layer: f.layer, kind: f.kind, policy: f.policy, policies: f.policies.slice(), saved: isOnSaved(f), unlocked: featureUnlocked(f), active: active(f), armable: armable(f),
       override: enableOverride[id] === undefined ? null : enableOverride[id], gate: f.gateSrc, gateHolds: f.gate ? holds(f.gate) : null,
       after: f.after.slice(), order: f.order ? f.order.slice() : null, keep: f.keepMilestone ? { layer: f.keepMilestone.layer, id: f.keepMilestone.id } : null, multiSkipped: f.multiSkipped || 0 };
   };
@@ -579,6 +602,7 @@
 
   // ---- the au side layer -----------------------------------------------------------------------------------------------
   var DISCLOSURE = 'Automation tools are a loader addition (tmt-loader); every toggle is off by default.';
+  var ARM_LABEL = 'Arm features that are not unlocked yet — an armed feature waits, and starts by itself at the unlock:';
   T.auTitle = 'Automation Tools';
   var clickables = { rows: 1, cols: 4 };
 
@@ -587,7 +611,10 @@
     player[AU].features[f.id] = !player[AU].features[f.id];
     player[AU].disclosed = true;
   }
-  function onColor(f) { return active(f) ? '#4f9a6a' : featureUnlocked(f) ? '#3d6f91' : '#666666'; }
+  // Green = running; blue = unlocked and off; AMBER = armed while still locked (saved on, waiting for the unlock);
+  // grey = locked. The amber is the only visible difference between "armed" and "off" on a locked button, and it can
+  // only appear while the setting is on, because that is the only way the flag can have been set.
+  function onColor(f) { return active(f) ? '#4f9a6a' : featureUnlocked(f) ? '#3d6f91' : isOnSaved(f) ? '#8a6d3b' : '#666666'; }
 
   function buildClickables() {
     for (var k in clickables) if (!isNaN(k)) delete clickables[k];
@@ -605,11 +632,15 @@
       },
       unlocked: true,
       canClick: function () { return features.length > 0; },
+      // ⚖ DECIDED (U4): with the setting ON, *All features* arms the locked ones too. An "All" that quietly meant
+      // "all the unlocked ones" would leave the player pressing every locked button by hand to reach the state the
+      // master toggle exists to reach in one press, and the two toggles reading DIFFERENT predicates is exactly the
+      // kind of split a later reader has to re-derive. With the setting OFF both refuse, as they do today.
       onClick: function () {
         var anyOff = false;
-        for (var i = 0; i < features.length; i++) if (!isOnSaved(features[i]) && featureUnlocked(features[i])) anyOff = true;
+        for (var i = 0; i < features.length; i++) if (!isOnSaved(features[i]) && armable(features[i])) anyOff = true;
         if (!player[AU].features) player[AU].features = {};
-        for (var j = 0; j < features.length; j++) player[AU].features[features[j].id] = anyOff && featureUnlocked(features[j]);
+        for (var j = 0; j < features.length; j++) player[AU].features[features[j].id] = anyOff && armable(features[j]);
         player[AU].disclosed = true;
       },
       style: { 'background-color': '#7fb2d9' },
@@ -620,11 +651,13 @@
         clickables[id] = {
           title: f.title,
           display: function () {
-            if (!featureUnlocked(f)) return 'Locked';
+            // A locked feature reads `Locked` exactly as it did before the setting existed; with the setting on it
+            // says which of the two locked states it is in, because `Armed` is what the press just bought.
+            if (!featureUnlocked(f)) return !armLocked() ? 'Locked' : (isOnSaved(f) ? 'Armed' : 'Off') + '<br>locked';
             return (active(f) ? 'On' : 'Off') + (T.profileName !== 'saved' ? ' (profile ' + T.profileName + ')' : '') + '<br>' + f.policy;
           },
           unlocked: true,
-          canClick: function () { return featureUnlocked(f); },
+          canClick: function () { return armable(f); },
           onClick: function () { toggleSaved(f); },
           style: { 'background-color': function () { return onColor(f); } },
           tmtFeature: f.id,
@@ -852,6 +885,16 @@
           return 'Profile: <b>' + T.profileName + '</b> — ' + on + ' of ' + features.length + ' registered features running';
         }],
         ['display-text', function () { return player[AU] && player[AU].disclosed ? DISCLOSURE : ''; }],
+        // THE SETTING, and it is a `toggle`, not a clickable (⚖ user, 2026-09-19). That distinction is the whole
+        // reason it is here: `buildClickables` lays the feature buttons out in a fixed grid whose `rows` / `cols`
+        // it computes from `features.length + 1`, and U1's mobile CSS flattens THOSE boxes with `display: contents`
+        // — a 12th clickable would have shifted every button's id by one and joined the flatten. A tabFormat member
+        // sits outside both: the grid arithmetic is untouched and the flatten never sees it.
+        // `row` + `toggle` + `display-text` are the ENGINE's own components, and all three are registered by all
+        // 171 games (measured, quote-agnostically, over `Vue.component("…")` in games/). `toggle`'s click runs the
+        // engine's own `toggleAuto([layer, field])`, which is how the field gets written without this file touching
+        // the DOM — it never has, and the contract says so.
+        ['row', [['display-text', function () { return ARM_LABEL; }], ['toggle', [AU, 'armLocked']]]],
         'blank',
         'clickables',
       ],

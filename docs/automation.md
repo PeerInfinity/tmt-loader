@@ -35,6 +35,7 @@ to the game's other side nodes (selector `#app .smallNode.au` on both engines). 
   feature's policy under it;
 - a master toggle, *All features*: turns every unlocked feature on, or (when all are on) all off;
 - a profile readout: the active profile and how many features are running;
+- **a setting, *Arm features that are not unlocked yet*** — see below;
 - after the first click on any toggle, the line *"Automation tools are a loader addition (tmt-loader); every toggle is
   off by default."*
 
@@ -45,6 +46,49 @@ The toggles live in `player.au.features` (`{featureId: true|false}`), `player.au
 `gameLoop` updates `best` for every side layer). **`player.au.clickables` has one key per toggle button**, so the full
 state hash moves with the NUMBER of registered features; compare game state across tables with `au` excluded (the
 harness's `hashGame`).
+
+### Arming a feature that is not unlocked yet (U4)
+
+⚖ user, 2026-09-19. A locked feature's toggle is shown and refuses the press. With the setting
+**Arm features that are not unlocked yet** on, it accepts one: the feature goes to `player.au.features` as usual, the
+button reads **Armed** in amber, and *it does not run*. The moment the feature's own `unlocked()` becomes true it
+starts, with no further press.
+
+**Nothing about running changed, and that is what makes arming safe.** Every branch of the registry's `active(f)`
+already ANDs with `featureUnlocked(f)`, while `isOnSaved` is stored per feature id independently of unlock state — so
+an armed-but-locked feature is inert by construction, and `active()` turns it on by itself at the unlock. The setting
+lifts exactly two UI predicates and reaches nothing else:
+
+| | setting off (the default) | setting on |
+|---|---|---|
+| a locked feature's own toggle | `canClick` false; reads `Locked` | `canClick` true; reads `Armed` / `Off` over `locked` |
+| *All features* | turns on every **unlocked** feature | turns on every feature, **locked ones included** (⚖ decided in U4: an "All" that meant "all the unlocked ones" would leave the locked buttons to be pressed one by one, and two toggles reading different predicates is a split a later reader has to re-derive) |
+| `active(f)` — whether it runs | unchanged | **unchanged** |
+
+**Where it lives.** `player.au.armLocked`, beside `player.au.disclosed` — the `au` layer's own non-feature UI state, and
+a store the save already carries. ⚠ It is **not** in the layer's `startData`: the S1 pins compare the FULL state hash,
+which includes `player.au`, so a key present from the first boot would move every pinned `want` hash for a setting
+nobody has touched. Absent reads false; the first press writes it.
+
+**What it is made of.** A tabFormat `['row', [['display-text', …], ['toggle', ['au', 'armLocked']]]]` — the engine's own
+components, all three registered by all 171 games (measured over `Vue.component("…")` in `games/`, quote-agnostically).
+⚠ It is deliberately **not** a clickable: `buildClickables` lays the feature buttons out in a grid whose `rows` / `cols`
+it computes from `features.length + 1`, and `loader/mobile.css` flattens those row boxes with `display: contents`, so a
+twelfth clickable would have shifted every button's id by one and joined the flatten. A tabFormat member sits outside
+both. The click runs the engine's own `toggleAuto(['au', 'armLocked'])`, which is how the field is written without
+`loader/tmt-auto.js` touching the DOM — it never has, and `docs/contract.md` says so.
+
+`tmtLoader.armLocked()` reads it and `tmtLoader.armLocked(on)` writes it (through `Vue.set`, because the key is absent
+until first written and 22 of the 171 engines' own `toggleAuto` assigns plainly). `featureState(id).armable` is the
+predicate both toggles read: `unlocked || armLocked`.
+
+**The gate** is `node tools/harness/gates-a1.mjs --part 2`, one row per game: with the setting off a real press on a
+locked button changes nothing; with it on the feature arms, the flag survives a reload, and 200 ticks later it is still
+`active: false` with 0 actions; then the feature is unlocked **in the same page** and must go active and *act* with no
+further press. The unlock is the engine's own where the engine allows it (`doReset(l)`, then the `player[l].unlocked`
+flag) and the row says which path it took. ⚠ Neither sticks everywhere — measured on Something Tree, whose
+`unlock.update()` recomputes `player.fundamental.unlocked` every tick and puts it straight back — so the fallback
+replaces the feature's derived `unlocked()` with one that says yes, the same construction gate M1 uses for `pseudoUnl`.
 
 ## Profiles
 

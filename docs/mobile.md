@@ -740,6 +740,56 @@ milliseconds in the tail with the frame rate untouched. What the numbers do poin
 `ptr` at its snapshot, 60 → 21 → 12 → 6.6 on `the-yes-tree`) with p50 lateness rising to tens of milliseconds. A
 probe that had only ever printed "no delay" would have said nothing at all.
 
+#### The list stops drifting down while you read it (U4)
+
+⚖ user, 2026-09-19: *"the Layers view drifts down on a reset."* It did, and the fix is **one CSS line** —
+`overflow-anchor: none` on `.tmt-layerlist-body`.
+
+**The mechanism is the browser's, not this file's.** `refresh()` rewrites a card's live text 20×/s: the prestige
+button's string, the amount readout, a counter's digits. Those strings change length, a card's content height moves by
+a few pixels, and the browser's **scroll anchoring** then adjusts `scrollTop` to keep the anchor element it picked
+visually still. That adjustment *is* the drift. MEASURED on `the-yes-tree` at 390 px, through the card's own reset
+button:
+
+| | before | after |
+|---|---|---|
+| `scrollTop` | 2275 | 2272 |
+| `scrollHeight` | 5287 | 5283 |
+
+The list got **4 px shorter** and the offset followed it down. On `ptr` at its deep snapshot the same press measures
+`scrollTop` −3 with `scrollHeight` −3 under `overflow-anchor: auto`, and **0 with −3** with the fix: the height still
+moves, the offset no longer does.
+
+⛔ **It is NOT `rebuildInner`'s `body.textContent = ''`.** That is real code with nothing preserving `scrollTop`
+across it, and it was the first hypothesis — but a reset does not change MEMBERSHIP, so `signature()` matches and no
+rebuild runs; and a *forced* membership change measures **Δ 0**, because the wipe and the refill happen inside one
+task with no layout between them. Reducing the height churn would have been a second, weaker option; disabling
+anchoring on the one scroller we own is exact.
+
+**Who can witness it.** 44 of the 171 games; the other **127 cannot**, because their list is not scrollable at
+390×844 at all (measured over the whole roster at `d7cd5c185`). ⚠ `ptr` **is** one of the 44 — but only once its deep
+snapshot is loaded, which is the state gate M1 reaches it in. At a fresh save its list fits the viewport exactly
+(737 px of content in 737 px), which is why a first look said it could not witness this.
+
+**The gate** (`--gate mobile`, two halves, in the layers leg):
+
+- the **real** one rides the existing reset press: the scroller is put at a mid-list offset, the card's own prestige
+  button is clicked, and both numbers are read either side;
+- a **constructed** one, so the claim is judged wherever the list scrolls at all: a 40 px spacer inserted as the
+  body's first child.
+
+⛔ **The discriminator is not "scrollTop did not move."** A build whose cards stopped changing height would pass that
+while proving nothing about anchoring, so **each half judges only where Δ height ≠ 0** and abstains otherwise, naming
+which it was.
+
+⚠ **And the constructed half had to be built the right way round.** The first version grew the first card's
+`marginTop`. A computed-style change to `margin` / `padding` / `height` on the anchor node **or any of its ancestors
+up to the scroller** is a *suppression trigger* in the scroll-anchoring spec: the browser declines to adjust at all.
+MEASURED on `something`, whose rows hold one card each so the first card *is* an ancestor of the anchor: `marginTop`
++40 gave `dTop` **0** with `dHeight` 40 — a clean pass, with anchoring fully on and the defect fully present — while a
+spacer at the top of the same body gave **40 / 40**. A probe built the first way would have certified the fix before
+anything was fixed.
+
 ### Reading a card can make the ENGINE write `player`
 
 The list assigns nothing to `player`. That is not the same as the state not moving, and two measured cases say why:
@@ -1252,6 +1302,27 @@ no path to — and both rounds had to be thrown away and the battery re-run seri
 `git checkout` accident and the tell was the same: **a mutant reddening a check it cannot reach.** What caught it
 was the harness's own refusal to start on a dirty tree, firing when the *other* battery had a mutant applied. A
 mutant harness needs a lock, or a single process; "I started it in the background" is not a guarantee that it ended.
+
+#### What U4 added to the leg
+
+Two verdicts per game, both in the layers leg and both summarised on one `M1 layers drift` line:
+
+| verdict | what it means |
+|---|---|
+| `held while the height moved` | Δ `scrollTop` was 0 while Δ `scrollHeight` was not — the claim, judged |
+| `THE LIST DRIFTED` | the offset followed the height; this is the defect |
+| `abstains (the list is not scrollable at this width: N px of room)` | 127 of the 171 games; the number is printed so it is not mistaken for a pass |
+| `abstains (the press did not move the content height)` | the real half only: the reset moved nothing to anchor against |
+
+⚠ **The abstentions are the majority and the line says so**, because the whole risk here is a green that means
+"nothing was measured". The constructed half judges 44 games; the real half judges however many of them have a
+reset press that moves the height (2 of the 5 in the bounded local set: `ptr` and `the-alphabetree`).
+
+And, beside them on the `?mobile=1&automation=1` page, the **default half of the arming setting** (`docs/automation.md`):
+it is off, it is not in the save, its control is in the `au` tab, every locked feature's toggle still refuses — and
+`clickables === features + 1`, which is what says the setting stayed **out** of the clickable grid whose flatten the
+same leg measures two lines above. The arming flow itself is `gates-a1.mjs --part 2`, which CI does not run; this is
+the half that protects every existing row, on the two games that have an automation table.
 
 ### The state leg needs a control
 
