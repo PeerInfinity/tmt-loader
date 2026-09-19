@@ -197,16 +197,24 @@ async function picker() {
     li.dataset.id = m.id;
     const a = document.createElement('a');
     a.href = `?mod=${encodeURIComponent(m.id)}`;
-    a.textContent = m.name;
+    // ⚠ A FIELD A GAME DOES NOT HAVE IS NOT THE STRING "null". Two games (`the-modding-tree`, `the-burning-tree`)
+    // carry no `author` at all — their TMT 2.0.x `modInfo` predates the field — and this line used to render them
+    // as `vnull by null`, on the published site, for as long as they have been hosted. An absent part is dropped;
+    // the parts that are present still read the same.
+    a.textContent = m.name || m.id;
     const meta = document.createElement('div');
     meta.className = 'meta';
     const up = m.upstream || {};
-    meta.textContent = `v${m.version} by ${m.author} · ${up.repo} @ ${(up.commit || '').slice(0, 7)} · TMT ${m.engine && m.engine.tmtNum} · license ${m.license && m.license.verdict}`;
+    const byline = [m.version ? `v${m.version}` : null, m.author ? `by ${m.author}` : null].filter(Boolean).join(' ');
+    meta.textContent = [byline || null,
+      up.repo ? `${up.repo} @ ${(up.commit || '').slice(0, 7)}` : null,
+      m.engine && m.engine.tmtNum ? `TMT ${m.engine.tmtNum}` : null,
+      m.license && m.license.verdict ? `license ${m.license.verdict}` : null].filter(Boolean).join(' · ');
     const count = () => rawKeys(raw, localStorage, prefixFor(m.id)).length;
     const btn = document.createElement('button');
     const label = () => { btn.textContent = `clear this game's save (${count()} keys)`; };
     btn.addEventListener('click', () => {
-      if (!confirm(`Delete every saved key of ${m.name} in this browser?`)) return;
+      if (!confirm(`Delete every saved key of ${m.name || m.id} in this browser?`)) return;
       for (const k of rawKeys(raw, localStorage, prefixFor(m.id))) raw.removeItem.call(localStorage, k);
       label();
     });

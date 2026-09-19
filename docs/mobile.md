@@ -270,7 +270,17 @@ static counts are **1211 array-form and 641 object-form, in 171 of 171 games**. 
 is not corroboration. The "170 of 171" was never a real finding about one holdout game; it was the bound.
 
 (Same root cause as the `buyUpg` miscount recorded below. Two numbers in this document came from a glob that
-silently excluded one game; if you add a third census, do not bound it to `js/`.)
+silently excluded one game; if you add a third census, do not bound it to `js/`. Since U2g you do not have to
+remember: `node tools/census-figures.mjs` regenerates every figure in this section and fails when the prose and
+the tree disagree, and CI runs it on every push.)
+
+⚠ **That count is a census of the SUBTREE, and the subtree holds code the loader never loads** — `Old Code/`,
+`demo.html`, a game's own `js/Demo/`. Counted over only the files the loader actually loads (each manifest's
+`load.scripts` + `modFiles`, which is what `games/<id>/` contributes to a page), the same declarations are
+**935 array-form and 455 object-form, in 170 of 171 games** — `distance-incremental`'s only `tabFormat`
+declaration is in `Old Code/gametest.js` and in its `js/Demo/`, neither of which the loader loads. Both numbers
+are true of what they count; a figure without its scope is not a figure, which is the third way the counts in this
+section have gone wrong.
 
 ⚠ **Read `tabFormat` from `tmp`, never from `layers`.** A layer may declare `tabFormat()` as a function (PTR has
 one); the engine's own `updateTemp` evaluates it into `tmp`, and that result is what the tab renders.

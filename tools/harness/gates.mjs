@@ -17,7 +17,7 @@ import { parity } from './parity.mjs';
 import { upstreamExport } from './upstream-export.mjs';
 import { checkManifest } from './check-manifest.mjs';
 import { nodeIds, compareIds } from './check-goldens.mjs';
-import { checkGamesTable, checkDeclined, OUT as GAMES_DOC, DECLINED } from '../games-table.mjs';
+import { checkGamesTable, checkDeclined, checkSelfDeclared, OUT as GAMES_DOC, DECLINED } from '../games-table.mjs';
 import { execFileSync } from 'node:child_process';
 entryOnly(import.meta.url);  // a battery, not a library — see lib.mjs
 
@@ -97,6 +97,12 @@ try {
     row({ gate: 'G6 games doc', id: null, ok: g.ok, ticks: 0, gameSeconds: 0, diff: null, hash: null,
       notes: g.ok ? `${GAMES_DOC}: ${g.games} games in manifests/index.json, generator built ${g.built}, ${g.listed} listed in that order, file byte-equal to the generator's output`
         : g.problems.join('; ').slice(0, 400) });
+    // G6b — every manifest's name/author/version IS the game's own declaration, re-read from its sources. Two games
+    // carried `null` for as long as they have been hosted because the emitter's reader looked only in `mod.js`.
+    const n = checkSelfDeclared();
+    row({ gate: 'G6b manifest = the game\'s own declaration', id: null, ok: n.ok, ticks: 0, gameSeconds: 0, diff: null, hash: null,
+      notes: n.ok ? `${n.checked} manifest(s): name, author and version re-read from each game's own modInfo/VERSION${n.undeclared ? `; ${n.undeclared} game(s) declare no name of their own` : ''}`
+        : n.problems.join('; ').slice(0, 400) });
     const d = checkDeclined();
     row({ gate: 'G7 declined list', id: null, ok: d.ok, ticks: 0, gameSeconds: 0, diff: null, hash: null,
       notes: d.ok ? `${DECLINED}: ${d.declined} games declined with a reason, none of them hosted`

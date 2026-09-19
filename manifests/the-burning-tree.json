@@ -1,8 +1,8 @@
 {
   "schema": 1,
   "id": "the-burning-tree",
-  "name": null,
-  "version": null,
+  "name": "The Burning Tree",
+  "version": "0.2.0",
   "author": null,
   "upstream": {
     "repo": "thefinaluptake/The-Burning-Tree",

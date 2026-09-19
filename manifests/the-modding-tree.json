@@ -1,8 +1,8 @@
 {
   "schema": 1,
   "id": "the-modding-tree",
-  "name": null,
-  "version": null,
+  "name": "The Modding Tree",
+  "version": "2.0.5.1",
   "author": null,
   "upstream": {
     "repo": "Pimvgd/The-Modding-Tree",
