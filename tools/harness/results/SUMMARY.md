@@ -3833,3 +3833,14 @@ set of nine could not have contained it, and the reference games both define the
 
 Fixed by calling whichever name the engine has; both games GREEN afterwards, and the pre-fix CI run is the mutant
 record for it.
+
+### The CI verdict at `482151ae9` — the roster, read from the merge job
+
+| gate | roster | leg | result | notes |
+|---|---|---|---|---|
+| U2d CI sweep | — 171 games — | `--gate mobile --shard i/10`, GitHub Actions | GREEN | run `35411106779`; **171/171 covered, each exactly once; 0 RED**; the same 6 state-leg abstentions as U2h's baseline (the-gaming-tree, plague-tree-…, falling-mountain-…, the-cookie-tree, the-orchard-tree, the-periodic-table-tree); shards 88–190 s (spread ×2.16 — the ~×2 floor U2h measured, unmoved by U2d's four extra legs), serial total 22.5 min, **sharded wall clock 3.2 min** |
+| U2d CI sweep (the previous one) | — 171 games — | same, at `daeab5795` | RED, correctly | run `35410614217`; 171/171 covered, **1 RED: the-modding-tree** — the `buyUpg` defect above. ⛔ NINE SHARD CHECKMARKS WERE GREEN and the run's own conclusion was `failure`; the id came from the `merge + roster assertion` job, which is the only place that names it |
+
+⚠ Worth keeping: U2d's four new driving legs cost the sweep **nothing measurable** — 3.2 min against U2h's five
+runs at 3.0–3.7 min, and the shard spread stayed at the ×2.16 the cost table already achieves. The legs are cheap
+because three of the four ride ticks the leg was already taking.
