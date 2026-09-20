@@ -3676,7 +3676,7 @@
     var rows = explainForView(true);   // the redraw IS the refresh point — see explainForView
     var running = 0, never = 0, edited = 0, escalated = 0;
     for (var i = 0; i < rows.length; i++) { if (rows[i].state === 'on') running++; if (rows[i].neverFired) never++; if (rows[i].policy && rows[i].policy.saved) edited++; if (rows[i].policy && rows[i].policy.escalated) escalated++; }
-    return '<div style="text-align:left;max-width:100%;overflow-wrap:anywhere;word-break:break-word">'
+    return '<div class="tmtl-root" style="' + ROOT_STYLE + '">'
       + '<div style="opacity:.75;font-size:.9em;margin-bottom:6px;text-align:left">' + esc(ADV_INTRO) + '</div>'
       + '<div style="margin-bottom:4px;text-align:left">Profile <b>' + esc(T.profileName) + '</b> · ' + running + ' of ' + rows.length + ' running'
       + (never ? ' · <b style="color:#c08a3e">' + never + ' never fired</b>' : '')
@@ -3722,6 +3722,19 @@
   var PRED_FIELD_STYLE = CONTROL + ';width:100%;box-sizing:border-box;margin:1px 0;padding:1px 4px;font-family:monospace;font-size:.85em';
   var SELECT_STYLE = CONTROL + ';max-width:min(100%,22em);padding:1px 4px;font-family:inherit;font-size:.9em';
   var BTN_STYLE = CONTROL + ';margin:0 1px;padding:1px 6px;font-family:inherit;font-size:.9em;cursor:pointer';
+  // ⛔ V5 PART 1 — THE ROOT TAKES THE PANE'S WIDTH, NOT ITS OWN TEXT'S. MEASURED on ptr at 1280 px, desktop: the
+  // engine renders a subtab's content through its `column` component, whose `.upgTable` is a WRAPPING COLUMN
+  // flexbox — and a flex item there is laid out at the MAX-CONTENT width of what is in it. So the loader's column came
+  // out **1766 px wide inside a 634 px pane** (865 on Something Tree), the pane (`overflow:hidden`) clipped it, and
+  // every long line and every control past the pane's edge was unreadable and unreachable: 413 elements past it at
+  // 1280, 712 at 390 without `?mobile=1` — the same whether or not a control was on screen, which is why V4 read it as
+  // "ptr's layout" (shots-v4.mjs). `?mobile=1` alone was spared, because mobile.css clamps `.upgCol`.
+  // ⛔ A FIXED-LAYOUT TABLE AT 100 % IS THE ONE BOX WHOSE WIDTH IS ITS CONTAINER'S RATHER THAN ITS CONTENT'S: measured
+  // on both engines at 390 and 1280, with and without `?mobile=1`, the root is exactly the pane's width every time.
+  // ⚠ `contain:inline-size` was measured first and is a TRAP: the column shrink-wraps to NOTHING (0 px wide) and a
+  // "no element past the viewport" count over it comes back 0 — a vacuous green, which is why gates-v5 part 1 also
+  // asserts the root is as wide as its pane.
+  var ROOT_STYLE = 'text-align:left;max-width:100%;overflow-wrap:anywhere;word-break:break-word;display:table;table-layout:fixed;width:100%;box-sizing:border-box';
 
   var COMPONENTS = {
     // ONE parameter. `data` = {fid, which, name, value, label, type, min, max} plus, since V3, an optional TARGET:
@@ -3785,8 +3798,18 @@
         wide: function () { return this.data.type === 'predicate'; },
         fieldStyle: function () { return this.wide ? PRED_FIELD_STYLE : FIELD_STYLE; },
       },
-      template: '<span style="display:inline-block;text-align:left;margin:2px 8px 2px 0" :style="wide ? \'white-space:normal;width:100%\' : \'white-space:nowrap\'">'
-        + '<span style="opacity:.75;font-size:.85em">{{ data.label }}</span>'
+      // ⛔ V5 PART 1 — THE ROW WRAPS; THE CONTROL GROUP DOES NOT. Until V5 the whole field — label, box and both
+      // steppers — sat in ONE `white-space:nowrap` span, so a long label pushed the box and the `−` / `+` off the
+      // right edge: measured at 390 px on ptr (`all/M22`, the give-up block), NINE elements past the viewport, the
+      // steppers at x = 617 and 642, and `scrollWidth` 390 — the page does not scroll sideways, so those controls
+      // were UNREACHABLE, not merely cramped. Now the field is a WRAPPING flex row: the label is its own item and
+      // wraps its own words, and the box with its steppers is one item that never breaks apart, so a narrow screen
+      // puts the control on the next line instead of past the edge, and a wide one keeps it beside its label as
+      // before. ⚠ Every size of the box and the buttons is UNCHANGED (FIELD_STYLE / BTN_STYLE) — a tap target is
+      // no smaller than it was (gates-v5 part 1 measures that against the pre-V5 numbers).
+      template: '<span class="tmtl-field" style="display:inline-flex;flex-wrap:wrap;align-items:center;max-width:100%;min-width:0;box-sizing:border-box;text-align:left;margin:2px 8px 2px 0;vertical-align:middle;white-space:normal" :style="wide ? \'width:100%\' : \'\'">'
+        + '<span class="tmtl-label" style="opacity:.75;font-size:.85em;min-width:0;max-width:100%;overflow-wrap:anywhere;margin-right:3px">{{ data.label }}</span>'
+        + '<span class="tmtl-ctlgrp" style="display:inline-flex;align-items:center;white-space:nowrap;max-width:100%" :style="wide ? \'flex:1 1 100%\' : \'flex:0 0 auto\'">'
         // ⚠ `data-fid` / `data-param` are how a GATE points at ONE feature's field. The first cut of `gates-v2`
         // located `input.tmtl-input` with `.first()` and typed into whichever feature happened to be drawn first,
         // then reported that the value had not committed — the leg was measuring the wrong block.
@@ -3800,7 +3823,8 @@
         + ' @keydown.stop="onKey" @keyup.stop @keypress.stop>'
         + '<button v-if="!wide" type="button" style="' + BTN_STYLE + '" @click="step(-1)" @keydown.stop>&minus;</button>'
         + '<button v-if="!wide" type="button" style="' + BTN_STYLE + '" @click="step(1)" @keydown.stop>+</button>'
-        + '<span v-if="error" class="tmtl-error" style="color:#d07a7a;font-size:.85em;display:block;white-space:normal">{{ error }}</span>'
+        + '</span>'
+        + '<span v-if="error" class="tmtl-error" style="color:#d07a7a;font-size:.85em;display:block;flex:1 1 100%;white-space:normal">{{ error }}</span>'
         + '</span>',
     },
     // The STRATEGY PICKER. `data` = {fid, value, options: [{id, label, help, available, why}]} and, since V3, an
@@ -4124,7 +4148,7 @@
       },
       created: function () { T.requestLadder(); },   // the one place that WANTS the mark names
       methods: { arm: function () { T.setWatchOption('track', true); } },
-      template: '<div style="text-align:left;max-width:100%;overflow-wrap:anywhere;word-break:break-word">'
+      template: '<div class="tmtl-root" style="' + ROOT_STYLE + '">'
         + '<div style="opacity:.75;font-size:.9em;margin-bottom:6px;text-align:left">' + '' + PROG_INTRO + '</div>'
         + '<div v-if="!p.armed" style="text-align:left">'
         +   '<button type="button" class="tmtl-track-on" style="' + BTN_STYLE + '" @click="arm" @keydown.stop>start tracking progress</button>'
@@ -4207,7 +4231,7 @@
         rowsNow: function () { return this.blocks.map(function (b) { return b.row; }); },
         folded: function () { var b = this.blocks, n = 0; for (var i = 0; i < b.length; i++) if (b[i].collapsed) n++; return n; },
       },
-      template: '<div style="text-align:left;max-width:100%;overflow-wrap:anywhere;word-break:break-word">'
+      template: '<div class="tmtl-root" style="' + ROOT_STYLE + '">'
         + '<tmtl-watch :data="{watch: watch}"></tmtl-watch>'
         // ⚖ Q1's second half: expand all / collapse all, and they set EVERY block including the ones whose default is
         // the other way — `collapse all` then `expand all` has to be reachable from any state.
