@@ -37,8 +37,10 @@ const row = (r) => { rows.push(r); console.log(`${r.ok ? 'GREEN' : 'RED  '} ${r.
 // here and say so, which is the point. (Same reasoning as `gateCoverage`'s per-game row-count check for `gates-a1`;
 // this battery's rows are not per-game, so it needs its own floor.)
 // ⚠ A DECLARED ROW COUNT IS PART OF THE GATE (a battery that stops part-way prints fewer rows, and fewer rows is
-// fewer reds) — so ADDING a leg moves it, and CI says so. R2 added one witness leg to part 1: 9 → 10.
-const ROWS = { 1: 10, 2: 3, 3: 2, '3p': 2, 4: 4, 6: 1 };
+// fewer reds) — so ADDING a leg moves it, and CI says so. R2 added one witness leg to part 1: 9 → 10. V4 added one
+// more for its two new codes: 10 → 11, and CI found that too (run 35511982551: `unwitnessed: blocked:predicate,
+// stopped:until`, four slices out of four).
+const ROWS = { 1: 11, 2: 3, 3: 2, '3p': 2, 4: 4, 6: 1 };
 
 const SNAP = (id, m) => `tools/harness/snapshots/${id}/all/${m}.json`;
 // M15 → M16: R1′'s own leg, and the one long ptr leg V1's inertness is measured on (plan §14d).
@@ -80,8 +82,10 @@ const job = (id, o) => new Promise((resolve) => { queue.push({ id, o, resolve })
 //
 // ⛔ THE CODES NO FIXTURE CAN SHOW, and why, measured: ptr's table leaves `challenges` and `clickables` at policy
 // `off` (so the four challenge codes, `blocked:exit` and the two clickable codes never occur); neither table uses
-// `buy-unless-saving` (`holding:saving`) or `keepsUpgrades`; no table on the roster carries a `gates` entry
-// (`blocked:gate`); and `armed` needs a locked feature toggled on, which is a press. Those are CONSTRUCTED in
+// `buy-unless-saving` (`holding:saving`) or `keepsUpgrades`; and `armed` needs a locked feature toggled on, which is
+// a press. ⚠ `blocked:gate` STAYS CONSTRUCTED THOUGH ITS PREMISE MOVED (V4): `games-auto/ptr.js` now carries a
+// `gates` entry — the M21 pause — so "no table on the roster carries one" is false, but that gate is false only
+// past PTR's q milestone 4 at ~26,600 game-seconds and no leg here is within four orders of magnitude of it. Those are CONSTRUCTED in
 // `loader/reasons.test.mjs` over a stub engine, which this part runs and requires green — a list of codes the unit
 // test claims to cover is worth nothing unless the test passed in the same run that quotes it.
 const CONSTRUCTED = [
@@ -107,6 +111,15 @@ const LEGS = [
   // witness needs. No table names `gain>=Nx-unit`, so the leg has to name it — a fixture witness beats a
   // construction wherever one exists (§18.4's rule, applied to this slice's own new code).
   { key: 'ptr fresh 400×1, --auto-opt policy:reset:p=gain>=2x-unit (R2: the empty-purse bar, and the deadlock)', id: 'ptr', o: { profile: 'all', diff: 1, ticks: 400, 'auto-opt': 'policy:reset:p=gain>=2x-unit', explain: true } },
+  // ⛔ V4's TWO NEW CODES, ON ONE REAL LEG, and the pairing is deliberate: `until` stops `reset:p` once 5 prestige
+  // points have been earned (⚖ §13's own example, and `reset:p` acts ten times BEFORE it stops — a feature that
+  // never acted cannot witness a stop), while a `while` that THROWS sits on `reset:b`. The two are independent
+  // features of independent layers, so this leg is also the evidence that a throwing predicate does not take the
+  // tick down with it: `reset:g` goes on acting on the same ticks.
+  // ⚠ A FIXTURE WITNESS BEATS A CONSTRUCTION wherever one exists (§18.4's rule), which is why these are legs and
+  // not two more entries in CONSTRUCTED below.
+  { key: 'ptr fresh 400×1, --auto-opt until:reset:p=… ; while:reset:b=<throws> (V4: the stop and the bad predicate)', id: 'ptr',
+    o: { profile: 'all', diff: 1, ticks: 400, 'auto-opt': 'until:reset:p=player.p.points.gte(5);while:reset:b=player.nosuchlayer.gte(1)', explain: true } },
   { key: 'something fresh 600×1 (profile all)', id: 'something', o: { profile: 'all', diff: 1, ticks: 600, explain: true } },
 ];
 

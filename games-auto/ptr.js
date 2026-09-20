@@ -76,6 +76,34 @@ tmtLoader.autoTable = {
     // resets, so the policy that farms quirks fastest is the one that never gets there (R2 part 2).
     'reset:q': 'gain>=2',
   },
+  // ⛔ R2's WALL AT M21, BROKEN BY A PAUSE — and the whole finding is that it is a PAUSE and not a latching STOP.
+  // `h` needs 1e30 Time Energy to reset and `hasMilestone('q',4)` to be SHOWN (M20). Time Energy is row 2's, and a
+  // `q` reset WIPES row 2 — so the policy that farms quirks fastest is the one that never lets Time Energy climb
+  // back, and R2 measured M21 and M22 as two BRANCHES that pull opposite ways (plan §24.7): `gain>=2` reaches M20
+  // and M22 and never M21, while the two `rate-peak` cells reach M21 and never M22.
+  // ⚖ 13d.2 — no arbitrary waiting: this is not a clock. It stops resetting `q` at the exact moment `q` has nothing
+  // left to unlock on this rung (its milestone 4 is the last one row 2 can buy) and starts again the moment the
+  // thing it was waiting FOR has happened. Both terms are the engine's own.
+  //
+  // MEASURED over a WHOLE STRETCH (gate V4-m21, from `snapshots/ptr/all/M15.json` → M22, 16,000 ticks, diff 1,
+  // every cell TWICE and every cell equal; the planner reproduced the winning row independently at 3346da419):
+  //   NO pause (the control)   M16 17058 · M17 23492 · M18 25598 · M19 25937 · M20 26612 · M21 —     · M22 29204
+  //   **this entry**           M16 17058 · M17 23492 · M18 25598 · M19 25937 · M20 26612 · M21 28058 · M22 30618
+  //   …with `|| TE within 1e20 of h's requirement` added — BYTE-IDENTICAL to this entry (the extra term is inert:
+  //      by the time q ms 4 holds, Time Energy is already inside the window)
+  //   `h.unlocked || tmp.h.baseAmount.lt(tmp.h.requires.div('1e10'))`   M16 17058 and then NOTHING — and
+  //   `…div('1e20')` is byte-identical to it (32048 / `a40493595e4663d1`). ⛔ Reading the REQUIREMENT from the
+  //      engine instead of naming the milestone pauses `q` before it has ever reset, and a layer UNLOCKS ON ITS
+  //      FIRST RESET — so `q` never unlocks at all. The milestone is not a literal standing in for the requirement;
+  //      it is the only term that can be true before the layer exists.
+  //   the DERIVED candidate (pause while a SHOWN-but-LOCKED layer of my own row exists) M16–M21 to the second, and
+  //      then NO M22 — see `provenance` and plan §27: it deadlocks on PTR itself.
+  // ⚠ THE PRICE IS THE CLIMB, NOT THE RULE. M22 moves 29204 → 30618, i.e. **+1414 game-seconds**, and the pause
+  // itself lasts 26612 → 28058 = **1446**. The delay IS the time Time Energy needs to reach 1e30 with row 2 intact;
+  // no pause predicate can make that cheaper, because it is the game's cost and not a scheduling choice.
+  gates: {
+    'reset:q': "!hasMilestone('q',4) || player.h.unlocked",
+  },
   alternatives: {
     'reset:p': ['interval>=10', 'always', 'gain>=1'],
     'reset:b': ['keepsUpgrades'],
@@ -122,7 +150,7 @@ tmtLoader.autoTable = {
     'reset:s': "A2-3, re-measured at the frontier (SUMMARY gate R1′-2.3): `always` reaches M16 at 24203 against `interval>=5`'s 24236 — the same tie.",
     'reset:e': "R1′ (SUMMARY gate R1′-2.3): e is row 2's only NORMAL layer, so its gain follows how high points climbed and an interval reset spends that climb every 5 s. `gain>=2x` reaches every remaining mark of the rung (M11 14745 · M12 14909 · M15 16048 · M16 24179); `interval>=5` and `always` reach none of them.",
     'buyables:e': "R1′ (SUMMARY gate R1′-2.2): the reserve is READ from the game, never written here. `reserve>=next-upgrade` ends 47 EP held with 3 Enhancers against `buy`'s 11 EP with 4 — and a literal `reserve>=25` is byte-identical to `buy`, because once e11 is owned the next upgrade costs 400.",
-    'reset:q': "R2 (SUMMARY gate R2-S1), scored over a WHOLE STRETCH from `all/M15.json` → M22: the derived `gain>=2x` is `gain >= 0` while q holds nothing, so it unlocked q at 16917 and a row-3 reset wiped row 2 — M16 24179 and then nothing past M19. `gain>=2` reaches M16 at 17058, M20 at 26594 and M22 at 29194; 2 is q milestone 0's own requirement (2 total quirks).",
+    'reset:q': "R2 (SUMMARY gate R2-S1), scored over a WHOLE STRETCH from `all/M15.json` → M22: the derived `gain>=2x` is `gain >= 0` while q holds nothing, so it unlocked q at 16917 and a row-3 reset wiped row 2 — M16 24179 and then nothing past M19. `gain>=2` reaches M16 at 17058, M20 at 26594 and M22 at 29194; 2 is q milestone 0's own requirement (2 total quirks). \u2014 V4 added its PAUSE (gate V4-m21, every cell twice): without it M21 is never reached and M22 lands at 29204; with it M21 lands at 28058 and M22 at 30618, M16\u2013M20 unmoved to the second. The +1414 game-s at M22 is the 1446 game-s Time Energy needs to reach 1e30 with row 2 intact \u2014 the game's cost, not the rule's.",
     'buyables:t': "R1′ (SUMMARY gate R1′-2.4) LIFTED the exclusion this table used to carry. With it: t upgrades [11], Time Energy 6300 at its cap, `t.unlockOrder` 1. Without it: 11 Extra Time Capsules, cap 2.49e9, t upgrades [11,12,13,14,15,23] and `t.unlockOrder` 0 — the t half of M12.",
   },
 };

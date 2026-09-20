@@ -84,7 +84,10 @@ function pump() {
   }
 }
 const job = (id, o) => new Promise((resolve) => { queue.push({ id, o, resolve }); pump(); });
-const marksOf = (r) => Object.fromEntries(Object.entries(r.marks || {}).map(([m, v]) => [m, v.gameSeconds]));
+// ⚠ A MARK THE RUN DID NOT REACH IS PRESENT AND `null` (`--marks-continue` records the whole slice), so this
+// filters rather than maps — measured: the first cut threw on the first leg that missed a mark, which is the
+// case the whole battery exists to report.
+const marksOf = (r) => Object.fromEntries(Object.entries(r.marks || {}).filter(([, v]) => v && v.gameSeconds !== undefined).map(([m, v]) => [m, v.gameSeconds]));
 
 /**
  * ⛔ A SNAPSHOT WITH A PLAYER'S EDIT ALREADY IN IT — which is the only honest way to measure a SAVED value.
@@ -379,9 +382,15 @@ const PAUSE_CELLS = [
  */
 const DERIVED_PAUSE = (l) => {
   const q = JSON.stringify(l);
-  return `!Object.keys(layers).some(function(m){var L=layers[m];`
-    + `return m!==${q} && L && !L.tmtLoaderLayer && !isNaN(L.row) && Number(L.row)===Number(layers[${q}].row)`
-    + ` && (typeof L.layerShown==='function'?L.layerShown.call(L):L.layerShown)!==false && !(player[m]&&player[m].unlocked);})`;
+  // ⛔ NOT ONE SEMICOLON IN IT, AND THAT IS A CONSTRAINT THIS SLICE MEASURED RATHER THAN ASSUMED: `--auto-opt` /
+  // `?autoOpt=` SPLIT THEIR STRING ON `;`, so a predicate carrying one is cut in half and the halves are two
+  // unrelated options. The first cut of this rule had `var L=layers[m];` in it and every cell came back
+  // `option while:reset:q — not a JavaScript expression — Unexpected token ')'`. A predicate a PLAYER types is
+  // unaffected (it goes into the save, not into an option string); a predicate a SWEEP passes is not.
+  return `!Object.keys(layers).some(function(m){ return m!==${q} && layers[m] && !layers[m].tmtLoaderLayer`
+    + ` && !isNaN(layers[m].row) && Number(layers[m].row)===Number(layers[${q}].row)`
+    + ` && (typeof layers[m].layerShown==='function'?layers[m].layerShown.call(layers[m]):layers[m].layerShown)!==false`
+    + ` && !(player[m]&&player[m].unlocked) })`;
 };
 async function partM21() {
   const { runCells } = await import('./sweep.mjs');

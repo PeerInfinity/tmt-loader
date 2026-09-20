@@ -192,6 +192,14 @@ The rule that replaces it:
    that inherited the old default NAME its configuration (§14d.2 item 14) instead of inheriting whatever the table
    says today.
 
+⚠ **A PREDICATE PASSED THROUGH `--auto-opt` MAY NOT CONTAIN A SEMICOLON**, and V4 measured it rather than assuming
+it: `--auto-opt` and `?autoOpt=` split their string on `;`, so a `while:` / `until:` cell carrying one is cut in half
+and the halves are read as two unrelated options. The symptom is
+`option while:reset:q — not a JavaScript expression — Unexpected token ')'`, which correctly names the option and
+says nothing about the semicolon. Write the predicate as a single expression (`&&` / `||` / `?:`, no `var`, no
+statement) — a player typing into the tab is unaffected, because a saved predicate never goes through an option
+string.
+
 `tools/harness/sweep.mjs` runs that shape: **`--vary` may be repeated** (each occurrence is an AXIS, and the cells are
 their cross product) and **`--repeat N`** runs every cell N times and reports `twiceEqual`. Every line carries
 `ticks_ms` and the box's 1-minute load at the start and end of its own child, because a full pool changes ms/tick and

@@ -710,6 +710,142 @@ jobs:
           retention-days: 14
 
   # ---------------------------------------------------------------------------------------------------------------
+  # V4 — the per-feature CONTROLS (`while`, `until`, `priority`) and the M21 pause (plan §27).
+  #
+  # ⚖ WHAT IS IN CI AND WHAT IS NOT, by V2's and V3's rule:
+  #   · parts 1, 3, 4 and 5 are CHEAP-ish and each is a claim a later slice will lean on — that a typed predicate
+  #     COMPILES before it is committed and a throw is contained to its feature, that the `until` latch survives a
+  #     RELOAD (it is the only reason it means anything to a player), that `priority` is the kind's place until
+  #     somebody moves it, and that a build carrying all of it is byte-identical when nobody has used it. They run here.
+  #   · part 6 is the PAGE, which is where V1's, V2's and V3's real defects were found. It runs here.
+  #   · ⛔ part 2 does NOT: it is two 16,000-tick ladder legs (~25 min), and what it asserts — a table entry and a
+  #     saved edit are the same slot — is also asserted on the stub in part 1, cheaply. It is run by hand and quoted
+  #     in the as-built with the head it ran at.
+  #   · ⛔ parts `m21` / `derived` are MEASUREMENT TABLES, not gates (V3 part 4's rule: a measurement table is not a
+  #     gate), and `fix` WRITES fixtures. All three are run by hand.
+  #   · ⛔ part 7 does NOT, for V2 part 6's and V3 part 6's reason: a 171-game page walk needs sharding and a merge
+  #     assertion to be honest.
+  #
+  # ⛔ `--assert` on every part: exiting 1 on a red row does NOT catch a battery that stopped part-way.
+  # ---------------------------------------------------------------------------------------------------------------
+  v4-node:
+    name: V4 controls — headless (parts 1, 3, 4, 5)
+    needs: fast
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      # ⚠ `npm ci` but NO `playwright install`: these parts import the package and never launch a browser.
+      - run: npm ci
+
+      - name: Part 1 — schema ≡ behaviour, and both new codes on a real leg
+        shell: bash  # bash -eo pipefail: without it `| tee` reports the pipe's status and a refusal is lost
+        run: |
+          set -o pipefail
+          node tools/harness/gates-v4.mjs --part 1 --no-summary --assert --pool 2 | tee v4-1.txt
+
+      - name: Part 3 — the `until` latch across a RELOAD, and the re-arm
+        shell: bash
+        run: |
+          set -o pipefail
+          node tools/harness/gates-v4.mjs --part 3 --no-summary --assert --pool 2 | tee v4-3.txt
+
+      - name: Part 4 — priority, the identity and the move
+        shell: bash
+        run: |
+          set -o pipefail
+          node tools/harness/gates-v4.mjs --part 4 --no-summary --assert --pool 3 | tee v4-4.txt
+
+      - name: Part 5 — inertness, the opening and M15 → M20
+        shell: bash
+        run: |
+          set -o pipefail
+          node tools/harness/gates-v4.mjs --part 5 --no-summary --assert --pool 2 | tee v4-5.txt
+
+      - name: Summary
+        if: always()
+        shell: bash
+        run: |
+          {
+            echo '## V4 controls — headless'
+            echo ''
+            echo '```'
+            cat v4-1.txt v4-3.txt v4-4.txt v4-5.txt 2>/dev/null | grep -E 'VERDICT|REFUSED|^RED|green$' || echo 'no output'
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload the rows
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: v4-node
+          path: tools/harness/results/tmp/gates-v4-part*-last.json
+          if-no-files-found: warn
+          retention-days: 14
+
+  v4-page:
+    name: V4 controls — in the page (part 6)
+    needs: fast
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - run: npm ci
+
+      - name: Cache the Playwright browser
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+
+      - run: npx playwright install --with-deps chromium
+
+      # ⚠ The predicate is TYPED with a real keyboard and it CONTAINS the letters both engines bind as hotkeys, so
+      # the typing leg IS the hotkey leg; and the latch is believed only after a real `save()` and a real reload.
+      - name: Part 6 — a predicate typed, refused, stopped, reloaded, re-armed; a priority edited; markup inert
+        shell: bash
+        run: |
+          set -o pipefail
+          node tools/harness/gates-v4.mjs --part 6 --no-summary --assert | tee v4-6.txt
+
+      - name: Summary
+        if: always()
+        shell: bash
+        run: |
+          {
+            echo '## V4 controls — in the page'
+            echo ''
+            echo '```'
+            cat v4-6.txt 2>/dev/null | grep -E 'VERDICT|REFUSED|^RED|green$' || echo 'no output'
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload the rows
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: v4-page
+          path: tools/harness/results/tmp/gates-v4-part*-last.json
+          if-no-files-found: warn
+          retention-days: 14
+
+  # ---------------------------------------------------------------------------------------------------------------
   # V3 — the PROGRESS TRACKER, the STALL WATCH and the collapsible Advanced blocks (plan §21).
   #
   # ⚖ WHAT IS IN CI AND WHAT IS NOT, and why, for the same reason V2's split has:
