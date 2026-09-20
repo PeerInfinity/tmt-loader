@@ -123,9 +123,17 @@ test('R2 — the member’s OWN rule decides inside its turn; the cycle only say
   // `gain>=100x` on a layer gaining 1 a reset can fire exactly once (an empty purse makes the bar 0) and never
   // again. If the turn made its holder eager, `a` would reset every tick it held the turn.
   const ctx = boot({ 'reset:a': `gain>=100x|turn@5/3x/5`, 'reset:b': `always|turn@5/3x/5` });
-  tick(ctx, 60);
+  tick(ctx, 200);
   assert.equal(acts(ctx)['reset:a'], 1, `the patient member must keep its own rule: ${JSON.stringify(acts(ctx))}`);
-  assert.ok(acts(ctx)['reset:b'] > 5, 'the eager member must still spend its turns');
+  assert.equal(rowOf(ctx, 'reset:a').last.code, 'waiting:gain-x', 'the member’s own refusal must be what it reports');
+  // ⚠ AND ITS TURN IS **NOT** TAKEN AWAY FOR SAYING NO. The first cut yielded here and the sweep measured what
+  // that costs: with `gain>=2` on PTR's `q`, the engine allows a reset while the gain is still one quirk, so a
+  // twenty-reset turn ended after ONE and `reset:h` ran unscheduled (`q` 5 / `h` 37 against the working
+  // arrangement's 286 / 15). "My rule says not yet" is productive waiting, and the weight exists to protect it.
+  // ⚠ THE COST, and it is the SAME GAP the dead-member freeze is (see the row below and plan §32.4a): this member
+  // resets exactly ONCE, so it never has two resets to take an interval between, and with no bound it holds the
+  // row. What answers it is a release rule based on PROGRESS toward the threshold, which is not built.
+  assert.equal(acts(ctx)['reset:b'], undefined, `the row stalls on it — the documented gap: ${JSON.stringify(acts(ctx))}`);
   // ⚠ READ AT THE END OF A TICK, `a` is OUT of turn — it yielded the moment its own rule said no, which is what
   // keeps a patient member from holding its row. Either code is the same fact.
   assert.ok(['waiting:gain-x', 'waiting:turn'].includes(rowOf(ctx, 'reset:a').last.code), rowOf(ctx, 'reset:a').last.code);
@@ -221,7 +229,7 @@ test('R4 — the memory is in `runtimeState()`, and `restoreRuntime(runtimeState
   tick(ctx, 25);
   const rt = JSON.parse(JSON.stringify(T(ctx).runtimeState()));
   assert.ok(rt.cycle && rt.cycle['1'], 'the cycle wrote no memory');
-  assert.equal(Object.keys(rt.cycle['1']).sort().join(','), 'at,holder,left,mem,round,since,skip');
+  assert.equal(Object.keys(rt.cycle['1']).sort().join(','), 'acted,arm,at,holder,left,mem,round,since,skip');
   T(ctx).restoreRuntime(rt);
   assert.deepEqual(JSON.parse(JSON.stringify(T(ctx).runtimeState().cycle)), rt.cycle);
   // MUTANT: "the memory is a closure" — a resumed run takes a different path from an uninterrupted one and this

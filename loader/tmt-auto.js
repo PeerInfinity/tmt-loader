@@ -914,18 +914,15 @@
     var P = parsedOf(f);
     var d = primaryReset(f, P);
     if (d.act) { d.rule = P ? P.id : null; if (turn) return d; return d; }
-    // ⛔ R3b — THE ONE RULE THAT MAKES A PATIENT MEMBER SAFE, AND IT NEEDS NO NUMBER AT ALL. There are two ways a
-    // holder can fail to use its turn and they are NOT the same thing:
-    //   · the ENGINE refuses — the layer cannot reset yet, it is waiting on a RESOURCE. That is what a turn is
-    //     FOR: PTR's `h` needs ~1,450 quiet game-seconds for Time Energy to reach 1e30, and it only gets them
-    //     because holding the turn is what keeps `q` from wiping row 2. Answered above this line, before the turn
-    //     is even consulted, so the member keeps its turn.
-    //   · the member's OWN POLICY refuses while the engine would allow — it COULD reset and chooses not to. There
-    //     is nothing for it to wait for that another member's turn would spoil, so it yields at once.
-    // Without this, a patient policy on a cycle member holds its row for ever (measured on the stub: `gain>=100x`
-    // on a member that can reset once takes the turn and never gives it back), which is the deadlock the brief's
-    // R2 warned about — met here without making anybody eager and without a clock.
-    if (turn) turnYield(f);
+    // ⛔ R3b — AND A HOLDER WHOSE OWN POLICY REFUSES **KEEPS** ITS TURN. The first cut yielded here, reasoning
+    // that a member which COULD reset and chooses not to has nothing to wait for. That is measurably wrong, and
+    // the oracle is a configuration that works: with `gain>=2` on PTR's `q`, Generator Power climbs back to where
+    // the ENGINE allows a reset while the gain is still ONE quirk — so the policy refuses, the turn was handed
+    // away, and a twenty-reset turn ended after ONE reset. Measured: `reset:q` 5 and `reset:h` 37 over the stretch,
+    // i.e. `reset:h = always` running unscheduled, against the working arrangement's 286 / 15.
+    // ⚠ "My rule says not yet" IS productive waiting — `gain>=2`, `rate-peak` and `interval>=T` all mean "soon,
+    // and it is worth more then". The weight exists to protect exactly that. What answers a member that is not
+    // using its turn is the GUARD, and only the guard.
     if (!stallMod(P)) return d;
     return stallFallback(f, P, d);
   }
@@ -1224,16 +1221,16 @@
   //                was punished for it, every member ended up skipped, and the one holder that could not act had
   //                nobody left to release the turn to — a scheduler that stopped scheduling, green in every hash.
   //   'ineligible' the member was paused, stopped, or left the row → nothing remembered, nothing skipped
-  //   'yielded'    the member COULD act and its own rule said no → nothing remembered, nothing skipped, and it is
-  //                eligible again at once: it is not being punished, it simply has nothing to wait for
   function endTurn(C, id, how) {
     if (how === 'released') C.skip[id] = C.round + Math.max(1, C.ids.length);
-    C.holder = null; C.left = 0; C.since = null;
+    C.holder = null; C.left = 0; C.since = null; C.acted = null;
   }
   /** ⛔ WHAT THE GUARD IS LATE AGAINST, AND THE MEASUREMENT THAT DECIDED IT — read the modifier row. */
   function pushCycleInterval(f, prev) {
     var C = cycleOf(f);
-    if (!C || prev === undefined) return;
+    if (!C) return;
+    if (prev === undefined) prev = C.arm && C.arm[f.id];
+    if (prev === undefined) return;
     var dt = (Number(player.timePlayed) || 0) - prev;
     if (!(dt > 0)) return;
     var m = C.mem[f.id] || (C.mem[f.id] = []);
@@ -1244,6 +1241,12 @@
     C.holder = f.id;
     C.left = turnParams(f).w;
     C.since = Number(player.timePlayed) || 0;
+    C.acted = null;
+    // ⚠ THE FIRST WAIT IS AN INTERVAL TOO — `stallSince`'s precedent, for `stallSince`'s reason (§V2): a member
+    // whose first reset had no predecessor has ZERO intervals and would hold its turn for ever. The clock starts
+    // the moment it is handed a turn.
+    if (C.arm === undefined) C.arm = {};
+    if (C.arm[f.id] === undefined && lastReset[f.id] === undefined) C.arm[f.id] = C.since;
     C.at = C.ids.indexOf(f.id);
     C.round++;
   }
@@ -1301,7 +1304,7 @@
       var active2 = R.members.length >= 2;
       if (!active2 && !cycles[R.key]) continue;
       seen[R.key] = 1;
-      var C = cycles[R.key] || (cycles[R.key] = { holder: null, left: 0, since: null, round: 0, at: -1, mem: {}, skip: {} });
+      var C = cycles[R.key] || (cycles[R.key] = { holder: null, left: 0, since: null, acted: null, round: 0, at: -1, mem: {}, skip: {}, arm: {} });
       C.ids = R.members.map(function (g) { return g.id; });
       C.demand = R.demand;
       C.dormant = !active2;
@@ -1310,7 +1313,13 @@
       if (C.holder && (!byId[C.holder] || C.ids.indexOf(C.holder) < 0 || cyclePaused(byId[C.holder]))) endTurn(C, C.holder, 'ineligible');
       if (C.holder) {
         var h = byId[C.holder], typ = typicalTurn(C, h);
-        if (typ !== null && (now - C.since) > turnParams(h).k * typ) endTurn(C, C.holder, 'released');
+        // ⛔ SINCE ITS LAST ACT, NOT SINCE THE TURN BEGAN. A turn of weight W spans W resets; measuring from the
+        // turn's start compares one member's WHOLE turn against the wait for ONE of its resets, so any weight
+        // above 1 is released mid-turn and the weight stops meaning anything (measured: weight 5 and weight 20
+        // byte-identical). The question the guard asks is "has this member gone K× longer than usual without a
+        // reset?", so the clock restarts every time it acts.
+        var sinceAct = C.acted === null || C.acted === undefined ? C.since : C.acted;
+        if (typ !== null && (now - sinceAct) > turnParams(h).k * typ) endTurn(C, C.holder, 'released');
       }
       if (C.demand) { var d = demandedMember(C, R); if (d && d.id !== C.holder) { if (C.holder) endTurn(C, C.holder, 'preempted'); grantTurn(C, d); } }
       if (!C.holder) { var nx = nextMember(C, R); if (nx) grantTurn(C, nx); }
@@ -1331,23 +1340,13 @@
     return { act: false, code: 'waiting:turn',
       values: { layer: h ? h.layer : null, row: rowOf(f), left: C.left, weight: h ? turnParams(h).w : null, mine: turnParams(f).w } };
   }
-  /** The holder COULD act and its own rule says no: it gives the turn up at once, with no skip and no memory. */
-  function turnYield(f) {
-    var C = cycleOf(f);
-    if (!C || C.holder !== f.id) return;
-    endTurn(C, f.id, 'yielded');
-    var R = null, rs = cycleRows();
-    for (var i = 0; i < rs.length; i++) if (rs[i].key === String(rowOf(f))) R = rs[i];
-    if (!R) return;
-    var nx = nextMember(C, R);
-    if (nx && nx.id !== f.id) grantTurn(C, nx);
-  }
   /** Count one reset against the holder's turn; hand the turn on the moment the turn is spent. */
   function turnSpend(f, prev) {
     var C = cycleOf(f);
     if (!C) return;
     pushCycleInterval(f, prev);
     if (C.holder !== f.id) return;
+    C.acted = Number(player.timePlayed) || 0;
     C.left--;
     if (C.left > 0) return;
     endTurn(C, f.id, 'complete');
@@ -2609,8 +2608,9 @@
     var cy = {}, ncy = 0;
     for (var yi in cycles) {
       var YC = cycles[yi];
-      cy[yi] = { holder: YC.holder, left: YC.left, since: YC.since, round: YC.round, at: YC.at,
-        mem: JSON.parse(JSON.stringify(YC.mem)), skip: Object.assign({}, YC.skip) };
+      cy[yi] = { holder: YC.holder, left: YC.left, since: YC.since, acted: YC.acted === undefined ? null : YC.acted,
+        round: YC.round, at: YC.at, mem: JSON.parse(JSON.stringify(YC.mem)), skip: Object.assign({}, YC.skip),
+        arm: Object.assign({}, YC.arm || {}) };
       ncy++;
     }
     if (ncy) o.cycle = cy;
@@ -2684,9 +2684,10 @@
     for (k in rt.cycle || {}) {
       var rc = rt.cycle[k];
       cycles[k] = { holder: rc.holder === undefined ? null : rc.holder, left: Number(rc.left) || 0,
-        since: rc.since === null || rc.since === undefined ? null : Number(rc.since), round: Number(rc.round) || 0,
+        since: rc.since === null || rc.since === undefined ? null : Number(rc.since),
+        acted: rc.acted === null || rc.acted === undefined ? null : Number(rc.acted), round: Number(rc.round) || 0,
         at: rc.at === undefined ? -1 : Number(rc.at), mem: JSON.parse(JSON.stringify(rc.mem || {})),
-        skip: Object.assign({}, rc.skip || {}), ids: [] };
+        skip: Object.assign({}, rc.skip || {}), arm: Object.assign({}, rc.arm || {}), ids: [] };
     }
     for (k in chAttempt) delete chAttempt[k];
     for (k in rt.challengeAttempt || {}) chAttempt[k] = Object.assign({}, rt.challengeAttempt[k]);
