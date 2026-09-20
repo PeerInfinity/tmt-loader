@@ -535,7 +535,12 @@ async function part4d(browser, base) {
 
 // ---- Part 5: inertness -------------------------------------------------------------------------------------------
 async function part5() {
-  const o = { profile: 'all', diff: 1, ticks: 12000, 'from-snapshot': SNAP('ptr', 'M15'), ladder: 'tools/harness/ladder/ptr.json', to: 'M16' };
+// ⛔ THE PIN NAMES ITS CONFIGURATION (§14d.2 item 14, again — R2). This leg's 24179 / `9e2eadb7c58c0078` was
+// measured when the table left `reset:q` on the DERIVED `gain>=2x`. R2 moved that entry to `gain>=2` and the same
+// leg now reaches M16 at 17058, so the pin is reproduced by NAMING the policy it was measured under rather than
+// by inheriting whatever the table says today. The claim this row makes is about THIS slice's own change being
+// inert, not about which default ships; the shipped table's L1 leg is pinned by `gates-r2 --part 2`.
+  const o = { profile: 'all', diff: 1, ticks: 12000, 'auto-opt': 'policy:reset:q=gain>=2x', 'from-snapshot': SNAP('ptr', 'M15'), ladder: 'tools/harness/ladder/ptr.json', to: 'M16' };
   const [A, B] = await Promise.all([job('ptr', o), job('ptr', o)]);
   const twice = A.ticks === B.ticks && A.hashGame === B.hashGame && JSON.stringify(A.hook?.actions) === JSON.stringify(B.hook?.actions);
   row({ gate: 'V2-5 with NO edit made, the M15 → M16 leg is unmoved', id: 'ptr', leg: 'profile all, diff 1', ok: !!A.ok && !!B.ok && twice && A.ticks === M16_PIN.ticks && A.hashGame === M16_PIN.hashGame,

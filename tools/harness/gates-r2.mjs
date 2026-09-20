@@ -262,7 +262,35 @@ async function partCells() {
     cells: opts.map((o, i) => cell(o, notes[i] || 'a composition the single-axis sweeps earned')) });
 }
 
-const PARTS = { q: partQ, e: partE, p: partP, x: partX, l3: partL3, cells: partCells, 1: part1, 2: part2, 3: part3, w: partW };
+// ---- Part 3b: the DISCRIMINATING leg, because part 3's control moves two things at once ---------------------------
+// ⚠ `exclude=toggles:q` holds back `e.auto` / `t.autoExt` AND `t.auto` / `s.auto` / `sb.auto`, so it changes the whole
+// trajectory and cannot isolate "does the loader double-buy what the game buys". The question that CAN be isolated is
+// the converse: with the natives ON, does the loader's own `buyables:e` / `buyables:t` still do anything? Run from
+// `all/M19.json`, where `q` milestone 3 holds and every native buyer and auto-prestige is already on, and EXCLUDE the
+// loader's two purchase kinds. If that leg is byte-identical to the table's, the loader's purchase kinds are inert
+// there and the yield is a tidiness question; if it is not, the difference IS the double-buy, in buy counts.
+async function part3b() {
+  const from = path.join(SNAP_ALL, `${String(a.from || 'M19')}.json`);
+  if (!fs.existsSync(from)) { row({ gate: 'R2-3b', id: 'ptr', ok: false, notes: `no fixture ${from} — run --part 2 first` }); return; }
+  const ticks = Number(a.p3ticks || 1500);
+  const cells = [
+    cell('', 'the table, with every native autobuyer already on (q ms 3 holds at this fixture)'),
+    cell('exclude=buyables:e,buyables:t', "the loader's two purchase kinds EXCLUDED, the natives untouched — the isolating control"),
+    cell('exclude=reset:t,reset:s,reset:sb', "the loader's three row-2 resets EXCLUDED — the same question for the `reset` kind, which ALREADY yields (`yielding:native`), so this leg must be byte-identical or the yield is not working"),
+  ];
+  const lines = await runCells({ id: 'ptr', cells,
+    flags: Object.entries({ diff: 1, ticks, 'wall-ms': 900000, profile: 'all', 'from-snapshot': from, stall: 1000000, eval: READOUT }), pool: 3, repeat: 2 });
+  const base = lines[0];
+  lines.forEach((l, i) => {
+    const same = l.hashGame === base.hashGame && l.gameSeconds === base.gameSeconds;
+    row({ gate: `R2-3b ${cells[i].note}`, id: 'ptr', leg: `from all/${String(a.from || 'M19')}.json, ${ticks} ticks, diff 1, twice`, ok: !!l.ok && l.twiceEqual === true,
+      ticks: l.ticks, gameSeconds: l.gameSeconds, diff: 1, hash: l.hashGame,
+      notes: `${i ? `identical to the table's leg: ${same}; ` : ''}actions ${JSON.stringify(l.actions)}; twice equal ${l.twiceEqual}; end ${readoutText('L1', l)}; ${box(l)}` });
+  });
+  writeJSON(path.join(REPO, 'tools/harness/results/tmp/r2-3b.json'), { lines });
+}
+
+const PARTS = { q: partQ, e: partE, p: partP, x: partX, l3: partL3, cells: partCells, 1: part1, 2: part2, 3: part3, '3b': part3b, w: partW };
 const ENTRY = process.argv[1] && path.resolve(process.argv[1]) === path.resolve(new URL(import.meta.url).pathname);
 if (ENTRY) {
   if (!PARTS[PART]) { console.error(`unknown --part ${PART} (have: ${Object.keys(PARTS).join(', ')})`); process.exit(2); }

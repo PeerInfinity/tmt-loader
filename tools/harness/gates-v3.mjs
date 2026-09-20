@@ -143,7 +143,12 @@ async function part1() {
 // `au` layer's save shape moves — `gates-p1a --part 0`'s frontier fixture — is unmoved, because V3 added nothing to
 // `startData`.
 async function part2() {
-  const base = { profile: 'all', diff: 1, ticks: 12000, 'from-snapshot': SNAP('ptr', 'M15'), ladder: 'tools/harness/ladder/ptr.json', to: 'M16' };
+// ⛔ THE PIN NAMES ITS CONFIGURATION (§14d.2 item 14, again — R2). This leg's 24179 / `9e2eadb7c58c0078` was
+// measured when the table left `reset:q` on the DERIVED `gain>=2x`. R2 moved that entry to `gain>=2` and the same
+// leg now reaches M16 at 17058, so the pin is reproduced by NAMING the policy it was measured under rather than
+// by inheriting whatever the table says today. The claim this row makes is about THIS slice's own change being
+// inert, not about which default ships; the shipped table's L1 leg is pinned by `gates-r2 --part 2`.
+  const base = { profile: 'all', diff: 1, ticks: 12000, 'auto-opt': 'policy:reset:q=gain>=2x', 'from-snapshot': SNAP('ptr', 'M15'), ladder: 'tools/harness/ladder/ptr.json', to: 'M16' };
   const RT = 'tmtLoader.runtimeState()';
   const A = await job('ptr', { ...base, eval: RT });
   const keys = A.eval ? Object.keys(A.eval).sort() : [];

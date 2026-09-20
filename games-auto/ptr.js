@@ -48,6 +48,33 @@ tmtLoader.autoTable = {
     // (gate R1′-2.2): `buy` 11 EP held (best 36) with 4 Enhancers · `reserve>=next-upgrade` 47 EP (best 47) with 3 ·
     // and the literal `reserve>=25` is byte-identical to `buy`, because once e11 is owned the next upgrade costs 400.
     'buyables:e': 'reserve>=next-upgrade',
+    // ⛔ R2, AND THE ONE DEFAULT THIS SLICE MOVED. `q` is row 3 and NORMAL, so it inherited the derived `gain>=2x` —
+    // which on an EMPTY purse is `gain >= 0`, i.e. `always` (docs/automation.md, "the EMPTY PURSE"). `q` holds nothing
+    // almost all the time, because `buyables:q` spends every quirk on Quirk Layers (cost `2^(2^x − 1)`: 1, 2, 8, 128 …),
+    // so the ratio was against a RESIDUE and the rule fired the instant one quirk existed — unlocking `q` at 16917 and
+    // letting a row-3 reset wipe row 2 before row 2 was done. Measured over a WHOLE STRETCH (gate R2-S1, from
+    // `snapshots/ptr/all/M15.json` → M22, 14 000 ticks, diff 1, every cell twice equal — scoring from `all/M16.json`
+    // was itself the trap, since that fixture was written under the rule being judged):
+    //   `gain>=2x` (shipped)  M16 24179 · M17 16917 · M18 24274 · M19 24607 · then nothing for ~5 400 game-s
+    //   `gain>=2x-unit`       M16 17058 · M17 23492 · M18 25598 · M19 25931 · then nothing
+    //   **`gain>=2`**         M16 17058 · M17 23492 · M18 25598 · M19 25931 · M20 26594 · **M22 29194**
+    //   `always`              M16 NEVER · M17 16917 · M18 24056 · M19 25290 · M20 26473
+    //   `unlocks-purchase`    M16 22346 · M18 22477 · then nothing (q buyable 11 costs 1 quirk, so it affords something
+    //                         on the first reset: on this layer the target-driven rule IS the degenerate one)
+    //   `rate-peak@0/0`       M16 22346 · M18 24609 · M19 26218 · M20 27299 · **M21 27652** · no M22
+    //   `rate-peak@0.1/30`    M16 22346 · M18 26214 · M19 28062 · M20 29323 · M21 29676 · no M22
+    // Two facts add up to this entry. (1) **The floor is worth 7 121 game-seconds at M16** — the whole completion of
+    // row 2 — and `gain>=2x-unit` and `gain>=2` are IDENTICAL until the first reset leaves `q` holding one, which is
+    // the measurement that isolates the empty purse from the constant. (2) **Past that point the ratio stalls and the
+    // fixed bar does not**: the Quirk Layer cost outruns the gain, `2× held` runs away, and only `gain>=2` reaches
+    // M20 and M22. ⚖ 13d.2 counts `gain>=N` as target-driven, and this N is the layer's own first milestone —
+    // q ms 0 is `player.q.total.gte(2)`, the digest's L3.2 and G1's "if you can, try to reset for 2 quirks in one go".
+    // ⚠ The stall MODIFIER cannot substitute: `gain>=2x-unit|stall>=3x/5` and `|stall>=2x/5` are BYTE-IDENTICAL to the
+    // bare `gain>=2x-unit` over this leg (same 30048 / `b483e2d3d5ba1137`) — with 3 q resets in 14 000 ticks the
+    // fallback never accumulates the history it needs. ⚠ And M21 is NOT gated by `reset:h`: `policy:reset:h=gain>=2x-unit`
+    // beside this entry is byte-identical too. What gates M21 is Time Energy having to re-climb to 1e30 between q
+    // resets, so the policy that farms quirks fastest is the one that never gets there (R2 part 2).
+    'reset:q': 'gain>=2',
   },
   alternatives: {
     'reset:p': ['interval>=10', 'always', 'gain>=1'],
@@ -57,6 +84,7 @@ tmtLoader.autoTable = {
     'reset:e': ['interval>=5', 'unlocks-purchase', 'always', 'gain>=1'],
     'reset:s': ['interval>=5', 'gain>=1'],
     'buyables:e': ['buy', 'buy-unless-saving'],
+    'reset:q': ['gain>=2x-unit', 'rate-peak@0/0', 'gain>=2x', 'always'],
   },
   // milestone 0 of b / g ("8 Boosters" / "8 Generators": "Keep Prestige Upgrades on reset") gates keepsUpgrades (A1 §11e.8)
   keep: { 'reset:b': { layer: 'b', id: 0 }, 'reset:g': { layer: 'g', id: 0 } },
@@ -94,6 +122,7 @@ tmtLoader.autoTable = {
     'reset:s': "A2-3, re-measured at the frontier (SUMMARY gate R1′-2.3): `always` reaches M16 at 24203 against `interval>=5`'s 24236 — the same tie.",
     'reset:e': "R1′ (SUMMARY gate R1′-2.3): e is row 2's only NORMAL layer, so its gain follows how high points climbed and an interval reset spends that climb every 5 s. `gain>=2x` reaches every remaining mark of the rung (M11 14745 · M12 14909 · M15 16048 · M16 24179); `interval>=5` and `always` reach none of them.",
     'buyables:e': "R1′ (SUMMARY gate R1′-2.2): the reserve is READ from the game, never written here. `reserve>=next-upgrade` ends 47 EP held with 3 Enhancers against `buy`'s 11 EP with 4 — and a literal `reserve>=25` is byte-identical to `buy`, because once e11 is owned the next upgrade costs 400.",
+    'reset:q': "R2 (SUMMARY gate R2-S1), scored over a WHOLE STRETCH from `all/M15.json` → M22: the derived `gain>=2x` is `gain >= 0` while q holds nothing, so it unlocked q at 16917 and a row-3 reset wiped row 2 — M16 24179 and then nothing past M19. `gain>=2` reaches M16 at 17058, M20 at 26594 and M22 at 29194; 2 is q milestone 0's own requirement (2 total quirks).",
     'buyables:t': "R1′ (SUMMARY gate R1′-2.4) LIFTED the exclusion this table used to carry. With it: t upgrades [11], Time Energy 6300 at its cap, `t.unlockOrder` 1. Without it: 11 Extra Time Capsules, cap 2.49e9, t upgrades [11,12,13,14,15,23] and `t.unlockOrder` 0 — the t half of M12.",
   },
 };
