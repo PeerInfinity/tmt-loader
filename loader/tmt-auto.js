@@ -1075,8 +1075,19 @@
   // and its predicate is compiled by `T.predicate`, the same mini-language a table gate and a ladder mark already
   // share. ⛔ EVALUATED ONLY WHEN AN EVENT FIRES, never per tick: a mark is a state predicate, an event is when the
   // state changed, and `progressStats().markChecks` is what says the cost is per EVENT.
+  // ⚠ THE HOST IS ASKED ONCE, LAZILY, AND ONLY BY SOMETHING THAT WANTS THE LABELS. `loader/page.js` supplies
+  // `T.fetchLadder` (which reads an INDEX first, so a game without a ladder costs no 404 — CI judged the first cut's
+  // 404 on 169 games); the Node harness sets `T.ladder` outright from `--ladder-labels`. This file fetches nothing.
+  var ladderAsked = false;
+  function requestLadder() {
+    if (ladderAsked || T.ladder !== undefined) return;
+    ladderAsked = true;
+    try { if (typeof T.fetchLadder === 'function') T.fetchLadder(); } catch (e) { /* the host has none */ }
+  }
+  T.requestLadder = requestLadder;
   function ladderMarks() {
     var L = T.ladder;
+    if (L === undefined) { requestLadder(); return null; }
     return L && L.marks && typeof L.marks.length === 'number' ? L.marks : null;
   }
   function ladderMarksNow() {
@@ -2793,6 +2804,7 @@
           return p;
         },
       },
+      created: function () { T.requestLadder(); },   // the one place that WANTS the mark names
       methods: { arm: function () { T.setWatchOption('track', true); } },
       template: '<div style="text-align:left;max-width:100%;overflow-wrap:anywhere;word-break:break-word">'
         + '<div style="opacity:.75;font-size:.9em;margin-bottom:6px;text-align:left">' + '' + PROG_INTRO + '</div>'

@@ -181,18 +181,35 @@ async function boot(id) {
   if (AUTOMATION) {
     // ---- the LADDER, where this game has one (V3) ------------------------------------------------------------------
     // ⚠ TWO OF THE 171 GAMES HAVE A LADDER (`tools/harness/ladder/<id>.json`, ptr and something), and the Progress
-    // timeline uses its mark NAMES as labels on the events that satisfy them. So this is an OPTIONAL fetch whose 404
-    // costs nothing: 169 games take the branch below and the view is complete without it. ⛔ `loader/tmt-auto.js`
-    // fetches nothing itself — it never touches the DOM or the network, which is what `docs/contract.md` says — so the
-    // HOST is what hands it the file, exactly as the host hands it the manifest and the options.
-    // ⚠ NOT through `fetchText`, which THROWS on a non-200 and would take the whole boot down on 169 games.
-    try {
-      const r = await fetch(abs(`tools/harness/ladder/${id}.json`), { cache: 'no-cache' });
-      if (r.ok) {
-        const L = JSON.parse(await r.text());
-        if (L && Array.isArray(L.marks)) { T.ladder = L; T.loaded.push(`tools/harness/ladder/${id}.json`); }
-      } else T.skipped.push(`tools/harness/ladder/${id}.json (${r.status})`);
-    } catch (e) { T.skipped.push(`tools/harness/ladder/${id}.json (${String(e.message || e).slice(0, 60)})`); }
+    // timeline uses its mark NAMES as labels on the events that satisfy them. ⛔ `loader/tmt-auto.js` fetches nothing
+    // itself — it never touches the DOM or the network, which is what `docs/contract.md` says — so the HOST hands it
+    // the file, exactly as the host hands it the manifest and the options.
+    //
+    // ⛔⛔ AND IT IS LAZY, AND IT ASKS AN INDEX FIRST — BOTH MEASURED, by CI, on the first cut that did neither.
+    // The first cut fetched `tools/harness/ladder/<id>.json` on every automation boot and pushed a note to
+    // `T.skipped` on a 404. `G1 load — automation page` judges EVERY request a page makes: a failed request the
+    // manifest does not declare is a RED, and `tmtLoader.skipped` must equal the manifest's declared list exactly.
+    // Result: **169 of 171 games RED**, for a file 169 of them were never going to have. So the ladder is asked for
+    // only when something actually wants it (the `Progress` subtab, or a progress event with the tracker armed),
+    // and the INDEX says which games have one, so there is never a 404 to judge.
+    T.fetchLadder = (function () {
+      let asked = null;
+      return function () {
+        if (asked) return asked;
+        asked = (async () => {
+          const r = await fetch(abs('tools/harness/ladder/index.json'), { cache: 'no-cache' });
+          if (!r.ok) return null;
+          const index = JSON.parse(await r.text());
+          if (!index || !Array.isArray(index.games) || index.games.indexOf(id) < 0) { T.ladder = null; return null; }
+          const g = await fetch(abs(`tools/harness/ladder/${id}.json`), { cache: 'no-cache' });
+          if (!g.ok) return null;
+          const L = JSON.parse(await g.text());
+          if (L && Array.isArray(L.marks)) { T.ladder = L; return L; }
+          return null;
+        })().catch(() => null);
+        return asked;
+      };
+    })();
   }
   step('script loader/tmt-auto.js');
   await insertScript({ src: abs('loader/tmt-auto.js') }, 'loader/tmt-auto.js');

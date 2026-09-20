@@ -202,9 +202,16 @@ tmtLoader.progress()   // { armed, events: [{at, kind, layer, id, key, tick, mar
   watch went permanently deaf on the game it had just rescued (measured on the page by `tools/harness/shots-v3.mjs`).
   The flag rides in `runtimeState()` so a resume measures the same median.
 - **Ladder marks as labels.** Where `tools/harness/ladder/<id>.json` exists — **2 of the 171 games** — the host hands
-  it to the core (`loader/page.js` fetches it and ignores a 404; `run.mjs --ladder` passes it as `--ladder-labels`)
-  and an event carries the names of any marks it satisfied. ⛔ Evaluated only when an EVENT fires, never per tick;
-  `markChecks` says so. The view is complete without one, which is what the other 169 games get.
+  it to the core and an event carries the names of any marks it satisfied. ⛔ Evaluated only when an EVENT fires,
+  never per tick; `markChecks` says so. The view is complete without one, which is what the other 169 games get.
+  ⛔ **The request is LAZY and asks an INDEX first, and both halves were measured by CI.** The first cut fetched the
+  ladder on every automation boot and noted a 404 in `tmtLoader.skipped`; `G1 load — automation page` judges every
+  request a page makes (a failed one the manifest does not declare is a RED, and `skipped` must equal the manifest's
+  declared list) and reported **169 of 171 RED** — for a file 169 of them were never going to have. So
+  `loader/page.js` supplies `tmtLoader.fetchLadder()`, the core calls it only when something wants the labels (the
+  `Progress` subtab's `created`, or a progress event with the tracker armed), and it reads
+  `tools/harness/ladder/index.json` first, so **there is never a 404 to judge**. `loader/watch.test.mjs` keeps the
+  index in step with the directory. In Node `run.mjs --ladder` passes `--ladder-labels` and sets it outright.
 - **The labels are the engine's own.** A layer's name is `layers[l].name` and an item is named by its own numeric id.
   This view introduces no second naming scheme for anything the game declares.
 

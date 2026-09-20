@@ -11,6 +11,8 @@
 // belongs in the page gates.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import path from 'node:path';
 import { bootStub, tick, rowOf, Decimal } from './stub-engine.mjs';
 
 /** A prestige layer whose reset gain and reset permission are the caller's to script. */
@@ -454,4 +456,20 @@ test('the watch parameters are validated by the SAME checkParam the strategy tab
   assert.equal(T.watchOptions().k, '4.5');
   // every declared parameter says what it is a proxy for (⚖ 13d.2)
   for (const p of T.watchParams()) assert.ok(p.why && p.why.length > 20, `${p.name} declares no proxy sentence`);
+});
+
+// ---------------------------------------------------------------------------------------------------------------
+// Leg 8 — the LADDER INDEX is in step with the directory
+// ---------------------------------------------------------------------------------------------------------------
+test('tools/harness/ladder/index.json lists exactly the games that have a ladder', () => {
+  // ⛔ THE INDEX EXISTS BECAUSE A 404 IS A RED. `loader/page.js` reads it before it asks for a ladder, so a game
+  // without one costs no request — CI's `G1 load — automation page` judges every request a page makes and reported
+  // **169 of 171 RED** on the first cut, which fetched the ladder outright. An index that drifted from the
+  // directory would put the 404 straight back.
+  const dir = path.resolve(new URL('../tools/harness/ladder', import.meta.url).pathname);
+  const onDisk = fs.readdirSync(dir).filter((f) => f.endsWith('.json') && f !== 'index.json').map((f) => f.slice(0, -5)).sort();
+  const index = JSON.parse(fs.readFileSync(path.join(dir, 'index.json'), 'utf8'));
+  assert.ok(Array.isArray(index.games), 'the index declares no `games` list');
+  assert.equal(index.games.join(' '), onDisk.join(' '), 'the index and the directory disagree');
+  assert.ok(index.note && index.note.length > 40, 'the index does not say what it is for');
 });

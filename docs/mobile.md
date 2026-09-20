@@ -1083,9 +1083,10 @@ of them. `ptr`'s `g` at M16 has `points`, `best`, `total` and `power` all at `0`
 own example — is not reported at that state**. It is at every state where the numbers differ. That is an abstention
 the text genuinely cannot resolve, not a rule that can be tightened out of it.
 
-⚖ **THE LABEL IS THE PLAYER KEY, and the prose name is an open question for the user.** `power` is certain and
-terse; "generator power" lives only in the words around the number. The gate lifts those words and REPORTS them
-without rendering them, so the decision has a sample in front of it. On `ptr` at M16 the lift reads
+⚖ **THE LABEL IS THE PLAYER KEY — SETTLED (user, 2026-09-19: *"Yes, let's use the player key."*).** `power` is
+certain and terse; "generator power" lives only in the words around the number. The gate lifts those words and
+REPORTS them without rendering them — that reporting is what put a sample in front of the decision, and it STAYS as
+the evidence for the ruling rather than as a pending question. On `ptr` at M16 the lift reads
 `t.energy → Time Energy` and `q.energy → Quirk Energy` — both right; **under the bare test it also produced
 `q.time → Quirk Energy`, which is wrong**, and on `the-infinity-tree` it produced `i.time → number`,
 `v.resetting → time` and `d.relativity → velocity`, which are the words of the NEXT sentence. ⛔ No per-game name
@@ -1100,7 +1101,7 @@ every amount on every layer is zero and the text cannot attribute any of them �
 contributes 32 candidates and shows none. The two games with recorded deep snapshots are where the feature has
 anything to report.
 
-⚖ **And the roster is what the label question should be decided on.** The gate lifts the adjacent words and
+⚖ **And the roster is what the label question WAS decided on.** The gate lifts the adjacent words and
 reports them; over all 171 games the lift produced **2 right out of 13**: `ptr t.energy → Time Energy` and
 `ptr q.energy → Quirk Energy` are exactly right, `the-cultree`'s **six** stat keys (`sta`, `str`, `spd`, `int`,
 `wis`, `lck`) all lift the SAME wrong word `STR`, `the-element-tree`'s multipliers and `the-prestige-tree`'s
