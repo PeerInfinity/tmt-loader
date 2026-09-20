@@ -1996,9 +1996,15 @@ re-render) and watches the very next render fill it:
 - ⛔ **no ambiguous attribution is remembered**, and the withheld keys are NAMED (`the-cultree`: 6). ⚠ A leg that
   only read the store could not see this — the probe's own expectation reads the SAME store, so a build that
   remembered a collided key would move the expectation with it and stay green.
-- ⛔ **the write goes to storage, not to `player`**: the state hash is taken across exactly the render that writes.
-  ⚠ Leg M cannot see this either — it measures a full render with the set already written, where a first-sight
-  write does not happen at all.
+- ⛔ **the write goes to storage, not to `player`**, asserted TWO ways: the state hash across exactly the render
+  that writes, and the BYTES under the storage key compared against the remembered set. ⚠ Leg M cannot see this at
+  all — it measures a full render with the set already written, where a first-sight write does not happen.
+  ⛔ **And the hash alone could not see it either**, which the mutant round MEASURED rather than argued: the
+  "write it into `player`" mutant was GREEN on two of the three games, because its write had already happened at an
+  earlier render and re-writing the SAME value moves no hash. Only `ptr`, whose set grows between the first render
+  and the leg, reddened. The byte comparison needs no change to be visible. ⚠ `the-cultree` still cannot witness
+  that mutant — it remembers nothing (all six of its rows collide) so it stores nothing either, and the two agree
+  at empty; the row says `0 remembered` out loud rather than passing in silence.
 
 ### The state leg needs a control
 
