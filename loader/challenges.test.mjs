@@ -31,6 +31,11 @@ function game(o = {}) {
         if (a === null || a === undefined) { entered.at = null; entered.id = null; }
         else if (entered.id !== Number(a)) { entered.at = Number(player.timePlayed); entered.id = Number(a); }
         const dt = entered.at === null ? 0 : Number(player.timePlayed) - entered.at;
+        // ⚠ A FORK WHOSE OWN `doReset` WIPES ITS OWN LAYER. `rowReset` leaves a SAME-ROW layer's data alone unless
+        // that layer's own `doReset` touches it (games/ptr/js/game.js), and PTR's `h` does not — so on PTR the
+        // strength at ENTRY and the strength at the GIVE-UP happen to be equal, and nothing there can tell the two
+        // readings apart. `wipeInside` supplies the engine shape that can.
+        if (o.wipeInside) player.h.points = new Decimal(a === null || a === undefined ? Number(player.h.points) : 0);
         // the currency the challenge is scored on — `player.points`, which is what `canCompleteChallenge` reads
         // when a challenge declares no `currencyInternalName` (the engine's own default branch).
         player.points = new Decimal(Math.pow(10, 300 * (a === null || a === undefined ? 0 : o.curve(dt, Number(a)))));
@@ -110,6 +115,17 @@ test('after a give-up the challenge is NOT re-entered until the layer is R× str
   ctx.player.h.points = new Decimal(8);
   tick(ctx, 2);
   assert.equal(ctx.tmtLoader.hookStats().challenges['challenges:h'].enter, 2, 'the layer is strong enough, so it tries again');
+});
+
+test('⛔ the retry bar is the strength the attempt STARTED from — mutant `retry bar read at the give-up`', () => {
+  // The layer holds 4 outside and is wiped to 0 for as long as the attempt lasts. The bar must be R × 4, not
+  // R × 1 (which is what the empty-purse floor would turn a give-up-time reading into) — the second would let the
+  // run walk straight back into a challenge it has just failed, on a layer that has not grown at all.
+  const ctx = boot({ curve: () => 0.5, held: 4, wipeInside: true }, { policies: { 'challenges:h': POLICY(0.1, 20, 2) } });
+  tick(ctx, 60);
+  assert.equal(ctx.tmtLoader.hookStats().challenges['challenges:h'].gaveUp, 1);
+  assert.equal(row(ctx).code, 'waiting:retry');
+  assert.equal(String(row(ctx).values.need), '8', 'R × what it held at ENTRY (4), not R × what being inside left (0 → floored to 1)');
 });
 
 test('⛔ the retry bar has R2’s EMPTY-PURSE FLOOR — a layer holding nothing does not re-enter at once', () => {

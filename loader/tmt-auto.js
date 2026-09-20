@@ -1083,7 +1083,10 @@
     // ⚠ `startHeld` IS SEEDED FROM THE PRESENT ON A SEEDED ATTEMPT, and that is the honest reading: the retry rule
     // asks "is the layer stronger than it was when this failed", and for an attempt whose start nothing recorded the
     // only strength this process can honestly name is the one it can see.
-    if (!m || m.id !== id) m = chAttempt[f.id] = { id: id, at: now, held: null, anchorAt: now, anchorP: null, startHeld: String(layerHeld(f.layer)) };
+    // ⚠ NO `at` FIELD. The first cut carried the entry time as well, and nothing ever read it — the window works
+    // off `anchorAt`, which moves. A record a resume restores is not the place for a value no decision consults, and
+    // a mutant that changed it reddened nothing, which is how it was found.
+    if (!m || m.id !== id) m = chAttempt[f.id] = { id: id, held: null, anchorAt: now, anchorP: null, startHeld: String(layerHeld(f.layer)) };
     return m;
   }
   /**

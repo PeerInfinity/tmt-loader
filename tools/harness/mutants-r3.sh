@@ -92,12 +92,6 @@ mutant m7-retry-without-the-unit-floor \
   "p='$AUTO';s=open(p).read();o='  function layerHeld(l) { var h = D(player[l] && player[l].points); return h.lt(D(1)) ? D(1) : h; }';assert o in s;s=s.replace(o,'  function layerHeld(l) { return D(player[l] && player[l].points); }');open(p,'w').write(s)" \
   $UNIT
 
-# MEASURED AT THE WRONG MOMENT. Recording the layer's strength when the attempt FAILS rather than when it BEGAN
-# measures what being inside the challenge left, which is a measurement of the challenge and not of the run.
-mutant m8-retry-bar-measured-at-the-give-up \
-  "p='$AUTO';s=open(p).read();o='(chFailed[f.id] || (chFailed[f.id] = {}))[pick] = chAttempt[f.id].startHeld;';assert o in s;s=s.replace(o,'(chFailed[f.id] || (chFailed[f.id] = {}))[pick] = String(layerHeld(l));');open(p,'w').write(s)" \
-  $UNIT
-
 # ---- the pause, and the plumbing --------------------------------------------------------------------------------
 # A STRANDED PAUSE READS AS AN ORDINARY GATE — the measured defect this code exists for. ⚠ It is NOT redundant with
 # the vocabulary row: `blocked:gate` is a perfectly good code and the run still pauses, so nothing but a row that
@@ -115,7 +109,15 @@ mutant m10-the-kind-reads-the-policy-string \
 # THE SEEDED WINDOW. A resumed run that finds itself inside a challenge with no record would be judged as an attempt
 # that began at time zero, and would be given up on its first tick.
 mutant m11-the-attempt-is-not-seeded \
-  "p='$AUTO';s=open(p).read();o='    if (!m || m.id !== id) m = chAttempt[f.id] = { id: id, at: now,';assert o in s;s=s.replace(o,'    if (!m || m.id !== id) m = chAttempt[f.id] = { id: id, at: 0,');open(p,'w').write(s)" \
+  "p='$AUTO';s=open(p).read();o='held: null, anchorAt: now, anchorP: null';assert o in s;s=s.replace(o,'held: null, anchorAt: 0, anchorP: null');open(p,'w').write(s)" \
+  $UNIT
+
+# THE RETRY BAR IS MEASURED AT ENTRY, and this is the mutant that says why the FIELD exists. ⚠ It is void on PTR by
+# accident and not by design: `rowReset` leaves a SAME-ROW layer's own data alone unless that layer's own `doReset`
+# wipes it (games/ptr/js/game.js), and PTR's `h` does not — so the entry reading and the give-up reading coincide
+# there. A fork whose `doReset` wipes its own layer is the case the row is written for, and the stub supplies it.
+mutant m13-retry-bar-read-at-the-give-up \
+  "p='$AUTO';s=open(p).read();o='(chFailed[f.id] || (chFailed[f.id] = {}))[pick] = chAttempt[f.id].startHeld;';assert o in s;s=s.replace(o,'(chFailed[f.id] || (chFailed[f.id] = {}))[pick] = String(layerHeld(l));');open(p,'w').write(s)" \
   $UNIT
 
 # THE MEMORY IS NOT IN THE RECORD — a resumed run would re-enter a challenge it had already given up on, and a
