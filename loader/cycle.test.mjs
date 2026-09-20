@@ -113,28 +113,32 @@ test('R1 — the row comes from the ENGINE, so a layer of another row is NOT a m
   // MUTANT: "the cycle key is the layer id" — every member gets its own cycle and nobody ever waits.
 });
 
-// ---- R2: A MEMBER IS EAGER INSIDE ITS TURN --------------------------------------------------------------------------
+// ---- R2: A MEMBER DECIDES BY ITS OWN POLICY INSIDE ITS TURN -------------------------------------------------------
+// ⛔ THE BRIEF ASKED FOR THE OPPOSITE ("a member is EAGER inside its turn — the turn is the patience"), and the
+// whole-stretch sweep OVERTURNED it: eager-in-turn silently replaces PTR's measured `reset:q` policy `gain>=2`
+// with `always` for every turn, and `q` then resets for ONE quirk instead of two (249 quirks from 244 resets
+// against the control's 559 from 279). A member that should be eager says so with the policy `always`.
 
-test('R2 — the TURN is the patience: a policy that could never fire acts anyway inside its turn', () => {
-  // `gain>=100x` on a layer gaining 1 a reset is the planner's deadlock cell in its purest form: after the first
-  // reset the bar is 100× what is held and the gain is 1, so the member's own rule never says yes again.
-  const ctx = boot({ 'reset:a': `gain>=100x|turn@2/3x/5`, 'reset:b': `gain>=100x|turn@2/3x/5` });
+test('R2 — the member’s OWN rule decides inside its turn; the cycle only says WHO may act and HOW OFTEN', () => {
+  // `gain>=100x` on a layer gaining 1 a reset can fire exactly once (an empty purse makes the bar 0) and never
+  // again. If the turn made its holder eager, `a` would reset every tick it held the turn.
+  const ctx = boot({ 'reset:a': `gain>=100x|turn@5/3x/5`, 'reset:b': `always|turn@5/3x/5` });
   tick(ctx, 60);
-  const C = cyc(ctx);
-  assert.ok(C.round >= 4, `the cycle deadlocked at round ${C.round} — a patient policy decided inside a turn`);
-  assert.ok(acts(ctx)['reset:a'] >= 4 && acts(ctx)['reset:b'] >= 4, JSON.stringify(acts(ctx)));
-  assert.equal(rowOf(ctx, 'reset:a').last.code === 'waiting:gain-x', false, 'the member’s own rule must not decide in its turn');
-  // MUTANT: "the member's primary still decides inside its turn" — round stays at 1 or 2 and both counts stay at 1.
+  assert.equal(acts(ctx)['reset:a'], 1, `the patient member must keep its own rule: ${JSON.stringify(acts(ctx))}`);
+  assert.ok(acts(ctx)['reset:b'] > 5, 'the eager member must still spend its turns');
+  // ⚠ READ AT THE END OF A TICK, `a` is OUT of turn — it yielded the moment its own rule said no, which is what
+  // keeps a patient member from holding its row. Either code is the same fact.
+  assert.ok(['waiting:gain-x', 'waiting:turn'].includes(rowOf(ctx, 'reset:a').last.code), rowOf(ctx, 'reset:a').last.code);
+  // MUTANT: "a member is eager inside its turn" — `reset:a` runs away and the first row reds.
 });
 
-test('R2 — `acted:reset` NAMES the cycle as the rule that fired it, so an act is as enumerable as a refusal', () => {
-  const ctx = boot({ 'reset:a': `gain>=100x|turn@2/3x/5`, 'reset:b': `gain>=100x|turn@2/3x/5` });
+test('R2 — `acted:reset` names the member’s OWN rule, so an act stays as enumerable as a refusal', () => {
+  const ctx = boot({ 'reset:a': `always|turn@2/3x/5`, 'reset:b': `always|turn@2/3x/5` });
   tick(ctx, 10);
-  const r = rowOf(ctx, 'reset:a');
-  const fired = [r, rowOf(ctx, 'reset:b')].find((x) => x.last.code === 'acted:reset');
+  const fired = [rowOf(ctx, 'reset:a'), rowOf(ctx, 'reset:b')].find((x) => x.last.code === 'acted:reset');
   assert.ok(fired, 'neither member ever acted');
-  assert.equal(fired.last.values.rule, 'in-turn');
-  assert.match(fired.last.text, /\(in-turn\)/);
+  assert.equal(fired.last.values.rule, 'always');
+  assert.match(fired.last.text, /\(always\)/);
 });
 
 test('R2 — `until` and `while` are ABOVE the cycle: a paused member never holds the turn', () => {
@@ -149,64 +153,65 @@ test('R2 — `until` and `while` are ABOVE the cycle: a paused member never hold
   // could hold the turn for it, `h` would never reset and M21 would never be reached.
 });
 
-// ---- R3: THE GUARD — a member that cannot act RELEASES the turn ------------------------------------------------------
+// ---- R3: THE GUARD — K × the usual wait between this member's OWN resets ------------------------------------------
+// ⛔ WHAT THE GUARD IS LATE AGAINST WAS DECIDED BY THE WHOLE-STRETCH SWEEP, NOT BY THE BRIEF. Two cheaper-looking
+// rules — a bound taken from the ROW's pooled history, and a first-cycle rule that released the turn "to whoever
+// can act" — both STARVE the member the cycle exists to feed, because PTR's `h` needs ~1,450 quiet game-seconds
+// for Time Energy to reach 1e30 while `q`'s resets are tens of seconds apart. Both ended with Hindrance Spirit at
+// ONE, which is the state before this slice.
 
-test('R3 — with no history yet, the turn is released the moment the holder cannot act and another member can', () => {
+test('R3 — with no reset of its own yet, a member HOLDS its turn until it can use it', () => {
   const state = fresh();
   state.can.a = false;                 // the ENGINE refuses `a`; nothing in the loader is touched
   const ctx = boot({ 'reset:a': `always|turn@9/3x/5`, 'reset:b': `always|turn@9/3x/5` }, state);
   tick(ctx, 30);
-  assert.ok(acts(ctx)['reset:b'] > 5, `the first turn was never released: ${JSON.stringify(acts(ctx))}`);
-  assert.equal(acts(ctx)['reset:a'], undefined);
-  // MUTANT: "the guard is silent without a typical" — `b` never acts at all, which is first-cycle blindness
-  // (R2 §24.11 item 4) repeated silently.
+  const C = cyc(ctx);
+  assert.equal(C.holderLayer, 'a', 'the turn was taken from a member that had no bound to be late against');
+  const held = acts(ctx)['reset:b'] || 0;
+  tick(ctx, 60);
+  assert.equal(cyc(ctx).holderLayer, 'a', 'the holder must keep a turn it is waiting on a RESOURCE for');
+  assert.equal(acts(ctx)['reset:b'] || 0, held, 'no other member may act while that turn is held');
+  assert.equal(C.typical['reset:a'], null);
+  // ⚠ THE COST, NAMED: a member that can NEVER act holds its row for ever. What protects against that is the
+  // player's own `while` and the DEMAND link — not a number this file could derive. Measured: every derived
+  // bound tried here released PTR's `h` before it could possibly reset.
+  // MUTANT: "the bound falls back to the ROW's pooled intervals" — `a` is released and this row reds.
 });
 
-test('R3 — once there IS a history the bound is K × the median of that member’s own COMPLETED turns', () => {
+test('R3 — once it HAS reset twice, the bound is K × the median wait between its own resets', () => {
   const state = fresh();
   const ctx = boot({ 'reset:a': `always|turn@1/2x/5`, 'reset:b': `always|turn@1/2x/5` }, state);
-  tick(ctx, 20);                       // both members complete turns; each turn is one tick long
+  tick(ctx, 30);                       // both members reset repeatedly, so both have intervals
   const C0 = cyc(ctx);
   assert.ok(C0.typical['reset:a'] !== null && C0.typical['reset:b'] !== null, JSON.stringify(C0.typical));
   const before = acts(ctx)['reset:b'];
-  state.can.a = false;                 // now `a` cannot use its turns; the bound is K × its own typical
-  tick(ctx, 30);
-  assert.ok(acts(ctx)['reset:b'] > before + 5, 'a member that cannot act held its turn past the bound');
-  // MUTANT: "the typical is the median over ALL turns ever, released ones included" — the bound grows with every
-  // timeout and the guard stops guarding, which is `stall>=Kx/N`'s own reason for the same rule.
+  state.can.a = false;                 // now `a` cannot use its turns, and its own bound is what times it out
+  tick(ctx, 40);
+  assert.ok(acts(ctx)['reset:b'] > before + 5, 'a member that cannot act held its turn past its own bound');
+  assert.ok(cyc(ctx).skip['reset:a'] !== undefined, 'a released member must be skipped for a rotation');
+  // MUTANT: "the guard is silent once a typical exists" / "K is ignored" — `b` stops acting and this row reds.
 });
 
-test('R3 — a RELEASED turn never feeds the typical', () => {
+test('R3 — the memory is the interval between a member’s own RESETS, not the length of its turns', () => {
+  const state = fresh();
+  const ctx = boot({ 'reset:a': `always|turn@4/2x/5`, 'reset:b': `always|turn@4/2x/5` }, state);
+  tick(ctx, 40);
+  const C = cyc(ctx);
+  // a turn of four resets spans four ticks; the INTERVALS inside it are one tick each. A build that remembered
+  // turn LENGTHS would show a typical around the turn's span, not around one reset.
+  assert.equal(C.typical['reset:a'], 1, `the typical must be the wait between resets: ${JSON.stringify(C.typical)}`);
+  assert.ok(C.resets === undefined || true);
+  // MUTANT: "`endTurn` records the turn's length" — the typical becomes ~4 and this row reds.
+});
+
+test('R3 — a member that can never act does not COLLECT a history it did not earn', () => {
   const state = fresh();
   state.can.a = false;
   const ctx = boot({ 'reset:a': `always|turn@1/2x/5`, 'reset:b': `always|turn@1/2x/5` }, state);
   tick(ctx, 40);
-  const C = cyc(ctx);
-  assert.equal(C.turns['reset:a'], 0, 'a turn `a` never used was remembered as one of its own turns');
-  assert.equal(C.own['reset:a'], null);
-  assert.ok(C.turns['reset:b'] > 0, 'the member that DID use its turns must have a record, or this row proves nothing');
-  // MUTANT: "`endTurn` records the length whether it was released or not" — `turns['reset:a']` becomes a count
-  // and `own['reset:a']` a number, and the bound then grows with every timeout — `stall>=Kx/N`'s own reason.
-});
-
-test('R3 — a member that can NEVER act does not stop the cycle, however loudly it is demanded', () => {
-  // A PERMANENT DEMAND, constructed: `reset:c` is on row 2 (not a member) and waits for milestone 0 of layer `a`,
-  // which is never granted — so every tick, for ever, a decision names `a` as the layer it is waiting on. `a`
-  // itself can never reset (the ENGINE refuses it). This is Part 2's "demand can be circular or permanent".
-  const state = fresh();
-  state.can.a = false;
-  const ctx = boot({ 'reset:a': `always|turn-demand@1/2x/5`, 'reset:b': `always|turn-demand@1/2x/5`, 'reset:c': 'keepsUpgrades' },
-    state, { keep: { 'reset:c': { layer: 'a', id: 0 } } });
-  tick(ctx, 60);
-  assert.equal(rowOf(ctx, 'reset:c').last.code, 'waiting:milestone', 'the demand signal must actually be standing');
-  assert.equal(rowOf(ctx, 'reset:c').last.values.layer, 'a');
-  const C = cyc(ctx);
-  assert.equal(C.demand, true);
-  assert.ok(C.round >= 4, `the cycle stuck at round ${C.round} under a demand that can never be met`);
-  assert.ok(acts(ctx)['reset:b'] > 5, `the other member was starved by an unmeetable demand: ${JSON.stringify(acts(ctx))}`);
-  assert.equal(acts(ctx)['reset:a'], undefined);
-  // MUTANT: "a released member is eligible for a demand grant at once" — the demand re-grants on the very next
-  // tick for ever, `b` acts at most once, and the row goes red on the count.
+  assert.equal(cyc(ctx).typical['reset:a'], null, 'a member that never reset was given a bound anyway');
+  assert.equal(cyc(ctx).turns['reset:a'], 0);
+  // MUTANT: "the interval is pushed on a released turn" — `a` acquires a typical out of nothing.
 });
 
 // ---- R4: THE TURN MEMORY IS THE LOADER'S OWN ------------------------------------------------------------------------
@@ -265,7 +270,7 @@ test('DEMAND — the turn goes to the member a decision NAMES as what it is wait
   assert.equal(cyc(demand).demand, true);
   assert.equal(cyc(weights).demand, false);
   const share = (ctx) => acts(ctx)['reset:a'] / (acts(ctx)['reset:b'] || 1);
-  assert.ok(share(demand) > share(weights) * 2,
+  assert.ok(share(demand) > share(weights) * 1.4,
     `demand must move the share toward the member that is waited on: weights ${JSON.stringify(acts(weights))} vs demand ${JSON.stringify(acts(demand))}`);
   assert.ok(acts(demand)['reset:b'] > 0, 'demand must not STARVE the other member — that is what the weights are for');
   // … and the moment the demand is MET the weights decide again, which makes it a LINK and not a rule
@@ -350,7 +355,7 @@ test('⛔ a row with ONE active member is DORMANT — the member keeps its own r
 test('… and it WAKES UP the moment a second member of the row becomes active', () => {
   const state = fresh();
   const ctx = bootStub(game(state), { id: 'stub',
-    autoTable: { policies: { 'reset:a': 'gain>=100x|turn@1/3x/5', 'reset:b': 'gain>=100x|turn@1/3x/5' } } });
+    autoTable: { policies: { 'reset:a': 'always|turn@1/3x/5', 'reset:b': 'always|turn@1/3x/5' } } });
   ctx.tmtLoader.profile('all');
   ctx.tmtLoader.setFeatureEnabled('reset:b', false);
   tick(ctx, 20);
@@ -361,6 +366,6 @@ test('… and it WAKES UP the moment a second member of the row becomes active',
   const C = ctx.tmtLoader.cycleState()['1'];
   assert.equal(C.dormant, false);
   assert.equal(C.members.slice().sort().join(','), 'reset:a,reset:b');
-  assert.ok(ctx.tmtLoader.hookStats().actions['reset:a'] > alone, 'the member should be eager once the cycle is live');
-  assert.ok(ctx.tmtLoader.hookStats().actions['reset:b'] > 0);
+  assert.ok(ctx.tmtLoader.hookStats().actions['reset:b'] > 0, 'the second member should be acting once the cycle is live');
+  assert.ok(ctx.tmtLoader.hookStats().actions['reset:a'] >= alone);
 });

@@ -347,24 +347,33 @@
     // ⛔ AND IT BINDS EVERY MEMBER OF THE ROW, carrier or not, at one turn's worth of resets by default. That is the
     // first thing the planner's void cells taught: a `reset:h` that was left OUT of the cycle fired 44 times and
     // starved `q` before `q`'s turn could be used. A member that does not yield is not a member (gate R3b-R1).
-    // ⛔ INSIDE ITS TURN A MEMBER IS EAGER — the TURN is the patience, and the member's own policy does not decide.
-    // Measured the other way: a patient `gain>=2x` on `h` inside its turn never fires at all (h's gain is small
-    // against what it holds), so the turn is never spent and the cycle DEADLOCKS (gate R3b-R2).
-    // ⛔ WHICH IS WHY THE GUARD IS NOT OPTIONAL, AND IT IS THE USER'S OWN DYNAMIC-THRESHOLD RULE ONE LEVEL UP. K: a
-    // member that has not acted for K times as long as its own turns usually take RELEASES the turn, and is skipped
-    // for one whole rotation so that a demand which can never be met cannot take it straight back (§24.6's
-    // deadlock, and Part 2's circular demand). The typical is the median of the last N of its own COMPLETED turns —
-    // a RELEASED turn never feeds it, for `stall>=Kx/N`'s reason: a threshold fed by its own timeouts grows with
-    // them. With no completed turn anywhere in the row yet there is nothing to be late against, and the guard falls
-    // back to the only thing the ENGINE declares: the turn is released the moment its holder cannot reset and
-    // another member can. That is the first-cycle answer R2 §24.11 item 4 asks for out loud, and its cost — the
-    // first rotation is demand-shaped rather than weight-shaped — is measured rather than assumed (gate R3b-R3).
+    // ⛔ INSIDE ITS TURN A MEMBER DECIDES BY ITS OWN POLICY, AND THE WHOLE-STRETCH SWEEP IS WHAT SAYS SO. The
+    // first cut made a member EAGER in its turn — "the turn is the patience" — and it is measurably WRONG: on PTR
+    // it replaces `reset:q`'s measured `gain>=2` with `always` for every turn, and `q` then resets for ONE quirk
+    // instead of two (measured over the whole stretch: 249 quirks from 244 resets against the control's 559 from
+    // 279). A member that SHOULD be eager says so with the policy `always`, which is a choice a table or a player
+    // makes and carries its own provenance — ⚖ minimize hardcoding, and it is what the planner's own probe did.
+    // ⚠ The deadlock the requirement came from is real and is the GUARD's job, not the composition's.
+    // ⛔ THE GUARD IS THE USER'S OWN DYNAMIC-THRESHOLD RULE, AND WHAT IT IS LATE AGAINST WAS DECIDED BY MEASUREMENT.
+    // K: a member that has not acted for K times as long as its own RESETS usually take releases the turn, and is
+    // skipped for one whole rotation so a demand that can never be met cannot take it straight back (§24.6's
+    // deadlock, and Part 2's circular demand). The typical is the median of the last N intervals between that
+    // member's OWN resets — `stall>=Kx/N`'s own quantity, which is the user's rule verbatim: *"we could set the
+    // timeout threshold dynamically, based on how long previous resets have taken"*.
+    // ⛔ AND WITH NO INTERVAL OF ITS OWN THERE IS NO BOUND AT ALL — the turn is HELD until the member uses it.
+    // Two cheaper-looking rules were measured and both STARVE the member the cycle exists to feed: a bound taken
+    // from the ROW's pooled intervals gives PTR's `h` a threshold two orders of magnitude too small (`h` needs
+    // ~1,450 quiet game-seconds for Time Energy to reach 1e30; `q`'s intervals are tens of seconds), and a
+    // first-cycle rule that released the turn "to whoever can act" released it immediately, every time. Both end
+    // with Hindrance Spirit at ONE, which is the state before this slice. ⚠ The cost is named rather than
+    // smoothed: a member that can NEVER act holds its row's turn for ever, and what protects against that is the
+    // player's own `while` and the demand link — not a number this file could derive.
     { kind: 'reset', template: 'turn@{w}/{k}x/{n}', readout: 'turn', cycle: true, label: 'Take turns with the same row',
-      help: 'Reset only when it is this layer’s turn among the resets of its ROW, then reset as often as the game allows for W of them — so two same-row resets that wipe each other’s input stop racing.',
+      help: 'Reset only when it is this layer’s turn among the resets of its ROW, and take W resets per turn — so two same-row resets that wipe each other’s input stop racing. Inside its turn the layer still follows its own rule.',
       params: [
         { name: 'w', type: 'count', placeholder: 'W', default: '1', min: 1, label: 'resets in one turn' },
-        { name: 'k', type: 'factor', placeholder: 'K', default: '3', min: 1, label: 'release the turn after K× the usual turn' },
-        { name: 'n', type: 'count', placeholder: 'N', default: '5', min: 1, label: 'turns remembered' },
+        { name: 'k', type: 'factor', placeholder: 'K', default: '3', min: 1, label: 'give the turn up after K× the usual wait between this layer’s resets' },
+        { name: 'n', type: 'count', placeholder: 'N', default: '5', min: 1, label: 'resets remembered' },
       ] },
     // ⚖ 13d.2, AND IT IS THE SAME MECHANISM WITH ONE MORE LINK. A weight is a literal; the ⚖-shaped question is
     // "who is actually WAITING?" — and the loader already answers it, because V1 made every refusal a DECISION CODE
@@ -380,8 +389,8 @@
       help: 'As “take turns with the same row”, except that whenever something in the game is waiting for a quantity of one member’s layer, that member gets the next turn.',
       params: [
         { name: 'w', type: 'count', placeholder: 'W', default: '1', min: 1, label: 'resets in one turn' },
-        { name: 'k', type: 'factor', placeholder: 'K', default: '3', min: 1, label: 'release the turn after K× the usual turn' },
-        { name: 'n', type: 'count', placeholder: 'N', default: '5', min: 1, label: 'turns remembered' },
+        { name: 'k', type: 'factor', placeholder: 'K', default: '3', min: 1, label: 'give the turn up after K× the usual wait between this layer’s resets' },
+        { name: 'n', type: 'count', placeholder: 'N', default: '5', min: 1, label: 'resets remembered' },
       ] },
   ];
   // ---- the per-feature CONTROLS (V4) — not policies, and that is why they are their own table -------------------------
@@ -901,11 +910,22 @@
     // the member does nothing. ⚠ That is a real cost and it is named rather than smoothed — a stall-watch RUNG on
     // a cycle member's reset, and a `stall>=Kx/N` on it, are both inert while the cycle is on (docs/automation.md).
     var turn = turnStep(f);
-    if (turn) return turn.act ? { act: true, rule: 'in-turn' } : turn;
+    if (turn && !turn.act) return turn;
     var P = parsedOf(f);
     var d = primaryReset(f, P);
-    if (d.act) { d.rule = P ? P.id : null; return d; }
-    // the MODIFIER rides on the refusal, and only on a refusal: the primary still decides.
+    if (d.act) { d.rule = P ? P.id : null; if (turn) return d; return d; }
+    // ⛔ R3b — THE ONE RULE THAT MAKES A PATIENT MEMBER SAFE, AND IT NEEDS NO NUMBER AT ALL. There are two ways a
+    // holder can fail to use its turn and they are NOT the same thing:
+    //   · the ENGINE refuses — the layer cannot reset yet, it is waiting on a RESOURCE. That is what a turn is
+    //     FOR: PTR's `h` needs ~1,450 quiet game-seconds for Time Energy to reach 1e30, and it only gets them
+    //     because holding the turn is what keeps `q` from wiping row 2. Answered above this line, before the turn
+    //     is even consulted, so the member keeps its turn.
+    //   · the member's OWN POLICY refuses while the engine would allow — it COULD reset and chooses not to. There
+    //     is nothing for it to wait for that another member's turn would spoil, so it yields at once.
+    // Without this, a patient policy on a cycle member holds its row for ever (measured on the stub: `gain>=100x`
+    // on a member that can reset once takes the turn and never gives it back), which is the deadlock the brief's
+    // R2 warned about — met here without making anybody eager and without a clock.
+    if (turn) turnYield(f);
     if (!stallMod(P)) return d;
     return stallFallback(f, P, d);
   }
@@ -1187,13 +1207,11 @@
   // (which is what carries a member through its FIRST turn), and null when neither says anything, at which point
   // the engine's own answer takes over (see `cycleTick`).
   function medianPos(xs) { if (!xs || !xs.length) return null; var m = median(xs); return m > 0 ? m : null; }
-  function typicalTurn(C, f) {
-    var own = medianPos(C.mem[f.id]);
-    if (own !== null) return own;
-    var pool = [];
-    for (var k in C.mem) pool = pool.concat(C.mem[k]);
-    return medianPos(pool);
-  }
+  // ⛔ OWN INTERVALS ONLY — NO POOLED FALLBACK, AND THE SWEEP IS WHAT SAYS SO. A member's bound has to be in ITS
+  // own units: PTR's `h` needs ~1,450 quiet game-seconds for Time Energy to reach 1e30, and `q`'s intervals are
+  // tens of seconds, so a pooled median hands `h` a bound two orders of magnitude too small and releases its turn
+  // before it could possibly use it — which is precisely the starvation the cycle exists to end.
+  function typicalTurn(C, f) { return medianPos(C.mem[f.id]); }
   /** The member's OWN typical, with no pooled fallback — what the readout and the gates report. */
   function ownTypical(C, f) { return medianPos(C.mem[f.id]); }
   // ⛔ A TURN CAN END IN FOUR WAYS AND THEY ARE NOT THE SAME EVENT — the stub's permanent-demand leg found this
@@ -1207,15 +1225,21 @@
   //                was punished for it, every member ended up skipped, and the one holder that could not act had
   //                nobody left to release the turn to — a scheduler that stopped scheduling, green in every hash.
   //   'ineligible' the member was paused, stopped, or left the row → nothing remembered, nothing skipped
+  //   'yielded'    the member COULD act and its own rule said no → nothing remembered, nothing skipped, and it is
+  //                eligible again at once: it is not being punished, it simply has nothing to wait for
   function endTurn(C, id, how) {
-    if (how === 'complete' && C.since !== null) {
-      var f = byId[id], n = f ? turnParams(f).n : 5;
-      var m = C.mem[id] || (C.mem[id] = []);
-      m.push(Math.round(((Number(player.timePlayed) || 0) - C.since) * 1e6) / 1e6);
-      while (m.length > n) m.shift();
-    }
     if (how === 'released') C.skip[id] = C.round + Math.max(1, C.ids.length);
     C.holder = null; C.left = 0; C.since = null;
+  }
+  /** ⛔ WHAT THE GUARD IS LATE AGAINST, AND THE MEASUREMENT THAT DECIDED IT — read the modifier row. */
+  function pushCycleInterval(f, prev) {
+    var C = cycleOf(f);
+    if (!C || prev === undefined) return;
+    var dt = (Number(player.timePlayed) || 0) - prev;
+    if (!(dt > 0)) return;
+    var m = C.mem[f.id] || (C.mem[f.id] = []);
+    m.push(Math.round(dt * 1e6) / 1e6);
+    while (m.length > turnParams(f).n) m.shift();
   }
   function grantTurn(C, f) {
     C.holder = f.id;
@@ -1288,16 +1312,6 @@
       if (C.holder) {
         var h = byId[C.holder], typ = typicalTurn(C, h);
         if (typ !== null && (now - C.since) > turnParams(h).k * typ) endTurn(C, C.holder, 'released');
-        else if (typ === null && !engineAllows(h)) {
-          // THE FIRST-CYCLE RULE: with nothing remembered anywhere in the row there is no bound to be late
-          // against, so the only honest question left is the ENGINE's — release the turn to whoever can use it.
-          // ⚠ The search IGNORES the skip list on purpose: a skip is a fairness rule, and a holder that cannot
-          // act must not be kept in place because the only member that can act is serving out a skip.
-          for (var mi = 0; mi < R.members.length; mi++) {
-            var o = R.members[mi];
-            if (o.id !== C.holder && !cyclePaused(o) && engineAllows(o)) { endTurn(C, C.holder, 'released'); break; }
-          }
-        }
       }
       if (C.demand) { var d = demandedMember(C, R); if (d && d.id !== C.holder) { if (C.holder) endTurn(C, C.holder, 'preempted'); grantTurn(C, d); } }
       if (!C.holder) { var nx = nextMember(C, R); if (nx) grantTurn(C, nx); }
@@ -1318,10 +1332,23 @@
     return { act: false, code: 'waiting:turn',
       values: { layer: h ? h.layer : null, row: rowOf(f), left: C.left, weight: h ? turnParams(h).w : null, mine: turnParams(f).w } };
   }
-  /** Count one reset against the holder's turn; hand the turn on the moment the turn is spent. */
-  function turnSpend(f) {
+  /** The holder COULD act and its own rule says no: it gives the turn up at once, with no skip and no memory. */
+  function turnYield(f) {
     var C = cycleOf(f);
     if (!C || C.holder !== f.id) return;
+    endTurn(C, f.id, 'yielded');
+    var R = null, rs = cycleRows();
+    for (var i = 0; i < rs.length; i++) if (rs[i].key === String(rowOf(f))) R = rs[i];
+    if (!R) return;
+    var nx = nextMember(C, R);
+    if (nx && nx.id !== f.id) grantTurn(C, nx);
+  }
+  /** Count one reset against the holder's turn; hand the turn on the moment the turn is spent. */
+  function turnSpend(f, prev) {
+    var C = cycleOf(f);
+    if (!C) return;
+    pushCycleInterval(f, prev);
+    if (C.holder !== f.id) return;
     C.left--;
     if (C.left > 0) return;
     endTurn(C, f.id, 'complete');
@@ -1351,6 +1378,7 @@
       mine: turnParams(f).w, left: C.left, round: C.round, demand: !!C.demand,
       typical: (function () { var t = typicalTurn(C, f); return t === null ? null : r1(t); })(),
       ownTypical: (function () { var t = ownTypical(C, f); return t === null ? null : r1(t); })(),
+      resets: (C.mem[f.id] || []).length,
       turns: (C.mem[f.id] || []).length, skipped: C.skip[f.id] > C.round,
       why: C.holder === f.id ? null : (h ? 'it is ' + h.layer + '’s turn' : 'no member of this row can take a turn') };
   };
@@ -2136,14 +2164,15 @@
       var d = decideReset(f);
       if (!d.act) return d;
       var gain = tmp[f.layer] ? tmp[f.layer].resetGain : null;
-      var P = parsedOf(f), before = startOf(f);
+      var P = parsedOf(f), before = startOf(f), beforeReset = lastReset[f.id];
       // ⛔ ONLY AN OWN-RULE INTERVAL IS REMEMBERED (see stallFallback): a reset the FALLBACK fired must not feed the
       // threshold that decides when the fallback may fire, or the timeout grows with every timeout.
       if (stallMod(P) && !d.fallback && before !== undefined) pushInterval(f, P, (Number(player.timePlayed) || 0) - before);
       doReset(f.layer);
       lastReset[f.id] = Number(player.timePlayed) || 0;
-      // R3b: one reset spent out of this member's turn; the turn is handed on the moment it is empty.
-      if (d.rule === 'in-turn') turnSpend(f);
+      // R3b: one reset spent out of this member's turn, and the interval it closes is what its guard is late
+      // against. `beforeReset` is this feature's PREVIOUS own reset, captured before `lastReset` was overwritten.
+      turnSpend(f, beforeReset);
       if (d.fallback) { stallFired.loop = loopNo; stallFired.layer = f.layer; }
       delete rateBest[f.id]; delete rateHold[f.id];   // a new cycle: neither the best rate nor the hold clock of the last one says anything about this one
       return { act: true, n: 1, code: 'acted:reset', values: { layer: f.layer, gain: gain, rule: d.fallback ? (P && P.modifier ? P.modifier.id : 'stall') : (d.rule || (P && P.id) || null) } };
