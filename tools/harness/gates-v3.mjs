@@ -415,31 +415,39 @@ async function part6(browser, base, ids) {
         if (!ready) { abstained.push(`${id}: the automation page did not come up`); await context.close(); continue; }
         await page.evaluate(() => { showTab('au'); });
         await redraw(page);
-        // the paired control (V1 part 6): a redraw that changes nothing, taken FIRST and costing exactly one redraw
+        // ⛔ THE CONTROL HAS TO PRICE EVERY PIECE OF WORK THE LEG DOES, NOT JUST THE REDRAWS — measured, and the
+        // first cut went RED on `arctree` alone with `extra: 63`. That game's own values make TMT's `format()` log
+        // "We meet an NaN at (e^NaN)NaN" on EVERY `updateTemp()` (§16.3 item 12), and `tmtLoader.tick()` calls
+        // `updateTemp()` once per tick — so 60 ticks cost 60 log lines that had nothing to do with V3 and that a
+        // redraw-only control could not see. The leg now measures its two costs separately and subtracts both.
         const b0 = errs.length;
         await redraw(page);
         await page.waitForTimeout(60);
         const perRedraw = errs.length - b0;
+        // ⚠ THE TRACKER IS ARMED BEFORE THE TICKS, not after: a tracker armed afterwards would have seeded from the
+        // state those ticks produced and recorded nothing, which is a green that measures nothing.
+        const bT = errs.length;
+        const TICKS = 60;
+        await page.evaluate((n) => { tmtLoader.setWatchOption('track', true); tmtLoader.tick(1, n); }, TICKS);
+        await page.waitForTimeout(60);
+        const perTicks = errs.length - bT;
         const before = errs.length;
         r = await page.evaluate(async () => {
           const T = window.tmtLoader, out = { tabs: Object.keys(layers[T.auLayer].tabFormat), drawn: {}, features: T.features.length, components: T.componentNames.slice() };
           const paint = (w) => { player.subtabs[T.auLayer].mainTabs = w; updateTemp(); if (typeof updateTabFormats === 'function') updateTabFormats(); };
           const sleep = (ms) => new Promise((res) => setTimeout(res, ms));
-          for (const w of out.tabs) { paint(w); await sleep(80); out.drawn[w] = (document.querySelector('#app').innerText || '').length; }
-          // ⚠ the tracker is armed FIRST, then the game is ticked — a tracker armed after the ticks would have
-          // seeded from the state those ticks produced and recorded nothing, which is a green that measures nothing.
-          T.setWatchOption('track', true);
-          const seeded = T.progress().total;
-          T.tick(1, 60);
-          paint('Progress');
+          let paints = 0;
+          for (const w of out.tabs) { paint(w); paints++; await sleep(80); out.drawn[w] = (document.querySelector('#app').innerText || '').length; }
+          paint('Progress'); paints++;
           await sleep(120);
           const p = T.progress();
-          out.seeded = seeded;
           out.events = p.total;
           out.progRows = document.querySelectorAll('#app .tmtl-prog-row').length;
           out.armed = p.armed;
-          paint('Advanced');
+          out.marks = Object.keys(p.marks).length;
+          paint('Advanced'); paints++;
           await sleep(120);
+          out.paints = paints;
           out.folds = document.querySelectorAll('#app button.tmtl-fold').length;
           out.rows = T.explain().length;
           out.unknown = T.explain().filter((x) => x.last && x.last.code === 'unknown').map((x) => x.id);
@@ -449,7 +457,9 @@ async function part6(browser, base, ids) {
           return out;
         });
         r.perRedraw = perRedraw;
-        r.extra = (errs.length - before) - perRedraw * (r.tabs.length + 3);
+        r.perTicks = perTicks;
+        r.ticks = TICKS;
+        r.extra = (errs.length - before) - perRedraw * r.paints;
         r.errs = errs.slice(0, 2);
       } finally { await context.close(); }
     } catch (e) { abstained.push(`${id}: ${String(e.message).slice(0, 90)}`); continue; }
@@ -467,7 +477,10 @@ async function part6(browser, base, ids) {
       + `⚠ (counted, and NOT given a cause: an abstention is a measurement not made — §18.4 item 11); `
       + `the tracker recorded at least one event on ${moved.length} of ${judged.length} game(s) over 60 ticks (a game that made no progress in that window records none, which is the rule being right); `
       + `progress rows drawn ${judged.reduce((s, x) => s + x.r.progRows, 0)}; fold buttons ${judged.reduce((s, x) => s + x.r.folds, 0)} over ${judged.reduce((s, x) => s + x.r.rows, 0)} feature row(s); `
-      + `watch states seen ${JSON.stringify([...new Set(judged.map((x) => x.r.watch))])}` });
+      + `watch states seen ${JSON.stringify([...new Set(judged.map((x) => x.r.watch))])}; `
+      + `⚠ the console-error control prices BOTH costs the leg pays — ${judged.reduce((s2, x) => s2 + x.r.perRedraw, 0)} line(s) per redraw and `
+      + `${judged.reduce((s2, x) => s2 + x.r.perTicks, 0)} across ${judged.length} game(s)' 60 ticks, almost all of them arctree's own `
+      + `"We meet an NaN at (e^NaN)NaN" on every updateTemp()` });
   writeJSON(path.join(REPO, `tools/harness/results/tmp/gates-v3-part6${a.shard ? '-' + String(a.shard).replace('/', 'of') : ''}.json`), { commit, dirty, assigned: ids, judged: judged.map((x) => ({ id: x.id, ok: x.ok, ...x.r })), abstained });
 }
 
