@@ -742,8 +742,14 @@ async function part7(browser, base, ids) {
           out.helpers = document.querySelectorAll('#app select.tmtl-select[data-control]').length;
           out.warn = !!document.querySelector('#app .tmtl-watch-warn');
           out.controls = T.controls().length;
-          // every registered feature answers `controlState` without throwing, and none claims an owner
-          out.owned = T.explain().filter((x) => x.control && (x.control['while'].owner || x.control.until.owner || x.control.priority.owner)).map((x) => x.id);
+          // ⛔ EVERY REGISTERED FEATURE ANSWERS `controlState` WITHOUT THROWING, AND NONE CARRIES A **PLAYER'S**
+          // CONTROL. ⚠ "none carries one at all" was the first cut of this row and it is WRONG as of this slice:
+          // `games-auto/ptr.js` now ships a `while` on `reset:q` (the M21 pause), which is a TABLE entry and is
+          // exactly what "a game may declare one" means. The row that matters is that no game on the roster comes
+          // up with something a PLAYER or a runtime lever set — that is what "off by default" says here.
+          const owner = (c) => [c['while'].owner, c.until.owner, c.priority.owner];
+          out.owned = T.explain().filter((x) => x.control && owner(x.control).some((o) => o === 'you' || o === 'runtime')).map((x) => x.id);
+          out.fromTable = T.explain().filter((x) => x.control && owner(x.control).some((o) => o === 'table')).map((x) => x.id);
           out.unknown = T.explain().filter((x) => x.last && x.last.code === 'unknown').map((x) => x.id);
           out.scrollX = document.documentElement.scrollWidth > document.documentElement.clientWidth;
           out.helperSrc = rows2.length ? T.predicateHelpers(rows2[0].id).length : 0;
@@ -758,7 +764,7 @@ async function part7(browser, base, ids) {
       && r.controls === 3 && r.ctlRows === r.editable * 3 && r.helpers === r.editable * 2
       && r.owned.length === 0 && (r.editable === 0 || r.helperSrc > 0) && r.warn;
     judged.push({ id, ok, r });
-    if (!ok) row({ gate: 'V4-7 roster: three control rows and two helper lists per editable block', id, leg: 'profile all', ok: false, notes: JSON.stringify(r).slice(0, 700) });
+    if (!ok) row({ gate: 'V4-7 roster: three control rows and two helper lists per editable block', id, leg: 'profile all', ok: false, notes: JSON.stringify(r).slice(0, 900) });
   }
   const red = judged.filter((x) => !x.ok);
   row({ gate: 'V4-7 the ROSTER: the new editors render on every game judged, and NOTHING is set on any of them', id: `${judged.length} judged`, leg: `${ids.length} assigned`,
@@ -767,7 +773,8 @@ async function part7(browser, base, ids) {
       + `⚠ (counted, and NOT given a cause: an abstention is a measurement not made — §18.4 item 11); `
       + `${judged.reduce((s, x) => s + x.r.ctlRows, 0)} control row(s) over ${judged.reduce((s, x) => s + x.r.editable, 0)} editable block(s); `
       + `${judged.reduce((s, x) => s + x.r.helpers, 0)} helper pick-list(s); `
-      + `⛔ 0 of ${judged.length} game(s) has ANY control set, which is what "off by default" means here; `
+      + `⛔ 0 of ${judged.length} game(s) has a control a PLAYER or a runtime lever set, which is what "off by default" means here; `
+      + `the only TABLE-declared control on the roster is ${JSON.stringify([...new Set(judged.flatMap((x) => x.r.fromTable.map((f) => `${x.id}:${f}`)))])} \u2014 PTR's M21 pause; `
       + `the experimental label is beside the watch on ${judged.filter((x) => x.r.warn).length} of ${judged.length}; `
       + `console-error control: ${judged.reduce((s, x) => s + x.r.perRedraw, 0)} line(s) per redraw over ${judged.length} game(s)` });
   writeJSON(path.join(REPO, `tools/harness/results/tmp/gates-v4-part7${a.shard ? '-' + String(a.shard).replace('/', 'of') : ''}.json`), { commit, dirty, assigned: ids, judged: judged.map((x) => ({ id: x.id, ok: x.ok, ...x.r })), abstained });
