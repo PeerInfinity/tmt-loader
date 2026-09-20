@@ -223,9 +223,16 @@ async function part4() {
   // simple system walked through it on its own in ~1650 game-seconds (plan §12a.2 item 9, §12b.4 controls (i)/(iii)).
   // A watch that escalates there is escalating a game that was about to move by itself — so the question this row
   // answers is what it DOES, and whether escalating was a mistake, measured against the same leg with it off.
-  const fBase = { profile: 'all', diff: 1, ticks: 3000, 'from-snapshot': FRONTIER, ladder: 'tools/harness/ladder/ptr.json', to: 'M12', eval: EV };
+  // ⚠ `--from M10 --to M11`, AND THE FRONTIER'S OWN `--auto-opt` WITH IT. Two things the first cut got wrong and the
+  // rows said so by coming back empty in 0 s: the fixture's `mark` is `STALL`, which `--from` defaults to and the
+  // ladder has no such entry (`ladderSlice` throws); and the frontier is a state the A2 POLICY SET produced
+  // (`config['auto-opt']` in the fixture), so a leg that resumed it under today's table would be measuring a
+  // configuration nobody ran. §12b.4's own control (i) is the number this row is against: **M11 at 15782**, from a
+  // state at 14131 game-seconds — the S1 "stall" the simple system walks out of by itself in ~1650 game-seconds.
+  const FRONTIER_OPT = 'policy:reset:p=interval>=10;policy:reset:t=interval>=5;policy:reset:e=interval>=5;policy:reset:s=interval>=5;policy:buyables:e=buy;exclude=buyables:t';
+  const fBase = { profile: 'all', diff: 1, ticks: 3000, 'from-snapshot': FRONTIER, ladder: 'tools/harness/ladder/ptr.json', from: 'M10', to: 'M11', eval: EV };
   for (const [key, opt] of [['the watch OFF — the control that walks through it', null], ['the watch ON, NOTHING edited', 'watch=1']]) {
-    const t = await twice('ptr', opt ? { ...fBase, 'auto-opt': opt } : fBase);
+    const t = await twice('ptr', { ...fBase, 'auto-opt': FRONTIER_OPT + (opt ? ';' + opt : '') });
     row({ gate: 'V3-4 the P1a FRONTIER, where the detector called a stall the game walked out of by itself', id: 'ptr', leg: key,
       ok: !!t.A.ok && !!t.B.ok && t.same, ticks: t.A.ticks, hash: t.A.hashGame,
       notes: `marks ${JSON.stringify(t.ma)} (control (i) reached M11 at 15782); watch ${t.A.eval?.w?.code} after ${t.A.eval?.w?.events} escalation(s); escalated ${JSON.stringify(t.A.eval?.esc)}; `

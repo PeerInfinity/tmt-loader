@@ -411,7 +411,9 @@ async function part6(browser, base, ids) {
           const T = window.tmtLoader, rows = T.explain();
           const text = document.querySelector('#app').innerText || '';
           // one block per feature that is not collapsed, one collapsed line per feature that is — together, every row
-          const blocks = document.querySelectorAll('#app div[style*="border-left"]').length;
+          // ⛔ `.tmtl-block` since V3 — the stall-watch panel also has a left border, so a style-substring match
+          // counts it as a feature block (see gates-a1 --part 2, which went red on exactly that).
+          const blocks = document.querySelectorAll('#app div.tmtl-block').length;
           const collapsed = rows.filter((x) => x.state === 'locked' || x.state === 'excluded').length;
           return { features: T.features.length, rows: rows.length, blocks, collapsed, unknown: rows.filter((x) => x.last && x.last.code === 'unknown').map((x) => x.id),
             sub: player.subtabs.au.mainTabs, subs: Object.keys(tmp.au.tabFormat), rendered: text.indexOf('What each feature decided') >= 0, len: text.length,
@@ -424,7 +426,9 @@ async function part6(browser, base, ids) {
         r.errs = errs.slice(0, 2);
       } finally { await context.close(); }
     } catch (e) { abstained.push(`${id}: ${String(e.message).slice(0, 90)}`); continue; }
-    const ok = r.rendered && r.sub === 'Advanced' && JSON.stringify(r.subs) === '["Simple","Advanced"]'
+    // ⚠ THREE SUBTABS SINCE V3 (`Progress`), and `Simple` FIRST is the load-bearing half: both engines select
+    // `Object.keys(tabFormat)[0]`. A fourth (P2's round log) joins the same way and this literal moves again.
+    const ok = r.rendered && r.sub === 'Advanced' && JSON.stringify(r.subs) === '["Simple","Advanced","Progress"]'
       && r.blocks === r.rows - r.collapsed && r.unknown.length === 0 && r.extra <= 0 && r.scrollX === false;
     judged.push({ id, ok, r });
     if (!ok) row({ gate: 'V1-6 roster: the Advanced subtab', id, leg: 'profile all, 60 ticks', ok: false, notes: JSON.stringify(r) });

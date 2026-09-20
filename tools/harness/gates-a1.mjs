@@ -431,7 +431,10 @@ async function part2Advanced(id) {
     await page.waitForTimeout(300);
 
     const shape = await page.evaluate(() => ({ subs: Object.keys(tmp.au.tabFormat), sel: player.subtabs.au.mainTabs, features: tmtLoader.features.length }));
-    check(JSON.stringify(shape.subs) === '["Simple","Advanced"]', `the au tab has exactly the subtabs ${JSON.stringify(shape.subs)}`);
+    // ⚠ THREE SINCE V3 (`Progress`), and the ORDER is the load-bearing half: both engines select
+    // `Object.keys(tabFormat)[0]` in `getStartPlayer` and repair an old save to it in `fixSave`, so `Simple` being
+    // FIRST is what every other leg of this file depends on. A fourth (P2's round log) joins the same way.
+    check(JSON.stringify(shape.subs) === '["Simple","Advanced","Progress"]', `the au tab has exactly the subtabs ${JSON.stringify(shape.subs)}`);
     check(shape.sel === 'Simple', `a fresh boot selects ${shape.sel} — the tab every other leg of this file reads`);
     const simple = await page.evaluate(() => ({ text: document.querySelector('#app').innerText, adv: (document.querySelector('#app').innerText || '').indexOf('What each feature decided') >= 0 }));
     check(simple.text.includes('Automation Tools') && !simple.adv, 'Simple still renders the title, and none of the Advanced view');
@@ -444,7 +447,9 @@ async function part2Advanced(id) {
 
     const adv = await page.evaluate(() => {
       const T = window.tmtLoader, rows = T.explain();
-      const blocks = [...document.querySelectorAll('#app div[style*="border-left"]')];
+      // ⛔ `.tmtl-block`, NOT `div[style*="border-left"]` — V3's stall-watch panel has a left border too, and the
+      // substring match counted it as a feature block (7 against 6 rows, red on a view rendering perfectly).
+      const blocks = [...document.querySelectorAll('#app div.tmtl-block')];
       const collapsed = rows.filter((x) => x.state === 'locked' || x.state === 'excluded');
       const text = document.querySelector('#app').innerText || '';
       // render ≡ headless, per feature: the block that NAMES this id must carry its reason text and its policy
@@ -484,7 +489,7 @@ async function part2Advanced(id) {
       updateTemp(); if (typeof updateTabFormats === 'function') updateTabFormats();
       return new Promise((res) => setTimeout(() => {
         const text = document.querySelector('#app').innerText || '';
-        res({ pwned: window.__tmtPwned === 1, imgs: document.querySelectorAll('#app div[style*="border-left"] img').length, asText: text.indexOf('onerror=') >= 0, id });
+        res({ pwned: window.__tmtPwned === 1, imgs: document.querySelectorAll('#app div.tmtl-block img').length, asText: text.indexOf('onerror=') >= 0, id });
       }, 250));
     });
     check(xss.pwned === false && xss.imgs === 0, `an injected <img onerror> in ${xss.id}'s provenance did not execute and created no element (pwned ${xss.pwned}, imgs ${xss.imgs})`);

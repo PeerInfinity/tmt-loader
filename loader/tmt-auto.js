@@ -2385,7 +2385,7 @@
     var bits = '';
     if (r.policy && r.policy.escalated) bits += ' ' + chip('ESCALATED', '#a06a3e');
     if (r.neverFired) bits += ' <span style="color:#c08a3e">⚠ never fired</span>';
-    return '<div style="opacity:' + (r.state === 'on' ? '.85' : '.6') + ';padding:2px 0;text-align:left">' + esc(r.title) + ' <span style="opacity:.6;font-size:.85em">' + esc(r.id) + '</span> — '
+    return '<div class="tmtl-collapsed" style="opacity:' + (r.state === 'on' ? '.85' : '.6') + ';padding:2px 0;text-align:left">' + esc(r.title) + ' <span style="opacity:.6;font-size:.85em">' + esc(r.id) + '</span> — '
       + chip(r.state.toUpperCase(), STATE_BG[r.state]) + bits + ' <span style="font-size:.9em">' + esc(r.last ? r.last.text : '') + '</span></div>';
   }
   function featureBlock(r) {
@@ -2408,7 +2408,12 @@
     // targeting them DIRECTLY and beating what they would have inherited. An inline declaration is what wins.
     // (Seen on the first screenshots: the headings read left and every fact inside a block read centred, which is
     // prose, not a list.)
-    var o = ['<div style="border-left:3px solid ' + STATE_BG[r.state] + ';background:rgba(127,178,217,.08);border-radius:4px;padding:6px 8px;margin:0 0 8px 0;text-align:left">'];
+    // ⛔ `class="tmtl-block"`, ADDED IN V3 BECAUSE A GATE WAS MATCHING A STYLE SUBSTRING. `gates-a1 --part 2` and
+    // `gates-v1 --part 4` counted feature blocks with `div[style*="border-left"]`, and V3's own stall-watch panel
+    // has a left border too — so the count came back ONE too high (7 blocks against 6 feature rows) and the leg went
+    // red on a view that was rendering perfectly. Same shape as §18.4 item 9's `Read-only.`: a gate keyed to
+    // something that is not the thing it is asking about. The class is what it is asking about.
+    var o = ['<div class="tmtl-block" style="border-left:3px solid ' + STATE_BG[r.state] + ';background:rgba(127,178,217,.08);border-radius:4px;padding:6px 8px;margin:0 0 8px 0;text-align:left">'];
     o.push('<div style="text-align:left">' + chip(r.state.toUpperCase(), STATE_BG[r.state]) + ' <b>' + esc(r.title) + '</b> <span style="opacity:.55;font-size:.85em">' + esc(r.id) + '</span></div>');
     o.push('<div style="text-align:left;font-size:.9em;opacity:.85">policy ' + bits.join(' · ') + '</div>');
     if (r.gate) o.push('<div style="text-align:left;font-size:.9em;opacity:.85">gate <code>' + esc(r.gate) + '</code></div>');
