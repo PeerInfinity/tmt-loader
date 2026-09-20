@@ -775,7 +775,7 @@ order**:
 | `toggles` | `toggles:<l>` | a milestone with `toggles: [[layer, field], …]` | `on` | `player[l].unlocked` |
 | `upgrades` | `upgrades:<l>` | numeric ids in `upgrades` | `cheapest-first`; `order-then-cheapest` when the table gives `order` | `player[l].unlocked` |
 | `buyables` | `buyables:<l>` | numeric ids in `buyables` | `buy` | `player[l].unlocked` |
-| `challenges` | `challenges:<l>` | numeric ids in `challenges` | `off`; `sequential` when the table gives `order` | `player[l].unlocked` |
+| `challenges` | `challenges:<l>` | numeric ids in `challenges` | `off`; **`sequential\|give-up@0.1/30/2x`** when the table gives `order` (R3a — see below) | `player[l].unlocked` |
 | `clickables` | `clickables:<l>` | numeric ids in `clickables` | `off`; `when` when the table lists the layer's clickables | `player[l].unlocked` |
 | `reset` | `reset:<l>` | a prestige: `type` `normal`, `static` or `custom` | `always` for a static layer; `gain>=2x` for normal / custom | `layerShown !== false` evaluated live (the node is visible) — not `tmp[l].layerShown`, which `updateTemp` computes before `gameLoop` and so lags a layer the game unlocks inside `gameLoop` by one tick |
 
@@ -983,6 +983,20 @@ primary has been saying no for too long. A policy that REPLACED the primary woul
 `rateHold`. ⛔ Each appears **only when it has something to say**, and intervals are recorded only for a feature whose
 policy carries the modifier — so a run that uses neither new strategy writes byte-for-byte the record it wrote before
 V2, and every snapshot committed in this repo stays valid.
+
+### The derived default for the `challenges` kind (R3a)
+
+**Without an `order` it is `off`, and it stays `off`.** A KIND default reaches every game on the roster, and the
+roster is 171 games nobody has swept. Measured (gate R3a-6, the first 14 ids in the roster's own order, 600 ticks
+each): **11 of the 14 register a `challenges` feature — 44 features between them** — and every one is at `off` with
+nothing active at the stop. Switching the kind on would put 43 unswept features into challenges at once. ⚠ What the
+sample bounds: 14 of 171 ids, 600 ticks each.
+
+**With an `order` it is now `sequential|give-up@0.1/30/2x`.** A table that names a challenge SEQUENCE has already
+opted into entering them, and until R3a that opt-in had no way OUT — `sequential` left a challenge only by winning
+it. The opt-in path is the one place a moved default can only help, and it reaches no game that has not asked for
+it: no table on the roster declares a challenge `order` today, which is why Something Tree's leg is byte-identical
+across the change.
 
 ### `give-up@B/H/Rx` — the challenge EXIT rule, and its retry rule (R3a), a MODIFIER
 
