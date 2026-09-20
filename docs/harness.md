@@ -168,6 +168,14 @@ node tools/harness/run.mjs ptr --profile all --ladder tools/harness/ladder/ptr.j
 4. A change to the core or a table re-checks the earlier fixtures by resuming from them: the marks after must land at
    the recorded tick and `hashGame` (or the change is a finding, not a re-record).
 
+⚠ **AND EVERY FIXTURE WRITTEN MOVES A SELECTOR, not just the readers that name it.** `deepestSnapshot()` picks the
+file with the MOST TICKS across `snapshots/<id>/{frontier,all,pinned}/`, and `tools/harness/page.mjs` and
+`tools/harness/cost-layerlist.mjs` both open ptr at whatever that is — so a new deepest fixture changes which SAVE
+the M1 page sweep and the layerlist cost sweep measure, and any figure taken from them is owed a re-measurement.
+(`shardCost()` is the exception: a measured cost in `tools/harness/shard-costs.json` takes precedence, and `ptr` has
+one.) A rung that writes fixtures therefore owes a LIST — by name AND by selector — of what reads them; R1′, R2, V4
+and R3a each carry one in their as-built.
+
 ## Scoring a DEFAULT: over WHOLE STRETCHES, never from the fixture the old default wrote (R2)
 
 ⛔ **A fixture bakes in the policy that produced it, and a layer UNLOCKS ON ITS FIRST RESET.** The two together make

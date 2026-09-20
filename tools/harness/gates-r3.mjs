@@ -121,16 +121,16 @@ const ENTRY_LITERAL = "challengeCompletions('h',11)<1 || (player.q.total.gte(100
 
 async function part1() {
   await sweep({ gate: 'R3a-1 the ENTRY / EXIT question on L1 —', leg: 'L1', cells: [
-    cell('policy:challenges:h=off', 'CONTROL (a): the kind as it SHIPS — ptr declares no `order` for challenges, so the derived default is `off` and no challenge is ever entered'),
-    cell('policy:challenges:h=sequential', 'CONTROL (b): the wall itself — an ENTRY rule with no EXIT rule'),
-    cell(`policy:challenges:h=${GIVEUP};while:challenges:h=${ENTRY_LITERAL}`, "(a) the digest's LITERALS as an entry gate (L3.13: 100 quirks / 100 hindrance spirit), per-COMPLETION so H11 is not blocked too (§5d′), with the exit rule under it"),
-    cell(`policy:challenges:h=${GIVEUP.replace(/\/\d+(\.\d+)?x$/, '/1x')}`, 'EXIT ONLY: the give-up rule with the retry factor at 1, i.e. re-enter the moment it is left — the control that isolates the retry rule'),
-    cell(`policy:challenges:h=${GIVEUP}`, '(b) the DERIVED pair: give up when the attempt stops closing the distance, retry when the challenge’s own LAYER is R× stronger than it was at the failed attempt'),
-    cell(`while:challenges:h=${ENTRY_LITERAL}`, 'the entry gate WITHOUT `sequential` — the derived `off` is untouched by a gate, which is the row that shows a gate cannot switch a kind on'),
+    cell('policy:challenges:h=off', 'CONTROL: what shipped BEFORE this slice — ptr declared no `order` for challenges, so the derived default was `off` and no challenge was ever entered'),
+    cell('policy:challenges:h=sequential', 'CONTROL: THE WALL ITSELF — an ENTRY rule with no EXIT rule'),
+    cell(`policy:challenges:h=${GIVEUP};while:challenges:h=${ENTRY_LITERAL}`, "(a) the digest's LITERALS as an entry gate (L3.13: 100 quirks / 100 hindrance spirit), written per COMPLETION so H11 is not blocked with H12 (§5d′), with the exit rule under it"),
+    cell(`policy:challenges:h=${GIVEUP.replace(/\/\d+(\.\d+)?x$/, '/1x')}`, 'EXIT ONLY: the same rule with the retry bar at R = 1, i.e. re-enter the moment it is left — the control that isolates the retry rule from the exit rule'),
+    cell('', '(b) the DERIVED pair, as the table now SHIPS it: give up when the attempt stops closing the distance, retry when the challenge’s own LAYER is R× stronger than it was at the failed attempt. ⚖ A row that needs an --auto-opt string to reproduce is measuring an override, not a default'),
+    cell(`policy:challenges:h=${GIVEUP.replace('@0.1/', '@0/')}`, 'the BARE rule (B = 0): give up only when progress stops DEAD — the control every buffered setting is measured against, as `rate-peak@0/0` is'),
   ] });
   const c = rows.filter((r) => r.ok).length;
-  row({ gate: 'R3a-1 VERDICT: which configuration reaches M25 (H12) and at what cost to the tree', id: 'ptr', ok: c === rows.length, ticks: null, gameSeconds: null, diff: 1, hash: null,
-    notes: `${c}/${rows.length} cells reproduced twice equal; read the marks and the enter/exit/gaveUp triple on each row above — a cell that reaches no new mark is a RESULT, and the curve beside it is the deliverable` });
+  row({ gate: 'R3a-1 VERDICT: which configuration reaches M25 (H12), and at what cost to the tree', id: 'ptr', ok: c === rows.length, ticks: null, gameSeconds: null, diff: 1, hash: null,
+    notes: `${c}/${rows.length} cells reproduced twice equal; read the marks and the enter/exit/gaveUp triple on each row — a cell that reaches no new mark is a RESULT, and the curve beside it is the deliverable` });
 }
 
 // ---- Part 2: what the two CONTROLS can and cannot say on this kind ------------------------------------------------
@@ -289,19 +289,54 @@ async function part7() {
       const errs = [];
       page.on('console', (m) => { if (m.type() === 'error') errs.push(m.text()); });
       page.on('pageerror', (e) => errs.push(String(e)));
-      await page.goto(`${srv.url}/games/${id}/index.html?automation=1`, { waitUntil: 'load' });
-      await page.waitForFunction('typeof tmtLoader !== "undefined" && tmtLoader.features && tmtLoader.features.length > 0', null, { timeout: 60000 });
-      const seen = await page.evaluate(() => {
-        const out = { kinds: [], mods: {}, components: (window.tmtLoader.componentNames || []).length };
-        for (const f of window.tmtLoader.features) if (!out.kinds.includes(f.kind)) out.kinds.push(f.kind);
-        for (const k of out.kinds) out.mods[k] = window.tmtLoader.modifiers(k).map((m) => m.id);
+      // ⚠ THE LOADER'S PAGE IS THE REPO ROOT, NOT THE GAME'S OWN index.html — `index.html?mod=<id>&automation=1`
+      // is how every other page gate opens a game (gates-v4:550), and a game's own file boots the PLAIN page with no
+      // loader at all. The first cut of this row waited 60 s for `tmtLoader.features` on a page that has no tmtLoader.
+      await page.goto(new URL(`index.html?mod=${encodeURIComponent(id)}&automation=1`, srv.url).href, { waitUntil: 'load' });
+      await page.waitForFunction(() => window.tmtLoader && (window.tmtLoader.ready || window.tmtLoader.error), null, { timeout: 60000 });
+      // ⛔ THE ROW HAS TO OPEN THE VIEW, NOT JUST READ THE TABLE. `T.modifiers('challenges')` carrying the row is a
+      // fact about DATA; the CLAIM is that V2's generic editors render it with no new component, and only the DOM can
+      // say that. ptr's `challenges:h` is LOCKED at a fresh boot (its layer is) and a locked block renders no editors,
+      // so the leg switches the feature ON — which ARMS it (U4) — and an armed block IS editable.
+      const seen = await page.evaluate(async () => {
+        const T = window.tmtLoader;
+        const out = { kinds: [], mods: {}, components: (T.componentNames || []).length, target: null, modFields: [], button: null, ctlFields: 0, error: null };
+        try {
+          for (const f of T.features) if (!out.kinds.includes(f.kind)) out.kinds.push(f.kind);
+          for (const k of out.kinds) out.mods[k] = T.modifiers(k).map((m) => m.id);
+          const ch = T.features.filter((f) => f.kind === 'challenges')[0];
+          if (!ch) return out;
+          out.target = ch.id;
+          // ⚠ `setFeatureEnabled` IS A RUNTIME OVERRIDE AND LEAVES THE BLOCK `locked` — measured: the state word
+          // stayed `locked` and nothing rendered. What makes a locked block editable is ARMING it, which is the
+          // SAVE (`player.au.armLocked` + `player.au.features[id]`), i.e. exactly what the Simple tab's press does.
+          T.armLocked(true);
+          if (!player[T.auLayer].features) player[T.auLayer].features = {};
+          player[T.auLayer].features[ch.id] = true;
+          T.setSavedPolicy(ch.id, 'sequential|give-up@0.2/40/3x');
+          showTab('au');
+          updateTemp();
+          player.subtabs[T.auLayer].mainTabs = 'Advanced';
+          updateTemp();
+          T.invalidateView();
+          await new Promise((r) => setTimeout(r, 500));
+          const q = `[data-fid="${ch.id}"]`;
+          out.state = (T.explain().find((r) => r.id === ch.id) || {}).state;
+          out.button = (document.querySelector(`button.tmtl-mod${q}`) || {}).textContent || null;
+          out.modFields = Array.from(document.querySelectorAll(`input.tmtl-input${q}`)).map((n) => n.getAttribute('data-param')).filter((x) => x && x.indexOf('modifier:') === 0);
+          out.ctlFields = document.querySelectorAll(`.tmtl-ctl-row${q}`).length;
+        } catch (e) { out.error = String((e && e.message) || e).slice(0, 200); }
         return out;
       });
       const hasCh = seen.kinds.includes('challenges');
-      const ok = !errs.length && (!hasCh || (seen.mods.challenges || []).includes('give-up@B/H/Rx'));
-      row({ gate: `R3a-7 the page on ${id}: the modifier table the editors render from`, id, leg: '?automation=1, the Advanced view’s own source', ok,
+      const wantFields = ['modifier:b', 'modifier:h', 'modifier:r'];
+      const fieldsOk = JSON.stringify(seen.modFields.slice().sort()) === JSON.stringify(wantFields);
+      const ok = !errs.length && !seen.error && seen.components === 7
+        && (!hasCh || ((seen.mods.challenges || []).includes('give-up@B/H/Rx') && fieldsOk
+            && !!seen.button && seen.button.indexOf('Give up when it stops getting closer') >= 0));
+      row({ gate: `R3a-7 the page on ${id}: the new modifier through V2’s GENERIC editors`, id, leg: 'index.html?mod=<id>&automation=1, Advanced, the feature switched on', ok,
         ticks: null, gameSeconds: null, diff: null, hash: null,
-        notes: `kinds [${seen.kinds.join(', ')}]; modifiers ${JSON.stringify(seen.mods)}; componentNames ${seen.components} (⛔ UNCHANGED: the modifier is rendered by V2’s own generic editor, so there is no new tmtl-* family); console errors ${errs.length}${errs.length ? ': ' + errs.slice(0, 2).join(' | ') : ''}` });
+        notes: `kinds [${seen.kinds.join(', ')}]; modifiers ${JSON.stringify(seen.mods)}; target ${seen.target} (state ${seen.state}); the modifier's three parameter editors rendered: ${JSON.stringify(seen.modFields)}; the button reads "${seen.button}" (⚖ read from the modifier's own table ROW — it said "the stall fallback" on every kind before this slice); V4 control rows still ${seen.ctlFields}; componentNames ${seen.components} (⛔ UNCHANGED: no new tmtl-* family); console errors ${errs.length}${seen.error ? '; EVAL ERROR ' + seen.error : ''}${errs.length ? ': ' + errs.slice(0, 2).join(' | ') : ''}` });
       await page.close();
     }
   } finally { await browser.close(); srv.stop(); }
