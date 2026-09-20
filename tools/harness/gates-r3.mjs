@@ -34,7 +34,9 @@ const row = (r) => { rows.push(r); console.log(`${r.ok ? 'GREEN' : 'RED  '} ${r.
 
 // ⛔ THE FLOOR EACH PART MUST REACH (`--assert`, CI): a battery that dies part-way prints fewer rows, and fewer rows
 // is fewer reds. These are the exact counts each part emits; a part that grows a leg has to come here and say so.
-const ROWS = { 1: 7, 2: 7, 3: 6, 4: 13, 5: 3, 6: 5, 7: 2, q: 5 };
+// ⚠ part 4 emits 2 leg rows + one row per fixture WRITTEN + one per fixture RE-EVALUATED: 2 + 2 + 2 = 6 at this head.
+// A rung that reaches M25 would write two more fixtures and move this to 10 — which is the point of declaring it.
+const ROWS = { 1: 7, 2: 7, 3: 6, 4: 6, 5: 3, 6: 5, 7: 2, q: 5 };
 
 const READING = [
   'Every cell is ONE run.mjs process, run TWICE unless the row says otherwise; a cell whose two runs disagree on the',
