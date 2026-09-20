@@ -2378,6 +2378,83 @@
     out.until.stopped = untilHitOf(f) !== null;
     return out;
   };
+  // ---- V4b: RESET THE AUTOMATION SETTINGS, and NOTHING ELSE -------------------------------------------------------
+  // ⚖ THE USER'S REQUEST, verbatim (2026-09-20): *"I want a tool to reset just the automation settings to the
+  // defaults, without resetting all of the game data."* The second half is the requirement, and it is exactly what
+  // `hashGame` already means: it excludes `player.au` and `player.subtabs.au`, so this press CANNOT move the game.
+  //
+  // ⛔ ITS SPECIFICATION IS A DEEP-EQUAL, NEVER A FIELD LIST. After the press `player.au` must equal what a FRESH
+  // BOOT has, and `runtimeState()` must be back to its fresh key set. A list of fields to clear would go stale the
+  // next time this arc adds one — V4 added four (`while`, `until`, `untilHit`, `priority`) and V3 added `escalate`
+  // before it — and it would go stale SILENTLY. What makes the deep-equal sufficient is a property every field here
+  // holds and every later one must: AN ABSENT FIELD BEHAVES IDENTICALLY TO ITS DEFAULT.
+  //
+  // ⛔ AND IT SPANS BOTH STORES. Clearing only the save leaves a feature the stall watch has ESCALATED, or one a
+  // `setPolicy` runtime override is driving, running a policy nothing on screen names — the settings would read as
+  // reset and the game would not behave as if they were.
+  //
+  // ⚠ WHAT IT DOES *NOT* TOUCH, and each has a reason:
+  //   · the ENGINE's own per-layer stores under `player.au` (`points`, `clickables`, `upgrades`, …). They are the
+  //     engine's, not the loader's, and `clickables` has one key per toggle BUTTON.
+  //   · `lastReset` / `loopNo` / `ranAt` / `stats` in the runtime record. Those are the RUN's history — how long
+  //     since each feature last reset, and what it has done — not a setting; they are in a fresh record too, and
+  //     clearing them would move every pinned resume.
+  //   · the per-browser fold map (`tmt-loader:<id>:ui.au.collapsed`). It is a VIEW preference, not a setting, it is
+  //     not in the save, and the press says so.
+  var RESET_CLEARS = [
+    'which features are switched on',
+    'the arming setting',
+    'every strategy, value, pause, stop and priority you have edited',
+    'the stall watch\u2019s option and every escalation list',
+    'any override a measurement left running',
+  ];
+  T.resetClears = function () { return RESET_CLEARS.slice(); };
+  /**
+   * Put the automation back to what a fresh save has. `{ok, cleared, error}` — `cleared` COUNTS what it removed, so
+   * a press that found nothing says so rather than claiming to have done something.
+   * ⛔ IT IS NOT UNDOABLE, so the PRESS is two-step (see `tmtl-reset`); this function is the one that acts.
+   */
+  T.resetAutomation = function () {
+    var au = player[AU];
+    if (!au) return { ok: false, cleared: null, error: 'this save has no automation store yet' };
+    var cleared = { features: 0, edits: 0, runtimePolicies: 0, runtimeControls: 0, runtimeEnabled: 0, escalations: 0, tracker: false, armLocked: false };
+    var k;
+    // ---- the SAVE ----------------------------------------------------------------------------------------------
+    var e = editsOf();
+    if (e) for (k in e) { cleared.edits++; delIn(e, k); }   // ⚠ INCLUDING the reserved `'*'` entry (the stall
+                                                           //   watch's own settings): it is found by a key walk
+                                                           //   and by NOTHING else — every other reader looks a
+                                                           //   feature up BY ID and cannot see it.
+    // ⚠ DELETED, NOT SET FALSE. A fresh save's `features` is `{}`, and "back to what a fresh save has" is the whole
+    // specification — a map of explicit `false`s is a different object and would fail the deep-equal that is the
+    // gate. `delIn` is `Vue.delete` where there is a Vue, so the observer is notified; a later toggle then ADDS a
+    // key plainly, which is exactly what it does on a save that has never been touched.
+    if (au.features) for (k in au.features) { if (au.features[k]) cleared.features++; delIn(au.features, k); }
+    if (au.armLocked) { cleared.armLocked = true; au.armLocked = false; }
+    au.disclosed = false;
+    // ---- the memory OUTSIDE `player` ---------------------------------------------------------------------------
+    for (var i = 0; i < features.length; i++) {
+      var f = features[i];
+      if (f.policyRuntime !== null) { cleared.runtimePolicies++; f.policyRuntime = null; }
+      for (var c = 0; c < CONTROLS.length; c++) if (f.controls[CONTROLS[c].name] !== null) { cleared.runtimeControls++; f.controls[CONTROLS[c].name] = null; }
+      if (escRung[f.id]) cleared.escalations++;
+    }
+    cleared.runtimeEnabled = T.clearFeatureOverrides();
+    clearWatch();
+    if (prog !== null) { cleared.tracker = true; prog = null; }
+    // ⚠ V2's DECISION MEMORY goes with the policies it belongs to: a `rate-peak` best and a stall history are
+    // memory OF a configuration, and the configuration has just been removed.
+    for (k in stallMem) delete stallMem[k];
+    for (k in stallSince) delete stallSince[k];
+    for (k in rateBest) delete rateBest[k];
+    for (k in rateHold) delete rateHold[k];
+    stallFired.loop = -1; stallFired.layer = null;
+    for (i = 0; i < features.length; i++) { features[i].predCache = null; features[i].policyStr = undefined; }
+    orderCache = {};
+    invalidateView();
+    return { ok: true, cleared: cleared, error: null };
+  };
+
   // ---- the helper PICK-LISTS (V4) — the predicates the ENGINE can name for this feature --------------------------
   // ⚠ A BLANK TEXT BOX IS NOT AN AFFORDANCE. These WRITE the predicate text into the field, where it stays fully
   // editable — they are a starting point, never a second language. ⚖ minimize hardcoding: every one is built from
@@ -3291,6 +3368,61 @@
         + '<span v-if="error" class="tmtl-error" style="color:#d07a7a;font-size:.85em;display:block">{{ error }}</span>'
         + '</div>',
     },
+    // ---- V4b: RESET THE AUTOMATION SETTINGS ------------------------------------------------------------------------
+    // ⛔ TWO PRESSES, AND THE FIRST ONE ONLY EXPLAINS. The press is not undoable and its footgun is real and NAMED
+    // rather than smoothed: a player who switched twelve features on to work around one bad strategy loses all
+    // twelve. So the confirm LISTS what goes, COUNTS what is actually there to lose, and points at the narrow tool
+    // that already exists — V2's per-feature *use the default*, which is one feature and one press.
+    // ⚠ It sits at the BOTTOM of the Advanced view, under the blocks, because it is the one control here that
+    // cannot be undone and nothing should be able to hit it while reaching for something else.
+    'tmtl-reset': {
+      props: ['data'],
+      data: function () { return { armed: false, done: null, error: null }; },
+      computed: {
+        // what a press would actually cost THIS save, counted rather than described
+        cost: function () {
+          var rows = this.data.rows || [], on = 0, edited = 0, i;
+          for (i = 0; i < rows.length; i++) {
+            if (rows[i].state === 'on' || rows[i].state === 'armed') on++;
+            var p = rows[i].policy, c = rows[i].control;
+            if ((p && (p.saved || p.runtime)) || (c && (c['while'].owner === 'you' || c.until.owner === 'you' || c.priority.owner === 'you'))) edited++;
+          }
+          return { on: on, edited: edited, watch: this.data.watch && this.data.watch.options && this.data.watch.options.saved
+            ? (this.data.watch.options.saved.watch || this.data.watch.options.saved.track) : false };
+        },
+        clears: function () { return T.resetClears(); },
+      },
+      methods: {
+        arm: function () { this.armed = true; this.done = null; this.error = null; },
+        cancel: function () { this.armed = false; },
+        go: function () {
+          var r = T.resetAutomation();
+          this.armed = false;
+          this.done = r.ok ? r.cleared : null;
+          this.error = r.ok ? null : r.error;
+        },
+      },
+      template: '<div class="tmtl-reset" style="text-align:left;margin:14px 0 4px 0;padding:4px 6px;border-left:3px solid #8a4a4a;background:rgba(138,74,74,.1);border-radius:4px">'
+        + '<button v-if="!armed" type="button" class="tmtl-reset-arm" style="' + BTN_STYLE + '" @click="arm" @keydown.stop>reset the automation settings\u2026</button>'
+        + '<span v-if="!armed && !done" style="opacity:.75;margin-left:6px;font-size:.9em">back to what a new save has \u2014 the game itself is not touched.</span>'
+        + '<div v-if="armed" style="text-align:left">'
+        +   '<div style="color:#c08a3e"><b>This cannot be undone.</b> It clears, for this game:</div>'
+        +   '<ul style="text-align:left;margin:2px 0 4px 18px;padding:0">'
+        +     '<li v-for="w in clears" :key="w" style="text-align:left">{{ w }}</li>'
+        +   '</ul>'
+        +   '<div style="text-align:left">Right now that is <b>{{ cost.on }}</b> feature(s) switched on and <b>{{ cost.edited }}</b> you have edited'
+        +     '<span v-if="cost.watch">, and the stall watch\u2019s own setting</span>.</div>'
+        +   '<div style="text-align:left;opacity:.8;font-size:.9em">To change ONE feature back instead, use <b>use the default</b> in its own block. '
+        +     'Which blocks you have folded is remembered by this browser, not by the save, and is left alone.</div>'
+        +   '<div style="text-align:left;opacity:.8;font-size:.9em">Your game \u2014 points, layers, upgrades, everything you have played \u2014 is not touched.</div>'
+        +   '<button type="button" class="tmtl-reset-go" style="' + BTN_STYLE + ';margin-top:3px" @click="go" @keydown.stop>yes, reset the automation settings</button>'
+        +   '<button type="button" class="tmtl-reset-cancel" style="' + BTN_STYLE + '" @click="cancel" @keydown.stop>cancel</button>'
+        + '</div>'
+        + '<div v-if="done" class="tmtl-reset-done" style="text-align:left;color:#4f9a6a">done \u2014 cleared {{ done.features }} switched-on feature(s), {{ done.edits }} saved edit(s)'
+        +   '<span v-if="done.runtimePolicies + done.runtimeControls + done.runtimeEnabled"> and {{ done.runtimePolicies + done.runtimeControls + done.runtimeEnabled }} override(s) a measurement had left running</span>.</div>'
+        + '<span v-if="error" class="tmtl-error" style="color:#d07a7a;display:block">{{ error }}</span>'
+        + '</div>',
+    },
     // ---- the PROGRESS subtab (V3 Part 1) ---------------------------------------------------------------------------
     // ⚠ IT RENDERS `T.progress()` AND COMPUTES NOTHING OF ITS OWN, which is V1's rule and is why the timeline is
     // testable in Node (`gates-v3 --part 5` compares the rendered rows against the API's).
@@ -3394,6 +3526,9 @@
           return out;
         },
         watch: function () { return T.watchState(); },
+        // ⚠ the same per-tick rows `blocks` is built from, so the reset's COUNT of what a press would cost cannot
+        // disagree with what the player is looking at.
+        rowsNow: function () { return this.blocks.map(function (b) { return b.row; }); },
         folded: function () { var b = this.blocks, n = 0; for (var i = 0; i < b.length; i++) if (b[i].collapsed) n++; return n; },
       },
       template: '<div style="text-align:left;max-width:100%;overflow-wrap:anywhere;word-break:break-word">'
@@ -3406,6 +3541,8 @@
         +   '<span style="opacity:.7;margin-left:6px">{{ folded }} of {{ blocks.length }} collapsed</span>'
         + '</div>'
         + '<tmtl-feature v-for="b in blocks" :key="b.row.id" :data="b" @toggle="toggle"></tmtl-feature>'
+        // ⚠ LAST, under every block: it is the one control here that cannot be undone.
+        + '<tmtl-reset :data="{rows: rowsNow, watch: watch}"></tmtl-reset>'
         + '</div>',
     },
   };

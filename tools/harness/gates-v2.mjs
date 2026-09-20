@@ -36,10 +36,10 @@ const row = (r) => { rows.push(r); console.log(`${r.ok ? 'GREEN' : 'RED  '} ${r.
 // that dies part-way prints fewer rows, and fewer rows is fewer reds. These are the exact counts each part emits.
 const ROWS = { 1: 3, 2: 13, 3: 5, 4: 8, 5: 3, 6: 1 };
 
-// ⚠ V3 ADDED TWO COMPONENTS (`tmtl-watch`, `tmtl-progress`), so what was the literal 4 here is now a DECLARED count
-// in one place. It is deliberately not read off `tmtLoader.componentNames` — a gate that asks the thing it is judging
-// how many it should have is not a gate.
-const COMPONENTS_EXPECTED = 6;
+// ⚠ V3 ADDED TWO COMPONENTS (`tmtl-watch`, `tmtl-progress`) and V4b ADDED ONE (`tmtl-reset`), so what was the
+// literal 4 here is now a DECLARED count in one place. It is deliberately not read off `tmtLoader.componentNames` —
+// a gate that asks the thing it is judging how many it should have is not a gate.
+const COMPONENTS_EXPECTED = 7;
 const SNAP = (id, m) => `tools/harness/snapshots/${id}/all/${m}.json`;
 // The R1′ leg V1's inertness is measured on, and V2's after it (plan §14d, §16.1).
 const M16_PIN = { ticks: 24179, hashGame: '9e2eadb7c58c0078' };

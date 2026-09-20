@@ -471,7 +471,7 @@ async function part6(browser, base, ids) {
     } catch (e) { abstained.push(`${id}: ${String(e.message).slice(0, 90)}`); continue; }
     const ok = r.rendered && r.unknown.length === 0 && r.extra <= 0 && r.scrollX === false
       && r.tabs.length === 3 && r.tabs[0] === 'Simple' && r.drawn.Progress > 0
-      && r.armed === true && r.folds === r.rows && r.components.length === 6;
+      && r.armed === true && r.folds === r.rows && r.components.length === 7;   // ⚠ 6 → 7: V4b's `tmtl-reset`
     judged.push({ id, ok, r });
     if (!ok) row({ gate: 'V3-6 roster: three subtabs, the tracker, and a fold button per block', id, leg: 'profile all', ok: false, notes: JSON.stringify(r).slice(0, 700) });
   }

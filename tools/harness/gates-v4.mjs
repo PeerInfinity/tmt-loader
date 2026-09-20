@@ -20,6 +20,9 @@
 //         two new codes in the block, a RELOAD, the re-arm press, a priority edited, `<img onerror>` inert, and M1's
 //         au rows intact.
 // Part 7  THE ROSTER (page). The new editors render on every game judged; abstentions counted and UNCAUSED.
+// Part 8  THE RESET (V4b, page + node). Two presses on a REALISTICALLY CONFIGURED save, and the specification is a
+//         DEEP-EQUAL: `player.au` equals a fresh boot's, `runtimeState()` is back to its fresh key set, `hashGame` is
+//         UNMOVED, and the per-browser fold map is LEFT ALONE. ⚖ It also REPORTS what the press really cost.
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
@@ -37,7 +40,7 @@ const row = (r) => { rows.push(r); console.log(`${r.ok ? 'GREEN' : 'RED  '} ${r.
 
 // ⛔ THE FLOOR EACH PART MUST REACH, for `--assert` (CI) — V1's, V2's and V3's rule, and R2 met it twice: a battery
 // that dies part-way prints fewer rows, and fewer rows is fewer reds. ⚠ ADDING A LEG MOVES THIS, deliberately.
-const ROWS = { 1: 3, 2: 3, 3: 4, 4: 3, 5: 4, 6: 2, 7: 1 };
+const ROWS = { 1: 3, 2: 3, 3: 4, 4: 3, 5: 4, 6: 2, 7: 1, 8: 3 };
 
 const SNAP = (id, m) => `tools/harness/snapshots/${id}/all/${m}.json`;
 const PTR_LADDER = 'tools/harness/ladder/ptr.json';
@@ -590,7 +593,7 @@ async function part6(browser, base) {
       // to `null` when there is none, because Vue RENDERS an attribute bound to `''`: with `|| ''` this selector
       // also matched the strategy picker and read three helper lists where two exist (measured).
       const preds = shape.controls.length - 1;   // `priority` is the one `count`
-      check(shape.rows === shape.controls.length && shape.helpers === preds && shape.boxes === shape.controls.length && shape.comps === 6,
+      check(shape.rows === shape.controls.length && shape.helpers === preds && shape.boxes === shape.controls.length && shape.comps === 7,
         `${shape.rows} control row(s) for ${JSON.stringify(shape.controls)}, ${shape.boxes} field(s), ${shape.helpers} helper pick-list(s) (one per predicate, expected ${preds}), ${shape.comps} component(s) — no new component family`);
       // ⚖ V4 Part 4: the watch's label, which R2 owed
       check(/experimental — not a safety net/.test(shape.warn) && shape.warn.length > 80,
@@ -712,6 +715,133 @@ async function part6(browser, base) {
   }
 }
 
+// ---- Part 8: the RESET (V4b) ---------------------------------------------------------------------------------------
+// ⚖ THE USER'S REQUEST (2026-09-20): *"reset just the automation settings to the defaults, without resetting all of
+// the game data."* ⛔ ITS GATE IS A DEEP-EQUAL and never a field list: a list goes stale the next time this arc adds
+// a field, and SILENTLY. The three rows are the whole specification — the save comes back, the runtime comes back,
+// and the GAME does not move.
+async function part8(browser, base) {
+  for (const id of ['ptr', 'something']) {
+    const notes = [];
+    let ok = true;
+    const check = (c, w) => { if (!c) ok = false; notes.push(`${c ? '\u2713' : '\u2717'} ${w}`); };
+    const { context, page, errs } = await openGamePage(browser, base, id, '&profile=saved');
+    try {
+      await showSub(page, 'Advanced');
+      // ⛔ A REALISTICALLY CONFIGURED SAVE, not one edit. The footgun this press carries is that a player who
+      // switched twelve features on to work around one bad strategy loses all twelve, so the leg builds a save with
+      // something in every store and REPORTS what the press cost it.
+      const before = await page.evaluate(() => {
+        const T = window.tmtLoader;
+        const fresh = JSON.stringify(player[T.auLayer]);   // ⚠ taken BEFORE anything is set — the reference
+        const rows = T.explain().filter((r) => r.state !== 'excluded');
+        const on = rows.slice(0, 6).map((r) => r.id);
+        for (const fid of on) player[T.auLayer].features[fid] = true;
+        T.armLocked(true);
+        const editable = T.explain().filter((r) => r.state === 'on' && r.kind === 'reset').map((r) => r.id);
+        for (const fid of editable.slice(0, 2)) {
+          T.setSavedControl(fid, 'while', 'player.points.gte(0)');
+          T.setSavedControl(fid, 'until', 'player.points.gte("1e999")');
+          T.setSavedControl(fid, 'priority', '1');
+        }
+        if (editable[0]) T.setSavedPolicy(editable[0], 'always');
+        T.setWatchOption('watch', true);                       // → the reserved entry edits['*'], and the tracker
+        if (editable[0]) T.setPolicy(editable[0], 'always');    // → a RUNTIME override a measurement left running
+        if (editable[1]) T.setControl(editable[1], 'while', 'false');
+        try { T.setCollapsedAll(true); } catch (e) { /* no storage */ }
+        T.tick(1, 20);
+        T.invalidateView();
+        return { fresh, au: JSON.stringify(player[T.auLayer]), rt: Object.keys(T.runtimeState()).sort(),
+          game: T.stateJSON(T.gameState), folds: T.collapsePrefs(),
+          on: T.explain().filter((r) => r.state === 'on' || r.state === 'armed').length,
+          edited: T.explain().filter((r) => r.policy && (r.policy.saved || r.policy.runtime)).length,
+          editedCtl: T.explain().filter((r) => r.control && ['while', 'until', 'priority'].some((n) => r.control[n].owner === 'you')).length,
+          armed: player[T.auLayer].armLocked, watch: T.watchOptions().watch, tracker: T.progress().armed };
+      });
+      check(before.au !== before.fresh && before.on > 0 && (before.edited > 0 || before.editedCtl > 0) && before.watch === true,
+        `a REALISTICALLY configured save to lose: ${before.on} feature(s) on/armed, ${before.edited} policy-edited, ${before.editedCtl} control-edited, `
+        + `arming ${before.armed}, the watch ON, the tracker ${before.tracker}, runtime record ${JSON.stringify(before.rt)}`);
+
+      // ---- the FIRST press only EXPLAINS -------------------------------------------------------------------------
+      await page.evaluate(() => { updateTemp(); if (typeof updateTabFormats === 'function') updateTabFormats(); });
+      await page.waitForTimeout(200);
+      await page.locator('#app button.tmtl-reset-arm').first().click({ timeout: 5000 });
+      await redraw(page);
+      await page.waitForTimeout(200);
+      const confirm = await page.evaluate(() => {
+        const el = document.querySelector('#app .tmtl-reset');
+        return { text: el ? el.innerText.replace(/\s+/g, ' ') : null, go: document.querySelectorAll('#app button.tmtl-reset-go').length,
+          cancel: document.querySelectorAll('#app button.tmtl-reset-cancel').length,
+          au: JSON.stringify(player[tmtLoader.auLayer]),
+          // ⚠ THE GAME SNAPSHOT IS TAKEN HERE, not twenty ticks earlier: the question is whether the PRESS moved the
+          // game, and a reference taken before a redraw measures the redraw too (2.7 writes `resetTime` on one).
+          game: tmtLoader.stateJSON(tmtLoader.gameState) };
+      });
+      // ⚠ READ FROM THE PAGE, not from a literal here: the words are the loader's own data (`resetClears()`), and a
+      // gate that carried its own copy would go green on a confirm that had drifted from what the function clears.
+      const clears = await page.evaluate(() => tmtLoader.resetClears());
+      const listed = clears.every((w) => String(confirm.text).includes(w.slice(0, 24)));
+      check(confirm.go === 1 && confirm.cancel === 1 && confirm.au === before.au && /cannot be undone/i.test(String(confirm.text)) && listed,
+        `the first press only EXPLAINS: the save is byte-identical (${confirm.au === before.au}), both presses are on screen, it says it cannot be undone, `
+        + `and it lists every one of ${clears.length} thing(s) it clears \u2014 "${String(confirm.text).slice(0, 320)}\u2026"`);
+
+      // ---- the SECOND press, and the SPECIFICATION ---------------------------------------------------------------
+      await page.locator('#app button.tmtl-reset-go').first().click({ timeout: 5000 });
+      await redraw(page);
+      await page.waitForTimeout(250);
+      const after = await page.evaluate(() => {
+        const T = window.tmtLoader;
+        return { au: JSON.stringify(player[T.auLayer]), rt: Object.keys(T.runtimeState()).sort(),
+          game: T.stateJSON(T.gameState), folds: T.collapsePrefs(),
+          on: T.explain().filter((r) => r.state === 'on' || r.state === 'armed').length,
+          owned: T.explain().filter((r) => r.control && ['while', 'until', 'priority'].some((n) => r.control[n].owner === 'you' || r.control[n].owner === 'runtime')).map((r) => r.id),
+          savedPolicies: T.explain().filter((r) => r.policy && (r.policy.saved || r.policy.runtime)).map((r) => r.id),
+          armed: player[T.auLayer].armLocked, watch: T.watchOptions().watch, tracker: T.progress().armed,
+          done: (document.querySelector('#app .tmtl-reset-done') || {}).textContent || null };
+      });
+      // ⛔ THE SPECIFICATION, AND IT IS **THE LOADER'S KEYS** OF `player.au` — measured, and the first cut of this
+      // row had it wrong in a way only 2.7 could show. `player.au` is a LAYER, so the ENGINE keeps its own per-layer
+      // stores in it, and 2.7's `gameLoop` writes `best` from `points` and `resetTime` from the clock EVERY TICK.
+      // A reset that made the whole key equal a fresh boot's would be resetting GAME DATA — the one thing the user
+      // asked it not to do. So the loader's four keys must equal a fresh boot's, and the ENGINE's must equal what
+      // they were the instant before the press, which is strictly stronger than "unchanged since boot".
+      // ⚠ The four are DECLARED here, not read off the thing being judged (V3's rule): a fifth loader key added to
+      // the `au` layer's `startData` has to come here and say so.
+      const LOADER_KEYS = ['features', 'disclosed', 'armLocked', 'edits'];
+      const pick = (json, keys, want) => { const o = JSON.parse(json), r = {}; for (const k of Object.keys(o)) if (keys.includes(k) === want) r[k] = o[k]; return JSON.stringify(r); };
+      const loaderOk = pick(after.au, LOADER_KEYS, true) === pick(before.fresh, LOADER_KEYS, true);
+      const engineOk = pick(after.au, LOADER_KEYS, false) === pick(before.au, LOADER_KEYS, false);
+      check(loaderOk && engineOk,
+        `⛔ THE SPECIFICATION: the LOADER's keys of \`player.au\` ${JSON.stringify(LOADER_KEYS)} deep-equal a FRESH BOOT's (${loaderOk}) `
+        + `\u2014 and this row names no field INSIDE them \u2014 while the ENGINE's own per-layer stores in the same key are UNTOUCHED by the press (${engineOk}); `
+        + `⚠ they are not a fresh boot's and must not be: 2.7 writes \`best\` and \`resetTime\` into every side layer on every tick`
+        + `${loaderOk ? '' : `\n      after  ${pick(after.au, LOADER_KEYS, true)}\n      fresh  ${pick(before.fresh, LOADER_KEYS, true)}`}`
+        + `${engineOk ? '' : `\n      after  ${pick(after.au, LOADER_KEYS, false)}\n      before ${pick(before.au, LOADER_KEYS, false)}`}`);
+      check(after.rt.join(',') === 'lastReset,loopNo,ranAt,stats',
+        `…and the runtime record is back to its fresh key set ${JSON.stringify(after.rt)} \u2014 a reset that cleared only the SAVE would leave an escalated or overridden feature running a policy nothing on screen names`);
+      check(after.game === confirm.game && after.on === 0 && after.owned.length === 0 && after.savedPolicies.length === 0
+        && after.armed === false && after.watch === false && after.tracker === false,
+        `…and the GAME did not move ACROSS THE PRESS (hashGame's own state, byte-identical: ${after.game === confirm.game}`
+        + `${after.game === confirm.game ? '' : `, first divergence at ${(() => { let i = 0; while (i < after.game.length && after.game[i] === confirm.game[i]) i++; return `${i}: …${confirm.game.slice(Math.max(0, i - 60), i + 60)}… vs …${after.game.slice(Math.max(0, i - 60), i + 60)}…`; })()}`}`
+        + `); ${after.on} feature(s) on, ${after.owned.length} control(s) owned, `
+        + `${after.savedPolicies.length} policy override(s), arming ${after.armed}, watch ${after.watch}, tracker ${after.tracker}; the press reported "${String(after.done).replace(/\s+/g, ' ').slice(0, 160)}"`);
+      // ⚠ THE FOLD MAP IS A VIEW PREFERENCE AND IS LEFT ALONE, which the press says out loud.
+      check(JSON.stringify(after.folds) === JSON.stringify(before.folds),
+        `…and the per-browser fold map is UNTOUCHED (${before.folds.closed.length} closed before, ${after.folds.closed.length} after) \u2014 it is not in the save and the press says so`);
+      check(errs.length === 0, `no page error at all: ${errs.length}${errs.length ? ' \u2014 ' + errs[0] : ''}`);
+      // ⚖ REPORTED, not judged: what a configured save actually loses.
+      notes.push(`⚖ COST: this save lost ${before.on} switched-on feature(s), ${before.edited} policy edit(s) and ${before.editedCtl} control edit(s) in one press`);
+    } catch (e) { ok = false; notes.push('EXCEPTION ' + String((e && e.stack) || e).slice(0, 400)); }
+    finally { await context.close(); }
+    row({ gate: 'V4-8 (page) the reset: two presses, `player.au` back to a fresh boot\u2019s, the runtime with it, the GAME unmoved', id, leg: 'profile saved, au \u2192 Advanced', ok, notes: notes.join('; ') });
+  }
+  // …and the words the confirm shows are DATA, so the component cannot drift from what the function clears.
+  const words = await job('ptr', { ticks: 0, eval: 'tmtLoader.resetClears()' });
+  row({ gate: 'V4-8 what the confirm LISTS is data the loader owns, not prose in a template', id: '—', leg: `${(words.eval || []).length} item(s)`,
+    ok: !!words.ok && Array.isArray(words.eval) && words.eval.length >= 4,
+    notes: JSON.stringify(words.eval) });
+}
+
 // ---- Part 7: the roster ------------------------------------------------------------------------------------------
 // ⛔ ABSTENTIONS ARE COUNTED AND LEFT UNCAUSED (§18.4 item 11): an abstention is a measurement NOT MADE.
 async function part7(browser, base, ids) {
@@ -760,7 +890,7 @@ async function part7(browser, base, ids) {
         r.errs = errs.slice(0, 2);
       } finally { await context.close(); }
     } catch (e) { abstained.push(`${id}: ${String(e.message).slice(0, 90)}`); continue; }
-    const ok = r.unknown.length === 0 && r.extra <= 0 && r.scrollX === false && r.components === 6
+    const ok = r.unknown.length === 0 && r.extra <= 0 && r.scrollX === false && r.components === 7
       && r.controls === 3 && r.ctlRows === r.editable * 3 && r.helpers === r.editable * 2
       && r.owned.length === 0 && (r.editable === 0 || r.helperSrc > 0) && r.warn;
     judged.push({ id, ok, r });
@@ -795,6 +925,7 @@ try {
     browser = await chromium.launch();
     server = await startServer(REPO);
     if (PART === '6') await part6(browser, server.url);
+    else if (PART === '8') await part8(browser, server.url);
     else if (PART === '7') {
       let ids = a._.length ? a._ : GAMES();
       if (a.shard) { const { i, n } = parseShard(a.shard); ids = assignShards(GAMES(), n)[i - 1]; }

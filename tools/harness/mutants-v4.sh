@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# The V4 mutant round — the per-feature CONTROLS (`while`, `until`, `priority`).
+# The V4 mutant round — the per-feature CONTROLS (`while`, `until`, `priority`) and V4b's RESET.
 #
 # ⛔ FOR EVERY MUTANT, TWO QUESTIONS WERE ASKED BEFORE IT WAS WRITTEN (the brief's Part 5):
 #   1. CAN IT MOVE ITS LEG'S OWN REFERENCE? Every leg here is PAIRED against a control that has NOTHING set — no
@@ -119,6 +119,27 @@ mutant m10-unvalidatable-save-is-run \
 # THE PREDICATE IS NOT ESCAPED in the block it is rendered into. `display-text` is `v-html` on both engines.
 mutant m11-predicate-not-escaped \
   "p='$AUTO';s=open(p).read();o=\"o.push('<div style=\\\"text-align:left;font-size:.9em;opacity:.85\\\">acts only while <code>' + esc(ctl['while'].value)\";assert o in s;s=s.replace(o,\"o.push('<div style=\\\"text-align:left;font-size:.9em;opacity:.85\\\">acts only while <code>' + (ctl['while'].value)\");open(p,'w').write(s)" \
+  $UNIT
+
+# ---- V4b: the RESET ------------------------------------------------------------------------------------------------
+# ⛔ THE ONE THE SPEC NAMES: a reset that clears the SAVE and leaves the memory outside it. A feature the stall watch
+# has escalated, or one a `setPolicy` override is driving, then goes on running a policy nothing on screen names —
+# the settings read as reset and the game does not behave as if they were.
+mutant m12-reset-leaves-the-runtime \
+  "p='$AUTO';s=open(p).read();o='    cleared.runtimeEnabled = T.clearFeatureOverrides();';assert o in s;s=s.replace(o,'    cleared.runtimeEnabled = 0;');t='      if (f.policyRuntime !== null) { cleared.runtimePolicies++; f.policyRuntime = null; }';assert t in s;s=s.replace(t,'      if (f.policyRuntime !== null) { cleared.runtimePolicies++; }');open(p,'w').write(s)" \
+  $UNIT
+
+# THE RESERVED ENTRY IS MISSED. `edits['*']` is the stall watch's own settings; it is found by a KEY WALK and by
+# nothing else, because every other reader looks a feature up BY ID. A reset written the obvious way — over the
+# feature list — leaves it, and the watch comes back on.
+mutant m13-reset-misses-the-reserved-entry \
+  "p='$AUTO';s=open(p).read();o=\"    if (e) for (k in e) { cleared.edits++; delIn(e, k); }\";assert o in s;s=s.replace(o,\"    if (e) for (var bi = 0; bi < features.length; bi++) if (e[features[bi].id]) { cleared.edits++; delIn(e, features[bi].id); }\");open(p,'w').write(s)" \
+  $UNIT
+
+# `features` SET FALSE RATHER THAN DELETED. A map of explicit `false`s behaves identically and is a DIFFERENT object,
+# so only a row that compares against a FRESH BOOT can see it — which is exactly why the spec is a deep-equal.
+mutant m14-reset-sets-false-instead-of-deleting \
+  "p='$AUTO';s=open(p).read();o='    if (au.features) for (k in au.features) { if (au.features[k]) cleared.features++; delIn(au.features, k); }';assert o in s;s=s.replace(o,'    if (au.features) for (k in au.features) { if (au.features[k]) cleared.features++; setIn(au.features, k, false); }');open(p,'w').write(s)" \
   $UNIT
 
 echo

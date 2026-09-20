@@ -717,7 +717,7 @@ jobs:
   #     COMPILES before it is committed and a throw is contained to its feature, that the `until` latch survives a
   #     RELOAD (it is the only reason it means anything to a player), that `priority` is the kind's place until
   #     somebody moves it, and that a build carrying all of it is byte-identical when nobody has used it. They run here.
-  #   · part 6 is the PAGE, which is where V1's, V2's and V3's real defects were found. It runs here.
+  #   · parts 6 and 8 are the PAGE, which is where V1's, V2's and V3's real defects were found. It runs here.
   #   · ⛔ part 2 does NOT: it is two 16,000-tick ladder legs (~25 min), and what it asserts — a table entry and a
   #     saved edit are the same slot — is also asserted on the stub in part 1, cheaply. It is run by hand and quoted
   #     in the as-built with the head it ran at.
@@ -792,7 +792,7 @@ jobs:
           retention-days: 14
 
   v4-page:
-    name: V4 controls — in the page (part 6)
+    name: V4 controls — in the page (parts 6, 8)
     needs: fast
     runs-on: ubuntu-latest
     timeout-minutes: 30
@@ -824,6 +824,14 @@ jobs:
           set -o pipefail
           node tools/harness/gates-v4.mjs --part 6 --no-summary --assert | tee v4-6.txt
 
+      # ⚠ The reset is driven with its REAL two presses on a REALISTICALLY configured save, and its specification is
+      # a deep-equal against a fresh boot — never a field list, which would go stale the next time this arc adds one.
+      - name: "Part 8 — the reset: two presses, the save back to a fresh boot's, the runtime with it, the GAME unmoved"
+        shell: bash
+        run: |
+          set -o pipefail
+          node tools/harness/gates-v4.mjs --part 8 --no-summary --assert | tee v4-8.txt
+
       - name: Summary
         if: always()
         shell: bash
@@ -832,7 +840,7 @@ jobs:
             echo '## V4 controls — in the page'
             echo ''
             echo '```'
-            cat v4-6.txt 2>/dev/null | grep -E 'VERDICT|REFUSED|^RED|green$' || echo 'no output'
+            cat v4-6.txt v4-8.txt 2>/dev/null | grep -E 'VERDICT|REFUSED|^RED|green$' || echo 'no output'
             echo '```'
           } >> "$GITHUB_STEP_SUMMARY"
 

@@ -88,7 +88,7 @@ SUPPLIED). Both engines' `column` / `row` render **any registered component by n
 `:layer` and `:data` — ptr `js/components.js:71-73`, something `:60-72`), so a component the LOADER registers appears
 inside a `tabFormat` exactly like an engine one. Censused quote-agnostically over `games/`: **all 171 of the 171
 games register `Vue.component("column")`**, which is the premise the whole design rests on. `tmt-auto.js` registers
-**six** components (four since V2, two more since V3), namespaced so nothing can collide:
+**seven** components (four since V2, two more since V3, one more since V4b), namespaced so nothing can collide:
 
 | component | what it is |
 |---|---|
@@ -98,6 +98,7 @@ games register `Vue.component("column")`**, which is the premise the whole desig
 | `tmtl-number` | one parameter: a text field with `−` / `+` steps, bound to LOCAL state and committed on change / Enter / blur. Since V3 it writes to one of THREE targets — the saved policy, an escalation rung, or a stall-watch setting — because everything that makes it correct (the draft that survives the re-render, the hotkey guard, the per-type step, the clamp) would otherwise be got wrong twice more |
 | `tmtl-watch` | (V3) the stall watch's own controls: the on/off press, the tracker's, the three settings and the state line |
 | `tmtl-progress` | (V3) the `Progress` subtab's timeline |
+| `tmtl-reset` | (V4b) *reset the automation settings* — a two-press confirm at the BOTTOM of the Advanced view, under every block, because it is the one control here that cannot be undone |
 
 ⚖ **They wear the GAME's theme, not the browser's** (user, 2026-09-19: *"light text on a dark background"*). An
 `<input>`, a `<select>` and a `<button>` come with the browser's own colours — black on white — which is wrong
@@ -349,6 +350,47 @@ have to open 59 blocks to find.
 - The engines' hotkeys cannot fire from the new presses: every one carries `@keydown.stop`, as V2's do.
 
 `tmtLoader.collapsePrefs()`, `collapsed(id)`, `setCollapsed(id, on | null)`, `setCollapsedAll(on)`.
+
+## Reset the automation settings (V4b)
+
+⚖ **The user's words** (2026-09-20): *"I want a tool to reset just the automation settings to the defaults, without
+resetting all of the game data."* The second half is the requirement, and it is exactly what `hashGame` already
+means — it excludes `player.au` and `player.subtabs.au`, so the press **cannot** move the game.
+
+At the BOTTOM of the `Advanced` view, under every block, because it is the one control there that cannot be undone.
+**Two presses:** the first only EXPLAINS — it lists what goes, COUNTS what this save actually has to lose, and points
+at the narrow tool that already exists — and the second acts.
+
+**What it clears** (`tmtLoader.resetClears()`, which is the same data the confirm renders, so the words cannot drift
+from what the function does): which features are switched on · the arming setting · every strategy, value, pause,
+stop and priority you have edited · the stall watch's option and every escalation list · any override a measurement
+left running.
+
+⛔ **IT SPANS BOTH STORES, and a tool that cleared only the save would read as a bug.** The SAVE half is
+`player.au.edits` (including the reserved entry `edits['*']` — the watch's own settings, which is found by a key
+walk and by *nothing else*, since every other reader looks a feature up BY ID), `player.au.features`,
+`armLocked` and `disclosed`. The half OUTSIDE `player` is `setPolicy`'s overrides, `setFeatureEnabled`'s, V4's
+`setControl`'s, the watch's escalation rungs, the progress tracker, and V2's `rate-peak` / stall memory — a feature
+the watch has ESCALATED would otherwise go on running a policy nothing on screen names.
+
+**What it does NOT touch**, each for a reason:
+
+- the ENGINE's own per-layer stores inside `player.au` (`points`, `best`, `clickables`, `upgrades`, …). They are the
+  engine's, not the loader's. ⚠ **This is why the gate compares the LOADER's four keys against a fresh boot's and
+  the engine's against what they were the instant before the press** — measured on 2.7, which writes `best` and
+  `resetTime` into every side layer on EVERY TICK, so "the whole key equals a fresh boot's" is false there and a
+  press that made it true would be resetting game data;
+- `lastReset` / `loopNo` / `ranAt` / `stats` in the runtime record — the RUN's history, not a setting, and present in
+  a fresh record too;
+- the per-browser fold map (`tmt-loader:<id>:ui.au.collapsed`). A view preference, not in the save, and the press
+  says so.
+
+⚠ **The footgun is named rather than smoothed.** A player who switched twelve features on to work around one bad
+strategy loses all twelve. The confirm says how many, and points at V2's per-feature **use the default**, which is
+one feature and one press.
+
+`tmtLoader.resetAutomation()` returns `{ok, cleared, error}`; `cleared` COUNTS what it removed, so a press that found
+nothing says so instead of claiming to have done something.
 
 ### The reason vocabulary
 

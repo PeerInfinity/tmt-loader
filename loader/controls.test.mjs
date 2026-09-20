@@ -383,3 +383,109 @@ test('THE HELPERS WRITE PREDICATE TEXT and nothing else — every one is built f
   assert.equal(T(ctx).savedControl('reset:a', 'while'), hs[0].src);
 });
 function checkOne(ctx, src) { const r = ctx.tmtLoader.setSavedControl('reset:a', 'while', src); ctx.tmtLoader.setSavedControl('reset:a', 'while', null); return r.ok ? null : r.error; }
+
+// ---- V4b: RESET THE AUTOMATION SETTINGS ------------------------------------------------------------------------
+// ⚖ The user's request (2026-09-20): *"reset just the automation settings to the defaults, without resetting all of
+// the game data."* ⛔ ITS SPECIFICATION IS A DEEP-EQUAL, NEVER A FIELD LIST — a list would go stale the next time
+// this arc adds a field, and SILENTLY. What makes the deep-equal sufficient is the property asserted first below:
+// an ABSENT field behaves identically to its default.
+
+/** `player.au` as a comparable string, with the ENGINE's own per-layer stores included — the whole key, not a subset. */
+const auJSON = (ctx) => JSON.stringify(ctx.player.au, (k, v) => (v && v.v !== undefined && typeof v.gte === 'function' ? String(v) : v));
+
+test('ABSENT ≡ DEFAULT for every field V4 added — which is why the reset’s gate can be a deep-equal', () => {
+  const ctx = boot({ autoTable: { policies: { 'reset:a': 'always' } } });
+  T(ctx).profile('all');
+  const fresh = auJSON(ctx);
+  // set all four, then remove them by hand WITHOUT going through any clearing code
+  T(ctx).setSavedControl('reset:a', 'while', 'true');
+  T(ctx).setSavedControl('reset:a', 'until', 'true');
+  T(ctx).setSavedControl('reset:a', 'priority', '1');
+  ctx.player.points = new Decimal(1000);
+  tick(ctx, 1);
+  assert.equal(typeof ctx.player.au.edits['reset:a'].untilHit, 'number');
+  delete ctx.player.au.edits['reset:a'];
+  ctx.player.au.disclosed = false;
+  assert.equal(auJSON(ctx), fresh, 'removing the entry did not put `player.au` back to what a fresh boot has');
+  assert.equal(T(ctx).controlState('reset:a')['while'].owner, null);
+  assert.equal(T(ctx).controlState('reset:a').until.stopped, false);
+  assert.equal(T(ctx).controlState('reset:a').priority.effective, T(ctx).controlState('reset:a').priority.kindPlace);
+});
+
+test('THE RESET puts `player.au` back to a FRESH BOOT’s, and the runtime record with it', () => {
+  const fresh = auJSON(boot({ autoTable: { policies: { 'reset:a': 'always' } } }));
+  const ctx = boot({ autoTable: { policies: { 'reset:a': 'always' } } });
+  T(ctx).profile('saved');
+  // …a realistically configured save: features on, a policy edited, all three controls, a latch, the watch's own
+  // setting at the reserved entry, and two RUNTIME overrides a measurement left behind
+  T(ctx).setFeatureEnabled('reset:a', true);
+  ctx.player.au.features['reset:a'] = true;
+  ctx.player.au.features['upgrades:a'] = true;
+  ctx.player.au.armLocked = true;
+  T(ctx).setSavedPolicy('reset:a', 'gain>=3');
+  T(ctx).setSavedControl('reset:a', 'while', 'true');
+  T(ctx).setSavedControl('reset:a', 'until', 'true');
+  T(ctx).setSavedControl('reset:a', 'priority', '1');
+  T(ctx).setWatchOption('track', true);
+  T(ctx).setPolicy('reset:a', 'always');
+  T(ctx).setControl('upgrades:a', 'while', 'false');
+  ctx.player.points = new Decimal(1000);
+  tick(ctx, 2);
+  assert.notEqual(auJSON(ctx), fresh, 'the configured save is indistinguishable from a fresh one — this test proves nothing');
+  assert.ok(T(ctx).runtimeState().policies, 'no runtime override to clear');
+
+  const r = T(ctx).resetAutomation();
+  assert.equal(r.ok, true, r.error);
+  // ⛔ THE SPECIFICATION, and it names none of V4's fields
+  assert.equal(auJSON(ctx), fresh, `player.au did not come back to a fresh boot's: ${auJSON(ctx)}`);
+  const rt = T(ctx).runtimeState();
+  // ⚠ `lastReset` / `loopNo` / `ranAt` / `stats` are the RUN's history, not a setting, and are in a fresh record too
+  assert.equal(Object.keys(rt).sort().join(','), 'lastReset,loopNo,ranAt,stats',
+    `the runtime record still carries a settings block: ${JSON.stringify(Object.keys(rt))}`);
+  assert.equal(T(ctx).savedPolicy('reset:a'), null);
+  assert.equal(T(ctx).controlState('reset:a').until.stopped, false);
+  assert.equal(T(ctx).watchOptions().track, false);
+  assert.ok(r.cleared.edits >= 2 && r.cleared.features >= 2 && r.cleared.runtimePolicies === 1 && r.cleared.runtimeControls === 1,
+    `the COUNT must say what it really removed: ${JSON.stringify(r.cleared)}`);
+  // MUTANT "the reset clears `edits` but leaves a runtime override / the latch": the deep-equal or the key-set row reds
+});
+
+test('THE RESET DOES NOT TOUCH THE GAME — `hashGame` is byte-identical across the press', () => {
+  const ctx = boot({ autoTable: { policies: { 'reset:a': 'always' } } });
+  T(ctx).profile('all');
+  ctx.player.points = new Decimal(1000);
+  tick(ctx, 3);
+  T(ctx).setSavedControl('reset:a', 'while', 'false');
+  T(ctx).setSavedControl('reset:a', 'priority', '1');
+  // ⚠ `stateJSON(gameState)` rather than the hash: the stub has no SubtleCrypto, and it is the serialisation the
+  // hash is taken OF — `hashGame` excludes `player.au`, which is the user's actual requirement.
+  const game = T(ctx).stateJSON(T(ctx).gameState);
+  const all = T(ctx).stateJSON();
+  T(ctx).resetAutomation();
+  assert.equal(T(ctx).stateJSON(T(ctx).gameState), game, 'the reset moved the GAME');
+  assert.notEqual(T(ctx).stateJSON(), all, 'the reset moved nothing at all — including the automation it is for');
+});
+
+test('THE RESET IS HONEST ABOUT A SAVE WITH NOTHING IN IT', () => {
+  const ctx = boot({ autoTable: { policies: { 'reset:a': 'always' } } });
+  T(ctx).profile('all');
+  const r = T(ctx).resetAutomation();
+  assert.equal(r.ok, true);
+  assert.equal(r.cleared.edits, 0);
+  assert.equal(r.cleared.features, 0);
+  assert.equal(r.cleared.runtimePolicies, 0);
+  assert.equal(Object.keys(ctx.player.au.edits).length, 0);
+  // and the words the confirm shows are DATA, so the component cannot drift from what the function does
+  assert.ok(T(ctx).resetClears().length >= 4, JSON.stringify(T(ctx).resetClears()));
+});
+
+test('THE RESERVED ENTRY `edits["*"]` GOES TOO — it is found by a key walk and by nothing else', () => {
+  const ctx = boot({ autoTable: { policies: { 'reset:a': 'always' } } });
+  T(ctx).profile('all');
+  T(ctx).setWatchOption('watch', true);
+  assert.ok(ctx.player.au.edits['*'], 'the watch setting is not at the reserved entry — this test measures nothing');
+  assert.equal(T(ctx).watchOptions().watch, true);
+  T(ctx).resetAutomation();
+  assert.equal(ctx.player.au.edits['*'], undefined, 'a reset that looks features up BY ID would have missed this');
+  assert.equal(T(ctx).watchOptions().watch, false);
+});
