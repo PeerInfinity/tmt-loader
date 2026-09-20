@@ -1848,12 +1848,22 @@ readout and holds every other string still, and the prestige text is a different
 each card leg L takes the engine's current string and derives two more from it — **GROWN** (every number replaced
 by `1.111e3,284`, the widest `format()` reaches, which is leg E's own vocabulary and not an arbitrary literal) and
 **FLIPPED** (the other shape entirely: a second half where the engine emitted none, none where it did) — writes
-each through `tmp[l].prestigeButtonText`, refreshes, and requires the block's height not to move. It writes `tmp`,
-never `player`, restores it, and judges the restore against the card as it was BEFORE anything was written.
-⚠ **The grown half abstains per card where the string really needs another line** — its own line-box count rose,
-the card is narrower than the text, and the promise is one line box per half rather than that prose cannot wrap
-(`the-yes-tree` 5 of 22 cards, `the-alphabetree` 4 of 46). **The flipped half never abstains**: its second half is
-short on purpose, so a height that moves there is a height that answers to whether the engine filled the row.
+each through `tmp[l].prestigeButtonText`, refreshes, and measures. It writes `tmp`, never `player`, restores it, and
+judges the restore against the card as it was BEFORE anything was written.
+
+**What it asserts is two things, and only one of them abstains.**
+- **The RESERVATION, on every card in all three states, never abstaining**: both line elements exist and each is at
+  least one line box tall. That is item 1's actual claim, and it is what a build that collapsed an empty second row
+  breaks — in the BASE state on a card whose second half the engine did not emit, and in the FLIPPED state on every
+  card.
+- **The two HEIGHT comparisons** (grown against base, flipped against base), ⚠ **only while each half is a SINGLE
+  line box**. MEASURED, and it cost a CI round: `the-cultree`'s `g` and `sorbet-s-convolution-mainframe`'s
+  `universe` reddened the first version of this leg, and neither was the bug. A half that ALREADY WRAPS is not a
+  fixed number of pixels tall — the engines' prestige strings carry `<b>`, and the line box holding it is taller
+  than the others — so re-wrapping the same words moves the total (66.5 → 63.75 px) with the line COUNT unchanged,
+  and removing a two-line half removes two lines where the flipped variant's one-line replacement puts back one
+  (66.5 → 49.25). Those cards keep the reservation check and abstain from the comparisons, and the row says how
+  many did. The grown half abstains again, separately, where the grown string really outgrows the card.
 
 **5. Leg M — a full render still writes nothing.** The list's standing claim is most at risk in U7, because item 2
 CALLS the layers' own display functions and item 3 reads their costs. `layersInert` measures the hash across

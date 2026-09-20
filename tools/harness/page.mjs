@@ -2484,43 +2484,62 @@ async function gateMobile(browser, base, ids) {
       });
       {
         const MOVE = 0.5;   // the same sub-pixel tolerance leg E uses; the unfixed build moves this by a whole line
-        const bad = [], wrapped = [];
+        const bad = [], multiLine = [], grownWrap = [];
+        let judged = 0;
         for (const r of resetH.rows) {
+          const lh = r.base.lh;
           // ⛔ NO LINE ELEMENTS AT ALL is the split reverted: the button is one run of text again, and this leg
           // cannot measure a half that does not exist. It is a failure here, named, as well as in the probe.
-          if (r.base.lines !== 2) { bad.push(`${r.layer}(${r.type}) has ${r.base.lines} line element(s), not 2`); continue; }
-          // GROWN, per half: a half whose LINE-BOX COUNT rose really does need the extra line (the string got
-          // longer than the card is wide), and that card abstains from this half rather than reddening — the
-          // promise is one line box per half, never that prose cannot wrap. A half whose count did NOT rise and
-          // whose box moved anyway is the bug.
-          let grewRows = false;
-          for (let i = 0; i < 2; i++) if (r.grown.rows[i] !== r.base.rows[i]) grewRows = true;
-          if (grewRows) wrapped.push(`${r.layer}(${r.type}) ${r.base.rows.join('+')}\u2192${r.grown.rows.join('+')}`);
+          if (r.base.lines !== 2 || !(lh > 0)) { bad.push(`${r.layer}(${r.type}) has ${r.base.lines} line element(s), not 2`); continue; }
+          // ---- THE RESERVATION, in all three states, and it NEVER abstains. This is item 1's actual claim — the
+          // second row is there whether or not the engine filled it — and it is what a build that collapsed an
+          // empty second line breaks, on the card where the engine emitted none (`normal` past `resetGain` 100)
+          // in the base state and on EVERY card in the flipped one.
+          for (const [label, st] of [['base', r.base], ['grown', r.grown], ['flipped', r.flipped]]) {
+            if (st.lines !== 2) { bad.push(`${r.layer}(${r.type}) ${label}: ${st.lines} line element(s), not 2`); continue; }
+            for (let i = 0; i < 2; i++) {
+              if (st.hs[i] < lh - MOVE) bad.push(`${r.layer}(${r.type}${r.emptyL2 ? ',emptyL2' : ''}) ${label}: line ${i + 1} is ${st.hs[i]}px, under one line box (${lh})`);
+            }
+          }
+          // ---- THE HEIGHT COMPARISONS, and ⚠ they are only meaningful while each half is a SINGLE line box.
+          // MEASURED on `the-cultree`'s `g` and `sorbet-s-convolution-mainframe`'s `universe`, which reddened the
+          // first version of this leg: a half that ALREADY WRAPS is not a fixed number of pixels tall, because the
+          // engines' prestige strings carry `<b>` and the line box holding it is taller than the others — so
+          // re-wrapping the same words moves the total (66.5 → 63.75) with the line COUNT unchanged, and removing
+          // a two-line half removes two lines where the flipped variant's short replacement is one (66.5 → 49.25).
+          // Neither is the bug. Those cards keep the reservation check above and abstain from the two comparisons.
+          if (r.base.rows[0] !== 1 || r.base.rows[1] !== 1) { multiLine.push(`${r.layer}(${r.type}) ${r.base.rows.join('+')} line boxes`); continue; }
+          judged++;
+          // GROWN: the same string at a much later save. A half whose line-box count ROSE really does need the
+          // extra line (the string got longer than the card is wide) and that card abstains from this half — the
+          // promise is one line box per half, never that prose cannot wrap.
+          if (r.grown.rows[0] !== 1 || r.grown.rows[1] !== 1) grownWrap.push(`${r.layer}(${r.type}) 1+1\u2192${r.grown.rows.join('+')}`);
           else if (Math.abs(r.grown.reset - r.base.reset) > MOVE) bad.push(`${r.layer}(${r.type}) GROWN ${r.base.reset}\u2192${r.grown.reset}`);
           // FLIPPED: the other shape entirely — a second half where the engine emitted none, or none where it
-          // did. ⛔ NO ABSTENTION HERE. This is the reservation itself, and the variant's own second half is short
-          // enough that it cannot wrap; a height that moves is a height that answers to whether the engine filled
-          // the row, which is exactly the `normal` type's permanent one-line/two-line change.
+          // did. Its replacement is short on purpose, so on a card whose halves are one line box each the height
+          // cannot move for any reason but the row itself appearing or disappearing.
           if (Math.abs(r.flipped.reset - r.base.reset) > MOVE) bad.push(`${r.layer}(${r.type}${r.emptyL2 ? ',emptyL2' : ''}) FLIPPED ${r.base.reset}\u2192${r.flipped.reset}`);
         }
         const flippedWitness = resetH.rows.filter((r) => r.emptyL2);
         row.resetHeight = {
-          cards: resetH.rows.length, types: [...new Set(resetH.rows.map((r) => r.type))],
-          // ⚠ the cards whose SECOND HALF THE ENGINE DOES NOT EMIT right now — the only ones a reservation that
-          // was conditional on line two being non-empty would break, and therefore the only ones that make that
-          // mutant non-vacuous. A page with none of them still judges the flip in the other direction.
+          cards: resetH.rows.length, judged, types: [...new Set(resetH.rows.map((r) => r.type))],
+          // ⚠ the cards whose SECOND HALF THE ENGINE DOES NOT EMIT right now — the only ones on which the
+          // RESERVATION check fails in the BASE state under a build that collapsed an empty second row, and
+          // therefore the only ones that make that half of the mutant non-vacuous here. The flipped state judges
+          // the same claim on every card.
           emptyL2: flippedWitness.map((r) => `${r.layer}:${r.type}`),
           normalCards: resetH.rows.filter((r) => r.type === 'normal').length,
           staticCards: resetH.rows.filter((r) => r.type === 'static').length,
           lineHeight: resetH.rows.length ? resetH.rows[0].base.lh : null,
-          grownWrapped: wrapped.slice(0, 4), grownWrappedCards: wrapped.length,
+          multiLine: multiLine.slice(0, 4), multiLineCards: multiLine.length,
+          grownWrapped: grownWrap.slice(0, 4), grownWrappedCards: grownWrap.length,
           bad: bad.slice(0, 4),
           restored: resetH.notRestored.length === 0, notRestored: resetH.notRestored,
           stateMoved: resetH.stateMoved, hash: resetH.hashAfter,
           verdict: !resetH.rows.length ? 'abstains (no card on this game has a prestige button)'
             : bad.length ? 'THE RESET BLOCK MOVED WITH THE STRING'
             : resetH.notRestored.length ? 'NOT RESTORED'
-            : `unchanged over the grown and the flipped string on all ${resetH.rows.length} card(s) (${resetH.rows.filter((r) => r.type === 'static').length} static, ${resetH.rows.filter((r) => r.type === 'normal').length} normal); ${flippedWitness.length} render an EMPTY second line today; ${wrapped.length} abstained from the grown half for a real wrap`,
+            : `two reserved line boxes on all ${resetH.rows.length} card(s) in all three states (${resetH.rows.filter((r) => r.type === 'static').length} static, ${resetH.rows.filter((r) => r.type === 'normal').length} normal); ${flippedWitness.length} render an EMPTY second line today; the height comparisons judged ${judged}, ${multiLine.length} card(s) abstained for a half that already wraps and ${grownWrap.length} for a real wrap under the grown string`,
         };
         row.resetHeightOk = !/MOVED|NOT RESTORED/.test(row.resetHeight.verdict);
       }
