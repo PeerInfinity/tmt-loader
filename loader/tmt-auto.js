@@ -328,6 +328,61 @@
         { name: 'h', type: 'seconds', placeholder: 'H', default: '30', label: 'within this many seconds' },
         { name: 'r', type: 'factor', placeholder: 'R', default: '2', min: 1, label: 'retry once the layer holds this multiple of what it held' },
       ] },
+    // ---- R3b: THE ROW CYCLE — same-row resets that wipe each other's input TAKE TURNS ---------------------------
+    // ⚖ THE USER'S IDEA, VERBATIM (2026-09-20): "Another idea is to cycle through which same-row resource to do the
+    // next reset. … There are a few different ways we could do this." — and, on the planner's ranked recommendation,
+    // "I agree with your recommendations. Please continue."
+    //
+    // ⛔ THE SHAPE OF THE PROBLEM, MEASURED THREE TIMES BEFORE THIS ROW EXISTED (plan §24.7 M21, §30.2 item 1, §31).
+    // Two layers of the SAME ROW each reset by wiping every row below, so each one takes the other's input away
+    // again. On PTR row 3 that is `h` (a fixed, cheap 1e30 Time Energy) against `q` (a Generator Power requirement
+    // that is neither) — and NO arrangement of per-feature policies fixes it, because whichever rule is eager takes
+    // every tick the other one needed. `always` on `h` ends with 38 Hindrance Spirit and every quirk frozen; the
+    // shipped table ends with ONE Hindrance Spirit. The question is not what either rule waits for. It is WHOSE
+    // TURN IT IS.
+    //
+    // ⛔ A CYCLE IS DERIVED, NOT TYPED. Its members are the reset features of the layers on the SAME ROW — the
+    // ENGINE'S OWN `row` — and a row HAS a cycle only while at least one of those features carries this modifier.
+    // With no table entry and no player edit there is no cycle anywhere and nothing moves at all (gate R3b-5).
+    // ⛔ AND IT BINDS EVERY MEMBER OF THE ROW, carrier or not, at one turn's worth of resets by default. That is the
+    // first thing the planner's void cells taught: a `reset:h` that was left OUT of the cycle fired 44 times and
+    // starved `q` before `q`'s turn could be used. A member that does not yield is not a member (gate R3b-R1).
+    // ⛔ INSIDE ITS TURN A MEMBER IS EAGER — the TURN is the patience, and the member's own policy does not decide.
+    // Measured the other way: a patient `gain>=2x` on `h` inside its turn never fires at all (h's gain is small
+    // against what it holds), so the turn is never spent and the cycle DEADLOCKS (gate R3b-R2).
+    // ⛔ WHICH IS WHY THE GUARD IS NOT OPTIONAL, AND IT IS THE USER'S OWN DYNAMIC-THRESHOLD RULE ONE LEVEL UP. K: a
+    // member that has not acted for K times as long as its own turns usually take RELEASES the turn, and is skipped
+    // for one whole rotation so that a demand which can never be met cannot take it straight back (§24.6's
+    // deadlock, and Part 2's circular demand). The typical is the median of the last N of its own COMPLETED turns —
+    // a RELEASED turn never feeds it, for `stall>=Kx/N`'s reason: a threshold fed by its own timeouts grows with
+    // them. With no completed turn anywhere in the row yet there is nothing to be late against, and the guard falls
+    // back to the only thing the ENGINE declares: the turn is released the moment its holder cannot reset and
+    // another member can. That is the first-cycle answer R2 §24.11 item 4 asks for out loud, and its cost — the
+    // first rotation is demand-shaped rather than weight-shaped — is measured rather than assumed (gate R3b-R3).
+    { kind: 'reset', template: 'turn@{w}/{k}x/{n}', readout: 'turn', cycle: true, label: 'Take turns with the same row',
+      help: 'Reset only when it is this layer’s turn among the resets of its ROW, then reset as often as the game allows for W of them — so two same-row resets that wipe each other’s input stop racing.',
+      params: [
+        { name: 'w', type: 'count', placeholder: 'W', default: '1', min: 1, label: 'resets in one turn' },
+        { name: 'k', type: 'factor', placeholder: 'K', default: '3', min: 1, label: 'release the turn after K× the usual turn' },
+        { name: 'n', type: 'count', placeholder: 'N', default: '5', min: 1, label: 'turns remembered' },
+      ] },
+    // ⚖ 13d.2, AND IT IS THE SAME MECHANISM WITH ONE MORE LINK. A weight is a literal; the ⚖-shaped question is
+    // "who is actually WAITING?" — and the loader already answers it, because V1 made every refusal a DECISION CODE
+    // carrying the values it compared. A code may now declare WHICH of its values names the layer it is waiting ON
+    // (`demand` in the CODES table): R3a's retry bar says *"challenge 12 failed with 1.00 of h; it will be tried
+    // again at 2.00"*, and `h` in that sentence is a demand on layer `h`. While such a demand names a member of the
+    // cycle, that member gets the turn; with none, the weights decide exactly as above. NO LAYER NAME AND NO GAME
+    // ENTERS THIS FILE: a new reason code that declares a `demand` value is a new demand signal and no code here.
+    // ⚠ ONE MEMBER ASKING FOR IT IS ENOUGH for the whole row, because demand only ever hands a turn to a member
+    // something is waiting on — the most a member that did not ask for it can lose is its place in the rotation,
+    // which the guard above already allows.
+    { kind: 'reset', template: 'turn-demand@{w}/{k}x/{n}', readout: 'turn', cycle: 'demand', label: 'Take turns, and give the turn to whoever is waited on',
+      help: 'As “take turns with the same row”, except that whenever something in the game is waiting for a quantity of one member’s layer, that member gets the next turn.',
+      params: [
+        { name: 'w', type: 'count', placeholder: 'W', default: '1', min: 1, label: 'resets in one turn' },
+        { name: 'k', type: 'factor', placeholder: 'K', default: '3', min: 1, label: 'release the turn after K× the usual turn' },
+        { name: 'n', type: 'count', placeholder: 'N', default: '5', min: 1, label: 'turns remembered' },
+      ] },
   ];
   // ---- the per-feature CONTROLS (V4) — not policies, and that is why they are their own table -------------------------
   // ⚖ THE USER'S REQUEST, VERBATIM (2026-09-15, plan §13): "an option to stop doing the resets after a specific
@@ -546,7 +601,13 @@
     // ⛔ V4: THE LATCH, and it is a DECISION code like every other: the feature is running, unlocked and refusing,
     // and the refusal is permanent until the player re-arms it. `at` is the game-second the condition first held.
     'stopped:until':      { text: 'Stopped — {until} held at {at} s; re-arm it in the tab to start again',           values: ['until', 'at'] },
-    'blocked:after':      { text: 'Blocked — waiting for {sibling} to unlock first',              values: ['sibling'] },
+    // ⚖ R3b: `demand` NAMES WHICH OF A CODE'S OWN VALUES IS THE LAYER IT IS WAITING ON. It is not a new vocabulary
+    // and not a second reading of the decision — it is one more DECLARATION on a row that already carries the
+    // values it compared, and it is what makes "the turn goes to the layer something is waiting on" derivable with
+    // no layer name and no game anywhere in this file. A code that declares one is a demand signal; a new code that
+    // declares one is a new demand signal and no code in the cycle changes. `T.reasonCodes()` publishes it, so a
+    // gate can witness the set rather than trust it.
+    'blocked:after':      { text: 'Blocked — waiting for {sibling} to unlock first',              values: ['sibling'], demand: 'sibling' },
     'blocked:enter':      { text: 'Blocked — the game will not enter challenge {id}',             values: ['id'] },
     'blocked:exit':       { text: 'Blocked — the game will not exit challenge {id} yet',          values: ['id'] },
     'yielding:native':    { text: "Yielding — the game's own auto-reset is resetting {layer}",     values: ['layer'] },
@@ -560,7 +621,7 @@
     // dimensionless, so they must not go through `format()` (the `quantities` rule above, read the other way).
     'waiting:progress':   { text: 'In challenge {id} — {pct}% of the way to its goal; it must close {need}% of what is left, and {held} s of {hold} s have gone by', values: ['id', 'pct', 'need', 'held', 'hold'] },
     'acted:challenge-give-up': { text: 'Gave up challenge {id} at {pct}% of its goal — it closed under {need}% of what was left for {hold} s', values: ['id', 'pct', 'need', 'hold'] },
-    'waiting:retry':      { text: 'Waiting — challenge {id} failed with {had} of {layer}; it will be tried again at {need}', values: ['id', 'layer', 'had', 'need'], quantities: ['had', 'need'] },
+    'waiting:retry':      { text: 'Waiting — challenge {id} failed with {had} of {layer}; it will be tried again at {need}', values: ['id', 'layer', 'had', 'need'], quantities: ['had', 'need'], demand: 'layer' },
     // ⛔ THE ONE STATE A PAUSE ON THIS KIND CAN LEAVE BEHIND, AND IT IS MEASURED. Entering a challenge is not
     // idempotent: it puts the GAME into a mode that only this feature will take it out of. A `while` that goes false
     // while the game is inside one therefore means "stop entering" AND "never leave" — R3a measured a run stranded
@@ -572,7 +633,7 @@
     'waiting:gain-x':     { text: 'Waiting — gain {gain} of {need} ({n}× the {have} held)',        values: ['gain', 'need', 'n', 'have'], quantities: ['gain', 'need', 'have'] },
     'waiting:gain-unit':  { text: 'Waiting — gain {gain} of {need} ({n}× one unit; the layer holds {have})', values: ['gain', 'need', 'n', 'have'], quantities: ['gain', 'need', 'have'] },
     'waiting:interval':   { text: 'Waiting — {elapsed} s of {need} s since the last reset',        values: ['elapsed', 'need'] },
-    'waiting:milestone':  { text: 'Waiting — milestone {id} of {layer} is not held',              values: ['layer', 'id'] },
+    'waiting:milestone':  { text: 'Waiting — milestone {id} of {layer} is not held',              values: ['layer', 'id'], demand: 'layer' },
     'waiting:purchase':   { text: 'Waiting — the reset would still afford nothing',               values: [] },
     // V2: the two new reset strategies. `waiting:rate` is `rate-peak` saying the cycle is still improving;
     // `waiting:stall-clock` is the stall MODIFIER's countdown, naming the primary rule that is still refusing; and
@@ -581,6 +642,11 @@
     'waiting:rate':       { text: 'Waiting — {rate}/s now against the best {best}/s; the reset needs it under {need}/s for {hold} s and it has held {held} s', values: ['rate', 'best', 'need', 'held', 'hold'], quantities: ['rate', 'best', 'need'] },
     'waiting:stall-clock':{ text: 'Waiting — {elapsed} s of {need} s before the stall fallback may reset, and {policy} still says no', values: ['elapsed', 'need', 'policy'] },
     'waiting:stall-yield':{ text: 'Waiting — the stall fallback yielded to {layer}, which is closer to its target', values: ['layer'] },
+    // ⛔ R3b: THE ROW CYCLE's own refusal, and it is a DECISION code like every other — the feature is running,
+    // unlocked, the ENGINE would allow the reset, and the cycle is holding it back for a named sibling. It is
+    // reported only where the engine says yes: a member that could not reset anyway keeps `cannot-reset`, so
+    // `waiting:turn` means exactly "the game would let me and the cycle will not".
+    'waiting:turn':       { text: 'Waiting — it is {layer}’s turn among row {row}’s resets ({left} of {weight} left); this layer takes {mine} per turn', values: ['layer', 'row', 'left', 'weight', 'mine'] },
     'waiting:when':       { text: 'Waiting — no clickable of {layer} is ready',                   values: ['layer'] },
     'holding:reserve':    { text: 'Holding — {have} under the reserve {reserve}',                 values: ['have', 'reserve'], quantities: ['have', 'reserve'] },
     'holding:saving':     { text: 'Holding — {have} while upgrade {id} costs {cost}',             values: ['have', 'id', 'cost'], quantities: ['have', 'cost'] },
@@ -599,7 +665,7 @@
     'acted:clickables':         { text: 'Clicked {n} clickable(s): {ids}',                        values: ['n', 'ids'] },
     unknown:              { text: 'UNKNOWN — an exit of the decision path that no code names',    values: [] },
   };
-  T.reasonCodes = function () { var o = {}; for (var k in CODES) o[k] = { text: CODES[k].text, values: CODES[k].values.slice() }; return o; };
+  T.reasonCodes = function () { var o = {}; for (var k in CODES) o[k] = { text: CODES[k].text, values: CODES[k].values.slice(), demand: CODES[k].demand || null }; return o; };
 
   // ⚠ The GAME's own `format()`, captured once (this file runs after every game script). A fork may not have one.
   var GAME_FORMAT = (function () { try { return new Function('return typeof format === "function" ? format : null')(); } catch (e) { return null; } })();
@@ -825,11 +891,22 @@
     // yield to native: while the game's own auto-reset predicate holds, gameLoop resets this layer itself
     if (tmp[l].autoPrestige) return { act: false, code: 'yielding:native', values: { layer: l } };
     for (var i = 0; i < f.after.length; i++) if (!player[f.after[i]] || !player[f.after[i]].unlocked) return { act: false, code: 'blocked:after', values: { sibling: f.after[i] } };
+    // ---- R3b: THE ROW CYCLE, AND WHERE IT SITS IN THE CHAIN -------------------------------------------------------
+    // ⛔ THE PRECEDENCE, IN ONE PLACE. `until` and `while` are ABOVE this (they are decided in `runLayer`, before
+    // any kind's decision path is entered), so a STOPPED or PAUSED member is not in the cycle's hands at all and
+    // PTR's M21 pause on `reset:q` goes on unlocking `h` exactly as it did. The ENGINE is above it too — the three
+    // questions answered just above this line — so `waiting:turn` means "the game would let me and the cycle will
+    // not", and a member that could not reset anyway keeps `cannot-reset`. BELOW it is the member's own POLICY,
+    // which does not decide at all while its row has a cycle: inside its turn the member is eager, and outside it
+    // the member does nothing. ⚠ That is a real cost and it is named rather than smoothed — a stall-watch RUNG on
+    // a cycle member's reset, and a `stall>=Kx/N` on it, are both inert while the cycle is on (docs/automation.md).
+    var turn = turnStep(f);
+    if (turn) return turn.act ? { act: true, rule: 'in-turn' } : turn;
     var P = parsedOf(f);
     var d = primaryReset(f, P);
     if (d.act) { d.rule = P ? P.id : null; return d; }
     // the MODIFIER rides on the refusal, and only on a refusal: the primary still decides.
-    if (!P || !P.modifier) return d;
+    if (!stallMod(P)) return d;
     return stallFallback(f, P, d);
   }
   /** The chosen strategy's own answer, with no modifier involved. */
@@ -949,10 +1026,12 @@
   }
   function typicalOf(f) { var m = stallMem[f.id]; return m && m.length ? median(m) : null; }
   /** The modifier's clock starts the first tick it runs for a feature, so the FIRST reset is an interval too. */
-  function armStall(f, P) { if (P && P.modifier && stallSince[f.id] === undefined) stallSince[f.id] = Number(player.timePlayed) || 0; }
+  function armStall(f, P) { if (stallMod(P) && stallSince[f.id] === undefined) stallSince[f.id] = Number(player.timePlayed) || 0; }
   function pushInterval(f, P, dt) {
     if (!(dt > 0)) return;
-    var n = Math.max(1, Math.round(Number(P.modifier.params.n)));
+    var M = stallMod(P);
+    if (!M) return;
+    var n = Math.max(1, Math.round(Number(M.params.n)));
     var m = stallMem[f.id] || (stallMem[f.id] = []);
     m.push(Math.round(dt * 1e6) / 1e6);
     while (m.length > n) m.shift();
@@ -964,7 +1043,9 @@
     var last = startOf(f);
     if (last === undefined) return null;
     var now = Number(player.timePlayed) || 0;
-    return { elapsed: now - last, need: Number(P.modifier.params.k) * typ, typical: typ };
+    var M = stallMod(P);
+    if (!M) return null;
+    return { elapsed: now - last, need: Number(M.params.k) * typ, typical: typ };
   }
   function stallFallback(f, P, d) {
     var c = stallClock(f, P);
@@ -1002,7 +1083,7 @@
   function stallCandidate(g) {
     if (g.kind !== 'reset' || !active(g)) return null;
     var P = parsedOf(g);
-    if (!P || !P.modifier) return null;
+    if (!stallMod(P)) return null;
     if (g.gate && !holds(g.gate)) return null;
     var l = g.layer;
     if (!tmp[l] || tmp[l].canReset !== true || tmp[l].autoPrestige) return null;
@@ -1025,6 +1106,273 @@
     return S && S.progress ? S.progress(g, d && d.values) : null;
   }
   function r1(x) { return Math.round(Number(x) * 10) / 10; }
+
+  // ---- R3b: THE ROW CYCLE (the modifier rows above say WHY) ----------------------------------------------------------
+  // ⛔ ONE PLACE KNOWS WHICH MODIFIER IS WHICH, AND IT IS THE ROW. R3a learned this the cheap way (`readout`); this
+  // slice adds a second reset modifier, so every path that meant "the STALL modifier" has to say so. `stallMod(P)`
+  // is that sentence, and `armStall` / `pushInterval` / `stallFallback` / `stallCandidate` all go through it — a
+  // feature carrying `turn@…` must not accumulate stall intervals, must not reach the stall arbiter, and must not
+  // add a `stallIntervals` block to `runtimeState()` it will never read.
+  function stallMod(P) {
+    if (!P || !P.modifier) return null;
+    var M = byStrategyId('reset', P.modifier.id);
+    return M && M.readout === 'stall' ? P.modifier : null;
+  }
+  /** The cycle modifier a feature declares, or null. `demand` is the variant's own declaration. */
+  function turnMod(f) {
+    if (f.kind !== 'reset') return null;
+    var P = parsedOf(f);
+    if (!P || !P.modifier) return null;
+    var M = byStrategyId('reset', P.modifier.id);
+    return M && M.cycle ? { id: M.id, params: P.modifier.params, demand: M.cycle === 'demand' } : null;
+  }
+  // The DEFAULTS a bound member that declares nothing runs under — read off the `turn@W/Kx/N` row's own parameters,
+  // never written twice (⚖ minimize hardcoding: moving a default is moving one table row).
+  function turnDefaults() {
+    var M = byStrategyId('reset', 'turn@W/Kx/N'), o = { w: 1, k: 3, n: 5 };
+    if (!M) return o;
+    for (var i = 0; i < M.params.length; i++) o[M.params[i].name] = Number(M.params[i].default);
+    return o;
+  }
+  function turnParams(f) {
+    var m = turnMod(f), d = turnDefaults();
+    if (!m) return { w: Math.max(1, Math.round(d.w)), k: d.k, n: Math.max(1, Math.round(d.n)), carrier: false };
+    return { w: Math.max(1, Math.round(Number(m.params.w))), k: Number(m.params.k), n: Math.max(1, Math.round(Number(m.params.n))), carrier: true };
+  }
+  function rowOf(f) { try { var r = layers[f.layer] && layers[f.layer].row; return r === undefined ? null : r; } catch (e) { return null; } }
+  // ⚠ READ-ONLY, and that is why it is not `untilStep` / `whileStep`. Those two LATCH and they write — calling them
+  // from the cycle's own pass would stop a feature a game-second before `runLayer` does, and would double-write the
+  // `until` latch. This asks the same two questions and changes nothing.
+  function cyclePaused(f) {
+    if (untilHitOf(f) !== null) return true;
+    var c = predicateOf(f, 'while');
+    if (!c.src) return false;
+    var v = evalPredicate(c);
+    return !!v.error || !v.value;
+  }
+  /** Would the ENGINE allow this member's reset right now? (The same three questions `decideReset` opens with.) */
+  function engineAllows(f) {
+    var l = f.layer;
+    if (!tmp[l] || tmp[l].canReset !== true || tmp[l].autoPrestige) return false;
+    for (var i = 0; i < f.after.length; i++) if (!player[f.after[i]] || !player[f.after[i]].unlocked) return false;
+    return true;
+  }
+  var cycles = {};   // row key → {holder, left, since, round, at, mem:{id:[turn lengths]}, skip:{id: round}}
+  /** Every row that HAS a cycle this tick, with every active reset feature of that row as a member. */
+  function cycleRows() {
+    var by = {}, order = [];
+    for (var i = 0; i < features.length; i++) {
+      var g = features[i];
+      if (g.kind !== 'reset' || !active(g)) continue;
+      var r = rowOf(g);
+      if (r === null || r === undefined) continue;
+      var key = String(r);
+      if (!by[key]) { by[key] = { row: r, key: key, members: [], on: false, demand: false }; order.push(key); }
+      by[key].members.push(g);
+      var m = turnMod(g);
+      if (m) { by[key].on = true; if (m.demand) by[key].demand = true; }
+    }
+    var out = [];
+    for (var j = 0; j < order.length; j++) if (by[order[j]].on) out.push(by[order[j]]);
+    return out;
+  }
+  function cycleOf(f) {
+    var C = cycles[String(rowOf(f))];
+    return C && !C.dormant && C.ids && C.ids.indexOf(f.id) >= 0 ? C : null;
+  }
+  // ⛔ A TYPICAL OF ZERO IS NOT A BOUND, and the stub found it before any game did. A turn of weight one that is
+  // granted and spent inside the SAME tick is zero game-seconds long — a real length, honestly recorded — and
+  // `K × 0` would release every turn on the tick it was granted, before its holder's layer had even run. So a
+  // non-positive median is "nothing to be late against": the member's own turns first, the ROW's pooled turns next
+  // (which is what carries a member through its FIRST turn), and null when neither says anything, at which point
+  // the engine's own answer takes over (see `cycleTick`).
+  function medianPos(xs) { if (!xs || !xs.length) return null; var m = median(xs); return m > 0 ? m : null; }
+  function typicalTurn(C, f) {
+    var own = medianPos(C.mem[f.id]);
+    if (own !== null) return own;
+    var pool = [];
+    for (var k in C.mem) pool = pool.concat(C.mem[k]);
+    return medianPos(pool);
+  }
+  /** The member's OWN typical, with no pooled fallback — what the readout and the gates report. */
+  function ownTypical(C, f) { return medianPos(C.mem[f.id]); }
+  // ⛔ A TURN CAN END IN FOUR WAYS AND THEY ARE NOT THE SAME EVENT — the stub's permanent-demand leg found this
+  // by deadlocking on the version that had two. `how`:
+  //   'complete'   the member spent its whole turn → the LENGTH is remembered, and nothing is skipped
+  //   'released'   the GUARD took it back → nothing is remembered (a threshold fed by its own timeouts grows with
+  //                them, `stall>=Kx/N`'s own reason), and the member is skipped for one whole rotation so a demand
+  //                that can never be met cannot hand it straight back
+  //   'preempted'  DEMAND moved the turn to a member something is waiting on → nothing remembered and NOTHING
+  //                SKIPPED. ⚠ Skipping here is what deadlocked the first cut: the member the demand interrupted
+  //                was punished for it, every member ended up skipped, and the one holder that could not act had
+  //                nobody left to release the turn to — a scheduler that stopped scheduling, green in every hash.
+  //   'ineligible' the member was paused, stopped, or left the row → nothing remembered, nothing skipped
+  function endTurn(C, id, how) {
+    if (how === 'complete' && C.since !== null) {
+      var f = byId[id], n = f ? turnParams(f).n : 5;
+      var m = C.mem[id] || (C.mem[id] = []);
+      m.push(Math.round(((Number(player.timePlayed) || 0) - C.since) * 1e6) / 1e6);
+      while (m.length > n) m.shift();
+    }
+    if (how === 'released') C.skip[id] = C.round + Math.max(1, C.ids.length);
+    C.holder = null; C.left = 0; C.since = null;
+  }
+  function grantTurn(C, f) {
+    C.holder = f.id;
+    C.left = turnParams(f).w;
+    C.since = Number(player.timePlayed) || 0;
+    C.at = C.ids.indexOf(f.id);
+    C.round++;
+  }
+  function eligibleMember(C, f) { return !!f && !cyclePaused(f) && !(C.skip[f.id] > C.round); }
+  /** The next member in the rotation that may hold a turn; null when every member is paused. */
+  function nextMember(C, R) {
+    var n = R.members.length, i, f, first = null;
+    if (!n) return null;
+    for (var pass = 0; pass < 2; pass++) {
+      for (i = 1; i <= n; i++) {
+        f = R.members[((C.at < 0 ? -1 : C.at) + i + n) % n];
+        if (!eligibleMember(C, f)) continue;
+        // ⚠ THE FIRST TURN OF A CYCLE GOES TO A MEMBER THAT CAN USE IT. With nothing remembered there is no bound
+        // the guard could release a stuck first turn against, so the cycle simply does not open on a member the
+        // engine is refusing. Once one turn has completed the median rule takes over and this branch is dead.
+        if (C.round === 0 && pass === 0 && !engineAllows(f)) { if (!first) first = f; continue; }
+        return f;
+      }
+      if (first) return first;
+      // every member is skipped: clear the skips rather than deadlock (a skip is a fairness rule, not a stop)
+      for (var k in C.skip) delete C.skip[k];
+    }
+    return null;
+  }
+  /** ⚖ THE DEMAND STEP — derived from the reason vocabulary, never from a layer name (see the modifier row). */
+  function demandedMember(C, R) {
+    var want = {};
+    for (var i = 0; i < features.length; i++) {
+      var g = features[i], last = g.last;
+      if (!last || !CODES[last.code] || !CODES[last.code].demand) continue;
+      var v = last.values && last.values[CODES[last.code].demand];
+      if (typeof v === 'string' && v) want[v] = true;
+    }
+    var n = R.members.length;
+    for (var j = 1; j <= n; j++) {
+      var f = R.members[((C.at < 0 ? -1 : C.at) + j + n) % n];
+      if (want[f.layer] && eligibleMember(C, f)) return f;
+    }
+    return null;
+  }
+  // ⛔ ONCE PER `gameLoop`, AHEAD OF THE FIRST FEATURE — the same point `watchTick` runs at, and for the same
+  // reason: `runLayer` is called from each layer's own `automate` and from the au layer's fallback, so this is the
+  // earliest point guaranteed to come before any member decides, whatever order the engines walk the layers in.
+  function cycleTick() {
+    var rs = cycleRows(), seen = {}, i;
+    for (i = 0; i < rs.length; i++) {
+      var R = rs[i];
+      // ⛔ A CYCLE OF ONE IS NOT A CYCLE, AND THIS IS LOAD-BEARING ON PTR. A cycle's whole content is "whose turn
+      // is it", and with one active member the answer is always "yours" — which, since a member is EAGER inside
+      // its turn, would silently turn that member's policy into `always`. On PTR row 3 `reset:h` is LOCKED until
+      // M21, so a cycle that counted one member would have replaced `reset:q`'s measured `gain>=2` with `always`
+      // for the whole M15→M21 stretch, and R2 measured `always` on `q` reaching M16 NEVER (plan §24.3). So a row
+      // with fewer than two active members is DORMANT: the members decide by their own policies, exactly as they
+      // did before this slice, and the cycle keeps whatever it has already remembered for when the row fills up.
+      var active2 = R.members.length >= 2;
+      if (!active2 && !cycles[R.key]) continue;
+      seen[R.key] = 1;
+      var C = cycles[R.key] || (cycles[R.key] = { holder: null, left: 0, since: null, round: 0, at: -1, mem: {}, skip: {} });
+      C.ids = R.members.map(function (g) { return g.id; });
+      C.demand = R.demand;
+      C.dormant = !active2;
+      if (!active2) { if (C.holder) endTurn(C, C.holder, 'ineligible'); continue; }
+      var now = Number(player.timePlayed) || 0;
+      if (C.holder && (!byId[C.holder] || C.ids.indexOf(C.holder) < 0 || cyclePaused(byId[C.holder]))) endTurn(C, C.holder, 'ineligible');
+      if (C.holder) {
+        var h = byId[C.holder], typ = typicalTurn(C, h);
+        if (typ !== null && (now - C.since) > turnParams(h).k * typ) endTurn(C, C.holder, 'released');
+        else if (typ === null && !engineAllows(h)) {
+          // THE FIRST-CYCLE RULE: with nothing remembered anywhere in the row there is no bound to be late
+          // against, so the only honest question left is the ENGINE's — release the turn to whoever can use it.
+          // ⚠ The search IGNORES the skip list on purpose: a skip is a fairness rule, and a holder that cannot
+          // act must not be kept in place because the only member that can act is serving out a skip.
+          for (var mi = 0; mi < R.members.length; mi++) {
+            var o = R.members[mi];
+            if (o.id !== C.holder && !cyclePaused(o) && engineAllows(o)) { endTurn(C, C.holder, 'released'); break; }
+          }
+        }
+      }
+      if (C.demand) { var d = demandedMember(C, R); if (d && d.id !== C.holder) { if (C.holder) endTurn(C, C.holder, 'preempted'); grantTurn(C, d); } }
+      if (!C.holder) { var nx = nextMember(C, R); if (nx) grantTurn(C, nx); }
+    }
+    // ⚠ A ROW WHOSE CYCLE IS SWITCHED OFF LEAVES NO MEMORY BEHIND, which is what makes `runtimeState()` inert for a
+    // run that never had one (gate R3b-5): the block is absent, not empty.
+    for (var k in cycles) if (!seen[k]) delete cycles[k];
+  }
+  /** The cycle's answer for one member, or null when its row has none. Read by `decideReset` and by the readout. */
+  function turnStep(f) {
+    var C = cycleOf(f);
+    if (!C) return null;
+    // A member that asks before the cycle has a holder takes the turn — it is the first eligible one of this tick
+    // in layer order, which is deterministic, and it cannot produce a refusal that names nobody.
+    if (!C.holder) grantTurn(C, f);
+    if (C.holder === f.id) return { act: true, cycle: C };
+    var h = byId[C.holder];
+    return { act: false, code: 'waiting:turn',
+      values: { layer: h ? h.layer : null, row: rowOf(f), left: C.left, weight: h ? turnParams(h).w : null, mine: turnParams(f).w } };
+  }
+  /** Count one reset against the holder's turn; hand the turn on the moment the turn is spent. */
+  function turnSpend(f) {
+    var C = cycleOf(f);
+    if (!C || C.holder !== f.id) return;
+    C.left--;
+    if (C.left > 0) return;
+    endTurn(C, f.id, 'complete');
+    var R = null, rs = cycleRows();
+    for (var i = 0; i < rs.length; i++) if (rs[i].key === String(rowOf(f))) R = rs[i];
+    if (!R) return;
+    var nx = nextMember(C, R);
+    if (nx) grantTurn(C, nx);
+  }
+  /** What the Advanced view shows about the cycle — a READOUT, never a decision (V1's rule). */
+  T.turnState = function (id) {
+    var f = byId[id];
+    if (!f) throw new Error('no feature "' + id + '"');
+    var P = parsedOf(f);
+    var M = P && P.modifier ? byStrategyId(f.kind, P.modifier.id) : null;
+    if (!M || M.readout !== 'turn') return null;   // R3a's rule: a modifier's readout belongs to its own ROW
+    var C = cycleOf(f);
+    if (!C) {
+      var D = cycles[String(rowOf(f))];
+      return { modifier: P.modifier.id, row: rowOf(f), members: D ? D.ids.slice() : [], holder: null, mine: turnParams(f).w,
+        dormant: true, turns: D && D.mem[f.id] ? D.mem[f.id].length : 0,
+        why: D ? 'only one reset of this row is running, so there is nothing to take turns with — this feature decides by its own rule'
+               : 'this feature is not running, so its row has no cycle yet' };
+    }
+    var h = byId[C.holder];
+    return { modifier: P.modifier.id, row: rowOf(f), members: C.ids.slice(), holder: h ? h.layer : null,
+      mine: turnParams(f).w, left: C.left, round: C.round, demand: !!C.demand,
+      typical: (function () { var t = typicalTurn(C, f); return t === null ? null : r1(t); })(),
+      ownTypical: (function () { var t = ownTypical(C, f); return t === null ? null : r1(t); })(),
+      turns: (C.mem[f.id] || []).length, skipped: C.skip[f.id] > C.round,
+      why: C.holder === f.id ? null : (h ? 'it is ' + h.layer + '’s turn' : 'no member of this row can take a turn') };
+  };
+  /** Every cycle in force, for a gate or a probe. `{}` while no row has one. */
+  T.cycleState = function () {
+    var o = {};
+    for (var k in cycles) {
+      var C = cycles[k], h = byId[C.holder];
+      o[k] = { members: C.ids.slice(), holder: C.holder, holderLayer: h ? h.layer : null, left: C.left,
+        since: C.since, round: C.round, demand: !!C.demand, dormant: !!C.dormant, typical: {}, own: {}, turns: {}, skip: Object.assign({}, C.skip) };
+      // ⚠ `typical` is the EFFECTIVE bound (a member's own turns, else the row's pooled ones); `own` is the
+      // member's own median with no fallback, and `turns` how many of its own COMPLETED turns are remembered. A
+      // gate that asked only the effective one could not tell "this member has a history" from "the row does".
+      for (var i = 0; i < C.ids.length; i++) {
+        var g = byId[C.ids[i]], t = typicalTurn(C, g), ot = ownTypical(C, g);
+        o[k].typical[C.ids[i]] = t === null ? null : r1(t);
+        o[k].own[C.ids[i]] = ot === null ? null : r1(ot);
+        o[k].turns[C.ids[i]] = (C.mem[C.ids[i]] || []).length;
+      }
+    }
+    return o;
+  };
 
   // ---- R3a: the challenge GIVE-UP rule's own reading of the engine --------------------------------------------------
   // ⛔ THE FOUR-BRANCH LOOKUP IS THE ENGINE'S, NOT OURS. `canCompleteChallenge` (games/ptr/js/game.js:275, and the
@@ -1791,9 +2139,11 @@
       var P = parsedOf(f), before = startOf(f);
       // ⛔ ONLY AN OWN-RULE INTERVAL IS REMEMBERED (see stallFallback): a reset the FALLBACK fired must not feed the
       // threshold that decides when the fallback may fire, or the timeout grows with every timeout.
-      if (P && P.modifier && !d.fallback && before !== undefined) pushInterval(f, P, (Number(player.timePlayed) || 0) - before);
+      if (stallMod(P) && !d.fallback && before !== undefined) pushInterval(f, P, (Number(player.timePlayed) || 0) - before);
       doReset(f.layer);
       lastReset[f.id] = Number(player.timePlayed) || 0;
+      // R3b: one reset spent out of this member's turn; the turn is handed on the moment it is empty.
+      if (d.rule === 'in-turn') turnSpend(f);
       if (d.fallback) { stallFired.loop = loopNo; stallFired.layer = f.layer; }
       delete rateBest[f.id]; delete rateHold[f.id];   // a new cycle: neither the best rate nor the hold clock of the last one says anything about this one
       return { act: true, n: 1, code: 'acted:reset', values: { layer: f.layer, gain: gain, rule: d.fallback ? (P && P.modifier ? P.modifier.id : 'stall') : (d.rule || (P && P.id) || null) } };
@@ -2102,7 +2452,9 @@
     // before any feature decides, whatever order the engines walk the layers in. `watchTick` polls the progress
     // tracker and then escalates at most one waiting feature — so a feature's very next decision is made under the
     // rung the stall it is part of just bought.
-    if (watchLoop !== loopNo) { watchLoop = loopNo; watchTick(); orderLoop = -1; }
+    // ⚠ R3b: THE CYCLE STEPS BESIDE THE WATCH, and AFTER it on purpose — the watch may change a feature's policy
+    // this tick, and whether a feature CARRIES the cycle modifier is read from the policy in force.
+    if (watchLoop !== loopNo) { watchLoop = loopNo; watchTick(); orderLoop = -1; cycleTick(); }
     var list = layerOrder(l);
     for (var i = 0; i < list.length; i++) {
       var f = list[i];
@@ -2220,6 +2572,20 @@
     for (var qi in stallSince) { ss[qi] = stallSince[qi]; nss++; }
     if (nss) o.stallSince = ss;
     if (stallFired.loop >= 0) o.stallFired = { loop: stallFired.loop, layer: stallFired.layer };
+    // ---- R3b: the ROW CYCLE's memory ------------------------------------------------------------------------------
+    // ⛔ THE SAME RULE AS EVERY BLOCK ABOVE, FOR THE SAME REASON: it appears only when it has something to say. The
+    // cycle's whole state is the LOADER's own — ⛔ never `player.<layer>.resetTime`, which exists only on the
+    // 2.7-style engine (the planner's nine void cells compared six of themselves against `undefined` on ptr and
+    // measured nothing) — so a run whose tables name no cycle writes EXACTLY the record it wrote before this slice
+    // and every snapshot committed in this repo stays valid (gate R3b-5).
+    var cy = {}, ncy = 0;
+    for (var yi in cycles) {
+      var YC = cycles[yi];
+      cy[yi] = { holder: YC.holder, left: YC.left, since: YC.since, round: YC.round, at: YC.at,
+        mem: JSON.parse(JSON.stringify(YC.mem)), skip: Object.assign({}, YC.skip) };
+      ncy++;
+    }
+    if (ncy) o.cycle = cy;
     // ---- R3a: the challenge give-up rule's memory ----------------------------------------------------------------
     // ⛔ THE SAME RULE, FOR THE SAME REASON, WITH THE SAME CONSEQUENCE (V2's and V3's): each block appears only when
     // it has something to say, and nothing writes into either object unless a `give-up` modifier is in force — so a
@@ -2286,6 +2652,14 @@
     for (k in rt.rateHold || {}) rateHold[k] = Number(rt.rateHold[k]);
     stallFired.loop = rt.stallFired ? Number(rt.stallFired.loop) : -1;
     stallFired.layer = rt.stallFired ? rt.stallFired.layer : null;
+    for (k in cycles) delete cycles[k];
+    for (k in rt.cycle || {}) {
+      var rc = rt.cycle[k];
+      cycles[k] = { holder: rc.holder === undefined ? null : rc.holder, left: Number(rc.left) || 0,
+        since: rc.since === null || rc.since === undefined ? null : Number(rc.since), round: Number(rc.round) || 0,
+        at: rc.at === undefined ? -1 : Number(rc.at), mem: JSON.parse(JSON.stringify(rc.mem || {})),
+        skip: Object.assign({}, rc.skip || {}), ids: [] };
+    }
     for (k in chAttempt) delete chAttempt[k];
     for (k in rt.challengeAttempt || {}) chAttempt[k] = Object.assign({}, rt.challengeAttempt[k]);
     for (k in chFailed) delete chFailed[k];
@@ -3018,6 +3392,9 @@
           strategy: pp ? pp.id : null, params: pp ? Object.assign({}, pp.params) : null,
           modifier: pp && pp.modifier ? { id: pp.modifier.id, params: Object.assign({}, pp.modifier.params) } : null },
         stall: T.stallState(f.id),
+        // R3b: the ROW CYCLE's row for this feature — `null` unless its policy carries a cycle modifier, so a run
+        // without one renders exactly the rows it rendered before (R3a's `readout` rule, one modifier on).
+        turn: T.turnState(f.id),
         // V3: the stall watch's row for this feature — `null` when the watch is off, so a run without it renders
         // exactly the rows it rendered before.
         escalation: escalationOf(f),
@@ -3467,7 +3844,15 @@
         modOn: function () { return !!this.data.row.policy.modifier; },
         // ⚖ R3a: the button NAMES the modifier it toggles, from the table — it used to say "the stall fallback"
         // whatever kind it was on, and the second modifier made that a lie on every `challenges` feature.
-        modLabel: function () { var m = this.mods; return m.length ? '“' + m[0].label + '”' : 'the modifier'; },
+        // ⛔ R3b: AND ONE BUTTON COULD ONLY EVER REACH `mods[0]`. R3a's fix named the row it toggled; with a
+        // SECOND modifier on the `reset` kind the naming was right and the reach was not — the row cycle was
+        // unreachable from the tab on the one kind that has it. One button PER ROW, each labelled from its own row
+        // and each showing whether it is the one in force, is the same fix carried to the end (⚖ minimize
+        // hardcoding: a third modifier is one more table row and no code here).
+        modRows: function () {
+          var on = this.data.row.policy.modifier;
+          return this.mods.map(function (m) { return { id: m.id, label: m.label, help: m.help, on: !!on && on.id === m.id }; });
+        },
         edited: function () { return !!this.data.row.policy.saved; },
         // ---- V4: the three per-feature CONTROLS, rendered GENERICALLY from `T.controls()` ------------------------
         // ⚖ minimize hardcoding, the same way V2's parameter editors are built from the strategy table: a fourth
@@ -3498,7 +3883,7 @@
         setCtl: function (name, v) { var r = T.setSavedControl(this.data.row.id, name, v); this.ctlError = r.ok ? null : r.error; },
         clearCtl: function (name) { this.setCtl(name, null); },
         rearm: function () { var r = T.rearm(this.data.row.id); this.ctlError = r.ok ? null : r.error; },
-        toggleMod: function () { T.setSavedModifier(this.data.row.id, this.modOn ? null : this.mods[0].id); },
+        toggleMod: function (id) { T.setSavedModifier(this.data.row.id, this.data.row.policy.modifier && this.data.row.policy.modifier.id === id ? null : id); },
         toDefault: function () { T.setSavedPolicy(this.data.row.id, null); },
         toggleOpen: function () { this.$emit('toggle', this.data.row.id); },
         addRung: function () { var r = T.addEscalationRung(this.data.row.id); this.rungError = r.ok ? null : r.error; },
@@ -3527,9 +3912,11 @@
         +     '<tmtl-number v-for="f in fields" :key="f.key" :data="f"></tmtl-number>'
         +   '</div>'
         +   '<div v-if="mods.length" style="text-align:left;font-size:.9em">'
-        +     '<button type="button" class="tmtl-mod" :data-fid="data.row.id" style="' + BTN_STYLE + '" @click="toggleMod" @keydown.stop>{{ (modOn ? \'remove \' : \'add \') + modLabel }}</button>'
+        +     '<button v-for="m in modRows" :key="m.id" type="button" class="tmtl-mod" :data-fid="data.row.id" :data-mod="m.id" :data-on="m.on ? 1 : 0" style="' + BTN_STYLE + '" :title="m.help" @click="toggleMod(m.id)" @keydown.stop>{{ (m.on ? \'remove \' : \'add \') + \'“\' + m.label + \'”\' }}</button>'
         +     '<span v-if="data.row.stall && data.row.stall.why" style="opacity:.7;margin-left:6px">{{ data.row.stall.why }}</span>'
         +     '<span v-else-if="data.row.stall" style="opacity:.7;margin-left:6px">typical {{ data.row.stall.typical }} s over {{ data.row.stall.remembered }} own-rule reset(s) · {{ data.row.stall.elapsed }} s of {{ data.row.stall.need }} s</span>'
+        +     '<span v-if="data.row.turn && data.row.turn.why" style="opacity:.7;margin-left:6px">{{ data.row.turn.why }}</span>'
+        +     '<span v-else-if="data.row.turn" style="opacity:.7;margin-left:6px">its turn now · {{ data.row.turn.left }} of {{ data.row.turn.mine }} left · row {{ data.row.turn.row }}: {{ data.row.turn.members.length }} member(s){{ data.row.turn.demand ? \', on demand\' : \'\' }}</span>'
         +   '</div>'
         // ---- the per-feature CONTROLS (V4): the pause, the stop and the priority ----------------------------------
         // ⚖ §13b, the user's own two requests. ⚠ Every press carries `@keydown.stop`, and the text boxes are

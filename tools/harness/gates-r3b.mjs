@@ -1,0 +1,289 @@
+// Gate R3b-1 (plan §31a/§31b/§32): the ROW CYCLE — turn-taking between same-row resets, demand-driven, and H12.
+//   node tools/harness/gates-r3b.mjs --part 1     the CYCLE sweep on the whole stretch (all/M15 → 37048), every cell TWICE
+//   node tools/harness/gates-r3b.mjs --part 2     R1–R4, the four requirements, on BOTH engine families
+//   node tools/harness/gates-r3b.mjs --part 3     H12 "Speed Demon" — the ENTRY-STATE question, read off the source first
+//   node tools/harness/gates-r3b.mjs --part 4     the rung M25 / M26 and its fixtures
+//   node tools/harness/gates-r3b.mjs --part 5     INERTNESS: the opening, M15 → M24, and the key sets
+//   node tools/harness/gates-r3b.mjs --part 6     the PAGE: the cycle's parameters through V2's editors, ptr AND something
+//
+// ⛔ THE WALL THIS BATTERY IS BUILT AROUND, and it is the third appearance of ONE shape (plan §24.7, §30.2 item 1,
+// §31). Two layers of the same ROW each reset by wiping every row below them, so each takes the other's input away
+// again. On PTR row 3 that is `h` (a fixed, cheap 1e30 Time Energy) against `q` (a Generator Power requirement that
+// is neither), and no arrangement of per-feature POLICIES fixes it: `always` on `h` ends with 38 Hindrance Spirit and
+// every quirk frozen, the shipped table ends with ONE Hindrance Spirit, and R3a's derived pause never unlocks `h` at
+// all. What decides is WHOSE TURN IT IS — so the thing under measurement here is a scheduler, not a threshold.
+//
+// ⚠ ONE HORIZON FOR EVERY CELL OF PART 1, INCLUDING THE CONTROL. The planner's own table (plan §31a) read the
+// control at 42048 and the three turn-taking rows at 37048, so its quirk counts are not comparable across rows — it
+// said so in the handshake. Every cell here is 21,000 ticks from `all/M15.json`, i.e. 37048 game-seconds, and every
+// cell runs TWICE; a cell whose two runs disagree on the marks, the end game-second or the end `hashGame` is RED.
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
+import { spawn } from 'node:child_process';
+import { REPO, GAMES, parseArgs, writeJSON, headCommit, treeDirty, entryOnly } from './lib.mjs';
+import { appendSection } from './summary.mjs';
+import { runCells } from './sweep.mjs';
+entryOnly(import.meta.url);
+
+const a = parseArgs(process.argv.slice(2), ['no-summary', 'no-write']);
+const PART = String(a.part || '1');
+const commit = headCommit(), dirty = treeDirty();
+const rows = [];
+const row = (r) => { rows.push(r); console.log(`${r.ok ? 'GREEN' : 'RED  '} ${r.gate} ${r.id} gs=${r.gameSeconds ?? '-'} ${String(r.notes || '').slice(0, 340)}`); };
+
+// ⛔ THE FLOOR EACH PART MUST REACH (`--assert`, CI): a battery that dies part-way prints fewer rows, and fewer rows
+// is fewer reds. ⚠ RE-MEASURED AGAINST WHAT EACH PART ACTUALLY EMITS rather than against what its author expected —
+// CI has caught exactly this on five slices running (plan §30.3).
+const ROWS = { 1: 8, 2: 10, 3: 6, 4: 4, 5: 5, 6: 2 };
+
+const READING = [
+  'Every cell is ONE run.mjs process, run TWICE unless the row says otherwise; a cell whose two runs disagree on the',
+  'marks, the end game-second or the end hashGame is RED. L15 = from snapshots/ptr/all/M15.json (16048 game-s),',
+  '21,000 ticks, diff 1, --profile all, the stall watch OFF — so every row of part 1 ends at 37048 game-seconds and',
+  'the quirk counts ARE comparable (the planner\'s own table read its control 5,000 game-s later than its other rows',
+  'and said so). L1 = from all/M22.json → M26, the rung\'s own leg. L2 = a FRESH game → M12, the opening\'s',
+  'regression column. L3 = Something Tree S01–S05 with games-auto/something.js unchanged — the generality control,',
+  'where "no change" is the result. A cell\'s label is the whole --auto-opt string it ran, so a row names the',
+  'configuration it measured (§14d.2 item 14). "—" for a mark means NOT REACHED inside the leg, which is a result.',
+].join(' ');
+
+const PTR_LADDER = path.join(REPO, 'tools/harness/ladder/ptr.json');
+const SOMETHING_LADDER = path.join(REPO, 'tools/harness/ladder/something.json');
+const SNAP_ALL = path.join(REPO, 'tools/harness/snapshots/ptr/all');
+const POOL = Number(a.pool || 5);
+const REPEAT = Number(a.repeat || 2);
+
+// The row-3 readout every L15/L1 row carries. ⚠ `q.time` and `q.energy` are in it because part 3 found that they are
+// what H12 is actually measured against (see part 3's header), and `qbuy11` (Quirk Layers) because it is the EXPONENT
+// on quirk-energy regrowth. `cycleState()` is the scheduler's own record — whose turn, how long its turns take.
+export const READOUT = `({points: String(player.points), q: String(player.q.points), qTotal: String(player.q.total), qLayers: String(player.q.buyables[11]), qMs: player.q.milestones.slice(), qUpg: player.q.upgrades.slice(), qTime: String(player.q.time), qEnergy: String(player.q.energy), h: String(player.h.points), hBest: String(player.h.best), hChall: Object.assign({}, player.h.challenges), active: player.h.activeChallenge, te: String(player.t.energy), gp: String(player.g.power), sb: String(player.sb.points), ch: tmtLoader.hookStats().challenges, cyc: tmtLoader.cycleState()})`;
+const READOUT_OPEN = `({points: String(player.points), p: String(player.p.points), gp: String(player.g.power), uo: [player.t.unlockOrder, player.e.unlockOrder, player.s.unlockOrder], cyc: tmtLoader.cycleState(), rtKeys: Object.keys(tmtLoader.runtimeState()).sort(), auKeys: Object.keys(player.au).sort()})`;
+const READOUT_SOMETHING = `({points: String(player.points), fundamental: String(player.fundamental.points), primitive: String(player.primitive.points), unlock: String(player.unlock.points), cyc: tmtLoader.cycleState()})`;
+
+const LEG = {
+  L15: { id: 'ptr', marks: ['M16', 'M17', 'M18', 'M19', 'M20', 'M21', 'M22', 'M23', 'M24', 'M25', 'M26'],
+    flags: { diff: 1, ticks: Number(a.ticks || 21000), 'wall-ms': 900000, ladder: PTR_LADDER, to: 'M26',
+      'from-snapshot': path.join(SNAP_ALL, 'M15.json'), 'marks-continue': true, stall: 1000000, eval: READOUT } },
+  L1: { id: 'ptr', marks: ['M23', 'M24', 'M25', 'M26'],
+    flags: { diff: 1, ticks: Number(a.ticks1 || 12000), 'wall-ms': 900000, ladder: PTR_LADDER, to: 'M26',
+      'from-snapshot': path.join(SNAP_ALL, 'M22.json'), 'marks-continue': true, stall: 1000000, eval: READOUT } },
+  L2: { id: 'ptr', marks: ['M07', 'M08', 'M09', 'M10', 'M11', 'M12'],
+    flags: { diff: 1, ticks: Number(a.openTicks || 8000), 'wall-ms': 900000, ladder: PTR_LADDER, to: 'M12', stall: 1000000, eval: READOUT_OPEN } },
+  L3: { id: 'something', marks: ['S01', 'S02', 'S03', 'S04', 'S05'],
+    flags: { diff: 1, ticks: Number(a.sTicks || 3000), 'wall-ms': 900000, ladder: SOMETHING_LADDER, to: 'S05', stall: 1000000, eval: READOUT_SOMETHING } },
+};
+const flagsOf = (leg, extra = {}) => Object.entries({ ...LEG[leg].flags, ...extra });
+const mark = (l, m) => (l.marks && l.marks[m] != null ? `${l.marks[m]}` : '—');
+const marksOf = (leg, l) => LEG[leg].marks.map((m) => `${m} ${mark(l, m)}`).join(' · ');
+const short = (v) => (v === undefined || v === null ? '—' : String(v).replace(/(\d)\.(\d\d\d)\d+e/, '$1.$2e').slice(0, 12));
+const box = (l) => `ticks_ms ${l.ticks_ms}; wall ${Math.round((l.box?.wallMs || 0) / 1000)}s; load ${l.box?.loadStart}→${l.box?.loadEnd}; pool ${POOL}`;
+const acts = (l) => Object.entries(l.actions || {}).filter(([k]) => k.startsWith('reset:') || k.startsWith('challenges:')).map(([k, v]) => `${k} ${v}`).join(' ');
+const cell = (opt, note) => ({ label: opt, opt, note });
+
+function cycText(e) {
+  const c = e && e.cyc;
+  if (!c || !Object.keys(c).length) return 'no cycle';
+  return Object.entries(c).map(([k, v]) => `row ${k}: ${v.round} turns, holder ${v.holderLayer}, typical ${JSON.stringify(v.typical)}${v.demand ? ', on demand' : ''}`).join(' | ');
+}
+function readoutText(leg, l) {
+  const e = l.runs?.[0]?.eval || l.eval || null;
+  if (!e) return '—';
+  if (leg === 'L2') return `pts ${short(e.points)}, p ${short(e.p)}, gp ${short(e.gp)}, uo ${JSON.stringify(e.uo)}, ${cycText(e)}, runtime keys [${(e.rtKeys || []).join(',')}], player.au keys [${(e.auKeys || []).join(',')}]`;
+  if (leg === 'L3') return `pts ${short(e.points)}, fundamental ${short(e.fundamental)}, primitive ${short(e.primitive)}, unlock ${short(e.unlock)}, ${cycText(e)}`;
+  const c = e.ch && e.ch['challenges:h'];
+  return `q ${e.q}/${e.qTotal} total, QL ${e.qLayers}, q ms [${e.qMs}], q upg [${e.qUpg}], q.time ${short(e.qTime)}, q.energy ${short(e.qEnergy)}, h ${e.h} (best ${e.hBest}), h challenges ${JSON.stringify(e.hChall)}, active ${e.active}, enter/exit/gaveUp ${c ? `${c.enter}/${c.exit}/${c.gaveUp}` : '—'}, TE ${short(e.te)}, GP ${short(e.gp)}, SB ${short(e.sb)}, pts ${short(e.points)}, ${cycText(e)}`;
+}
+
+/** Run a set of cells on one leg and write one SUMMARY row per cell. */
+async function sweep({ gate, leg, cells, repeat = REPEAT, extra = {} }) {
+  const L = LEG[leg];
+  let done = 0;
+  const total = cells.length * repeat;
+  const lines = await runCells({ id: L.id, cells, flags: flagsOf(leg, extra), pool: POOL, repeat, stop: L.flags.to,
+    onRun: (c, l) => console.log(`[PROGRESS ${++done}/${total}] ${leg} ${c.label || '(the table)'} run ${l.run} → ${l.ok ? `${l.gameSeconds}s ${l.hashGame}` : 'FAILED ' + l.error} (${Math.round((l.box?.wallMs || 0) / 1000)}s wall)`) });
+  lines.forEach((l, i) => {
+    const c = cells[i];
+    const ok = !!l.ok && (repeat < 2 || l.twiceEqual === true);
+    row({ gate: `${gate} ${c.label || 'the table as it stands (control)'}`, id: L.id,
+      leg: `${leg}, diff 1, profile all, ${L.flags.ticks} ticks, ${repeat} run(s)`,
+      ok, ticks: l.ticks, gameSeconds: l.gameSeconds, diff: 1, hash: l.hashGame,
+      notes: `${marksOf(leg, l)}; ${repeat > 1 ? `twice equal: ${l.twiceEqual} (run 2 ${l.runs[1]?.gameSeconds}s/${l.runs[1]?.hashGame})` : 'ONE run'}; ${c.note ? c.note + '; ' : ''}${acts(l)}; end ${readoutText(leg, l)}; ${box(l)}${l.error ? '; ERROR ' + l.error : ''}` });
+  });
+  writeJSON(path.join(REPO, `tools/harness/results/tmp/r3b-${gate.replace(/[^\w]+/g, '-')}.json`), { gate, leg, cells, lines });
+  return lines;
+}
+
+// ---- the candidates ------------------------------------------------------------------------------------------------
+// ⚖ 13d.2 — no arbitrary waiting. The WEIGHT is the one literal here and it is a sweep AXIS, which is where a literal
+// comes from; K and N are the guard's two buffers, carried from `stall>=Kx/N` at its own defaults; and the DEMAND
+// variant needs no weight at all, which is the point of measuring it against them.
+const GUARD = `${String(a.k || '3')}x/${String(a.n || '5')}`;
+const turn = (w, kind = 'turn') => `policy:reset:q=gain>=2|${kind}@${w}/${GUARD};policy:reset:h=gain>=2x|${kind}@1/${GUARD}`;
+
+async function part1() {
+  await sweep({ gate: 'R3b-1 the ROW CYCLE over the whole stretch —', leg: 'L15', cells: [
+    cell('', 'CONTROL: the table as it SHIPS at this head — no cycle anywhere. Re-measured at 37048 so its quirk count is comparable with the rows below (the planner\'s own control was read at 42048)'),
+    cell('policy:reset:h=always', 'CONTROL: the eager `reset:h` the user hit by hand — the starvation this slice exists to fix, and the row that says what "h grows" costs when nobody is taking turns'),
+    cell(turn(1), 'W = 1: strict alternation — one q reset per h reset'),
+    cell(turn(5), 'W = 5'),
+    cell(turn(20), 'W = 20 — the planner\'s probe found the interior optimum near here'),
+    cell(turn(60), 'W = 60'),
+    cell(turn(1, 'turn-demand'), 'the DEMAND-driven variant at W = 1: whenever a decision names a member\'s layer as what it is waiting on (R3a\'s retry bar does), that member gets the turn; with no demand the weights decide'),
+  ] });
+  const c = rows.filter((r) => r.ok).length;
+  row({ gate: 'R3b-1 VERDICT: which cycle configuration grows `h` without starving `q`, and what the ratio costs', id: 'ptr', ok: c === rows.length, ticks: null, gameSeconds: null, diff: 1, hash: null,
+    notes: `${c}/${rows.length} cells reproduced twice equal; read Hindrance Spirit, total quirks, q upgrades and the enter/exit/gaveUp triple ACROSS the rows — every row ends at the same game-second, so the columns are comparable` });
+}
+
+// ---- Part 2: R1–R4, the four requirements the planner's nine void cells taught ------------------------------------
+// ⛔ EACH IS A CLAIM ABOUT THE MECHANISM, NOT ABOUT PTR, so each runs on BOTH ENGINE FAMILIES — ptr (a 2.2.1-style
+// engine) and Something Tree (a 2.7-style one). R4 is the reason: six of the planner's cells read
+// `player.<layer>.resetTime`, which EXISTS ONLY on 2.7, compared it against `undefined` on ptr, and measured
+// nothing — and the tell was two complementary gates both reading false. A leg green on one family proves nothing
+// about the other, which is why every row here is a pair.
+const SOMETHING_ROW = String(a.srow || '1');
+async function part2() {
+  const legs = [
+    { gate: 'R3b-R1 the cycle BINDS EVERY MEMBER of the row', id: 'ptr',
+      opt: `policy:reset:q=gain>=2|turn@20/${GUARD}`,
+      note: 'only `reset:q` carries the modifier. R1 holds iff `reset:h` — which declares nothing — is a MEMBER anyway and yields: read `members` on the cycle and `reset:h`\'s own count. The mutant "one member never yields" (members = carriers only) reddens this' },
+    { gate: 'R3b-R2 a member is EAGER inside its turn', id: 'ptr', opt: turn(20),
+      note: 'both members carry it and both keep a PATIENT primary (`gain>=2` on q, `gain>=2x` on h). R2 holds iff the turns are spent anyway — `round` > 2 and both resets acting. The mutant "a member keeps its patient policy inside its turn" deadlocks the cycle at round 1–2' },
+    { gate: 'R3b-R3 a member that cannot act RELEASES the turn', id: 'ptr', opt: `${turn(20)};while:reset:q=false`,
+      note: 'PERMANENT demand / permanent block, constructed: `reset:q` is paused for the whole leg, so a cycle that cannot release would hold its turn for ever and `reset:h` would never act. R3 holds iff `h` acts and the cycle shows `q` skipped or never held. The mutant "a released turn feeds the typical" makes the bound grow with its own timeouts' },
+    { gate: 'R3b-R4 the turn memory is the LOADER\'s own', id: 'ptr', opt: turn(20),
+      note: '`cycleState().typical` is non-null for a member that has completed a turn. ⛔ `player.<layer>.resetTime` does not exist on this engine family at all — a memory read from it would be `undefined` here and the row would be measuring nothing' },
+  ];
+  const sLegs = legs.map((L) => ({ ...L, id: 'something',
+    opt: L.opt.replace(/reset:q/g, 'reset:primitive').replace(/reset:h/g, 'reset:fundamental').replace('gain>=2|', 'gain>=2x|').replace('gain>=2x|turn@1', 'gain>=2x|turn@1') }));
+  for (const L of [...legs, ...sLegs]) {
+    const leg = L.id === 'ptr' ? 'L1' : 'L3';
+    const lines = await runCells({ id: L.id, cells: [cell(L.opt, L.note)], flags: flagsOf(leg, { ticks: L.id === 'ptr' ? Number(a.p2ticks || 4000) : Number(a.sTicks || 3000) }), pool: 1, repeat: 1, stop: null });
+    const l = lines[0];
+    const e = l.runs?.[0]?.eval || l.eval || null;
+    const cyc = (e && e.cyc) || {};
+    const key = L.id === 'ptr' ? '3' : SOMETHING_ROW;
+    const C = cyc[key] || null;
+    let ok = !!l.ok && !!C;
+    if (ok && L.gate.startsWith('R3b-R1')) ok = C.members.length >= 2;
+    if (ok && L.gate.startsWith('R3b-R2')) ok = C.round >= 3;
+    if (ok && L.gate.startsWith('R3b-R3')) ok = C.round >= 2;
+    if (ok && L.gate.startsWith('R3b-R4')) ok = Object.values(C.typical).some((v) => v !== null);
+    row({ gate: L.gate, id: L.id, leg: `${leg}, diff 1, profile all, ONE run`, ok, ticks: l.ticks, gameSeconds: l.gameSeconds, diff: 1, hash: l.hashGame,
+      notes: `cell \`${L.opt}\`; ${L.note}; cycle rows [${Object.keys(cyc).join(',')}]; row ${key} ${C ? `members [${C.members.join(', ')}] · ${C.round} turns · holder ${C.holderLayer} · typical ${JSON.stringify(C.typical)} · skip ${JSON.stringify(C.skip)}` : 'ABSENT'}; ${acts(l)}; ${box(l)}${l.error ? '; ERROR ' + l.error : ''}` });
+  }
+  const c = rows.filter((r) => r.ok).length;
+  row({ gate: 'R3b-R VERDICT: the four requirements, on BOTH engine families', id: 'both', ok: c === rows.length, ticks: null, gameSeconds: null, diff: 1, hash: null,
+    notes: `${c}/${rows.length} rows green. ⛔ A row green on one family says nothing about the other — R4 exists because six of the planner's probe cells compared against a field only 2.7 has` });
+  row({ gate: 'R3b-R MUTANTS: each leg above has one that reddens it', id: 'both', ok: true, ticks: null, gameSeconds: null, diff: 1, hash: null,
+    notes: 'tools/harness/mutants-r3b.sh — R1 "members = carriers only"; R2 "the member keeps its patient policy inside its turn"; R3 "a released turn feeds the typical"; R4 "the typical is read from player[l].resetTime". Each is committed first and restored from a COPY' });
+}
+
+// ---- Part 3: H12 "Speed Demon" — the source FIRST, then the sweep --------------------------------------------------
+// ⛔ WHY IT FAILS AT 290 HINDRANCE SPIRIT, READ OFF `games/ptr/js/layers.js` BEFORE ANY CELL WAS RUN, and the digest's
+// L3.13 ("grind for more quirks up to 100 and more Hindrance spirit up to 100 as well, and you will complete H2 in
+// about 2–3 seconds") is measuring the wrong two quantities:
+//   · h12's goal is **1e3550 POINTS** (`layers.js:2745`), and its in-challenge effect is `baseDiv12()`
+//     (`layers.js:2693-2696`): the Booster/Generator BASES are divided by
+//     `sqrt(player.q.time) × (3·player.sb.points³ + 1) + 1`.
+//   · `player.q.time` is the game-seconds since the `q` layer last reset (`layers.js:2983` adds `diff`), and it is
+//     zeroed by `q.doReset` AND by `h.doReset` (`layers.js:2957` and `2649`) — so ENTERING H12 zeroes it, and the
+//     divisor then GROWS as sqrt(t) for as long as the attempt lasts. "Divided more over time" is literal: H12 is a
+//     RACE, and R3a's measurement of it ("flat to seventeen digits from 80 game-seconds after entry") is the divisor
+//     winning, not the tree being weak.
+//   · the same two `doReset`s zero `player.q.energy`, and quirk energy is what multiplies point gain
+//     (`mod.js:57`, `tmp.q.enEff = (q.energy+1)²`). It regrows as `q.time^(QuirkLayers + freeLayers − 1)` integrated
+//     (`layers.js:2983-2984`), i.e. with an EXPONENT set by `player.q.buyables[11]`.
+//   ⇒ the quantity that decides H12 is not Hindrance Spirit and not the quirk COUNT: it is how fast quirk energy can
+//   regrow from zero, which is QUIRK LAYERS (and the q upgrades that multiply `enGainMult`) against sqrt(q.time).
+//   Hindrance Spirit helps only through `tmp.h.effect`, one more multiplier on the same gain — which is why 290 of it
+//   changes nothing while the exponent is unchanged. ⚠ AND IT IS THE CYCLE'S OWN COST: every `h` reset zeroes quirk
+//   energy, so a cycle that gives `h` many turns is paying for Hindrance Spirit in the exact currency H12 needs.
+async function part3() {
+  const best = String(a.best || '20');
+  await sweep({ gate: 'R3b-3 H12 — the ENTRY STATE, over the whole stretch —', leg: 'L15', cells: [
+    cell(turn(best), `the best weight from part 1 (W = ${best}) as the baseline this part varies`),
+    cell(`${turn(best)};policy:buyables:q=buyMax`, 'QUIRK LAYERS as the exponent: buy them as fast as the quirks arrive (`buyMax` instead of the derived `buy`), because `q.buyables[11]` is the EXPONENT on quirk-energy regrowth and the divisor is only sqrt(q.time)'),
+    cell(`${turn(best)};while:challenges:h=hasMilestone('q',5) && player.q.time.lt(30)`, "ENTER RIGHT AFTER A q RESET: `player.q.time` is zeroed by entering, but the q upgrades q11–q13 are PRICED in it (`layers.js:3133/3146/3159`), so a low q.time at entry is a cheaper in-challenge shop. A `while` a player could write"),
+    cell(`${turn(best)};while:challenges:h=hasMilestone('q',5) && player.q.buyables[11].gte(6)`, 'ENTER ONLY WITH THE EXPONENT: wait for 6 Quirk Layers before trying H12 at all — the derived form of "strong enough", read off the quantity the source says decides'),
+  ] });
+  const c = rows.filter((r) => r.ok).length;
+  row({ gate: 'R3b-3 VERDICT: does any reflex arrangement reach M25 — and if not, what is the wall\'s NAME', id: 'ptr', ok: c === rows.length, ticks: null, gameSeconds: null, diff: 1, hash: null,
+    notes: `${c}/${rows.length} cells twice equal. ⚠ Read M25 and the enter/exit/gaveUp triple together with q.energy and QL at the end of each row. If none reaches M25 that is the RESULT, and plan §31 names this mark as the first where the ADVANCED planner's measured candidates plausibly earn their cost` });
+  row({ gate: 'R3b-3 the digest\'s L3.13 CORRECTED by the source', id: 'ptr', ok: true, ticks: null, gameSeconds: null, diff: 1, hash: null,
+    notes: 'h12 goal 1e3550 POINTS (layers.js:2745); in-challenge the Booster/Generator bases are divided by sqrt(player.q.time)·(3·sb³+1)+1 (baseDiv12, layers.js:2693); q.time AND q.energy are zeroed by both q.doReset and h.doReset (2957 / 2649); quirk energy regrows with an exponent of player.q.buyables[11] (2983-2984) and multiplies point gain as (q.energy+1)² (mod.js:57). ⇒ "100 quirks and 100 hindrance spirit" names neither quantity that decides it' });
+}
+
+// ---- Part 4: the rung and its fixtures ----------------------------------------------------------------------------
+async function part4() {
+  const best = String(a.best || '20');
+  const dirs = [path.join(os.tmpdir(), `r3b-snap-1-${process.pid}`), path.join(os.tmpdir(), `r3b-snap-2-${process.pid}`)];
+  dirs.forEach((d) => fs.mkdirSync(d, { recursive: true }));
+  const both = await Promise.all([
+    runCells({ id: 'ptr', cells: [cell(turn(best), 'run 1, writing fixtures')], flags: flagsOf('L15', { snapshots: dirs[0] }), pool: 1, repeat: 1, stop: 'M26' }),
+    runCells({ id: 'ptr', cells: [cell(turn(best), 'run 2')], flags: flagsOf('L15', { snapshots: dirs[1] }), pool: 1, repeat: 1, stop: 'M26' }),
+  ]);
+  const [r1, r2] = both.map((x) => x[0]);
+  const agree = r1.ok && r2.ok && r1.gameSeconds === r2.gameSeconds && r1.hashGame === r2.hashGame;
+  row({ gate: `R3b-4 the rung under the cycle (W = ${best}), twice`, id: 'ptr', leg: 'L15, diff 1, profile all, 2 runs', ok: agree,
+    ticks: r1.ticks, gameSeconds: r1.gameSeconds, diff: 1, hash: r1.hashGame,
+    notes: `${marksOf('L15', r1)}; run 2 ${r2.gameSeconds}s/${r2.hashGame}; ${acts(r1)}; end ${readoutText('L15', r1)}; ${box(r1)}` });
+  const written = fs.existsSync(dirs[0]) ? fs.readdirSync(dirs[0]).filter((f) => f.endsWith('.json')).sort() : [];
+  for (const f of written) {
+    const A = JSON.parse(fs.readFileSync(path.join(dirs[0], f), 'utf8'));
+    const B = fs.existsSync(path.join(dirs[1], f)) ? JSON.parse(fs.readFileSync(path.join(dirs[1], f), 'utf8')) : null;
+    const same = !!B && A.gameSeconds === B.gameSeconds && A.hash === B.hash && A.hashGame === B.hashGame;
+    row({ gate: `R3b-4 fixture ${A.mark} reproduces`, id: 'ptr', leg: 'L15', ok: same, ticks: A.ticks, gameSeconds: A.gameSeconds, diff: A.diff, hash: A.hashGame,
+      notes: `mark ${A.mark}; full hash ${A.hash}; run 2 ${B ? `${B.gameSeconds}s/${B.hash}/${B.hashGame}` : 'MISSING'}; runtime keys [${Object.keys(A.runtime || {}).sort().join(',')}]` });
+  }
+  row({ gate: 'R3b-4 VERDICT: which fixtures this rung would MOVE, and every consumer of the selector', id: 'ptr', ok: rows.every((r) => r.ok), ticks: null, gameSeconds: null, diff: 1, hash: null,
+    notes: '⚠ `deepestSnapshot()` picks ptr\'s deepest fixture by TICKS (tools/harness/page.mjs, tools/harness/cost-layerlist.mjs), so ANY mark added or moved here shifts what those two read. Fixtures are written to a TEMP dir by this part and committed only by the slice, deliberately' });
+}
+
+// ---- Part 5: INERTNESS -------------------------------------------------------------------------------------------
+// ⛔ EVERYTHING NEW IS OFF UNTIL A TABLE OR A PLAYER TURNS IT ON, and this part is what says so rather than the
+// prose. A row cycle exists only where a reset feature's policy carries one of the two cycle modifiers.
+async function part5() {
+  await sweep({ gate: 'R3b-5 INERTNESS —', leg: 'L2', cells: [cell('', 'the OPENING to M12 with the table as it ships: no cycle, and `runtimeState()` / `player.au` key sets as R3a left them')] });
+  await sweep({ gate: 'R3b-5 INERTNESS —', leg: 'L15', cells: [cell('', 'M15 → M24 with the table as it ships: the marks and the end hash of the control')] });
+  await sweep({ gate: 'R3b-5 INERTNESS —', leg: 'L3', cells: [cell('', 'Something Tree S01–S05, games-auto/something.js unchanged: "no change" is the result')] });
+  const c = rows.filter((r) => r.ok).length;
+  row({ gate: 'R3b-5 VERDICT: the pins this slice must not move', id: 'both', ok: c === rows.length, ticks: null, gameSeconds: null, diff: 1, hash: null,
+    notes: `${c}/${rows.length}. The opening must read 6718 / \`82eee26f947b2b2e\`; the runtime key set gains \`cycle\` ONLY where a cycle exists, so the L2 row's key list is the claim` });
+  row({ gate: 'R3b-5 the key sets, declared', id: 'ptr', ok: true, ticks: null, gameSeconds: null, diff: 1, hash: null,
+    notes: 'ADDED by this slice: `runtimeState().cycle` (absent unless a row has a cycle) — {holder,left,since,round,at,mem,skip} per row key. NOTHING is added to `player`, `player.au` or any `startData`, so no full-hash pin moves' });
+}
+
+// ---- Part 6: the PAGE ---------------------------------------------------------------------------------------------
+// ⛔ THE TABLE IS NOT THE EVIDENCE — R3a's own lesson (§30.2a): `tmtLoader.modifiers('reset')` carrying the new rows
+// is a fact about DATA, and the CLAIM is that V2's generic editors RENDER their parameters with no new component.
+// Only the DOM can say that, and only on an ARMED feature (a locked block renders no editors).
+async function part6() {
+  const script = path.join(REPO, 'tools/harness/page.mjs');
+  for (const id of ['ptr', 'something']) {
+    const fid = id === 'ptr' ? 'reset:q' : 'reset:primitive';
+    const pol = id === 'ptr' ? `gain>=2|turn@20/${GUARD}` : `gain>=2x|turn-demand@3/${GUARD}`;
+    const r = await new Promise((res) => {
+      const p = spawn(process.execPath, [script, '--gate', 'r3b-cycle', '--id', id, '--fid', fid, '--policy', pol], { cwd: REPO, encoding: 'utf8' });
+      let out = '';
+      p.stdout.on('data', (d) => { out += d; process.stdout.write(d); });
+      p.stderr.on('data', (d) => { out += d; });
+      p.on('close', (code) => res({ code, out }));
+    });
+    const m = /GATERESULT (\{.*\})/.exec(r.out);
+    const j = m ? JSON.parse(m[1]) : null;
+    row({ gate: `R3b-6 the cycle's parameters through V2's editors, in the DOM`, id, leg: 'the page, ?automation=1', ok: !!j && j.ok, ticks: null, gameSeconds: null, diff: 1, hash: null,
+      notes: j ? `policy \`${pol}\`; modifier buttons ${JSON.stringify(j.modButtons)}; the cycle's three parameter editors rendered: ${JSON.stringify(j.modFields)}; the readout line "${j.turnLine}"; componentNames ${j.components} (⛔ UNCHANGED: no new tmtl-* family); console errors ${(j.errors || []).length}${(j.errors || []).length ? ': ' + j.errors.slice(0, 2).join(' | ') : ''}` : `NO GATERESULT (exit ${r.code})` });
+  }
+}
+
+const PARTS = { 1: part1, 2: part2, 3: part3, 4: part4, 5: part5, 6: part6 };
+if (!PARTS[PART]) { console.error(`unknown --part ${PART} (1..6)`); process.exit(2); }
+await PARTS[PART]();
+
+if (!a['no-write']) writeJSON(path.join(REPO, `tools/harness/results/tmp/gates-r3b-part${PART}-last.json`), { date: new Date().toISOString(), commit, dirty, rows });
+const green = rows.filter((r) => r.ok).length;
+console.log(`\nVERDICT: rows ${green}/${rows.length} of ${ROWS[PART] ?? '?'} expected`);
+if (!a['no-summary']) appendSection({ title: `R3b-1 the ROW CYCLE — part ${PART}`, commit, dirty, rows, reading: READING, slug: `gates-r3b-part${PART}` });
+if (a.assert && (green !== rows.length || rows.length !== ROWS[PART])) process.exit(1);
