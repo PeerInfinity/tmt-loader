@@ -852,7 +852,7 @@ jobs:
   # ⛔ `--assert` on every part: exiting 1 on a red row does NOT catch a battery that stopped part-way.
   # ---------------------------------------------------------------------------------------------------------------
   r3b-node:
-    name: R3b row cycle — headless (parts 2, 5)
+    name: R3b row cycle — headless (part 2)
     needs: fast
     runs-on: ubuntu-latest
     timeout-minutes: 60
@@ -873,13 +873,7 @@ jobs:
         shell: bash  # bash -eo pipefail: without it `| tee` reports the pipe's status and a refusal is lost
         run: |
           set -o pipefail
-          node tools/harness/gates-r3b.mjs --part 2 --no-summary --assert --pool 2 | tee r3b-2.txt
-
-      - name: "Part 5 — inertness: the opening, M15 → M24, and Something Tree"
-        shell: bash
-        run: |
-          set -o pipefail
-          node tools/harness/gates-r3b.mjs --part 5 --no-summary --assert --pool 2 | tee r3b-5.txt
+          node tools/harness/gates-r3b.mjs --part 2 --no-summary --assert | tee r3b-2.txt
 
       - name: Summary
         if: always()
@@ -889,7 +883,7 @@ jobs:
             echo '## R3b row cycle — headless'
             echo ''
             echo '```'
-            cat r3b-2.txt r3b-5.txt 2>/dev/null | grep -E 'VERDICT|REFUSED|^RED|green$' || echo 'no output'
+            cat r3b-2.txt 2>/dev/null | grep -E 'VERDICT|REFUSED|^RED|green$' || echo 'no output'
             echo '```'
           } >> "$GITHUB_STEP_SUMMARY"
 
@@ -898,6 +892,53 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: r3b-node
+          path: tools/harness/results/tmp/gates-r3b-part*-last.json
+          if-no-files-found: warn
+          retention-days: 14
+
+  # ⚠ PART 5 IS ITS OWN JOB, and the reason is a measured one: its M15 → M24 leg is ~16,000 ticks and runs TWICE,
+  # which on a CI box is most of an hour by itself. Sharing a runner with part 2 put both inside one 60-minute
+  # timeout, and a battery that is killed by a timeout prints fewer rows — which is fewer reds.
+  r3b-inert:
+    name: R3b row cycle — inertness (part 5)
+    needs: fast
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - run: npm ci
+
+      - name: "Part 5 — inertness: the opening, M15 → M24, and Something Tree"
+        shell: bash
+        run: |
+          set -o pipefail
+          node tools/harness/gates-r3b.mjs --part 5 --no-summary --assert --pool 3 | tee r3b-5.txt
+
+      - name: Summary
+        if: always()
+        shell: bash
+        run: |
+          {
+            echo '## R3b row cycle — inertness'
+            echo ''
+            echo '```'
+            cat r3b-5.txt 2>/dev/null | grep -E 'VERDICT|REFUSED|^RED|green$' || echo 'no output'
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload the rows
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: r3b-inert
           path: tools/harness/results/tmp/gates-r3b-part*-last.json
           if-no-files-found: warn
           retention-days: 14

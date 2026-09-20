@@ -65,6 +65,13 @@ const LEG = {
   L15: { id: 'ptr', marks: ['M16', 'M17', 'M18', 'M19', 'M20', 'M21', 'M22', 'M23', 'M24', 'M25', 'M26'],
     flags: { diff: 1, ticks: Number(a.ticks || 21000), 'wall-ms': 900000, ladder: PTR_LADDER, to: 'M26',
       'from-snapshot': path.join(SNAP_ALL, 'M15.json'), 'marks-continue': true, stall: 1000000, eval: READOUT } },
+  // ⚠ NO `--marks-continue` HERE, AND THAT IS THE POINT OF THE ROW (R3a's own note): the inertness claim is about
+  // the marks and the state AT M24, not about whatever a leg drifts to afterwards — so the leg STOPS at the mark
+  // and its end state IS the mark. A row that compared an end hash 6,000 ticks later would be comparing two
+  // different states and would red on a slice that moved neither.
+  L15m24: { id: 'ptr', marks: ['M16', 'M17', 'M18', 'M19', 'M20', 'M21', 'M22', 'M23', 'M24'],
+    flags: { diff: 1, ticks: Number(a.ticks24 || 16000), 'wall-ms': 900000, ladder: PTR_LADDER, to: 'M24',
+      'from-snapshot': path.join(SNAP_ALL, 'M15.json'), stall: 1000000, eval: READOUT } },
   L1: { id: 'ptr', marks: ['M23', 'M24', 'M25', 'M26'],
     flags: { diff: 1, ticks: Number(a.ticks1 || 12000), 'wall-ms': 900000, ladder: PTR_LADDER, to: 'M26',
       'from-snapshot': path.join(SNAP_ALL, 'M22.json'), 'marks-continue': true, stall: 1000000, eval: READOUT } },
@@ -142,42 +149,76 @@ async function part1() {
 // `player.<layer>.resetTime`, which EXISTS ONLY on 2.7, compared it against `undefined` on ptr, and measured
 // nothing — and the tell was two complementary gates both reading false. A leg green on one family proves nothing
 // about the other, which is why every row here is a pair.
-const SOMETHING_ROW = String(a.srow || '1');
+// ⛔ AND THE 2.7 EXEMPLAR IS NOT `something`, WHICH IS A FINDING RATHER THAN A CHOICE. Measured at 600 ticks,
+// `--profile all`: Something Tree has exactly ONE active reset feature on every row it reaches (`unlock` on row 0,
+// `fundamental` on row 1, `primitive` on row 2) and the deeper row-2 layers never unlock inside its whole ladder —
+// so it CANNOT host a cycle at its frontier, and legs written against it would measure a dormant row and read as
+// green. The 2.7 family therefore needs a third game, and the roster is where it comes from: a bounded scan of the
+// first 24 ids found `collection-of-everything` (17 layers carrying `player[l].resetTime`, five active resets on
+// row 1 at 600 ticks) and `the-congratulations-tree` (12, three on row 1). The first is used here; ptr carries
+// `resetTime` on ZERO layers, which is the other half of what R4 is about.
+const FAM_EVAL = `({cyc: tmtLoader.cycleState(), acts: tmtLoader.hookStats().actions, rt: (function(){var n=0;for(var l in layers){if(layers[l].tmtLoaderLayer)continue;if(player[l]&&player[l].resetTime!==undefined)n++;}return n;})(), on: (function(){var o={};tmtLoader.explain().forEach(function(r){if(r.kind==='reset'&&r.state==='on')o[r.id]=(layers[r.layer]||{}).row;});return o;})()})`;
+const PATIENT = 'gain>=1e300';   // a bar no layer in either family can clear — the "patient policy" every R2 leg needs
+const FAMILIES = [
+  { id: 'ptr', family: '2.2.1-style — ZERO layers carry `player[l].resetTime`', rowKey: '3', carrier: 'reset:q', other: 'reset:h', wantRT: 0,
+    flags: { diff: 1, ticks: Number(a.p2ticks || 4000), profile: 'all', stall: 1000000, 'wall-ms': 300000,
+      'from-snapshot': path.join(SNAP_ALL, 'M22.json'), eval: FAM_EVAL } },
+  { id: 'collection-of-everything', family: '2.7-style — 17 layers carry `player[l].resetTime`', rowKey: '1', carrier: 'reset:bam', other: 'reset:mush', wantRT: 1,
+    flags: { diff: 1, ticks: Number(a.p2ticks2 || 1500), profile: 'all', stall: 1000000, 'wall-ms': 300000, eval: FAM_EVAL } },
+];
 async function part2() {
-  const legs = [
-    { gate: 'R3b-R1 the cycle BINDS EVERY MEMBER of the row', id: 'ptr',
-      opt: `policy:reset:q=gain>=2|turn@20/${GUARD}`,
-      note: 'only `reset:q` carries the modifier. R1 holds iff `reset:h` — which declares nothing — is a MEMBER anyway and yields: read `members` on the cycle and `reset:h`\'s own count. The mutant "one member never yields" (members = carriers only) reddens this' },
-    { gate: 'R3b-R2 a member is EAGER inside its turn', id: 'ptr', opt: turn(20),
-      note: 'both members carry it and both keep a PATIENT primary (`gain>=2` on q, `gain>=2x` on h). R2 holds iff the turns are spent anyway — `round` > 2 and both resets acting. The mutant "a member keeps its patient policy inside its turn" deadlocks the cycle at round 1–2' },
-    { gate: 'R3b-R3 a member that cannot act RELEASES the turn', id: 'ptr', opt: `${turn(20)};while:reset:q=false`,
-      note: 'PERMANENT demand / permanent block, constructed: `reset:q` is paused for the whole leg, so a cycle that cannot release would hold its turn for ever and `reset:h` would never act. R3 holds iff `h` acts and the cycle shows `q` skipped or never held. The mutant "a released turn feeds the typical" makes the bound grow with its own timeouts' },
-    { gate: 'R3b-R4 the turn memory is the LOADER\'s own', id: 'ptr', opt: turn(20),
-      note: '`cycleState().typical` is non-null for a member that has completed a turn. ⛔ `player.<layer>.resetTime` does not exist on this engine family at all — a memory read from it would be `undefined` here and the row would be measuring nothing' },
-  ];
-  const sLegs = legs.map((L) => ({ ...L, id: 'something',
-    opt: L.opt.replace(/reset:q/g, 'reset:primitive').replace(/reset:h/g, 'reset:fundamental').replace('gain>=2|', 'gain>=2x|').replace('gain>=2x|turn@1', 'gain>=2x|turn@1') }));
-  for (const L of [...legs, ...sLegs]) {
-    const leg = L.id === 'ptr' ? 'L1' : 'L3';
-    const lines = await runCells({ id: L.id, cells: [cell(L.opt, L.note)], flags: flagsOf(leg, { ticks: L.id === 'ptr' ? Number(a.p2ticks || 4000) : Number(a.sTicks || 3000) }), pool: 1, repeat: 1, stop: null });
+  for (const F of FAMILIES) {
+    const legs = [
+      { key: 'R1', name: 'the cycle BINDS EVERY MEMBER of the row',
+        opt: `policy:${F.carrier}=always|turn@5/${GUARD}`,
+        note: `only \`${F.carrier}\` carries the modifier. R1 holds iff the row's OTHER active resets are members anyway and yield — the planner's void cell left an eager one out and it fired 44 times, wiping the row below before the member whose turn it was could use it` },
+      { key: 'R2', name: 'a member is EAGER inside its turn',
+        opt: `policy:${F.carrier}=${PATIENT}|turn@2/${GUARD};policy:${F.other}=${PATIENT}|turn@2/${GUARD}`,
+        note: `both named members keep a primary no layer can ever clear (\`${PATIENT}\`). R2 holds iff the turns are spent ANYWAY — the turn is the patience, and a policy that decided inside a turn would deadlock the cycle at round 1` },
+      { key: 'R3', name: 'a member that cannot act RELEASES the turn',
+        opt: `policy:${F.carrier}=always|turn@9/${GUARD};policy:${F.other}=always|turn@9/${GUARD};while:${F.carrier}=false`,
+        note: `a PERMANENT block, constructed: \`${F.carrier}\` is paused for the whole leg. A cycle that could not release would hold its turn for ever and the rest of the row would never act` },
+      { key: 'R4', name: 'the turn memory is the LOADER’s own',
+        opt: `policy:${F.carrier}=always|turn@2/${GUARD};policy:${F.other}=always|turn@2/${GUARD}`,
+        note: `the record is \`cycleState().own\` / \`.turns\` — the member's OWN completed turns. ⛔ The tempting engine field is \`player[l].resetTime\`, and this row reports how many layers of THIS game carry it: a memory read from it would be \`undefined\` on a 2.2.1 game and a number on a 2.7 one, which is exactly how six of the planner's probe cells measured nothing and looked like a result` },
+    ];
+    for (const L of legs) {
+      const lines = await runCells({ id: F.id, cells: [cell(L.opt, L.note)], flags: Object.entries(F.flags), pool: 1, repeat: 1 });
+      const l = lines[0];
+      const e = l.runs?.[0]?.eval || l.eval || null;
+      const C = (e && e.cyc && e.cyc[F.rowKey]) || null;
+      const A = (e && e.acts) || {};
+      const rt = e ? e.rt : null;
+      let ok = !!l.ok && !!C && !C.dormant;
+      let why = '';
+      if (ok && L.key === 'R1') { ok = C.members.length >= 2 && (A[F.other] || 0) > 0; why = `members ${C.members.length}, ${F.other} acted ${A[F.other] || 0}`; }
+      if (ok && L.key === 'R2') { ok = C.round >= 3 && (A[F.carrier] || 0) > 0 && (A[F.other] || 0) > 0; why = `round ${C.round}, ${F.carrier} ${A[F.carrier] || 0}, ${F.other} ${A[F.other] || 0}`; }
+      if (ok && L.key === 'R3') { ok = C.round >= 2 && (A[F.other] || 0) > 0 && !(A[F.carrier] > 0); why = `round ${C.round}, the paused ${F.carrier} acted ${A[F.carrier] || 0}, ${F.other} acted ${A[F.other] || 0}`; }
+      if (ok && L.key === 'R4') { ok = Object.values(C.own).some((v) => v !== null) && (F.wantRT ? rt > 0 : rt === 0); why = `own ${JSON.stringify(C.own)}, turns ${JSON.stringify(C.turns)}, layers carrying player[l].resetTime: ${rt}`; }
+      row({ gate: `R3b-${L.key} ${L.name}`, id: F.id, leg: `${F.family}, row ${F.rowKey}, ${F.flags.ticks} ticks, ONE run`, ok,
+        ticks: l.ticks, gameSeconds: l.gameSeconds, diff: 1, hash: l.hashGame,
+        notes: `cell \`${L.opt}\`; ${L.note}; ${why}; cycle rows [${Object.keys((e && e.cyc) || {}).join(',')}]; row ${F.rowKey} ${C ? `members [${C.members.join(', ')}] · ${C.round} turns · holder ${C.holderLayer} · own ${JSON.stringify(C.own)} · skip ${JSON.stringify(C.skip)}` : 'ABSENT'}; active resets by row ${JSON.stringify((e && e.on) || {})}; ${acts(l)}; ${box(l)}${l.error ? '; ERROR ' + l.error : ''}` });
+    }
+  }
+  // ⛔ THE ROW THAT SAYS WHY THE 2.7 LEG IS NOT ON `something`, and it is a MEASUREMENT, not a note: it goes RED the
+  // day Something Tree grows a second active reset on any row, which is the day these legs should move back onto it.
+  {
+    const lines = await runCells({ id: 'something', cells: [cell('', 'the reference 2.7 game at its own frontier')],
+      flags: Object.entries({ diff: 1, ticks: Number(a.sTicks || 3000), profile: 'all', stall: 1000000, 'wall-ms': 300000,
+        ladder: SOMETHING_LADDER, to: 'S05', eval: FAM_EVAL }), pool: 1, repeat: 1 });
     const l = lines[0];
     const e = l.runs?.[0]?.eval || l.eval || null;
-    const cyc = (e && e.cyc) || {};
-    const key = L.id === 'ptr' ? '3' : SOMETHING_ROW;
-    const C = cyc[key] || null;
-    let ok = !!l.ok && !!C;
-    if (ok && L.gate.startsWith('R3b-R1')) ok = C.members.length >= 2;
-    if (ok && L.gate.startsWith('R3b-R2')) ok = C.round >= 3;
-    if (ok && L.gate.startsWith('R3b-R3')) ok = C.round >= 2;
-    if (ok && L.gate.startsWith('R3b-R4')) ok = Object.values(C.typical).some((v) => v !== null);
-    row({ gate: L.gate, id: L.id, leg: `${leg}, diff 1, profile all, ONE run`, ok, ticks: l.ticks, gameSeconds: l.gameSeconds, diff: 1, hash: l.hashGame,
-      notes: `cell \`${L.opt}\`; ${L.note}; cycle rows [${Object.keys(cyc).join(',')}]; row ${key} ${C ? `members [${C.members.join(', ')}] · ${C.round} turns · holder ${C.holderLayer} · typical ${JSON.stringify(C.typical)} · skip ${JSON.stringify(C.skip)}` : 'ABSENT'}; ${acts(l)}; ${box(l)}${l.error ? '; ERROR ' + l.error : ''}` });
+    const byRow = {};
+    for (const [fid, r] of Object.entries((e && e.on) || {})) (byRow[String(r)] || (byRow[String(r)] = [])).push(fid);
+    const biggest = Math.max(0, ...Object.values(byRow).map((x) => x.length));
+    row({ gate: 'R3b-R4b why the 2.7 leg is NOT on Something Tree — measured, not assumed', id: 'something',
+      leg: 'S01 → S05, diff 1, profile all, ONE run', ok: !!l.ok && biggest < 2 && (e ? e.rt > 0 : false),
+      ticks: l.ticks, gameSeconds: l.gameSeconds, diff: 1, hash: l.hashGame,
+      notes: `active resets by row ${JSON.stringify(byRow)}; the biggest row holds ${biggest} — so there is no cycle to construct here and a leg written against it would measure a DORMANT row and read green. ${e ? e.rt : '?'} layers carry \`player[l].resetTime\`, which is what makes it the 2.7 exemplar in the first place. ⚠ This row goes RED the day Something Tree grows a second active reset on one row, and that is the day these legs move back onto it; ${box(l)}` });
   }
   const c = rows.filter((r) => r.ok).length;
   row({ gate: 'R3b-R VERDICT: the four requirements, on BOTH engine families', id: 'both', ok: c === rows.length, ticks: null, gameSeconds: null, diff: 1, hash: null,
-    notes: `${c}/${rows.length} rows green. ⛔ A row green on one family says nothing about the other — R4 exists because six of the planner's probe cells compared against a field only 2.7 has` });
-  row({ gate: 'R3b-R MUTANTS: each leg above has one that reddens it', id: 'both', ok: true, ticks: null, gameSeconds: null, diff: 1, hash: null,
-    notes: 'tools/harness/mutants-r3b.sh — R1 "members = carriers only"; R2 "the member keeps its patient policy inside its turn"; R3 "a released turn feeds the typical"; R4 "the typical is read from player[l].resetTime". Each is committed first and restored from a COPY' });
+    notes: `${c}/${rows.length} rows green. ⛔ A row green on one family says nothing about the other — R4 exists because six of the planner's probe cells compared against \`player[l].resetTime\`, which only the 2.7 family has, and measured "paused for ever" on ptr` });
 }
 
 // ---- Part 3: H12 "Speed Demon" — the source FIRST, then the sweep --------------------------------------------------
@@ -246,7 +287,7 @@ async function part4() {
 // prose. A row cycle exists only where a reset feature's policy carries one of the two cycle modifiers.
 async function part5() {
   await sweep({ gate: 'R3b-5 INERTNESS —', leg: 'L2', cells: [cell('', 'the OPENING to M12 with the table as it ships: no cycle, and `runtimeState()` / `player.au` key sets as R3a left them')] });
-  await sweep({ gate: 'R3b-5 INERTNESS —', leg: 'L15', cells: [cell('', 'M15 → M24 with the table as it ships: the marks and the end hash of the control')] });
+  await sweep({ gate: 'R3b-5 INERTNESS —', leg: 'L15m24', cells: [cell('', 'M15 → M24 with the table as it ships: every mark of the rung, and the state AT M24')] });
   await sweep({ gate: 'R3b-5 INERTNESS —', leg: 'L3', cells: [cell('', 'Something Tree S01–S05, games-auto/something.js unchanged: "no change" is the result')] });
   const c = rows.filter((r) => r.ok).length;
   row({ gate: 'R3b-5 VERDICT: the pins this slice must not move', id: 'both', ok: c === rows.length, ticks: null, gameSeconds: null, diff: 1, hash: null,
