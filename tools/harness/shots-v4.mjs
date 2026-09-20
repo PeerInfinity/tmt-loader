@@ -63,6 +63,22 @@ try {
       const file = `tools/harness/results/${id}-au-controls-${tag}.png`;
       await page.screenshot({ path: path.join(REPO, file), fullPage: true });
       out.push(file);
+      // …and V4b's CONFIRM, which is the one control here that cannot be undone. ⚠ The FIRST press only explains,
+      // so this shot is of a page that has changed nothing — which is the point of there being two.
+      const arm = page.locator('#app button.tmtl-reset-arm').first();
+      if (await arm.count()) {
+        await arm.click({ timeout: 5000 });
+        await page.evaluate(() => { updateTemp(); if (typeof updateTabFormats === 'function') updateTabFormats(); });
+        await page.waitForTimeout(300);
+        // ⚠ SCROLLED INTO VIEW AND SHOT AS A VIEWPORT, not clipped to a bounding box: the confirm is at the BOTTOM
+        // of a very long page and a clip measured before the layout settles comes back one line tall (measured).
+        await page.locator('#app .tmtl-reset').first().scrollIntoViewIfNeeded({ timeout: 5000 });
+        await page.waitForTimeout(250);
+        const f2 = `tools/harness/results/${id}-au-reset-${tag}.png`;
+        await page.screenshot({ path: path.join(REPO, f2) });
+        out.push(f2);
+        out.push(`   (${id} ${tag}: the confirm, first press only \u2014 ${JSON.stringify(await page.evaluate(() => (document.querySelector('#app .tmtl-reset') || {}).innerText.replace(/\s+/g, ' ').slice(0, 260)))})`);
+      }
       out.push(`   (${id} ${tag}: paused ${state.paused} ${JSON.stringify(state.pausedState)}; stopped ${state.stopped} ${JSON.stringify(state.stoppedState)}; priority ${state.prio} ${JSON.stringify(state.prioState)}; throwing ${state.broken} ${JSON.stringify(state.brokenState)}; ${state.codes.join(' | ')})`);
       await context.close();
     }
