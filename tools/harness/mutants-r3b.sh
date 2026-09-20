@@ -44,6 +44,10 @@ mutant() {
 }
 
 UNIT="node --test loader/cycle.test.mjs"
+# ⛔ THE WHOLE-STRETCH RATIO ROW. Two defects of this slice are invisible to every stub leg (§34), so their mutants
+# are driven by the gate that can see them. ONE run per cell: a mutant round asks whether a row RED-dens, and a
+# twice-equal check is the row's own business when it runs for real.
+RATIO="node tools/harness/gates-r3b.mjs --part 7 --no-summary --no-write --repeat7 1 --pool 2"
 
 # ---- R1: the cycle binds EVERY member --------------------------------------------------------------------------
 # ⛔ THE PLANNER'S OWN VOID CELL, AS A MUTATION. Three of its nine cells gated only `q`; the eager `reset:h` that was
@@ -66,12 +70,6 @@ mutant m2-cycle-keyed-by-layer \
 # two (249 quirks from 244 resets against the control's 559 from 279).
 mutant m3-eager-inside-the-turn \
   "p='$AUTO';s=open(p).read();o='    if (turn && !turn.act) return turn;';assert o in s;s=s.replace(o,'    if (turn) return turn.act ? { act: true, rule: '+chr(39)+'always'+chr(39)+' } : turn;');open(p,'w').write(s)" \
-  $UNIT
-
-# ⛔ THE HOLDER NEVER YIELDS when its OWN rule refuses — the deadlock the stub found the moment the derived
-# bound was removed: a patient policy on a cycle member takes the turn and never gives it back, and its row stops.
-mutant m3b-no-yield-on-a-policy-refusal \
-  "p='$AUTO';s=open(p).read();o='    if (turn) turnYield(f);';assert o in s;s=s.replace(o,'');open(p,'w').write(s)" \
   $UNIT
 
 # ⚠ … AND ITS MIRROR: the holder yields whenever it cannot act, ENGINE refusal included. That is the rule the
@@ -187,6 +185,10 @@ mutant m16-yield-when-the-policy-refuses \
 
 # THE GUARD MEASURES FROM THE TURN'S START RATHER THAN THE HOLDER'S LAST ACT. A turn of weight W spans W resets, so
 # the whole turn is compared against the usual wait for ONE — every weight above 1 is released mid-turn.
+# ⛔ AND ITS DRIVER IS THE RATIO ROW, NOT THE STUB — measured: against `$UNIT` this mutant comes back GREEN, because
+# on the stub a member is granted a turn and spends it inside a tick or two, so a bound taken from the turn's start
+# is never reached. That is the whole reason part 7 exists, and a mutant has to be driven by the gate that can see
+# it. ⚠ It is a ~20-minute leg; the round is no longer a one-minute affair.
 mutant m17-guard-clock-from-the-turn-start \
   "p='$AUTO';s=open(p).read();o='        var sinceAct = C.acted === null || C.acted === undefined ? C.since : C.acted;';assert o in s;s=s.replace(o,'        var sinceAct = C.since;');open(p,'w').write(s)" \
-  $UNIT
+  $RATIO
