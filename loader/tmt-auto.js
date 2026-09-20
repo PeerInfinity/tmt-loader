@@ -381,6 +381,8 @@
         // quirks; at K = 30 it yields **19.1** and reproduces a known-good arrangement BYTE-FOR-BYTE
         // (`d2da5ef3a490f92a`, 73 Hindrance Spirit, 673 quirks, M22–M24 identical to the control). K = 300 and
         // K = 100000 are byte-identical to K = 30, so the answer is not sensitive above the knee.
+        // ⚖ AND THE WATCH'S OWN `k` WAS MOVED 3 → 10 FOR THE SAME KIND OF REASON (heavy-tailed gaps; see
+        // WATCH_PARAMS). A `K` inherited across mechanisms that ask different questions is a default nobody measured.
         // ⚠ `stall>=Kx/N` KEEPS ITS OWN K = 3, and that is not an inconsistency: it asks "is this feature's own
         // rule unusually late?", where a small multiple of a median is right. A cycle asks "is this member failing
         // to USE its turn?", and the damage a wrong answer does is a FALSE RELEASE that starves the member the

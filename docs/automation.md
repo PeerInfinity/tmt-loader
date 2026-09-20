@@ -867,7 +867,7 @@ something, `gates-v2 --part 1`): the strategies are generic, so no game can have
 ### MODIFIERS: a strategy that rides on another one
 
 A policy may carry **one modifier**, appended with `|`: `gain>=2x|stall>=3x/5`, `sequential|give-up@0.1/30/2x`,
-`gain>=2|turn@20/3x/5`. There are **four** today — `stall>=Kx/N`, `turn@W/Kx/N` and `turn-demand@W/Kx/N` on `reset`,
+`gain>=2|turn@20/30x/5`. There are **four** today — `stall>=Kx/N`, `turn@W/Kx/N` and `turn-demand@W/Kx/N` on `reset`,
 and `give-up@B/H/Rx` on `challenges`, all below — and the grammar, the validator and the editors took every one of
 them from one more table row and no code at all (⚖ minimize hardcoding: `T.modifiers(kind)` is what the Advanced
 view renders, so a modifier on a new kind needs no new `tmtl-*` component and `componentNames` does not move).
@@ -893,7 +893,7 @@ for the same refusal.
 | | `unlocks-purchase` | … only when `player[l].points + tmp[l].resetGain` affords the cheapest unowned, unlocked upgrade of `l`, or the next level of one of its unlocked buyables — both only where costed in the layer's own points (no `currencyInternalName` / `currencyLocation` / `currencyLayer`); else wait |
 | | **`rate-peak@B/H`** | the currency-per-second optimum, with no threshold in the layer's own units. `rate = tmp[l].resetGain / (game-seconds since this feature's own last reset)`, `best` = the highest rate since that reset; reset once `(gain + 1) / elapsed < best × (1 − B)` has held **continuously** for `H` game-seconds. See below |
 | | **`… \| stall>=Kx/N`** (a MODIFIER) | on top of any of the above: if the primary rule has been waiting `K ×` as long as this feature's own resets usually take, reset anyway — but only the stalled feature closest to its target goes first. See below |
-| | **`… \| turn@W/Kx/N`** (a MODIFIER) | the ROW CYCLE: reset only while it is this layer's turn among the resets of its ROW, and take `W` resets per turn. Out of turn the reason is `waiting:turn`; IN turn the member still follows its own rule, and gives the turn up at once if that rule says no while the engine would allow. See below |
+| | **`… \| turn@W/Kx/N`** (a MODIFIER) | the ROW CYCLE: reset only while it is this layer's turn among the resets of its ROW, and take `W` resets per turn. Out of turn the reason is `waiting:turn`; IN turn the member follows its OWN rule and keeps the turn while that rule waits. `K` is the backstop that releases a member which is not using its turn — defaulted to **30**, not `stall>=Kx/N`'s 3, and measured. See below |
 | | **`… \| turn-demand@W/Kx/N`** (a MODIFIER) | the same, plus: whenever a decision NAMES a member's layer as what it is waiting on, that member gets the next turn. See below |
 | `upgrades` | `cheapest-first` | buys unlocked, unowned, affordable upgrades, cheapest `tmp` cost first (ties by id) |
 | | `order` | only the table's `order[]`, in that order |
@@ -1094,6 +1094,10 @@ demand which can never be met cannot hand it straight back.
   legitimate wait reads as a stall. Measured over the whole stretch: at `K = 3` a weight of 20 gives a ratio of
   **1.0** and 211 quirks; at `K = 30` it gives **19.1** and reproduces a known-good arrangement byte-for-byte.
   `K = 300` and `K = 100000` are byte-identical to 30, so the answer is not sensitive above the knee.
+  ⚖ **AND THERE IS A PRECEDENT IN THIS FILE**: the stall WATCH's own `k` was moved from 3 to **10** for the same
+  KIND of reason — a game's progress gaps are heavy-tailed, so a small multiple of a median lands inside normal play
+  (see the watch's parameter table). Three of the four `K`s in this loader have now been measured rather than
+  inherited, and the one that keeps 3 (`stall>=Kx/N`) is the one asking a question a median actually answers.
   ⚠ **No quantity fixes this** — taking the LONGEST of the window instead of the median measures identically,
   because what is wrong is the window's CONTENTS. The real answer is a release rule based on PROGRESS toward the
   threshold; until that exists `K` is a backstop and is defaulted to behave like one. The damage a wrong answer does
