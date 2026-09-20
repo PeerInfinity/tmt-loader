@@ -1095,8 +1095,13 @@ table either way: ⚖ MINIMIZE HARDCODING.
 ⚠ **Two resources can still print the same number** where the layer states it twice; both are kept (the card is
 reporting quantities and both are right) and the attribution between them is by key order alone. The gate counts it.
 
-**Over the roster**: **274 candidate Decimals, 16 shown, on 10 cards across 9 games**, 8 of them sharing a value
-with a sibling. ⚠ **The yield is low BY CONSTRUCTION**: 169 of the 171 games are swept at a FRESH save, where
+**Over the roster**: **274 candidate Decimals, 15 shown, on 9 cards across 9 games**, 8 of them sharing a value
+with a sibling. ⚠ **THIS FIGURE MOVES WITH THE FIXTURES AND NOTHING PINS IT.** It was `16 shown on 10 cards` when
+U7 measured it, at a tree where `ptr`'s deepest recorded snapshot was `all/M16` (16,048 ticks). R2 re-cut the
+defaults and added M17–M20 and M22, and `deepestSnapshot()` selects by TICKS, so the sweep now reads `ptr` at
+`all/M22` (29,204) — where `t.energy` no longer attributes and `ptr` contributes ONE row instead of two. Re-measured
+from CI's own merged artifact at `7aa5ef5e4` (run 35498862194, 171/171, 0 RED). `resCandidates` and `resCollide`
+did not move. ⚠ **The yield is low BY CONSTRUCTION**: 169 of the 171 games are swept at a FRESH save, where
 every amount on every layer is zero and the text cannot attribute any of them — `the-infinity-tree` alone
 contributes 32 candidates and shows none. The two games with recorded deep snapshots are where the feature has
 anything to report.
@@ -1217,8 +1222,9 @@ to keep those rows, or to drop every category whose components declare no curren
 display; these are the per-category ones. Only categories the card DRAWS get one — `visibleSeq`, the same three
 visibility rules the chips and counters are under — so a row cannot leak what those rules hide.
 
-**Over the roster**: **247 progress rows on 242 cards** — 225 upgrades, 22 buyables, **and not one challenge**
-at any state the sweep drives. The rule that chose them: `only` 123 (one candidate, where the two rules cannot
+**Over the roster**: **248 progress rows on 243 cards** — 225 upgrades, 22 buyables, **and not one challenge**
+at any state the sweep drives. ⚠ Same caveat as the resource figure above: this was `247 on 242` at U7's tree and
+moved by one when `ptr`'s deepest snapshot became `all/M22`. Re-measured at `7aa5ef5e4`. The rule that chose them: `only` 123 (one candidate, where the two rules cannot
 differ), `cheapest` 119 and **`first` 5** — the currencies-disagree fallback really fires, on `the-cultree`,
 `the-dingus-tree`, `the-orchard-tree` and `collection-of-everything`. ⚖ The categories where cheapest and
 first-listed pick **different** components number **8, on 6 games**; the wrong-currency guard fired **once**
