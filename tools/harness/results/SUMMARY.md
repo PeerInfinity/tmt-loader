@@ -5297,3 +5297,106 @@ Reading this section: Every cell is ONE run.mjs process, run TWICE unless the ro
 | R3a-6 the BOUNDED roster sample: which games register a `challenges` feature at all | — | 14 games (the first 14 ids in the roster's own order), 600 ticks each, diff 1 | — | — | — | — | GREEN | 11 of 14 register one: ptr [challenges:h=sequential\|give-up@0.1/30/2x, challenges:ne=off] · something [challenges:arithmetic=off, challenges:polygon=off, challenges:pbooster=off] · the-dressy-tree [challenges:S=off, challenges:H=off, challenges:L=off] · the-pro-tree [challenges:b=off, challenges:g=off, challenges:c=off, challenges:f=off, challenges:j=off, challenges:o=off, challenges:z=off, challenges:du=off, challenges:re=off, challenges:sa=off] · the-extended-tree [challenges:h=off, challenges:ne=off, challenges:fn=off] · the-omega-tree [challenges:hp=off, challenges:mp=off, challenges:sa=off, challenges:dp=off, challenges:rp=off] · the-number-tree [challenges:NN=off, challenges:UF=off, challenges:F=off, challenges:I=off, challenges:IP=off, challenges:E=off, challenges:O=off, challenges:M=off] · prestige-tree-rewritten-unsoftcapped4 [challenges:h=off] · arc-tree [challenges:zero=off, challenges:world=off, challenges:saya=off] · a-tree-for-sure [challenges:m=off, challenges:d=off, challenges:t=off, challenges:g=off] · the-earth-tree [challenges:i=off] |
 | R3a-6 …and what each of them was DOING at the stop | — | the same legs | — | — | — | — | GREEN | ptr: active [null,null] enter/exit/gaveUp {} · something: active [null,null,null] enter/exit/gaveUp {} · the-dressy-tree: active [null,null,null] enter/exit/gaveUp {} · the-pro-tree: active [null,null,null,null,null,null,null,null,null,null] enter/exit/gaveUp {} · the-extended-tree: active [null,null,null] enter/exit/gaveUp {} · the-omega-tree: active [null,null,null,null,null] enter/exit/gaveUp {} · the-number-tree: active [null,null,null,null,null,null,null,null] enter/exit/gaveUp {} · prestige-tree-rewritten-unsoftcapped4: active [null] enter/exit/gaveUp {} · arc-tree: active [null,null,null] enter/exit/gaveUp {} · a-tree-for-sure: active [null,null,null,null] enter/exit/gaveUp {} · the-earth-tree: active [null] enter/exit/gaveUp {} |
 | R3a-6 VERDICT: the derived default for the `challenges` kind | — | — | — | — | — | — | GREEN | a kind default reaches every game on the roster, and the roster is 171 games nobody has swept. Read the two rows above with part 1’s: the exit rule removes the trap ON PTR, which is one game |
+## 2026-09-20 — U10: pressing **Tree** blanked 5 games, and a buyable chip now says how many you own — commit `68dabecaf`
+
+⚖ user, 2026-09-20, item 1: *"I confirmed the mobile view tree problem for these games. The tree shows when the
+page first loads, but clicking on the Tree button on the bottom bar shows a blank screen."*
+⚖ item 2: *"In both expanded view and collapsed view, the Layers view should show the number purchased in each
+chip for the buyables."*
+
+**CI at `68dabecaf`: run `35526081787` (dispatched at the branch — `sweep.yml` is `push: [main]` +
+`workflow_dispatch`, so a branch push runs NOTHING by itself), 25/25 jobs green, `rows: 171/171 game(s); 0 RED`,
+6 abstained on the state leg (the usual six).** Every figure below is computed from that run's own merged shard
+JSON, not from a local run.
+
+### Item 1 — the fault was the CALL, not the rule
+
+⛔ **`loader/navbar.js` stated a false premise as a fact**: *"'none' is the tree in every engine the loader
+hosts"*. Every engine states the mapping in one line of its own `showTab` — `var toTreeTab = name == <name>` —
+and **all 171 have it** (⚠ two of them with single quotes, which a grep over `games/*/js/` misses; the census
+reads `String(showTab)` in the page):
+
+| what the engine calls its tree tab | games | from the CI run |
+|---|---|---|
+| `none` | 166 | `navbarUI.treeTab()` = `none` on 166 rows |
+| `tree` | **5** | `distance-incremental`, `the-stardust-tree`, `the-incrementreeverse`, `the-burning-tree`, `the-modding-tree` |
+
+On those five `showTab('none')` selects a name that is neither the tree nor any tab: the engine gave `#treeTab`
+its "a tab is open" classes (`col left`) and rendered **nothing** beside it, so `mobile.css` §2 hid the last
+thing on the screen. Under `?navbar=1` alone the same press leaves a half-width tree with dead space.
+
+⚠ **U9'S ACCOUNT IS CORRECTED.** U9 recorded the defect as present *"at a fresh save"*. It is not: **all five
+default to `player.tab === 'tree'`** and are green at a fresh load — exactly what the user described. U9's
+reading was taken **after its own tree-canvas leg had called `showTab('none')`**, i.e. in the same forced state
+the button was creating. It is a **TRANSITION** defect, and a gate that loads a page and looks can never see one.
+
+⛔ **The brief asked for `mobile.css` §2's RULE to be fixed; measurement says otherwise.** What `col left` means
+is `player.tab != <this engine's tree>`, which is what master-detail wants for every state a game's own UI can
+reach — the COMMENT was wrong, not the rule. The obvious defensive rewrite, `#app:has(.col.right) .col.left`, was
+measured and is worse: over all 171 with one tab opened in each, `.col.right` is the open tab **171/171** and no
+game shows a tree node while a tab is open **0/171**, *but* `the-basic-tree` keeps a rendered `col right fast tab`
+box in the DOM **on the tree as well**, so that rule would blank that game the way the bug blanked the other five.
+Recorded in the stylesheet beside the rule so the next slice does not spend the hour again.
+
+| leg 3a, from the CI run | judged | green | abstained |
+|---|---|---|---|
+| the engine is on ITS OWN tree after the press | 171 | **171** | — |
+| a visible `.treeNode` after the press | 169 | **169** | 2 (`bobbit-s-tech-tree`, `layer-tree` draw none at a fresh save) |
+| a layer tab still takes the whole screen | 169 | **169** | the same 2 |
+| Tree brings the tree back from that tab | 171 | **171** | — (170 opened a layer, 1 the `#info` corner) |
+| the bar marks Tree as the open view | 171 | **171** | — |
+
+### Item 2 — one string, two views, and a width that does not move
+
+| | from the CI run |
+|---|---|
+| buyable controls carrying a count (chips + action buttons) | **104** over **17** of 171 games — the other 154 draw none and ABSTAIN |
+| components rendered in BOTH views at once | **52** (each asserted to say the same thing) |
+| cards disagreeing with `getBuyableAmount`, or between views, or carrying a stray count | **0** |
+| reserved width | **2 digit columns** on the 18 games whose cards have a count box; 0 elsewhere |
+
+⚠ **The swept states barely exercise buyables**, which is what the format was chosen against: over all 171 at
+`934dc41dc`, **17 games draw any buyable chip, 56 chips, widths {1 character ×53, 2 ×3}** (all three of the
+two-character ones on `ptr`/`s` at `M22`). So the reservation's floor is 2 — nothing on the roster can widen a
+chip at all — and it is a **floor, not a cap**: an amount has no bound, `formatWhole` reaches 11 characters at the
+magnitudes a TMT save reaches, and reserving 11 columns on a 44 px chip would cost every game its chip row.
+
+⚠ **THE SIGN IS NOT A DIGIT, and the first build got it wrong.** `ch` is a digit column; at 13 px a digit is
+7.83 px and the `×` is 8.5, so a `2ch` reservation written across `×36` reserved 15.7 px for a 24.1 px string and
+the chip grew with the number anyway (`ptr`/`s`: 61.67 px at `×0` against 69.5 at `×36`). The sign is constant and
+now sits outside the reserved box. After: the count box is **24.11 px at `×0` and 24.13 at `×36`**, the chip 69.48
+against 69.50.
+
+### ⛔ The reader mutant is VACUOUS without a construction — and so was the width leg
+
+**0 of 56 chips disagree** between `getBuyableAmount` and `player[layer].buyables[id]` at the swept states, so
+swapping one for the other reddens nothing on a roster pass. The gate CONSTRUCTS the disagreement —
+`player[layer].unlocked = false`, which makes the 3 games whose accessor reads `unl(layer) ? … : 0` answer
+differently — and abstains, naming the game, everywhere else. From the CI run: **judged on 1 game** (`ptr`: *the
+chip follows getBuyableAmount (0) where player[l].buyables says 21*), **162 abstained** for no buyable above zero
+at their state and **8** because that engine's `getBuyableAmount` IS the direct read.
+
+⛔ **And the width leg had the same disease, found by its own mutant.** It read the number of digit columns to
+test off the BUILD's own `min-width`, so a build that reserves nothing was asked to hold still over ZERO columns —
+`m6` came back GREEN. The probe now carries its own floor (2 columns, the roster's measured worst case) and tests
+`max(reserved, 2)`. **A probe that takes its bound from the thing under test cannot fail.**
+
+## U10 mutant round (`bash tools/harness/mutants-u10.sh <out>`) — commit `68dabecaf` — 8/8, each reddening its OWN check
+
+Every mutant `restored: diff is empty`. ⚠ `the-modding-tree` is both the witness for item 1 and the CONTROL for
+item 2 (it draws no buyable chip at a fresh save); `ptr` is the control for item 1 — its tree really is `none`, so
+a hardcoded name is right about it, and a mutant that reddened both would say nothing about the five games.
+
+| mutant | reddens | control stays green |
+|---|---|---|
+| `m1-tree-tab-hardcoded-none` (the build before this slice) | `the-modding-tree` `tree` — *PRESSING TREE DID NOT PUT THE ENGINE ON ITS TREE (player.tab "none" is not this engine's tree "tree")* | `ptr` |
+| `m2-active-state-hardcoded-none` | `the-modding-tree` `tree` — *THE BAR DOES NOT MARK TREE AS THE OPEN VIEW ON ITS OWN TREE (active [])* | `ptr` |
+| `m3-derivation-returns-none` | `the-modding-tree` `tree` | `ptr` |
+| `m4-count-from-player-not-accessor` | `ptr` `reader` — the CONSTRUCTED witness, the only thing that can see it | `the-modding-tree` |
+| `m5-count-in-one-view-only` | `ptr` `counts` | `the-modding-tree` |
+| `m6-count-width-not-reserved` | `ptr` `digits` | `the-modding-tree` |
+| `m7-title-without-the-count` | `ptr` `counts` | `the-modding-tree` |
+| `m8-zero-count-hidden` | `ptr` `counts` **and** `reader` — the construction ends with the accessor at exactly 0, the value this mutation hides, so the witness necessarily sees it too | `the-modding-tree` |
+
+⚠ **A first round ran with the ORIGINAL width leg and `m6` was GREEN** — that is what found the vacuous floor
+above. The round in this table is the re-run after the fix.

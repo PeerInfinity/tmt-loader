@@ -31,10 +31,11 @@ sets `navbar` without `?navbar=1` being typed. `?navbar=1` brings four files: `l
 
 - **One column.** `#app` drops to `column-count: 1`; `.col` stops being a 49.5 % absolute box and becomes a
   full-width one; the `.vl` divider goes.
-- **Master-detail.** The engine gives an element the classes `col left` exactly while a layer tab is open, and
-  `fullWidth` while it is not — so `.col.left { display: none }` *is* "the tree until you open a layer, then the
-  layer gets the screen". The engine's own `.back` button (`showTab('none')`) is already the way back. No JS and
-  no per-game knowledge are involved.
+- **Master-detail.** The engine gives an element the classes `col left` while `player.tab` is **not the name that
+  engine gives its tree tab**, and `fullWidth` while it is — so `.col.left { display: none }` *is* "the tree until
+  you open a layer, then the layer gets the screen". The engine's own `.back` button is already the way back. No
+  JS and no per-game knowledge are involved. ⚠ *"exactly while a layer tab is open"* is what this bullet used to
+  say, and the difference is not pedantry: it is the premise that blanked five games (U10, below).
 - **The tree's furniture joins the flow.** `.treeOverlay` floats the points readout, the corner buttons and the
   side-layer nodes over the tree at fixed offsets; at 390 px they land on top of the nodes. They become ordinary
   flow content above the tree, and the spacers the engines use to clear them (`#treeTab`'s leading `<br>`s, the
@@ -95,6 +96,10 @@ indirection gives the active state for free: those controls carry `v-if="player.
 control that has been seen and is now absent means its tab is the open one. A button whose control has never
 appeared stays hidden — which is why Help shows on the two games that define `help_data` and nowhere else.
 
+⚠ **Tree is the one button with no corner control to forward to**, so it calls `showTab` itself — and since U10
+it asks the ENGINE which tab that is rather than assuming `'none'` (`navbarUI.treeTab()`; see "Pressing **Tree**
+really shows the tree"). Still no tab id and no game id in this file: the name is derived, once, per game.
+
 ### The tree canvas follows the page (U9)
 
 ⚖ user, 2026-09-20: *"The tree branches display incorrectly when scrolling down in mobile view. Is there anything
@@ -152,33 +157,62 @@ nothing on (byte-identical either way). It is visible.
 modes: hiding it with `visibility` leaves the screenshot **byte-identical**, so a probe built on that property
 reports "invisible" about a canvas that is plainly painted. That is a probe trap, not a finding about the fix.
 
-#### ⛔ NOT FIXED HERE: on 5 games `?mobile=1` hides the TREE ITSELF
+#### Pressing **Tree** really shows the tree (U10)
 
-Found while measuring the above, PRE-EXISTING (identical with `position: absolute`), and **out of U9's scope** —
-it is a different defect on a different set of games, and fixing it means revisiting §2's master-detail rule,
-which is a design call rather than a repair.
+⚖ user, 2026-09-20: *"I confirmed the mobile view tree problem for these games. The tree shows when the page
+first loads, but clicking on the Tree button on the bottom bar shows a blank screen."*
 
-§2 hides `.col.left` because *"the engine gives an element `col left` exactly while a layer tab is open, and
-`fullWidth` while it is not"*. Measured over all 171 games at a fresh save with `player.tab === 'none'`:
-**166 give `#treeTab` `fullWidth`, and 5 give it `col left`** — so on those five the rule hides the tree on the
-tree tab.
+⛔ **THE BAR'S OWN PREMISE WAS FALSE.** `loader/navbar.js` said, as a fact, that *"'none' is the tree in every
+engine the loader hosts"*. Censused at `934dc41dc` by reading each game's own `showTab` in the page — every
+engine states the mapping in one line, `var toTreeTab = name == <the tree's name>`, and **all 171 have it**:
 
-| game | `.treeNode`s | visible under `?mobile=1` |
-|---|---|---|
-| `the-incrementreeverse` | 6 | **0** |
-| `the-stardust-tree` | 6 | **0** |
-| `distance-incremental` | 5 | **0** |
-| `the-modding-tree` | 5 | **0** |
-| `the-burning-tree` | 3 | **0** |
+| what the engine calls its tree tab | games |
+|---|---|
+| `none` | **166** |
+| `tree` | **5** — `the-modding-tree`, `the-burning-tree`, `distance-incremental`, `the-stardust-tree`, `the-incrementreeverse` |
 
-`the-modding-tree`, measured: plain page `#treeTab` is `col left` / `display: block`, 5 of 5 nodes visible, canvas
-193×844; with `?mobile=1` it is `col left` / `display: none`, **0 of 5 visible**, canvas **0×0** (that engine sizes
-the bitmap from `#treeTab.scrollWidth`, which is 0 for a hidden box — which is how this surfaced at all).
+On those five, `showTab('none')` selects a name that is neither the tree nor any tab. The engine's own class
+binding is `fullWidth: player.tab == 'tree'`, `col left` otherwise, so `#treeTab` took the "a tab is open"
+classes while the engine rendered **nothing** in the column beside it — and `mobile.css` §2, which hides
+`.col.left`, then hid the last thing on the screen. Under `?navbar=1` alone the same press leaves a half-width
+tree with dead space beside it. Measured, phone context 390×844, a real click on the navbar's `☷Tree`:
 
-⚠ **No gate could have caught it, and that is the lesson worth keeping**: every geometry check in M1 asks whether
-something ESCAPES the viewport or is too SMALL to tap, and nothing that is not rendered can do either. The U9
-tree-canvas leg abstains on all five (`getImageData: The source width is 0`), which is honest but is not the same
-as noticing. A check for "the tree tab shows its tree" is what would have.
+| game | at load | after pressing Tree (before) | after (now) |
+|---|---|---|---|
+| `the-modding-tree` | `tab=tree` · `fullWidth` · 1/5 nodes visible | `tab=none` · **`col left`** · `display:none` · **0/5** | `tab=tree` · `fullWidth` · **1/5** |
+| `the-burning-tree` | `tab=tree` · fullWidth · 1/3 | `tab=none` · col left · none · **0/3** | fullWidth · **1/3** |
+| `distance-incremental` | `tab=tree` · fullWidth · 2/5 | `tab=none` · col left · none · **0/5** | fullWidth · **2/5** |
+| `the-stardust-tree` | `tab=tree` · fullWidth · 3/6 | `tab=none` · col left · none · **0/6** | fullWidth · **3/6** |
+| `the-incrementreeverse` | `tab=tree` · fullWidth · 1/6 | `tab=none` · col left · none · **0/6** | fullWidth · **1/6** |
+| `ptr` (control) | `tab=none` · fullWidth · 1/8 | `tab=none` · fullWidth · **1/8** | unchanged |
+
+**THE FIX IS THE CALL, NOT THE RULE.** ⚖ LOADER FIRST, and the loader's fault was that it named the tab itself:
+the Tree button now asks the ENGINE which tab is the tree (`navbarUI.treeTab()`, derived once from `showTab`'s
+own source, memoised, defaulting to `'none'` where the line cannot be read), and the bar's **active state** reads
+the same derivation — on those five games the bar used to mark no button at all while the player was looking at
+their tree. ⚖ MINIMIZE HARDCODING: no game id appears anywhere in the fix.
+
+⛔ **THE RULE IN §2 WAS NOT CHANGED, AND THE OBVIOUS REWRITE IS MEASURABLY WORSE.** The brief for this slice asked
+for §2 to be fixed; measurement says otherwise and the reasoning is recorded in `mobile.css` beside the rule.
+What the class actually says is `player.tab != <this engine's tree>` — which is exactly what the master-detail
+view wants, for every state a game's own UI can reach. The defensive rewrite "hide `.col.left` only while a
+detail pane exists" (`#app:has(.col.right) .col.left`) reads well and is **false**: censused over all 171 with
+one tab opened in each, `.col.right` is the open tab everywhere (171/171) and no game shows a tree node while a
+tab is open (0/171) — **but `the-basic-tree` keeps a rendered `col right fast tab` box in the DOM on the tree as
+well**, so that rule would blank *that* game exactly the way the bug blanked the other five. The comment was the
+thing that was wrong, and it has been rewritten.
+
+⚠ **U9'S ACCOUNT OF THIS IS CORRECTED HERE, and the correction is the lesson.** U9 recorded it as present *"at a
+fresh save"* over "all 171 games at a fresh save with `player.tab === 'none'`". It is not: **all five default to
+`player.tab === 'tree'`** and are green at a fresh load — which is precisely what the user saw and reported.
+U9's reading was taken **after its own tree-canvas leg had called `showTab('none')`**, i.e. in the same forced
+state the Tree button was creating. It is a **TRANSITION** defect, and a gate that loads a page and looks can
+never see one. The roster says the same thing twice over: exactly 5 games load on `tree`, exactly those 5
+blanked, and **5 MORE** (`the-energy-factory`, `the-periodic-table-tree`, `coffee-shop`, `the-leveling-tree`,
+`the-history-tree`) load on a LAYER tab with no `#treeTab` at all, so for them the Tree press is the only way to
+reach the tree. (2 games — `bobbit-s-tech-tree`, `layer-tree` — draw no visible tree node at a fresh save in
+either reading, and the gate abstains on them by name.)
+
 
 #### Nothing in any engine redraws the tree on a scroll
 
@@ -1365,6 +1399,74 @@ Its key is `@points`, `@`-prefixed the way `currencyKey`'s own globals are, so n
 with it; `data-global="yes"` marks it in the DOM. ⚠ **Reported, never styled** — the `sticky` flag's own rule: a
 row the player reads must not change appearance because of where the list learned about it.
 
+#### A buyable chip says how many you own (U10)
+
+⚖ user, 2026-09-20: *"In both expanded view and collapsed view, the Layers view should show the number purchased
+in each chip for the buyables."*
+
+**ONE STRING, TWO VIEWS.** Since U6 one chip object backs two controls — the expanded view's chip and the
+collapsed card's action button — and both now take their text from the same call (`drawChipText`). That is not
+tidiness: U8 had to make the reset text one source for the same reason, because a control that reads one way
+expanded and another collapsed changes at the instant of the transition, which is the moment a finger is on it.
+
+**WHAT IT RENDERS.** The short name stays its own box (`.tmt-layerlist-chip-name`) and the amount is a second
+one (`.tmt-layerlist-chip-n`), with the `×` supplied by CSS. ⚠ **They cannot be one run of text**: the short name
+can itself END IN A DIGIT — `nameChips` answers a collision with one, and `falling-mountain-s-alterprestige`
+really produces `N28` — so `N28` + `3` concatenated would be genuinely ambiguous. The control also carries the
+formatted number on `data-count` (the machine-readable value, and the memo that stops the DOM being written when
+the number has not moved) and on its `title`, which keeps U2e's rule — *the tooltip's first line IS the element's
+own `title`* — true rather than merely intended.
+
+**THE READER IS THE COUNTERS' OWN**, `ownedAmount('buyables', …)` → the engine's `getBuyableAmount`.
+⛔ **That is not the same as `player[layer].buyables[id]`**, and the census is why it matters — over the 171 at
+`934dc41dc`: **165** define the accessor as exactly that read, **3** return `unl(layer) ? player[layer].buyables[id] : 0`
+(`ptr`, `prestige-tree-ng`, `the-extended-tree`) and **1** wraps it in `new Decimal`
+(`universal-reconstruction`). The accessor is what the engine's own buttons read, so it is what the chip reads.
+⚠ **A buyable at zero keeps its `×0`** — `ownedAmount` deliberately keeps a buyable's box at zero where a
+clickable only counts above zero, and that asymmetry is the engines' (2.2.1 starts a clickable at `Decimal(0)`,
+2.7 at `""`). Hiding the number at zero would be the one reading that is not honest: the chip is there either
+way. The formatting is the engine's `formatWhole`, and every path that reaches it is already inside
+`withoutRaisingNaN`, so a NaN cannot leave `player.hasNaN` raised. The list still writes **nothing** to `player`.
+
+**THE WIDTH IS RESERVED — ⚖ U2c, and this is a width change.** The amount box carries `min-width` in `ch`
+(a fixed digit column, because the panel is `tabular-nums`), written per CARD by `layerlist.js` and **only ever
+grown**, which is the rule `syncCounters` has kept for an accumulating total since U2d.
+
+⚠ **THE SIGN IS OUTSIDE THE RESERVED BOX, and the first build got this wrong.** `ch` is a DIGIT column and the
+`×` is not a digit — measured at 13 px, a digit is 7.83 px and the `×` is 8.5 — so a `2ch` reservation written
+across the whole `×36` reserved 15.7 px for a 24.1 px string and the chip grew with the number anyway
+(`ptr`/`s`: 61.67 px at `×0` against 69.5 at `×36`). The sign is constant, so it is the container's `::before`
+on an inline-flex box and only the digits are reserved. Measured after: the count box is **24.11 px at `×0` and
+24.13 at `×36`**, and the chip 69.48 against 69.50.
+
+**THE DISTRIBUTION, AND THE WORST CASE.** Measured over all 171 games at the states the sweep drives (each
+game's deepest recorded snapshot where it has one, a fresh save otherwise), ⚠ **at `934dc41dc` — and
+`deepestSnapshot()` selects by TICKS, so another arc adding a snapshot re-points these figures**:
+
+| | |
+|---|---|
+| games drawing any buyable chip | **17 of 171** — the other 154 abstain |
+| buyable chips in total | **56** |
+| rendered width | **1 character ×53, 2 characters ×3** (all three on `ptr`/`s` at `M22`) |
+| the two readers disagreeing | **0 of 56** |
+
+So the floor is **2 digit columns**: nothing on the roster can widen a chip at all. ⛔ **It is a floor and not a
+cap, deliberately.** A buyable amount has no bound and `formatWhole` reaches **eleven** characters at the
+magnitudes a TMT save really reaches (`1.111e3,284`, the widest this arc has measured) — reserving eleven
+columns on a 44 px chip would cost every game the density of its chip row for a width almost no card will ever
+want. Past the floor the box grows once per order of magnitude and never gives the width back, which is exactly
+the guarantee the user already accepted for the counter that holds the **buyables total** — a strictly larger and
+faster-moving number on the same card. The gate measures the box over every reserved column and REPORTS the
+first magnitude past it rather than asserting anything about it.
+
+⚠ **AND THE MUTANT FOR THE READER IS VACUOUS WITHOUT A CONSTRUCTION.** 0 of 56 chips disagree, so swapping
+`getBuyableAmount` for `player[layer].buyables[id]` reddens nothing on a roster pass. The gate therefore
+CONSTRUCTS the disagreement on the three games whose accessor is not the direct read — it sets
+`player[layer].unlocked = false`, which makes `unl(layer)` false — and abstains, naming the game, on the other
+168. Measured on `ptr`/`s` buyable 11: the accessor goes to `0` while `player.s.buyables[11]` still says `36`,
+the chip follows the accessor, and the construction restores.
+
+
 #### Per-category progress in the expanded card (U7)
 
 ⚖ user, 2026-09-19: *"In Layers view, when a layer is in expanded view, can we add a row to display the progress
@@ -2270,6 +2372,47 @@ it, and it is judged in BOTH directions, which is what a build that simply never
 
 The probe rebuilds the declaration test itself — a fifth independent rebuild, for the reason the other four carry —
 and the summary names the declaring cards with their labels, so the `TBD` ones are visible rather than buried.
+
+#### What U10 added to the leg
+
+**1. Leg 3a — THE TREE BUTTON IS PRESSED.** On the FRESH page, before the snapshot load, because a fresh load is
+the state the user reported and because the five games this repairs default to it.
+⛔ **A LEG THAT ONLY LOOKS AT LOAD IS VACUOUS, and that is the whole lesson of this item**: all five are green
+at load, which is exactly why a roster sweep never caught the defect and why the user could. The leg presses the
+real button — the same event a finger produces — and looks again. Four things are judged and each can fail
+alone:
+
+| check | the claim | abstains when |
+|---|---|---|
+| `shows` | `player.tab` is the name THIS engine gives its tree (`navbarUI.treeTab()`) and `#treeTab` is displayed | never |
+| `nodes` | a visible `.treeNode` after the press | the game draws none in either reading (2 of 171, named) |
+| `detail` | with a layer tab open, **no** tree node is visible — master-detail still holds | the game draws no node |
+| `back` | pressing Tree from that open tab brings the tree back — the user's own journey | no tab could be opened |
+
+…and the bar's own **active state**: on its own tree, `Tree` is the one button marked active. That is the half
+`shows` cannot see, because the page can be right while the highlight is wrong.
+⚠ `detail` is what stops the lazy repair. A "fix" that simply stopped hiding `.col.left` would pass `shows` and
+`nodes` and leave `mobile.css` §2 dead; the leg asserts BOTH directions on every game.
+
+**2. Leg 6 — the buyable counts, both views, against the engine's own accessor.** Per card: every
+`.tmt-layerlist-chip[data-kind="buyables"]` and every `.tmt-layerlist-act[data-kind="buyables"]` must carry
+`data-count` and a rendered `.tmt-layerlist-chip-n` equal to `formatWhole(getBuyableAmount(layer, id))` —
+rebuilt in the probe, never asked of the list — its short name must still be its own box, its `title` must end
+in the same ` ×<count>`, the two views must say the same thing about the same component, and **nothing that is
+not a buyable may carry a count at all**. `countChips` is what says whether a game could judge it: 154 of the
+171 draw no buyable chip at the state the sweep reaches, and the sweep line prints how many really witnessed it.
+
+**3. The CONSTRUCTED reader witness** (`rules.countReader`), because the roster pass cannot tell the two readers
+apart — 0 of 56 chips disagree. It locks a layer that has a buyable above zero, which makes
+`unl(layer) ? … : 0` answer differently from the raw save, and the chip must follow the accessor. It abstains,
+naming the game, wherever the construction does NOT pull the two apart — 168 of the 171 — and that abstention is
+counted separately from a pass.
+
+**4. U2c's digits leg now writes the count's own box**, over every digit column the reservation covers, plus the
+two halves of U2d's rule (a shorter value gives no width back; the same length in different glyphs does not move
+it), in both states and at both widths. The first magnitude PAST the reservation is measured and REPORTED rather
+than asserted — a buyable has no bound, and a growth there is the documented behaviour, not a defect.
+
 
 ### The state leg needs a control
 

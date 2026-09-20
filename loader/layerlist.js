@@ -812,7 +812,101 @@
   function paintChip(el, c) { return paintSkin(el, c, c); }
   /** The chips of one card, repainted. Rides the THROTTLED path with the counters and the action row's lit/grey:
    *  a colour is a readout, and `affordable()` is game code called once per chip. */
-  function paintChips(rec) { rec.chips.forEach(function (c, i) { if (rec.chipEls[i]) paintChip(rec.chipEls[i], c); }); }
+  function paintChips(rec) { rec.chips.forEach(function (c, i) { if (rec.chipEls[i]) { paintChip(rec.chipEls[i], c); syncChipCount(rec.chipEls[i], c); } }); }
+
+  // ---------------------------------------------------------------- (U10) HOW MANY YOU OWN, ON THE CHIP ITSELF
+  // ⚖ "In both expanded view and collapsed view, the Layers view should show the number purchased in each chip
+  // for the buyables" (user, 2026-09-20). BOTH views take the same string from the same reader, for the reason U8
+  // had to make the reset text one source: a chip that reads one way expanded and another collapsed changes at the
+  // instant of the transition.
+  //
+  // ⚠ ONE READER, AND IT IS THE COUNTERS' OWN: `ownedAmount('buyables', …)`, i.e. the engine's
+  // `getBuyableAmount`. ⛔ That is NOT the same as `player[l].buyables[id]` — censused over the 171 at
+  // `934dc41dc`: 165 games define it as exactly that read, THREE return `unl(layer) ? player[layer].buyables[id] : 0`
+  // (`ptr`, `prestige-tree-ng`, `the-extended-tree`) and one wraps it in `new Decimal`. The accessor is what the
+  // engine's own buttons read, so it is what the chip reads.
+  // ⚠ A BUYABLE AT ZERO STILL HAS A CHIP AND STILL PRINTS `0` — `ownedAmount` keeps a buyable's box at zero
+  // while a clickable only counts above zero, and that asymmetry is the engines' (see the comment on `ownedAmount`).
+  // Hiding the number at zero would be the one reading that is not honest: the chip is there either way.
+  // ⚠ FORMATTED BY THE ENGINE (`whole()` → `formatWhole`), and every path that calls this is already inside
+  // `withoutRaisingNaN` (`rebuild` and `refresh` both wrap their whole pass), so formatting a NaN cannot leave
+  // `player.hasNaN` raised. The list writes NOTHING to `player`.
+  var COUNT_SIGN = '\u00d7';   // the × is DECORATION and lives in CSS (`::before`), so the span holds digits alone
+  /** The formatted amount a buyable chip shows, or `null` for a chip that is not a buyable or whose amount the
+   *  engine will not give us. Never an invented `0`. */
+  function chipCount(c) {
+    if (c.kind !== 'buyables') return null;
+    var a = ownedAmount('buyables', c.layer, c.id);
+    return a === null ? null : whole(a);
+  }
+  /** The chip's TEXT, for BOTH views: a name span always, and a count span for a buyable.
+   *  ⚠ TWO SPANS, not one string. The short name can itself END IN A DIGIT — `nameChips` disambiguates a
+   *  collision with one (`N28` on `falling-mountain-s-alterprestige`) — so `chip + count` concatenated would be
+   *  genuinely ambiguous. The name is also what the gate reads to assert the names are unique. */
+  function drawChipText(el, c) {
+    el.textContent = '';
+    var n = document.createElement('span');
+    n.className = 'tmt-layerlist-chip-name';
+    n.textContent = c.chip;
+    el.appendChild(n);
+    el.title = c.title;
+    if (c.kind !== 'buyables') return;
+    // ⚠ THE SIGN AND THE DIGITS ARE SEPARATE BOXES, and that is what makes the reservation EXACT. `min-width`
+    // is in `ch` — one digit column — and the × is NOT a digit: measured at 13 px, a digit is 7.83 px and the
+    // × is 8.5, so a `2ch` reservation written across `×36` reserved 15.7 px for a 24.1 px string and the chip
+    // grew with the number anyway (the first build of this did exactly that). The sign is CONSTANT, so it lives
+    // outside the reserved box — as the container's `::before`, which on an inline-flex container is a flex item.
+    var q = document.createElement('span');
+    q.className = 'tmt-layerlist-chip-count';
+    var d = document.createElement('span');
+    d.className = 'tmt-layerlist-chip-n';
+    q.appendChild(d);
+    el.appendChild(q);
+    syncChipCount(el, c);
+  }
+  /** The count, re-read on the THROTTLED path (`paintChips` / `syncActions`) beside the colours — it is a readout
+   *  and `getBuyableAmount` is game code, so it wants the counters' budget and not a frame's.
+   *  ⚠ `data-count` IS THE MEMO AND THE MACHINE-READABLE VALUE IN ONE: the formatted number, so a gate can
+   *  compare it against `getBuyableAmount` without parsing the rendered glyphs, and an unchanged number writes
+   *  nothing to the DOM.
+   *  ⚠ THE `title` CARRIES IT TOO, because U2e's rule is that the tooltip's FIRST LINE *is* the element's own
+   *  `title` — a chip that showed ×3 while its tooltip said only the name would be the one disagreement that rule
+   *  exists to make impossible. */
+  function syncChipCount(el, c) {
+    if (c.kind !== 'buyables') return false;
+    var t = chipCount(c);
+    var s = t === null ? '' : t;
+    if (el.dataset.count === s) return false;
+    el.dataset.count = s;
+    var q = el.querySelector('.tmt-layerlist-chip-n');
+    if (q) q.textContent = s;
+    el.title = s === '' ? c.title : c.title + ' ' + COUNT_SIGN + s;
+    return true;
+  }
+  /** ⚠ THE COUNT RESERVES ITS WIDTH, by the rule `syncCounters` already keeps for an accumulating total: a
+   *  reservation in `ch` (a fixed digit column, because layerlist.css puts tabular figures on the panel) that only
+   *  ever GROWS. A width that shrank back would move the row the moment a number did — ⚖ U2c, *"prevent the
+   *  layout from shifting as the number of digits in the numbers changes"*.
+   *  ⚠ ONE RESERVATION PER CARD, shared by the expanded chips and the collapsed action buttons, so the two
+   *  views are the same width as well as the same string, and so the buyables in a row line up with each other.
+   *  ⚠ THE FLOOR IS MEASURED, not chosen: `COUNT_CHARS_MIN` is the widest buyable count the whole roster
+   *  renders at the states the sweep drives, so no game on the roster can widen a chip AT ALL. Past it the box
+   *  grows once per order of magnitude and never gives the width back — which is the honest answer for a number
+   *  with no bound: `formatWhole` reaches ELEVEN characters at the magnitudes a TMT save really reaches
+   *  (`1.111e3,284`), and reserving eleven columns on a 44 px chip would cost every game the row's density for a
+   *  width almost no card will ever want. */
+  var COUNT_CHARS_MIN = 2;   // measured over all 171 at `934dc41dc` — see docs/mobile.md
+  function fitChipCounts(rec) {
+    var want = Math.max(rec.countChars, COUNT_CHARS_MIN);
+    var widest = function (el) { var t = el && el.dataset ? str(el.dataset.count) : ''; if (t.length > want) want = t.length; };
+    rec.chipEls.forEach(widest);
+    rec.actionEls.forEach(function (a) { widest(a.el); });
+    if (want === rec.countChars) return false;
+    rec.countChars = want;
+    var qs = rec.el.querySelectorAll('.tmt-layerlist-chip-n');
+    for (var i = 0; i < qs.length; i++) qs[i].style.minWidth = want + 'ch';
+    return true;
+  }
 
   // ---------------------------------------------------------------- the card's own readouts
   // 2.2.1 computes `tmp[l].prestigeButtonText` in `updateTemp` and its component reads it; 2.7 has no such tmp key
@@ -1762,8 +1856,7 @@
         b.dataset.kind = c.kind;       // also what gives a MILESTONE chip its square corners, in CSS
         b.dataset.cid = c.id;
         b.dataset.layer = c.layer;     // a `layer-proxy` chip acts on ANOTHER layer than the card it sits on
-        b.textContent = c.chip;
-        b.title = c.title;
+        drawChipText(b, c);            // (U10) the short name, and — for a buyable — how many you own
         paintChip(b, c);               // (U5) the game's own colour for this component in this state
         b.addEventListener('click', function () { chipPressed(c); });
         chipBox.appendChild(b);
@@ -1802,12 +1895,13 @@
       counterBox: counterBox, counterKeys: '', counterEls: [], reserved: Object.create(null),
       resourceBox: resourceBox, resourceKeys: '', resourceEls: [], resReserved: Object.create(null),
       progressBox: progressBox, progressKeys: '', progressEls: [],
-      actionBox: actionBox, actionKeys: '', actionEls: [] };
+      actionBox: actionBox, actionKeys: '', actionEls: [], countChars: 0 };
     cards[l] = rec;
     drawCounters(rec, counters);
     drawResources(rec, resourcesOf(l));
     drawProgress(rec, progressOf(l).rows);
     drawActions(rec, actions);
+    fitChipCounts(rec);   // (U10) the counts are written at build; their reservation is applied here, not a sync later
     return el;
   }
 
@@ -1975,8 +2069,7 @@
       b.dataset.kind = c.kind;
       b.dataset.cid = c.id;
       b.dataset.layer = c.layer;
-      b.textContent = c.chip;
-      b.title = c.title;
+      drawChipText(b, c);   // (U10) THE SAME call the expanded chip makes, so the two views cannot disagree
       b.addEventListener('click', function () { chipPressed(c); });
       rec.actionBox.appendChild(b);
       return { chip: c, el: b };
@@ -1995,6 +2088,7 @@
     rec.actionEls.forEach(function (a) {
       a.el.dataset.afford = affordable(a.chip) ? 'yes' : 'no';
       paintSkin(a.el, a.chip, a);   // the memo is the ACTION's own record, never the shared chip object
+      syncChipCount(a.el, a.chip);  // (U10) and the same count the expanded chip shows — its memo is `data-count`
     });
   }
 
@@ -2139,6 +2233,9 @@
       var as = actionsOf(rec.chips), ak = as.map(function (c) { return c.key; }).join(' ');
       if (ak !== rec.actionKeys) { drawActions(rec, as); refit.push(l); } else syncActions(rec);
       paintChips(rec);   // (U5) and the chips' own three-way colour, on the same budget as the lit/grey above
+      // (U10) …and the width the buyable counts reserve, AFTER both rows have written theirs: one pass per card,
+      // and it writes nothing at all unless the widest count on the card actually grew.
+      if (fitChipCounts(rec)) refit.push(l);
     });
     if (refit.length) fitCards(refit);
     // an open tooltip is re-read and re-anchored HERE, so it rides the counters' own throttle rather than the frame

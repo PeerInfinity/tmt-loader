@@ -240,6 +240,9 @@ const DIGITS_PROBE = `(${function () {
     layer: c.dataset.layer, card: R(c), meta: R(c.querySelector('.tmt-layerlist-meta')),
     name: R(c.querySelector('.tmt-layerlist-name')), amount: R(c.querySelector('.tmt-layerlist-amount')),
     ctr: [].map.call(c.querySelectorAll('.tmt-layerlist-counter'), R),
+    // (U10) and the two controls a BUYABLE COUNT sits in — the expanded chip and the collapsed action button
+    chip: [].map.call(c.querySelectorAll('.tmt-layerlist-chip'), R),
+    act: [].map.call(c.querySelectorAll('.tmt-layerlist-act'), R),
   }));
   const amounts = [].slice.call(panel.querySelectorAll('.tmt-layerlist-amount'));
   const ctrs = [].slice.call(panel.querySelectorAll('.tmt-layerlist-counter-value'));
@@ -273,9 +276,49 @@ const DIGITS_PROBE = `(${function () {
     cmp(cBase, shot(), ['ctr'], `(${label})`, counterMoved);
   });
   ctrs.forEach((e, i) => { e.textContent = wasCtr[i]; });
-  const restored = amounts.every((e, i) => e.textContent === wasAmt[i]) && ctrs.every((e, i) => e.textContent === wasCtr[i]);
+  // 3. (U10) THE BUYABLE COUNT, over the magnitudes ITS RESERVATION COVERS — and one past it, reported rather
+  //    than asserted. ⚖ U2c: *"prevent the layout from shifting as the number of digits in the numbers
+  //    changes"*. The reservation is `min-width` in `ch` on `.tmt-layerlist-chip-n`, written per CARD by
+  //    layerlist.js and only ever GROWN, with a floor at the widest count the roster renders — so up to that
+  //    width the box may not move at all, and `over` is the honest measurement of what happens past it (a
+  //    buyable amount has no bound; `formatWhole` reaches eleven characters at the magnitudes a TMT save
+  //    really reaches, and reserving eleven digit columns on a 44 px chip would cost every game the chip row).
+  //    ⚠ Written STRAIGHT INTO THE SPAN, like the two phases above: nothing in the game moves, so the only
+  //    thing that can move a box is the string.
+  const ns = [].slice.call(panel.querySelectorAll('.tmt-layerlist-chip-n'));
+  const wasN = ns.map((e) => e.textContent);
+  const reserved = ns.length ? Math.max.apply(null, ns.map((e) => parseInt(e.style.minWidth, 10) || 0)) : 0;
+  // ⛔ THE PROBE'S OWN FLOOR, AND WITHOUT IT THIS LEG IS VACUOUS. Reading the number of columns off the build
+  // means a build that reserves NOTHING is asked to hold still over zero columns and passes — measured: the
+  // `min-width` removed, `reserved` 0, and the mutant came back GREEN. `COUNT_COLS_MIN` is the widest buyable
+  // count the ROSTER renders (2 characters, over all 171 at `934dc41dc`), so the box must hold still over at
+  // least that many WHATEVER the build reserved, and over more where it reserved more.
+  const COUNT_COLS_MIN = 2;
+  const cols = Math.max(reserved, COUNT_COLS_MIN);
+  const within = [], over = [];
+  if (ns.length) {
+    const fill = (k) => { const t = new Array(k + 1).join('7'); ns.forEach((e) => { e.textContent = t; }); };
+    fill(1);
+    const nBase = shot();
+    for (let k = 1; k <= cols; k++) { fill(k); cmp(nBase, shot(), ['card', 'chip', 'act'], `at ${k} digit(s)`, within); }
+    fill(cols + 1);
+    cmp(nBase, shot(), ['card', 'chip', 'act'], `at ${cols + 1} digit(s)`, over);
+    // …and the two halves of U2d's reservation rule, on this box too: a SHORTER value gives no width back, and
+    // the same length in different glyphs does not move it either
+    fill(cols);
+    const gBase = shot();
+    ns.forEach((e) => { e.textContent = new Array(cols + 1).join('1'); });
+    cmp(gBase, shot(), ['card', 'chip', 'act'], '(glyphs)', within);
+    fill(1);
+    cmp(gBase, shot(), ['card', 'chip', 'act'], '(shorter)', within);
+    ns.forEach((e, i) => { e.textContent = wasN[i]; });
+  }
+  const restored = amounts.every((e, i) => e.textContent === wasAmt[i]) && ctrs.every((e, i) => e.textContent === wasCtr[i])
+    && ns.every((e, i) => e.textContent === wasN[i]);
   return { cards: cards.length, amounts: amounts.length, counters: ctrs.length, magnitudes: STRINGS.length,
-    moved: moved.length, sample: moved.slice(0, 4), counterMoved: counterMoved.length, counterSample: counterMoved.slice(0, 4), restored };
+    moved: moved.length, sample: moved.slice(0, 4), counterMoved: counterMoved.length, counterSample: counterMoved.slice(0, 4),
+    countBoxes: ns.length, countReserved: reserved, countCols: cols, countMoved: within.length, countSample: within.slice(0, 4),
+    countOver: over.length, countOverSample: over.slice(0, 2), restored };
 }})()`;
 
 /** Everything the mobile layout promises, measured in the page. Geometry only — it asserts nothing about the game. */
@@ -927,6 +970,42 @@ const LAYERLIST_PROBE = `(${function () {
       return { key: `${ll}/${kind}/${id}`, wantKey: w.key, gotKey: e.dataset.skin || '',
         want: w.bg, got: String(getComputedStyle(e).backgroundColor || '') }; });
     const actSkinBad = actSkins.filter((x) => x.got !== x.want || x.gotKey !== x.wantKey);
+    // ---- U10: A BUYABLE CHIP SAYS HOW MANY YOU OWN ----------------------------------------------------------
+    // ⚖ "In both expanded view and collapsed view, the Layers view should show the number purchased in each chip
+    // for the buyables" (user, 2026-09-20). The expectation is rebuilt HERE out of the ENGINE's own accessor and
+    // never asked of the list.
+    // ⛔ `getBuyableAmount`, NOT `player[l].buyables[id]` — censused over the 171 at `934dc41dc`: 165 define the
+    // accessor as exactly that read, THREE return `unl(layer) ? … : 0` (`ptr`, `prestige-tree-ng`,
+    // `the-extended-tree`) and one wraps it in `new Decimal`. The two agree at every state the sweep drives (0 of
+    // 56 chips disagree), which is why the U10 mutant needs the CONSTRUCTED witness in `row.countReader` rather
+    // than this roster pass.
+    // ⚠ BOTH VIEWS, AND THE SAME STRING: the chip and the action button stand for one component, so a build in
+    // which they could differ is the defect U8 had to fix for the reset text. `viewBad` is what asserts it.
+    const wantCount = (ll, id) => { const v = S(() => getBuyableAmount(ll, Number(id)), null); return v === null ? '' : F(v, true); };
+    const readCount = (e) => {
+      const ll = e.dataset.layer || l, id = e.dataset.cid;
+      const n = e.querySelector('.tmt-layerlist-chip-n');
+      const nm = e.querySelector('.tmt-layerlist-chip-name');
+      const title = String(e.getAttribute('title') || '');
+      const want = wantCount(ll, id);
+      return { key: `${ll}/${e.dataset.cid}`, role: e.classList.contains('tmt-layerlist-act') ? 'act' : 'chip',
+        want, data: e.dataset.count == null ? null : String(e.dataset.count), text: n ? n.textContent : null,
+        // the short NAME is still its own box, so a count can never be mistaken for the disambiguation digit
+        named: !!nm && !!nm.textContent,
+        // U2e: the tooltip's first line IS the title, so the title has to carry the count as well
+        titleOk: want === '' ? !/\u00d7/.test(title) : title.endsWith(' \u00d7' + want) };
+    };
+    const countEls = [...c.querySelectorAll('.tmt-layerlist-chip[data-kind="buyables"], .tmt-layerlist-act[data-kind="buyables"]')];
+    const counts = countEls.map(readCount);
+    const countBad = counts.filter((x) => x.data !== x.want || x.text !== x.want || !x.named || !x.titleOk);
+    // the same component, read in the two views: a `chip` and an `act` with the same key must say the same thing
+    const byKey = {};
+    counts.forEach((x) => { (byKey[x.key] = byKey[x.key] || []).push(x); });
+    const viewBad = Object.keys(byKey).filter((k) => byKey[k].length > 1
+      && new Set(byKey[k].map((x) => String(x.data) + '|' + String(x.text))).size > 1);
+    // and NOTHING BUT a buyable carries one: a count on an upgrade chip would be a second, wrong reading
+    const countStray = [...c.querySelectorAll('.tmt-layerlist-chip:not([data-kind="buyables"]), .tmt-layerlist-act:not([data-kind="buyables"])')]
+      .filter((e) => e.dataset.count != null || e.querySelector('.tmt-layerlist-chip-n')).length;
     // ---- U7 item 1: TWO LINE BOXES, ALWAYS ------------------------------------------------------------------
     // ⚠ Read while the card is in whatever state it was in: the reset button is in BOTH. The claim has two halves
     // and they need different evidence — the SPLIT (line one is the text before the engine's first run of `<br>`s,
@@ -1073,6 +1152,11 @@ const LAYERLIST_PROBE = `(${function () {
       ctrSkinSet: [...new Set(ctrSkins.map((x) => x.wantKey))],
       actSkins, actSkinBad, actSkinOk: actSkinBad.length === 0,
       actSkinSet: [...new Set(actSkins.map((x) => x.wantKey))],
+      // --- U10: the buyable counts, in both views ---
+      counts: counts.slice(0, 6), countChips: counts.length, countBad: countBad.slice(0, 3),
+      countStray, countViewBad: viewBad.slice(0, 3),
+      countOk: countBad.length === 0 && viewBad.length === 0 && countStray === 0,
+      countPaired: Object.keys(byKey).filter((k) => byKey[k].length > 1).length,
       // ⚠ THE DISCRIMINATOR: a card showing ALL THREE of the engine's states at once. A two-state check
       // (bought / not) passes on a build that never renders red, which is what the build before U5 was.
       threeStates: skinSet.filter((k) => k !== 'pseudo').length >= 3,
@@ -1129,6 +1213,15 @@ const LAYERLIST_PROBE = `(${function () {
     // sequence differs from U2's source order (every upgrade, then buyable, then challenge, by id).
     orderFromSource: perCard.filter((x) => x.fromSource).length,
     cardsWithChips: perCard.filter((x) => x.want.length).length,
+    // --- U10: the buyable counts, rolled up. `countChips` is what says whether this game could judge it at all:
+    // 154 of the 171 draw NO buyable chip at the state the sweep reaches, so their pass is an abstention and the
+    // sweep line says how many games really witnessed it.
+    countChips: perCard.reduce((n, x) => n + x.countChips, 0),
+    countCards: perCard.filter((x) => x.countChips > 0).length,
+    countPaired: perCard.reduce((n, x) => n + x.countPaired, 0),
+    countOk: perCard.every((x) => x.countOk),
+    countBad: perCard.filter((x) => !x.countOk).slice(0, 3).map((x) => ({ layer: x.layer, bad: x.countBad, view: x.countViewBad, stray: x.countStray })),
+    countSample: perCard.filter((x) => x.countChips).slice(0, 2).map((x) => ({ layer: x.layer, counts: x.counts.slice(0, 4) })),
     tabFormatShapes: shapes,
     // --- U2d: THE COLLAPSED CARD ---------------------------------------------------------------------------
     // ⚠ U2b's `capStarved` reporting is GONE, retired rather than answered: it counted the cards whose whole
@@ -1674,6 +1767,83 @@ async function treeCanvasLeg(page) {
   return rec;
 }
 
+/**
+ * (U10) leg 3a — PRESSING **Tree** REALLY SHOWS THE TREE, and a layer tab still takes the screen.
+ *
+ * ⚖ user, 2026-09-20: *"The tree shows when the page first loads, but clicking on the Tree button on the bottom
+ * bar shows a blank screen."* Five of the 171 games call their tree tab `tree` rather than `none`
+ * (loader/navbar.js), and the bar used to ask for `showTab('none')` on all of them — a name that is neither the
+ * tree nor any tab, which left the engine saying "not on the tree" with nothing to show instead.
+ *
+ * ⛔ **A LEG THAT ONLY LOOKS AT LOAD IS VACUOUS, and that is the whole lesson.** All five DEFAULT to
+ * `player.tab === 'tree'`, so at a fresh load they are green — measured over the whole roster at `934dc41dc`:
+ * exactly 5 games load on `tree`, exactly those 5 blanked, and 5 MORE load on a layer tab and draw no tree node
+ * until the button is pressed. A gate that loads a page and looks could never see it; the gate has to PRESS THE
+ * BUTTON, which is also what a player does. U9 recorded the defect as present "at a fresh save" — its reading
+ * was taken after its own canvas leg had called `showTab('none')`, which is the same forced state.
+ *
+ * Four things are judged, and each can fail on its own:
+ *   `shows`  — after the press, `player.tab` is the name THIS engine gives its tree (read from
+ *              `navbarUI.treeTab()`, the derivation itself) and `#treeTab` is displayed. This is the half that
+ *              reddens when the bar goes back to the hardcoded `'none'`, EVEN IF the CSS still shows the tree.
+ *   `nodes`  — a visible `.treeNode` after the press. ABSTAINS on a game that draws none in either reading
+ *              (2 of the 171 at a fresh save), named rather than passed.
+ *   `detail` — master-detail still holds: with a tab open, no tree node is visible. Without it a "fix" that
+ *              simply stopped hiding the tree would pass, and mobile.css §2 would be dead.
+ *   `back`   — pressing Tree FROM that open tab brings the tree back. The user's own journey, and the one the
+ *              five games could not complete.
+ */
+async function treeButtonLeg(page) {
+  const LOOK = `(${function () {
+    const t = document.getElementById('treeTab');
+    const nodes = [...document.querySelectorAll('#app .treeNode')];
+    const vis = (el) => { const c = getComputedStyle(el), r = el.getBoundingClientRect();
+      return c.display !== 'none' && c.visibility !== 'hidden' && Number(c.opacity) !== 0 && r.width > 0 && r.height > 0; };
+    let tab = null; try { tab = (typeof player !== 'undefined' && player) ? String(player.tab) : null; } catch (e) { tab = null; }
+    return { tab, treeClass: t ? String(t.className) : null,
+      treeShown: !!t && getComputedStyle(t).display !== 'none' && t.getClientRects().length > 0,
+      nodes: nodes.length, visible: nodes.filter(vis).length,
+      active: [...document.querySelectorAll('#tmt-navbar button.active')].map((b) => b.dataset.key) };
+  }})()`;
+  const press = async () => {
+    // the REAL button, with a real click — the same event a finger produces. (A click is not a neutral probe on
+    // every game, which is why this leg runs before the ones that measure the state hash.)
+    await page.evaluate(() => { const b = document.querySelector('#tmt-navbar button[data-key="tree"]'); if (b) b.click(); });
+    await page.waitForTimeout(250);
+    return page.evaluate(LOOK);
+  };
+  const rec = { treeTab: await page.evaluate(() => { const u = window.tmtLoader.navbarUI; return u && u.treeTab ? u.treeTab() : null; }) };
+  rec.load = await page.evaluate(LOOK);
+  rec.pressed = await press();
+  // a tab to give the screen to: the first layer the engine says is reachable, else the game's own info corner
+  const opened = await page.evaluate(() => {
+    try { for (const l of LAYERS) if (typeof layerunlocked === 'function' ? layerunlocked(l) : (player[l] && player[l].unlocked)) { showTab(l); return { via: 'layer', name: l }; } } catch (e) { /* engines differ */ }
+    const el = document.querySelector('#info');
+    if (el) { el.click(); return { via: 'info', name: 'info' }; }
+    return null;
+  });
+  rec.opened = opened;
+  if (opened) { await page.waitForTimeout(250); rec.onTab = await page.evaluate(LOOK); rec.back = await press(); }
+  const drew = Math.max(rec.load.visible, rec.pressed.visible) > 0;
+  rec.shows = rec.pressed.treeShown && rec.treeTab !== null && rec.pressed.tab === rec.treeTab;
+  rec.nodes = !drew ? null : rec.pressed.visible > 0;
+  rec.detail = !opened || !rec.onTab ? null : (drew ? rec.onTab.visible === 0 : null);
+  rec.backOk = !opened || !rec.back ? null : (rec.back.treeShown && rec.back.tab === rec.treeTab && (!drew || rec.back.visible > 0));
+  // …and the BAR agrees with the engine. `refresh()` reads the same derivation, so a bar still comparing against
+  // the literal `'none'` shows NO button as active on the five games while the player is looking at their tree.
+  rec.activeOk = rec.pressed.active.length === 1 && rec.pressed.active[0] === 'tree';
+  rec.verdict = rec.treeTab === null ? 'THE BAR DOES NOT SAY WHICH TAB IS THE TREE (navbarUI.treeTab is gone)'
+    : !rec.shows ? `PRESSING TREE DID NOT PUT THE ENGINE ON ITS TREE (${rec.pressed.tab !== rec.treeTab ? `player.tab ${JSON.stringify(rec.pressed.tab)} is not this engine's tree ${JSON.stringify(rec.treeTab)}` : `player.tab is ${JSON.stringify(rec.treeTab)} but #treeTab is not displayed`}; #treeTab "${rec.pressed.treeClass}" shown=${rec.pressed.treeShown})`
+    : rec.nodes === false ? `PRESSING TREE LEFT NO TREE NODE ON SCREEN (${rec.pressed.visible} of ${rec.pressed.nodes}, #treeTab "${rec.pressed.treeClass}")`
+    : rec.detail === false ? `A LAYER TAB DID NOT TAKE THE SCREEN (${rec.onTab.visible} tree node(s) still visible on tab ${JSON.stringify(rec.onTab.tab)})`
+    : rec.backOk === false ? `TREE DID NOT COME BACK FROM AN OPEN TAB (player.tab ${JSON.stringify(rec.back.tab)}, ${rec.back.visible} node(s))`
+    : !rec.activeOk ? `THE BAR DOES NOT MARK TREE AS THE OPEN VIEW ON ITS OWN TREE (active ${JSON.stringify(rec.pressed.active)})`
+    : `${rec.pressed.visible}/${rec.pressed.nodes} node(s) after the press on tab ${JSON.stringify(rec.treeTab)}`
+      + (rec.nodes === null ? ' (abstains on the node count: this game draws none at this state)' : '')
+      + (rec.detail === null ? '; abstains on master-detail' : `; the ${opened.via} tab took the screen and Tree brought it back`);
+  return rec;
+}
+
 async function gateMobile(browser, base, ids) {
   const rows = [];
   for (const id of ids) {
@@ -1760,6 +1930,11 @@ async function gateMobile(browser, base, ids) {
       row.snapshot = snapshot ? { file: snapshot.file, ticks: snapshot.ticks } : null;
       const look = async (view) => { const m = await page.evaluate(MOBILE_PROBE); row.views.push({ view, ...m }); return m; };
       await look('fresh-tree');
+      // --- leg 3a (U10): THE TREE BUTTON. Here, on the FRESH page and before `loadFrom`, because a fresh load is
+      // the state the user reported and because the five games that could not show their tree default to it.
+      row.treeButton = await treeButtonLeg(page);
+      row.treeButtonOk = !/^THE |^PRESSING|^A LAYER|^TREE DID/.test(String(row.treeButton.verdict));
+
       if (snapshot) {
         const r2 = await pageLoadFrom(page, snapshot.player);
         if (!r2.ready) throw new Error(`not ready after loadFrom: ${JSON.stringify(r2.error)}`);
@@ -2378,6 +2553,62 @@ async function gateMobile(browser, base, ids) {
         }
         return { candidate: null };
       });
+      // ⚠ And a FIFTH (U10): WHICH READER THE COUNT COMES FROM. `getBuyableAmount` and
+      // `player[l].buyables[id]` agree at every state the sweep drives — 0 of 56 chips disagree over the whole
+      // roster at `934dc41dc` — so the mutant that swaps one for the other is VACUOUS on the roster pass and this
+      // is what makes it judgeable. THREE games define the accessor as `unl(layer) ? player[layer].buyables[id] : 0`
+      // (`ptr`, `prestige-tree-ng`, `the-extended-tree`), so LOCKING the layer is what pulls the two apart, the
+      // same way `canAffordUpgrade` and `pseudoUnl` are replaced elsewhere on this page. Restored, and
+      // `restored` is what says it was.
+      // ⚠ IT ABSTAINS, NAMING THE GAME, wherever the construction does NOT make the two readers disagree —
+      // which is the other 168. An abstention is not a pass and the sweep line counts them separately.
+      const rReader = await page.evaluate(() => {
+        const ui = window.tmtLoader.layerListUI;
+        if (!ui) return { verdict: 'abstains (no layerListUI)' };
+        ui.open();
+        const F = (v) => { try { return String(formatWhole(v)); } catch (e) { return 'THROW'; } };
+        const chipOf = (card, kind, id) => {
+          const list = document.querySelectorAll(`.tmt-layerlist-card[data-layer="${card}"] .tmt-layerlist-chip`);
+          for (const e of list) if (e.dataset.kind === kind && String(e.dataset.cid) === String(id)) return e;
+          return null;
+        };
+        // a buyable chip whose amount is ABOVE ZERO — at zero the two readers agree whatever the accessor does
+        let pick = null;
+        for (const card of ui.cards()) {
+          for (const c of ui.chipsOf(card)) {
+            if (c.kind !== 'buyables') continue;
+            const v = (() => { try { return getBuyableAmount(c.layer, Number(c.id)); } catch (e) { return null; } })();
+            const n = Number(v && typeof v.toNumber === 'function' ? v.toNumber() : v);
+            if (!(n > 0) || !chipOf(card, 'buyables', c.id)) continue;
+            pick = { card, layer: c.layer, id: c.id }; break;
+          }
+          if (pick) break;
+        }
+        if (!pick) return { verdict: 'abstains (no buyable chip above zero at this state)' };
+        const { card, layer, id } = pick;
+        let had, out;
+        try {
+          had = player[layer].unlocked;
+          const before = chipOf(card, 'buyables', id).dataset.count;
+          player[layer].unlocked = false;
+          ui.refresh();
+          const el = chipOf(card, 'buyables', id);
+          out = { pick, before, present: !!el, count: el ? el.dataset.count : null,
+            accessor: F((() => { try { return getBuyableAmount(layer, Number(id)); } catch (e) { return null; } })()),
+            direct: F((() => { try { return player[layer].buyables[id]; } catch (e) { return null; } })()) };
+        } finally {
+          try { player[layer].unlocked = had; } catch (e) { /* put it back whatever happened */ }
+          ui.refresh();
+        }
+        const back = chipOf(card, 'buyables', id);
+        out.restored = !!back && back.dataset.count === out.before;
+        out.verdict = !out.present ? `abstains (locking ${out.pick.layer} removed the chip)`
+          : out.accessor === out.direct ? `abstains (this engine's getBuyableAmount IS the direct read: both ${out.direct})`
+          : out.count !== out.accessor ? `THE COUNT IS NOT THE ENGINE'S ACCESSOR (chip ${out.count}, getBuyableAmount ${out.accessor}, player[l].buyables ${out.direct})`
+          : !out.restored ? 'NOT RESTORED'
+          : `the chip follows getBuyableAmount (${out.accessor}) where player[l].buyables says ${out.direct}`;
+        return out;
+      });
       const hasPseudo = await page.evaluate(() => typeof window.pseudoUnl === 'function');
       let rPs = null;
       if (hasPseudo) {
@@ -2406,9 +2637,11 @@ async function gateMobile(browser, base, ids) {
           : { layer: rClk.layer, id: rClk.id, was: rClk.was, text: rClk.text,
               verdict: rClk.zeroBox ? 'A BOX AT THE ENGINE\'S ZERO' : !rClk.appeared ? 'NO BOX FOR A REAL AMOUNT'
                 : !rClk.restored ? 'NOT RESTORED' : 'appeared for an amount, absent at the zero' },
+        // (U10) which reader the buyable count comes from, judged only where the construction pulls the two apart
+        countReader: rReader,
         restored: rBack.chips === rBase.chips && !!rBack.seqOk && rBack.milestoneChips === rBase.milestoneChips,
       };
-      row.rulesOk = !!(row.rules.restored && !/DISAGREES|STILL SHOWN|NOT MARKED|A BOX AT|NO BOX FOR|NOT RESTORED|VANISHED|DID NOT MOVE/.test(`${row.rules.ms.verdict} ${row.rules.pseudo.verdict} ${row.rules.clickable.verdict} ${row.rules.bigAmount.verdict}`));
+      row.rulesOk = !!(row.rules.restored && !/DISAGREES|STILL SHOWN|NOT MARKED|A BOX AT|NO BOX FOR|NOT RESTORED|VANISHED|DID NOT MOVE|NOT THE ENGINE/.test(`${row.rules.ms.verdict} ${row.rules.pseudo.verdict} ${row.rules.clickable.verdict} ${row.rules.bigAmount.verdict} ${row.rules.countReader.verdict}`));
 
       // --- U5 leg I: THE THREE-WAY READING, ON ONE CARD, CONSTRUCTED -------------------------------------------
       // ⚖ "purchased, affordable, unaffordable — the game's own three-way reading" (user, 2026-09-19).
@@ -2653,18 +2886,23 @@ async function gateMobile(browser, base, ids) {
       const digits = [await digitsAt(PHONE, 'phone'), await digitsAt(DESKTOP, 'desktop')];
       await page.setViewportSize(PHONE);
       await page.waitForTimeout(150);
-      const dBad = digits.flatMap((d) => [d.collapsed, d.expanded].flatMap((x, i) => (x.moved || x.counterMoved ? (x.sample || []).concat(x.counterSample || []).map((m) => `${d.at}/${i ? 'expanded' : 'collapsed'} ${m}`) : [])));
+      const dBad = digits.flatMap((d) => [d.collapsed, d.expanded].flatMap((x, i) => (x.moved || x.counterMoved || x.countMoved ? (x.sample || []).concat(x.counterSample || []).concat(x.countSample || []).map((m) => `${d.at}/${i ? 'expanded' : 'collapsed'} ${m}`) : [])));
       row.digits = {
         cards: digits[0].collapsed.cards, amounts: digits[0].collapsed.amounts, counters: digits[0].collapsed.counters,
         magnitudes: digits[0].collapsed.magnitudes,
         moved: digits.map((d) => `${d.at} ${d.collapsed.moved}/${d.expanded.moved}`).join(' '),
         counterMoved: digits.map((d) => `${d.at} ${d.collapsed.counterMoved}/${d.expanded.counterMoved}`).join(' '),
+        // (U10) the buyable count's own box, over every width its reservation covers — and `countOver`, the
+        // honest report of the first magnitude PAST it, which is a growth and not a defect (see DIGITS_PROBE).
+        countBoxes: digits[0].expanded.countBoxes, countReserved: digits[0].expanded.countReserved,
+        countMoved: digits.map((d) => `${d.at} ${d.collapsed.countMoved}/${d.expanded.countMoved}`).join(' '),
+        countOver: digits.map((d) => `${d.at} ${d.collapsed.countOver}/${d.expanded.countOver}`).join(' '),
         bad: dBad.slice(0, 4),
         restored: digits.every((d) => d.collapsed.restored && d.expanded.restored),
         verdict: !digits[0].collapsed.amounts ? 'abstains (no card carries a readout)'
           : dBad.length ? 'THE BOX MOVED WITH THE DIGITS'
           : !digits.every((d) => d.collapsed.restored && d.expanded.restored) ? 'NOT RESTORED'
-          : 'unchanged over every magnitude, at both widths, in both states' };
+          : `unchanged over every magnitude, at both widths, in both states${digits[0].expanded.countBoxes ? ` (and over ${digits[0].expanded.countReserved} reserved digit column(s) on ${digits[0].expanded.countBoxes} buyable count(s))` : '; no buyable count on this game'}` };
       row.digitsOk = !/MOVED|NOT RESTORED/.test(row.digits.verdict);
 
 
@@ -3397,7 +3635,9 @@ async function gateMobile(browser, base, ids) {
         // U7: the reset line's split and its two reserved line boxes, the other-resources filter in BOTH
         // directions, and the progress rows against the probe's own fourth rebuild
         // U8: … and the remembered set is keyed inside THIS game's own storage namespace
-        && L.resetOk && L.resOk && L.progOk && L.resMemKeyOk);
+        && L.resetOk && L.resOk && L.progOk && L.resMemKeyOk
+        // U10: … and every buyable chip prints `getBuyableAmount`, in BOTH views, with the title agreeing
+        && L.countOk);
       // GEOMETRY, at each width on that width's own terms: the phone demands nothing escapes and nothing is under
       // 44 px (the same bar the other phone views are held to); the desktop is judged against the PLAIN desktop
       // page, which is the layout this game's author shipped (leg 5's rule).
@@ -3448,7 +3688,7 @@ async function gateMobile(browser, base, ids) {
       // the mobile page must load as cleanly as the plain one: judged against the SAME manifest allowances as G1
       const j = judgeLoad(readManifest(id), base, structuredClone({ ...stats.of(page) }), await page.evaluate(() => ({ skipped: tmtLoader.skipped, pageErrors: tmtLoader.pageErrors })));
       row.loadVerdict = { ok: j.ok, failedNotDeclared: j.failedBad, blockedNotDeclared: j.blockedBad, errorsAfterReady: j.errorsAfterReady, errorsAfterReadySample: j.errorsAfterReadySample };
-      row.ok = !!(row.ready && !row.error && row.inertOk && row.stateOk && row.geometryOk && row.navOk && row.bothOk && row.navbarOnlyOk && row.layersOk && row.treeOk && j.ok);
+      row.ok = !!(row.ready && !row.error && row.inertOk && row.stateOk && row.geometryOk && row.navOk && row.bothOk && row.navbarOnlyOk && row.layersOk && row.treeOk && row.treeButtonOk && j.ok);
     } catch (e) {
       row.exception = String((e && e.stack) || e).slice(0, 600);
     } finally { await context.close(); }
@@ -3747,7 +3987,29 @@ async function main() {
       const trMax = trJ.length ? Math.max(...trJ.map((r) => (r.tree.bottom && r.tree.bottom.maxD) || 0)) : null;
       console.log(`M1 tree canvas (U9 — node centre to the nearest PAINTED branch pixel, at the top of the page AND scrolled to the bottom; tolerance ${BRANCH_TOL} px): ${trJ.length - trRed.length}/${trJ.length} judged green over ${trJ.reduce((n, r) => n + ((r.tree.bottom && r.tree.bottom.judged) || 0), 0)} on-screen node(s), worst ${trMax === null ? '—' : trMax + ' px'}; ${trShort.length} judged at ${SHORT_VIEW.width}×${SHORT_VIEW.height} because the page does not scroll at ${PHONE.height}; ${trAbs.length} ABSTAINED${trAbs.length ? ` (${trAbs.slice(0, 4).map((r) => `${r.id}: ${r.tree.verdict}`).join('; ')}${trAbs.length > 4 ? `, …(${trAbs.length})` : ''})` : ''}${trRed.length ? ` (RED: ${trRed.map((r) => `${r.id} ${r.tree.verdict}`).join('; ')})` : ''}`);
       console.log(`M1 tree canvas redraw (U9 — the loader's own passive scroll listener; NO engine listens on scroll, and \`?managed=1\` has stopped the 500 ms cadence): ${trJ.filter((r) => r.tree.redrawOk).length}/${trJ.length} redrew on the scroll; ${trJ.filter((r) => r.tree.spaceOk).length}/${trJ.length} have the canvas in VIEWPORT space; ${trInner.length} game(s) still scroll something inside #app${trInner.length ? `: ${trInner.slice(0, 4).map((r) => `${r.id} ${JSON.stringify(r.tree.top.innerScrollers)}`).join('; ')}` : ' — so the 6 games whose y1 reads #treeTab.scrollTop are unaffected'}`);
+      // (U10) THE TREE BUTTON. ⛔ The counts that matter are the JUDGED ones: a game whose tree draws no node at
+      // a fresh save cannot witness the node half, and the line says how many, by name.
+      const tb = rows.filter((r) => r.treeButton);
+      const tbRed = tb.filter((r) => r.treeButtonOk === false);
+      const tbNodes = tb.filter((r) => r.treeButton.nodes !== null);
+      const tbNoNode = tb.filter((r) => r.treeButton.nodes === null).map((r) => r.id);
+      const tbDetail = tb.filter((r) => r.treeButton.detail !== null);
+      const tbNames = [...new Set(tb.map((r) => String(r.treeButton.treeTab)))].sort();
+      const tbOdd = tb.filter((r) => r.treeButton.treeTab !== 'none').map((r) => `${r.id}=${r.treeButton.treeTab}`);
+      console.log(`M1 tree button (U10 — the REAL navbar press, then the visible \`.treeNode\` count; ⛔ a reading AT LOAD is vacuous, all five of the games this fixes are green there): ${tb.length - tbRed.length}/${tb.length} green; the engine's own tree-tab name ${JSON.stringify(tbNames)}${tbOdd.length ? ` — NOT \`none\` on ${tbOdd.length}: ${tbOdd.join(', ')}` : ''}; ${tbNodes.filter((r) => r.treeButton.nodes).length}/${tbNodes.length} showed a tree node after the press${tbNoNode.length ? `, ${tbNoNode.length} ABSTAINED (this game draws none at a fresh save: ${tbNoNode.join(', ')})` : ''}; master-detail judged on ${tbDetail.filter((r) => r.treeButton.detail).length}/${tbDetail.length}${tbRed.length ? ` (RED: ${tbRed.map((r) => `${r.id} ${r.treeButton.verdict}`).join('; ')})` : ''}`);
       console.log(`M1 layers leg: ${rows.filter((r) => r.layersOk).length}/${rows.length} green over ${cards} card(s) and ${chips} chip(s), at ${PHONE.width}px with touch and at ${DESKTOP.width}px without`);
+      // (U10) THE BUYABLE COUNTS. ⚠ `countChips` is what says whether a game could judge this at all, and the
+      // CONSTRUCTED reader witness is what makes the `player[l].buyables[id]` mutant mean anything: the two
+      // readers agree at every state the sweep drives.
+      const cq = rows.filter((r) => r.layers && r.layers.phone);
+      const cqChips = cq.reduce((n, r) => n + (r.layers.phone.countChips || 0), 0);
+      const cqGames = cq.filter((r) => r.layers.phone.countChips > 0);
+      const cqRed = cq.filter((r) => r.layers.phone.countOk === false);
+      const rd = rows.filter((r) => r.rules && r.rules.countReader);
+      const rdJ = rd.filter((r) => !/abstains/.test(String(r.rules.countReader.verdict)));
+      const rdRed = rdJ.filter((r) => /NOT THE ENGINE|NOT RESTORED/.test(String(r.rules.countReader.verdict)));
+      const dRes = cq.map((r) => r.digits && r.digits.countReserved).filter((x) => x != null);
+      console.log(`M1 buyable counts (U10 — ⚖ "show the number purchased in each chip", both views): ${cqChips} chip(s)/button(s) over ${cqGames.length}/${cq.length} game(s) — the other ${cq.length - cqGames.length} draw NO buyable chip at this state and ABSTAIN; ${cq.length - cqRed.length}/${cq.length} agree with \`getBuyableAmount\` in both views${cqRed.length ? ` (RED: ${cqRed.map((r) => `${r.id} ${JSON.stringify(r.layers.phone.countBad)}`).join('; ')})` : ''}; width reserved ${[...new Set(dRes)].join('/')} digit column(s); the CONSTRUCTED reader witness judged on ${rdJ.length}/${rd.length} (${rdJ.map((r) => `${r.id}: ${r.rules.countReader.verdict}`).slice(0, 3).join('; ') || 'none — on every game here getBuyableAmount IS the direct read, so the swap-the-reader mutant is VACUOUS'})${rdRed.length ? ` (RED: ${rdRed.map((r) => r.id).join(', ')})` : ''}`);
       // U2b: the chips MIRROR THE NORMAL VIEW — the sequence, the dividers, the milestone corners, and the two
       // discriminators (a count that fell, an order that moved) on the reference games.
       const ll = (r) => (r.layers && r.layers.phone) || null;
@@ -3832,7 +4094,7 @@ async function main() {
       console.log(`M1 layers inertness: ${rows.filter((r) => r.layersInert && r.layersInert.verdict === 'unchanged').length} unchanged state hash across opening the list, ${rows.filter((r) => r.layersInert && r.layersInert.verdict === 'MOVED').length} moved, ${llAbst.length} abstained${llAbst.length ? ` (the page does not repeat its own hash: ${llAbst.join(', ')})` : ''}`);
       const noCand = rows.filter((r) => r.resetVerdict && r.resetVerdict.startsWith('no candidate')).map((r) => r.id);
       console.log(`M1 layers reset press: ${rows.filter((r) => r.resetVerdict === 'moved').length} moved player[l].points, ${rows.filter((r) => r.resetVerdict === 'NOT MOVED').length} did not, ${noCand.length} abstained${noCand.length ? ` (nothing could reset: ${noCand.join(', ')})` : ''}`);
-      for (const r of rows.filter((x) => !x.ok)) console.log(`  ${r.id}: layers=${r.layersOk} digits=${r.digits ? r.digits.verdict : '—'}${r.digits && !r.digitsOk ? ' ' + JSON.stringify(r.digits) : ''} tips=${r.tips ? `${r.tips.phoneVerdict} / desktop ${r.tips.desktopVerdict} / tap ${r.tips.tap.verdict} / hover ${r.tips.hover.verdict}` : '—'}${r.tips && !r.tipsOk ? ' ' + JSON.stringify(r.tips) : ''} persist=${r.persist ? r.persist.verdict : '—'}${r.persist && !r.persistOk ? ' ' + JSON.stringify(r.persist) : ''} fit=${r.fitOk}${r.fitWidths && !r.fitOk ? ' ' + JSON.stringify(r.fitWidths) : ''} stability=${r.stabilityOk}${r.stability && !r.stabilityOk ? ' ' + JSON.stringify(r.stability) : ''} throttle=${r.throttleOk}${r.throttle && !r.throttleOk ? ' ' + JSON.stringify(r.throttle) : ''} counter=${r.counterVerdict}${r.counterMove && r.counterVerdict === 'NOT MOVED' ? ' ' + JSON.stringify(r.counterMove) : ''}${r.chipBaseline && !(r.chipBaseline.fell && r.chipBaseline.orderMoved) ? ` chipBaseline=${JSON.stringify(r.chipBaseline)}` : ''}${r.layers && !r.layersOk ? ' ' + JSON.stringify(r.layers) : ''}${r.resetVerdict && r.resetVerdict !== 'moved' ? ` reset=${r.resetVerdict} ${JSON.stringify(r.reset)}` : ''} inert=${r.inertOk} both=${r.bothOk}${r.both ? ' ' + JSON.stringify(r.both) : ''} navbarOnly=${r.navbarOnlyOk}${r.navbarOnly && !r.navbarOnlyOk ? ' ' + JSON.stringify(r.navbarOnly) : ''} state=${r.stateVerdict}${r.state ? ` (plain ${r.state.plain} / control ${r.state.plainControl} / mobile ${r.state.mobile})` : ''} geometry=${r.geometryOk} nav=${r.navOk} load=${r.loadVerdict && r.loadVerdict.ok}${r.worst && r.worst.length ? ` worst=${JSON.stringify(r.worst)}` : ''}${r.exception ? ` exception=${r.exception}` : ''}`);
+      for (const r of rows.filter((x) => !x.ok)) console.log(`  ${r.id}: treeButton=${r.treeButton ? r.treeButton.verdict : "—"} counts=${r.layers && r.layers.phone ? r.layers.phone.countOk : "—"}${r.layers && r.layers.phone && r.layers.phone.countOk === false ? " " + JSON.stringify(r.layers.phone.countBad) : ""} reader=${r.rules && r.rules.countReader ? r.rules.countReader.verdict : "—"} layers=${r.layersOk} digits=${r.digits ? r.digits.verdict : '—'}${r.digits && !r.digitsOk ? ' ' + JSON.stringify(r.digits) : ''} tips=${r.tips ? `${r.tips.phoneVerdict} / desktop ${r.tips.desktopVerdict} / tap ${r.tips.tap.verdict} / hover ${r.tips.hover.verdict}` : '—'}${r.tips && !r.tipsOk ? ' ' + JSON.stringify(r.tips) : ''} persist=${r.persist ? r.persist.verdict : '—'}${r.persist && !r.persistOk ? ' ' + JSON.stringify(r.persist) : ''} fit=${r.fitOk}${r.fitWidths && !r.fitOk ? ' ' + JSON.stringify(r.fitWidths) : ''} stability=${r.stabilityOk}${r.stability && !r.stabilityOk ? ' ' + JSON.stringify(r.stability) : ''} throttle=${r.throttleOk}${r.throttle && !r.throttleOk ? ' ' + JSON.stringify(r.throttle) : ''} counter=${r.counterVerdict}${r.counterMove && r.counterVerdict === 'NOT MOVED' ? ' ' + JSON.stringify(r.counterMove) : ''}${r.chipBaseline && !(r.chipBaseline.fell && r.chipBaseline.orderMoved) ? ` chipBaseline=${JSON.stringify(r.chipBaseline)}` : ''}${r.layers && !r.layersOk ? ' ' + JSON.stringify(r.layers) : ''}${r.resetVerdict && r.resetVerdict !== 'moved' ? ` reset=${r.resetVerdict} ${JSON.stringify(r.reset)}` : ''} inert=${r.inertOk} both=${r.bothOk}${r.both ? ' ' + JSON.stringify(r.both) : ''} navbarOnly=${r.navbarOnlyOk}${r.navbarOnly && !r.navbarOnlyOk ? ' ' + JSON.stringify(r.navbarOnly) : ''} state=${r.stateVerdict}${r.state ? ` (plain ${r.state.plain} / control ${r.state.plainControl} / mobile ${r.state.mobile})` : ''} geometry=${r.geometryOk} nav=${r.navOk} load=${r.loadVerdict && r.loadVerdict.ok}${r.worst && r.worst.length ? ` worst=${JSON.stringify(r.worst)}` : ''}${r.exception ? ` exception=${r.exception}` : ''}`);
     } else if (a.gate === 'options') {
       const rows = await gateOptions(browser, base, ids);
       if (a.json) writeJSON(a.json, { commit: headCommit(), base, gate: 'options', shard: shardMeta, viewport: DESKTOP, rows });
@@ -3855,7 +4117,7 @@ async function main() {
       console.log(`M1 layers drift (U4 — the scroller's \`overflow-anchor\` is ${anch.join('/') || '—'}): CONSTRUCTED height change above the offset, ${adJ.length - adRed.length}/${adJ.length} judged game(s) held scrollTop still while the height moved${adRed.length ? ` (DRIFTED: ${adRed.map((x) => `${x} ${JSON.stringify(rows.find((r) => r.id === x).anchorDrift)}`).join('; ')})` : ''}, ${adRoom.length} abstained for a list that does not scroll at 390px${adNone.length ? `, ⛔ ${adNone.length} NEVER RAN (the row threw: ${adNone.slice(0, 6).join(', ')})` : ''}; the REAL reset press, ${rdJ.length - rdRed.length}/${rdJ.length} judged${rdRed.length ? ` (DRIFTED: ${rdRed.map((x) => `${x} ${JSON.stringify(rows.find((r) => r.id === x).resetDrift)}`).join('; ')})` : ''}, ${rows.filter((r) => r.resetDrift && /abstains/.test(r.resetDrift.verdict)).length} abstained (no room, or the press did not move the height)`);
       const armRows = rows.filter((r) => r.both && r.both.arm);
       if (armRows.length) console.log(`M1 au arming setting (U4 — the DEFAULT half; the arming flow itself is gates-a1.mjs --part 2): ${armRows.filter((r) => r.both.armOk).length}/${armRows.length} green over ${armRows.map((r) => `${r.id}: ${r.both.armVerdict}`).join('; ')}`);
-      for (const r of rows.filter((x) => !x.ok)) console.log(`  ${r.id}: layers=${r.layersOk} digits=${r.digits ? r.digits.verdict : '—'}${r.digits && !r.digitsOk ? ' ' + JSON.stringify(r.digits) : ''} tips=${r.tips ? `${r.tips.phoneVerdict} / desktop ${r.tips.desktopVerdict} / tap ${r.tips.tap.verdict} / hover ${r.tips.hover.verdict}` : '—'}${r.tips && !r.tipsOk ? ' ' + JSON.stringify(r.tips) : ''} persist=${r.persist ? r.persist.verdict : '—'}${r.persist && !r.persistOk ? ' ' + JSON.stringify(r.persist) : ''} fit=${r.fitOk}${r.fitWidths && !r.fitOk ? ' ' + JSON.stringify(r.fitWidths) : ''} stability=${r.stabilityOk}${r.stability && !r.stabilityOk ? ' ' + JSON.stringify(r.stability) : ''} throttle=${r.throttleOk}${r.throttle && !r.throttleOk ? ' ' + JSON.stringify(r.throttle) : ''} counter=${r.counterVerdict}${r.counterMove && r.counterVerdict === 'NOT MOVED' ? ' ' + JSON.stringify(r.counterMove) : ''}${r.chipBaseline && !(r.chipBaseline.fell && r.chipBaseline.orderMoved) ? ` chipBaseline=${JSON.stringify(r.chipBaseline)}` : ''}${r.layers && !r.layersOk ? ' ' + JSON.stringify(r.layers) : ''}${r.resetVerdict && r.resetVerdict !== 'moved' ? ` reset=${r.resetVerdict} ${JSON.stringify(r.reset)}` : ''} drift=${r.anchorDrift ? r.anchorDrift.verdict : '—'}${r.anchorDrift && !r.anchorOk ? ' ' + JSON.stringify(r.anchorDrift) : ''} resetDrift=${r.resetDrift ? r.resetDrift.verdict : '—'}${r.resetDrift && /DRIFTED/.test(r.resetDrift.verdict) ? ' ' + JSON.stringify(r.resetDrift) : ''} inert=${r.inertOk} both=${r.bothOk}${r.both ? ' ' + JSON.stringify(r.both) : ''} navbarOnly=${r.navbarOnlyOk}${r.navbarOnly && !r.navbarOnlyOk ? ' ' + JSON.stringify(r.navbarOnly) : ''} state=${r.stateVerdict}${r.state ? ` (plain ${r.state.plain} / control ${r.state.plainControl} / mobile ${r.state.mobile})` : ''} geometry=${r.geometryOk} nav=${r.navOk} load=${r.loadVerdict && r.loadVerdict.ok}${r.worst && r.worst.length ? ` worst=${JSON.stringify(r.worst)}` : ''}${r.exception ? ` exception=${r.exception}` : ''}`);
+      for (const r of rows.filter((x) => !x.ok)) console.log(`  ${r.id}: treeButton=${r.treeButton ? r.treeButton.verdict : "—"} counts=${r.layers && r.layers.phone ? r.layers.phone.countOk : "—"}${r.layers && r.layers.phone && r.layers.phone.countOk === false ? " " + JSON.stringify(r.layers.phone.countBad) : ""} reader=${r.rules && r.rules.countReader ? r.rules.countReader.verdict : "—"} layers=${r.layersOk} digits=${r.digits ? r.digits.verdict : '—'}${r.digits && !r.digitsOk ? ' ' + JSON.stringify(r.digits) : ''} tips=${r.tips ? `${r.tips.phoneVerdict} / desktop ${r.tips.desktopVerdict} / tap ${r.tips.tap.verdict} / hover ${r.tips.hover.verdict}` : '—'}${r.tips && !r.tipsOk ? ' ' + JSON.stringify(r.tips) : ''} persist=${r.persist ? r.persist.verdict : '—'}${r.persist && !r.persistOk ? ' ' + JSON.stringify(r.persist) : ''} fit=${r.fitOk}${r.fitWidths && !r.fitOk ? ' ' + JSON.stringify(r.fitWidths) : ''} stability=${r.stabilityOk}${r.stability && !r.stabilityOk ? ' ' + JSON.stringify(r.stability) : ''} throttle=${r.throttleOk}${r.throttle && !r.throttleOk ? ' ' + JSON.stringify(r.throttle) : ''} counter=${r.counterVerdict}${r.counterMove && r.counterVerdict === 'NOT MOVED' ? ' ' + JSON.stringify(r.counterMove) : ''}${r.chipBaseline && !(r.chipBaseline.fell && r.chipBaseline.orderMoved) ? ` chipBaseline=${JSON.stringify(r.chipBaseline)}` : ''}${r.layers && !r.layersOk ? ' ' + JSON.stringify(r.layers) : ''}${r.resetVerdict && r.resetVerdict !== 'moved' ? ` reset=${r.resetVerdict} ${JSON.stringify(r.reset)}` : ''} drift=${r.anchorDrift ? r.anchorDrift.verdict : '—'}${r.anchorDrift && !r.anchorOk ? ' ' + JSON.stringify(r.anchorDrift) : ''} resetDrift=${r.resetDrift ? r.resetDrift.verdict : '—'}${r.resetDrift && /DRIFTED/.test(r.resetDrift.verdict) ? ' ' + JSON.stringify(r.resetDrift) : ''} inert=${r.inertOk} both=${r.bothOk}${r.both ? ' ' + JSON.stringify(r.both) : ''} navbarOnly=${r.navbarOnlyOk}${r.navbarOnly && !r.navbarOnlyOk ? ' ' + JSON.stringify(r.navbarOnly) : ''} state=${r.stateVerdict}${r.state ? ` (plain ${r.state.plain} / control ${r.state.plainControl} / mobile ${r.state.mobile})` : ''} geometry=${r.geometryOk} nav=${r.navOk} load=${r.loadVerdict && r.loadVerdict.ok}${r.worst && r.worst.length ? ` worst=${JSON.stringify(r.worst)}` : ''}${r.exception ? ` exception=${r.exception}` : ''}`);
     } else {
       if (shard) throw new Error('--shard applies to --gate load / --gate mobile, not to a single-game run');
       const out = await runPage(browser, base, ids[0], { ticks: Number(a.ticks ?? 200), diff: Number(a.diff ?? 0.05), leg: a.leg || 'idle', until: a.until || null, stateOut: a['state-out'], playerOut: a['player-out'], loadFrom: a['load-from'] ? fs.readFileSync(a['load-from'], 'utf8') : null, profile: a.profile || null, exclude: a.exclude ? a.exclude.split(',') : [], autoOpt: a['auto-opt'] || null, automation: !a['no-automation'] });

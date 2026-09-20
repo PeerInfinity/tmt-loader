@@ -53,9 +53,24 @@ html.tmt-mobile .col {
 html.tmt-mobile .vl { display: none; }
 
 /* ---------------------------------------------------------------- 2. master-detail
- * The engine gives an element `col left` exactly while a layer tab is open, and `fullWidth` while it is not. So
- * "hide `.col.left`" IS "show the tree until a layer is opened, then give the layer the screen" — and the engine's
- * own `.back` button (`showTab('none')`) is already the back affordance. No JS, no per-game knowledge. */
+ * ⛔ WHAT `col left` MEANS, EXACTLY — and the loose reading of it is what blanked the tree on five games (U10).
+ * This comment used to say *"the engine gives an element `col left` exactly while a layer tab is open"*. It does
+ * not. Every engine binds that class to `player.tab != <the name THAT engine gives its tree tab>`, which is the
+ * same statement only for the states a game's own UI can reach. `loader/navbar.js` asked for `showTab('none')` on
+ * five games whose tree tab is called `tree` (censused there), so `player.tab` became a name that is neither the
+ * tree nor any tab: the engine said "not on the tree" and rendered nothing beside it, and this rule then hid the
+ * last thing on screen. ⚖ LOADER FIRST — and the loader's fault was the CALL, so U10 fixed it in `navbar.js`
+ * and left this rule alone. What the class says is still exactly what the master-detail view wants: the tree is
+ * on screen while the engine says we are on the tree, and gives way the moment it says we are not. The engine's
+ * own `.back` button (`showTab(<its tree>)`) is still the back affordance. No JS, no per-game knowledge.
+ *
+ * ⛔ AND THE OBVIOUS DEFENSIVE REWRITE IS MEASURABLY WORSE — recorded so it is not tried again.
+ * "Hide `.col.left` only while a detail pane exists" (`html.tmt-mobile #app:has(.col.right) .col.left`) reads well
+ * and is FALSE: censused at `934dc41dc` over all 171 games, one tab opened in each, `.col.right` is the open tab
+ * everywhere (171/171) — but `the-basic-tree` keeps a rendered `col right fast tab` box in the DOM **on the tree
+ * as well**, so that rule would blank THAT game exactly the way the bug it was meant to repair blanked the other
+ * five. The gate is what holds this rule honest instead, in both directions and on every game (docs/mobile.md,
+ * "Pressing Tree really shows the tree"). */
 html.tmt-mobile .col.left { display: none; }
 
 /* `position: relative`, not `static`: these columns contain absolutely-positioned children that rely on the column

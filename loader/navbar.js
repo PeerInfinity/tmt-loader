@@ -14,6 +14,8 @@
 // own corner control (#optionWheel, #info, #help), whose onclick already names the right tab for that engine. The
 // same indirection gives the active state for free: those controls carry `v-if="player.tab != '<their tab>'"`, so a
 // control that has been seen and is now absent means its tab is the open one.
+// THE TREE BUTTON IS THE ONE WITH NO CORNER CONTROL TO FORWARD TO, so it calls `showTab` itself — and since U10 it
+// asks the ENGINE what that tab is called rather than assuming `'none'` (see `treeTab` below).
 (function () {
   'use strict';
   var T = window.tmtLoader;
@@ -37,10 +39,34 @@
   var buttons = Object.create(null);
   var nav = null;
 
+  // ---- WHICH NAME MEANS THE TREE (U10; docs/mobile.md).
+  // ⛔ `'none'` IS NOT THE TREE IN EVERY ENGINE, and that premise — which this file used to state as a fact —
+  // is what blanked the tree on five games. Censused at `934dc41dc` over all 171 by reading each game's own
+  // `showTab` in the page: **166 read `var toTreeTab = name == "none"` and FIVE read `== "tree"`**
+  // (`the-modding-tree`, `the-burning-tree`, `distance-incremental`, `the-stardust-tree`,
+  // `the-incrementreeverse`). On those five `showTab('none')` selects a tab that does not exist: `player.tab`
+  // stops being the tree, so the engine gives `#treeTab` its "a tab is open" classes (`col left`) while rendering
+  // NOTHING in the column beside it. Under `?mobile=1` that is a blank screen (mobile.css §2 hides `.col.left`);
+  // under `?navbar=1` alone it is a half-width tree with dead space beside it. Either way the press left the game
+  // in a state its own UI cannot reach.
+  // ⚖ NO GAME IDS (MINIMIZE HARDCODING). THE ENGINE ITSELF SAYS WHICH, in the one line of `showTab` that is
+  // the whole of its answer: `var toTreeTab = name == <the tree's name>`. Read once, memoised, and read as a bare
+  // identifier for the same reason every other engine global here is.
+  // ⚠ THE DEFAULT IS `'none'` — the 166-game majority, and what this file did before — so a fork whose
+  // `showTab` says it some other way is no worse off than it was. The gate measures the derived name per game and
+  // presses the button, so a fork the derivation cannot read is a RED there rather than a silent blank.
+  var treeName;
+  function treeTab() {
+    if (treeName !== undefined) return treeName;
+    treeName = 'none';
+    try {
+      var m = /toTreeTab\s*=\s*name\s*==\s*['"]([^'"]*)['"]/.exec(String(showTab));
+      if (m) treeName = m[1];
+    } catch (e) { /* a game with no showTab keeps the default; onTree's own catch then makes the press inert */ }
+    return treeName;
+  }
   function onTree() {
-    // 'none' is the tree in every engine the loader hosts (2.2.1 `.back` uses it; 2.7 `showTab` reads
-    // `var toTreeTab = name == "none"`). Read as a bare identifier: showTab is a function declaration.
-    try { showTab('none'); } catch (e) { /* a game without showTab keeps the button inert rather than throwing */ }
+    try { showTab(treeTab()); } catch (e) { /* a game without showTab keeps the button inert rather than throwing */ }
   }
 
   function build() {
@@ -93,7 +119,9 @@
     });
     if (openKey === null) {
       // no system tab is open; the tree button is the active one only when no layer tab is open either
-      try { openKey = (typeof player !== 'undefined' && player && player.tab === 'none') ? 'tree' : null; } catch (e2) { openKey = null; }
+      // (U10) …and the tree's own name, not the literal `'none'`: on the five games that call it `tree` the bar
+      // used to show NO button as active while the player was looking at the tree.
+      try { openKey = (typeof player !== 'undefined' && player && player.tab === treeTab()) ? 'tree' : null; } catch (e2) { openKey = null; }
     }
     if (listOpen) openKey = 'layers'; // the overlay is over whatever tab is underneath it
     ENTRIES.forEach(function (e) {
@@ -188,7 +216,9 @@
     var app = document.getElementById('app');
     if (app) obs.observe(app, { childList: true, subtree: true, attributes: true, attributeFilter: ['class', 'style'] });
     T.navbarUI = { nav: nav, refresh: refresh, entries: ENTRIES.map(function (e) { return e.key; }), seen: seen,
-      redrawTree: redrawTree, treeRedraws: function () { return redraws; } };
+      redrawTree: redrawTree, treeRedraws: function () { return redraws; },
+      treeTab: treeTab };   // (U10) what this engine calls its tree tab — derived, so the gate can read the answer
+
   }
 
   // navbar.js is inserted BEFORE the game's onload, so the engine's corner controls do not exist yet; the nav is
