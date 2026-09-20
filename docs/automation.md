@@ -220,6 +220,14 @@ tmtLoader.progress()   // { armed, events: [{at, kind, layer, id, key, tick, mar
 ⚖ **The user's words** (2026-09-19): *"Another idea is to have an option to keep track of when progress seems to be
 stalled, and switch to a strategy that's less likely to get stuck."* **OFF by default.**
 
+⛔ **EXPERIMENTAL — it is NOT a safety net, and that is MEASURED (R2, twice equal; reproduced by the planner to the
+hash).** On a healthy opening the watch is byte-identical to having it off. But on PTR from `all/M15.json` under the
+shipped table — which reaches M16 at 17058 and M22 at 29204 — switching the watch on reaches **no mark at all** in
+14,000 game-seconds (`hashGame a104beb628873be7`; `reset:e` fires 2412 times against 224; `q` never unlocks). The
+mechanism: **a default that is correctly PATIENT is indistinguishable, to the watch, from one that is STUCK**, so it
+escalates a feature that was doing the right thing. Which feature the arbiter picks, and what the derived escalation
+lists contain, have not been swept. Until they are, do not leave it on unattended.
+
 ⛔ **"Less likely to get stuck" is not a property a strategy has universally, and that is MEASURED.** `always` is the
 arm that never waits on PTR's `q` (M22 at 30958) and the arm that WALLS row 1 on `p` (it resets at 10 points, so
 points never reach the 200 that b and g need); `gain>=2x` is the exact reverse (plan §18.2). So there is no safe
