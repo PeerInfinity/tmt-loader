@@ -152,6 +152,34 @@ nothing on (byte-identical either way). It is visible.
 modes: hiding it with `visibility` leaves the screenshot **byte-identical**, so a probe built on that property
 reports "invisible" about a canvas that is plainly painted. That is a probe trap, not a finding about the fix.
 
+#### ⛔ NOT FIXED HERE: on 5 games `?mobile=1` hides the TREE ITSELF
+
+Found while measuring the above, PRE-EXISTING (identical with `position: absolute`), and **out of U9's scope** —
+it is a different defect on a different set of games, and fixing it means revisiting §2's master-detail rule,
+which is a design call rather than a repair.
+
+§2 hides `.col.left` because *"the engine gives an element `col left` exactly while a layer tab is open, and
+`fullWidth` while it is not"*. Measured over all 171 games at a fresh save with `player.tab === 'none'`:
+**166 give `#treeTab` `fullWidth`, and 5 give it `col left`** — so on those five the rule hides the tree on the
+tree tab.
+
+| game | `.treeNode`s | visible under `?mobile=1` |
+|---|---|---|
+| `the-incrementreeverse` | 6 | **0** |
+| `the-stardust-tree` | 6 | **0** |
+| `distance-incremental` | 5 | **0** |
+| `the-modding-tree` | 5 | **0** |
+| `the-burning-tree` | 3 | **0** |
+
+`the-modding-tree`, measured: plain page `#treeTab` is `col left` / `display: block`, 5 of 5 nodes visible, canvas
+193×844; with `?mobile=1` it is `col left` / `display: none`, **0 of 5 visible**, canvas **0×0** (that engine sizes
+the bitmap from `#treeTab.scrollWidth`, which is 0 for a hidden box — which is how this surfaced at all).
+
+⚠ **No gate could have caught it, and that is the lesson worth keeping**: every geometry check in M1 asks whether
+something ESCAPES the viewport or is too SMALL to tap, and nothing that is not rendered can do either. The U9
+tree-canvas leg abstains on all five (`getImageData: The source width is 0`), which is honest but is not the same
+as noticing. A check for "the tree tab shows its tree" is what would have.
+
 #### Nothing in any engine redraws the tree on a scroll
 
 Censused over all **171** `canvas.js` files at `3346da419`: **0** listen on `scroll`; **3** listen on `wheel`,
