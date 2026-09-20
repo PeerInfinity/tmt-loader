@@ -75,6 +75,22 @@ tmtLoader.autoTable = {
     // beside this entry is byte-identical too. What gates M21 is Time Energy having to re-climb to 1e30 between q
     // resets, so the policy that farms quirks fastest is the one that never gets there (R2 part 2).
     'reset:q': 'gain>=2',
+    // ⛔ R3a — THE CHALLENGE KIND, AND THE EXIT RULE IT NEEDED. `sequential` alone has an ENTRY rule ("the first
+    // unlocked, incomplete challenge") and NO EXIT rule: it leaves a challenge only by WINNING it. From
+    // `snapshots/ptr/all/M22.json` that completes H11 "Upgrade Desert" in 65 game-seconds and then walks straight
+    // into H12 "Speed Demon", which H11 has just unlocked and which the run is far too weak for — and stays.
+    // MEASURED, twice equal, at `934dc41dc` (plan §30, gate R3a-1): 11,878 game-seconds inside H12, points flat at
+    // 1.2e2334 against a goal of 1e3550, quirks FROZEN at 26 total, `reset:q` 13 (none after entry) against the
+    // shipped `off`'s 247. It is the shape of every later challenge in this game, not a PTR accident.
+    // ⚖ The modifier's three parameters: B and H are the two buffers the user asked for by name for `rate-peak`
+    // (plan §18), and R is `gain>=Nx`'s shape on the challenge's own layer with R2's empty-purse floor. The rule
+    // itself reads nothing but what the ENGINE declares about the challenge — docs/automation.md has the whole of it.
+    // MEASURED against its own controls over the same whole stretch (gate R3a-1, every cell twice equal):
+    //   `off` (what shipped)        no mark; 247 `reset:q`; 494 total quirks; not in a challenge
+    //   `sequential` (no exit)      M23 30683 · M24 30736; then 11,878 game-s inside H12; 13 `reset:q`
+    //   **this entry**              M23 30683 · M24 30736; H12 entered, given up, deferred; **532 `reset:q`,
+    //                               1065 total quirks, q upgrades [11,12,13,14]** — the tree farming again
+    'challenges:h': 'sequential|give-up@0.1/30/2x',
   },
   // ⛔ R2's WALL AT M21, BROKEN BY A PAUSE — and the whole finding is that it is a PAUSE and not a latching STOP.
   // `h` needs 1e30 Time Energy to reset and `hasMilestone('q',4)` to be SHOWN (M20). Time Energy is row 2's, and a
@@ -103,6 +119,21 @@ tmtLoader.autoTable = {
   // no pause predicate can make that cheaper, because it is the game's cost and not a scheduling choice.
   gates: {
     'reset:q': "!hasMilestone('q',4) || player.h.unlocked",
+    // ⛔ R3a: WITHOUT THIS GATE THE ENTRY IS 2,560 GAME-SECONDS TOO EARLY, AND IT WOULD MOVE M22. `challenges:h`
+    // unlocks with its LAYER (`player[l].unlocked`), which is M21 at 28058 — so a table that merely named
+    // `sequential` would enter H11 at 28058, and entering a challenge is a FORCED LAYER RESET that wipes row 2.
+    // Every fixture from M21 on would move, for an entry the game itself advises against.
+    // ⚖ The literal is the digest's own (L3.9 / G1: "make sure that you have the 25 quirk milestone and 10
+    // hindrance spirit" before attempting H1) — and it is the digest CORRECTED BY MEASUREMENT. The 25-quirk half is
+    // load-bearing; the 10-hindrance-spirit half is not, and carrying it would block the rung outright: H11 is
+    // completed in 65 game-seconds with ONE hindrance spirit, and `h` does not reset again at this frontier (the
+    // engine itself refuses — "Cannot reset — 5.46e23 of 1.00e30" — for the whole leg, which is why all five
+    // `reset:h` policies measure BYTE-IDENTICAL; plan §30.2 item 1).
+    // ⚠ NO DERIVED FORM WAS FOUND, and the reason is worth carrying: nothing either engine declares says how strong
+    // a run must be before a challenge is worth entering. That is the ADVANCED planner's question — it needs a
+    // rollback — and not a predicate's. What a predicate CAN say is a schedule, and §5d′'s per-completion form
+    // (`challengeCompletions(l, id) < 1 || …`) was measured doing exactly that.
+    'challenges:h': "hasMilestone('q',5)",
   },
   alternatives: {
     'reset:p': ['interval>=10', 'always', 'gain>=1'],
@@ -113,6 +144,7 @@ tmtLoader.autoTable = {
     'reset:s': ['interval>=5', 'gain>=1'],
     'buyables:e': ['buy', 'buy-unless-saving'],
     'reset:q': ['gain>=2x-unit', 'rate-peak@0/0', 'gain>=2x', 'always'],
+    'challenges:h': ['sequential', 'off'],
   },
   // milestone 0 of b / g ("8 Boosters" / "8 Generators": "Keep Prestige Upgrades on reset") gates keepsUpgrades (A1 §11e.8)
   keep: { 'reset:b': { layer: 'b', id: 0 }, 'reset:g': { layer: 'g', id: 0 } },
@@ -151,6 +183,7 @@ tmtLoader.autoTable = {
     'reset:e': "R1′ (SUMMARY gate R1′-2.3): e is row 2's only NORMAL layer, so its gain follows how high points climbed and an interval reset spends that climb every 5 s. `gain>=2x` reaches every remaining mark of the rung (M11 14745 · M12 14909 · M15 16048 · M16 24179); `interval>=5` and `always` reach none of them.",
     'buyables:e': "R1′ (SUMMARY gate R1′-2.2): the reserve is READ from the game, never written here. `reserve>=next-upgrade` ends 47 EP held with 3 Enhancers against `buy`'s 11 EP with 4 — and a literal `reserve>=25` is byte-identical to `buy`, because once e11 is owned the next upgrade costs 400.",
     'reset:q': "R2 (SUMMARY gate R2-S1), scored over a WHOLE STRETCH from `all/M15.json` → M22: the derived `gain>=2x` is `gain >= 0` while q holds nothing, so it unlocked q at 16917 and a row-3 reset wiped row 2 — M16 24179 and then nothing past M19. `gain>=2` reaches M16 at 17058, M20 at 26594 and M22 at 29194; 2 is q milestone 0's own requirement (2 total quirks). \u2014 V4 added its PAUSE (gate V4-m21, every cell twice): without it M21 is never reached and M22 lands at 29204; with it M21 lands at 28058 and M22 at 30618, M16\u2013M20 unmoved to the second. The +1414 game-s at M22 is the 1446 game-s Time Energy needs to reach 1e30 with row 2 intact \u2014 the game's cost, not the rule's.",
+    'challenges:h': "R3a (SUMMARY gate R3a-1), scored over a WHOLE STRETCH from `all/M22.json` → M26, every cell twice equal: bare `sequential` completes H11 in 65 game-s and then sits inside H12 for 11,878 game-s with the currency flat at 1e2334 against a goal of 1e3550 and every quirk frozen — it has an entry rule and no exit rule. With the give-up modifier the same run leaves H12 when it stops closing the distance and defers the next attempt until the layer is twice as strong, and the tree goes back to farming: 532 `reset:q` and 1065 total quirks against the trapped run's 13 and 26. The gate is the digest's own advice (L3.9) minus the half measurement showed to be wrong: the 25-quirk milestone matters, the 10 hindrance spirit does not.",
     'buyables:t': "R1′ (SUMMARY gate R1′-2.4) LIFTED the exclusion this table used to carry. With it: t upgrades [11], Time Energy 6300 at its cap, `t.unlockOrder` 1. Without it: 11 Extra Time Capsules, cap 2.49e9, t upgrades [11,12,13,14,15,23] and `t.unlockOrder` 0 — the t half of M12.",
   },
 };
