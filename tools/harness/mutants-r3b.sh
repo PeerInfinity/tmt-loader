@@ -104,11 +104,12 @@ mutant m6-the-bound-falls-back-to-the-ROWs-pooled-intervals \
   "p='$AUTO';s=open(p).read();o='  function typicalTurn(C, f) { return medianPos(C.mem[f.id]); }';assert o in s;s=s.replace(o,'  function typicalTurn(C, f) { var own = medianPos(C.mem[f.id]); if (own !== null) return own; var pool = []; for (var k in C.mem) pool = pool.concat(C.mem[k]); return medianPos(pool); }');open(p,'w').write(s)" \
   $UNIT
 
-# ⚠ A TYPICAL OF ZERO IS A BOUND. This is the defect the stub found while the slice was being built: a one-reset
-# turn granted and spent inside the same tick is zero game-seconds long, so `K × 0 = 0` releases every turn on the
-# tick it was granted — before its holder's layer has run.
-mutant m7-zero-is-a-bound \
-  "p='$AUTO';s=open(p).read();o='  function medianPos(xs) { if (!xs || !xs.length) return null; var m = median(xs); return m > 0 ? m : null; }';assert o in s;s=s.replace(o,'  function medianPos(xs) { if (!xs || !xs.length) return null; return median(xs); }');open(p,'w').write(s)" \
+# ⚠ A ZERO INTERVAL IS REMEMBERED, so `K × 0 = 0` releases every turn on the tick it was granted — before its
+# holder's layer has run. Two resets land inside one game-second whenever `diff` is 0, which is a real leg.
+# ⚠ The first cut guarded this TWICE (here and on the median) and the mutant round found the second one
+# redundant: a guard no leg can redden is not a guard. There is one place now.
+mutant m7-a-zero-interval-is-remembered \
+  "p='$AUTO';s=open(p).read();o='    if (!(dt > 0)) return;';assert o in s;s=s.replace(o,'    if (dt < 0) return;');open(p,'w').write(s)" \
   $UNIT
 
 # ⛔ A RELEASED MEMBER IS NOT SKIPPED. A demand that can never be met then hands the turn straight back on the very

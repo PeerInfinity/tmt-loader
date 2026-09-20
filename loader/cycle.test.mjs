@@ -369,3 +369,39 @@ test('… and it WAKES UP the moment a second member of the row becomes active',
   assert.ok(ctx.tmtLoader.hookStats().actions['reset:b'] > 0, 'the second member should be acting once the cycle is live');
   assert.ok(ctx.tmtLoader.hookStats().actions['reset:a'] >= alone);
 });
+
+// ---- the two the mutant round found no row for ------------------------------------------------------------------
+// ⛔ A SURVIVING MUTANT IS A GATE THAT CANNOT SEE THE DEFECT IT WAS WRITTEN FOR, and the answer is a ROW, not a
+// note (plan §18.8, §30.7). Both of these were real defects earlier in this slice; when the mechanism moved onto
+// reset INTERVALS the rows that used to see them stopped being able to.
+
+test('a ZERO interval is not a bound — two resets inside one game-second must not release every turn', () => {
+  // `diff = 0` makes `player.timePlayed` stand still, so two resets in consecutive ticks are ZERO game-seconds
+  // apart. That is a real measurement, and `K × 0` would release every turn on the tick it was granted.
+  const ctx = boot({ 'reset:a': `always|turn@3/2x/5`, 'reset:b': `always|turn@3/2x/5` });
+  tick(ctx, 12, 0);
+  assert.ok((acts(ctx)['reset:a'] || 0) > 1, `the member must have reset repeatedly, or this row proves nothing: ${JSON.stringify(acts(ctx))}`);
+  const C = cyc(ctx);
+  assert.equal(C.typical['reset:a'], null, `a zero interval must not become a bound: ${JSON.stringify(C.typical)}`);
+  assert.equal(C.turns['reset:a'], 0, 'a zero interval must not be remembered at all');
+  // and the turns are still being SPENT rather than released on the tick they were granted
+  assert.ok((acts(ctx)['reset:b'] || 0) > 1, JSON.stringify(acts(ctx)));
+  // MUTANT m7 `a-zero-interval-is-remembered`: the typical becomes 0 and every turn is released the instant it is
+  // granted, so the weights stop meaning anything.
+});
+
+test('a member DEMAND moved the turn away from is not punished for it', () => {
+  // `reset:c` (row 2, not a member) waits for milestone 0 of layer `a`, which is never granted — so `a` is
+  // demanded on every tick and `b` is preempted over and over. A preemption is not a guard release: `b` must not
+  // collect a skip, or every member ends up skipped and the rotation stops (measured: it did).
+  const ctx = boot({ 'reset:a': `always|turn-demand@1/3x/5`, 'reset:b': `always|turn-demand@1/3x/5`, 'reset:c': 'keepsUpgrades' },
+    fresh(), { keep: { 'reset:c': { layer: 'a', id: 0 } } });
+  tick(ctx, 40);
+  const C = cyc(ctx);
+  assert.equal(rowOf(ctx, 'reset:c').last.values.layer, 'a', 'the demand signal must actually be standing');
+  assert.equal(C.demand, true);
+  assert.ok(C.round > 4, `the rotation must keep moving under a standing demand: round ${C.round}`);
+  assert.deepEqual(Object.keys(C.skip).sort().join(','), '', `a preempted member collected a skip: ${JSON.stringify(C.skip)}`);
+  assert.ok(acts(ctx)['reset:b'] > 0, 'the preempted member must still get turns');
+  // MUTANT m9 `preemption-skips-the-preempted`: `skip` fills up and the rotation stalls.
+});

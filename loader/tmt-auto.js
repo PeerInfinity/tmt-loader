@@ -1200,13 +1200,12 @@
     var C = cycles[String(rowOf(f))];
     return C && !C.dormant && C.ids && C.ids.indexOf(f.id) >= 0 ? C : null;
   }
-  // ⛔ A TYPICAL OF ZERO IS NOT A BOUND, and the stub found it before any game did. A turn of weight one that is
-  // granted and spent inside the SAME tick is zero game-seconds long — a real length, honestly recorded — and
-  // `K × 0` would release every turn on the tick it was granted, before its holder's layer had even run. So a
-  // non-positive median is "nothing to be late against": the member's own turns first, the ROW's pooled turns next
-  // (which is what carries a member through its FIRST turn), and null when neither says anything, at which point
-  // the engine's own answer takes over (see `cycleTick`).
-  function medianPos(xs) { if (!xs || !xs.length) return null; var m = median(xs); return m > 0 ? m : null; }
+  // ⛔ A ZERO INTERVAL IS NOT A BOUND, and there is exactly ONE place that says so — `pushCycleInterval`'s
+  // `dt > 0`. Two resets that land inside one game-second (a run at `diff` 0, or a fork whose loop can reset twice
+  // in a tick) are zero game-seconds apart, and `K × 0` would release every turn on the tick it was granted,
+  // before its holder's layer had even run. ⚠ The first cut ALSO checked the median here, and the mutant round
+  // found that redundant: a second guard on the same fact is a guard no leg can redden.
+  function medianPos(xs) { return xs && xs.length ? median(xs) : null; }
   // ⛔ OWN INTERVALS ONLY — NO POOLED FALLBACK, AND THE SWEEP IS WHAT SAYS SO. A member's bound has to be in ITS
   // own units: PTR's `h` needs ~1,450 quiet game-seconds for Time Energy to reach 1e30, and `q`'s intervals are
   // tens of seconds, so a pooled median hands `h` a bound two orders of magnitude too small and releases its turn
