@@ -173,3 +173,20 @@ mutant m15-demand-is-any-layer-shaped-value \
 echo
 echo "⛔ READ EVERY LINE ABOVE. A mutant that comes back GREEN is a gate that cannot see the defect it was written"
 echo "   for, and the answer is a NEW ROW — not a note. R3a's round had two survivors on its first pass."
+
+# ---- §34: the two defects the planner's ORACLE found, as mutants -----------------------------------------------
+# ⛔ BOTH ARE THE BUILD THAT SHIPPED FOR AN AFTERNOON, and neither is visible to any stub leg — they need a REAL
+# game over a WHOLE stretch, which is why `gates-r3b --part 7` exists. Each is checked against the ratio row.
+#
+# A HOLDER WHOSE OWN POLICY REFUSES YIELDS THE TURN. On PTR's `q` (`gain>=2`), Generator Power climbs back to where
+# the ENGINE allows a reset while the gain is still one quirk — so a twenty-reset turn ends after ONE, every weight
+# becomes the same run, and `reset:h=always` runs unscheduled. Measured: q 5 / h 37 against the oracle's 286 / 15.
+mutant m16-yield-when-the-policy-refuses \
+  "p='$AUTO';s=open(p).read();o='    if (!stallMod(P)) return d;';assert o in s;s=s.replace(o,'    if (turn) { var YC = cycleOf(f); if (YC && YC.holder === f.id) { endTurn(YC, f.id, %spreempted%s); } }\n    if (!stallMod(P)) return d;'.replace('%s',chr(39)));open(p,'w').write(s)" \
+  $UNIT
+
+# THE GUARD MEASURES FROM THE TURN'S START RATHER THAN THE HOLDER'S LAST ACT. A turn of weight W spans W resets, so
+# the whole turn is compared against the usual wait for ONE — every weight above 1 is released mid-turn.
+mutant m17-guard-clock-from-the-turn-start \
+  "p='$AUTO';s=open(p).read();o='        var sinceAct = C.acted === null || C.acted === undefined ? C.since : C.acted;';assert o in s;s=s.replace(o,'        var sinceAct = C.since;');open(p,'w').write(s)" \
+  $UNIT

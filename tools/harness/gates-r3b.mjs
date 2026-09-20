@@ -4,6 +4,8 @@
 //   node tools/harness/gates-r3b.mjs --part 3     H12 "Speed Demon" — the ENTRY-STATE question, read off the source first
 //   node tools/harness/gates-r3b.mjs --part 4     the rung M25 / M26 and its fixtures
 //   node tools/harness/gates-r3b.mjs --part 5     INERTNESS: the opening, M15 → M24, and the key sets
+//   node tools/harness/gates-r3b.mjs --part 7     THE RATIO: over the WHOLE STRETCH, does a weight of W actually
+//                                                 buy W resets per round? (§34 — stub legs cannot see this)
 //   node tools/harness/gates-r3b.mjs --part 6     the PAGE: the cycle's parameters through V2's editors, ptr AND something
 //
 // ⛔ THE WALL THIS BATTERY IS BUILT AROUND, and it is the third appearance of ONE shape (plan §24.7, §30.2 item 1,
@@ -41,7 +43,7 @@ const row = (r) => { rows.push(r); console.log(`${r.ok ? 'GREEN' : 'RED  '} ${r.
 // ⛔ THE FLOOR EACH PART MUST REACH (`--assert`, CI): a battery that dies part-way prints fewer rows, and fewer rows
 // is fewer reds. ⚠ RE-MEASURED AGAINST WHAT EACH PART ACTUALLY EMITS rather than against what its author expected —
 // CI has caught exactly this on five slices running (plan §30.3).
-const ROWS = { 1: 9, 2: 10, 3: 6, 4: 4, 5: 5, 6: 2 };
+const ROWS = { 1: 9, 2: 10, 3: 6, 4: 4, 5: 5, 6: 2, 7: 3 };
 
 const READING = [
   'Every cell is ONE run.mjs process, run TWICE unless the row says otherwise; a cell whose two runs disagree on the',
@@ -406,7 +408,38 @@ async function part6() {
   } finally { await browser.close(); srv.stop(); }
 }
 
-const PARTS = { 1: part1, 2: part2, 3: part3, 4: part4, 5: part5, 6: part6 };
+// ---- Part 7: THE RATIO, over the WHOLE STRETCH ----------------------------------------------------------------------
+// ⛔ THE ROW THE SLICE DID NOT HAVE, AND THE DEFECT IT WOULD HAVE CAUGHT. §33/§34: the built cycle failed to
+// reproduce a configuration that demonstrably works, and the signature was that `turn@5` and `turn@20` measured
+// BYTE-IDENTICAL — the weight was not honoured at all. Every leg of part 2 is on the stub, where a member is
+// granted a turn and spends it inside a tick or two; NONE of them can see a weight that collapses only when a
+// member's own rule says "not yet" and its waits are long. The question has to be asked of a REAL game over a
+// WHOLE stretch, and it has to be asked as a RATIO rather than as a hash.
+//
+// ⚠ `exclude=reset:o,reset:ss` is part of the cell, not a convenience: PTR's row 3 has FOUR active members from
+// M21 and two of them can never reset there, so a run without the exclusion measures the dead-member freeze
+// instead of the ratio (§33 row (f)). The freeze is a REAL and separate defect — plan §32.4a names its candidate.
+async function part7() {
+  const cells = [
+    cell(`exclude=reset:o,reset:ss;policy:reset:q=gain>=2|turn@5/${String(a.k7 || '100000')}x/5;policy:reset:h=always|turn@1/${String(a.k7 || '100000')}x/5`, 'W = 5'),
+    cell(`exclude=reset:o,reset:ss;policy:reset:q=gain>=2|turn@20/${String(a.k7 || '100000')}x/5;policy:reset:h=always|turn@1/${String(a.k7 || '100000')}x/5`, 'W = 20 — the ORACLE’s own configuration (plan §33 row (b)); a build that reproduces it lands on `d2da5ef3a490f92a`'),
+  ];
+  const lines = await sweep({ gate: 'R3b-7 the RATIO over the whole stretch —', leg: 'L15', cells, repeat: Number(a.repeat7 || 1) });
+  const ratios = lines.map((l) => {
+    const A = l.actions || {};
+    return { q: A['reset:q'] || 0, h: A['reset:h'] || 0, r: (A['reset:h'] || 0) ? (A['reset:q'] || 0) / A['reset:h'] : 0, hash: l.hashGame };
+  });
+  // ⛔ THE CLAIM IS A RATIO AND A SEPARATION, not a hash: `W` resets of the weighted member per reset of the
+  // weight-1 member, within a factor of two, AND the two weights must not land on the same run.
+  const ok5 = ratios[0].r >= 2.5 && ratios[0].r <= 10;
+  const ok20 = ratios[1].r >= 10 && ratios[1].r <= 40;
+  const distinct = ratios[0].hash !== ratios[1].hash;
+  row({ gate: 'R3b-7 VERDICT: a weight of W buys about W resets per round, and two weights are two runs', id: 'ptr',
+    leg: 'L15, diff 1, profile all', ok: ok5 && ok20 && distinct, ticks: null, gameSeconds: null, diff: 1, hash: null,
+    notes: `W=5 → ${ratios[0].q}/${ratios[0].h} = ${ratios[0].r.toFixed(1)} (want 2.5–10); W=20 → ${ratios[1].q}/${ratios[1].h} = ${ratios[1].r.toFixed(1)} (want 10–40); distinct runs: ${distinct} (${ratios[0].hash} vs ${ratios[1].hash}). ⛔ BEFORE §34's fix BOTH cells were 5/37 and byte-identical — which is what a weight that is never honoured looks like, and what no stub leg could see` });
+}
+
+const PARTS = { 1: part1, 2: part2, 3: part3, 4: part4, 5: part5, 6: part6, 7: part7 };
 if (!PARTS[PART]) { console.error(`unknown --part ${PART} (1..6)`); process.exit(2); }
 await PARTS[PART]();
 
