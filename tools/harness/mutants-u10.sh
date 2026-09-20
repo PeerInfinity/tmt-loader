@@ -137,6 +137,9 @@ mutant m7-title-without-the-count \
 # (8) THE ZERO HIDDEN — the plausible \"tidier\" build. ⚠ A buyable at zero still HAS a chip (the engines define
 #     `getBuyableAmount` for it), so a chip that silently drops its count there is saying something different
 #     about it than about its neighbours.
+#     ⚠ IT REDDENS TWO LEGS, and that is not sloppiness in the mutant: `reader`'s construction ends with the
+#     accessor at exactly 0, which is the value this mutation hides, so the witness necessarily sees it too. The
+#     expectation names both rather than the round being called a failure for a mutation that discriminates.
 mutant m8-zero-count-hidden \
   "p='loader/layerlist.js';s=open(p).read();o='    var s = t === null ? \'\' : t;';assert o in s;s=s.replace(o,'    var s = (t === null || t === \'0\') ? \'\' : t;');open(p,'w').write(s)" \
-  ptr=counts the-modding-tree=
+  ptr=counts,reader the-modding-tree=

@@ -288,19 +288,26 @@ const DIGITS_PROBE = `(${function () {
   const ns = [].slice.call(panel.querySelectorAll('.tmt-layerlist-chip-n'));
   const wasN = ns.map((e) => e.textContent);
   const reserved = ns.length ? Math.max.apply(null, ns.map((e) => parseInt(e.style.minWidth, 10) || 0)) : 0;
+  // ⛔ THE PROBE'S OWN FLOOR, AND WITHOUT IT THIS LEG IS VACUOUS. Reading the number of columns off the build
+  // means a build that reserves NOTHING is asked to hold still over zero columns and passes — measured: the
+  // `min-width` removed, `reserved` 0, and the mutant came back GREEN. `COUNT_COLS_MIN` is the widest buyable
+  // count the ROSTER renders (2 characters, over all 171 at `934dc41dc`), so the box must hold still over at
+  // least that many WHATEVER the build reserved, and over more where it reserved more.
+  const COUNT_COLS_MIN = 2;
+  const cols = Math.max(reserved, COUNT_COLS_MIN);
   const within = [], over = [];
   if (ns.length) {
     const fill = (k) => { const t = new Array(k + 1).join('7'); ns.forEach((e) => { e.textContent = t; }); };
     fill(1);
     const nBase = shot();
-    for (let k = 1; k <= reserved; k++) { fill(k); cmp(nBase, shot(), ['card', 'chip', 'act'], `at ${k} digit(s)`, within); }
-    fill(reserved + 1);
-    cmp(nBase, shot(), ['card', 'chip', 'act'], `at ${reserved + 1} digit(s)`, over);
+    for (let k = 1; k <= cols; k++) { fill(k); cmp(nBase, shot(), ['card', 'chip', 'act'], `at ${k} digit(s)`, within); }
+    fill(cols + 1);
+    cmp(nBase, shot(), ['card', 'chip', 'act'], `at ${cols + 1} digit(s)`, over);
     // …and the two halves of U2d's reservation rule, on this box too: a SHORTER value gives no width back, and
     // the same length in different glyphs does not move it either
-    fill(reserved);
+    fill(cols);
     const gBase = shot();
-    ns.forEach((e) => { e.textContent = new Array(reserved + 1).join('1'); });
+    ns.forEach((e) => { e.textContent = new Array(cols + 1).join('1'); });
     cmp(gBase, shot(), ['card', 'chip', 'act'], '(glyphs)', within);
     fill(1);
     cmp(gBase, shot(), ['card', 'chip', 'act'], '(shorter)', within);
@@ -310,7 +317,7 @@ const DIGITS_PROBE = `(${function () {
     && ns.every((e, i) => e.textContent === wasN[i]);
   return { cards: cards.length, amounts: amounts.length, counters: ctrs.length, magnitudes: STRINGS.length,
     moved: moved.length, sample: moved.slice(0, 4), counterMoved: counterMoved.length, counterSample: counterMoved.slice(0, 4),
-    countBoxes: ns.length, countReserved: reserved, countMoved: within.length, countSample: within.slice(0, 4),
+    countBoxes: ns.length, countReserved: reserved, countCols: cols, countMoved: within.length, countSample: within.slice(0, 4),
     countOver: over.length, countOverSample: over.slice(0, 2), restored };
 }})()`;
 
@@ -1826,7 +1833,7 @@ async function treeButtonLeg(page) {
   // the literal `'none'` shows NO button as active on the five games while the player is looking at their tree.
   rec.activeOk = rec.pressed.active.length === 1 && rec.pressed.active[0] === 'tree';
   rec.verdict = rec.treeTab === null ? 'THE BAR DOES NOT SAY WHICH TAB IS THE TREE (navbarUI.treeTab is gone)'
-    : !rec.shows ? `PRESSING TREE DID NOT PUT THE ENGINE ON ITS TREE (player.tab ${JSON.stringify(rec.pressed.tab)} != ${JSON.stringify(rec.treeTab)}, #treeTab "${rec.pressed.treeClass}" shown=${rec.pressed.treeShown})`
+    : !rec.shows ? `PRESSING TREE DID NOT PUT THE ENGINE ON ITS TREE (${rec.pressed.tab !== rec.treeTab ? `player.tab ${JSON.stringify(rec.pressed.tab)} is not this engine's tree ${JSON.stringify(rec.treeTab)}` : `player.tab is ${JSON.stringify(rec.treeTab)} but #treeTab is not displayed`}; #treeTab "${rec.pressed.treeClass}" shown=${rec.pressed.treeShown})`
     : rec.nodes === false ? `PRESSING TREE LEFT NO TREE NODE ON SCREEN (${rec.pressed.visible} of ${rec.pressed.nodes}, #treeTab "${rec.pressed.treeClass}")`
     : rec.detail === false ? `A LAYER TAB DID NOT TAKE THE SCREEN (${rec.onTab.visible} tree node(s) still visible on tab ${JSON.stringify(rec.onTab.tab)})`
     : rec.backOk === false ? `TREE DID NOT COME BACK FROM AN OPEN TAB (player.tab ${JSON.stringify(rec.back.tab)}, ${rec.back.visible} node(s))`
