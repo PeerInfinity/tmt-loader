@@ -260,22 +260,67 @@ async function part5() {
 // is a fact about DATA, and the CLAIM is that V2's generic editors RENDER their parameters with no new component.
 // Only the DOM can say that, and only on an ARMED feature (a locked block renders no editors).
 async function part6() {
-  const script = path.join(REPO, 'tools/harness/page.mjs');
-  for (const id of ['ptr', 'something']) {
-    const fid = id === 'ptr' ? 'reset:q' : 'reset:primitive';
-    const pol = id === 'ptr' ? `gain>=2|turn@20/${GUARD}` : `gain>=2x|turn-demand@3/${GUARD}`;
-    const r = await new Promise((res) => {
-      const p = spawn(process.execPath, [script, '--gate', 'r3b-cycle', '--id', id, '--fid', fid, '--policy', pol], { cwd: REPO, encoding: 'utf8' });
-      let out = '';
-      p.stdout.on('data', (d) => { out += d; process.stdout.write(d); });
-      p.stderr.on('data', (d) => { out += d; });
-      p.on('close', (code) => res({ code, out }));
-    });
-    const m = /GATERESULT (\{.*\})/.exec(r.out);
-    const j = m ? JSON.parse(m[1]) : null;
-    row({ gate: `R3b-6 the cycle's parameters through V2's editors, in the DOM`, id, leg: 'the page, ?automation=1', ok: !!j && j.ok, ticks: null, gameSeconds: null, diff: 1, hash: null,
-      notes: j ? `policy \`${pol}\`; modifier buttons ${JSON.stringify(j.modButtons)}; the cycle's three parameter editors rendered: ${JSON.stringify(j.modFields)}; the readout line "${j.turnLine}"; componentNames ${j.components} (⛔ UNCHANGED: no new tmtl-* family); console errors ${(j.errors || []).length}${(j.errors || []).length ? ': ' + j.errors.slice(0, 2).join(' | ') : ''}` : `NO GATERESULT (exit ${r.code})` });
-  }
+  const { chromium } = await import('playwright');
+  const { startServer } = await import('./lib.mjs');
+  const srv = await startServer(REPO);
+  const browser = await chromium.launch();
+  try {
+    for (const id of ['ptr', 'something']) {
+      const page = await browser.newPage({ viewport: { width: 1600, height: 1000 } });
+      const errs = [];
+      page.on('console', (m) => { if (m.type() === 'error') errs.push(m.text()); });
+      page.on('pageerror', (e) => errs.push(String(e)));
+      // ⚠ THE LOADER'S PAGE IS THE REPO ROOT — a game's own index.html boots the PLAIN page with no loader at all.
+      await page.goto(new URL(`index.html?mod=${encodeURIComponent(id)}&automation=1`, srv.url).href, { waitUntil: 'load' });
+      await page.waitForFunction(() => window.tmtLoader && (window.tmtLoader.ready || window.tmtLoader.error), null, { timeout: 60000 });
+      const kind = id === 'ptr' ? 'turn' : 'turn-demand';
+      const seen = await page.evaluate(async (k) => {
+        const T = window.tmtLoader;
+        const out = { mods: [], components: (T.componentNames || []).length, target: null, modFields: [], buttons: [], ctlFields: 0, turnLine: null, state: null, error: null };
+        try {
+          out.mods = T.modifiers('reset').map((m) => m.id);
+          const f = T.features.filter((x) => x.kind === 'reset')[0];
+          if (!f) return out;
+          out.target = f.id;
+          // ⚠ `setFeatureEnabled` is a RUNTIME override and leaves a locked block LOCKED (R3a §30.2a). What makes
+          // one editable is ARMING it — the SAVE — which is exactly what the Simple tab's press does.
+          T.armLocked(true);
+          if (!player[T.auLayer].features) player[T.auLayer].features = {};
+          player[T.auLayer].features[f.id] = true;
+          T.setSavedPolicy(f.id, `always|${k}@7/4x/6`);
+          showTab('au');
+          updateTemp();
+          player.subtabs[T.auLayer].mainTabs = 'Advanced';
+          updateTemp();
+          T.invalidateView();
+          await new Promise((r) => setTimeout(r, 500));
+          const q = `[data-fid="${f.id}"]`;
+          out.state = (T.explain().find((r) => r.id === f.id) || {}).state;
+          out.buttons = Array.from(document.querySelectorAll(`button.tmtl-mod${q}`)).map((n) => ({ mod: n.getAttribute('data-mod'), on: n.getAttribute('data-on'), text: (n.textContent || '').trim() }));
+          out.modFields = Array.from(document.querySelectorAll(`input.tmtl-input${q}`)).map((n) => n.getAttribute('data-param')).filter((x) => x && x.indexOf('modifier:') === 0);
+          out.ctlFields = document.querySelectorAll(`.tmtl-ctl-row${q}`).length;
+          const spans = Array.from(document.querySelectorAll(`div${q} span, ${q} ~ * span`)).map((n) => (n.textContent || '').trim());
+          out.turnLine = spans.find((t) => /turn|only one reset of this row/i.test(t)) || null;
+        } catch (e) { out.error = String((e && e.message) || e).slice(0, 200); }
+        return out;
+      }, kind);
+      // ⛔ THE TABLE IS NOT THE EVIDENCE: what this row claims is that V2's GENERIC editors render the cycle's three
+      // parameters, that each modifier ROW gets its own button (⚠ before this slice ONE button could only ever
+      // reach `mods[0]`, so the row cycle would have been unreachable from the tab on the one kind that has it),
+      // and that no new component family appeared.
+      const wantFields = ['modifier:k', 'modifier:n', 'modifier:w'];
+      const fieldsOk = JSON.stringify(seen.modFields.slice().sort()) === JSON.stringify(wantFields);
+      const btnOk = seen.buttons.length === seen.mods.length
+        && seen.buttons.some((b) => b.mod === `${kind}@W/Kx/N` && b.on === '1' && /remove/.test(b.text))
+        && seen.buttons.some((b) => b.mod === 'stall>=Kx/N' && b.on === '0' && /add/.test(b.text));
+      const ok = !errs.length && !seen.error && seen.components === 7 && fieldsOk && btnOk
+        && seen.mods.includes('turn@W/Kx/N') && seen.mods.includes('turn-demand@W/Kx/N');
+      row({ gate: `R3b-6 the page on ${id}: the CYCLE through V2’s GENERIC editors`, id, leg: 'index.html?mod=<id>&automation=1, Advanced, the feature armed', ok,
+        ticks: null, gameSeconds: null, diff: null, hash: null,
+        notes: `policy \`always|${kind}@7/4x/6\`; target ${seen.target} (state ${seen.state}); reset modifiers ${JSON.stringify(seen.mods)}; ONE BUTTON PER ROW: ${JSON.stringify(seen.buttons)}; the cycle's three parameter editors rendered: ${JSON.stringify(seen.modFields)}; the readout line "${seen.turnLine}"; V4 control rows still ${seen.ctlFields}; componentNames ${seen.components} (⛔ UNCHANGED: no new tmtl-* family); console errors ${errs.length}${seen.error ? '; EVAL ERROR ' + seen.error : ''}${errs.length ? ': ' + errs.slice(0, 2).join(' | ') : ''}` });
+      await page.close();
+    }
+  } finally { await browser.close(); srv.stop(); }
 }
 
 const PARTS = { 1: part1, 2: part2, 3: part3, 4: part4, 5: part5, 6: part6 };

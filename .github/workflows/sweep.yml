@@ -832,6 +832,131 @@ jobs:
           if-no-files-found: warn
           retention-days: 14
 
+  # R3b — the ROW CYCLE: turn-taking between same-row resets, demand-driven (plan §31a/§31b/§32).
+  #
+  # ⚖ WHAT IS IN CI AND WHAT IS NOT, by V2's, V3's, V4's and R3a's rule:
+  #   · part 2 is the one whose CLAIM later slices lean on — the four requirements the planner's nine VOID cells
+  #     taught (bind every member; eager in turn; release the turn; the memory is the LOADER's), each run on BOTH
+  #     ENGINE FAMILIES. ⛔ That last word is the whole point: six of those void cells read
+  #     `player.<layer>.resetTime`, which exists only on the 2.7-style engine, so a leg green on `something` alone
+  #     proves nothing about ptr and vice versa. It runs here.
+  #   · part 5 is INERTNESS: the fresh opening, M15 → M24 and Something Tree, unchanged. A slice that adds two
+  #     modifiers to a kind must not move a run that never names them — the kind of claim CI has caught five
+  #     slices running. It runs here.
+  #   · part 6 is the PAGE: V2's generic editors render the cycle's three parameters, and each modifier ROW gets
+  #     its own button (before this slice ONE button could only reach `mods[0]`). It runs here.
+  #   · ⛔ parts 1 and 3 do NOT: they are MEASUREMENT TABLES of 21,000-tick legs, four to seven cells, every cell
+  #     twice — well over half an hour each. They are run by hand and quoted in the as-built with their head.
+  #   · ⛔ part 4 WRITES fixtures. By hand, for that reason.
+  #
+  # ⛔ `--assert` on every part: exiting 1 on a red row does NOT catch a battery that stopped part-way.
+  # ---------------------------------------------------------------------------------------------------------------
+  r3b-node:
+    name: R3b row cycle — headless (parts 2, 5)
+    needs: fast
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      # ⚠ `npm ci` but NO `playwright install`: these parts import the package and never launch a browser.
+      - run: npm ci
+
+      - name: "Part 2 — R1–R4, the four requirements, on BOTH engine families"
+        shell: bash  # bash -eo pipefail: without it `| tee` reports the pipe's status and a refusal is lost
+        run: |
+          set -o pipefail
+          node tools/harness/gates-r3b.mjs --part 2 --no-summary --assert --pool 2 | tee r3b-2.txt
+
+      - name: "Part 5 — inertness: the opening, M15 → M24, and Something Tree"
+        shell: bash
+        run: |
+          set -o pipefail
+          node tools/harness/gates-r3b.mjs --part 5 --no-summary --assert --pool 2 | tee r3b-5.txt
+
+      - name: Summary
+        if: always()
+        shell: bash
+        run: |
+          {
+            echo '## R3b row cycle — headless'
+            echo ''
+            echo '```'
+            cat r3b-2.txt r3b-5.txt 2>/dev/null | grep -E 'VERDICT|REFUSED|^RED|green$' || echo 'no output'
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload the rows
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: r3b-node
+          path: tools/harness/results/tmp/gates-r3b-part*-last.json
+          if-no-files-found: warn
+          retention-days: 14
+
+  r3b-page:
+    name: R3b row cycle — in the page (part 6)
+    needs: fast
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - run: npm ci
+
+      - name: Cache the Playwright browser
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+
+      - run: npx playwright install --with-deps chromium
+
+      # ⚠ The claim is that two more modifiers needed no new component: `componentNames` must not move, the cycle's
+      # three parameter editors must be in the DOM, and there must be ONE BUTTON PER MODIFIER ROW — the single
+      # button this replaced could only ever reach `mods[0]`, so the cycle was unreachable from the tab.
+      - name: "Part 6 — the cycle through V2's generic editors, on ptr AND something"
+        shell: bash
+        run: |
+          set -o pipefail
+          node tools/harness/gates-r3b.mjs --part 6 --no-summary --assert | tee r3b-6.txt
+
+      - name: Summary
+        if: always()
+        shell: bash
+        run: |
+          {
+            echo '## R3b row cycle — in the page'
+            echo ''
+            echo '```'
+            cat r3b-6.txt 2>/dev/null | grep -E 'VERDICT|REFUSED|^RED|green$' || echo 'no output'
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload the rows
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: r3b-page
+          path: tools/harness/results/tmp/gates-r3b-part*-last.json
+          if-no-files-found: warn
+          retention-days: 14
+
   # ---------------------------------------------------------------------------------------------------------------
   # V4 — the per-feature CONTROLS (`while`, `until`, `priority`) and the M21 pause (plan §27).
   #

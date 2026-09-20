@@ -404,6 +404,13 @@ The vocabulary is **data** — one enumerated table in `loader/tmt-auto.js`, rea
 `quantities`, the subset of those that goes through the GAME's own `format()`. (An id is not a quantity: running
 every value through `format()` printed *"the cheapest upgrade is 21.00 at 20.00"*.) **No value is free text.**
 
+⚖ **(R3b) A row may also declare `demand`** — which ONE of its `values` names the layer this decision is waiting
+ON. It is not a second vocabulary and not a second reading of the decision; it is one more declaration on a row that
+already carries the values it compared, and it is what lets the ROW CYCLE hand the turn to "whoever is waited on"
+with no layer name and no game anywhere in the loader. Three rows declare one today (`blocked:after` → `sibling`,
+`waiting:retry` → `layer`, `waiting:milestone` → `layer`), `reasonCodes()` publishes it, and a new code that
+declares one is a new demand signal with no change to the cycle at all.
+
 | code | when |
 |---|---|
 | `locked` | the feature's own `unlocked()` is false and it is not armed |
@@ -428,6 +435,7 @@ every value through `format()` printed *"the cheapest upgrade is 21.00 at 20.00"
 | `waiting:interval` | seconds elapsed of the interval |
 | `waiting:milestone` | `keepsUpgrades`' milestone, or the milestone that would grant a toggle |
 | `waiting:purchase` | `unlocks-purchase`: the points after the reset still afford nothing |
+| `waiting:turn` | (R3b) the ROW CYCLE: the engine would allow this reset and it is another member's turn. It names whose turn it is, how much of that turn is left and what this member's own turn is worth. ⚠ Reported ONLY where the engine says yes — a member that could not reset anyway keeps `cannot-reset` |
 | `waiting:when` | no clickable of the layer is unlocked, clickable and `when`-true |
 | `holding:reserve` | a `reserve>=…` holds the purchase, with what is held and the reserve |
 | `holding:saving` | `buy-unless-saving`, with the upgrade it is saving for and its cost |
@@ -451,10 +459,17 @@ plus one per feature the table excluded:
 ```js
 { id, title, layer, kind,
   state: 'on' | 'off' | 'armed' | 'locked' | 'excluded',
-  policy: { inForce, table, derived, alternatives: [] },
+  policy: { inForce, table, derived, alternatives: [], saved, runtime, base, escalated, strategy, params, modifier },
   last: { code, text, values, tick, at } | null,
+  stall, turn, escalation, control,
   acted, lastActedAt, neverFired, eligibleFor, gate, after, provenance }
 ```
+
+⚠ `stall`, `turn`, `escalation` and `control` are the per-modifier / per-mechanism READOUTS, and each is `null`
+unless that mechanism is in force for this feature — `stall` for `stall>=Kx/N`, `turn` for the ROW CYCLE,
+`escalation` for the stall watch, `control` for `while` / `until` / `priority`. A readout belongs to its own table
+ROW: before R3a, `stallState` answered for ANY feature carrying ANY modifier and told a `challenges` feature that
+there had been *"no reset by this feature's own rule yet"*.
 
 `run.mjs --explain` dumps it at the stop (`R.explain`). Every reason in the tab is therefore testable in Node with no
 browser, and "what the page renders equals what the API returns" is a comparison rather than two implementations
@@ -851,12 +866,21 @@ something, `gates-v2 --part 1`): the strategies are generic, so no game can have
 
 ### MODIFIERS: a strategy that rides on another one
 
-A policy may carry **one modifier**, appended with `|`: `gain>=2x|stall>=3x/5`, `sequential|give-up@0.1/30/2x`. The
-primary strategy still decides; the modifier only speaks when the primary has refused. There are two today —
-`stall>=Kx/N` on `reset` and `give-up@B/H/Rx` on `challenges`, both below — and the grammar, the validator and the
-editors took the second from one more table row and no code at all (⚖ minimize hardcoding: `T.modifiers(kind)` is
-what the Advanced view renders, so a modifier on a new kind needs no new `tmtl-*` component and `componentNames`
-does not move).
+A policy may carry **one modifier**, appended with `|`: `gain>=2x|stall>=3x/5`, `sequential|give-up@0.1/30/2x`,
+`gain>=2|turn@20/3x/5`. There are **four** today — `stall>=Kx/N`, `turn@W/Kx/N` and `turn-demand@W/Kx/N` on `reset`,
+and `give-up@B/H/Rx` on `challenges`, all below — and the grammar, the validator and the editors took every one of
+them from one more table row and no code at all (⚖ minimize hardcoding: `T.modifiers(kind)` is what the Advanced
+view renders, so a modifier on a new kind needs no new `tmtl-*` component and `componentNames` does not move).
+
+⚠ **The modifiers do not all compose the same way, and the row says which is which.** `stall>=Kx/N` and
+`give-up@B/H/Rx` ride on a REFUSAL: the primary still decides, and the modifier only speaks once the primary has
+said no. The two cycle modifiers do the opposite — they take the decision AWAY from the primary while their row's
+cycle is live. A modifier's `readout` names the block that describes it (`stall`, `turn`), which is how
+`T.stallState()` and `T.turnState()` stay honest about a feature carrying the other one.
+
+⛔ **ONE modifier per policy**, because `|` cuts a policy string once. So a cycle member cannot also carry the
+stall fallback — and it should not want to: the turn IS the patience, and the stall fallback is a second arbiter
+for the same refusal.
 
 | Kind | Policy | What it does each tick |
 |---|---|---|
@@ -869,6 +893,8 @@ does not move).
 | | `unlocks-purchase` | … only when `player[l].points + tmp[l].resetGain` affords the cheapest unowned, unlocked upgrade of `l`, or the next level of one of its unlocked buyables — both only where costed in the layer's own points (no `currencyInternalName` / `currencyLocation` / `currencyLayer`); else wait |
 | | **`rate-peak@B/H`** | the currency-per-second optimum, with no threshold in the layer's own units. `rate = tmp[l].resetGain / (game-seconds since this feature's own last reset)`, `best` = the highest rate since that reset; reset once `(gain + 1) / elapsed < best × (1 − B)` has held **continuously** for `H` game-seconds. See below |
 | | **`… \| stall>=Kx/N`** (a MODIFIER) | on top of any of the above: if the primary rule has been waiting `K ×` as long as this feature's own resets usually take, reset anyway — but only the stalled feature closest to its target goes first. See below |
+| | **`… \| turn@W/Kx/N`** (a MODIFIER) | the ROW CYCLE: reset only while it is this layer's turn among the resets of its ROW, and then reset as often as the ENGINE allows for `W` of them. Out of turn the reason is `waiting:turn`; in turn the member's own policy does not decide. See below |
+| | **`… \| turn-demand@W/Kx/N`** (a MODIFIER) | the same, plus: whenever a decision NAMES a member's layer as what it is waiting on, that member gets the next turn. See below |
 | `upgrades` | `cheapest-first` | buys unlocked, unowned, affordable upgrades, cheapest `tmp` cost first (ties by id) |
 | | `order` | only the table's `order[]`, in that order |
 | | `order-then-cheapest` | the table's `order[]` first (each affordable one, in order), then `cheapest-first` over the upgrades not in it |
@@ -983,6 +1009,112 @@ primary has been saying no for too long. A policy that REPLACED the primary woul
 `rateHold`. ⛔ Each appears **only when it has something to say**, and intervals are recorded only for a feature whose
 policy carries the modifier — so a run that uses neither new strategy writes byte-for-byte the record it wrote before
 V2, and every snapshot committed in this repo stays valid.
+
+### `turn@W/Kx/N` and `turn-demand@W/Kx/N` — the ROW CYCLE (R3b), two MODIFIERS
+
+⚖ **The user's idea, verbatim** (2026-09-20): *"Another idea is to cycle through which same-row resource to do the
+next reset. … There are a few different ways we could do this."*
+
+**The problem it is for.** Two layers of the same ROW each reset by wiping every row below them, so each takes the
+other's input away again. It is not a PTR accident — it is what a tree row IS — and on PTR it appeared three times
+before anything was built for it: the M21 wall (`q` wiping the Time Energy `h` needs), all five `reset:h` policies
+measuring byte-identical because the engine never even asks them, and Hindrance Spirit stuck at ONE under every
+arrangement of per-feature rules. **No policy can fix it**, because whichever rule is eager takes every tick the
+other one needed. What decides is whose TURN it is.
+
+**A cycle is DERIVED, never typed.**
+
+- Its **key is the row** — `layers[l].row`, the engine's own declaration. No layer name and no game id appears in
+  the loader.
+- Its **members** are every ACTIVE `reset` feature of that row, whether or not it carries a modifier. A member that
+  declares nothing is bound at the declared default weight of **1**. ⛔ *A member that does not yield is not a
+  member*: the planner's own probe left `reset:h` out of the cycle and it fired 44 times, wiping row 2 before the
+  member whose turn it was could use it.
+- A row **has** a cycle only while at least one of its reset features carries `turn@…` or `turn-demand@…`. With no
+  table entry and no player edit there is no cycle anywhere, nothing is scheduled, and `runtimeState()` writes
+  exactly the record it wrote before R3b.
+- ⛔ **A cycle of ONE is not a cycle.** A row with fewer than two active members is DORMANT: its members decide by
+  their own policies, exactly as before, and the cycle keeps whatever it has already remembered for when the row
+  fills up. This is load-bearing: PTR's `reset:h` is locked until M21, and since a member is EAGER inside its turn,
+  a cycle that counted one member would silently have replaced `reset:q`'s measured `gain>=2` with `always` for the
+  whole M15→M21 stretch — which R2 measured reaching M16 NEVER.
+
+**Inside its turn a member is EAGER.** Its own policy does not decide; the ENGINE does (`tmp[l].canReset`, the
+native-autobuyer yield and the `after` siblings, exactly as always). The turn IS the patience. Measured the other
+way, a patient rule inside a turn never fires at all — `gain>=2x` on a layer whose gain is small against what it
+holds — so the turn is never spent and the cycle deadlocks. `acted:reset` names `in-turn` as the rule that fired it.
+
+**Precedence — where the cycle sits in the chain.**
+
+```
+  until  >  while / the table's gate  >  THE ENGINE (canReset, autoPrestige, after)  >  THE CYCLE  >  the policy
+```
+
+- `until` and `while` are **above** it, so a STOPPED or PAUSED member is not in the cycle's hands at all and the
+  cycle never holds a turn for one. (This is what keeps PTR's M21 pause working: `reset:q` is paused until `h` is
+  unlocked, and a cycle that held the turn for it would mean `h` never reset and M21 was never reached.)
+- **The engine is above it too**, so `waiting:turn` means exactly *"the game would let me and the cycle will not"*.
+  A member that could not reset anyway keeps `cannot-reset`, which is the more useful sentence.
+- The **policy is below it**, and while the row's cycle is live it does not decide at all. ⚠ That is a real cost,
+  and it is named rather than smoothed: a `stall>=Kx/N` on a cycle member cannot be carried in the same string, and
+  a **stall-watch rung** on a cycle member's reset is INERT while the cycle is live.
+
+**The guard — `K` and `N`, and it is not optional.** A member that has not acted for `K ×` as long as its own turns
+usually take RELEASES the turn, and is skipped for one whole rotation so that a demand which can never be met
+cannot hand it straight back.
+
+- `typical` = the **median** of the last `N` of that member's own **COMPLETED** turns. ⛔ *A released turn never
+  feeds it* — `stall>=Kx/N`'s own reason one level up: a threshold fed by its own timeouts grows with them.
+- ⚠ **A typical of zero is not a bound.** A turn of weight one that is granted and spent inside the same tick is
+  zero game-seconds long — a real length, honestly recorded — and `K × 0` would release every turn on the tick it
+  was granted, before its holder's layer had even run.
+- **The first cycle has no history**, and the answer is derived rather than defaulted: with nothing positive
+  remembered for this member, the ROW's pooled turn lengths are used; with nothing remembered anywhere, there is no
+  bound to be late against and the only honest question left is the ENGINE's — **the turn is released the moment
+  its holder cannot reset and another member can.** The cycle also OPENS on a member that can act. The cost is that
+  the first rotation is demand-shaped rather than weight-shaped, which is a real difference and is measured
+  (gate R3b-R3) rather than assumed.
+- A turn therefore ends in **four** distinct ways, and they are not the same event: `complete` (the length is
+  remembered), `released` (the guard took it — nothing remembered, skipped for a rotation), `preempted` (demand
+  moved it — nothing remembered, **nothing skipped**) and `ineligible` (the member was paused, stopped, or left
+  the row). ⚠ Skipping a PREEMPTED member deadlocked the first cut outright: every member ended up skipped and the
+  one holder that could not act had nobody left to release the turn to — a scheduler that stopped scheduling, and
+  green in every hash.
+
+**DEMAND — `turn-demand@W/Kx/N`, and where it comes from.** ⚖ 13d.2 asks what a number stands for, and a weight is a
+literal. The ⚖-shaped question is *"who is actually WAITING?"* — and V1 already answers it, because every refusal
+is a DECISION CODE carrying the values it compared. A code may now declare **which of its own values names the layer
+it is waiting ON**:
+
+| code | the value that names a layer |
+|---|---|
+| `blocked:after` | `sibling` |
+| `waiting:retry` | `layer` — R3a's retry bar: *"challenge 12 failed with 1.00 of h; it will be tried again at 2.00"* |
+| `waiting:milestone` | `layer` |
+
+While any active feature's last decision names a member's layer that way, that member gets the next turn; with no
+such demand the weights decide exactly as above. **No layer name and no game enters the loader**: a new reason code
+that declares a `demand` value is a new demand signal and no code in the cycle changes. `T.reasonCodes()` publishes
+the declaration, so a gate witnesses the set rather than trusting it.
+
+- ⚠ **One member asking for it is enough for the whole row.** Demand only ever hands a turn to a member something
+  is waiting on, so the most a member that did not ask for it can lose is its place in the rotation — which the
+  guard already allows.
+- ⚠ **Demand can be permanent or circular** (a bar that can never be met). That is what the guard's skip is for,
+  and it is constructed rather than argued: gate `R3b-R3` stands a demand that is never satisfied and measures that
+  the other member goes on acting.
+- The cycle's own refusal, `waiting:turn`, declares **no** demand — a scheduler whose refusal fed itself would
+  never hand a turn anywhere else.
+
+**Readout.** `T.turnState(id)` (and the `turn` row of `explain()`) says whose turn it is, how many resets this
+member's own turn is worth, how many of its own turns are remembered, its typical, and whether it is skipped.
+`T.cycleState()` is the whole record, one entry per row, for a gate or a probe.
+
+**Memory** (`tmtLoader.runtimeState().cycle`, never the save, and ⛔ **never an engine field**): per row key,
+`{holder, left, since, round, at, mem, skip}`. It appears **only when a cycle exists**. ⚠ The engine field that
+looks right is `player.<layer>.resetTime`, and it exists **only on the 2.7-style engine** — the 2.2.1 family has no
+such field, so six of the planner's own probe cells compared against `undefined`, measured "paused for ever", and
+looked like a result. Every gate leg for the cycle therefore runs on BOTH engine families.
 
 ### The derived default for the `challenges` kind (R3a)
 
