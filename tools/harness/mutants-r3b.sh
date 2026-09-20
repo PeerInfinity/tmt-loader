@@ -185,10 +185,17 @@ mutant m16-yield-when-the-policy-refuses \
 
 # THE GUARD MEASURES FROM THE TURN'S START RATHER THAN THE HOLDER'S LAST ACT. A turn of weight W spans W resets, so
 # the whole turn is compared against the usual wait for ONE — every weight above 1 is released mid-turn.
-# ⛔ AND ITS DRIVER IS THE RATIO ROW, NOT THE STUB — measured: against `$UNIT` this mutant comes back GREEN, because
-# on the stub a member is granted a turn and spends it inside a tick or two, so a bound taken from the turn's start
-# is never reached. That is the whole reason part 7 exists, and a mutant has to be driven by the gate that can see
-# it. ⚠ It is a ~20-minute leg; the round is no longer a one-minute affair.
+# ⚠ ⛔ THIS MUTANT IS **REDUNDANT AT THE SHIPPED DEFAULT**, and that is measured, not assumed — V4's second
+# question, answered honestly. It comes back GREEN against `$UNIT` (on the stub a turn is spent inside a tick or two,
+# so a bound from the turn's start is never reached) AND GREEN against `$RATIO` (0 RED, 3 green): with `K = 30` the
+# bound is 30 × ~19 = ~570 game-seconds while a twenty-reset turn spans ~380, so BOTH clocks measure 19.1 and the
+# two builds are indistinguishable. The clock-origin defect mattered at the INHERITED `K = 3`, and raising K to the
+# measured 30 subsumed it.
+# ⇒ What would separate them is a weight whose TURN SPAN exceeds `K × typical` — e.g. `turn@60` (~1140 s against a
+# ~570 s bound), where the turn-start clock releases mid-turn and the act clock does not. That cell is the ROW a
+# future slice should add to part 7 before trusting this mutant again. It is left here, RED-less and labelled, rather
+# than deleted: the fix it protects is real and the reason it cannot currently fail is the interesting part.
+# ⚠ It is a ~20-minute leg either way; the round is no longer a one-minute affair.
 mutant m17-guard-clock-from-the-turn-start \
   "p='$AUTO';s=open(p).read();o='        var sinceAct = C.acted === null || C.acted === undefined ? C.since : C.acted;';assert o in s;s=s.replace(o,'        var sinceAct = C.since;');open(p,'w').write(s)" \
   $RATIO
