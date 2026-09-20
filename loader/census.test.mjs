@@ -12,7 +12,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
-import { check, measure, sourcesOf, tooltipsByKind, hasHardResetOptButton, toggleAutoBodies } from '../tools/census-figures.mjs';
+import { check, measure, sourcesOf, tooltipsByKind, hasHardResetOptButton, toggleAutoBodies, startDataExtras } from '../tools/census-figures.mjs';
 
 const REPO = path.resolve(new URL('..', import.meta.url).pathname);
 const read = (f) => fs.readFileSync(path.join(REPO, f), 'utf8');
@@ -87,6 +87,13 @@ for (const [claim, from, to] of [
   // the back control by class alone.
   ['a bare `.bought`', 'a bare `.locked` rule (171 and 171)**, and **4**', 'a bare `.locked` rule (171 and 170)**, and **4**'],
   ['the back control', '(171), and 166 of', '(171), and 162 of'],
+  // ⚠ U7: the three figures the reset-line split and the other-resources feature rest on. The first decides
+  // whether splitting on the FIRST run of breaks and collapsing the rest is the right rule; the second says the
+  // engines' own global is the same everywhere but one; the third sizes the other-resources question — and its
+  // doctored value is the number the BRIEF quoted, which is what this tree does not produce.
+  ['per-layer prestigeButtonText overrides', 'declare 106 such per-layer overrides', 'declare 107 such per-layer overrides'],
+  ['the global prestigeButtonText', '170 with four breaks', '169 with four breaks'],
+  ['startData blocks carrying', '1,753 (layer, key) pairs', '1,713 (layer, key) pairs'],
 ]) {
   test(`a wrong figure in the prose is caught: ${claim}`, () => {
     const text = read(MOBILE);
@@ -99,6 +106,25 @@ for (const [claim, from, to] of [
     assert.deepEqual(red, [row(r, claim).name], `other claims went red too: ${red.join(', ')}`);
   });
 }
+
+// ⚠ U7 — the other-resources census classifies by the ENGINE's own key set, and the set is the whole of the
+// figure: a scan that let `points` / `best` / `total` through would report every layer as carrying an extra
+// Decimal. Driven here rather than inferred from the roster number, which cannot say WHICH keys it counted.
+test('startDataExtras keeps the layer\u2019s own Decimals and drops the engine\u2019s', () => {
+  const body = `startData() { return {
+      unlocked: false,
+      points: new Decimal(0),
+      best: new Decimal(0),
+      total: new Decimal(0),
+      power: new Decimal(0),
+      spentOnBuyables: new Decimal(0),
+      power: new Decimal(0),
+      first: 0,
+      auto: false,
+  }}`;
+  assert.deepEqual(startDataExtras(body), ['power'], 'the engine\u2019s own keys, a plain number and a repeat must all drop out');
+  assert.deepEqual(startDataExtras('startData() { return { unlocked: true } }'), []);
+});
 
 // ⚠ U6 — the arming toggle's click path. Its own document, so it gets its own mutant rather than joining the
 // mobile.md table above.

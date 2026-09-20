@@ -184,6 +184,59 @@ const RE_BACK_GOBACK = /goBack\s*\(/;
 // `js/utils/options.js` through `Vue.set`) and `the-tree-emipiplu` (three copies under `2/`, `3/` and `js/`). Which
 // one the click reaches is decided by LOAD ORDER, so the question is only answerable over the manifest's own list,
 // in the manifest's own order, taking the last.
+// ⚠ U7 — THE PRESTIGE STRING'S OWN BREAKS (docs/mobile.md). The layer list splits the engines' prestige text on
+// its FIRST run of `<br>`s, so "how many breaks are there, and who writes them" is a property of the ROSTER that
+// decides whether that split rule is right — and no gate that DRIVES games could answer it, because the layer
+// whose override has eight breaks is one nobody's recorded snapshot reaches.
+//
+// Two different declarations, counted apart:
+//  · the GLOBAL `function prestigeButtonText(layer)` — the engines' own, with its `normal` / `static` / `none`
+//    branches and an `else return layers[layer].prestigeButtonText()`. Brace-matched, LAST declaration winning,
+//    over the `loaded` scope, for the reason `toggleAuto` is: which one the page reaches is decided by load order.
+//  · the per-LAYER `prestigeButtonText() { … }` a layer declares to serve that `else` branch — free HTML, and the
+//    thing the split rule has to survive.
+// ⚠ The per-layer form is told from the global by the word before it: `function prestigeButtonText` is the global
+// wherever it appears, and everything else is a member. A bounded regex would mis-split a long body, so both are
+// brace-matched (the `toggleAuto` census records what a `[\s\S]{0,800}?` window cost).
+// ⚠ U7 — A LAYER'S OWN DECIMALS (docs/mobile.md). The layer list reports the resources a layer states only inside
+// its own panel, and the size of that question is a property of the ROSTER: how many `startData()` blocks carry a
+// Decimal the ENGINE did not put there. Static, over the whole subtree, and brace-matched for the reason every
+// other body census here is — a bounded window runs past the closing brace on a long one.
+// ⚠ IT IS A TEXT SCAN AND NOT A PARSE, so a `new Decimal(` inside a string or a comment can be miscounted. It is
+// reported as three numbers that move together (blocks, pairs, games) rather than as one, and the RUNTIME detector
+// the list actually ships is a different and stricter thing — this figure sizes the question, never the feature.
+const RE_START_DATA = /\bstartData\s*(?:\([^)]*\))?\s*\{/g;
+// what both engines put in `player[layer]` themselves (`getStartPlayer` / `getStartLayerData`)
+const ENGINE_LAYER_KEYS = new Set(['points', 'best', 'total', 'unlocked', 'resetTime', 'forceTooltip',
+  'noRespecConfirm', 'buyables', 'clickables', 'spentOnBuyables', 'upgrades', 'milestones', 'lastMilestone',
+  'primeMiles', 'achievements', 'challenges', 'grid', 'prevTab', 'activeChallenge', 'subtabs', 'infoboxes']);
+/** The layer-own Decimal keys declared in one `startData` body, deduplicated. */
+export function startDataExtras(body) {
+  const out = new Set();
+  for (const m of body.matchAll(/([A-Za-z_$][\w$]*)\s*:\s*new\s+Decimal\s*\(/g)) {
+    if (!ENGINE_LAYER_KEYS.has(m[1])) out.add(m[1]);
+  }
+  return [...out];
+}
+
+const RE_PRESTIGE_GLOBAL = /^\s*function\s+prestigeButtonText\s*\([^)]*\)\s*\{/gm;
+const RE_PRESTIGE_MEMBER = /(?<!function\s{1,4})\bprestigeButtonText\s*(?:\([^)]*\))?\s*\{/g;
+/** Every body matching `re` in `text`, brace-matched, in source order. */
+export function bracedBodies(text, re) {
+  const out = [];
+  for (const m of String(text).matchAll(re)) {
+    let depth = 0, end = -1;
+    for (let i = m.index + m[0].length - 1; i < text.length; i++) {
+      const c = text[i];
+      if (c === '{') depth++;
+      else if (c === '}') { depth--; if (depth === 0) { end = i; break; } }
+    }
+    out.push(text.slice(m.index, end < 0 ? text.length : end + 1));
+  }
+  return out;
+}
+const countBr = (body) => (body.match(/<br\s*\/?>/gi) || []).length;
+
 const RE_TOGGLE_DECL = /^function\s+toggleAuto\s*\(/m;
 /** Every top-level `function toggleAuto(...) {...}` in one file, brace-matched, in source order. */
 export function toggleAutoBodies(text) {
@@ -235,7 +288,7 @@ export function measure({ bound = 'subtree', root = REPO } = {}) {
   for (const id of ids) {
     const { files, missing } = sourcesOf(id, bound, root);
     if (missing) problems.push(`${id}: ${missing}`);
-    const g = { files: files.length, optButton: false, hardResetOpt: false, optionWheel: false, buyUpg: false, buyUpgrade: false, tabArray: 0, tabObject: 0, purchaseLimit: false, purchaseLimitInLayerSupport: false, tabButtons: false, colComponent: false, textInput: false, sliderComponent: false, dropDown: false, pseudoUnlGlobal: false, pseudoUnlComponent: false, tooltipAny: false, tooltipChipped: 0, tooltipAchievement: 0, boughtBare: false, lockedBare: false, boughtValue: null, lockedValue: null, backClass: false, backGoBack: false, toggleAutoDecl: false, toggleAutoVueSet: false, toggleAutoInData: false };
+    const g = { files: files.length, optButton: false, hardResetOpt: false, optionWheel: false, buyUpg: false, buyUpgrade: false, tabArray: 0, tabObject: 0, purchaseLimit: false, purchaseLimitInLayerSupport: false, tabButtons: false, colComponent: false, textInput: false, sliderComponent: false, dropDown: false, pseudoUnlGlobal: false, pseudoUnlComponent: false, tooltipAny: false, tooltipChipped: 0, tooltipAchievement: 0, boughtBare: false, lockedBare: false, boughtValue: null, lockedValue: null, backClass: false, backGoBack: false, toggleAutoDecl: false, toggleAutoVueSet: false, toggleAutoInData: false, prestigeGlobal: false, prestigeGlobalBr: null, prestigeGlobalShape: null, prestigeLayerBr: [], startBlocks: 0, startWithExtra: 0, startPairs: 0 };
     // the ENTRY DOCUMENT, which no `bound` covers: it is not a `.js` file and it is where 2.2.1 keeps both anchors.
     // ⛔ A game whose entry cannot be read is a PROBLEM, never a false — the same rule the bounds are under.
     const entry = path.join(root, 'games', id, (readManifest(id, root).entry) || 'index.html');
@@ -256,6 +309,27 @@ export function measure({ bound = 'subtree', root = REPO } = {}) {
         if (bodies.length) { g.toggleAutoDecl = true; g.toggleAutoVueSet = /Vue\.set/.test(bodies[bodies.length - 1]); }
       }
       if (!g.toggleAutoInData && RE_TOGGLE_IN_DATA.test(text)) g.toggleAutoInData = true;
+      // U7: the prestige string's breaks — `.js` only, the LAST global declaration winning, and every per-layer
+      // override collected (a game can declare several, in several files).
+      if (/\.js$/i.test(f)) {
+        const gs = bracedBodies(text, new RegExp(RE_PRESTIGE_GLOBAL.source, 'gm'));
+        if (gs.length) {
+          const body = gs[gs.length - 1];
+          g.prestigeGlobal = true;
+          g.prestigeGlobalBr = countBr(body);
+          g.prestigeGlobalShape = `${/type\s*==?\s*["']normal["']/.test(body) ? 'n' : '-'}${/type\s*==?\s*["']static["']/.test(body) ? 's' : '-'}${/layers\[layer\]\.prestigeButtonText\s*\(/.test(body) ? 'e' : '-'}`;
+        }
+        for (const b of bracedBodies(text, new RegExp(RE_PRESTIGE_MEMBER.source, 'g'))) {
+          if (/^\s*function\s/.test(b)) continue;   // the global, matched from its own name
+          g.prestigeLayerBr.push(countBr(b));
+        }
+        // U7: how many `startData()` blocks carry a Decimal the engine did not put there
+        for (const b of bracedBodies(text, new RegExp(RE_START_DATA.source, 'g'))) {
+          g.startBlocks++;
+          const x = startDataExtras(b);
+          if (x.length) { g.startWithExtra++; g.startPairs += x.length; }
+        }
+      }
       if (RE.pseudoUnlComponent.test(text)) g.pseudoUnlComponent = true;
       if (RE.tabButtons.test(text)) g.tabButtons = true;
       if (RE.colComponent.test(text)) g.colComponent = true;
@@ -338,6 +412,21 @@ export function measure({ bound = 'subtree', root = REPO } = {}) {
     toggleAutoVueSet: where('toggleAutoVueSet').length,
     toggleAutoPlain: ids.filter((id) => per[id].toggleAutoDecl && !per[id].toggleAutoVueSet).length,
     toggleAutoInData: where('toggleAutoInData').length,
+    // --- U7: the prestige string's breaks (loaded) ---
+    prestigeGlobal: where('prestigeGlobal').length,
+    noPrestigeGlobal: ids.filter((id) => !per[id].prestigeGlobal),
+    // the games whose global is NOT the family's three-branch shape, and the ones whose break count is not 4
+    prestigeOffShape: ids.filter((id) => per[id].prestigeGlobal && per[id].prestigeGlobalShape !== 'nse'),
+    prestigeGlobalBr: ids.reduce((o, id) => { const n = per[id].prestigeGlobalBr; if (n !== null) o[n] = (o[n] || 0) + 1; return o; }, {}),
+    prestigeGlobalBrOdd: ids.filter((id) => per[id].prestigeGlobalBr !== null && per[id].prestigeGlobalBr !== 4),
+    prestigeLayerGames: ids.filter((id) => per[id].prestigeLayerBr.length).length,
+    prestigeLayerOverrides: ids.reduce((n, id) => n + per[id].prestigeLayerBr.length, 0),
+    prestigeLayerBr: ids.reduce((o, id) => { per[id].prestigeLayerBr.forEach((n) => { o[n] = (o[n] || 0) + 1; }); return o; }, {}),
+    // --- U7: how big the other-resources question is (subtree) ---
+    startBlocks: sum('startBlocks'),
+    startWithExtra: sum('startWithExtra'),
+    startPairs: sum('startPairs'),
+    startGames: ids.filter((id) => per[id].startWithExtra > 0).length,
     // --- V1: the subtab bar ---
     tabButtons: where('tabButtons').length,
     noTabButtons: ids.filter((id) => !per[id].tabButtons),
@@ -556,6 +645,48 @@ export function claims(sub, load) {
         return [ok, `doc: ${m[1]} (${named.join(', ')}), component-only ${m[3]}`];
       },
       measured: `${sub.pseudoUnlGlobal.length} (${sub.pseudoUnlGlobal.join(', ')}), component-only ${sub.pseudoUnlComponentOnly.join(', ') || '—'}`,
+    },
+    {
+      // U7: the prestige string's own breaks. The layer list splits on the FIRST run of `<br>`s and lets the rest
+      // collapse to spaces, and THIS is the figure that says the rule is right — a per-layer override with eight
+      // breaks is reachable in no recorded snapshot, so nothing that drives games can certify it.
+      name: 'per-layer prestigeButtonText overrides and their break counts (loaded)',
+      doc: 'docs/mobile.md',
+      re: /\*\*(\d+) of the (\d+) games\s+declare (\d+) such per-layer overrides, whose break counts are ((?:\d+ \u00d7\d+(?:, | and )?)+)\*\*/,
+      expect: (m) => {
+        const want = Object.fromEntries([...m[4].matchAll(/(\d+) \u00d7(\d+)/g)].map((x) => [x[1], num(x[2])]));
+        const got = load.prestigeLayerBr;
+        const same = Object.keys({ ...want, ...got }).every((k) => want[k] === got[k]);
+        return [num(m[1]) === load.prestigeLayerGames && num(m[2]) === N && num(m[3]) === load.prestigeLayerOverrides && same,
+          `doc: ${m[1]} of ${m[2]} games, ${m[3]} overrides, ${JSON.stringify(want)}`];
+      },
+      measured: `${load.prestigeLayerGames} of ${N} games, ${load.prestigeLayerOverrides} overrides, ${JSON.stringify(load.prestigeLayerBr)}`,
+    },
+    {
+      name: 'the global prestigeButtonText: shape and break count (loaded)',
+      doc: 'docs/mobile.md',
+      re: /All (\d+) globals keep the family's three-branch shape, (\d+) with four breaks and `([a-z0-9-]+)` with six\./,
+      expect: (m) => {
+        const ok = num(m[1]) === load.prestigeGlobal && num(m[1]) === N && load.prestigeOffShape.length === 0
+          && load.prestigeGlobalBr[4] === num(m[2]) && load.prestigeGlobalBr[6] === 1
+          && load.prestigeGlobalBrOdd.length === 1 && load.prestigeGlobalBrOdd[0] === m[3];
+        return [ok, `doc: ${m[1]} globals, ${m[2]} with four breaks, ${m[3]} with six`];
+      },
+      measured: `${load.prestigeGlobal} globals (${load.prestigeOffShape.length} off-shape), break counts ${JSON.stringify(load.prestigeGlobalBr)}, not four: ${load.prestigeGlobalBrOdd.join(', ') || '\u2014'}`,
+    },
+    {
+      // U7: how big the other-resources question is. ⚠ The brief this slice was written from quoted 450 / 1,713 /
+      // 91 against the same 2,260 blocks; the block count agreed and the rest did not, which is why the sentence
+      // states the method and this claim pins it.
+      name: 'startData blocks carrying a layer-own Decimal (subtree)',
+      doc: 'docs/mobile.md',
+      re: /\*\*([\d,]+) of the ([\d,]+)\s+startData blocks carrying at least one extra Decimal key \u2014 ([\d,]+) \(layer, key\) pairs across (\d+) of the (\d+) games\*\*/,
+      expect: (m) => {
+        const ok = num(m[1]) === sub.startWithExtra && num(m[2]) === sub.startBlocks && num(m[3]) === sub.startPairs
+          && num(m[4]) === sub.startGames && num(m[5]) === N;
+        return [ok, `doc: ${m[1]} of ${m[2]} blocks, ${m[3]} pairs, ${m[4]} of ${m[5]} games`];
+      },
+      measured: `${sub.startWithExtra} of ${sub.startBlocks} blocks, ${sub.startPairs} pairs, ${sub.startGames} of ${N} games`,
     },
   ];
 }

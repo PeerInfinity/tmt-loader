@@ -975,6 +975,177 @@ engine's, so that is the one asked, wrapped; a game without it falls back to the
 
 ⚠ The card press and the card's open **button** are both paths into `openTab`, so the test is in the function.
 
+#### The reset line is always two lines (U7)
+
+⚖ user, 2026-09-19: *"As the number of digits in the amount of the resources changes, the 'Reset for +1 boosters'
+text can take up either one line or two, causing the layout to flicker. Is there a way to make it always two lines,
+splitting it between 'Reset for +1 boosters' and 'x / y points'? Most of the layers have that same issue, and need
+that same fix."*
+
+**The cause was one line of ours**, and its comment had weighed two options and missed the third. The engines carry
+`<br><br>` in the middle of their prestige string to break a tall tab button in two; on a card that was collapsed to
+a space, because dropping the break in CSS jams the two halves together. The third option is to keep the break as a
+**structural** split into two rows, each with its own line box — which is what `resetLines()` does now.
+
+**The two prestige types fail differently, and both had to be fixed.** Out of the engines' own
+`prestigeButtonText(layer)`:
+
+| type | the string | how it breaks |
+|---|---|---|
+| `static` | `Reset for +N <res>` + `<br><br>` + `[Req:\|Next:] <have> / <need> <base>` | the second line always exists; only the WRAP moves |
+| `normal` | `Reset for +N <res>` + `<br><br>Next at <nextAt> <base>`, the **whole** second part conditional on `resetGain.lt(100) && points.lt(1e3)` | the card goes from two lines to ONE **as the game progresses** — a permanent height change |
+
+⚠ **And the brief's premise that `static` is unconditional holds for 170 of the 171 and not for all of them.**
+MEASURED:
+`the-factoree` wraps its static second half in `player[layer].points.lt(1e7) ? … : (!canReset(layer) ? … : "")`, so
+its static layers collapse to one line exactly as `normal` does. Reserving two line boxes **unconditionally** is
+what fixes every one of these; a height that collapsed when the second half is absent would re-introduce the
+`normal` case, which is why the reservation lives in `layerlist.css` and is not keyed on the second row's content.
+
+⚠ **The reservation is derived, not a pixel count.** `--tmt-reset-lh` is the button's own line-height and each row
+reserves exactly one of them (`min-height: calc(var(--tmt-reset-lh) * 1em)`); change the line-height and the
+reservation follows. A half that is genuinely longer than the card is wide still wraps — the promise is one line
+box per half, never that prose cannot wrap.
+
+⚠ **The split is on the FIRST run of `<br>`s and only the first.** The engines' `else` branch hands a layer whose
+`type` is none of normal/static/none to its own `layers[layer].prestigeButtonText()`, and **39 of the 171 games
+declare 106 such per-layer overrides, whose break counts are 0 ×36, 1 ×22, 2 ×35, 3 ×5, 4 ×4, 5 ×1, 6 ×2 and
+8 ×1** — static, brace-matched, over the loaded scope (`tools/census-figures.mjs`). All 171 globals keep the
+family's three-branch shape, 170 with four breaks and `the-factoree` with six. So whatever follows the first run
+keeps the old space collapse, and a string with no break at all leaves the second row empty — still occupying its
+line box. `resetText()`'s bare-word `Reset` fallback, which a layer whose text throws or returns `''` gets, is one
+line too, and it occupies two.
+
+#### A layer's other resources (U7)
+
+⚖ user, 2026-09-19: *"Some layers have more than one resource whose quantity is only reported in that layer's
+panel. For example, the generators layer has 'generators' and 'generator power'. Is there a way we can detect what
+resources are on each layer and display them all in the Layers view?"*
+
+**It is a broad feature, not a one-game curiosity.** A static census over every tracked `games/**/*.js`, parsing each
+`startData() { … }` body for `<key>: new Decimal(` outside the engine's own key set, finds **463 of the 2,260
+startData blocks carrying at least one extra Decimal key — 1,753 (layer, key) pairs across 93 of the 171 games**
+(`tools/census-figures.mjs`, subtree scope, brace-matched).
+
+⚠ **Re-measured, and three of those four numbers moved.** The brief this slice was written from quoted 450 / 1,713
+/ 91 against the same 2,260 blocks. The block count agrees exactly; the rest is the ENGINE KEY SET and the exact
+spacing the pattern allows, and the census here states both so the figure is reproducible rather than remembered.
+
+⛔ **Detection is easy; CLASSIFICATION is the whole problem.** Those keys split into genuine resources (`power` ×92,
+`energy` ×22, `souls`, `thoughts`, `hexes`, the dusts) and pure bookkeeping (`unlockOrder`, `setBuyableAmount`,
+`autoTime`, `prevH`, `target`, `cost`, `spent`, `buildLim`). Two discriminators were measured:
+
+| discriminator | matches | verdict |
+|---|---|---|
+| used as a `currencyInternalName` somewhere | 136 / 1,713 | ⛔ **rejected** — misses ~92% of the real ones, `power` included |
+| the layer SHOWS it to the player | — | ✅ the signal, and the user's own phrasing |
+
+⚠ **The static form of the second one over-counts and is not what shipped.** `format(….key)` anywhere in a file
+matches every layer's `power` in that file. The list asks it at RUNTIME instead: it evaluates the layer's own
+display text and keeps a candidate only when THIS value is stated in it.
+
+⚠ **The text comes from the DECLARATION, not from `tmp`.** `updateTempData` skips every key whose name carries
+"display", "description" or "tabformat" unless that layer's tab is the open one, so a closed layer's
+`tmp[l].tabFormat` still holds `setupTemp`'s `new Decimal(1)` placeholder wherever its display data was a function.
+The declaration is the only place those functions survive, so `collectText` walks it — a second, smaller walk than
+`layoutOf`, answering a different question.
+
+⛔ **AN OCCURRENCE BUDGET, not a bare "is this number in the text".** MEASURED on `the-infinity-tree` at a fresh
+save, where every amount on every layer is `0.00`: the bare membership test reported **23 resources over 9 cards, 21
+of them sharing a value**, and what it admitted was `resetting`, `buyableSpent`, `timeSpent`, `lastElectron`,
+`electronGain` — the whole of the bookkeeping the discriminator exists to exclude. One `0.00` in "You have 0.00
+energy" cannot be evidence for six keys. So each statement of a number is **consumed** by whoever claims it, the
+engine's own `points` / `best` / `total` / `spentOnBuyables` claim first (a layer's text routinely states them
+itself — "Your best Generators is 0"), and candidates take what is left in `player[l]`'s key order.
+
+| game / state | candidates | shown, bare test | shown, budget |
+|---|---|---|---|
+| `ptr` at `all/M16` | 5 | 4 (`g.power`, `t.energy`, `q.energy`, `q.time`) | **2** (`t.energy` 6.29e28, `q.energy` 2,011) |
+| `the-infinity-tree` fresh | 32 | 23 over 9 cards, 21 colliding | **0** |
+
+✅ **What the budget buys**: `q.time` is a bookkeeping Decimal that happens to hold exactly `q.energy`'s 2,011, and
+the bare test both admitted it and gave it `energy`'s own prose label.
+⚠ **What it costs, stated rather than buried**: a layer whose readouts are ALL the same number can attribute none
+of them. `ptr`'s `g` at M16 has `points`, `best`, `total` and `power` all at `0`, so **Generator Power — the user's
+own example — is not reported at that state**. It is at every state where the numbers differ. That is an abstention
+the text genuinely cannot resolve, not a rule that can be tightened out of it.
+
+⚖ **THE LABEL IS THE PLAYER KEY, and the prose name is an open question for the user.** `power` is certain and
+terse; "generator power" lives only in the words around the number. The gate lifts those words and REPORTS them
+without rendering them, so the decision has a sample in front of it. On `ptr` at M16 the lift reads
+`t.energy → Time Energy` and `q.energy → Quirk Energy` — both right; **under the bare test it also produced
+`q.time → Quirk Energy`, which is wrong**, and on `the-infinity-tree` it produced `i.time → number`,
+`v.resetting → time` and `d.relativity → velocity`, which are the words of the NEXT sentence. ⛔ No per-game name
+table either way: ⚖ MINIMIZE HARDCODING.
+
+⚠ **Two resources can still print the same number** where the layer states it twice; both are kept (the card is
+reporting quantities and both are right) and the attribution between them is by key order alone. The gate counts it.
+
+#### Per-category progress in the expanded card (U7)
+
+⚖ user, 2026-09-19: *"In Layers view, when a layer is in expanded view, can we add a row to display the progress
+towards the next unearned item from each category … Is there a way to detect what the cheapest unearned item from
+each category is? If not, then we can just pick the one whose chip is currently listed first."*
+
+**"Cheapest" is well defined for some categories and has no referent in others.** What the engines declare:
+
+| category | numeric target | |
+|---|---|---|
+| upgrades | `tmp[l].upgrades[id].cost` | ✅ comparable while the currency matches |
+| buyables | `tmp[l].buyables[id].cost` | ✅ `tmp` holds it ALREADY EVALUATED at the current amount |
+| challenges | `goal` | a goal, not a cost — comparable within one currency |
+| milestones | — | `requirementDescription` is PROSE. No number exists. |
+| achievements | — | the same |
+| clickables | — | no cost concept |
+
+⛔ **So a category with no number gets NO ROW.** "Progress" without a denominator is not a weaker row, it is a
+different thing. The rule is **cheapest where a cost exists and the currencies agree, first-listed otherwise** —
+which is the user's own stated fallback, so no ruling was needed to ship it. "The currencies agree" is asked on the
+engine's own identity for a currency, because two costs in different currencies do not compare at all and the
+numerically smaller of them would be an accident of scale. A `currencyLocation` is an object, so it is identified by
+REFERENCE rather than by its key name.
+
+⚠ **"Unearned" is not one predicate**, and it is `actionable()`'s rule read one level down (that one works on
+CHIPS, which exist only for a component with a usable short name; a progress row does not need one). Upgrades: drawn
+and not bought — and a PSEUDO teaser is not a thing you buy. Buyables: never "earned" at all, so the row means
+"progress to the NEXT one", and one at its `purchaseLimit` is skipped rather than shown at 100%. Challenges: not
+completed, active or not.
+
+**The denominator and its currency are the TOOLTIP's**, not a second reader: the same `DETAIL` part, `numFieldOf`
+and `currencyOf` the overlay composes its cost line out of. A buyable is the one category `DETAIL` carries no cost
+part for — its own `display` already states the cost, so the overlay composes none — and the part declared for it
+is in exactly the shape the other two use.
+
+⚠ **`currencyAmount` is `canAffordPurchase` AND `canCompleteChallenge`, because the two engine functions
+disagree.** The brief named only the first. An upgrade's and a buyable's fallback currency is `player[layer].points`;
+a CHALLENGE's is the **global** `player.points` — which is what its own completion test reads, and a single reader
+with one fallback would be wrong on every challenge whose layer has points of its own.
+
+⚠ **`multiRes`** — a cost in several currencies at once, where `cost` itself is `undefined`, declared by `ptr`,
+`prestige-tree-ng`, `prestige-tree-rewritten-unsoftcapped4` and `the-extended-tree`. A `x / y` row has no meaning
+for one, so it is skipped and counted, never rendered as `undefined / undefined`.
+
+⛔ **A limitation the brief did not anticipate, and half of it is undetectable.** `ptr`'s `s` buildings hand-roll
+`canAfford()` and `buy()` against `player.g.power` and declare neither `currencyInternalName` nor
+`currencyDisplayName`, so the engines' own generic reader — which is what this row uses — gives a numerator in
+space energy against a cost in generator power. In every engine-GENERIC path affordability implies amount ≥ cost,
+so "the engine says it CAN be bought and our amount is short" can only mean the wrong currency: **that row is
+dropped and counted**. The converse is not a signal (a game's `canAfford` routinely ANDs a second condition), and
+the case where the game simply cannot afford the item today is **not detectable at all** — `ptr`'s `s/13` ships as
+`17 / 6.28e350 space energy` at the M16 snapshot and the number on the left is not the one the game spends. Whether
+to keep those rows, or to drop every category whose components declare no currency at all, is the user's call.
+
+⚠ **The rows sit UNDER the reset button and are styled to match its second half**, which is the per-LAYER progress
+display; these are the per-category ones. Only categories the card DRAWS get one — `visibleSeq`, the same three
+visibility rules the chips and counters are under — so a row cannot leak what those rules hide.
+
+**What it costs.** Both new readers ride the counters' own 250 ms throttle, so the FRAME path is unmoved
+(`tools/harness/cost-layerlist.mjs`, 300 reps): the observer pass is 1.09 → 1.13 ms on `ptr`'s snapshot,
+2.04 → 2.16 ms on `the-yes-tree` and 0.95 → 1.00 ms on `the-infinity-tree`. The full pass rises
+2.13 → 4.64 ms (`ptr` snapshot, 11 cards), 3.43 → 6.01 ms (`the-yes-tree`, 25 cards) and 1.41 → 5.41 ms
+(`the-infinity-tree`, 18 cards and 32 candidate keys): **+0.10 to +0.23 ms per card per sync, four times a second**.
+The worst of them is item 2's, which calls the game's own display functions once per card per sync.
+
 ### Reading a card can make the ENGINE write `player`
 
 The list assigns nothing to `player`. That is not the same as the state not moving, and two measured cases say why:
@@ -1646,6 +1817,58 @@ memory clear.
 `the-shenanigans-tree-rewritten`, whose own "Achievement Gotten!" toast sits over the overlay and intercepts
 pointer events: an unbounded `page.click` spent 30 s and threw, and the row lost every leg after this one. A leg
 that could not press anything must not pass either, so it says so.
+
+#### What U7 added to the leg
+
+**Three roster-wide assertions inside `LAYERLIST_PROBE`, and two legs of their own.**
+
+**1. The reset line, per card (`resetOk`).** The probe reads the engine's prestige string ITSELF, splits it on its
+own first run of `<br>`s, and requires the button to hold exactly **two** `.tmt-layerlist-resetline` elements whose
+contents are that split — and, separately, that **each of them is at least one line box tall**, which is the
+reservation and is what a build that collapsed the empty second row breaks. `resetEmptyL2` names the cards whose
+second half the engine is NOT emitting right now (`ptr` at M16: `p` and `e`, both `normal` past `resetGain` 100).
+
+**2. The other resources, in BOTH directions (`resOk`).** A fourth independent rebuild: the probe re-derives the
+candidate keys out of `player[l]` and the engine's own key set, re-implements the **occurrence budget** over the
+text the list reports, and compares the whole expected list — keys and printed strings, in order — against what
+the card rendered. Neither a filter that admits everything nor one that admits nothing can pass, and neither can one
+that keeps a candidate whose occurrence an engine readout or an earlier key had already claimed. ⚠ What the probe
+does **not** re-implement is the layer's display TEXT: that is one walk of the game's own declarations with one
+right answer, and it is taken from the list. The classification over it is written out twice.
+
+**3. The progress rows (`progOk`)**, against the same rebuild carried one step further: the unearned set, the
+currency identity, the cheapest-or-first pick, the numerator from both engine defaults, and the wrong-currency
+guard. The rendered rows are compared to it by component, by `how` and by the `have / need` prefix.
+⚠ `cheapestWitnesses` counts the categories where cheapest and first-listed pick **different** components —
+`ptr` 1, `the-yes-tree` 2, `the-quantum-tree` 2, `the-infinity-tree` 1. **0 is an abstention on that half, never a
+pass**: the mutant that replaces one rule with the other can only redden a sample that has such a case.
+
+**4. Leg L — the reset block's height, against the game's OWN string.** Leg E cannot see this: it writes the amount
+readout and holds every other string still, and the prestige text is a different readout on a different row. For
+each card leg L takes the engine's current string and derives two more from it — **GROWN** (every number replaced
+by `1.111e3,284`, the widest `format()` reaches, which is leg E's own vocabulary and not an arbitrary literal) and
+**FLIPPED** (the other shape entirely: a second half where the engine emitted none, none where it did) — writes
+each through `tmp[l].prestigeButtonText`, refreshes, and requires the block's height not to move. It writes `tmp`,
+never `player`, restores it, and judges the restore against the card as it was BEFORE anything was written.
+⚠ **The grown half abstains per card where the string really needs another line** — its own line-box count rose,
+the card is narrower than the text, and the promise is one line box per half rather than that prose cannot wrap
+(`the-yes-tree` 5 of 22 cards, `the-alphabetree` 4 of 46). **The flipped half never abstains**: its second half is
+short on purpose, so a height that moves there is a height that answers to whether the engine filled the row.
+
+**5. Leg M — a full render still writes nothing.** The list's standing claim is most at risk in U7, because item 2
+CALLS the layers' own display functions and item 3 reads their costs. `layersInert` measures the hash across
+OPENING the panel; leg M measures it across five explicit `refresh()` calls with the panel already open, which is
+the pass those two readers ride. Same abstention rule: a page that will not repeat its own hash cannot judge.
+
+**6. Leg N — a cost in several currencies, CONSTRUCTED.** ⛔ It has to be constructed. `ptr` declares its own
+`multiRes` on the `hn` layer, which is reachable in **no** recorded snapshot state on the roster, so a leg that
+waited for a real one would abstain on every game and the "render it instead of skipping it" mutant would stay
+green everywhere. The leg puts one on the component the card has ALREADY CHOSEN — which is what makes the effect
+visible: the row must either name a different component (there were others) or disappear (there were not) — and
+asserts the API's `dropped` records it, that the rendered row no longer names it, and that the restore brings it
+back. ⚠ **Both sides of the declaration**, and the first version of this leg missed it: the list reads `cost`
+through `numFieldOf`, which falls back to the DECLARATION when `tmp` holds nothing, and a declared `cost()` is a
+function — clearing `tmp` alone left the real cost in place and the construction did nothing at all.
 
 ### The state leg needs a control
 

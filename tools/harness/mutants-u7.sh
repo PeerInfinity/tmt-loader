@@ -57,17 +57,28 @@ read_row() {  # read_row <game> → the six legs as "name=true|false"
     });'
 }
 
-# $1 = name, $2 = python mutation, $3.. = the legs whose RED is the claim (per game, ALL games must show it)
+# $1 = name, $2 = python mutation, $3.. = one `<game>=<leg>,<leg>` per game (an empty list is spelled `<game>=`).
+#
+# ⛔ THE EXPECTATION IS PER GAME, and that is a RESULT rather than bookkeeping. Two of these mutants are invisible
+# on a game that has no witness for them: m2 (the two-line height made conditional) can only break the per-card
+# RESERVATION on a card whose second line the engine leaves EMPTY, which `the-yes-tree` has none of, and m3 (the
+# resource filter dropped) can only show on a game with a candidate Decimal at all, which `the-yes-tree` has none
+# of either. A single roster-wide expectation would have to be the weaker of the two, and would then stop saying
+# which game actually witnessed the mutation. Both are written down, so a game that goes from witnessing to not
+# witnessing is a change this script reports.
 mutant() {
   local name="$1" mut="$2"; shift 2
-  local want="$*"
+  local spec=("$@")
   if [ -n "$ONLY" ] && [[ "$name" != *"$ONLY"* ]]; then return 0; fi
   restore
   python3 -c "$mut" || { echo "$name: THE MUTATION DID NOT APPLY"; return 1; }
-  echo "=== $name  (expects red: [${want:-none}])"
+  echo "=== $name  (expects: ${spec[*]:-nothing red})"
   git --no-pager diff --stat -- "$JS" "$CSS" | tail -1
   local ok=1
   for g in $GAMES; do
+    local want=""
+    for e in "${spec[@]:-}"; do [ "${e%%=*}" = "$g" ] && want="${e#*=}"; done
+    want="${want//,/ }"
     local out; out="$(read_row "$g")"
     echo "  $g: $out" | tee -a "$OUT/$name.log"
     local red=()
@@ -82,7 +93,7 @@ mutant() {
 }
 
 echo "control (no mutant):"
-mutant control "pass"
+mutant control "pass" ptr= the-yes-tree=
 
 # ---- item 1 ----------------------------------------------------------------------------------------------------
 # (a) the split reverted to what shipped before U7: one run of text, the engines' `<br>`s collapsed to spaces.
@@ -90,31 +101,35 @@ mutant control "pass"
 #     single run's height answers to how many characters are in it.
 mutant m1-split-reverted-to-space-collapse \
   "p='loader/layerlist.js';s=open(p).read();o='        var rl = resetLines(resetText(l));\n        c.resetL1.innerHTML = rl[0];\n        c.resetL2.innerHTML = rl[1];';assert o in s;s=s.replace(o,'        c.reset.innerHTML = resetText(l).replace(/<br\\\\s*\\\\/?>/gi, \\\" \\\");');open(p,'w').write(s)" \
-  resetSplit resetHeight
+  ptr=resetSplit,resetHeight the-yes-tree=resetSplit,resetHeight
 
 # (b) the two-line height made CONDITIONAL on the second line being non-empty — the `normal`-type half.
 #     ⛔ THE POINT OF THIS MUTANT: a check that only ever exercised a `static` layer stays GREEN under it, because
 #     a static layer's second half is there. It reddens on the cards whose second half the engine did NOT emit,
 #     which on `ptr` at M16 are `p` and `e`. On a game with none of those it is expected to stay green, and the
-#     leg's `emptyL2` list is what says whether the game could judge it — which is why `ptr` is in GAMES.
+#     leg's `emptyL2` list is what says whether the game could judge it — which is why `ptr` is in GAMES. MEASURED:
+#     `the-yes-tree` reds only `resetHeight`, because none of its cards has an empty second line for the per-card
+#     RESERVATION check to fail on; `ptr` reds both. Leg L's FLIPPED comparison catches it on either game.
 mutant m2-two-line-height-conditional \
   "p='loader/layerlist.css';s=open(p).read();o='#tmt-layerlist .tmt-layerlist-resetline {';assert o in s;s=s.replace(o,'#tmt-layerlist .tmt-layerlist-resetline[data-line=\\\"2\\\"]:empty { min-height: 0; }\n'+o);open(p,'w').write(s)" \
-  resetSplit resetHeight
+  ptr=resetSplit,resetHeight the-yes-tree=resetHeight
 
 # ---- item 2 ----------------------------------------------------------------------------------------------------
-# the filter dropped: every candidate Decimal renders, bookkeeping included
+# the filter dropped: every candidate Decimal renders, bookkeeping included.
+# ⚠ `the-yes-tree` declares NO layer-own Decimal at all (`resCandidates` 0 in the control row), so this mutation
+# has nothing to render there and the game cannot witness it. `ptr` at M16 has 5 candidates and 2 shown.
 mutant m3-resource-filter-dropped \
   "p='loader/layerlist.js';s=open(p).read();o='      var shown = takeOccurrence(text, budget, v);\n      if (shown === null) return;';assert o in s;s=s.replace(o,'      var shown = takeOccurrence(text, budget, v);\n      if (shown === null) shown = whole(v);');open(p,'w').write(s)" \
-  res
+  ptr=res the-yes-tree=
 
 # ---- item 3 ----------------------------------------------------------------------------------------------------
 # cheapest replaced by first-listed EVERYWHERE. ⚠ It can only redden a sample that HAS a category where the two
 # rules pick different components; `cheapestWitnesses` in the row above is what says whether this one did.
 mutant m4-cheapest-becomes-first-listed \
   "p='loader/layerlist.js';s=open(p).read();o='      if (same) g.cand.forEach(function (c) { if (ltAmt(c.target, one.target)) one = c; });';assert o in s;s=s.replace(o,'      /* mutant: first-listed everywhere */');open(p,'w').write(s)" \
-  prog
+  ptr=prog the-yes-tree=prog
 
 # a cost in SEVERAL currencies rendered instead of skipped: its first entry's cost becomes the target
 mutant m5-multires-rendered-not-skipped \
   "p='loader/layerlist.js';s=open(p).read();o='        if (part.multi && numFieldOf(part.multi, decl, t)) g.skipped++;\n        return;';assert o in s;s=s.replace(o,'        var m = part.multi ? numFieldOf(part.multi, decl, t) : null;\n        if (!m || typeof m.length !== \\\"number\\\" || !m.length) return;\n        v = safe(function () { return m[0].cost; }, undefined);\n        if (!isAmount(v)) return;');open(p,'w').write(s)" \
-  multiRes
+  ptr=multiRes the-yes-tree=multiRes
