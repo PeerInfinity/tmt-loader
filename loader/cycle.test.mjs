@@ -394,7 +394,10 @@ test('a member DEMAND moved the turn away from is not punished for it', () => {
   // `reset:c` (row 2, not a member) waits for milestone 0 of layer `a`, which is never granted — so `a` is
   // demanded on every tick and `b` is preempted over and over. A preemption is not a guard release: `b` must not
   // collect a skip, or every member ends up skipped and the rotation stops (measured: it did).
-  const ctx = boot({ 'reset:a': `always|turn-demand@1/3x/5`, 'reset:b': `always|turn-demand@1/3x/5`, 'reset:c': 'keepsUpgrades' },
+  // ⚠ `b` CARRIES A HEAVY WEIGHT ON PURPOSE: with both members at one reset a turn, each spends its turn inside
+  // the tick it is granted and the holder is never mid-turn when demand looks — so the preemption branch is never
+  // reached and the row would prove nothing. A nine-reset turn keeps `b` holding across ticks.
+  const ctx = boot({ 'reset:a': `always|turn-demand@1/3x/5`, 'reset:b': `always|turn-demand@9/3x/5`, 'reset:c': 'keepsUpgrades' },
     fresh(), { keep: { 'reset:c': { layer: 'a', id: 0 } } });
   tick(ctx, 40);
   const C = cyc(ctx);
