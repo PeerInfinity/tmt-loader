@@ -367,6 +367,7 @@ every value through `format()` printed *"the cheapest upgrade is 21.00 at 20.00"
 | `cannot-reset` | `tmp[l].canReset` is false, with the two numbers the engine compared |
 | `in-challenge` | a challenge is active and not completable yet |
 | `waiting:gain` / `waiting:gain-x` | the `gain>=N` / `gain>=Nx` threshold, with the gain and what it needs |
+| `waiting:gain-unit` | `gain>=Nx-unit` while the layer holds **less than one** of its own resource: the bar is N of the resource, not N× nothing. A SEPARATE code, because the two bars are different questions and a reader has to be able to tell which one is refusing |
 | `waiting:interval` | seconds elapsed of the interval |
 | `waiting:milestone` | `keepsUpgrades`' milestone, or the milestone that would grant a toggle |
 | `waiting:purchase` | `unlocks-purchase`: the points after the reset still afford nothing |
@@ -635,6 +636,12 @@ swept layers without a constant: ptr `reset:p` 918 / 1627 / 2112 game-s to A1-3'
 (2215 at ptr (iii), 1587 on fundamental, 377 / 835 on primitive); `unlocks-purchase` walled ptr (ii) and fundamental;
 `always` walled both.
 
+⚠ **R2 re-examined that default and kept it, for a reason worth knowing: on an EMPTY purse `gain>=2x` IS `always`**
+(`N × 0 = 0`), which is what makes it safe as a default — it can never refuse a layer its first reset, and on PTR's
+`reset:p` a rule that does refuse one is a deadlock (measured: zero resets in 8,000 game-seconds). The same
+property is what makes it a poor TABLE entry for a deep layer whose first reset wipes a row that has been
+accumulating for hours. `gain>=Nx-unit` is that case's strategy and is chosen per layer, never derived.
+
 Upgrades with a `pseudoUnl` (Prestige Tree's pseudo-upgrades) are never bought. Milestone toggles in the 2.2.1 `'multi'`
 form (`{layer, varName, options}`, a string it cycles) are skipped and counted (`tmtLoader.autoDerivation.multiTogglesSkipped`).
 
@@ -692,6 +699,7 @@ grammar, the validator and the editors take another from one more table row.
 | `reset` | `always` | `doReset(l)` whenever `tmp[l].canReset` |
 | | `gain>=N` | … when `tmp[l].resetGain ≥ N` (N is a quantity, not a count: the advanced planner derives it from the target it is resetting FOR, so it spans the Decimal range) |
 | | `gain>=Nx` | … when `tmp[l].resetGain ≥ N × player[l].points` (dimensionless: "the reset at least doubles/quadruples what I hold") |
+| | **`gain>=Nx-unit`** | the same, with the purse floored at ONE unit of the layer's own resource: `resetGain ≥ N × max(player[l].points, 1)`. Identical to `gain>=Nx` at every purse of one or more — the only case it changes is the one that had no content. See below |
 | | `interval>=T` | … when at least T of `player.timePlayed` passed since this feature's last reset (runtime memory, not saved) |
 | | `keepsUpgrades` | … only while `hasMilestone(keep.layer, keep.id)` holds (a post-milestone policy: it never starts the layer) |
 | | `unlocks-purchase` | … only when `player[l].points + tmp[l].resetGain` affords the cheapest unowned, unlocked upgrade of `l`, or the next level of one of its unlocked buyables — both only where costed in the layer's own points (no `currencyInternalName` / `currencyLocation` / `currencyLayer`); else wait |
@@ -734,6 +742,42 @@ threshold for that long."*
 
 **`rate-peak@0/0` is the bare rule and stays selectable** — it is the CONTROL every measurement of the other two is
 against. ⚖ **R2's sweep owns the real defaults**; V2 moves none and writes nothing into `games-auto/`.
+
+### `gain>=Nx-unit` — the EMPTY PURSE, and why a ratio is not a default (R2)
+
+⛔ **`gain>=Nx` on a layer that holds nothing is `gain >= 0` — it is `always`, and nobody had noticed.** The right-hand
+side is `N × player[l].points`; when the layer holds none of its own resource that product is zero and the rule fires on
+the first tick the engine allows a reset. It is not an edge case: **a layer holds nothing before its first reset (which
+is what UNLOCKS it), and again after every reset of a higher row** — and on PTR's `q` it holds nothing for most of the
+run besides, because `buyables:q` spends every quirk on Quirk Layers, so the purse is a residue rather than a measure of
+progress.
+
+`gain>=Nx-unit` is the same rule with the purse floored at ONE unit of the layer's own resource
+(`resetGain ≥ N × max(player[l].points, 1)`). It is identical to `gain>=Nx` at every purse of one or more, so the only
+behaviour it can change is the behaviour that had no content, and the refusal says which bar it is against
+(`waiting:gain-unit` rather than `waiting:gain-x`).
+
+**What it is worth, measured (gate R2-S1, from `snapshots/ptr/all/M15.json` → M22, 14,000 ticks, diff 1, every cell
+twice equal):** on `reset:q` the floor moves **M16 from 24179 to 17058 game-seconds** — 7,121 game-seconds, the whole
+completion of row 2 — because the shipped rule fired the instant one quirk was available, unlocked `q` early and let a
+row-3 reset wipe row 2 before row 2 was done.
+
+⛔ **AND IT IS NOT A DEFAULT.** On `reset:p` the same floor is a **DEADLOCK**: measured (gate R2-S3, a fresh game, 8,000
+game-seconds, twice equal) **zero resets, `player.points` still 10**, no mark reached at all, against the shipped
+`gain>=2x` reaching M12 at 6718. PTR generates no points until a prestige upgrade is bought, and no prestige upgrade can
+be bought before the first prestige — so a rule that waits for a gain of 2 waits forever. That is the general shape:
+**a floor on the first reset bricks any layer whose own reset is the only source of the progress the floor is waiting
+for.** The floor pays exactly where a premature first reset destroys something that took a long time to build, and
+costs where it does not (`reset:p` above, and Something Tree's `reset:fundamental`: S05 at 1074 game-seconds against
+`gain>=2x`'s 677, gate R2-S5). Nothing the engine declares distinguishes those two cases — not the layer's row, not
+whether its currency is spent down — so **which layers take the floor is a measured TABLE entry, and the derived
+default for a normal layer stays `gain>=2x`.**
+
+⚠ **The same first-cycle blindness is in `rate-peak`, and it is not fixed here.** `decideRatePeak` returns `act: true`
+when `lastReset[f.id]` is undefined ("no cycle to compare against yet"), so its first reset is unconditional too —
+measured on `reset:q`: every `rate-peak` cell unlocks `q` at 16917 game-seconds, exactly where `always` does, and pays
+for it with M16 at 22346 instead of 17058. A fix would seed the feature's reset clock when it first becomes able to
+reset, which also moves `interval>=T`'s first interval and therefore every A1/A2 pin — ⚖ a slice of its own.
 
 ### `stall>=Kx/N` — the stall fallback (V2), a MODIFIER
 

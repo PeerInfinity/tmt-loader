@@ -168,6 +168,37 @@ node tools/harness/run.mjs ptr --profile all --ladder tools/harness/ladder/ptr.j
 4. A change to the core or a table re-checks the earlier fixtures by resuming from them: the marks after must land at
    the recorded tick and `hashGame` (or the change is a finding, not a re-record).
 
+## Scoring a DEFAULT: over WHOLE STRETCHES, never from the fixture the old default wrote (R2)
+
+⛔ **A fixture bakes in the policy that produced it, and a layer UNLOCKS ON ITS FIRST RESET.** The two together make
+"resume from the last fixture and compare" the WRONG instrument for choosing a default, and it took a measured
+7,121 game-seconds to notice. `snapshots/ptr/all/M16.json` was written under `reset:q = gain>=2x`, which on an empty
+purse is `gain >= 0`: it fired the instant one quirk existed, unlocked `q` early, and let a row-3 reset wipe row 2
+before row 2 was finished. Every cell V2 and V3 scored "from `all/M16`" was therefore scored from a state the winning
+default would never reach — and the winning default reaches M16 itself at **17058** rather than 24179.
+
+The rule that replaces it:
+
+1. **Score a candidate default over a whole stretch**, from the last fixture the candidate cannot have moved
+   (`all/M15.json` for a row-3 default — row 3 has not acted by then), through the last mark of the rung, with the
+   earlier marks as COLUMNS of that same run rather than as starting points.
+2. **Add the opening as a second leg.** A fresh game to M12 is where a rule that waits too long shows up as a
+   deadlock rather than as a slower number: `gain>=2x-unit` on `reset:p` is zero resets in 8,000 game-seconds.
+3. **Add a second GAME as the generality control**, with its own table unchanged, so "the derived default moved and
+   nobody noticed on the other 170 games" is a row rather than an assumption.
+4. **Every cell twice, and a cell whose two runs disagree on the marks, the end game-second or the end `hashGame` is
+   RED.** Game-seconds are deterministic; wall time is not.
+5. **Regenerate every fixture the move moves, and say OLD → NEW** — tick and `hashGame`, per file — and make every pin
+   that inherited the old default NAME its configuration (§14d.2 item 14) instead of inheriting whatever the table
+   says today.
+
+`tools/harness/sweep.mjs` runs that shape: **`--vary` may be repeated** (each occurrence is an AXIS, and the cells are
+their cross product) and **`--repeat N`** runs every cell N times and reports `twiceEqual`. Every line carries
+`ticks_ms` and the box's 1-minute load at the start and end of its own child, because a full pool changes ms/tick and
+never changes game-seconds. It exports `runCells()` for a gate battery to drive directly (`gates-r2.mjs`), and it is
+ENTRY-guarded, so importing it does not start a sweep. **One cell per process**: an L1 leg is ~14,000 ticks at 13–19
+ms/tick on a quiet box and 40–45 ms/tick with six children on eight cores.
+
 ## What runs where
 
 ⚖ Until U2g (2026-09-18) CI held exactly one gate — the M1 mobile sweep — and every other check ran on one box, in

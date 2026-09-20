@@ -194,6 +194,20 @@
       params: [{ name: 'n', type: 'factor', placeholder: 'N', default: '2', label: 'multiple of what is held' }],
       layerTypes: ['normal', 'custom'], why: 'a static layer gains 1 per reset, so a multiple of what it already holds can never be reached (plan §14d.5)',
       progress: function (f, v) { return ratio(v && v.gain, v && v.need); } },
+    // ⛔ R2: THE EMPTY-PURSE SIBLING OF THE ROW ABOVE, AND THE REASON IT EXISTS IS A DEFECT IN THAT ROW.
+    // `gain>=Nx` reads `resetGain >= N × player[l].points`. When the layer holds NOTHING the right-hand side is
+    // `N × 0 = 0`, so the rule is `gain >= 0` — it is `always`, and it fires on the FIRST tick the engine allows a
+    // reset. That is not a small edge case: a layer holds nothing before its first reset (which is what UNLOCKS it)
+    // and again after every reset of a higher row, so on PTR the shipped `gain>=2x` unlocked `q` the instant one
+    // quirk was available and let a row-3 reset wipe row 2 before row 2 was done (plan §23, measured).
+    // ⚖ 13d.2 asks what a reset is FOR. A MULTIPLE of nothing is not a target; N of the layer's own resource is, and
+    // it is the same N the player already chose — no second literal, and identical to `gain>=Nx` at every purse of
+    // one unit or more (`N × max(held, 1)`), so the only behaviour it changes is the one that had no content.
+    { kind: 'reset', template: 'gain>={n}x-unit', label: 'Gain at least N× what is held (N when it holds none)',
+      help: 'As “gain at least N× what is held”, except that while the layer holds less than one of its own resource the reset waits for N of it — a multiple of nothing is no condition at all.',
+      params: [{ name: 'n', type: 'factor', placeholder: 'N', default: '2', label: 'multiple of what is held, or of one unit' }],
+      layerTypes: ['normal', 'custom'], why: 'a static layer gains 1 per reset, so a multiple of what it already holds (or of one unit, when it holds none) can never be reached (plan §14d.5)',
+      progress: function (f, v) { return ratio(v && v.gain, v && v.need); } },
     { kind: 'reset', template: 'interval>={t}', label: 'Every T seconds', help: 'Reset once this many game-seconds have passed since this feature’s own last reset.',
       params: [{ name: 't', type: 'seconds', placeholder: 'T', default: '10', min: 0, label: 'seconds between resets' }],
       progress: function (f, v) { return ratio(v && v.elapsed, v && v.need); } },
@@ -422,6 +436,7 @@
     // running, and the policy says not yet
     'waiting:gain':       { text: 'Waiting — gain {gain} of {need}',                              values: ['gain', 'need'], quantities: ['gain', 'need'] },
     'waiting:gain-x':     { text: 'Waiting — gain {gain} of {need} ({n}× the {have} held)',        values: ['gain', 'need', 'n', 'have'], quantities: ['gain', 'need', 'have'] },
+    'waiting:gain-unit':  { text: 'Waiting — gain {gain} of {need} ({n}× one unit; the layer holds {have})', values: ['gain', 'need', 'n', 'have'], quantities: ['gain', 'need', 'have'] },
     'waiting:interval':   { text: 'Waiting — {elapsed} s of {need} s since the last reset',        values: ['elapsed', 'need'] },
     'waiting:milestone':  { text: 'Waiting — milestone {id} of {layer} is not held',              values: ['layer', 'id'] },
     'waiting:purchase':   { text: 'Waiting — the reset would still afford nothing',               values: [] },
@@ -685,10 +700,16 @@
     if (!P) return { act: false, code: 'unknown', values: null };
     if (P.id === 'always') return { act: true };
     // gain>=Nx: the gain is at least N × the points held (dimensionless); gain>=N: the gain is at least N
-    if (P.id === 'gain>=Nx') {
-      var have = D(player[l].points), needX = have.times(Number(P.params.n));
+    if (P.id === 'gain>=Nx' || P.id === 'gain>=Nx-unit') {
+      // ⛔ `gain>=Nx` on an EMPTY purse is `gain >= 0`, i.e. `always` — see the strategy table. `gain>=Nx-unit`
+      // is the same rule with the purse floored at ONE UNIT of the layer's own resource, so the two differ ONLY
+      // while the layer holds less than one, and the refusal says which bar it is against.
+      var held = D(player[l].points);
+      var floored = P.id === 'gain>=Nx-unit' && held.lt(D(1));
+      var needX = (floored ? D(1) : held).times(Number(P.params.n));
       if (D(tmp[l].resetGain).gte(needX)) return { act: true };
-      return { act: false, code: 'waiting:gain-x', values: { gain: tmp[l].resetGain, need: needX, n: Number(P.params.n), have: player[l].points } };
+      return { act: false, code: floored ? 'waiting:gain-unit' : 'waiting:gain-x',
+        values: { gain: tmp[l].resetGain, need: needX, n: Number(P.params.n), have: player[l].points } };
     }
     if (P.id === 'gain>=N') {
       if (D(tmp[l].resetGain).gte(D(P.params.n))) return { act: true };   // Decimal: the threshold may be 1e276
