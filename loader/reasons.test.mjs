@@ -30,7 +30,7 @@ function game(over = {}) {
         t.canReset = t.baseAmount.gte(t.requires); t.autoPrestige = over.autoPrestige === true;
         t.resetGain = new Decimal(over.resetGain === undefined ? 1 : over.resetGain);
         t.upgrades = { 11: { cost: new Decimal(10), unlocked: true }, 12: { cost: new Decimal(1000), unlocked: true } };
-        t.buyables = { 11: { cost: new Decimal(5), unlocked: over.buyableUnlocked !== false } };
+        t.buyables = { 11: { cost: new Decimal(5), unlocked: over.buyableUnlocked !== false, autoed: over.autoed } };
         t.challenges = { 11: { unlocked: true, completionLimit: 1 }, 12: { unlocked: true, completionLimit: 1 } };
         t.clickables = { 11: { unlocked: true, canClick: over.canClick !== false } };
       },
@@ -55,6 +55,57 @@ const boot = (opts = {}, over = {}) => {
   ctx.tmtLoader.profile('all');
   return ctx;
 };
+
+// ⛔ R2 — THE GAME'S OWN AUTOBUYER, PER BUYABLE, AND THE ROW THAT CAN SEE IT IS A BUY COUNT. The `reset` kind has
+// yielded to `tmp[l].autoPrestige` since A1; a PURCHASE kind did not, and once a game grants its own buy-max the
+// loader and the engine are managing the same buyable. On PTR that is q milestone 1 (`player.e.auto`,
+// `player.t.autoExt`) and it is measured in gate R2-3b — but Something Tree declares no `autoed` and CANNOT witness
+// it, so the condition is CONSTRUCTED here.
+// ⚠ The assertion is the BUY COUNT, deliberately. A double-buy moves no mark and (on the stub) could leave the
+// reason code alone, so a row that asserted a code or a hash would walk straight past the mutant that removes the
+// yield; `player.a.buyables[11]` cannot.
+test('a buyable the GAME declares as `autoed` is left to the game — and the row that sees it is the BUY COUNT', () => {
+  const K = { options: { kinds: 'buyables' }, autoTable: { policies: { 'buyables:a': 'buy' } } };   // buyables ONLY, so the points are this kind's alone
+  const on = boot(K, { autoed: true });
+  on.player.a.points = new Decimal(1000);
+  tick(on, 3);
+  assert.equal(Number(on.player.a.buyables[11]), 0, 'the loader bought a buyable the game declares it autobuys');
+  assert.equal(Number(on.player.a.points), 1000, 'and it spent nothing');
+  assert.equal(rowOf(on, 'buyables:a').last.code, 'yielding:native');
+
+  // the CONTROL, identical but for the declaration: without it the same three ticks buy, so the row above is a
+  // measurement of the yield and not of an unaffordable or locked buyable
+  const off = boot(K, {});
+  off.player.a.points = new Decimal(1000);
+  tick(off, 3);
+  assert.ok(Number(off.player.a.buyables[11]) > 0, 'the control bought nothing either — the leg is vacuous');
+  // ⚠ the CENSUS, not `last`: the control spends the whole purse on its first tick and then says
+  // `nothing-affordable`, so the last tick's code is not the one this row is about
+  assert.ok(codes(off)['acted:buyables'] > 0, 'the control never acted');
+  assert.ok(Number(off.player.a.points) < 1000);
+  assert.equal(codes(on)['acted:buyables'] || 0, 0, 'the yielding arm acted at least once');
+});
+
+// ⚠ FALSY IS THE WHOLE OF "NO", and 155 of the 171 games never mention `autoed` at all — an absent declaration is
+// `undefined` and must buy exactly as before. ⛔ And the other half is what makes this row non-vacuous: `autoed()` is
+// the GAME's own expression and nothing obliges it to return a boolean, so a TRUTHY non-boolean must yield. A
+// mutant that tightens the test to `=== true` walks past the falsy half and dies on the truthy one.
+test('a falsy or absent `autoed` buys exactly as before — and a TRUTHY non-boolean one yields', () => {
+  const K = { options: { kinds: 'buyables' }, autoTable: { policies: { 'buyables:a': 'buy' } } };
+  for (const v of [undefined, false, null, 0, '']) {
+    const ctx = boot(K, { autoed: v });
+    ctx.player.a.points = new Decimal(1000);
+    tick(ctx, 3);
+    assert.ok(Number(ctx.player.a.buyables[11]) > 0, `autoed=${JSON.stringify(v)} suppressed the purchase`);
+  }
+  for (const v of [1, 'yes', new Decimal(1)]) {
+    const ctx = boot(K, { autoed: v });
+    ctx.player.a.points = new Decimal(1000);
+    tick(ctx, 3);
+    assert.equal(Number(ctx.player.a.buyables[11]), 0, `a truthy autoed=${JSON.stringify(String(v))} did not yield`);
+    assert.equal(rowOf(ctx, 'buyables:a').last.code, 'yielding:native');
+  }
+});
 
 test('the table is internally consistent: every placeholder is a declared value, every quantity is one too', () => {
   // ⚠ A code whose template names `{cost}` while its callers pass `{price}` renders `?` forever and no leg would

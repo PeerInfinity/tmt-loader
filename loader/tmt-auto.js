@@ -1622,10 +1622,27 @@
       var reserved = function () { return lim !== null && D(player[l].points).lte(lim); };
       var ids = f.order ? f.order.slice() : numIds(L.buyables);
       if (f.policy === 'highest-first' && !f.order) ids.reverse();
-      var n = 0, bought = [], held = false, seen = 0, minC = null, minId = null;
+      var n = 0, bought = [], held = false, seen = 0, minC = null, minId = null, autoed = [];
       for (var i = 0; i < ids.length; i++) {
         var id = ids[i];
         if (!B[id] || !B[id].unlocked) continue;
+        // ⛔ YIELD TO THE GAME'S OWN AUTOBUYER — PER BUYABLE (R2). `reset` has yielded to `tmp[l].autoPrestige` since
+        // A1; a PURCHASE kind did not, and the moment a game grants its own buy-max the two are managing the same
+        // buyable. PTR's q milestone 1 turns on `player.e.auto` (Enhancers, layers.js:1332) and `player.t.autoExt`
+        // (Extra Time Capsules, :1007), and the game then buys both with `buyMax()` and NO reserve. Measured
+        // (gate R2-3b, from `all/M19.json`, 1500 ticks, twice equal): with the natives on, `buyables:e` acted **0**
+        // times — it was already inert — and `buyables:t` acted **32**, which is the double-buy, on top of the
+        // native buyer, for 2 more capsules and no mark moved.
+        // ⚖ MINIMIZE HARDCODING: the condition is the GAME'S OWN DECLARATION, not a table entry. 2.7 lets a buyable
+        // declare `autoed()` and the engine evaluates it into `tmp[l].buyables[id].autoed` (verified live on ptr:
+        // t11 and e11 both true at the M19 fixture). The word appears in **16 of 171** games' sources by a bounded
+        // text grep over `games/*/`, re-measured 2026-09-20 — a game that does not declare it is unaffected, because
+        // a game that does not declare it is unaffected, because `undefined` is falsy.
+        // ⚠ TRUTHY, NOT `=== true`. A strict comparison was the first cut and it is the defect it is meant to
+        // prevent, upside down: `autoed()` is the GAME's own expression and nothing makes it return a boolean —
+        // a fork returning `1`, or a Decimal, means YES, and a strict check would silently go on double-buying.
+        // Falsy is the whole of "no", and that is what the 155 games with no declaration rely on.
+        if (B[id].autoed) { autoed.push(id); continue; }
         seen++;
         if (reserved()) { held = true; break; }
         // ⚠ the cheapest UNBOUGHT candidate, tracked only while nothing has been bought — once something has, the
@@ -1649,6 +1666,8 @@
       }
       if (n) return { act: true, n: n, code: 'acted:buyables', values: { n: n, ids: bought } };
       if (held) return { act: false, code: 'holding:reserve', values: { have: player[l].points, reserve: lim } };
+      // every unlocked buyable of this layer is the GAME's to buy — the same sentence `reset` already says
+      if (!seen && autoed.length) return { act: false, code: 'yielding:native', values: { layer: l } };
       if (!seen) return { act: false, code: 'nothing-to-do', values: { kind: 'buyables', layer: l } };
       return { act: false, code: 'nothing-affordable', values: { kind: 'buyable', id: minId, cost: minC } };
     },
