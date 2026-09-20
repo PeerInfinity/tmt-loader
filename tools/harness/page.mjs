@@ -711,27 +711,54 @@ const LAYERLIST_PROBE = `(${function () {
     return { key: st.prefix + MEM_KEY, value: st.raw.getItem.call(localStorage, st.prefix + MEM_KEY) }; }, { key: null, value: null });
   const memOf = (l) => S(() => { const o = JSON.parse(memRaw().value || '{}');
     return Array.isArray(o[l]) ? o[l] : []; }, []);
+  // (U9) THE DECLARED GLOBAL-CURRENCY ROW, rebuilt here from the engine's own declarations — the row is not a
+  // `player[l]` key, so `candKeys` can never produce it and the list's own answer is not asked for.
+  // ⛔ READ AS SOURCE, NEVER AS A VALUE: comparing `tmp[l].baseAmount` with `player.points` for equality reports
+  // 6 layers on ptr and ZERO on `something` at a fresh save, which is an artefact of the numbers and not an
+  // answer to the question. The boundary before `player` keeps `player[x].points` and `foo.player.points` out.
+  const G_KEY = '@points';
+  const G_RE = /(^|[^\w$.])player\s*\.\s*points\b/;
+  // ⛔ COMMENTS OUT FIRST: `gooby-cat-tree`'s `p` and `Fr` both carry a commented-out `//return player.points`
+  // under the line that runs, and a raw source test admits both. Replaced with a SPACE, so nothing is spliced.
+  const gStrip = (src) => String(src).replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/\/\/[^\n\r]*/g, ' ');
+  const gExpect = (l) => {
+    if (S(() => tmp[l].row, undefined) !== 0) return null;
+    const src = S(() => { const b = layers[l].baseAmount; return (b === undefined || b === null) ? '' : gStrip(b); }, '');
+    if (!G_RE.test(src)) return null;
+    const v = S(() => player.points, null);
+    if (!isDec(v)) return null;
+    const lab = S(() => { const t = tmp[l].baseResource; return t === undefined ? layers[l].baseResource : t; }, '');
+    return { key: G_KEY, label: (typeof lab === 'string' && lab) ? lab : 'points', text: F(v, false) };
+  };
   /** The resources the card SHOULD show, and the string each should print, in `player[l]`'s own key order.
    *  ⚠ (U8) TWO WAYS ONTO THE ROW, and the string is OURS either way: a key whose value the layer's text still
    *  states, and a key the store REMEMBERS from a state where it did. A text this pass could not read claims
    *  nothing and leaves the remembered rows standing, which is the post-reset case. */
   const resExpect = (l, text) => {
     const pl = S(() => player[l], null);
-    if (!pl || typeof pl !== 'object') return [];
+    const g = gExpect(l);
+    if ((!pl || typeof pl !== 'object') && !g) return [];
     const budget = Object.create(null);
-    if (text) for (const k of ENGINE_AMOUNTS) { const v = S(() => pl[k], null); if (isDec(v)) takeOcc(text, budget, v); }
+    if (text && pl) for (const k of ENGINE_AMOUNTS) { const v = S(() => pl[k], null); if (isDec(v)) takeOcc(text, budget, v); }
     const claim = Object.create(null), byText = Object.create(null);
+    // (U9) the declared row claims BEFORE any candidate, or a bookkeeping key holding the same number would take
+    // the global's own occurrence and the card would print the global's value under that key's name
+    let gShown = null;
+    if (g && text) { gShown = takeOcc(text, budget, S(() => player.points, null)); if (gShown !== null) byText[gShown] = (byText[gShown] || 0) + 1; }
     if (text) for (const k of candKeys(l)) {
       const t = takeOcc(text, budget, S(() => pl[k], null));
       if (t === null) continue;
       claim[k] = t; byText[t] = (byText[t] || 0) + 1;
     }
     const mem = memOf(l), out = [];
+    // ⚠ FIRST, and never sticky: a DECLARED row cannot vanish, so U8's memory has nothing to remember about it.
+    if (g) out.push({ key: g.key, label: g.label, text: g.text, claimed: gShown,
+      collide: gShown !== null && byText[gShown] > 1, sticky: false, global: true });
     for (const k of candKeys(l)) {
       const has = claim[k] !== undefined;
       if (!has && mem.indexOf(k) < 0) continue;
-      out.push({ key: k, text: F(S(() => pl[k], null), false), claimed: has ? claim[k] : null,
-        collide: has && byText[claim[k]] > 1, sticky: !has });
+      out.push({ key: k, label: k, text: F(S(() => pl[k], null), false), claimed: has ? claim[k] : null,
+        collide: has && byText[claim[k]] > 1, sticky: !has, global: false });
     }
     return out;
   };
@@ -928,7 +955,8 @@ const LAYERLIST_PROBE = `(${function () {
     // ---- U7 item 2: the other resources ---------------------------------------------------------------------
     const resEls = [...c.querySelectorAll('.tmt-layerlist-resource')];
     const gotRes = resEls.map((e) => ({ key: e.dataset.key, text: e.querySelector('.tmt-layerlist-resource-value').textContent,
-      sticky: e.dataset.sticky === 'yes' }));
+      label: e.querySelector('.tmt-layerlist-resource-label').textContent,
+      sticky: e.dataset.sticky === 'yes', global: e.dataset.global === 'yes' }));
     const text = S(() => String(window.tmtLoader.layerListUI.resourceText(l)), '');
     const cands = candKeys(l);
     // every rendered resource must be a CANDIDATE, must PRINT ITS OWN CURRENT VALUE, and must have got onto the
@@ -939,14 +967,30 @@ const LAYERLIST_PROBE = `(${function () {
     // prose, so "is this string in the text" cannot judge it; what must hold is that the row states what
     // `player[l][key]` holds NOW. A build that froze the last attributed STRING would pass every other check here.
     const resBad = [];
+    const gWant = gExpect(l);
     for (const r of gotRes) {
+      // (U9) the DECLARED row is judged on the DECLARATION and on the global value it prints — the two checks
+      // below (attributed or remembered) are about `player[l]` keys and say nothing about it.
+      if (r.global || r.key === G_KEY) {
+        if (!gWant) { resBad.push(`${r.key}: a global-currency row on a layer that does not declare one (row ${JSON.stringify(S(() => tmp[l].row, undefined))})`); continue; }
+        if (r.key !== G_KEY) resBad.push(`${r.key}: marked global but is not ${G_KEY}`);
+        if (r.text !== gWant.text) resBad.push(`${r.key}: prints "${r.text}", not the GLOBAL player.points "${gWant.text}"`);
+        if (r.label !== gWant.label) resBad.push(`${r.key}: labelled "${r.label}", not the authored baseResource "${gWant.label}"`);
+        if (r.sticky) resBad.push(`${r.key}: a DECLARED row cannot be remembered, but it renders as sticky`);
+        if (memOf(l).indexOf(r.key) >= 0) resBad.push(`${r.key}: the declared row was written into the remembered set`);
+        continue;
+      }
       if (cands.indexOf(r.key) < 0) { resBad.push(`${r.key}: not a candidate (engine key or not a Decimal)`); continue; }
+      if (r.label !== r.key) resBad.push(`${r.key}: labelled "${r.label}" — a player key's label is the key (U7)`);
       const v = S(() => player[l][r.key], null);
       const own = F(v, false);
       if (r.text !== own) resBad.push(`${r.key}: prints "${r.text}", not this key's own value "${own}"`);
       if (!r.sticky && !atNumber(text, own) && !atNumber(text, F(v, true))) resBad.push(`${r.key}: rendered as ATTRIBUTED, but "${own}" is not stated in this layer's own text`);
       if (r.sticky && memOf(l).indexOf(r.key) < 0) resBad.push(`${r.key}: rendered as REMEMBERED, but the store does not name it`);
     }
+    // ⛔ AND THE OTHER DIRECTION, which is the one a build that simply never emits the row would pass: a layer
+    // that DECLARES the global currency must have the row.
+    if (gWant && !gotRes.some((r) => r.key === G_KEY)) resBad.push(`${G_KEY}: declared (row 0, baseAmount reads the global player.points) but NOT rendered`);
     // ⚠ BOTH DIRECTIONS, against the budget rebuilt above: neither a filter that admits everything nor one that
     // admits nothing can pass, and neither can one that keeps a candidate whose occurrence an engine readout or
     // an earlier key had already claimed.
@@ -958,6 +1002,8 @@ const LAYERLIST_PROBE = `(${function () {
       if (g.key !== w.key) resBad.push(`${i}: ${g.key} != ${w.key}`);
       else if (g.text !== w.text) resBad.push(`${w.key}: "${g.text}" != "${w.text}"`);
       else if (g.sticky !== w.sticky) resBad.push(`${w.key}: rendered sticky=${g.sticky}, expected ${w.sticky}`);
+      else if (g.label !== w.label) resBad.push(`${w.key}: labelled "${g.label}", expected "${w.label}"`);
+      else if (g.global !== !!w.global) resBad.push(`${w.key}: rendered global=${g.global}, expected ${!!w.global}`);
     });
     // ⚖ (U8) decision 1's COST, counted rather than argued: the attributed rows whose own formatting differs from
     // the occurrence they claimed out of the layer's prose. `format` and `formatWhole` agree at 0, above 1,000 and
@@ -1032,7 +1078,7 @@ const LAYERLIST_PROBE = `(${function () {
       threeStates: skinSet.filter((k) => k !== 'pseudo').length >= 3,
       // --- U7 ---
       reset, resetOk,
-      resources: gotRes, wantRes, resBad, resCands: cands.length, resLift: lift, resCollide,
+      resources: gotRes, wantRes, resBad, resCands: cands.length, resLift: lift, resCollide, resGlobal: gWant,
       resSticky: gotRes.filter((r) => r.sticky).length, resMem: memOf(l), resRestated,
       prog: gotProg, wantProg, progBad, progOk: progBad.length === 0, cheapestWitness, progDropped,
       progHow: wantProg.map((w) => w.how),
@@ -1152,6 +1198,12 @@ const LAYERLIST_PROBE = `(${function () {
     // remembered. 0 here is not a pass, it is "this state had no ambiguous attribution to withhold".
     resWithheld: perCard.flatMap((x) => x.wantRes.filter((w) => w.collide && x.resMem.indexOf(w.key) < 0).map((w) => `${x.layer}.${w.key}`)),
     resRestated: perCard.flatMap((x) => x.resRestated),
+    // --- (U9) the DECLARED global-currency rows: which cards declare one, and the author's own label on each.
+    // ⚠ The LABEL is reported verbatim: 7 layers across the roster label it `TBD` (a fork's own placeholder), and
+    // rendering that as it stands is honest, while a name table would be the hardcoding ⚖ MINIMIZE HARDCODING
+    // rules out. 0 declaring cards is an ABSTENTION for this game, not a pass.
+    resGlobalCards: perCard.filter((x) => x.resGlobal).map((x) => `${x.layer}:${x.resGlobal.label}`),
+    resGlobalRows: perCard.reduce((n, x) => n + x.resources.filter((r) => r.global).length, 0),
     // ⚖ THE LABEL IS THE KEY and the prose lift is REPORTED, never rendered — the sample the user rules on
     resLift: perCard.flatMap((x) => x.resLift.map((y) => `${x.layer}.${y.key} \u2192 ${y.label}`)).slice(0, 12),
     resSample: perCard.filter((x) => x.resources.length).slice(0, 4).map((x) => ({ layer: x.layer, res: x.resources })),
@@ -3682,6 +3734,13 @@ async function main() {
       const seqRed = rows.filter((r) => ll(r) && !ll(r).seqOk).map((r) => r.id);
       const divRed = rows.filter((r) => ll(r) && !ll(r).dividerOk).map((r) => r.id);
       const radRed = rows.filter((r) => ll(r) && !ll(r).radiusOk).map((r) => r.id);
+      // (U9) the DECLARED global-currency rows, over whatever cards each game's state actually showed.
+      // ⚠ This is a count over the LIST's own cards, not over the roster's layers — a layer whose card the list
+      // does not show (locked, not `layerShown`) declares nothing here. The roster-wide census is docs/mobile.md's.
+      const gCards = rows.flatMap((r) => ((ll(r) || {}).resGlobalCards || []).map((x) => `${r.id}/${x}`));
+      const gLabels = gCards.reduce((o, x) => { const k = x.split(':').pop(); o[k] = (o[k] || 0) + 1; return o; }, {});
+      const gPer = rows.map((r) => ((ll(r) || {}).resGlobalCards || []).length).filter((n) => n > 0);
+      console.log(`M1 layers global currency (U9 — a row-0 layer whose \`baseAmount\` SOURCE reads the global \`player.points\`; the label is the author's own \`baseResource\`): ${gCards.length} declared card(s) on ${gPer.length}/${rows.length} game(s)${gPer.filter((n) => n > 1).length ? `, ${gPer.filter((n) => n > 1).length} of them with MORE THAN ONE (the row appears on each: ⚖ open for the user)` : ''}; labels ${JSON.stringify(gLabels)}${gCards.length ? `; e.g. ${gCards.slice(0, 6).join(', ')}` : ' — ABSTAINS: no card in this run declares one'}`);
       console.log(`M1 layers order: chip sequence equals the tabFormat-derived order in ${rows.length - seqRed.length}/${rows.length}${seqRed.length ? ` (RED: ${seqRed.join(', ')})` : ''}; dividers correct in ${rows.length - divRed.length}/${rows.length}${divRed.length ? ` (RED: ${divRed.join(', ')})` : ''}; milestone corners differ in ${rows.length - radRed.length}/${rows.length}${radRed.length ? ` (RED: ${radRed.join(', ')})` : ''}`);
       const ps = rows.reduce((n, r) => n + ((ll(r) && ll(r).pseudoChips) || 0), 0);
       // U2d: THE COLLAPSED CARD. U2b's `+N`-starvation report is gone with the card it described.

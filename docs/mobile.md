@@ -1249,6 +1249,83 @@ what a first load does too.
 are standing on the memory: every game boots with an empty store and the same render that shows a row is the one
 that records it. The feature only shows after a RESET, which is why the gate has to drive one (leg O).
 
+#### The global currency on a first-row card (U9)
+
+⚖ user, 2026-09-20: *"Points should be displayed as a secondary currency in the first layer, at least in ptr. Is
+there a clean rule that would do that?"*
+
+**Yes, and the ENGINE declares it.** U7's `resourcesOf` enumerates `player[layer]` keys only, so the GLOBAL
+`player.points` can never be one of them — that is the whole reason it was missing, and why this needs a rule and
+not a wider filter. A layer's `baseAmount` is the thing it resets **for**; where its source reads the global
+`player.points`, the global currency IS that layer's base currency.
+
+⛔ **READ AS SOURCE, NEVER AS A VALUE.** Comparing `tmp[layer].baseAmount` with `player.points` for equality
+reported **6 layers on `ptr` and ZERO on `something` and `the-point-tree`** — an artefact of a fresh save where
+the numbers happen to coincide or happen not to, and backwards on two of the three. The source read is
+value-independent and says the same thing at every state. (It is U7's everything-is-zero-at-a-fresh-save trap
+wearing a different hat.)
+
+⛔ **COMMENTS OUT FIRST, and that is MEASURED.** `gooby-cat-tree`'s `p` and `Fr` both carry a commented-out
+`//return player.points` under the line that actually runs (`player[this.layer].buyables[11]`), and a raw source
+test admits both — 488 layers instead of 486, and one game credited with a currency it does not use. The stripper
+replaces a comment with a SPACE, so it can only remove a match and never splice one together. ⚠ It is a stripper,
+not a tokenizer: a `//` inside a string literal would be cut too, and the failure mode of that is a row that does
+not appear, never a row that appears with the wrong number.
+
+⚠ **`player[...]` IS NOT THE GLOBAL.** `player[this.layer].points` and `player.p.points` are a LAYER's currency;
+the boundary before `player` is what also keeps `xplayer.points` and `foo.player.points` out.
+
+**Measured over all 171 games**, at `3346da419`, by `node tools/census-basecurrency.mjs` — which boots each game
+and reads `layers[l].baseAmount.toString()` off the live object, applying the SAME two rules the list applies.
+⚠ A RUNTIME census on purpose: a layer's declaration reaches `layers[l]` through `addLayer(...)` and through
+whatever the mod does to it at load, so the live object is the only place to see what the list will see.
+
+| | |
+|---|---|
+| layers | **2,513** |
+| declaring the GLOBAL `player.points` as their base | **486** (488 before the comment strip) |
+| — of those, on a NUMERIC row 0 | **192**, across **146 of 171 games** |
+| games with exactly ONE such row-0 layer | **118** |
+| with 2 / 3 / 4 / 5 / 8 | 18 / 7 / 1 / 1 / 1 |
+| with none | **25** |
+| row-0 declarers already `layerShown` at a fresh save | **152** |
+
+⚠ **Restricted to a NUMERIC row 0**: TMT also has `side` layers and `row` is not always a number — 23 of the 486
+declarers sit on a non-numeric row (`side` ×18) or on a row that is not 0 (`-10` ×2, `11`, `1`, one `undefined`).
+The row is read through `rowOf()`, the same reader `groups()` places the cards with, so the row a card SITS in and
+the row this rule asks about cannot drift apart.
+
+⚖ **ROW 0 ONLY, and ON EVERY ROW-0 LAYER THAT DECLARES IT — the second half is open for the user.** Row 0 is what
+makes this "the first layer", and it gives exactly one card on 118 games — `ptr`'s `p`, `something`'s `unlock`,
+`the-point-tree`'s `basic`, `the-modding-tree`'s `p`. But **28 games have 2–8 row-0 layers sharing the global
+currency** (`the-dressy-tree` 8, `the-chronicle-tree` 5, `the-function-of-time-tree` 4), and the same number then
+appears on several cards at once. Showing it on all of them is TRUE on each; showing it on one would be tidier and
+arbitrary. **All of them is what ships**, the count is reported here, and the user rules.
+
+⚖ **THE LABEL IS `baseResource`, AND THAT DOES NOT REOPEN U7's RULING.** U7 ships the player KEY as a row's label
+*because a name lifted out of the surrounding prose was right 2 times in 13*. `baseResource` is not lifted: it is
+a field the game's author wrote to name this very quantity. Authored, so it is used — and authored, so it is used
+VERBATIM. Over the 486 declarers the labels are `points` 205, `Points` 44, `Knowledge` 10, `spacetime` 9, **`TBD`
+7**, `Fragments` 6, `corpses` 6, `fabric` 6. ⚠ **`TBD` is `the-snake-tree`'s own placeholder** (2 of its 7 are on
+row 0). We render it as it stands, which is honest and looks like a bug; ⚖ MINIMIZE HARDCODING rules out a name
+table, and this is reported rather than special-cased.
+
+**It is not a second code path.** The row is produced by `resourcesOf` itself, ships in the same list, and is drawn
+and synced by the same `drawResources` / `syncResources`; it carries `collide` and `sticky` like every other row,
+and the U7/U8 rules apply to it unchanged:
+
+- it **claims its occurrence BEFORE any candidate**, exactly as the engine's own `points` / `best` / `total` do —
+  otherwise a `player[layer]` key holding the same number would take the global's own statement out of the prose
+  and the card would print the global's value under a bookkeeping key's name;
+- `collide` still records when two rows claimed the same printed number;
+- `sticky` is always **false** and the key is **not** written to the remembered set. U8's memory exists to keep a
+  row that would otherwise VANISH, and a DECLARED row cannot: the declaration does not depend on what the layer's
+  prose states this tick. The flag is carried so that every row in the list answers the same questions.
+
+Its key is `@points`, `@`-prefixed the way `currencyKey`'s own globals are, so no `player[layer]` key can collide
+with it; `data-global="yes"` marks it in the DOM. ⚠ **Reported, never styled** — the `sticky` flag's own rule: a
+row the player reads must not change appearance because of where the list learned about it.
+
 #### Per-category progress in the expanded card (U7)
 
 ⚖ user, 2026-09-19: *"In Layers view, when a layer is in expanded view, can we add a row to display the progress
@@ -2124,6 +2201,17 @@ were judged, how many were judged at the short viewport, and how many abstained 
 
 ⚠ The leg also reports `innerScrollers` — anything inside `#app` that still scrolls under our layout — because the
 6 games whose branch offset reads `#treeTab.scrollTop` would need a different answer if one did. It is 0.
+
+**2. Leg 6 — the DECLARED global-currency row.** It joins the other-resources assertion rather than sitting beside
+it, and it is judged in BOTH directions, which is what a build that simply never emits the row would fail:
+- a rendered `@points` row must print the GLOBAL `player.points`, carry the author's own `baseResource` as its
+  label, be marked `global`, and be neither `sticky` nor present in the remembered set;
+- a layer that DECLARES one (numeric row 0, `baseAmount` source reads `player.points` with comments stripped) must
+  HAVE the row;
+- and every `player[layer]` row must still be labelled with its KEY, so U7's ruling is asserted rather than assumed.
+
+The probe rebuilds the declaration test itself — a fifth independent rebuild, for the reason the other four carry —
+and the summary names the declaring cards with their labels, so the `TBD` ones are visible rather than buried.
 
 ### The state leg needs a control
 
