@@ -177,12 +177,26 @@
   var DEC = '\\d+(?:\\.\\d+)?(?:[eE][+-]?\\d+)?';
   // ⚠ GROUP-FREE ON PURPOSE. Each param contributes EXACTLY ONE capture group to a strategy's pattern, so `parse`
   // can read the groups off in param order; a type whose own regex carried a group would shift every index after it.
+  // ⛔ V4: A TYPE WHOSE VALIDATOR IS A FUNCTION, NOT A REGEX — §18.9 said this is what `until` would need, and it is.
+  // A predicate is a JavaScript EXPRESSION, and "is this a JavaScript expression?" is not a regular language. The
+  // check is the only honest one there is: it must COMPILE. Everything else about the editors — the draft that
+  // survives the re-render, the refusal that keeps the previous value, the save, the precedence — is already
+  // generic over the `type`, which is why this is one table row and not a second editing system.
+  function checkPredicate(s) {
+    if (!s) return null;   // EMPTY IS A VALUE: it means "no condition", and it is how a player clears one
+    try { T.predicate(s); } catch (e) { return 'not a JavaScript expression — ' + String((e && e.message) || e); }
+    return null;
+  }
   var PARAM_TYPES = {
     count:    { re: '\\d+', kind: 'integer', min: 1 },
     seconds:  { re: NUM,    kind: 'number',  min: 0 },
     factor:   { re: NUM,    kind: 'number',  min: 0 },
     quantity: { re: DEC,    kind: 'decimal', min: 0 },
     fraction: { re: NUM,    kind: 'number',  min: 0, max: 1 },
+    // ⚠ `re: null` — and `patternOf` REFUSES it in a strategy template, loudly. A predicate can contain `|`, which
+    // is the MODIFIER separator, and any bracket or quote there is; a policy string is a grammar and a predicate is
+    // not a token of it. This type exists for the per-feature CONTROLS below, which are their own fields.
+    predicate:{ re: null,   kind: 'text',    check: checkPredicate },
   };
   var STRATEGIES = [
     // --- reset -----------------------------------------------------------------------------------------------------
@@ -264,6 +278,43 @@
         { name: 'n', type: 'count', placeholder: 'N', default: '5', min: 1, label: 'resets remembered' },
       ] },
   ];
+  // ---- the per-feature CONTROLS (V4) — not policies, and that is why they are their own table -------------------------
+  // ⚖ THE USER'S REQUEST, VERBATIM (2026-09-15, plan §13): "an option to stop doing the resets after a specific
+  // amount of the currency has been earned" — that is `until`. §13b asks for it on EVERY kind, latching, with a
+  // manual re-arm, plus a `priority` per feature overriding the kind order.
+  //
+  // ⛔ ONE PREDICATE MECHANISM, TWO CONTROLS, AND THE PAUSE ALREADY EXISTED. `while` is NOT a new slot: it is the
+  // table's own `gates` entry, which has been in the loader since S1 and which no table on the roster had ever
+  // carried (plan §26 measured that a single `gates` line breaks PTR's M21 wall, so what M21 needed was a PAUSE and
+  // not a latching STOP). A player's `while` and the game's gate are therefore the SAME slot under V2's precedence,
+  // and `blocked:gate` goes on being the reason — now naming WHOSE predicate it is.
+  //
+  // ⛔ AND THEY ARE NOT POLICIES. A policy is one string per feature, parsed by a grammar, chosen from an alphabet;
+  // these are three independent FIELDS with three types, two of which have no grammar at all. Making `until` a
+  // strategy would have meant every strategy of every kind gaining a predicate parameter that most of them ignore.
+  // They live beside `policy` in the same `player.au.edits[<id>]` object (V2 §18.5 reserved exactly this) and they
+  // read PAST the stall watch's rung rather than through it (V3 §21.8): a feature the watch has escalated still has
+  // the player's `while` and `until`.
+  var CONTROLS = [
+    { name: 'while', type: 'predicate', default: '', label: 'act only while', control: true,
+      help: 'The feature does nothing while this is false, and carries on the moment it is true again — a PAUSE, not a stop. Leave it empty for no condition.' },
+    { name: 'until', type: 'predicate', default: '', label: 'stop once', control: true,
+      help: 'Once this has been true, the feature stops acting and stays stopped even if it goes false again — a STOP, with a re-arm press beside it. Leave it empty for no condition.' },
+    // ⚠ A `count` WHOSE DEFAULT IS NOT A LITERAL. An unedited feature's priority is its KIND's place in this game's
+    // kind order (1-based), which is the order it already runs in — so "nothing edited" is byte-identical by
+    // construction rather than by a rule, and the number a player sees is the one that is really deciding.
+    { name: 'priority', type: 'count', default: null, label: 'priority (1 = first)', control: true,
+      help: 'Which of this LAYER’s features acts first in a tick; 1 goes first. Ties keep the kind order. It cannot reach across layers — the engine decides in what order layers run.' },
+  ];
+  var CONTROL_ROW = { template: 'the per-feature controls', params: CONTROLS };
+  function controlRow(name) { for (var i = 0; i < CONTROLS.length; i++) if (CONTROLS[i].name === name) return CONTROLS[i]; return null; }
+  T.controls = function () {
+    return CONTROLS.map(function (p) {
+      var t = PARAM_TYPES[p.type];
+      return { name: p.name, type: p.type, default: p.default, label: p.label, help: p.help, valueKind: t.kind,
+        min: p.min === undefined ? t.min : p.min, max: p.max === undefined ? (t.max === undefined ? null : t.max) : p.max };
+    });
+  };
   var MOD_SEP = '|';
   function reSafe(s) { return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); }
   /** A row's pattern source, group-free except for one capture per parameter, in param order. */
@@ -273,7 +324,9 @@
     for (var i = 0; i < parts.length; i++) {
       var m = /^\{(\w+)\}$/.exec(parts[i]);
       if (!m) { src += reSafe(parts[i]); continue; }
-      src += '(' + PARAM_TYPES[paramOf(S, m[1]).type].re + ')';
+      var pt = PARAM_TYPES[paramOf(S, m[1]).type];
+      if (!pt || !pt.re) throw new Error('strategy ' + S.template + ': {' + m[1] + '} is a ' + paramOf(S, m[1]).type + ', which has no grammar and cannot appear in a policy string');
+      src += '(' + pt.re + ')';
     }
     return src;
   }
@@ -371,6 +424,9 @@
   function checkParam(S, name, value) {
     var p = paramOf(S, name), t = PARAM_TYPES[p.type];
     var s = String(value === undefined || value === null ? '' : value).trim();
+    // V4: a type may declare a `check` FUNCTION instead of a grammar (`predicate`). It answers the same way — null,
+    // or the sentence the field shows — so every caller above and below this line is unchanged.
+    if (typeof t.check === 'function') return t.check(s);
     if (!new RegExp('^' + t.re + '$').test(s)) return 'not a ' + p.type + ' — ' + (p.type === 'quantity' ? 'a number, optionally with an exponent (1e600)' : p.type === 'count' ? 'a whole number' : 'a number');
     // ⚠ A BOUND FALLS BACK TO THE TYPE'S, and the first cut only did that for the minimum — so `fraction`'s max of
     // 1 was declared and never consulted, and `rate-peak@2/0` validated (measured by this file's own leg 1).
@@ -426,7 +482,19 @@
     'off:policy':         { text: 'Off — the policy is {policy}',                                 values: ['policy'] },
     'off:excluded':       { text: 'Off — excluded from this game: {reason}',                      values: ['reason'] },
     // running, and something else says no
-    'blocked:gate':       { text: 'Blocked — the gate {gate} is false',                           values: ['gate'] },
+    // ⚠ V4: `owner` SAYS WHOSE PREDICATE IT IS. The slot now has four possible sources (the generic derivation, the
+    // game's table, the player's own `while`, a runtime override) and "Blocked — the gate X is false" could not tell
+    // a player whether they had typed X themselves. `owner` is an enumerated word this file owns, not free text.
+    'blocked:gate':       { text: 'Blocked — the gate {gate} ({owner}) is false',                 values: ['gate', 'owner'] },
+    // ⛔ V4: A PREDICATE THAT THROWS IS NOT A PREDICATE THAT IS FALSE, and a silent `false` is the trap this code
+    // exists to avoid: a player types `player.q.pionts` and the feature pauses for ever with a reason that reads
+    // exactly like a condition legitimately not met. ⚠ NO ERROR TEXT IN THE VALUES — "no free-text value" is this
+    // table's rule; the message is in the feature's BLOCK, from `controlState(id)`, which is where the brief asks
+    // for it. `which` is one of the CONTROLS' own names.
+    'blocked:predicate':  { text: 'Blocked — the “{which}” condition {src} could not be evaluated (see the block)',  values: ['which', 'src'] },
+    // ⛔ V4: THE LATCH, and it is a DECISION code like every other: the feature is running, unlocked and refusing,
+    // and the refusal is permanent until the player re-arms it. `at` is the game-second the condition first held.
+    'stopped:until':      { text: 'Stopped — {until} held at {at} s; re-arm it in the tab to start again',           values: ['until', 'at'] },
     'blocked:after':      { text: 'Blocked — waiting for {sibling} to unlock first',              values: ['sibling'] },
     'blocked:enter':      { text: 'Blocked — the game will not enter challenge {id}',             values: ['id'] },
     'blocked:exit':       { text: 'Blocked — the game will not exit challenge {id} yet',          values: ['id'] },
@@ -534,6 +602,10 @@
   T.escapeText = esc;
 
   var KINDS_ALL = ['toggles', 'upgrades', 'buyables', 'challenges', 'clickables', 'reset'];
+  // THIS GAME's kind order, as `derive()` resolved it (the table's, `--auto-opt kindOrder=`, or the generic one).
+  // It is what a feature's DEFAULT `priority` is read from, so a table that reorders the kinds reorders the
+  // defaults with it and a player editing one number is editing the same scale the loader is already using.
+  var kindOrderNow = KINDS_ALL.slice();
   var features = [];
   var byId = {};
   T.features = features;
@@ -1741,6 +1813,60 @@
     return { act: false, code: 'nothing-affordable', values: { kind: kind, id: id, cost: tmp[l].upgrades[id] ? tmp[l].upgrades[id].cost : null } };
   }
 
+  // ---- V4: `until` (the LATCHING stop) and `while` (the NON-LATCHING pause) ----------------------------------------
+  /** `until`: once it has held, the feature stops and STAYS stopped until the player re-arms it. */
+  function untilStep(f) {
+    var hit = untilHitOf(f);
+    var c = predicateOf(f, 'until');
+    // ⚠ THE LATCH IS CHECKED BEFORE THE PREDICATE IS EVALUATED. That is what makes it a latch rather than a second
+    // reading of the same condition: `until` is not monotone in general (M16's predicate is not — R2 measured it),
+    // so a rule that re-read it every tick would be `while` spelled differently.
+    if (hit !== null) { if (!c.src) { writeEdit(f.id, 'untilHit', null); return null; } return { code: 'stopped:until', values: { until: c.src, at: hit } }; }
+    if (!c.src) return null;
+    var v = evalPredicate(c);
+    if (v.error) return { code: 'blocked:predicate', values: { which: 'until', src: c.src } };
+    if (!v.value) return null;
+    var now = Math.round((Number(player.timePlayed) || 0) * 10) / 10;
+    writeEdit(f.id, 'untilHit', now);
+    invalidateView();
+    return { code: 'stopped:until', values: { until: c.src, at: now } };
+  }
+  /** `while`: the feature acts only while the predicate holds — the table's `gates` slot, with a player's edit on it. */
+  function whileStep(f) {
+    var c = predicateOf(f, 'while');
+    if (!c.src) return null;
+    var v = evalPredicate(c);
+    if (v.error) return { code: 'blocked:predicate', values: { which: 'while', src: c.src } };
+    if (v.value) return null;
+    return { code: 'blocked:gate', values: { gate: c.src, owner: controlOwner(f, 'while') } };
+  }
+  // ---- V4: PRIORITY — the order a LAYER's features act in, inside one tick ------------------------------------------
+  // ⛔ CACHED PER `gameLoop`, NOT PER LAYER CALL, and there is a measurement behind the shape: `runLayer` is called
+  // once per hooked layer per loop, so re-sorting inside it would be O(layers × features log features) every tick
+  // for a feature nobody has edited. The cache is rebuilt at the same once-per-loop point `watchTick` runs at.
+  // ⚠ AND THE COMMON CASE ALLOCATES NOTHING. With no priority edited anywhere, `byLayer` — registration order,
+  // which IS layer order × kind order — is returned as it stands, so "nothing edited ⇒ byte-identical" is a
+  // property of the code rather than a claim a gate has to keep re-checking. (It checks anyway: gate V4-5.)
+  // ⛔ IT CANNOT REACH ACROSS LAYERS. The ENGINE decides in what order layers run (`gameLoop` walks `layers`, and
+  // 2.2.1 skips a layer the player has not unlocked, which is why the `au` layer has a fallback pass at all). PTR's
+  // Extra Time Capsules spend Boosters, so `buyables:t` and `buyables:b` DO compete for one currency across two
+  // layers — and no number here can order them. The doc and the block both say so rather than implying otherwise.
+  var byLayer = {};
+  var orderCache = {};
+  var orderLoop = -1;
+  function layerOrder(l) {
+    if (orderLoop !== loopNo) { orderCache = {}; orderLoop = loopNo; }
+    if (orderCache[l]) return orderCache[l];
+    var base = byLayer[l] || (byLayer[l] = features.filter(function (f) { return f.layer === l; }));
+    var moved = false;
+    for (var i = 0; i < base.length; i++) if (priorityOf(base[i]) !== base[i].kindIndex) { moved = true; break; }
+    if (!moved) return (orderCache[l] = base);
+    // ⚠ A STABLE SORT, so TIES KEEP THE KIND ORDER (§13b's own words). Array#sort is stable in every engine these
+    // games run on; the index tiebreak makes it so whatever the engine does.
+    var idx = {};
+    base.forEach(function (f, i2) { idx[f.id] = i2; });
+    return (orderCache[l] = base.slice().sort(function (a, b) { return priorityOf(a) - priorityOf(b) || idx[a.id] - idx[b.id]; }));
+  }
   function runLayer(l, via) {
     if (ranAt[l] === loopNo) stats.doubles++;
     ranAt[l] = loopNo;
@@ -1752,17 +1878,26 @@
     // before any feature decides, whatever order the engines walk the layers in. `watchTick` polls the progress
     // tracker and then escalates at most one waiting feature — so a feature's very next decision is made under the
     // rung the stall it is part of just bought.
-    if (watchLoop !== loopNo) { watchLoop = loopNo; watchTick(); }
-    for (var i = 0; i < features.length; i++) {
-      var f = features[i];
-      if (f.layer !== l) continue;
+    if (watchLoop !== loopNo) { watchLoop = loopNo; watchTick(); orderLoop = -1; }
+    var list = layerOrder(l);
+    for (var i = 0; i < list.length; i++) {
+      var f = list[i];
       // ⚠ EVERY exit records, including the ones that do nothing: a feature the player can see in the tab and that
       // is not running has a reason too, and `off` / `locked` / `armed` are the three the tab shows most often.
       if (!active(f)) { say(f, featureUnlocked(f) ? 'off' : (isOnSaved(f) ? 'armed' : 'locked'), null); f.onSince = null; continue; }
       // `onSince`: when this feature last became ELIGIBLE (on, unlocked, under a profile that runs it) with nothing
       // done since. It is what `neverFired` is measured over, and it lives outside `player` like `f.last`.
       if (f.onSince === null) f.onSince = Number(player.timePlayed) || 0;
-      if (f.gate && !holds(f.gate)) { say(f, 'blocked:gate', { gate: f.gateSrc }); continue; }   // a table gate: the feature does nothing while its predicate is false
+      // ---- V4: the two PREDICATE controls, in this order and for this reason -----------------------------------
+      // ⛔ `until` FIRST, because a feature that has STOPPED has stopped: reporting `blocked:gate` for something the
+      // player told to stop would name the wrong reason, and the latch is not conditional on the pause.
+      // ⚠ A RUN-TIME THROW IS CONTAINED TO ITS OWN FEATURE and never reads as `false` — `continue`, not `throw`, so
+      // every other feature of the layer still decides this tick (the brief's Part 1(b), and it is what a player
+      // who mistypes one predicate needs: one dead feature, not a dead tick).
+      var stop = untilStep(f);
+      if (stop) { say(f, stop.code, stop.values); continue; }
+      var pause = whileStep(f);
+      if (pause) { say(f, pause.code, pause.values); continue; }
       var r = EXEC[f.kind](f);
       say(f, r.code, r.values);
       if (r.n) {
@@ -1831,6 +1966,19 @@
     var pol = {}, np = 0;
     for (var pi = 0; pi < features.length; pi++) if (features[pi].policyRuntime !== null) { pol[features[pi].id] = features[pi].policyRuntime; np++; }
     if (np) o.policies = pol;
+    // ---- V4: the RUNTIME overrides of the three per-feature controls --------------------------------------------
+    // ⛔ ONE BLOCK, AND ONLY WHEN IT HAS SOMETHING TO SAY — V2's and V3's rule, with V2's and V3's consequence: a run
+    // in which nothing calls `setControl` writes EXACTLY the record it wrote before V4, so every snapshot committed
+    // in this repo stays valid and every pinned resume reproduces. `gates-v4 --part 5` measures that.
+    // ⚠ The `until` LATCH IS NOT HERE. It is in the SAVE (`player.au.edits[<id>].untilHit`), because a stop a
+    // reload forgets means nothing to a player — and the save is what a resume restores anyway.
+    var ct = {}, nc = 0;
+    for (var ci = 0; ci < features.length; ci++) {
+      var cf = features[ci], one = null;
+      for (var cn2 = 0; cn2 < CONTROLS.length; cn2++) { var nm = CONTROLS[cn2].name; if (cf.controls[nm] !== null && cf.controls[nm] !== undefined) (one || (one = {}))[nm] = cf.controls[nm]; }
+      if (one) { ct[cf.id] = one; nc++; }
+    }
+    if (nc) o.controls = ct;
     // ---- V2: the stall modifier's and rate-peak's memory --------------------------------------------------------
     // ⛔ EACH BLOCK APPEARS ONLY WHEN IT HAS SOMETHING TO SAY. A run in which no feature carries a modifier and none
     // uses `rate-peak` writes EXACTLY the record it wrote before V2 — which is why every snapshot committed in this
@@ -1883,6 +2031,15 @@
     for (k in rt.enabled || {}) enableOverride[k] = !!rt.enabled[k];
     for (var pj = 0; pj < features.length; pj++) features[pj].policyRuntime = null;
     for (k in rt.policies || {}) if (byId[k]) { if (!policyOk(byId[k].kind, rt.policies[k])) throw new Error('restoreRuntime: policy "' + rt.policies[k] + '" is not a ' + byId[k].kind + ' policy'); byId[k].policyRuntime = rt.policies[k]; }
+    // V4: the runtime control overrides, validated the same way a restored policy is — a record this build cannot
+    // validate is a THROW, not a silently different configuration.
+    for (var cj = 0; cj < features.length; cj++) for (var ck = 0; ck < CONTROLS.length; ck++) features[cj].controls[CONTROLS[ck].name] = null;
+    for (k in rt.controls || {}) if (byId[k]) for (var cn3 in rt.controls[k]) {
+      if (!controlRow(cn3)) throw new Error('restoreRuntime: "' + cn3 + '" is not a per-feature control');
+      var cw = checkParam(CONTROL_ROW, cn3, rt.controls[k][cn3]);
+      if (cw) throw new Error('restoreRuntime: control ' + k + '.' + cn3 + ' — ' + cw);
+      byId[k].controls[cn3] = rt.controls[k][cn3];
+    }
     for (k in stallMem) delete stallMem[k];
     for (k in rt.stallIntervals || {}) stallMem[k] = rt.stallIntervals[k].slice();
     for (k in stallSince) delete stallSince[k];
@@ -1951,6 +2108,15 @@
     if (def.policy === 'keepsUpgrades' && !(def.keepMilestone && def.keepMilestone.layer && def.keepMilestone.id !== undefined)) throw new Error('registerAutoFeature ' + def.id + ': keepsUpgrades needs keepMilestone {layer, id}');
     if ((def.policy === 'order' || def.policy === 'order-then-cheapest') && !Array.isArray(def.order)) throw new Error('registerAutoFeature ' + def.id + ': policy ' + def.policy + ' needs order[]');
     if (!layers[def.layer]) throw new Error('registerAutoFeature ' + def.id + ': no layer "' + def.layer + '"');
+    // V4: a table predicate that does not COMPILE is a hard fail of the load, exactly as `gate` has always been —
+    // the check is `T.predicate`, the one every other predicate in this file goes through.
+    ['gate', 'gateDerived', 'until'].forEach(function (k) {
+      if (typeof def[k] === 'string' && def[k]) { var why = checkPredicate(def[k]); if (why) throw new Error('registerAutoFeature ' + def.id + ': ' + k + ' — ' + why); }
+    });
+    if (def.priority !== undefined && def.priority !== null) {
+      var pw = checkParam(CONTROL_ROW, 'priority', def.priority);
+      if (pw) throw new Error('registerAutoFeature ' + def.id + ': priority — ' + pw);
+    }
     // options['policy:<id>'] overrides the table's default policy (harness A/B lever; any valid policy of the kind)
     var ov = T.options && T.options['policy:' + def.id];
     if (ov !== undefined) {
@@ -1966,8 +2132,19 @@
       keepMilestone: def.keepMilestone || null,
       order: def.order ? def.order.map(Number) : null,
       after: Array.isArray(def.after) ? def.after.slice() : [],
-      gateSrc: typeof def.gate === 'string' ? def.gate : null,
-      gate: typeof def.gate === 'string' ? T.predicate(def.gate) : null,
+      // ---- V4: the per-feature CONTROLS, and the GATE is now one of them ------------------------------------------
+      // `gate0` is the slot's TABLE value (`autoTable.gates[<id>]`, or `--auto-opt while:<id>=`), compiled HERE so a
+      // table that ships a predicate which does not compile fails the page load exactly as it always has.
+      // `gateDerived` is what the generic derivation would say (null today — plan §27 records why).
+      // `controls` is the runtime override layer, memory OUTSIDE `player` like `policyRuntime`.
+      gate0: typeof def.gate === 'string' && def.gate ? def.gate : null,
+      gateDerived: typeof def.gateDerived === 'string' && def.gateDerived ? def.gateDerived : null,
+      until0: typeof def.until === 'string' && def.until ? def.until : null,
+      priority0: def.priority === undefined || def.priority === null ? null : Math.round(Number(def.priority)),
+      controls: { 'while': null, until: null, priority: null },
+      // its kind's 1-based place in THIS game's kind order — the default `priority`, so "nothing edited" is the
+      // order the loader has always run in, by construction
+      kindIndex: kindOrderNow.indexOf(def.kind) + 1,
       toggleList: def.toggleList || [],
       multiSkipped: def.multiSkipped || 0,
       clickList: (def.clickList || []).map(function (c) { return { id: Number(c.id), whenSrc: c.when, when: T.predicate(c.when) }; }),
@@ -1991,8 +2168,15 @@
     // is empty and `f.policy` is what it has always been. That is a property of the DATA, and `gates-v2 --part 5`
     // is what says so out loud.
     Object.defineProperty(f, 'policy', { enumerable: true, get: function () { return policyOf(f); } });
+    // ⛔ V4: `gateSrc` AND `gate` ARE GETTERS OVER THE SAME PRECEDENCE, for the reason `policy` is one — the tab, the
+    // decision path and `explain()` must not be able to disagree about which predicate is in force, and a cached
+    // copy would need invalidating from four writers. `gate` is still the compiled FUNCTION (or null), so every
+    // consumer written before V4 goes on working unchanged.
+    Object.defineProperty(f, 'gateSrc', { enumerable: true, get: function () { return controlOf(f, 'while'); } });
+    Object.defineProperty(f, 'gate', { enumerable: false, get: function () { var c = predicateOf(f, 'while'); return c.fn; } });
     features.push(f);
     byId[f.id] = f;
+    byLayer = {}; orderCache = {};   // V4: the per-layer running order is derived from `features`, so it is rebuilt
     hookLayer(f.layer);
     buildClickables();
     return features.length;
@@ -2039,6 +2223,189 @@
   }
   function setIn(obj, key, value) { if (G.Vue && typeof G.Vue.set === 'function') G.Vue.set(obj, key, value); else obj[key] = value; }
   function delIn(obj, key) { if (G.Vue && typeof G.Vue.delete === 'function') G.Vue.delete(obj, key); else delete obj[key]; }
+
+  // ---- V4: THE PER-FEATURE CONTROLS — ONE precedence, in ONE place, for all three ---------------------------------
+  //   the generic derivation  <  the game's TABLE (`autoTable.gates`, and `--auto-opt while:/until:/priority:<id>=`)
+  //   <  the PLAYER's saved edit (`player.au.edits[<id>].while | .until | .priority`)  <  a runtime override.
+  // It is V2's chain with ONE link fewer: it does NOT pass through the stall watch's rung, and that is V3 §21.8's
+  // own answer — the rung replaces a POLICY, and these are not policies, so a feature the watch has escalated still
+  // has the player's pause and stop.
+  // ⚠ `null` means NOT SET and falls through; `''` means SET TO NONE and does not — which is how a player removes a
+  // gate the game's table shipped (PTR's `reset:q`). A count has no "explicitly none": clearing it drops the key.
+  var CTL_BASE = { 'while': 'gate0', until: 'until0', priority: 'priority0' };
+  var CTL_DERIVED = { 'while': 'gateDerived' };
+  function savedControl(f, name) {
+    var e = editsOf();
+    var v = e && e[f.id] ? e[f.id][name] : undefined;
+    if (v === undefined || v === null) return null;
+    // ⚠ A SAVE THIS BUILD CANNOT VALIDATE IS IGNORED, NOT RUN — V2's rule for a saved policy, and it matters more
+    // here: `while` and `until` are `new Function` over text from a save file (docs/contract.md says what that
+    // widens and what it does not).
+    if (checkParam(CONTROL_ROW, name, v)) return null;
+    return name === 'priority' ? Math.round(Number(v)) : String(v);
+  }
+  function controlOf(f, name) {
+    var r = f.controls ? f.controls[name] : null;
+    if (r !== null && r !== undefined) return r;
+    var s = savedControl(f, name);
+    if (s !== null) return s;
+    var t = f[CTL_BASE[name]];
+    if (t !== null && t !== undefined) return t;
+    var d = CTL_DERIVED[name] ? f[CTL_DERIVED[name]] : null;
+    return d === undefined ? null : d;
+  }
+  /** WHOSE value is in force — `runtime` | `you` | `table` | `derived`, or null when nothing set one. */
+  function controlOwner(f, name) {
+    if (f.controls && f.controls[name] !== null && f.controls[name] !== undefined) return 'runtime';
+    if (savedControl(f, name) !== null) return 'you';
+    var t = f[CTL_BASE[name]];
+    if (t !== null && t !== undefined) return 'table';
+    var d = CTL_DERIVED[name] ? f[CTL_DERIVED[name]] : null;
+    return d === null || d === undefined ? null : 'derived';
+  }
+  // ⛔ COMPILED ONCE, AGAINST THE SOURCE — never per tick. `parsedOf` does exactly this for a policy string and for
+  // the same reason: the source can change under the reader (an edit, a load, a runtime override), so the cache key
+  // is the source itself rather than a generation counter somebody has to remember to bump.
+  // ⚠ A COMPILE ERROR IS KEPT, not thrown away. `holds()` turns a run-time throw into `false`, which is the right
+  // answer for a gate and the WRONG thing to show a player who has mistyped one — so the error travels with the
+  // compiled form and the decision path has a code for it.
+  function predicateOf(f, name) {
+    var src = controlOf(f, name);
+    if (!src) return { src: null, fn: null, error: null };
+    var c = f.predCache || (f.predCache = {});
+    if (!c[name] || c[name].src !== src) {
+      var err = null, fn = null;
+      try { fn = T.predicate(src); } catch (e) { err = String((e && e.message) || e); }
+      c[name] = { src: src, fn: fn, error: err };
+    }
+    return c[name];
+  }
+  /** A predicate's answer, with a RUN-TIME throw kept apart from a false: `{value, error}`. */
+  function evalPredicate(c) {
+    if (!c.fn) return { value: null, error: c.error || (c.src ? 'it did not compile' : null) };
+    try { return { value: !!c.fn(), error: null }; } catch (e) { return { value: null, error: String((e && e.message) || e) }; }
+  }
+  /** The game-second `until` first held, or null. ⛔ IT IS IN THE SAVE: a latch a reload forgets means nothing to
+   *  a player, and it lives under `au`, which `hashGame` excludes — so it cannot move a pinned game state. */
+  function untilHitOf(f) {
+    var e = editsOf(), v = e && e[f.id] ? e[f.id].untilHit : undefined;
+    if (typeof v === 'number' && isFinite(v)) return v;
+    return v === true ? 0 : null;
+  }
+  /** Write one field of a feature's edit entry, MERGING (V3's rule), and drop the entry when nothing is left. */
+  function writeEdit(id, name, value) {
+    var e = editsOf();
+    if (!e) return false;
+    var entry = Object.assign({}, e[id] || {});
+    if (value === undefined || value === null) delete entry[name]; else entry[name] = value;
+    var left = 0;
+    for (var k in entry) left++;
+    if (left) setIn(e, id, entry); else delIn(e, id);
+    return true;
+  }
+  /** A feature's EFFECTIVE priority: the number in force, else its kind's 1-based place in this game's kind order. */
+  function priorityOf(f) { var p = controlOf(f, 'priority'); return p === null || p === undefined ? f.kindIndex : p; }
+  T.savedControl = function (id, name) { var f = byId[id]; if (!f) throw new Error('no feature "' + id + '"'); if (!controlRow(name)) throw new Error('no control "' + name + '"'); var e = editsOf(); var v = e && e[id] ? e[id][name] : undefined; return v === undefined ? null : v; };
+  /** Write the player's own `while` / `until` / `priority`. `{ok, value, error}`; ⛔ a REFUSAL changes nothing and
+   *  says why — V2's rule, and the one the brief names for a predicate that will not compile. */
+  T.setSavedControl = function (id, name, value) {
+    var f = byId[id];
+    if (!f) throw new Error('no feature "' + id + '"');
+    var row = controlRow(name);
+    if (!row) return { ok: false, value: controlOf(f, name), error: '"' + name + '" is not one of ' + CONTROLS.map(function (c) { return c.name; }).join(' / ') };
+    var e = editsOf();
+    if (!e) return { ok: false, value: controlOf(f, name), error: 'this save has no automation store yet (player.' + AU + '.edits)' };
+    if (value === null || value === undefined) {
+      writeEdit(id, name, null);
+      // ⚠ CLEARING `until` DISARMS ITS LATCH TOO. A stop condition the player has removed must not go on stopping
+      // the feature from a flag nothing is showing them any more.
+      if (name === 'until') writeEdit(id, 'untilHit', null);
+      player[AU].disclosed = true; invalidateView();
+      return { ok: true, value: controlOf(f, name), error: null };
+    }
+    var v = row.type === 'predicate' ? String(value).trim() : String(value).trim();
+    var why = checkParam(CONTROL_ROW, name, v);
+    if (why) return { ok: false, value: controlOf(f, name), error: why };
+    var was = controlOf(f, name);
+    writeEdit(id, name, row.type === 'count' ? Math.round(Number(v)) : v);
+    // ⚠ A CHANGED `until` RE-ARMS: the latch belongs to the condition that set it, and carrying it over to a
+    // different condition would stop a feature for a reason that is no longer on screen.
+    if (name === 'until' && was !== v) writeEdit(id, 'untilHit', null);
+    player[AU].disclosed = true;
+    invalidateView();
+    return { ok: true, value: controlOf(f, name), error: null };
+  };
+  /** The RUNTIME override (never saved) — the harness's lever for these three, as `setPolicy` is for a policy. */
+  T.setControl = function (id, name, value) {
+    var f = byId[id];
+    if (!f) throw new Error('no feature "' + id + '"');
+    if (!controlRow(name)) throw new Error('no control "' + name + '"');
+    if (value === null || value === undefined) { f.controls[name] = null; invalidateView(); return null; }
+    var v = String(value).trim();
+    var why = checkParam(CONTROL_ROW, name, v);
+    if (why) throw new Error('setControl ' + id + '.' + name + ': ' + why);
+    f.controls[name] = controlRow(name).type === 'count' ? Math.round(Number(v)) : v;
+    invalidateView();
+    return f.controls[name];
+  };
+  /** Re-arm a feature its `until` has stopped. `{ok, error}` — the ONE way back, and it is the player's press. */
+  T.rearm = function (id) {
+    var f = byId[id];
+    if (!f) throw new Error('no feature "' + id + '"');
+    if (untilHitOf(f) === null) return { ok: false, error: 'this feature is not stopped' };
+    if (!editsOf()) return { ok: false, error: 'this save has no automation store yet (player.' + AU + '.edits)' };
+    writeEdit(id, 'untilHit', null);
+    invalidateView();
+    return { ok: true, error: null };
+  };
+  /** Everything the tab and a gate need about one feature's three controls, from ONE place. */
+  T.controlState = function (id) {
+    var f = byId[id];
+    if (!f) throw new Error('no feature "' + id + '"');
+    var out = {};
+    for (var i = 0; i < CONTROLS.length; i++) {
+      var name = CONTROLS[i].name, row = CONTROLS[i];
+      if (row.type === 'predicate') {
+        var c = predicateOf(f, name), v = c.fn ? evalPredicate(c) : { value: null, error: c.error };
+        out[name] = { value: controlOf(f, name), owner: controlOwner(f, name), holds: v.value, error: c.error || v.error,
+          table: f[CTL_BASE[name]], derived: CTL_DERIVED[name] ? f[CTL_DERIVED[name]] : null, saved: T.savedControl(id, name) };
+      } else {
+        out[name] = { value: controlOf(f, name), owner: controlOwner(f, name), effective: priorityOf(f), kindPlace: f.kindIndex,
+          table: f[CTL_BASE[name]], derived: null, saved: T.savedControl(id, name) };
+      }
+    }
+    out.until.hitAt = untilHitOf(f);
+    out.until.stopped = untilHitOf(f) !== null;
+    return out;
+  };
+  // ---- the helper PICK-LISTS (V4) — the predicates the ENGINE can name for this feature --------------------------
+  // ⚠ A BLANK TEXT BOX IS NOT AN AFFORDANCE. These WRITE the predicate text into the field, where it stays fully
+  // editable — they are a starting point, never a second language. ⚖ minimize hardcoding: every one is built from
+  // what the GAME declares (its layer ids, its milestone ids, its own `hasMilestone`), not from a per-game list.
+  // ⚠ MEMOISED PER FEATURE. The Advanced tab re-renders every tick and every OPEN block would otherwise walk the
+  // whole `layers` map and one layer's milestone ids on each one. The answer cannot move: layer ids and milestone
+  // ids are fixed at boot (what changes is whether they are HELD, which is the predicate's business, not the list's).
+  var helperCache = {};
+  T.predicateHelpers = function (id) {
+    var f = byId[id];
+    if (!f) throw new Error('no feature "' + id + '"');
+    if (helperCache[id]) return helperCache[id];
+    var l = f.layer, out = helperCache[id] = [], L = layers[l] || {};
+    var name = String(L.name || l);
+    out.push({ src: 'player.' + l + '.points.gte(100)', label: name + ': at least 100 of its own resource (edit the number)' });
+    out.push({ src: 'player.' + l + '.total.gte(100)', label: name + ': 100 earned in total (edit the number)' });
+    try {
+      var ms = numIds(L.milestones || {});
+      for (var i = 0; i < ms.length && i < 12; i++) out.push({ src: "hasMilestone('" + l + "', " + ms[i] + ')', label: name + ': milestone ' + ms[i] + ' held' });
+    } catch (e) { /* a layer without milestones */ }
+    // every layer the tree declares, so "…until the NEXT layer is unlocked" needs no typing at all
+    try {
+      var ks = [];
+      for (var k in layers) if (k !== AU && layers[k] && !layers[k].tmtLoaderLayer && layers[k].row !== undefined) ks.push(k);
+      for (var j = 0; j < ks.length; j++) out.push({ src: 'player.' + ks[j] + '.unlocked', label: String(layers[ks[j]].name || ks[j]) + ' is unlocked' });
+    } catch (e2) { /* a fork with no layers map */ }
+    return out;
+  };
   /** Write the player's chosen policy for one feature. Returns `{ok, policy, error}`; a REFUSAL changes nothing. */
   T.setSavedPolicy = function (id, policy) {
     var f = byId[id];
@@ -2049,8 +2416,10 @@
     // policy write that overwrote the whole entry would silently drop the list the player typed.
     var entry = Object.assign({}, e[id] || {});
     if (policy === null || policy === undefined) {
-      delete entry.policy;
-      if (entry.escalate === undefined) delIn(e, id); else setIn(e, id, entry);
+      // ⚠ V4: the entry is dropped only when NOTHING is left in it. Before V4 this read `entry.escalate === undefined`
+      // — one named sibling — and `while` / `until` / `untilHit` / `priority` would each have been silently deleted
+      // with the policy. The test is now "does this object still hold anything?", which no later field can outgrow.
+      writeEdit(id, 'policy', null);
       player[AU].disclosed = true; handEdited(id); invalidateView(); return { ok: true, policy: policyOf(f), error: null };
     }
     if (typeof policy !== 'string' || !policyOk(f.kind, policy)) return { ok: false, policy: policyOf(f), error: '"' + policy + '" is not a ' + f.kind + ' strategy this build knows' };
@@ -2342,7 +2711,10 @@
         // reasonable, and the feature is dead anyway.
         neverFired: acted === 0 && f.onSince !== null && (now - f.onSince) >= limit,
         eligibleFor: f.onSince === null ? null : Math.round((now - f.onSince) * 10) / 10,
-        gate: f.gateSrc, after: f.after.slice(),
+        // ⚠ `gate` STAYS A STRING, and it is the `while` value in force. Every consumer written before V4 — the
+        // block, `gates-a1`, `gates-v1` — reads it as one, and the slot did not change, only who may fill it.
+        // `control` is the whole answer beside it (V4), from `controlState()`, which is the ONE place that knows.
+        gate: f.gateSrc, after: f.after.slice(), control: T.controlState(f.id),
         provenance: (T.autoProvenance && T.autoProvenance[f.id]) || null,
       });
     }
@@ -2352,7 +2724,7 @@
         id: id, title: id, layer: id.slice(c + 1), kind: id.slice(0, c),
         state: 'excluded',
         policy: { inForce: null, table: null, derived: null, alternatives: [], saved: null, runtime: null, base: null, escalated: null, strategy: null, params: null, modifier: null },
-        stall: null, escalation: null,
+        stall: null, escalation: null, control: null,
         last: { code: 'off:excluded', text: codeText('off:excluded', { reason: T.autoExcluded[id] }), values: { reason: T.autoExcluded[id] }, tick: T.ticks, at: now },
         acted: 0, lastActedAt: null, neverFired: false, eligibleFor: null,
         gate: null, after: [],
@@ -2417,6 +2789,10 @@
   }
   // ⚠ V1's word was "Read-only." — V2 is the slice that stopped it being true.
   var ADV_INTRO = 'What each feature decided on the last tick it was asked, and why — and the strategy it decides by, which you can change here.';
+  // ⛔ V4 Part 4 — THE ONE SENTENCE BESIDE THE SWITCH, and it is `docs/automation.md`'s own (R2's measurement, in the
+  // words a player reads rather than a plan §). It names the MECHANISM, because the number belongs to one game and
+  // the mechanism belongs to every patient default there is.
+  var WATCH_WARN = 'A default that is correctly PATIENT looks exactly like one that is STUCK, so the watch can escalate a feature that was doing the right thing: measured on Prestige Tree Rewritten, switching it on reached no ladder mark at all where leaving it off reached six. Do not leave it on unattended.';
   var PROG_INTRO = 'Everything this session has held for the first time, newest first — an unlock, an upgrade, a milestone, an achievement, a challenge completion or a buyable past its own best. Re-buying what a reset took away is not progress, which is what makes a stall visible.';
   // ⚠ THE PLAYER'S WORDS FOR THE SIX KINDS, and the only place they are written. The IDs beside them are the GAME's own.
   var PROG_LABEL = { unlocked: 'unlocked', upg: 'upgrade', ms: 'milestone', ach: 'achievement', ch: 'challenge', buy: 'buyable' };
@@ -2424,6 +2800,9 @@
   // `?mobile=1` the layer list draws this tab through its own reader, which skips a `display-text` entirely. So the
   // layout is ordinary flow with `overflow-wrap`, no column widths and no element wider than its parent.
   function chip(text, bg) { return '<span style="display:inline-block;padding:0 6px;border-radius:3px;background:' + bg + ';color:#fff;font-size:.8em;vertical-align:middle">' + esc(text) + '</span>'; }
+  // V4: the player's word for each link of the controls' precedence chain. `you` is the one that has to be
+  // unmistakable — a condition the player typed and a condition the GAME's table shipped read identically otherwise.
+  var CTL_WORD = { runtime: 'a runtime setting', you: 'yours', table: 'the game’s table', derived: 'derived' };
   var STATE_BG = { on: '#4f9a6a', off: '#3d6f91', armed: '#8a6d3b', locked: '#666666', excluded: '#5a4a4a' };
   // A feature that cannot run yet is ONE LINE. There are 78 of them on ptr at a fresh save and 3 that are doing
   // anything; a full block each would bury the three.
@@ -2467,7 +2846,19 @@
     var o = ['<div class="tmtl-block" style="border-left:3px solid ' + STATE_BG[r.state] + ';background:rgba(127,178,217,.08);border-radius:4px;padding:6px 8px;margin:0 0 8px 0;text-align:left">'];
     o.push('<div style="text-align:left">' + chip(r.state.toUpperCase(), STATE_BG[r.state]) + ' <b>' + esc(r.title) + '</b> <span style="opacity:.55;font-size:.85em">' + esc(r.id) + '</span></div>');
     o.push('<div style="text-align:left;font-size:.9em;opacity:.85">policy ' + bits.join(' · ') + '</div>');
-    if (r.gate) o.push('<div style="text-align:left;font-size:.9em;opacity:.85">gate <code>' + esc(r.gate) + '</code></div>');
+    // ---- V4: the two PREDICATE controls and the priority, in the READ-ONLY half -------------------------------------
+    // ⚠ WHOSE PREDICATE IT IS is on the line, for the reason the reason code carries it: the slot has four possible
+    // sources and "gate X" could not tell a player whether they had typed X themselves.
+    // ⛔ AND A PREDICATE THAT WILL NOT EVALUATE SAYS SO HERE. That is the brief's own rule — a run-time throw reads
+    // as `false` to `holds()`, which is indistinguishable from a condition legitimately not met, and the block is
+    // where the difference has to be visible. The message is the ENGINE's; it is escaped like every other string.
+    var ctl = r.control;
+    if (ctl && ctl['while'].value) o.push('<div style="text-align:left;font-size:.9em;opacity:.85">acts only while <code>' + esc(ctl['while'].value) + '</code> <span style="opacity:.7">(' + esc(CTL_WORD[ctl['while'].owner] || ctl['while'].owner) + ')</span>'
+      + (ctl['while'].error ? ' <span style="color:#d07a7a">⚠ ' + esc(ctl['while'].error) + '</span>' : ctl['while'].holds === false ? ' <span style="color:#c08a3e">— false now</span>' : '') + '</div>');
+    else if (r.gate) o.push('<div style="text-align:left;font-size:.9em;opacity:.85">gate <code>' + esc(r.gate) + '</code></div>');
+    if (ctl && ctl.until.value) o.push('<div style="text-align:left;font-size:.9em;opacity:.85">stops once <code>' + esc(ctl.until.value) + '</code> <span style="opacity:.7">(' + esc(CTL_WORD[ctl.until.owner] || ctl.until.owner) + ')</span>'
+      + (ctl.until.error ? ' <span style="color:#d07a7a">⚠ ' + esc(ctl.until.error) + '</span>' : ctl.until.stopped ? ' <span style="color:#c08a3e">— STOPPED at ' + esc(ctl.until.hitAt) + ' s</span>' : '') + '</div>');
+    if (ctl && ctl.priority.owner) o.push('<div style="text-align:left;font-size:.9em;opacity:.85">priority <b>' + esc(ctl.priority.effective) + '</b> <span style="opacity:.7">(' + esc(CTL_WORD[ctl.priority.owner] || ctl.priority.owner) + '; its kind’s place is ' + esc(ctl.priority.kindPlace) + ') — within this layer only</span></div>');
     if (r.after && r.after.length) o.push('<div style="text-align:left;font-size:.9em;opacity:.85">after ' + r.after.map(esc).join(', ') + '</div>');
     o.push('<div style="text-align:left;margin-top:3px"><b>now:</b> ' + esc(r.last ? r.last.text : 'nothing decided yet') + '</div>');
     o.push('<div style="text-align:left;font-size:.9em;opacity:.7">acted ' + r.acted + (r.lastActedAt === null ? '' : ' · last at ' + r.lastActedAt + ' s') + (r.eligibleFor === null ? '' : ' · on for ' + r.eligibleFor + ' s') + '</div>');
@@ -2586,6 +2977,9 @@
   // arrow well on a dark field, which is the half-fix that looks worse than no fix.
   var CONTROL = THEMED + ';color-scheme:dark;border:1px solid rgba(127,178,217,.45);border-radius:3px';
   var FIELD_STYLE = CONTROL + ';width:7.5em;max-width:40vw;margin:0 3px;padding:1px 4px;font-family:inherit;font-size:.9em';
+  // V4: a predicate field. `width:100%` inside a block that is already `min-width:0`, so it fills the block at 390 px
+  // and never widens it — the mobile rule (`docs/mobile.md`): no control wider than the viewport, no page scroll.
+  var PRED_FIELD_STYLE = CONTROL + ';width:100%;box-sizing:border-box;margin:1px 0;padding:1px 4px;font-family:monospace;font-size:.85em';
   var SELECT_STYLE = CONTROL + ';max-width:min(100%,22em);padding:1px 4px;font-family:inherit;font-size:.9em';
   var BTN_STYLE = CONTROL + ';margin:0 1px;padding:1px 6px;font-family:inherit;font-size:.9em;cursor:pointer';
 
@@ -2612,6 +3006,10 @@
         write: function (v) {
           var d = this.data;
           if (d.watch) return T.setWatchOption(d.name, v);
+          // V4: the FOURTH target — one of the per-feature controls (`while` / `until` / `priority`). The field is
+          // the same field: the draft that survives the re-render, the hotkey guard and the refusal that keeps the
+          // previous value are what make it correct, and a `predicate` needs every one of them.
+          if (d.control) return T.setSavedControl(d.fid, d.name, v === '' ? null : v);
           if (d.rung) return T.setEscalationParam(d.fid, d.rung, d.name, v, d.which);
           return T.setSavedParam(d.fid, d.name, v, d.which);
         },
@@ -2641,17 +3039,24 @@
           if (r.ok) this.draft = String(this.data.value);
         },
       },
-      template: '<span style="display:inline-block;text-align:left;margin:2px 8px 2px 0;white-space:nowrap">'
+      computed: {
+        // ⚠ A `predicate` IS A SENTENCE, NOT A NUMBER: 7.5em would show a player four characters of what they typed.
+        // The type decides the width and whether the steppers are there at all — there is no step rule for text.
+        wide: function () { return this.data.type === 'predicate'; },
+        fieldStyle: function () { return this.wide ? PRED_FIELD_STYLE : FIELD_STYLE; },
+      },
+      template: '<span style="display:inline-block;text-align:left;margin:2px 8px 2px 0" :style="wide ? \'white-space:normal;width:100%\' : \'white-space:nowrap\'">'
         + '<span style="opacity:.75;font-size:.85em">{{ data.label }}</span>'
         // ⚠ `data-fid` / `data-param` are how a GATE points at ONE feature's field. The first cut of `gates-v2`
         // located `input.tmtl-input` with `.first()` and typed into whichever feature happened to be drawn first,
         // then reported that the value had not committed — the leg was measuring the wrong block.
         + '<input type="text" class="tmtl-input" :data-fid="data.fid" :data-param="data.which + \':\' + data.name" :data-rung="data.rung || 0"'
-        + ' :value="draft" :title="data.label" style="' + FIELD_STYLE + '"'
+        + ' :data-control="data.control || \'\'" :placeholder="data.placeholder || \'\'"'
+        + ' :value="draft" :title="data.help || data.label" :style="fieldStyle"'
         + ' @input="draft = $event.target.value" @change="commit" @focus="onFocus" @blur="onBlur"'
         + ' @keydown.stop="onKey" @keyup.stop @keypress.stop>'
-        + '<button type="button" style="' + BTN_STYLE + '" @click="step(-1)" @keydown.stop>&minus;</button>'
-        + '<button type="button" style="' + BTN_STYLE + '" @click="step(1)" @keydown.stop>+</button>'
+        + '<button v-if="!wide" type="button" style="' + BTN_STYLE + '" @click="step(-1)" @keydown.stop>&minus;</button>'
+        + '<button v-if="!wide" type="button" style="' + BTN_STYLE + '" @click="step(1)" @keydown.stop>+</button>'
         + '<span v-if="error" class="tmtl-error" style="color:#d07a7a;font-size:.85em;display:block;white-space:normal">{{ error }}</span>'
         + '</span>',
     },
@@ -2664,13 +3069,22 @@
       data: function () { return { error: null }; },
       methods: {
         onChange: function (e) {
+          // ⚠ V4 — THE HELPER PICK-LIST. It does NOT introduce a second language: it WRITES predicate TEXT into the
+          // same saved field the text box edits, where it stays fully editable. Picking the blank first option is a
+          // no-op, so the list can sit at its placeholder and never claim to be showing what is in force.
+          if (this.data.control) {
+            if (!e.target.value) { this.error = null; return; }
+            var c = T.setSavedControl(this.data.fid, this.data.control, e.target.value);
+            this.error = c.ok ? null : c.error;
+            return;
+          }
           var r = this.data.rung ? T.setEscalationStrategy(this.data.fid, this.data.rung, e.target.value)
             : T.setSavedStrategy(this.data.fid, e.target.value);
           this.error = r.ok ? null : r.error;
         },
       },
-      template: '<span style="display:inline-block;text-align:left">'
-        + '<select class="tmtl-select" :data-fid="data.fid" :data-rung="data.rung || 0" :value="data.value" style="' + SELECT_STYLE + '"'
+      template: '<span style="display:inline-block;text-align:left;max-width:100%">'
+        + '<select class="tmtl-select" :data-fid="data.fid" :data-rung="data.rung || 0" :data-control="data.control || \'\'" :value="data.value" style="' + SELECT_STYLE + '"'
         + ' @change="onChange" @keydown.stop @keyup.stop>'
         + '<option v-for="o in data.options" :value="o.id" :disabled="!o.available">{{ o.label }}{{ o.available ? \'\' : \' — \' + o.why }}</option>'
         + '</select>'
@@ -2732,8 +3146,35 @@
         mods: function () { return T.modifiers(this.data.row.kind); },
         modOn: function () { return !!this.data.row.policy.modifier; },
         edited: function () { return !!this.data.row.policy.saved; },
+        // ---- V4: the three per-feature CONTROLS, rendered GENERICALLY from `T.controls()` ------------------------
+        // ⚖ minimize hardcoding, the same way V2's parameter editors are built from the strategy table: a fourth
+        // control would be one more row of `CONTROLS` and no code here at all.
+        ctlFields: function () {
+          var r = this.data.row, cs = r.control;
+          if (!cs) return [];
+          return T.controls().map(function (c) {
+            var st = cs[c.name] || {};
+            return { key: 'ctl:' + c.name, fid: r.id, control: c.name, name: c.name, type: c.type, which: 'control',
+              label: c.label, help: c.help, min: c.min, max: c.max,
+              // ⚠ AN UNSET `priority` SHOWS ITS EFFECTIVE NUMBER, not an empty box: the number that is really
+              // deciding is its kind's place, and a blank field would hide the scale the player is editing on.
+              value: st.value === null || st.value === undefined ? (c.type === 'count' ? String(st.effective) : '') : String(st.value),
+              placeholder: c.type === 'predicate' ? 'no condition' : '',
+              owner: st.owner || null, holds: st.holds === undefined ? null : st.holds, error: st.error || null,
+              stopped: !!st.stopped, hitAt: st.hitAt === undefined ? null : st.hitAt,
+              effective: st.effective === undefined ? null : st.effective, kindPlace: st.kindPlace === undefined ? null : st.kindPlace };
+          });
+        },
+        helperOptions: function () {
+          var hs = T.predicateHelpers(this.data.row.id);
+          return [{ id: '', label: 'suggestions — pick one to fill the box', available: true }]
+            .concat(hs.map(function (h) { return { id: h.src, label: h.label, available: true }; }));
+        },
       },
       methods: {
+        setCtl: function (name, v) { var r = T.setSavedControl(this.data.row.id, name, v); this.ctlError = r.ok ? null : r.error; },
+        clearCtl: function (name) { this.setCtl(name, null); },
+        rearm: function () { var r = T.rearm(this.data.row.id); this.ctlError = r.ok ? null : r.error; },
         toggleMod: function () { T.setSavedModifier(this.data.row.id, this.modOn ? null : this.mods[0].id); },
         toDefault: function () { T.setSavedPolicy(this.data.row.id, null); },
         toggleOpen: function () { this.$emit('toggle', this.data.row.id); },
@@ -2742,7 +3183,7 @@
         moveRung: function (n, d) { var r = T.moveEscalationRung(this.data.row.id, n, d); this.rungError = r.ok ? null : r.error; },
         listToDefault: function () { T.setEscalation(this.data.row.id, null); this.rungError = null; },
       },
-      data: function () { return { rungError: null }; },
+      data: function () { return { rungError: null, ctlError: null }; },
       template: '<div style="text-align:left">'
         + '<h3 v-if="data.head" style="margin:14px 0 4px 0;text-align:left">{{ data.layerName }} <span style="opacity:.5;font-size:.7em">{{ data.row.layer }}</span></h3>'
         // ⚖ Q1: every block collapses, one press each. The chevron is BESIDE the block rather than inside the HTML,
@@ -2766,6 +3207,23 @@
         +     '<button type="button" class="tmtl-mod" :data-fid="data.row.id" style="' + BTN_STYLE + '" @click="toggleMod" @keydown.stop>{{ modOn ? \'remove the stall fallback\' : \'add the stall fallback\' }}</button>'
         +     '<span v-if="data.row.stall && data.row.stall.why" style="opacity:.7;margin-left:6px">{{ data.row.stall.why }}</span>'
         +     '<span v-else-if="data.row.stall" style="opacity:.7;margin-left:6px">typical {{ data.row.stall.typical }} s over {{ data.row.stall.remembered }} own-rule reset(s) · {{ data.row.stall.elapsed }} s of {{ data.row.stall.need }} s</span>'
+        +   '</div>'
+        // ---- the per-feature CONTROLS (V4): the pause, the stop and the priority ----------------------------------
+        // ⚖ §13b, the user's own two requests. ⚠ Every press carries `@keydown.stop`, and the text boxes are
+        // `tmtl-number` instances, so the engines' bare-letter hotkeys cannot fire from any of them (V2's trap (i)).
+        +   '<div v-if="ctlFields.length" class="tmtl-ctl" :data-fid="data.row.id" style="text-align:left;font-size:.9em;margin-top:4px;border-top:1px dashed rgba(127,178,217,.35);padding-top:3px">'
+        +     '<div v-for="c in ctlFields" :key="c.key" class="tmtl-ctl-row" :data-fid="data.row.id" :data-control="c.name" style="text-align:left;padding:1px 0">'
+        +       '<tmtl-number :data="c"></tmtl-number>'
+        +       '<span v-if="c.owner" style="opacity:.7">in force: {{ c.type === \'count\' ? c.effective : c.value }} ({{ c.owner === \'you\' ? \'yours\' : c.owner === \'table\' ? \'the game\\u2019s table\' : c.owner }})</span>'
+        +       '<button v-if="c.owner === \'you\'" type="button" class="tmtl-ctl-clear" :data-fid="data.row.id" :data-control="c.name" style="' + BTN_STYLE + '" title="clear this" @click="clearCtl(c.name)" @keydown.stop>×</button>'
+        +       '<span v-if="c.error" class="tmtl-error" style="color:#d07a7a;display:block">⚠ {{ c.error }}</span>'
+        +       '<span v-else-if="c.name === \'while\' && c.value && c.holds === false" style="color:#c08a3e"> — false now, so this feature is paused</span>'
+        +       '<span v-if="c.stopped" style="color:#c08a3e"> — STOPPED at {{ c.hitAt }} s</span>'
+        +       '<button v-if="c.stopped" type="button" class="tmtl-rearm" :data-fid="data.row.id" style="' + BTN_STYLE + ';margin-left:4px" @click="rearm" @keydown.stop>re-arm it</button>'
+        +       '<span v-if="c.name === \'priority\'" style="opacity:.6;display:block">its kind’s place is {{ c.kindPlace }} · this orders THIS layer’s features only — the engine decides in what order layers run</span>'
+        +       '<tmtl-select v-if="c.type === \'predicate\'" :data="{fid: data.row.id, control: c.name, value: \'\', options: helperOptions}"></tmtl-select>'
+        +     '</div>'
+        +     '<span v-if="ctlError" class="tmtl-error" style="color:#d07a7a">{{ ctlError }}</span>'
         +   '</div>'
         // ---- the ESCALATION LIST (V3): the rungs the stall watch would try, in order ------------------------------
         +   '<div v-if="esc" class="tmtl-esc" :data-fid="data.row.id" style="text-align:left;font-size:.9em;margin-top:4px;border-top:1px dashed rgba(127,178,217,.35);padding-top:3px">'
@@ -2811,6 +3269,15 @@
       },
       data: function () { return { error: null }; },
       template: '<div class="tmtl-watch" style="text-align:left;margin:0 0 8px 0;padding:4px 6px;border-left:3px solid #a06a3e;background:rgba(160,106,62,.1);border-radius:4px">'
+        // ---- V4 Part 4: the LABEL, owed from R2 ------------------------------------------------------------------
+        // ⛔ IT READ AS A PLAIN SWITCH, and it is not one. R2 measured it, twice equal, and the planner reproduced it
+        // to the hash: on PTR from `all/M15.json` under the shipped table the watch reaches NO MARK AT ALL in 14,000
+        // game-seconds against the control's six. The one-sentence reason is the mechanism, not the number, because
+        // the number is about one game and the mechanism is about every patient default there is.
+        // ⚠ The behaviour is UNCHANGED by this slice; its own sweep is a later one.
+        + '<div class="tmtl-watch-warn" style="text-align:left;color:#c08a3e;font-size:.9em;margin-bottom:3px">'
+        +   '<b>experimental — not a safety net.</b> <span style="opacity:.85">' + esc(WATCH_WARN) + '</span>'
+        + '</div>'
         + '<div style="text-align:left">'
         +   '<button type="button" class="tmtl-watch-toggle" :data-on="w.on ? 1 : 0" style="' + BTN_STYLE + '" @click="toggleWatch" @keydown.stop>{{ w.on ? \'the stall watch is ON\' : \'the stall watch is off\' }}</button>'
         +   '<button v-if="!w.on" type="button" class="tmtl-track-toggle" :data-on="w.options.saved.track ? 1 : 0" style="' + BTN_STYLE + ';margin-left:4px" @click="toggleTrack" @keydown.stop>{{ w.options.saved.track ? \'progress tracker ON\' : \'progress tracker off\' }}</button>'
@@ -3005,6 +3472,17 @@
     var v = T.options && T.options[name];
     return v === undefined ? fallback : String(v).split(',').filter(Boolean);
   }
+  // V4: `--auto-opt while:<id>=… / until:<id>=… / priority:<id>=…`, in the TABLE's slot (so the player's saved edit
+  // still outranks it, exactly as it outranks `policy:<id>=`). An empty value means "as if the table had none".
+  function ctlOpt(name, id, fromTable) {
+    var v = T.options && T.options[name + ':' + id];
+    if (v === undefined) return fromTable;
+    var s = String(v).trim();
+    if (!s) return undefined;
+    var why = checkParam(CONTROL_ROW, name, s);
+    if (why) throw new Error('option ' + name + ':' + id + ' — ' + why);
+    return name === 'priority' ? Math.round(Number(s)) : s;
+  }
 
   // The generic candidates, before the table and the kinds lever: [{id, layer, kind, …}] in layer order (row ascending,
   // then `layers` key order) × kind order.
@@ -3060,10 +3538,18 @@
     // 308 and 302 / 392 / 572 vs 309 / 399 / 579 — faster everywhere measured
     var kindOrder = listOpt('kindOrder', table.kindOrder || KINDS_ALL);
     if (kindOrder.length !== KINDS_ALL.length || KINDS_ALL.some(function (k) { return kindOrder.indexOf(k) < 0; })) throw new Error(src + ': kindOrder must be a permutation of ' + KINDS_ALL.join(','));
+    kindOrderNow = kindOrder.slice();   // V4: a feature's DEFAULT `priority` is its kind's place in THIS order
     var cands = candidates(kindOrder);
     var candById = {};
     cands.forEach(function (c) { candById[c.id] = c; });
     var known = function (where, id) { if (!candById[id]) throw new Error(src + ': ' + where + ' names "' + id + '", which is not a derived feature of this game'); };
+    // ⛔ V4: A MISTYPED CONTROL OPTION IS A HARD FAIL, not a run that quietly measures the game without it. That is
+    // R1′'s own finding applied to the three new levers — before it, a mistyped sweep cell measured the game with NO
+    // automation and printed a number (docs/automation.md, "Harness levers").
+    for (var optk in (T.options || {})) {
+      var om = /^(while|until|priority):(.+)$/.exec(optk);
+      if (om) known('option ' + om[1] + ':', om[2]);
+    }
     ['policies', 'alternatives', 'order', 'gates', 'off', 'keep', 'provenance'].forEach(function (k) {
       if (table[k] === undefined) return;
       if (typeof table[k] !== 'object' || Array.isArray(table[k])) throw new Error(src + ': ' + k + ' must be an object keyed by feature id');
@@ -3160,7 +3646,13 @@
         keepMilestone: table.keep && table.keep[id],
         order: order,
         after: c.kind === 'reset' ? after[l] : undefined,
-        gate: table.gates && table.gates[id],
+        // V4: the three per-feature CONTROLS at the TABLE's level, each with a `--auto-opt` override in the same
+        // slot `policy:<id>=` occupies — so a gate or a stop can be SWEPT with controls before it is written into a
+        // table (⚖ every entry in a table carries provenance, and a sweep is where provenance comes from). An
+        // EMPTY value clears the table's own entry, which is how a control leg measures the game without it.
+        gate: ctlOpt('while', id, table.gates && table.gates[id]),
+        until: ctlOpt('until', id, undefined),
+        priority: ctlOpt('priority', id, undefined),
         toggleList: c.toggleList, multiSkipped: c.multiSkipped,
         clickList: c.kind === 'clickables' ? clk[l] : undefined,
       };

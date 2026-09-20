@@ -59,6 +59,7 @@ It reads the engine's globals as **bare identifiers** inside its members, never 
 | `progress()`, `progressStats()`, `progressKeys()`, `progressMonitorState()`, `progressArm()` | *(automation, V3)* the PROGRESS TRACKER — the harness's `--stall-seen` rule in the core, OFF by default. `progress()` → `{armed, events, total, dropped, byKind, lastAt, sinceLast, typicalGap, gaps, stalled, threshold, cap, marks}`, newest first, the event list bounded (200; `?autoOpt=progressEvents=`) with the counts exact. `progressStats()` is the COST GATE — `fullScans` is **1** after a run of any length. `tmtLoader.ladder` is the HOST's (a `loader/page.js` fetch, or `run.mjs --ladder-labels`) and supplies mark NAMES as event labels on the 2 of 171 games that have one |
 | `watchState()`, `watchOptions()`, `watchParams()`, `watchCodes()`, `watchOn()`, `setWatchOption(name, v)` | *(automation, V3)* the STALL WATCH, OFF by default and **EXPERIMENTAL — not a safety net**: under a correctly patient default it reaches no mark at all (R2; `docs/automation.md`). Its state words are their own enumerated table, NOT reason codes — V1's vocabulary is the set of values a DECISION returns and the watch decides nothing a feature does |
 | `escalationList(id)`, `escalationState(id)`, `setEscalation(id, list\|null)`, `setEscalationStrategy(id, rung, sid)`, `setEscalationParam(id, rung, name, v[, 'modifier'])`, `addEscalationRung(id[, sid])`, `removeEscalationRung(id, rung)`, `moveEscalationRung(id, rung, dir)`, `rungChoices(id, rung)` | *(automation, V3)* the per-feature ESCALATION LIST. Derived until the player types one; each entry is a complete policy string. ⛔ Every write goes through `setEscalation`, so there is ONE validator and one refusal message; an empty TYPED list means *never escalate this feature* |
+| `controls()`, `controlState(id)`, `savedControl(id, name)`, `setSavedControl(id, name, v\|null)`, `setControl(id, name, v\|null)`, `rearm(id)`, `predicateHelpers(id)` | *(automation, V4)* the three per-feature CONTROLS — **`while`** (a non-latching PAUSE: the feature acts only while the predicate holds; it IS the table's `gates` slot), **`until`** (a LATCHING stop with a manual re-arm) and **`priority`** (which of a LAYER's features acts first in a tick; 1 goes first, ties keep the kind order, and it cannot reach across layers). Saved in `player.au.edits[id]` as `while` / `until` / `priority`, with the latch in `untilHit` (the game-second it first held). **Precedence:** derived < the table (`autoTable.gates`, `--auto-opt while:/until:/priority:<id>=`) < the player's saved edit < `setControl` — ⛔ it does NOT pass through the stall watch's rung, which replaces a POLICY and these are not policies. `null` = not set and falls through; `''` = set to NONE and does not, which is how a player removes a gate the game's table shipped. `f.gateSrc` / `f.gate` are GETTERS over the `while` link. Each write returns `{ok, value, error}` and ⛔ a refusal changes nothing and says why. Reasons: `blocked:gate` (now naming the OWNER), `stopped:until`, `blocked:predicate` |
 | `collapsePrefs()`, `collapsed(id)`, `setCollapsed(id, on\|null)`, `setCollapsedAll(on)` | *(automation, V3)* which Advanced blocks are folded. ⛔ NOT in `player` — `T.storage.raw`, key `ui.au.collapsed`, two lists (`{open, closed}`) because the default is not uniform. In Node there is no `storage.raw`, so both calls are no-ops |
 | `componentNames`, `vueVersion` | *(automation, V2; **six** since V3)* the Vue components the loader REGISTERS (`tmtl-editors`, `tmtl-feature`, `tmtl-select`, `tmtl-number`, and V3's `tmtl-watch`, `tmtl-progress`) and the engine's Vue version. ⚖ Corrected mid-V2: both engines' `column` / `row` render any registered component by NAME, so the loader supplies its own inputs rather than depending on `text-input` / `slider` / `drop-down` (154 / 154 / 152 of 171, and **`ptr` has none of the three**). ⛔ `loader/tmt-auto.js` still touches no DOM — these are definitions handed to Vue. Registered in automation mode ONLY: the plain page has no `tmtl-*` component at all. In Node they go to the harness's Vue stub and render nothing |
 | `stallState(id)` | *(automation, V2)* what the `Advanced` view shows about the stall modifier — a READOUT, never a decision |
@@ -72,6 +73,35 @@ It reads the engine's globals as **bare identifiers** inside its members, never 
 | `storage` | `{prefix, raw, list(), clear()}` — the save namespace (`tmt-loader:<id>:`) and the raw `Storage` methods |
 | `planner` | *(automation, HARNESS-ONLY in P1a)* the ADVANCED automation's foundation — `snapshot()` / `restore()` / `excursion()` / `measure()`, `knowledge()`, `goals()` (docs/planner.md). It exists only when `loader/tmt-planner.js` has been loaded, which **only `tools/harness/boot.mjs --planner` does**: the page does not fetch the file at all until P2. Loading it is inert — no layer, no DOM, nothing in `player`, and a run that loads it lands on the same tick and hash as one that does not. Without `tmtLoader.automation` the file defines `planner = {available: false, why}` and stops |
 | `plannerLadder` | *(harness)* the parsed `ladder/<game>.json` the planner reads as its sticky goal source (`--planner-ladder`) |
+
+## What a SAVE can reach, and what V4 changed about it
+
+⚖ The brief asked this out loud, so it is answered out loud: **`while` and `until` are `new Function` over a string
+that lives in a save file**, and a player can be handed a save by someone else.
+
+**What was already true before V4, and is not a consequence of it.** Importing a save into either engine runs the
+game's own code paths over whatever it contains — `fixSave` / `fixData` walk it, `updateTemp` evaluates the game's
+own formulas against it, and a `Decimal` field that is a string is parsed by the game. And the loader has compiled
+predicate strings since S1: the game's **table** (`autoTable.gates`, clickable `when`) and the harness's `--until` /
+`--marks` are all `new Function('return (' + src + ')')` in the page's global scope. `tmtLoader.predicate` is on this
+contract and has been since L1.
+
+**What V4 adds, exactly.** One more SOURCE for that same mechanism: a predicate may now come from
+`player.au.edits[<id>].while` / `.until` — i.e. from the save — as well as from the game's table, the URL and the
+harness. The reach is unchanged: it is `T.predicate`'s, the page's own global scope, the same expression language the
+table already had. No new capability is granted, no `eval` of statements (it is an EXPRESSION — `return (src)`), and
+nothing runs at LOAD time: a predicate is evaluated inside `automate()`, on a feature the player has switched on,
+under `?automation=1`.
+
+⛔ **What that means in practice, said plainly: a save someone hands you can already do anything the page can, and
+after V4 it can do it through one more field.** The mitigation that matters is the one that was always true — do not
+import a save you would not run a script from. The loader adds these guards and claims no more than them:
+
+- a saved value this build **cannot validate is IGNORED, not run** (it must COMPILE; `checkParam` → `checkPredicate`);
+- a predicate that throws at run time is **contained to its own feature** and reported as `blocked:predicate`, never
+  silently read as `false`;
+- everything typed is rendered through `v-html` and is **escaped** (`escapeText`), so a predicate cannot be markup;
+- the reach is not widened beyond `T.predicate`: there is no new global, no `with`, no statement form.
 
 ## Per-engine notes (measured in L1)
 

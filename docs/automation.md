@@ -368,7 +368,9 @@ every value through `format()` printed *"the cheapest upgrade is 21.00 at 20.00"
 | `off` | unlocked and not running (saved off, a runtime override, or the profile) |
 | `off:policy` | the kind's policy is literally `off` (`challenges`, `clickables`) |
 | `off:excluded` | the table's `off` map — the feature is never registered; this code appears only on `explain()`'s own row for it |
-| `blocked:gate` | the table's `gates` predicate is false |
+| `blocked:gate` | the `while` predicate in force is false — a PAUSE, not a stop. The text names the OWNER (the game's table / yours / derived / a runtime setting), because the slot has four possible sources |
+| `blocked:predicate` | (V4) a `while` or `until` predicate could not be EVALUATED — it did not compile, or it threw. ⛔ A separate code on purpose: `holds()` turns a throw into `false`, which reads exactly like a condition legitimately not met. The message itself is in the feature's block (`controlState(id)`), because this table takes no free-text value |
+| `stopped:until` | (V4) the feature's `until` predicate has held; it stays stopped until the player re-arms it, with the game-second it latched |
 | `blocked:after` | an `unlockOrder` sibling is not unlocked yet |
 | `blocked:enter` / `blocked:exit` | the engine refuses to enter / to leave that challenge |
 | `yielding:native` | `tmp[l].autoPrestige` — the game's own auto-reset is doing it |
@@ -612,6 +614,109 @@ their tuning, and the harness's `--profile all` legs are unaffected because thei
 value the strategy cannot parse leaves the previous one in force and the field shows the reason; it is never silently
 dropped.
 
+## The per-feature CONTROLS — `while`, `until` and `priority` (V4)
+
+⚖ **The user's request, verbatim** (2026-09-15, plan §13): *"an option to stop doing the resets after a specific
+amount of the currency has been earned"*. §13b asks for it on EVERY kind, latching, with a manual re-arm, plus a
+`priority` per feature overriding the kind order.
+
+Three fields per feature, beside `policy` in the same `player.au.edits[<id>]` object (V2 reserved exactly this, so
+there is no further ⚖ full-hash re-record). **All three are empty by default and every game behaves exactly as it
+did without them.**
+
+| control | type | what it does |
+|---|---|---|
+| **`while`** | `predicate` | the feature acts only while the predicate holds, and carries on the moment it is true again — a **PAUSE**. Reason `blocked:gate` |
+| **`until`** | `predicate` | once the predicate has held, the feature stops acting and **STAYS stopped** even if it goes false again, until the player presses *re-arm* — a **STOP**. Reason `stopped:until`; the latch is `player.au.edits[<id>].untilHit`, the game-second it first held |
+| **`priority`** | `count` | which of this **LAYER's** features acts first in a tick; 1 goes first, ties keep the kind order |
+
+⛔ **`while` IS the table's `gates` slot, and there is only one of them.** The pause has been in the loader since S1
+(`autoTable.gates`, reason `blocked:gate`) and no table on the roster had ever carried an entry — plan §26 measured
+that ONE `gates` line breaks PTR's M21 wall, which is how this slice learned that what M21 needed was a pause and
+not a latching stop. So a player's `while` and a game's gate are the same slot under one precedence, rather than two
+mechanisms that would eventually disagree:
+
+| | wins over | what it is |
+|---|---|---|
+| the generic derivation | — | nothing derives one today — plan §27 records the rule that was measured and why it is not a default |
+| the game's table | the derivation | `autoTable.gates[<id>]` (`while` only), and `--auto-opt while:/until:/priority:<id>=` for a harness leg or a sweep |
+| **the player's saved edit** | the table | `player.au.edits[<id>].while / .until / .priority` |
+| **a runtime override** | everything | `tmtLoader.setControl(id, name, value)` — never saved, rides in `runtimeState()` |
+
+⚠ **It does NOT pass through the stall watch's rung**, and that is V3 §21.8's own answer: the rung replaces a
+POLICY, and these are not policies — a feature the watch has escalated still has the player's pause and stop.
+⚠ **`null` means NOT SET and falls through; `''` means SET TO NONE and does not** — which is how a player removes a
+gate the game's table shipped, rather than being stuck with it.
+
+**The predicate language is the one the table and the ladder already share** — a JavaScript EXPRESSION over the
+engine's globals, compiled with `tmtLoader.predicate` in the page's own scope: `hasMilestone('q', 4)`,
+`player.h.unlocked`, `player.points.gte('1e300')`. Four rules, each with its own leg in `loader/controls.test.mjs`:
+
+1. **Compiled once, against its SOURCE** — never per tick. The cache key is the source string itself, because the
+   source can change under the reader (an edit, a load, a runtime override) and a generation counter is one more
+   thing to forget to bump.
+2. **A refusal changes nothing and SAYS why.** A predicate that will not compile leaves the previous value in force
+   and the field shows the reason — V2's rule for a refused value, and a save this build cannot validate is IGNORED
+   rather than run.
+3. **A run-time throw is contained to its own feature** and is NOT reported as `false`. `holds()` turns a throw into
+   `false`, which reads exactly like a condition that is merely not met; `blocked:predicate` is the difference, and
+   the engine's own message is in the block.
+4. **Everything typed is escaped** (`escapeText`) wherever the block renders it — the tab is `v-html`.
+
+⛔ **It is `new Function` over text from a SAVE.** `docs/contract.md` says exactly what that widens (one more source
+for a mechanism the table, the URL and the harness have all had since S1) and what it does not (the reach is
+`T.predicate`'s: an expression, in the page's scope, evaluated inside `automate()` on a feature the player switched
+on, never at load).
+
+**Helpers, not a second language.** Beside each predicate box is a pick-list of the predicates the ENGINE can name
+for that feature — "this layer's own resource ≥ N", "milestone k of layer L held", "layer L is unlocked" — built
+from the game's own layer and milestone ids (⚖ minimize hardcoding: no per-game list anywhere). Picking one WRITES
+the predicate text into the box, where it stays fully editable.
+
+### `priority` — and what "within a layer's tick" means
+
+An unedited feature's priority is **its kind's 1-based place in THIS game's kind order** (the table's `kindOrder`,
+`--auto-opt kindOrder=`, or the generic one). So "nothing edited ⇒ byte-identical" is a property of the code rather
+than a rule somebody has to keep: with nothing edited the loader returns the registration order — layer order × kind
+order — as it stands, and allocates nothing.
+
+⛔ **It cannot reach across layers, and the doc says so rather than implying otherwise.** The ENGINE decides in what
+order layers run: `gameLoop` walks `layers`, and TMT 2.2.1 skips a layer the player has not unlocked (which is why
+the `au` layer has a fallback pass at all). PTR's Extra Time Capsules are paid in **Boosters**, so `buyables:t` and
+`buyables:b` really do compete for one currency across two layers — and no number here can order them. What
+`priority` orders is one layer's own features inside its own `automate()`. A cross-layer reserve is the shared
+purchase-CURRENCY reader (plan §24.11 item 3), which is a different thing and still owed.
+
+The case it is for is V1's own readout: an `upgrades` feature taking the currency a `buyables` feature was holding
+under a reserve. Put the buyables first and the reserve is respected.
+
+⚠ **Re-arming a condition that is still REACHABLE re-latches, and that is right.** `until` is a latch on the
+CONDITION, not a one-shot switch: re-arm `stop resetting p once 30 prestige points have been earned` and the feature
+runs until 30 have been earned again. Measured (gate V4-3): after the press the feature acted 8 times and the latch
+moved 358 s → 595 s. If the intent is "stop for good", clear the condition instead of re-arming it.
+
+⚠ **A latch whose condition has GONE is disarmed.** If the `until` in force disappears — the player cleared it, or a
+harness leg set it through the TABLE's slot and the next process is not given that slot — the stop lifts. A latch
+with nothing on screen explaining it would be a feature that had silently died.
+
+**Two examples worth having**, both measured in this arc:
+
+- **PTR's M21 wall** (plan §24.7 / §26): a `q` reset wipes row 2 and Time Energy with it, so the policy that farms
+  quirks fastest is the one that never lets TE reach the 1e30 `h` needs. `while: "!hasMilestone('q',4) || player.h.unlocked"` on
+  `reset:q` — *pause once q milestone 4 holds, until h is unlocked* — makes M21 and M22 a sequence again. It is the
+  entry `games-auto/ptr.js` now ships.
+- **`always` on a deep NORMAL layer is a trap a player can pick from the V2 picker today** (measured by the planner,
+  2026-09-20): forced onto PTR's `reset:h`, it reaches 38 hindrance spirit and then freezes quirks at 10 total —
+  `reset:q` reads *"Cannot reset — 1.42e336 of 1.00e512"* — because every `h` reset wipes row 2 as well, `h`'s
+  requirement is fixed and cheap while `q`'s is neither, so the cheap reset starves the dear one for ever. The user
+  hit exactly this by hand. A `while` on `reset:h` is the shape that fixes it.
+
+Read and write them: `tmtLoader.controls()` (the table as data), `controlState(id)`, `savedControl(id, name)`,
+`setSavedControl(id, name, value | null)`, `setControl(id, name, value | null)`, `rearm(id)`,
+`predicateHelpers(id)`. Each write returns `{ok, value, error}`. ⚠ Clearing `until` disarms its latch, and CHANGING
+it re-arms — a stop belongs to the condition that set it.
+
+
 ## Derivation
 
 After the game's scripts (and the table), `tmt-auto.js` walks `layers`. For every **tree layer** — a numeric `row`, not a
@@ -682,6 +787,7 @@ at the PTR frontier.
 | `factor` | a number (a dimensionless multiple) | `gain>=Nx`, the stall modifier's `K` |
 | `fraction` | a number in **0 … 1** | `rate-peak`'s value buffer |
 | `quantity` | the whole Decimal range, exponent and all | `gain>=N`, `reserve>=N` |
+| `predicate` | (V4) a JavaScript EXPRESSION — validated by a `check` FUNCTION, not a grammar, because "is this an expression?" is not a regular language. ⛔ It declares `re: null` and a strategy TEMPLATE that named one THROWS at load: a predicate may contain `|`, which is the modifier separator, and any bracket or quote there is | the per-feature CONTROLS below |
 
 ⛔ **A policy is valid when the grammar AND the declared bounds accept it**, both from the same row. The first cut
 checked only the grammar and `rate-peak@2/0` sailed through — a value buffer of 2 puts the threshold at
@@ -859,7 +965,7 @@ tmtLoader.autoTable = {
   policies: { 'reset:p': 'interval>=10' },                 // a feature's default policy
   alternatives: { 'reset:p': ['always', 'gain>=1'] },      // listed next to the default (featureState / the au tab)
   order: { 'upgrades:e': [11], 'challenges:h': [11, 12] }, // upgrades order / order-then-cheapest, buyables order, challenge sequence
-  gates: { 'reset:q': "hasMilestone('h', 2)" },            // the feature does nothing while the predicate is false
+  gates: { 'reset:q': "hasMilestone('h', 2)" },            // `while`: the feature PAUSES while the predicate is false
   off: { 'buyables:t': 'Extra Time Capsules cost Boosters' }, // NOT registered; the reason is required (tmtLoader.autoExcluded)
   keep: { 'reset:b': { layer: 'b', id: 0 } },              // keepsUpgrades' milestone
   clickables: { c: [{ id: 11, when: 'player.c.points.gte(10)' }] },
@@ -926,6 +1032,11 @@ Everything else in both games is derived.
     (a row measured before a table lifted an exclusion cannot be reproduced without it — the A2 pins in `gates-s1` name
     `exclude=buyables:t` for exactly that reason) and what a sweep needs to switch one feature off without inventing an
     `off` policy for every kind. An unknown id, or one the table already excludes, throws;
+  - `while:<featureId>=<predicate>` / `until:<featureId>=<predicate>` / `priority:<featureId>=<n>` — (V4) the three
+    per-feature CONTROLS, in the TABLE's slot (so a player's saved edit still outranks them, exactly as it outranks
+    `policy:<id>=`). An EMPTY value clears the table's own entry, which is how a control leg measures the game
+    without a gate the table ships. ⛔ An id the derivation does not produce THROWS — R1′'s rule, because a mistyped
+    sweep cell that quietly measured the game without the thing under test is how a number gets printed for nothing;
   - `hookAll=1` — hook every tree layer (test probe); any other key lands in `tmtLoader.autoOptions`.
 - A THROW in the table or the derivation (an unknown key, an unknown feature id, a bad `include=`) is a **hard fail** of
   the run (`ok: false`, `failed_at: 'automation'`), not a run with `features: []` — the page fails its load on the same
@@ -952,6 +1063,11 @@ planner commits a configuration for an epoch without writing a planner decision 
 (`docs/planner.md`). `tmtLoader.policyTemplates` is the enumerable alphabet of each kind, with the parameterised
 policies named by their template (`gain>=Nx`, `interval>=T`, `reserve>=N`) — the numbers belong to whoever chooses them.
 `tmtLoader.registerRuntime(name, get, set)` adds another layer's memory to the same record.
+- `node tools/harness/gates-v4.mjs --part 1|2|3|4|5|6|7|m21|derived|fix` — the V4 gates: the `predicate` type on the
+  stub plus both new codes on a real leg (1), `while` as a table entry ≡ as a saved edit (2), the `until` latch
+  across a RELOAD and the re-arm (3), `priority` (4), inertness (5), the page (6), the roster (7); `m21` is the
+  pause sweep that chose PTR's `gates` entry, `derived` is the rule that was tried and NOT taken, `fix` regenerates
+  the fixtures the pause moves.
 - `node tools/harness/gates-s1.mjs --part 1|1s|2|2s-p|2s-f|2s-q|3` the S1 gates; `gates-a1.mjs`, `gates-a2.mjs` the A1/A2 ones.
 - `node tools/harness/gates-v1.mjs --part 1|2|3|4|6` — the V1 gates: every reason code witnessed by name (part 1),
   reason ≡ decision over whole legs (2), inertness and the format counter (3), subtab switching does not move

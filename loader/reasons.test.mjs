@@ -134,7 +134,12 @@ test('a run that never asks for text FORMATS NOTHING', () => {
   assert.ok(ctx.tmtLoader.explainStats().texts > 0, 'explain() built no text — the counter cannot see anything');
 });
 
-test('CONSTRUCTED: blocked:gate — no table on the roster carries a `gates` entry', () => {
+// ⚠ V4 MOVED THIS ROW'S TEXT AND ITS PREMISE, and both moves are the slice's subject. `games-auto/ptr.js` now
+// carries a `gates` entry (the M21 pause), so "no table on the roster carries one" is false — but no leg SHORT
+// enough for gates-v1 part 1 reaches PTR's q milestone 4, so the code is still constructed here. And the text now
+// names the OWNER of the predicate, because the slot has four possible sources and a player has to be able to tell
+// whether they typed it themselves.
+test('CONSTRUCTED: blocked:gate — the `while` slot, and its text names WHOSE predicate it is', () => {
   const ctx = boot();
   ctx.tmtLoader.registerAutoFeature({ id: 'reset:a-gated', layer: 'a', kind: 'reset', policy: 'always', gate: 'false' });
   ctx.player.a.points = new Decimal(1000);
@@ -143,7 +148,8 @@ test('CONSTRUCTED: blocked:gate — no table on the roster carries a `gates` ent
   const r = rowOf(ctx, 'reset:a-gated');
   assert.equal(r.last.code, 'blocked:gate');
   assert.equal(r.last.values.gate, 'false');
-  assert.match(r.last.text, /Blocked — the gate false is false/);
+  assert.equal(r.last.values.owner, 'table');
+  assert.match(r.last.text, /Blocked — the gate false \(table\) is false/);
 });
 
 test('CONSTRUCTED: off:policy — `challenges` and `clickables` sit at `off` in both real tables', () => {
