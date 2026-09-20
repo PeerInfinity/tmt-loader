@@ -179,7 +179,41 @@ html.tmt-mobile img {
   box-sizing: border-box;
 }
 
-/* ---------------------------------------------------------------- 6. touch behaviour */
+/* ---------------------------------------------------------------- 6. the tree canvas travels with the page
+ * ⛔ THE BRANCHES ARE DRAWN IN VIEWPORT COORDINATES INTO A CANVAS PLACED IN DOCUMENT SPACE, and §1 above is what
+ * pulls the two apart. `.canvas { top: 0; left: 0; position: absolute; z-index: -999 }` is the rule in ALL 171
+ * games (measured at 3346da419 over every .css under games/), i.e. the canvas is pinned to the top of the
+ * DOCUMENT; `drawTreeBranch` takes both endpoints from `getBoundingClientRect()`, which is relative to the
+ * VIEWPORT. On the game's own page nothing scrolls the document — the engine sets `body { overflow: hidden }` and
+ * scrolls INSIDE the columns — so the two spaces coincide and the engine is right. §1 moves the scroller to the
+ * page. Scroll by S and the canvas travels up with the document while the coordinates recompute against the
+ * viewport, so every branch is drawn S px away from the nodes it joins.
+ * ⚠ AND IT IS OUR BUG, not the engine's: without `?mobile=1` the document does not scroll and none of this
+ * happens. ⚖ LOADER FIRST — the fix is here, not a patch to games/.
+ *
+ * `fixed` makes the canvas's containing block the viewport, which is exactly the space its coordinates are already
+ * in. MEASURED on ptr at the M22 snapshot, 390×844, document 1241 px tall, as the distance from each ON-SCREEN
+ * branch endpoint's centre to the nearest pixel the canvas actually painted:
+ *
+ *                        at the top of the page   scrolled to the bottom (S = 397)
+ *     absolute (before)  7 nodes at 1.4 px        2 at 1.4, 4 at 147-243, 2 at 397   ⛔
+ *     fixed (after)      7 nodes at 1.4 px        8 nodes at 1.0 px                  ✅
+ *
+ * ⚠ A MEASUREMENT AT SCROLL 0 CANNOT SEE THIS AT ALL: the two spaces agree there, which is why the tree looks
+ * right until you scroll, and why the at-top reading is GREEN either way. The gate reads both ends
+ * (docs/mobile.md, "The tree canvas follows the page").
+ * ⚠ It also fixes a second defect the displacement hid: `resizeCanvas()` sizes the bitmap to `innerHeight` (844)
+ * while the mobile document is 1241 tall, so at the bottom 2 of those 8 nodes sat OUTSIDE the canvas altogether
+ * and their branches were clipped rather than merely displaced. A viewport-sized canvas that covers the viewport
+ * has nothing outside it to draw: 2 -> 0.
+ * ⚠ `z-index: -999` is KEPT. A negative-z fixed box is still painted above the root background; measured (the
+ * branch pixels change a screenshot at the line's midpoint exactly as they do with `absolute`) — a branch layer
+ * that is correct and invisible would be worse than one that is visible and wrong.
+ * The canvas is matched by its CLASS and its element name, not by `#treeCanvas`: the id is the engines' and the
+ * class is what carries the rule we are overriding. */
+html.tmt-mobile canvas.canvas { position: fixed; }
+
+/* ---------------------------------------------------------------- 7. touch behaviour */
 html.tmt-mobile * { -webkit-tap-highlight-color: transparent; }
 /* hover transforms fire on tap on touch devices and stick; they are decoration */
 @media (hover: none) {

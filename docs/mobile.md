@@ -95,6 +95,91 @@ indirection gives the active state for free: those controls carry `v-if="player.
 control that has been seen and is now absent means its tab is the open one. A button whose control has never
 appeared stays hidden — which is why Help shows on the two games that define `help_data` and nowhere else.
 
+### The tree canvas follows the page (U9)
+
+⚖ user, 2026-09-20: *"The tree branches display incorrectly when scrolling down in mobile view. Is there anything
+we can do about that?"*
+
+⛔ **It is a COORDINATE-SPACE MISMATCH, and it is OURS.** `.canvas { top: 0; left: 0; position: absolute;
+z-index: -999 }` is the rule in **all 171 games** (measured at `3346da419` over every `.css` under `games/`), so
+the tree canvas is pinned to the top of the **document**; `drawTreeBranch` takes both endpoints from
+`getBoundingClientRect()`, which is relative to the **viewport**. On the game's own page the two spaces coincide,
+because the engine sets `body { overflow: hidden }` and scrolls INSIDE the columns — nothing ever scrolls the
+document. §1 of `loader/mobile.css` moves the scroller to the page, which is what pulls them apart: scroll by S and
+the canvas travels up with the document while the coordinates recompute against the viewport, so every branch is
+drawn S px away from the nodes it joins. Without `?mobile=1` none of this happens, so ⚖ **LOADER FIRST** is
+satisfied by fixing it in our layer — `html.tmt-mobile canvas.canvas { position: fixed; }`, one rule, no engine
+patch.
+
+⚠ **Two hypotheses were wrong before the measurement, and both are recorded so they are not tried again.**
+
+⛔ **`+ document.body.scrollTop` is a RED HERRING.** Every engine adds a scroll offset to the viewport rect —
+`+ document.body.scrollTop` ×162, `+ (document.getElementById("treeTab").scrollTop || document.body.scrollTop)` ×6,
+`+ tab.scrollTop` where `tab = document.body` ×3 (censused at `3346da419`; `the-shenanigans-tree-rewritten`
+carries both shapes). **It is always 0.** The scroller under our layout is `document.documentElement`, not
+`document.body`. There is no double count to fix, and "fixing" that term would change nothing.
+
+⚠ **And the 6 games whose offset reads `#treeTab.scrollTop` are unaffected**, because under our layout nothing
+inside `#app` scrolls at all — `mobile.css` §1 gives the columns `overflow: visible`. The gate measures that per
+game rather than assuming it (`innerScrollers` in its own row; 0 across the roster).
+
+**The measurement, and it is the one a gate at scroll 0 cannot make.** For every node the tree joins and that is
+on screen, the distance from the node's centre to the nearest pixel the canvas **actually painted** (read out of
+`getImageData`, never recomputed from `drawTreeBranch` — a probe that recomputed the endpoints would agree with the
+engine by construction). `ptr` at `tools/harness/snapshots/ptr/all/M22.json`, 390×844, document 1241 px tall:
+
+| | at the top of the page | scrolled to the bottom (S = 397) |
+|---|---|---|
+| `position: absolute` (before) | 7 nodes at **1.4 px** | 2 at 1.4, 4 at 147–243, 2 at **397 px** ⛔ |
+| `position: fixed` (after) | 7 nodes at **1.4 px** | 8 nodes at **1.0 px** ✅ |
+
+⚠ **The at-top reading is GREEN either way — that is the point.** The two spaces agree at scroll 0, which is
+exactly why the tree looks right until you scroll, and why the U9 mutant must redden the SCROLLED half and leave
+the other alone.
+
+✅ **It also fixes a second defect the displacement was hiding.** `resizeCanvas()` sizes the bitmap to
+`innerHeight` (844) while the mobile document is 1241 tall, so at the bottom **2 of the 8 judged nodes sat outside
+the canvas altogether** and their branches were clipped rather than merely displaced. A viewport-sized canvas that
+covers the viewport has nothing outside it to draw: `offCanvas` goes 2 → 0.
+
+⚠ **`z-index: -999` is KEPT, and that a NEGATIVE-z FIXED canvas is still painted was measured, not assumed** — a
+branch layer that is correct and invisible would be worse than one that is visible and wrong. The oracle is a
+10×10 screenshot at a branch's midpoint with the canvas shown and hidden, plus a control patch the canvas paints
+nothing on (byte-identical either way). It is visible.
+⛔ **The oracle has to hide the canvas with `display: none`, NOT `visibility: hidden`.** Measured on ptr in both
+modes: hiding it with `visibility` leaves the screenshot **byte-identical**, so a probe built on that property
+reports "invisible" about a canvas that is plainly painted. That is a probe trap, not a finding about the fix.
+
+#### Nothing in any engine redraws the tree on a scroll
+
+Censused over all **171** `canvas.js` files at `3346da419`: **0** listen on `scroll`; **3** listen on `wheel`,
+which a touch device never fires. The only cadence is `setInterval(function(){ needCanvasUpdate = true }, 500)`
+plus the game loop's `if (needCanvasUpdate) resizeCanvas()`. So even with the canvas in the right space, the
+branches stand where the last redraw left them for up to half a second after a flick — which is very likely part of
+what the report was about. `loader/navbar.js` therefore adds a **passive, rAF-coalesced `scroll` listener**, mobile
+mode only, which calls the game's own redraw.
+
+**Measured, 8 jittered rounds per leg** (a fixed wait between scrolls phase-locks to the engine's own 500 ms
+cadence and would measure the phase rather than the lag), on an unmanaged page at each game's deepest snapshot.
+The two legs differ in exactly one line — the listener's registration, stripped by a route interceptor:
+
+| game | scroll → redraw, WITHOUT the listener | with it | redrawn by us |
+|---|---|---|---|
+| `ptr` | min 1.4 ms, median **107.3**, max **265.8** | min 0.8, median **32.0**, max **46.6** | 8 / 8 |
+| `something` | min 76.0, median **213.5**, max **302.2** | min 1.3, median **6.6**, max **47.8** | 8 / 8 |
+
+⚠ The "without" maxima are a sample of a 0–500 ms window, not its bound: the cadence's own bound is 500 ms and 8
+rounds will not reach it. `byUs` is 0 in every "without" round and 1 in every "with" one, which is what says the
+loader's listener — and not a lucky cadence tick — is what moved.
+
+⚠ **`resizeCanvas()`, not the cheaper-looking `drawTree()`**, and all three reasons were measured:
+the canvas carries the engine's `v-if`, so switching to a tab and back hands the tree a **brand-new element at the
+HTML default of 300×150** (measured on ptr under `?managed=1`, where the cadence is stopped: `drawTree()` alone
+painted the whole tree into that bitmap and 7 of 7 judged nodes fell outside it); how big the bitmap should be is
+the GAME's answer, not ours (164 games size it to `innerWidth × innerHeight`, 6 to `#treeTab.scrollWidth/Height`,
+1 to `document.body`'s); and `universal-reconstruction`'s `resizeCanvas` also calls `drawResearchBranches()`, so
+`drawTree` alone would leave half of that game's tree behind.
+
 ## The layer list
 
 The **Layers** button is the first button in the bar, immediately left of Tree, and it opens a scrollable list of
@@ -2011,6 +2096,34 @@ re-render) and watches the very next render fill it:
   and the leg, reddened. The byte comparison needs no change to be visible. ⚠ `the-cultree` still cannot witness
   that mutant — it remembers nothing (all six of its rows collide) so it stores nothing either, and the two agree
   at empty; the row says `0 remembered` out loud rather than passing in silence.
+
+#### What U9 added to the leg
+
+**1. Leg 3b — the tree canvas, at BOTH ends of the page.** ⛔ A leg that measured at scroll 0 could not see the
+defect AT ALL: the branch offset IS zero there. It runs on the phone page with the deepest save open and the tree
+showing, and reads the same probe three times — at the top, scrolled and **not redrawn by us**, and scrolled with a
+redraw FORCED. The three readings separate the two halves of the fix:
+
+| reading | what it is the claim for |
+|---|---|
+| `topOk` | nothing regressed where the two coordinate spaces already agreed — **green under both mutants** |
+| `bottomOk` (a redraw forced) | `position: fixed` on its own; the listener cannot help here |
+| `redrawOk` (`treeRedraws()` moved) | the loader's scroll listener on its own — under `?managed=1` the engine's 500 ms cadence is stopped, so nothing else could have redrawn |
+| `liveOk` | the two together: the branches are on their nodes without anyone forcing anything |
+
+The distance is measured against the pixels the canvas **actually painted** (`getImageData`, sampled on a 2 px
+grid, so a perfect hit reads up to √2 rather than 0) and only over nodes **on screen** — a node scrolled out of the
+viewport has no visible branch end, and judging it would measure the viewport rather than the canvas. Tolerance
+`BRANCH_TOL = 4` px against a measured worst of 1.0 (`ptr`) and 2.2 (`something`) on a correct build.
+
+⚠ **AN ABSTENTION IS NOT A PASS, and it is named.** A game whose page does not scroll, or whose tree draws no
+branch, cannot see this. 169 of the 171 games are swept at a FRESH save, one layer deep, where the document is
+exactly the viewport — so the leg first tries shrinking the viewport to **390×400** (a short phone is a real
+phone, and it is the same claim) and only abstains when even that does not scroll. The summary prints how many
+were judged, how many were judged at the short viewport, and how many abstained with the reason.
+
+⚠ The leg also reports `innerScrollers` — anything inside `#app` that still scrolls under our layout — because the
+6 games whose branch offset reads `#treeTab.scrollTop` would need a different answer if one did. It is 0.
 
 ### The state leg needs a control
 

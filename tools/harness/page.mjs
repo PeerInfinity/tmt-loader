@@ -1476,6 +1476,134 @@ const TIP_PROBE = `(${function () {
   };
 }})()`;
 
+// ---------------------------------------------------------------- (U9) THE TREE CANVAS, AT BOTH ENDS OF THE PAGE
+// ⛔ A MEASUREMENT AT SCROLL 0 CANNOT SEE THIS DEFECT AT ALL, and that is the whole reason this probe exists in
+// the shape it does. `.canvas` is `position: absolute; top: 0` in all 171 games — DOCUMENT space — while
+// `drawTreeBranch` computes both endpoints from `getBoundingClientRect()`, which is VIEWPORT space. At the top of
+// the page the two coincide and every branch is exactly on its nodes; scroll by S and the canvas travels up with
+// the document while the coordinates do not, so every branch is drawn S px away. The claim is therefore
+// node-centre-to-branch-endpoint distance AT BOTH ENDS, and the mutant (mobile.css §6 reverted) must redden the
+// SCROLLED reading and leave the at-top one green.
+//
+// ⚠ THE DISTANCE IS MEASURED AGAINST THE PIXELS THE CANVAS ACTUALLY PAINTED, not against a re-implementation of
+// `drawTreeBranch`. A probe that recomputed the endpoints would agree with the engine by construction and assert
+// nothing about where the ink is. Sampled on a 2 px grid, so a perfect hit reads up to √2 rather than 0.
+// ⚠ ONLY THE NODES ON SCREEN ARE JUDGED. A node scrolled out of the viewport has no visible branch end, and
+// judging it would measure the viewport rather than the canvas.
+const BRANCH_TOL = 4;          // px. MEASURED on a correct build: 1.0 on ptr, 2.2 on something (2 px sampling grid)
+const SHORT_VIEW = { width: 390, height: 400 };  // a phone in landscape-ish height: what makes a short game scroll at all
+const TREE_PROBE = `(() => {
+  const S = (f, d) => { try { const v = f(); return v === undefined ? d : v; } catch (e) { return d; } };
+  const cv = document.querySelector('canvas.canvas') || document.getElementById('treeCanvas');
+  if (!cv) return { err: 'no tree canvas' };
+  const cs = getComputedStyle(cv), r = cv.getBoundingClientRect();
+  const out = { canvas: { attr: cv.width + 'x' + cv.height, css: +r.width.toFixed(1) + 'x' + +r.height.toFixed(1),
+      left: +r.left.toFixed(1), top: +r.top.toFixed(1), position: cs.position, zIndex: cs.zIndex },
+    scroll: { innerH: innerHeight, doc: document.documentElement.scrollTop, body: document.body.scrollTop,
+      docH: document.documentElement.scrollHeight } };
+  // the endpoints of the branches the engine WOULD DRAW, built from PAIRS rather than from the layers that own
+  // them, and only from pairs that PAINT. ⚠ MEASURED on the-dressy-tree, whose D declares
+  // branches: ['D', 'S']: one SELF-branch (a zero-length line: moveTo(p); lineTo(p) with butt caps paints no
+  // pixel) and one to a layer with no element at all. Counting the owning layer unconditionally produced a single
+  // 'endpoint' with no ink anywhere, and the leg reported a defect about a branch that does not exist.
+  // A pair counts only when the two ends DIFFER and both elements are in the DOM — the second is drawTreeBranch's
+  // own precondition (it returns early on a null element).
+  const ends = new Set();
+  S(() => { for (const l in layers) { if (!tmp[l].layerShown || !tmp[l].branches) continue;
+    for (const b in tmp[l].branches) { const d = tmp[l].branches[b], o = String(Array.isArray(d) ? d[0] : d);
+      if (o === String(l)) continue;                         // a SELF-branch: moveTo(p); lineTo(p) paints nothing
+      if (!document.getElementById(l) || !document.getElementById(o)) continue;
+      ends.add(String(l)); ends.add(o); } } }, null);
+  const nodes = [];
+  for (const l of ends) { const el = document.getElementById(l); if (!el) continue;
+    const q = el.getBoundingClientRect(); if (!q.width && !q.height) continue;
+    nodes.push({ id: l, cx: q.left + q.width / 2, cy: q.top + q.height / 2 }); }
+  out.ends = nodes.length;
+  const px = [];
+  try { const g = cv.getContext('2d').getImageData(0, 0, cv.width, cv.height).data;
+    const sx = cv.width / (r.width || 1), sy = cv.height / (r.height || 1);
+    for (let y = 0; y < cv.height; y += 2) for (let x = 0; x < cv.width; x += 2)
+      if (g[(y * cv.width + x) * 4 + 3] > 8) px.push([r.left + x / sx, r.top + y / sy]);
+  } catch (e) { return { ...out, err: 'getImageData: ' + e.message }; }
+  out.painted = px.length;
+  const vis = nodes.filter((n) => n.cy >= 0 && n.cy <= innerHeight && n.cx >= 0 && n.cx <= innerWidth);
+  out.judged = vis.length;
+  out.nodes = vis.map((n) => { let best = Infinity;
+    for (let i = 0; i < px.length; i++) { const dx = px[i][0] - n.cx, dy = px[i][1] - n.cy, d = dx * dx + dy * dy; if (d < best) best = d; }
+    return { id: n.id, cy: +n.cy.toFixed(0), d: px.length ? +Math.sqrt(best).toFixed(1) : null }; });
+  // the nodes the canvas BITMAP does not even cover, which is the second half of the defect: resizeCanvas()
+  // sizes it to innerHeight while the mobile document is taller, so the lowest nodes were clipped, not displaced
+  out.offCanvas = vis.filter((n) => !(n.cx >= r.left && n.cx <= r.right && n.cy >= r.top && n.cy <= r.bottom)).length;
+  const ds = out.nodes.map((n) => n.d).filter((x) => x !== null);
+  out.maxD = ds.length ? +Math.max(...ds).toFixed(1) : null;
+  // and whether anything INSIDE the app scrolls under our layout — the 7 games whose y1 reads
+  // #treeTab.scrollTop would need a different answer if one did (mobile.css §1 sets the columns to overflow: visible)
+  out.innerScrollers = [...document.querySelectorAll('#app *')]
+    .filter((e) => e.scrollHeight > e.clientHeight + 2 && /auto|scroll/.test(getComputedStyle(e).overflowY))
+    .map((e) => (e.id || String(e.className) || e.tagName) + ' ' + e.scrollHeight + '/' + e.clientHeight).slice(0, 4);
+  return out;
+})()`;
+
+/** The whole leg, on the phone page with the deepest save open and the tree showing. */
+async function treeCanvasLeg(page) {
+  const redraws = () => page.evaluate(() => { const u = window.tmtLoader.navbarUI; return u && u.treeRedraws ? u.treeRedraws() : null; });
+  // ⚠ `resizeCanvas`, which SIZES the bitmap and then draws. The canvas carries the engine's `v-if`, so the tab
+  // switching leg 3 just did handed the tree a brand-new element at the HTML default of 300×150, and under
+  // `?managed=1` the engine's own 500 ms cadence is stopped and will never size it. Measured: `drawTree()`
+  // alone painted ptr's whole tree into that 300×150 bitmap, with 7 of 7 judged nodes outside it.
+  const force = () => page.evaluate(() => { try { resizeCanvas(); } catch (e) { try { drawTree(); } catch (e2) { /* no canvas here */ } } });
+  const at = async (y) => { await page.evaluate((v) => scrollTo(0, v), y); await page.waitForTimeout(160); };
+  await at(0);
+  await force();
+  await page.waitForTimeout(120);
+  let top = await page.evaluate(TREE_PROBE);
+  // ⚠ A GAME WHOSE PAGE DOES NOT SCROLL CANNOT SEE THIS AT ALL. Most of the roster boots one layer deep, where the
+  // document is exactly the viewport. Shrink the viewport rather than abstain: a short phone is a real phone, and
+  // it is the same claim. Restored before the leg returns.
+  let shortened = false;
+  if (!top.err && top.scroll.docH <= top.scroll.innerH + 2) {
+    await page.setViewportSize(SHORT_VIEW);
+    await page.waitForTimeout(250);
+    await force();
+    await page.waitForTimeout(120);
+    const t2 = await page.evaluate(TREE_PROBE);
+    if (!t2.err && t2.scroll.docH > t2.scroll.innerH + 2) { shortened = true; top = t2; }
+    else await page.setViewportSize(PHONE);
+  }
+  const rec = { shortened, viewport: shortened ? SHORT_VIEW : PHONE, top };
+  if (top.err) { await page.setViewportSize(PHONE); await at(0); return { ...rec, verdict: `abstains (${top.err})` }; }
+  rec.scrollable = top.scroll.docH > top.scroll.innerH + 2;
+  if (!rec.scrollable) { await page.setViewportSize(PHONE); await at(0);
+    return { ...rec, verdict: `abstains (the page does not scroll at ${top.scroll.innerH} px: ${top.scroll.docH} px of document)` }; }
+  // the LIVE reading: scrolled, and NOT redrawn by us — whatever put the branches where they are is the loader's
+  // own scroll listener or nothing, because `?managed=1` has stopped the engine's 500 ms canvas cadence outright.
+  const r0 = await redraws();
+  await at(top.scroll.docH);
+  rec.live = await page.evaluate(TREE_PROBE);
+  rec.redrew = (await redraws()) - r0;
+  // and the same place with a redraw FORCED, which is `position: fixed` on its own: the listener cannot help here
+  await force();
+  await page.waitForTimeout(120);
+  rec.bottom = await page.evaluate(TREE_PROBE);
+  await page.setViewportSize(PHONE);
+  await at(0);
+  const ok = (m) => !m.err && (m.judged === 0 || (m.maxD !== null && m.maxD <= BRANCH_TOL));
+  rec.judged = { top: top.judged, live: rec.live.judged, bottom: rec.bottom.judged };
+  rec.topOk = ok(top);
+  rec.bottomOk = ok(rec.bottom);          // the `position: fixed` claim
+  rec.liveOk = ok(rec.live);              // fixed AND redrawn in time
+  rec.redrawOk = rec.redrew >= 1;         // the scroll listener's own claim
+  rec.spaceOk = rec.bottom.canvas.position === 'fixed';
+  rec.verdict = !rec.topOk ? `THE BRANCHES MISS THEIR NODES AT THE TOP OF THE PAGE (max ${top.maxD} px over ${top.judged})`
+    : !rec.spaceOk ? `THE CANVAS IS NOT IN VIEWPORT SPACE (position: ${rec.bottom.canvas.position})`
+    : !rec.bottomOk ? `THE BRANCHES MISS THEIR NODES WHEN SCROLLED (max ${rec.bottom.maxD} px over ${rec.bottom.judged}, at scroll ${rec.bottom.scroll.doc})`
+    : !rec.redrawOk ? 'A SCROLL REDREW NOTHING (the loader listener is gone; the engine has none)'
+    : !rec.liveOk ? `THE BRANCHES LAG THE SCROLL (max ${rec.live.maxD} px before any redraw of ours)`
+    : rec.bottom.judged === 0 ? `on its nodes at the top; abstains when scrolled (no node on screen)`
+    : `on its nodes at both ends (max ${top.maxD} px at the top, ${rec.bottom.maxD} px at scroll ${rec.bottom.scroll.doc}, over ${rec.bottom.judged} nodes), redrawn by the loader`;
+  return rec;
+}
+
 async function gateMobile(browser, base, ids) {
   const rows = [];
   for (const id of ids) {
@@ -1579,6 +1707,16 @@ async function gateMobile(browser, base, ids) {
           await look(typeof t === 'string' ? `tab:${t}` : `open:${t.click}`);
         }
       }
+      // --- leg 3b (U9): THE TREE CANVAS FOLLOWS THE PAGE (docs/mobile.md, "the tree canvas"). Back on the tree,
+      // with the deepest save open — the state where a tree has branches at all. It runs here, before the legs
+      // that act, because it SCROLLS the page and puts it back, and because leg 6 presses a prestige button.
+      await page.evaluate(() => { try { showTab('none'); } catch (e) { /* engines differ; the canvas still measures */ } });
+      await page.waitForTimeout(250);
+      row.tree = await treeCanvasLeg(page);
+      // ⚠ AN ABSTENTION IS NOT A PASS, and it is named as one: a game whose page does not scroll even at 400 px, or
+      // whose tree draws no branch, cannot see this defect. The verdict string says which, and the sweep counts them.
+      row.treeOk = !/^THE |^A SCROLL/.test(String(row.tree.verdict));
+
       // --- leg 4: the two opt-ins TOGETHER. They compose today, and nothing was asserting it: the mobile layout
       // has to survive the `au` side layer and its tab, and the nav bar has to survive a second side node. Only
       // for a game with an automation table — elsewhere the registry derives features but has nothing to drive.
@@ -3233,7 +3371,7 @@ async function gateMobile(browser, base, ids) {
       // the mobile page must load as cleanly as the plain one: judged against the SAME manifest allowances as G1
       const j = judgeLoad(readManifest(id), base, structuredClone({ ...stats.of(page) }), await page.evaluate(() => ({ skipped: tmtLoader.skipped, pageErrors: tmtLoader.pageErrors })));
       row.loadVerdict = { ok: j.ok, failedNotDeclared: j.failedBad, blockedNotDeclared: j.blockedBad, errorsAfterReady: j.errorsAfterReady, errorsAfterReadySample: j.errorsAfterReadySample };
-      row.ok = !!(row.ready && !row.error && row.inertOk && row.stateOk && row.geometryOk && row.navOk && row.bothOk && row.navbarOnlyOk && row.layersOk && j.ok);
+      row.ok = !!(row.ready && !row.error && row.inertOk && row.stateOk && row.geometryOk && row.navOk && row.bothOk && row.navbarOnlyOk && row.layersOk && row.treeOk && j.ok);
     } catch (e) {
       row.exception = String((e && e.stack) || e).slice(0, 600);
     } finally { await context.close(); }
@@ -3522,6 +3660,16 @@ async function main() {
       console.log(`M1 navbar-only leg (${DESKTOP.width}\u00d7${DESKTOP.height}, no touch): ${rows.filter((r) => r.navbarOnlyOk).length}/${rows.length} green over ${nbViews} view(s), each against the same view of the plain desktop page`);
       const cards = rows.reduce((n, r) => n + ((r.layers && r.layers.phone && r.layers.phone.cards.length) || 0), 0);
       const chips = rows.reduce((n, r) => n + ((r.layers && r.layers.phone && r.layers.phone.chips) || 0), 0);
+      // (U9) THE TREE CANVAS. ⚠ An ABSTENTION is counted and named, never folded into the green: a game whose
+      // page does not scroll (even at 390×400) or whose tree draws no branch cannot see this defect at all.
+      const trJ = rows.filter((r) => r.tree && !/abstains/.test(String(r.tree.verdict)));
+      const trRed = rows.filter((r) => r.tree && r.treeOk === false);
+      const trAbs = rows.filter((r) => r.tree && /abstains/.test(String(r.tree.verdict)));
+      const trShort = trJ.filter((r) => r.tree.shortened);
+      const trInner = rows.filter((r) => r.tree && r.tree.top && (r.tree.top.innerScrollers || []).length);
+      const trMax = trJ.length ? Math.max(...trJ.map((r) => (r.tree.bottom && r.tree.bottom.maxD) || 0)) : null;
+      console.log(`M1 tree canvas (U9 — node centre to the nearest PAINTED branch pixel, at the top of the page AND scrolled to the bottom; tolerance ${BRANCH_TOL} px): ${trJ.length - trRed.length}/${trJ.length} judged green over ${trJ.reduce((n, r) => n + ((r.tree.bottom && r.tree.bottom.judged) || 0), 0)} on-screen node(s), worst ${trMax === null ? '—' : trMax + ' px'}; ${trShort.length} judged at ${SHORT_VIEW.width}×${SHORT_VIEW.height} because the page does not scroll at ${PHONE.height}; ${trAbs.length} ABSTAINED${trAbs.length ? ` (${trAbs.slice(0, 4).map((r) => `${r.id}: ${r.tree.verdict}`).join('; ')}${trAbs.length > 4 ? `, …(${trAbs.length})` : ''})` : ''}${trRed.length ? ` (RED: ${trRed.map((r) => `${r.id} ${r.tree.verdict}`).join('; ')})` : ''}`);
+      console.log(`M1 tree canvas redraw (U9 — the loader's own passive scroll listener; NO engine listens on scroll, and \`?managed=1\` has stopped the 500 ms cadence): ${trJ.filter((r) => r.tree.redrawOk).length}/${trJ.length} redrew on the scroll; ${trJ.filter((r) => r.tree.spaceOk).length}/${trJ.length} have the canvas in VIEWPORT space; ${trInner.length} game(s) still scroll something inside #app${trInner.length ? `: ${trInner.slice(0, 4).map((r) => `${r.id} ${JSON.stringify(r.tree.top.innerScrollers)}`).join('; ')}` : ' — so the 6 games whose y1 reads #treeTab.scrollTop are unaffected'}`);
       console.log(`M1 layers leg: ${rows.filter((r) => r.layersOk).length}/${rows.length} green over ${cards} card(s) and ${chips} chip(s), at ${PHONE.width}px with touch and at ${DESKTOP.width}px without`);
       // U2b: the chips MIRROR THE NORMAL VIEW — the sequence, the dividers, the milestone corners, and the two
       // discriminators (a count that fell, an order that moved) on the reference games.
