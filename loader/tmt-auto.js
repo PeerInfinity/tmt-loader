@@ -372,7 +372,22 @@
       help: 'Reset only when it is this layer’s turn among the resets of its ROW, and take W resets per turn — so two same-row resets that wipe each other’s input stop racing. Inside its turn the layer still follows its own rule.',
       params: [
         { name: 'w', type: 'count', placeholder: 'W', default: '1', min: 1, label: 'resets in one turn' },
-        { name: 'k', type: 'factor', placeholder: 'K', default: '3', min: 1, label: 'give the turn up after K× the usual wait between this layer’s resets' },
+        // ⛔ K = 30, AND IT IS MEASURED, NOT INHERITED — the default was 3, copied from `stall>=Kx/N`, and 3 BREAKS
+        // THE WEIGHT. A cycle member's waits are BIMODAL BY CONSTRUCTION: the cycle itself creates the long ones.
+        // PTR's `q` resets every ~19 game-seconds in a burst and then needs ~311 after a sibling's reset has wiped
+        // the row below, and `N` is a SLIDING WINDOW — so a burst flushes the long waits out of the memory, the
+        // bound collapses to `3 × 19`, and the next legitimate wait is read as a stall. Measured over the whole
+        // stretch from `all/M15.json` to 37048: at K = 3 a weight of 20 yields a `q`/`h` ratio of **1.0** and 211
+        // quirks; at K = 30 it yields **19.1** and reproduces a known-good arrangement BYTE-FOR-BYTE
+        // (`d2da5ef3a490f92a`, 73 Hindrance Spirit, 673 quirks, M22–M24 identical to the control). K = 300 and
+        // K = 100000 are byte-identical to K = 30, so the answer is not sensitive above the knee.
+        // ⚠ `stall>=Kx/N` KEEPS ITS OWN K = 3, and that is not an inconsistency: it asks "is this feature's own
+        // rule unusually late?", where a small multiple of a median is right. A cycle asks "is this member failing
+        // to USE its turn?", and the damage a wrong answer does is a FALSE RELEASE that starves the member the
+        // cycle exists to feed. ⚠ No quantity fixed this — the LONGEST of the window measures identically, because
+        // the window's contents are what is wrong. The real answer is a release rule based on PROGRESS toward the
+        // threshold (plan §32.4a), and until that exists K is a backstop and is set to behave like one.
+        { name: 'k', type: 'factor', placeholder: 'K', default: '30', min: 1, label: 'give the turn up after K× the usual wait between this layer’s resets' },
         { name: 'n', type: 'count', placeholder: 'N', default: '5', min: 1, label: 'resets remembered' },
       ] },
     // ⚖ 13d.2, AND IT IS THE SAME MECHANISM WITH ONE MORE LINK. A weight is a literal; the ⚖-shaped question is
@@ -389,7 +404,7 @@
       help: 'As “take turns with the same row”, except that whenever something in the game is waiting for a quantity of one member’s layer, that member gets the next turn.',
       params: [
         { name: 'w', type: 'count', placeholder: 'W', default: '1', min: 1, label: 'resets in one turn' },
-        { name: 'k', type: 'factor', placeholder: 'K', default: '3', min: 1, label: 'give the turn up after K× the usual wait between this layer’s resets' },
+        { name: 'k', type: 'factor', placeholder: 'K', default: '30', min: 1, label: 'give the turn up after K× the usual wait between this layer’s resets' },
         { name: 'n', type: 'count', placeholder: 'N', default: '5', min: 1, label: 'resets remembered' },
       ] },
   ];

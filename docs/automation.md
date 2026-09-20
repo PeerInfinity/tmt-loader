@@ -1053,11 +1053,13 @@ not the same thing:
 | the holder is refused by | what it means | what the cycle does |
 |---|---|---|
 | the **ENGINE** (`cannot-reset`, `yielding:native`, `blocked:after`) | it is waiting on a RESOURCE | it KEEPS the turn — that is what a turn is FOR. PTR's `h` needs ~1,450 quiet game-seconds for Time Energy to reach 1e30, and it only gets them because holding the turn is what stops `q` wiping row 2 |
-| its **own policy** (`waiting:gain`, `waiting:rate`, `waiting:interval`, …) | it could reset and chose not to | it YIELDS at once — there is nothing for it to wait for that another member's turn would spoil. No skip, no memory, and it is eligible again immediately |
+| its **own policy** (`waiting:gain`, `waiting:rate`, `waiting:interval`, …) | *"not yet, and it is worth more soon"* — which is ALSO productive waiting | it KEEPS the turn. ⛔ The first cut yielded here and it was measurably wrong: with `gain>=2` on PTR's `q`, the ENGINE allows a reset while the gain is still one quirk, so a twenty-reset turn ended after ONE and an eager sibling ran unscheduled. The weight exists to protect exactly this |
 
-Without the second row a patient policy on a cycle member holds its row for ever (measured on the stub: `gain>=100x`
-on a member that can reset once takes the turn and never gives it back). That is the deadlock the "be eager"
-requirement was invented for, met without a number.
+⚠ So a member that is not using its turn is the GUARD's business and nobody else's — there is no second mechanism.
+The one case neither answers is a member that can reset exactly ONCE: its bound comes from its SECOND reset, so it
+has none, and it holds the row. That is the same gap as a member that can never reset at all, and the candidate for
+both is a release rule based on PROGRESS toward the threshold rather than on elapsed time — which is also what would
+retire the `K` default below.
 
 **Precedence — where the cycle sits in the chain.**
 
@@ -1081,6 +1083,21 @@ demand which can never be met cannot hand it straight back.
 - `typical` = the **median** of the last `N` intervals between that member's **own resets** — `stall>=Kx/N`'s own
   quantity, and ⚖ the user's rule verbatim: *"we could set the timeout threshold dynamically, based on how long
   previous resets have taken"*.
+- ⚠ **The clock restarts every time the holder ACTS, not when the turn began.** A turn of weight `W` spans `W`
+  resets, so measuring from the turn's start compares the whole turn against the wait for ONE of its resets — every
+  weight above 1 is then released mid-turn and the weight stops meaning anything (measured: `turn@5` and `turn@20`
+  byte-identical).
+- ⛔ **`K` DEFAULTS TO 30 HERE, WHERE `stall>=Kx/N` USES 3, AND THAT IS MEASURED RATHER THAN INHERITED.** A cycle
+  member's waits are **bimodal by construction — the cycle itself creates the long ones**. PTR's `q` resets every
+  ~19 game-seconds in a burst and then needs ~311 after a sibling's reset has wiped the row below, and `N` is a
+  SLIDING WINDOW: a burst flushes the long waits out of the memory, the bound collapses to `3 × 19`, and the next
+  legitimate wait reads as a stall. Measured over the whole stretch: at `K = 3` a weight of 20 gives a ratio of
+  **1.0** and 211 quirks; at `K = 30` it gives **19.1** and reproduces a known-good arrangement byte-for-byte.
+  `K = 300` and `K = 100000` are byte-identical to 30, so the answer is not sensitive above the knee.
+  ⚠ **No quantity fixes this** — taking the LONGEST of the window instead of the median measures identically,
+  because what is wrong is the window's CONTENTS. The real answer is a release rule based on PROGRESS toward the
+  threshold; until that exists `K` is a backstop and is defaulted to behave like one. The damage a wrong answer does
+  here is a FALSE RELEASE, which starves the member the cycle exists to feed.
 - ⛔ **Its OWN intervals, with no pooled fallback.** A bound has to be in the member's own units: PTR's `h` needs
   ~1,450 quiet game-seconds and `q`'s resets are tens of seconds apart, so a pooled median hands `h` a threshold
   two orders of magnitude too small and releases its turn before it could possibly use it — which is exactly the
@@ -1091,10 +1108,9 @@ demand which can never be met cannot hand it straight back.
   named rather than smoothed — a member that can NEVER act holds its row's turn for ever, and what protects
   against that is the player's own `while`, the demand link, and the yield rule above; not a number this file could
   derive. Every derived bound that was tried released `h` before it could reset.
-- A turn therefore ends in **five** distinct ways, and they are not the same event: `complete` (spent), `released`
-  (the guard took it — skipped for a rotation), `preempted` (demand moved it — **nothing skipped**), `yielded`
-  (the holder's own rule said no — nothing skipped, eligible again at once) and `ineligible` (paused, stopped, or
-  left the row). ⚠ Skipping a PREEMPTED member deadlocked the first cut outright: every member ended up skipped
+- A turn therefore ends in **four** distinct ways, and they are not the same event: `complete` (spent), `released`
+  (the guard took it — skipped for a rotation), `preempted` (demand moved it — **nothing skipped**) and
+  `ineligible` (paused, stopped, or left the row). ⚠ Skipping a PREEMPTED member deadlocked the first cut outright: every member ended up skipped
   and the one holder that could not act had nobody left to give the turn to — a scheduler that stopped scheduling,
   and green in every hash.
 
