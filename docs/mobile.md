@@ -1016,6 +1016,14 @@ keeps the old space collapse, and a string with no break at all leaves the secon
 line box. `resetText()`'s bare-word `Reset` fallback, which a layer whose text throws or returns `''` gets, is one
 line too, and it occupies two.
 
+**Over the roster** (CI run `35478485680`, 171/171, 0 RED): **373 prestige buttons** — 144 `normal`, 49 `static`,
+**7 with a `type` that is none of the three** (the engines' `else` branch, whose text is the layer's own: five on
+`the-infinity-tree`, one on `the-incrementreeverse`) — and 9 games with no prestige button at all. **16 cards
+render an EMPTY second line right now**, across 9 games: `ptr`'s `p` and `e`, all three of `something`'s, five of
+`the-infinity-tree`'s, and ⚠ `the-dingus-tree`'s `f`, which is **`static`** — the runtime witness for the
+`the-factoree` shape above, on a different game. Those 16 are the cards a reservation keyed on the second row's
+content would break.
+
 #### A layer's other resources (U7)
 
 ⚖ user, 2026-09-19: *"Some layers have more than one resource whose quantity is only reported in that layer's
@@ -1081,6 +1089,18 @@ table either way: ⚖ MINIMIZE HARDCODING.
 ⚠ **Two resources can still print the same number** where the layer states it twice; both are kept (the card is
 reporting quantities and both are right) and the attribution between them is by key order alone. The gate counts it.
 
+**Over the roster**: **274 candidate Decimals, 16 shown, on 10 cards across 9 games**, 8 of them sharing a value
+with a sibling. ⚠ **The yield is low BY CONSTRUCTION**: 169 of the 171 games are swept at a FRESH save, where
+every amount on every layer is zero and the text cannot attribute any of them — `the-infinity-tree` alone
+contributes 32 candidates and shows none. The two games with recorded deep snapshots are where the feature has
+anything to report.
+
+⚖ **And the roster is what the label question should be decided on.** The gate lifts the adjacent words and
+reports them; over all 171 games the lift produced **2 right out of 13**: `ptr t.energy → Time Energy` and
+`ptr q.energy → Quirk Energy` are exactly right, `the-cultree`'s **six** stat keys (`sta`, `str`, `spd`, `int`,
+`wis`, `lck`) all lift the SAME wrong word `STR`, `the-element-tree`'s multipliers and `the-prestige-tree`'s
+`exponent` lift `x`, and `the-dressy-tree`'s `clicky` lifts `per click`.
+
 #### Per-category progress in the expanded card (U7)
 
 ⚖ user, 2026-09-19: *"In Layers view, when a layer is in expanded view, can we add a row to display the progress
@@ -1138,6 +1158,14 @@ to keep those rows, or to drop every category whose components declare no curren
 ⚠ **The rows sit UNDER the reset button and are styled to match its second half**, which is the per-LAYER progress
 display; these are the per-category ones. Only categories the card DRAWS get one — `visibleSeq`, the same three
 visibility rules the chips and counters are under — so a row cannot leak what those rules hide.
+
+**Over the roster**: **247 progress rows on 242 cards** — 225 upgrades, 22 buyables, **and not one challenge**
+at any state the sweep drives. The rule that chose them: `only` 123 (one candidate, where the two rules cannot
+differ), `cheapest` 119 and **`first` 5** — the currencies-disagree fallback really fires, on `the-cultree`,
+`the-dingus-tree`, `the-orchard-tree` and `collection-of-everything`. ⚖ The categories where cheapest and
+first-listed pick **different** components number **8, on 6 games**; the wrong-currency guard fired **once**
+(`the-energy-factory`'s `energy/buyables`). And the constraint item 2 puts at risk — the list writes nothing to
+`player` — **held on all 171**, across five explicit full renders with the panel open.
 
 **What it costs.** Both new readers ride the counters' own 250 ms throttle, so the FRAME path is unmoved
 (`tools/harness/cost-layerlist.mjs`, 300 reps): the observer pass is 1.09 → 1.13 ms on `ptr`'s snapshot,

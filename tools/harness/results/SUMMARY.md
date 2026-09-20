@@ -4623,3 +4623,109 @@ contaminated.
 | (d) the reactivity fix reverted (`armToggleOwned = false`) | A1 part 2, **11/12** | `the setting's own button RE-RENDERED on the press ("OFF" → "OFF")` — the flag still flipped, which is the whole bug |
 | (e) `openTab` hides before it asks — **today's bug** | leg K only | `THE OVERLAY CLOSED ON AN INACCESSIBLE LAYER` |
 
+## 2026-09-19 — U7: the reset line is always two lines, a layer's other resources, per-category progress — commit `1924ee1fc`
+
+Three items, all from the user on 2026-09-19. **CI at `1924ee1fc`: run `35478485680`, 21/21 jobs, `rows: 171/171
+game(s); 0 RED`** (six abstained on the state leg, the usual six). The round before it, `35478060913` at
+`9c65b6fd6`, was `171/171; 2 RED` — both of them the GATE and not the card, and the fix is below.
+
+### Four of the brief's numbers came back different, and one of its premises is false
+
+| the brief said | measured here | how |
+|---|---|---|
+| `static` always emits its `<br><br>` | **170 of the 171** — `the-factoree` wraps its static second half in `points.lt(1e7) ? … : (!canReset ? … : "")`, so that game's static layers collapse to one line exactly as `normal` does. Witnessed at runtime on a DIFFERENT game: `the-dingus-tree`'s `f` is a `static` card rendering an empty second line today | `census-figures`, brace-matched over the loaded scope |
+| "census how many games override `prestigeButtonText` wholesale" | **none do.** All 171 globals keep the family's three-branch shape. What exists is the per-LAYER override the `else` branch reaches: **39 games declare 106 of them**, break counts **0 ×36, 1 ×22, 2 ×35, 3 ×5, 4 ×4, 5 ×1, 6 ×2, 8 ×1** | same |
+| 450 of 2,260 startData blocks / 1,713 pairs / 91 games | **463 / 1,753 / 93.** The block count agrees exactly; the rest is the engine key set and the spacing the pattern allows | same, subtree scope |
+| `canAffordPurchase` covers every game (`… → player[layer].points`) | a CHALLENGE's default is the **global** `player.points` (`canCompleteChallenge`), not the layer's. The two engine functions disagree and both are right about their own category | read out of both reference engines |
+
+⚖ And a third prestige TYPE exists on the roster that the brief's table does not name: **7 cards render with
+`tmp[l].type` neither `normal` nor `static` nor `none`** (5 on `the-infinity-tree`, 1 on `the-incrementreeverse`,
+1 elsewhere) — the `else` branch, whose text is the layer's own.
+
+### What the roster shows, at the states the sweep drives
+
+**Item 1** — 373 prestige buttons over the 171 games (144 `normal`, 49 `static`, 7 custom; 9 games have none at
+all). **16 cards render an EMPTY second line right now**, across 9 games — `ptr`'s `p` and `e`, all three of
+`something`'s, `the-dingus-tree`'s `f` (a **static** one), and five of `the-infinity-tree`'s custom ones. Those are
+the cards a conditional reservation breaks, and they exist.
+
+**Item 2** — **274 candidate Decimals, 16 shown, on 10 cards across 9 games**, 8 of them sharing a value with a
+sibling. ⚠ The yield is low BY CONSTRUCTION and the reason is worth stating: 169 of the 171 games are swept at a
+FRESH save, where every amount on every layer is zero and the text cannot attribute any of them —
+`the-infinity-tree` alone contributes 32 candidates and shows none. The two games with recorded deep snapshots are
+where the feature has anything to report, and `ptr` reports `t.energy` 6.29e28 and `q.energy` 2,011.
+
+⚖ **THE LABEL IS THE OPEN QUESTION, and the roster answers it.** The gate lifts the words adjacent to each
+detected number and REPORTS them without rendering them. Over the whole roster:
+
+| lifted | verdict |
+|---|---|
+| `ptr t.energy → Time Energy`, `ptr q.energy → Quirk Energy` | ✅ exactly right |
+| `the-cultree k.sta → STR`, `k.str → STR`, `k.spd → STR`, `k.int → STR`, `k.wis → STR`, `k.lck → STR` | ⛔ **all six stats lift the SAME wrong word** |
+| `the-element-tree q.protonmultiplier → x`, `the-prestige-tree layer1.exponent → x`, `the-orchard-tree $.rotpenalty → x` | ⛔ useless |
+| `the-dressy-tree Mi.clicky → per click` | ⛔ the words of the next clause |
+
+**2 of 13 right.** The key ships as the label; the decision to lift or not is the user's, with this in front of it.
+
+**Item 3** — **247 progress rows on 242 cards**: 225 upgrades, 22 buyables, **and not one challenge** on the whole
+roster at these states. The rule that chose them: `only` 123 (one candidate, where cheapest and first-listed cannot
+differ), `cheapest` 119, **`first` 5** — the fallback really fires, on `the-cultree`, `the-dingus-tree`,
+`the-orchard-tree` and `collection-of-everything`. ⚖ **`cheapestWitnesses` — the categories where the two rules
+pick DIFFERENT components — is 8, on 6 games** (`the-quantum-tree` 2, `the-yes-tree` 2, `ptr`, `the-infinity-tree`,
+`weakling-tree`, `universal-expansion`). That number is what makes the cheapest-vs-first mutant non-vacuous; 0
+would have been an abstention. The wrong-currency guard fired **once** on the whole roster
+(`the-energy-factory`'s `energy/buyables`).
+
+**The write-nothing constraint** — the one item 2 puts at risk, because it CALLS the layers' own display
+functions — **held on all 171: `renderInert: unchanged` everywhere**, across five explicit full renders with the
+panel open.
+
+### ⛔ The gate was wrong before the card was: what CI found at `9c65b6fd6`
+
+`the-cultree`'s `g` and `sorbet-s-convolution-mainframe`'s `universe` were the only two RED rows, and **neither was
+a defect in the card**. Leg L compared the reset block's total height across the grown and flipped strings, which
+assumes each half is a fixed number of pixels tall. It is not:
+
+> **A half that ALREADY WRAPS is not a fixed height.** The engines' prestige strings carry `<b>`, and the line box
+> holding it is taller than the others — so re-wrapping the same words moves the total (`g` 66.5 → 63.75 px) with
+> the line COUNT unchanged, and flipping away a TWO-line second half removes two lines where the variant's
+> one-line replacement puts back one (66.5 → 49.25).
+
+The leg now asserts the two halves of the claim apart: **the RESERVATION** (both line elements present, each at
+least one line box, on every card in all three states) never abstains, and **the height comparisons** run only
+while each half is a single line box. Over the roster: **364 of 373 cards judged**, 9 abstained for a half that
+already wraps, 41 more for a real wrap under the grown string.
+
+### The mutants
+
+Five, run on **`ptr`** (at `all/M16`, the only recorded state with an empty second reset line AND a
+non-degenerate other-resource) and **`the-yes-tree`** (the sample that has layers where the cheapest unearned
+upgrade is not the first-listed one), the work restored from a COPY taken before any mutation — `diff` against it
+after every run: IDENTICAL. Each reddened its own named check and nothing else.
+
+| mutant | ptr | the-yes-tree | what it printed |
+|---|---|---|---|
+| m1 the `<br>` split reverted to the space collapse | `resetSplit` + `resetHeight` | same | `p(normal) has 0 line element(s), not 2` |
+| m2 the two-line height made conditional on line 2 being non-empty | `resetSplit` + `resetHeight` | **`resetHeight` only** | `p(normal,emptyL2) base: line 2 is 0px, under one line box (16.25)` |
+| m3 the other-resource filter dropped | `res` | **nothing** | `g: 1 rendered, expected 0 (none)` |
+| m4 cheapest replaced by first-listed everywhere | `prog` | `prog` | `0: buyables/s/11 != buyables/s/13` · `0: upgrades/sr/11 != upgrades/sr/12` |
+| m5 `multiRes` rendered instead of skipped | `multiRes` | `multiRes` | the constructed row still named the component it had to skip |
+
+⛔ **The expectation is PER GAME, and that is a result rather than bookkeeping.** m2 can only break the per-card
+RESERVATION on a card whose second line the engine leaves EMPTY, which `the-yes-tree` has none of — leg L's
+flipped state catches it there instead. m3 can only show on a game with a candidate Decimal at all, and
+`the-yes-tree` declares none. A single roster-wide expectation would have had to be the weaker of the two and would
+then have stopped saying which game witnessed the mutation.
+
+### What this leaves open
+
+- ⚖ **The prose label** (item 2). The key ships; the lift's roster-wide sample is above and it is 2 of 13.
+- ⚖ **A row whose numerator is in the wrong currency and cannot be detected.** `ptr`'s `s` buildings buy with
+  `player.g.power` and declare no currency to the engine at all, so the engines' own generic reader gives
+  `17 / 6.28e350 space energy` — the denominator is right and the number on the left is not what the game spends.
+  The guard catches only the half where the engine says the component CAN be bought. Dropping every category whose
+  components declare no currency would also drop the majority of the rows that are right.
+- **No challenge progress row exists anywhere on the roster** at these states. The code path is there and the
+  probe rebuilds it; nothing has driven it.
+- **Milestones, achievements and clickables get no row at all** — they declare no number. If a prose requirement
+  should become a row, that is a new question.
