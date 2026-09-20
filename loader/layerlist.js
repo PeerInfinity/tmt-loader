@@ -1174,6 +1174,55 @@
    *  1,000 and below 0.95, so the disagreement is confined to that one band. */
   function resAmount(v) { return fmtNum(v, false); }
 
+  // ---------------------------------------------------------------- (U9) THE GLOBAL CURRENCY ON A FIRST-ROW CARD
+  // ⚖ "Points should be displayed as a secondary currency in the first layer, at least in ptr. Is there a clean
+  // rule that would do that?" (user, 2026-09-20). ⛔ `resourcesOf` enumerates `player[l]` keys, so the GLOBAL
+  // `player.points` can never be one of them — that is the whole reason it was missing, and it is why this needs a
+  // rule rather than a wider filter.
+  //
+  // THE RULE IS THE ENGINE'S OWN DECLARATION. A layer's `baseAmount` is the thing it resets FOR; where its source
+  // reads the global `player.points`, the global currency IS that layer's base currency, and there is nothing to
+  // guess. Read as SOURCE, never as a VALUE — ⛔ comparing `tmp[l].baseAmount` to `player.points` for equality is
+  // the trap this item's first measurement fell into: at a fresh save the numbers coincide or fail to coincide by
+  // accident, and it reported 6 layers on `ptr` against 0 on `something` and `the-point-tree`, which is backwards.
+  // A source read is value-independent and says the same thing at every state. (It is U7's
+  // everything-is-zero-at-a-fresh-save trap wearing a different hat.)
+  //
+  // ⚠ `player[...]` IS NOT THE GLOBAL. `player[this.layer].points` and `player.p.points` are a LAYER's currency;
+  // the boundary before `player` is what keeps `xplayer.points` and `foo.player.points` out.
+  //
+  // ⚖ ROW 0 ONLY, which is what makes this "the FIRST layer", and it is read through `rowOf` — the same reader
+  // `groups()` places the cards with, so the row a card sits in and the row this rule asks about cannot drift
+  // apart. ⚠ Numeric 0: TMT also has `side` layers and `row` is not always a number.
+  // ⚖ AND ON EVERY ROW-0 LAYER THAT DECLARES IT, not on one chosen out of them. 28 games have 2-8 such layers
+  // (docs/mobile.md carries the census); showing the number on each is TRUE on each, showing it on one would be
+  // tidier and arbitrary. The user rules; this is what ships meanwhile.
+  //
+  // ⚠ THE LABEL IS `baseResource`, AND THAT DOES NOT REOPEN U7's RULING. U7 ships the player KEY as a row's label
+  // because a name LIFTED out of the surrounding prose was right 2 times in 13. `baseResource` is not lifted: it
+  // is a field the game's author wrote to name this very quantity. Authored, so it is used; and authored, so it is
+  // used VERBATIM — 7 layers label it `TBD`, which is a fork's own placeholder and is rendered as it stands
+  // (⚖ MINIMIZE HARDCODING: a per-game name table is exactly what we do not do).
+  var GLOBAL_RES_KEY = '@points';   // `@` prefixed like `currencyKey`'s own globals, so no `player[l]` key can collide
+  var BASE_IS_GLOBAL = /(^|[^\w$.])player\s*\.\s*points\b/;
+  /** ⛔ COMMENTS OUT FIRST, and this is MEASURED rather than tidiness. `gooby-cat-tree`'s `p` and `Fr` both carry a
+   *  commented-out `//return player.points` under the line that actually runs (`player[this.layer].buyables[11]`),
+   *  and a raw source test admitted BOTH — two layers, on the one game it would then have been wrong about, out of
+   *  194. Replaced with a SPACE, never removed, so nothing can be spliced into a match that was not there.
+   *  ⚠ It is a stripper, not a tokenizer: `//` inside a string literal or a regex would be cut too. The failure
+   *  mode of that is a row that does not appear, never a row that appears with the wrong number. */
+  function stripComments(src) { return String(src).replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/\/\/[^\n\r]*/g, ' '); }
+  /** The declared global row for this layer, or `null`. Reads DECLARATIONS only; writes nothing. */
+  function globalResOf(l) {
+    if (rowOf(l) !== 0) return null;
+    var src = safe(function () { var b = layers[l].baseAmount; return (b === undefined || b === null) ? '' : stripComments(b); }, '');
+    if (!BASE_IS_GLOBAL.test(src)) return null;
+    var v = safe(function () { return player.points; }, null);
+    if (!isDecimalAmt(v)) return null;
+    var label = str(safe(function () { var t = tmp[l].baseResource; return t === undefined ? layers[l].baseResource : t; }, ''));
+    return { key: GLOBAL_RES_KEY, label: label || 'points', value: v };
+  }
+
   /** THE LAYER'S OTHER RESOURCES — every Decimal in `player[l]` the engine did not put there whose value the
    *  layer's own text states, in `player[l]`'s own key order.
    *  ⚠ THE LABEL IS THE KEY, and that is a DECISION rather than a limitation of the scan. The prose name
@@ -1186,19 +1235,21 @@
    *  attribution is ambiguous so the gate can measure how often it happens. */
   function resourcesOf(l) {
     var p = safe(function () { return player[l]; }, null);
-    if (!p || typeof p !== 'object') return [];
+    // (U9) the DECLARED row, which is not a `player[l]` key and is therefore not subject to the attribution below
+    var g = globalResOf(l);
+    if (!p || typeof p !== 'object') p = null;
     var keys = [];
-    for (var k in p) {
+    if (p) for (var k in p) {
       if (ENGINE_PLAYER_KEYS[k]) continue;
       if (!isDecimalAmt(safe(function () { return p[k]; }, null))) continue;
       keys.push(k);
     }
-    if (!keys.length) return [];
+    if (!keys.length && !g) return [];
     // ⚠ (U8) NO LONGER `if (!text) return []`. A layer whose display text this pass could not read still has its
     // `player[l]` values, and a REMEMBERED key renders from the value; an empty text simply claims nothing.
     var text = displayTextOf(l);
     var budget = Object.create(null);
-    if (text) ENGINE_AMOUNT_KEYS.forEach(function (k) {
+    if (text && p) ENGINE_AMOUNT_KEYS.forEach(function (k) {
       var v = safe(function () { return p[k]; }, null);
       if (isDecimalAmt(v)) takeOccurrence(text, budget, v);
     });
@@ -1206,6 +1257,11 @@
     // is reporting quantities and both are right, and `collide` records that the attribution between them is by
     // key order alone — which is also what keeps such a key OUT of the remembered set.
     var claim = Object.create(null), byText = Object.create(null);
+    // (U9) THE DECLARED ROW CLAIMS BEFORE ANY CANDIDATE, for the same reason the engine's own amounts do: a layer
+    // whose tab states the global points would otherwise have that occurrence taken by whichever `player[l]` key
+    // happens to hold the same number, and the card would report the global's value under a bookkeeping key's name.
+    var gShown = null;
+    if (g && text) { gShown = takeOccurrence(text, budget, g.value); if (gShown !== null) byText[gShown] = (byText[gShown] || 0) + 1; }
     if (text) keys.forEach(function (k) {
       var shown = takeOccurrence(text, budget, safe(function () { return p[k]; }, null));
       if (shown === null) return;
@@ -1215,13 +1271,24 @@
     // PASS TWO: the rows, in `player[l]`'s own key order — the SAME order for a remembered row as for an
     // attributed one, so a row does not move along the line the moment it stops being attributable.
     var sticky = seenOf(l), out = [];
+    // (U9) FIRST, and only because it is the layer's BASE currency: the card's head already prints
+    // `player[l].points`, so the two readouts read as "what this layer resets for" then "what it holds".
+    // ⚠ `sticky` is always false here and the key is NOT added to the remembered set — U8's memory exists to keep
+    // a row that would otherwise VANISH, and a DECLARED row cannot: the declaration does not depend on what the
+    // layer's prose states this tick. It carries the flag so that every row in this list answers the same
+    // questions; it is one list and one renderer, never a second path.
+    if (g) {
+      var gCollide = gShown !== null && byText[gShown] > 1;
+      out.push({ layer: l, key: g.key, label: g.label, value: g.value, text: resAmount(g.value),
+        claimed: gShown, collide: gCollide, sticky: false, global: true });
+    }
     keys.forEach(function (k) {
       var shown = claim[k], has = shown !== undefined, collide = has && byText[shown] > 1;
       if (has && !collide) seenAdd(l, k);
       if (!has && !sticky[k]) return;
       var v = safe(function () { return p[k]; }, null);
-      out.push({ layer: l, key: k, value: v, text: resAmount(v), claimed: has ? shown : null,
-        collide: collide, sticky: !has });
+      out.push({ layer: l, key: k, label: k, value: v, text: resAmount(v), claimed: has ? shown : null,
+        collide: collide, sticky: !has, global: false });
     });
     return out;
   }
@@ -1829,7 +1896,10 @@
       box.dataset.key = r.key;
       var lab = document.createElement('span');
       lab.className = 'tmt-layerlist-resource-label';
-      lab.textContent = r.key;
+      // (U9) THE LABEL IS NOT ALWAYS THE KEY any more, and the two are separate fields for exactly one row: the
+      // DECLARED global-currency row, whose label is the game author's own `baseResource`. Every `player[l]` key
+      // still ships `label === key` (U7's ruling), so nothing else on any card moves.
+      lab.textContent = r.label === undefined ? r.key : r.label;
       var val = document.createElement('span');
       val.className = 'tmt-layerlist-resource-value';
       box.append(lab, val);
@@ -1844,8 +1914,11 @@
       var e = rec.resourceEls[i];
       if (!e || e.key !== r.key) return;
       e.val.textContent = r.text;
-      e.box.title = r.key + ': ' + r.text;
+      e.box.title = (r.label === undefined ? r.key : r.label) + ': ' + r.text;
       e.box.dataset.collide = r.collide ? 'yes' : 'no';
+      // (U9) reported, never styled — the `sticky` flag's own rule one line down. A row the player reads must not
+      // change appearance because of where the list learned about it.
+      e.box.dataset.global = r.global ? 'yes' : 'no';
       // (U8) whether this row is REMEMBERED right now — written here and not in `drawResources`, because a row
       // flips between attributed and remembered without the KEY SET moving, which is the only thing a rebuild
       // watches. It is reported, never styled: a row the player has already seen must not change appearance
@@ -2238,7 +2311,7 @@
       resetLines: function (l) { return resetLines(resetText(l)); },
       // (U7) the layer's OTHER resources, and the text they were detected in. The text is what a caller lifts a
       // prose label out of; the list itself ships the KEY as the label (see `resourcesOf`).
-      resources: function (l) { return resourcesOf(l).map(function (r) { return { layer: r.layer, key: r.key, text: r.text, collide: r.collide, sticky: r.sticky, claimed: r.claimed }; }); },
+      resources: function (l) { return resourcesOf(l).map(function (r) { return { layer: r.layer, key: r.key, label: r.label, text: r.text, collide: r.collide, sticky: r.sticky, claimed: r.claimed, global: !!r.global }; }); },
       /** (U8) The keys this game has already shown unambiguously, per layer — the remembered set itself, read out
        *  of the loader's own namespace. */
       resourceMemory: function () { var all = seenRead(), o = {}; for (var l in all) o[l] = Object.keys(all[l]); return o; },

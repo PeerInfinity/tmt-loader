@@ -95,6 +95,121 @@ indirection gives the active state for free: those controls carry `v-if="player.
 control that has been seen and is now absent means its tab is the open one. A button whose control has never
 appeared stays hidden — which is why Help shows on the two games that define `help_data` and nowhere else.
 
+### The tree canvas follows the page (U9)
+
+⚖ user, 2026-09-20: *"The tree branches display incorrectly when scrolling down in mobile view. Is there anything
+we can do about that?"*
+
+⛔ **It is a COORDINATE-SPACE MISMATCH, and it is OURS.** `.canvas { top: 0; left: 0; position: absolute;
+z-index: -999 }` is the rule in **all 171 games** (measured at `3346da419` over every `.css` under `games/`), so
+the tree canvas is pinned to the top of the **document**; `drawTreeBranch` takes both endpoints from
+`getBoundingClientRect()`, which is relative to the **viewport**. On the game's own page the two spaces coincide,
+because the engine sets `body { overflow: hidden }` and scrolls INSIDE the columns — nothing ever scrolls the
+document. §1 of `loader/mobile.css` moves the scroller to the page, which is what pulls them apart: scroll by S and
+the canvas travels up with the document while the coordinates recompute against the viewport, so every branch is
+drawn S px away from the nodes it joins. Without `?mobile=1` none of this happens, so ⚖ **LOADER FIRST** is
+satisfied by fixing it in our layer — `html.tmt-mobile canvas.canvas { position: fixed; }`, one rule, no engine
+patch.
+
+⚠ **Two hypotheses were wrong before the measurement, and both are recorded so they are not tried again.**
+
+⛔ **`+ document.body.scrollTop` is a RED HERRING.** Every engine adds a scroll offset to the viewport rect —
+`+ document.body.scrollTop` ×162, `+ (document.getElementById("treeTab").scrollTop || document.body.scrollTop)` ×6,
+`+ tab.scrollTop` where `tab = document.body` ×3 (censused at `3346da419`; `the-shenanigans-tree-rewritten`
+carries both shapes). **It is always 0.** The scroller under our layout is `document.documentElement`, not
+`document.body`. There is no double count to fix, and "fixing" that term would change nothing.
+
+⚠ **And the 6 games whose offset reads `#treeTab.scrollTop` are unaffected**, because under our layout nothing
+inside `#app` scrolls at all — `mobile.css` §1 gives the columns `overflow: visible`. The gate measures that per
+game rather than assuming it (`innerScrollers` in its own row; 0 across the roster).
+
+**The measurement, and it is the one a gate at scroll 0 cannot make.** For every node the tree joins and that is
+on screen, the distance from the node's centre to the nearest pixel the canvas **actually painted** (read out of
+`getImageData`, never recomputed from `drawTreeBranch` — a probe that recomputed the endpoints would agree with the
+engine by construction). `ptr` at `tools/harness/snapshots/ptr/all/M22.json` **at 29,204 ticks** (⚠ `deepestSnapshot()` selects by TICKS
+and that fixture MOVES — the table below is measured against that tick count, and a re-measurement is owed
+whenever it changes), 390×844, document 1241 px tall:
+
+| | at the top of the page | scrolled to the bottom (S = 397) |
+|---|---|---|
+| `position: absolute` (before) | 7 nodes at **1.4 px** | 2 at 1.4, 4 at 147–243, 2 at **397 px** ⛔ |
+| `position: fixed` (after) | 7 nodes at **1.4 px** | 8 nodes at **1.0 px** ✅ |
+
+⚠ **The at-top reading is GREEN either way — that is the point.** The two spaces agree at scroll 0, which is
+exactly why the tree looks right until you scroll, and why the U9 mutant must redden the SCROLLED half and leave
+the other alone.
+
+✅ **It also fixes a second defect the displacement was hiding.** `resizeCanvas()` sizes the bitmap to
+`innerHeight` (844) while the mobile document is 1241 tall, so at the bottom **2 of the 8 judged nodes sat outside
+the canvas altogether** and their branches were clipped rather than merely displaced. A viewport-sized canvas that
+covers the viewport has nothing outside it to draw: `offCanvas` goes 2 → 0.
+
+⚠ **`z-index: -999` is KEPT, and that a NEGATIVE-z FIXED canvas is still painted was measured, not assumed** — a
+branch layer that is correct and invisible would be worse than one that is visible and wrong. The oracle is a
+10×10 screenshot at a branch's midpoint with the canvas shown and hidden, plus a control patch the canvas paints
+nothing on (byte-identical either way). It is visible.
+⛔ **The oracle has to hide the canvas with `display: none`, NOT `visibility: hidden`.** Measured on ptr in both
+modes: hiding it with `visibility` leaves the screenshot **byte-identical**, so a probe built on that property
+reports "invisible" about a canvas that is plainly painted. That is a probe trap, not a finding about the fix.
+
+#### ⛔ NOT FIXED HERE: on 5 games `?mobile=1` hides the TREE ITSELF
+
+Found while measuring the above, PRE-EXISTING (identical with `position: absolute`), and **out of U9's scope** —
+it is a different defect on a different set of games, and fixing it means revisiting §2's master-detail rule,
+which is a design call rather than a repair.
+
+§2 hides `.col.left` because *"the engine gives an element `col left` exactly while a layer tab is open, and
+`fullWidth` while it is not"*. Measured over all 171 games at a fresh save with `player.tab === 'none'`:
+**166 give `#treeTab` `fullWidth`, and 5 give it `col left`** — so on those five the rule hides the tree on the
+tree tab.
+
+| game | `.treeNode`s | visible under `?mobile=1` |
+|---|---|---|
+| `the-incrementreeverse` | 6 | **0** |
+| `the-stardust-tree` | 6 | **0** |
+| `distance-incremental` | 5 | **0** |
+| `the-modding-tree` | 5 | **0** |
+| `the-burning-tree` | 3 | **0** |
+
+`the-modding-tree`, measured: plain page `#treeTab` is `col left` / `display: block`, 5 of 5 nodes visible, canvas
+193×844; with `?mobile=1` it is `col left` / `display: none`, **0 of 5 visible**, canvas **0×0** (that engine sizes
+the bitmap from `#treeTab.scrollWidth`, which is 0 for a hidden box — which is how this surfaced at all).
+
+⚠ **No gate could have caught it, and that is the lesson worth keeping**: every geometry check in M1 asks whether
+something ESCAPES the viewport or is too SMALL to tap, and nothing that is not rendered can do either. The U9
+tree-canvas leg abstains on all five (`getImageData: The source width is 0`), which is honest but is not the same
+as noticing. A check for "the tree tab shows its tree" is what would have.
+
+#### Nothing in any engine redraws the tree on a scroll
+
+Censused over all **171** `canvas.js` files at `3346da419`: **0** listen on `scroll`; **3** listen on `wheel`,
+which a touch device never fires. The only cadence is `setInterval(function(){ needCanvasUpdate = true }, 500)`
+plus the game loop's `if (needCanvasUpdate) resizeCanvas()`. So even with the canvas in the right space, the
+branches stand where the last redraw left them for up to half a second after a flick — which is very likely part of
+what the report was about. `loader/navbar.js` therefore adds a **passive, rAF-coalesced `scroll` listener**, mobile
+mode only, which calls the game's own redraw.
+
+**Measured, 8 jittered rounds per leg** (a fixed wait between scrolls phase-locks to the engine's own 500 ms
+cadence and would measure the phase rather than the lag), on an unmanaged page at each game's deepest snapshot.
+The two legs differ in exactly one line — the listener's registration, stripped by a route interceptor:
+
+| game | scroll → redraw, WITHOUT the listener | with it | redrawn by us |
+|---|---|---|---|
+| `ptr` | min 1.4 ms, median **107.3**, max **265.8** | min 0.8, median **32.0**, max **46.6** | 8 / 8 |
+| `something` | min 76.0, median **213.5**, max **302.2** | min 1.3, median **6.6**, max **47.8** | 8 / 8 |
+
+⚠ The "without" maxima are a sample of a 0–500 ms window, not its bound: the cadence's own bound is 500 ms and 8
+rounds will not reach it. `byUs` is 0 in every "without" round and 1 in every "with" one, which is what says the
+loader's listener — and not a lucky cadence tick — is what moved.
+
+⚠ **`resizeCanvas()`, not the cheaper-looking `drawTree()`**, and all three reasons were measured:
+the canvas carries the engine's `v-if`, so switching to a tab and back hands the tree a **brand-new element at the
+HTML default of 300×150** (measured on ptr under `?managed=1`, where the cadence is stopped: `drawTree()` alone
+painted the whole tree into that bitmap and 7 of 7 judged nodes fell outside it); how big the bitmap should be is
+the GAME's answer, not ours (164 games size it to `innerWidth × innerHeight`, 6 to `#treeTab.scrollWidth/Height`,
+1 to `document.body`'s); and `universal-reconstruction`'s `resizeCanvas` also calls `drawResearchBranches()`, so
+`drawTree` alone would leave half of that game's tree behind.
+
 ## The layer list
 
 The **Layers** button is the first button in the bar, immediately left of Tree, and it opens a scrollable list of
@@ -1164,6 +1279,83 @@ what a first load does too.
 are standing on the memory: every game boots with an empty store and the same render that shows a row is the one
 that records it. The feature only shows after a RESET, which is why the gate has to drive one (leg O).
 
+#### The global currency on a first-row card (U9)
+
+⚖ user, 2026-09-20: *"Points should be displayed as a secondary currency in the first layer, at least in ptr. Is
+there a clean rule that would do that?"*
+
+**Yes, and the ENGINE declares it.** U7's `resourcesOf` enumerates `player[layer]` keys only, so the GLOBAL
+`player.points` can never be one of them — that is the whole reason it was missing, and why this needs a rule and
+not a wider filter. A layer's `baseAmount` is the thing it resets **for**; where its source reads the global
+`player.points`, the global currency IS that layer's base currency.
+
+⛔ **READ AS SOURCE, NEVER AS A VALUE.** Comparing `tmp[layer].baseAmount` with `player.points` for equality
+reported **6 layers on `ptr` and ZERO on `something` and `the-point-tree`** — an artefact of a fresh save where
+the numbers happen to coincide or happen not to, and backwards on two of the three. The source read is
+value-independent and says the same thing at every state. (It is U7's everything-is-zero-at-a-fresh-save trap
+wearing a different hat.)
+
+⛔ **COMMENTS OUT FIRST, and that is MEASURED.** `gooby-cat-tree`'s `p` and `Fr` both carry a commented-out
+`//return player.points` under the line that actually runs (`player[this.layer].buyables[11]`), and a raw source
+test admits both — 488 layers instead of 486, and one game credited with a currency it does not use. The stripper
+replaces a comment with a SPACE, so it can only remove a match and never splice one together. ⚠ It is a stripper,
+not a tokenizer: a `//` inside a string literal would be cut too, and the failure mode of that is a row that does
+not appear, never a row that appears with the wrong number.
+
+⚠ **`player[...]` IS NOT THE GLOBAL.** `player[this.layer].points` and `player.p.points` are a LAYER's currency;
+the boundary before `player` is what also keeps `xplayer.points` and `foo.player.points` out.
+
+**Measured over all 171 games**, at `3346da419`, by `node tools/census-basecurrency.mjs` — which boots each game
+and reads `layers[l].baseAmount.toString()` off the live object, applying the SAME two rules the list applies.
+⚠ A RUNTIME census on purpose: a layer's declaration reaches `layers[l]` through `addLayer(...)` and through
+whatever the mod does to it at load, so the live object is the only place to see what the list will see.
+
+| | |
+|---|---|
+| layers | **2,513** |
+| declaring the GLOBAL `player.points` as their base | **486** (488 before the comment strip) |
+| — of those, on a NUMERIC row 0 | **192**, across **146 of 171 games** |
+| games with exactly ONE such row-0 layer | **118** |
+| with 2 / 3 / 4 / 5 / 8 | 18 / 7 / 1 / 1 / 1 |
+| with none | **25** |
+| row-0 declarers already `layerShown` at a fresh save | **152** |
+
+⚠ **Restricted to a NUMERIC row 0**: TMT also has `side` layers and `row` is not always a number — 23 of the 486
+declarers sit on a non-numeric row (`side` ×18) or on a row that is not 0 (`-10` ×2, `11`, `1`, one `undefined`).
+The row is read through `rowOf()`, the same reader `groups()` places the cards with, so the row a card SITS in and
+the row this rule asks about cannot drift apart.
+
+⚖ **ROW 0 ONLY, and ON EVERY ROW-0 LAYER THAT DECLARES IT — the second half is open for the user.** Row 0 is what
+makes this "the first layer", and it gives exactly one card on 118 games — `ptr`'s `p`, `something`'s `unlock`,
+`the-point-tree`'s `basic`, `the-modding-tree`'s `p`. But **28 games have 2–8 row-0 layers sharing the global
+currency** (`the-dressy-tree` 8, `the-chronicle-tree` 5, `the-function-of-time-tree` 4), and the same number then
+appears on several cards at once. Showing it on all of them is TRUE on each; showing it on one would be tidier and
+arbitrary. **All of them is what ships**, the count is reported here, and the user rules.
+
+⚖ **THE LABEL IS `baseResource`, AND THAT DOES NOT REOPEN U7's RULING.** U7 ships the player KEY as a row's label
+*because a name lifted out of the surrounding prose was right 2 times in 13*. `baseResource` is not lifted: it is
+a field the game's author wrote to name this very quantity. Authored, so it is used — and authored, so it is used
+VERBATIM. Over the 486 declarers the labels are `points` 205, `Points` 44, `Knowledge` 10, `spacetime` 9, **`TBD`
+7**, `Fragments` 6, `corpses` 6, `fabric` 6. ⚠ **`TBD` is `the-snake-tree`'s own placeholder** (2 of its 7 are on
+row 0). We render it as it stands, which is honest and looks like a bug; ⚖ MINIMIZE HARDCODING rules out a name
+table, and this is reported rather than special-cased.
+
+**It is not a second code path.** The row is produced by `resourcesOf` itself, ships in the same list, and is drawn
+and synced by the same `drawResources` / `syncResources`; it carries `collide` and `sticky` like every other row,
+and the U7/U8 rules apply to it unchanged:
+
+- it **claims its occurrence BEFORE any candidate**, exactly as the engine's own `points` / `best` / `total` do —
+  otherwise a `player[layer]` key holding the same number would take the global's own statement out of the prose
+  and the card would print the global's value under a bookkeeping key's name;
+- `collide` still records when two rows claimed the same printed number;
+- `sticky` is always **false** and the key is **not** written to the remembered set. U8's memory exists to keep a
+  row that would otherwise VANISH, and a DECLARED row cannot: the declaration does not depend on what the layer's
+  prose states this tick. The flag is carried so that every row in the list answers the same questions.
+
+Its key is `@points`, `@`-prefixed the way `currencyKey`'s own globals are, so no `player[layer]` key can collide
+with it; `data-global="yes"` marks it in the DOM. ⚠ **Reported, never styled** — the `sticky` flag's own rule: a
+row the player reads must not change appearance because of where the list learned about it.
+
 #### Per-category progress in the expanded card (U7)
 
 ⚖ user, 2026-09-19: *"In Layers view, when a layer is in expanded view, can we add a row to display the progress
@@ -2011,6 +2203,64 @@ re-render) and watches the very next render fill it:
   and the leg, reddened. The byte comparison needs no change to be visible. ⚠ `the-cultree` still cannot witness
   that mutant — it remembers nothing (all six of its rows collide) so it stores nothing either, and the two agree
   at empty; the row says `0 remembered` out loud rather than passing in silence.
+
+#### What U9 added to the leg
+
+**1. Leg 3b — the tree canvas, at BOTH ends of the page.** ⛔ A leg that measured at scroll 0 could not see the
+defect AT ALL: the branch offset IS zero there. It runs on the phone page with the deepest save open and the tree
+showing, and reads the same probe three times — at the top, scrolled and **not redrawn by us**, and scrolled with a
+redraw FORCED. The three readings separate the two halves of the fix:
+
+| reading | what it is the claim for |
+|---|---|
+| `topOk` | nothing regressed where the two coordinate spaces already agreed — **green under both mutants** |
+| `bottomOk` (a redraw forced) | `position: fixed` on its own; the listener cannot help here |
+| `redrawOk` (`treeRedraws()` moved) | the loader's scroll listener on its own — under `?managed=1` the engine's 500 ms cadence is stopped, so nothing else could have redrawn |
+| `liveOk` | the two together: the branches are on their nodes without anyone forcing anything |
+
+The distance is measured against the pixels the canvas **actually painted** (`getImageData`, sampled on a 2 px
+grid, so a perfect hit reads up to √2 rather than 0) and only over nodes **on screen** — a node scrolled out of the
+viewport has no visible branch end, and judging it would measure the viewport rather than the canvas. Tolerance
+`BRANCH_TOL = 4` px against a measured worst of 1.0 (`ptr`) and 2.2 (`something`) on a correct build.
+
+⛔ **The ENDPOINTS are the ones the engine ACTUALLY DREW**, recorded by wrapping the game's own `drawTreeBranch`
+for the length of one redraw — not re-derived from `tmp[l].branches`. ⚠ **The first version did re-derive them and
+the roster sweep caught it on two games.** The engines' own condition is `tmp[layer].layerShown == true`, and `==`
+is not truthiness: `the-testy-tree`'s `b`, `c` and `d` are shown as **`"ghost"`** (TMT's own occupies-space-but-
+invisible mode), so the engine draws none of their four branches while a truthiness test claimed all four
+endpoints — and the leg reported a defect on a game that is perfectly fine. 4 of the 171 engines write the truthy
+form themselves, so no single re-derivation is right for the roster either. Recording the calls also picks up
+**component branches** (`drawComponentBranches`, the `upgrade-`/`buyable-`/`clickable-` prefixes), which a
+`tmp[l].branches` walk misses entirely. A SELF-branch is dropped — `moveTo(p); lineTo(p)` with butt caps paints no
+pixel, and `the-dressy-tree`'s `D` declares one — as is a pair either of whose elements is absent, which is
+`drawTreeBranch`'s own precondition.
+
+⚠ **AN ABSTENTION IS NOT A PASS, and it is named.** A game whose page does not scroll, or whose engine draws no
+branch (`the-testy-tree`'s ghost layers, `the-universal-tree-voidcons0le-is-dumb`'s `layerShown: false` ones),
+cannot see this. 169 of the 171 games are swept at a FRESH save, one layer deep, where the document is
+exactly the viewport — so the leg first tries shrinking the viewport to **390×400** (a short phone is a real
+phone, and it is the same claim) and only abstains when even that does not scroll. The summary prints how many
+were judged, how many were judged at the short viewport, and how many abstained with the reason.
+
+⚠ The leg also reports `innerScrollers` — anything inside `#app` that still scrolls under our layout — because the
+6 games whose branch offset reads `#treeTab.scrollTop` would need a different answer if one did. It is 0.
+
+⚠ **And U8's leg P had to learn about it too.** The declared row CAN claim an occurrence out of the layer's prose
+and be unambiguous about it, so before this slice it looked exactly like a key the store must remember; the roster
+sweep reddened `the-universal-tree-voidcons0le-is-dumb` on `p.@points` saying so. Leg P now judges candidates only
+— a declared row is never remembered, because U8's memory keeps a row that would otherwise vanish and a
+declaration cannot.
+
+**2. Leg 6 — the DECLARED global-currency row.** It joins the other-resources assertion rather than sitting beside
+it, and it is judged in BOTH directions, which is what a build that simply never emits the row would fail:
+- a rendered `@points` row must print the GLOBAL `player.points`, carry the author's own `baseResource` as its
+  label, be marked `global`, and be neither `sticky` nor present in the remembered set;
+- a layer that DECLARES one (numeric row 0, `baseAmount` source reads `player.points` with comments stripped) must
+  HAVE the row;
+- and every `player[layer]` row must still be labelled with its KEY, so U7's ruling is asserted rather than assumed.
+
+The probe rebuilds the declaration test itself — a fifth independent rebuild, for the reason the other four carry —
+and the summary names the declaring cards with their labels, so the `TBD` ones are visible rather than buried.
 
 ### The state leg needs a control
 

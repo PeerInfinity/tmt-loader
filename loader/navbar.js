@@ -114,6 +114,43 @@
     }
   }
 
+  // ---- the tree canvas follows the page (MOBILE ONLY, and for the same reason the tooltips are: without the
+  // layout the document does not scroll and there is nothing to follow).
+  //
+  // ⛔ NOTHING IN ANY ENGINE REDRAWS THE TREE ON A SCROLL. Censused over all 171 `canvas.js` files at 3346da419:
+  // **0** listen on `scroll`; **3** listen on `wheel`, which a touch device never fires. The only cadence is
+  // `setInterval(function(){ needCanvasUpdate = true }, 500)` plus the game loop's `if (needCanvasUpdate)
+  // resizeCanvas()` — so after a flick the branches stand where the last redraw left them for up to half a
+  // second. mobile.css §6 puts the canvas in the viewport's coordinate space; this is what keeps it THERE while
+  // the page moves under it.
+  //
+  // ⚠ `resizeCanvas`, NOT the cheaper-looking `drawTree`, and BOTH halves of that were measured rather than
+  // assumed. `resizeCanvas` is the entry point the engine's own cadence calls (`if (needCanvasUpdate)
+  // resizeCanvas()`), and it is the one that SIZES the bitmap before drawing — which matters twice:
+  //   · the canvas carries the engine's `v-if`, so switching to a tab and back gives the tree a BRAND-NEW element
+  //     at the HTML default of 300×150. Measured on ptr under `?managed=1`, where the cadence is stopped:
+  //     `drawTree()` alone painted the whole tree into a 300×150 bitmap and 7 of 7 judged nodes fell outside it;
+  //   · how big the bitmap should be is the GAME's answer, not ours. 164 games size it to `innerWidth ×
+  //     innerHeight`, 6 to `#treeTab.scrollWidth/scrollHeight`, 1 to `document.body`'s (censused at 3346da419).
+  //   · and `universal-reconstruction`'s `resizeCanvas` also calls `drawResearchBranches()`, so `drawTree` alone
+  //     would leave half of that game's tree behind.
+  // `drawTree` stays as the fallback for an engine that somehow has no `resizeCanvas`; all 171 have both, and
+  // every one of them is pure rendering (`clearRect` + `drawTreeBranch`), which is what lets PURE UI stay true.
+  //
+  // Coalesced to one redraw per animation FRAME, for the reason the MutationObserver below carries, and PASSIVE:
+  // a listener that cannot preventDefault lets the compositor scroll without waiting for us.
+  var redraws = 0, scrollQueued = false;
+  function redrawTree() {
+    try { if (typeof resizeCanvas === 'function') { resizeCanvas(); redraws++; return true; } } catch (e) { /* a game that throws keeps the bar alive */ }
+    try { if (typeof drawTree === 'function') { drawTree(); redraws++; return true; } } catch (e2) { /* ditto */ }
+    return false;
+  }
+  function onScroll() {
+    if (scrollQueued) return;
+    scrollQueued = true;
+    requestAnimationFrame(function () { scrollQueued = false; redrawTree(); });
+  }
+
   // ---- tooltips on touch (MOBILE ONLY — a pointer that hovers already opens them, and pinning one open on every
   // click is not what a desktop reader asked for). Two engine shapes: 2.2.1 `[tooltip]` (shown by :hover:before/
   // :after) and 2.6/2.7 `.tooltipBox > .tooltip` (shown by opacity). One class of OURS covers both; see mobile.css,
@@ -136,6 +173,7 @@
     build();
     refresh();
     if (T.mobile) document.addEventListener('click', onClick, false);
+    if (T.mobile) window.addEventListener('scroll', onScroll, { passive: true });
     // Driven by the game's own re-renders, not by a timer of ours: nothing here is anything tmtLoader.pause() or
     // tmtLoader.timers has to account for. Vue repaints the points readout every tick, so the observer fires many
     // times per patch; coalesce to one refresh per animation FRAME. A frame, not a timeout — frames are never
@@ -149,7 +187,8 @@
     });
     var app = document.getElementById('app');
     if (app) obs.observe(app, { childList: true, subtree: true, attributes: true, attributeFilter: ['class', 'style'] });
-    T.navbarUI = { nav: nav, refresh: refresh, entries: ENTRIES.map(function (e) { return e.key; }), seen: seen };
+    T.navbarUI = { nav: nav, refresh: refresh, entries: ENTRIES.map(function (e) { return e.key; }), seen: seen,
+      redrawTree: redrawTree, treeRedraws: function () { return redraws; } };
   }
 
   // navbar.js is inserted BEFORE the game's onload, so the engine's corner controls do not exist yet; the nav is

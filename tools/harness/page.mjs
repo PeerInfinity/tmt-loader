@@ -711,27 +711,54 @@ const LAYERLIST_PROBE = `(${function () {
     return { key: st.prefix + MEM_KEY, value: st.raw.getItem.call(localStorage, st.prefix + MEM_KEY) }; }, { key: null, value: null });
   const memOf = (l) => S(() => { const o = JSON.parse(memRaw().value || '{}');
     return Array.isArray(o[l]) ? o[l] : []; }, []);
+  // (U9) THE DECLARED GLOBAL-CURRENCY ROW, rebuilt here from the engine's own declarations — the row is not a
+  // `player[l]` key, so `candKeys` can never produce it and the list's own answer is not asked for.
+  // ⛔ READ AS SOURCE, NEVER AS A VALUE: comparing `tmp[l].baseAmount` with `player.points` for equality reports
+  // 6 layers on ptr and ZERO on `something` at a fresh save, which is an artefact of the numbers and not an
+  // answer to the question. The boundary before `player` keeps `player[x].points` and `foo.player.points` out.
+  const G_KEY = '@points';
+  const G_RE = /(^|[^\w$.])player\s*\.\s*points\b/;
+  // ⛔ COMMENTS OUT FIRST: `gooby-cat-tree`'s `p` and `Fr` both carry a commented-out `//return player.points`
+  // under the line that runs, and a raw source test admits both. Replaced with a SPACE, so nothing is spliced.
+  const gStrip = (src) => String(src).replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/\/\/[^\n\r]*/g, ' ');
+  const gExpect = (l) => {
+    if (S(() => tmp[l].row, undefined) !== 0) return null;
+    const src = S(() => { const b = layers[l].baseAmount; return (b === undefined || b === null) ? '' : gStrip(b); }, '');
+    if (!G_RE.test(src)) return null;
+    const v = S(() => player.points, null);
+    if (!isDec(v)) return null;
+    const lab = S(() => { const t = tmp[l].baseResource; return t === undefined ? layers[l].baseResource : t; }, '');
+    return { key: G_KEY, label: (typeof lab === 'string' && lab) ? lab : 'points', text: F(v, false) };
+  };
   /** The resources the card SHOULD show, and the string each should print, in `player[l]`'s own key order.
    *  ⚠ (U8) TWO WAYS ONTO THE ROW, and the string is OURS either way: a key whose value the layer's text still
    *  states, and a key the store REMEMBERS from a state where it did. A text this pass could not read claims
    *  nothing and leaves the remembered rows standing, which is the post-reset case. */
   const resExpect = (l, text) => {
     const pl = S(() => player[l], null);
-    if (!pl || typeof pl !== 'object') return [];
+    const g = gExpect(l);
+    if ((!pl || typeof pl !== 'object') && !g) return [];
     const budget = Object.create(null);
-    if (text) for (const k of ENGINE_AMOUNTS) { const v = S(() => pl[k], null); if (isDec(v)) takeOcc(text, budget, v); }
+    if (text && pl) for (const k of ENGINE_AMOUNTS) { const v = S(() => pl[k], null); if (isDec(v)) takeOcc(text, budget, v); }
     const claim = Object.create(null), byText = Object.create(null);
+    // (U9) the declared row claims BEFORE any candidate, or a bookkeeping key holding the same number would take
+    // the global's own occurrence and the card would print the global's value under that key's name
+    let gShown = null;
+    if (g && text) { gShown = takeOcc(text, budget, S(() => player.points, null)); if (gShown !== null) byText[gShown] = (byText[gShown] || 0) + 1; }
     if (text) for (const k of candKeys(l)) {
       const t = takeOcc(text, budget, S(() => pl[k], null));
       if (t === null) continue;
       claim[k] = t; byText[t] = (byText[t] || 0) + 1;
     }
     const mem = memOf(l), out = [];
+    // ⚠ FIRST, and never sticky: a DECLARED row cannot vanish, so U8's memory has nothing to remember about it.
+    if (g) out.push({ key: g.key, label: g.label, text: g.text, claimed: gShown,
+      collide: gShown !== null && byText[gShown] > 1, sticky: false, global: true });
     for (const k of candKeys(l)) {
       const has = claim[k] !== undefined;
       if (!has && mem.indexOf(k) < 0) continue;
-      out.push({ key: k, text: F(S(() => pl[k], null), false), claimed: has ? claim[k] : null,
-        collide: has && byText[claim[k]] > 1, sticky: !has });
+      out.push({ key: k, label: k, text: F(S(() => pl[k], null), false), claimed: has ? claim[k] : null,
+        collide: has && byText[claim[k]] > 1, sticky: !has, global: false });
     }
     return out;
   };
@@ -928,7 +955,8 @@ const LAYERLIST_PROBE = `(${function () {
     // ---- U7 item 2: the other resources ---------------------------------------------------------------------
     const resEls = [...c.querySelectorAll('.tmt-layerlist-resource')];
     const gotRes = resEls.map((e) => ({ key: e.dataset.key, text: e.querySelector('.tmt-layerlist-resource-value').textContent,
-      sticky: e.dataset.sticky === 'yes' }));
+      label: e.querySelector('.tmt-layerlist-resource-label').textContent,
+      sticky: e.dataset.sticky === 'yes', global: e.dataset.global === 'yes' }));
     const text = S(() => String(window.tmtLoader.layerListUI.resourceText(l)), '');
     const cands = candKeys(l);
     // every rendered resource must be a CANDIDATE, must PRINT ITS OWN CURRENT VALUE, and must have got onto the
@@ -939,14 +967,30 @@ const LAYERLIST_PROBE = `(${function () {
     // prose, so "is this string in the text" cannot judge it; what must hold is that the row states what
     // `player[l][key]` holds NOW. A build that froze the last attributed STRING would pass every other check here.
     const resBad = [];
+    const gWant = gExpect(l);
     for (const r of gotRes) {
+      // (U9) the DECLARED row is judged on the DECLARATION and on the global value it prints — the two checks
+      // below (attributed or remembered) are about `player[l]` keys and say nothing about it.
+      if (r.global || r.key === G_KEY) {
+        if (!gWant) { resBad.push(`${r.key}: a global-currency row on a layer that does not declare one (row ${JSON.stringify(S(() => tmp[l].row, undefined))})`); continue; }
+        if (r.key !== G_KEY) resBad.push(`${r.key}: marked global but is not ${G_KEY}`);
+        if (r.text !== gWant.text) resBad.push(`${r.key}: prints "${r.text}", not the GLOBAL player.points "${gWant.text}"`);
+        if (r.label !== gWant.label) resBad.push(`${r.key}: labelled "${r.label}", not the authored baseResource "${gWant.label}"`);
+        if (r.sticky) resBad.push(`${r.key}: a DECLARED row cannot be remembered, but it renders as sticky`);
+        if (memOf(l).indexOf(r.key) >= 0) resBad.push(`${r.key}: the declared row was written into the remembered set`);
+        continue;
+      }
       if (cands.indexOf(r.key) < 0) { resBad.push(`${r.key}: not a candidate (engine key or not a Decimal)`); continue; }
+      if (r.label !== r.key) resBad.push(`${r.key}: labelled "${r.label}" — a player key's label is the key (U7)`);
       const v = S(() => player[l][r.key], null);
       const own = F(v, false);
       if (r.text !== own) resBad.push(`${r.key}: prints "${r.text}", not this key's own value "${own}"`);
       if (!r.sticky && !atNumber(text, own) && !atNumber(text, F(v, true))) resBad.push(`${r.key}: rendered as ATTRIBUTED, but "${own}" is not stated in this layer's own text`);
       if (r.sticky && memOf(l).indexOf(r.key) < 0) resBad.push(`${r.key}: rendered as REMEMBERED, but the store does not name it`);
     }
+    // ⛔ AND THE OTHER DIRECTION, which is the one a build that simply never emits the row would pass: a layer
+    // that DECLARES the global currency must have the row.
+    if (gWant && !gotRes.some((r) => r.key === G_KEY)) resBad.push(`${G_KEY}: declared (row 0, baseAmount reads the global player.points) but NOT rendered`);
     // ⚠ BOTH DIRECTIONS, against the budget rebuilt above: neither a filter that admits everything nor one that
     // admits nothing can pass, and neither can one that keeps a candidate whose occurrence an engine readout or
     // an earlier key had already claimed.
@@ -958,6 +1002,8 @@ const LAYERLIST_PROBE = `(${function () {
       if (g.key !== w.key) resBad.push(`${i}: ${g.key} != ${w.key}`);
       else if (g.text !== w.text) resBad.push(`${w.key}: "${g.text}" != "${w.text}"`);
       else if (g.sticky !== w.sticky) resBad.push(`${w.key}: rendered sticky=${g.sticky}, expected ${w.sticky}`);
+      else if (g.label !== w.label) resBad.push(`${w.key}: labelled "${g.label}", expected "${w.label}"`);
+      else if (g.global !== !!w.global) resBad.push(`${w.key}: rendered global=${g.global}, expected ${!!w.global}`);
     });
     // ⚖ (U8) decision 1's COST, counted rather than argued: the attributed rows whose own formatting differs from
     // the occurrence they claimed out of the layer's prose. `format` and `formatWhole` agree at 0, above 1,000 and
@@ -1032,7 +1078,7 @@ const LAYERLIST_PROBE = `(${function () {
       threeStates: skinSet.filter((k) => k !== 'pseudo').length >= 3,
       // --- U7 ---
       reset, resetOk,
-      resources: gotRes, wantRes, resBad, resCands: cands.length, resLift: lift, resCollide,
+      resources: gotRes, wantRes, resBad, resCands: cands.length, resLift: lift, resCollide, resGlobal: gWant,
       resSticky: gotRes.filter((r) => r.sticky).length, resMem: memOf(l), resRestated,
       prog: gotProg, wantProg, progBad, progOk: progBad.length === 0, cheapestWitness, progDropped,
       progHow: wantProg.map((w) => w.how),
@@ -1152,6 +1198,12 @@ const LAYERLIST_PROBE = `(${function () {
     // remembered. 0 here is not a pass, it is "this state had no ambiguous attribution to withhold".
     resWithheld: perCard.flatMap((x) => x.wantRes.filter((w) => w.collide && x.resMem.indexOf(w.key) < 0).map((w) => `${x.layer}.${w.key}`)),
     resRestated: perCard.flatMap((x) => x.resRestated),
+    // --- (U9) the DECLARED global-currency rows: which cards declare one, and the author's own label on each.
+    // ⚠ The LABEL is reported verbatim: 7 layers across the roster label it `TBD` (a fork's own placeholder), and
+    // rendering that as it stands is honest, while a name table would be the hardcoding ⚖ MINIMIZE HARDCODING
+    // rules out. 0 declaring cards is an ABSTENTION for this game, not a pass.
+    resGlobalCards: perCard.filter((x) => x.resGlobal).map((x) => `${x.layer}:${x.resGlobal.label}`),
+    resGlobalRows: perCard.reduce((n, x) => n + x.resources.filter((r) => r.global).length, 0),
     // ⚖ THE LABEL IS THE KEY and the prose lift is REPORTED, never rendered — the sample the user rules on
     resLift: perCard.flatMap((x) => x.resLift.map((y) => `${x.layer}.${y.key} \u2192 ${y.label}`)).slice(0, 12),
     resSample: perCard.filter((x) => x.resources.length).slice(0, 4).map((x) => ({ layer: x.layer, res: x.resources })),
@@ -1476,6 +1528,152 @@ const TIP_PROBE = `(${function () {
   };
 }})()`;
 
+// ---------------------------------------------------------------- (U9) THE TREE CANVAS, AT BOTH ENDS OF THE PAGE
+// ⛔ A MEASUREMENT AT SCROLL 0 CANNOT SEE THIS DEFECT AT ALL, and that is the whole reason this probe exists in
+// the shape it does. `.canvas` is `position: absolute; top: 0` in all 171 games — DOCUMENT space — while
+// `drawTreeBranch` computes both endpoints from `getBoundingClientRect()`, which is VIEWPORT space. At the top of
+// the page the two coincide and every branch is exactly on its nodes; scroll by S and the canvas travels up with
+// the document while the coordinates do not, so every branch is drawn S px away. The claim is therefore
+// node-centre-to-branch-endpoint distance AT BOTH ENDS, and the mutant (mobile.css §6 reverted) must redden the
+// SCROLLED reading and leave the at-top one green.
+//
+// ⚠ THE DISTANCE IS MEASURED AGAINST THE PIXELS THE CANVAS ACTUALLY PAINTED, not against a re-implementation of
+// `drawTreeBranch`. A probe that recomputed the endpoints would agree with the engine by construction and assert
+// nothing about where the ink is. Sampled on a 2 px grid, so a perfect hit reads up to √2 rather than 0.
+// ⚠ ONLY THE NODES ON SCREEN ARE JUDGED. A node scrolled out of the viewport has no visible branch end, and
+// judging it would measure the viewport rather than the canvas.
+const BRANCH_TOL = 4;          // px. MEASURED on a correct build: 1.0 on ptr, 2.2 on something (2 px sampling grid)
+const SHORT_VIEW = { width: 390, height: 400 };  // a phone in landscape-ish height: what makes a short game scroll at all
+/**
+ * ⛔ THE ENDPOINTS ARE THE ONES THE ENGINE ACTUALLY DREW, recorded by wrapping the game's own `drawTreeBranch`
+ * for the length of one redraw — NOT re-derived from `tmp[l].branches`.
+ * ⚠ MEASURED, and it is why this probe was rewritten: the engines' own condition is `tmp[layer].layerShown ==
+ * true`, and `==` is not truthiness. `the-testy-tree` has four branch pairs whose layers are shown as something
+ * that is truthy but not `true`, so a probe reading `tmp[l].branches` off the shown layers claimed four endpoints
+ * the engine draws nothing for — and the leg reported a defect on a game that is perfectly fine. (4 of the 171
+ * engines write the truthy form, so no single re-derivation is right for the roster either.)
+ * ✅ It also picks up COMPONENT branches (`drawComponentBranches`, `upgrade-`/`buyable-`/`clickable-` prefixes)
+ * for free, which a `tmp[l].branches` walk misses entirely.
+ * ⚠ A SELF-branch is dropped: `moveTo(p); lineTo(p)` with butt caps paints no pixel (the-dressy-tree's `D`
+ * declares one). So is a pair either of whose elements is absent — `drawTreeBranch`'s own precondition.
+ *
+ * `ids` = null records them; an array reuses a recorded set (the reading that must NOT force a redraw).
+ * `force` = run the game's own `resizeCanvas()` first. ⚠ `resizeCanvas`, not `drawTree`: the canvas carries the
+ * engine's `v-if`, so the tab switching in leg 3 hands the tree a brand-new element at the HTML default of
+ * 300×150, and under `?managed=1` the 500 ms cadence that would size it is stopped. Measured: `drawTree()` alone
+ * painted ptr's whole tree into that bitmap, with 7 of 7 judged nodes outside it.
+ */
+const TREE_PROBE = (ids, force) => `(() => {
+  const S = (f, d) => { try { const v = f(); return v === undefined ? d : v; } catch (e) { return d; } };
+  const cv = document.querySelector('canvas.canvas') || document.getElementById('treeCanvas');
+  if (!cv) return { err: 'no tree canvas' };
+  let pairs = ${ids ? JSON.stringify(ids) : 'null'};
+  const rec = [];
+  const orig = window.drawTreeBranch;
+  if (pairs === null && typeof orig === 'function') {
+    window.drawTreeBranch = function (num1, data, prefix) {
+      const o = String(Array.isArray(data) ? data[0] : data);
+      const a = (prefix || '') + String(num1), b = (prefix || '') + o;
+      if (a !== b && document.getElementById(a) && document.getElementById(b)) { rec.push(a); rec.push(b); }
+      return orig.apply(this, arguments);
+    };
+  }
+  let drew = 'not forced';
+  if (${force ? 'true' : 'false'}) { try { resizeCanvas(); drew = 'resizeCanvas'; } catch (e) { try { drawTree(); drew = 'drawTree'; } catch (e2) { drew = 'THREW ' + e2.message; } } }
+  else if (pairs === null) { try { drawTree(); drew = 'drawTree (to record)'; } catch (e) { drew = 'THREW ' + e.message; } }
+  if (typeof orig === 'function') window.drawTreeBranch = orig;
+  if (pairs === null) pairs = rec.filter((x, i) => rec.indexOf(x) === i);
+  const cs = getComputedStyle(cv), r = cv.getBoundingClientRect();
+  const out = { drew, ids: pairs,
+    canvas: { attr: cv.width + 'x' + cv.height, css: +r.width.toFixed(1) + 'x' + +r.height.toFixed(1),
+      left: +r.left.toFixed(1), top: +r.top.toFixed(1), position: cs.position, zIndex: cs.zIndex },
+    scroll: { innerH: innerHeight, doc: document.documentElement.scrollTop, body: document.body.scrollTop,
+      docH: document.documentElement.scrollHeight } };
+  const nodes = [];
+  for (const id of pairs) { const el = document.getElementById(id); if (!el) continue;
+    const q = el.getBoundingClientRect(); if (!q.width && !q.height) continue;
+    nodes.push({ id, cx: q.left + q.width / 2, cy: q.top + q.height / 2 }); }
+  out.ends = nodes.length;
+  const px = [];
+  try { const g = cv.getContext('2d').getImageData(0, 0, cv.width, cv.height).data;
+    const sx = cv.width / (r.width || 1), sy = cv.height / (r.height || 1);
+    for (let y = 0; y < cv.height; y += 2) for (let x = 0; x < cv.width; x += 2)
+      if (g[(y * cv.width + x) * 4 + 3] > 8) px.push([r.left + x / sx, r.top + y / sy]);
+  } catch (e) { return { ...out, err: 'getImageData: ' + e.message }; }
+  out.painted = px.length;
+  // ⚠ ONLY THE NODES ON SCREEN. A node scrolled out of the viewport has no visible branch end, and judging it
+  // would measure the viewport rather than the canvas.
+  const vis = nodes.filter((n) => n.cy >= 0 && n.cy <= innerHeight && n.cx >= 0 && n.cx <= innerWidth);
+  out.judged = vis.length;
+  out.nodes = vis.map((n) => { let best = Infinity;
+    for (let i = 0; i < px.length; i++) { const dx = px[i][0] - n.cx, dy = px[i][1] - n.cy, d = dx * dx + dy * dy; if (d < best) best = d; }
+    return { id: n.id, cy: +n.cy.toFixed(0), d: px.length ? +Math.sqrt(best).toFixed(1) : null }; });
+  // the nodes the canvas BITMAP does not even cover, which is the second half of the defect: resizeCanvas()
+  // sizes it to innerHeight while the mobile document is taller, so the lowest nodes were clipped, not displaced
+  out.offCanvas = vis.filter((n) => !(n.cx >= r.left && n.cx <= r.right && n.cy >= r.top && n.cy <= r.bottom)).length;
+  const ds = out.nodes.map((n) => n.d).filter((x) => x !== null);
+  out.maxD = ds.length ? +Math.max(...ds).toFixed(1) : null;
+  // and whether anything INSIDE the app scrolls under our layout — the 6 games whose y1 reads
+  // '#treeTab'.scrollTop would need a different answer if one did (mobile.css §1 sets the columns to overflow: visible)
+  out.innerScrollers = [...document.querySelectorAll('#app *')]
+    .filter((e) => e.scrollHeight > e.clientHeight + 2 && /auto|scroll/.test(getComputedStyle(e).overflowY))
+    .map((e) => (e.id || String(e.className) || e.tagName) + ' ' + e.scrollHeight + '/' + e.clientHeight).slice(0, 4);
+  return out;
+})()`;
+
+/** The whole leg, on the phone page with the deepest save open and the tree showing. */
+async function treeCanvasLeg(page) {
+  const redraws = () => page.evaluate(() => { const u = window.tmtLoader.navbarUI; return u && u.treeRedraws ? u.treeRedraws() : null; });
+  const at = async (y) => { await page.evaluate((v) => scrollTo(0, v), y); await page.waitForTimeout(160); };
+  await at(0);
+  let top = await page.evaluate(TREE_PROBE(null, true));
+  await page.waitForTimeout(80);
+  // ⚠ A GAME WHOSE PAGE DOES NOT SCROLL CANNOT SEE THIS AT ALL. Most of the roster boots one layer deep, where the
+  // document is exactly the viewport. Shrink the viewport rather than abstain: a short phone is a real phone, and
+  // it is the same claim. Restored before the leg returns.
+  let shortened = false;
+  if (!top.err && top.scroll.docH <= top.scroll.innerH + 2) {
+    await page.setViewportSize(SHORT_VIEW);
+    await page.waitForTimeout(250);
+    const t2 = await page.evaluate(TREE_PROBE(null, true));
+    if (!t2.err && t2.scroll.docH > t2.scroll.innerH + 2) { shortened = true; top = t2; }
+    else await page.setViewportSize(PHONE);
+  }
+  const rec = { shortened, viewport: shortened ? SHORT_VIEW : PHONE, top };
+  const home = async (v) => { if (v) await page.setViewportSize(PHONE); await at(0); };
+  if (top.err) { await home(shortened); return { ...rec, verdict: `abstains (${top.err})` }; }
+  rec.scrollable = top.scroll.docH > top.scroll.innerH + 2;
+  if (!rec.scrollable) { await home(shortened);
+    return { ...rec, verdict: `abstains (the page does not scroll at ${top.scroll.innerH} px: ${top.scroll.docH} px of document)` }; }
+  if (!top.ids.length) { await home(shortened);
+    return { ...rec, verdict: `abstains (the engine drew no branch: ${top.drew}, ${top.painted} painted pixel(s))` }; }
+  // the LIVE reading: scrolled, and NOT redrawn by us — whatever put the branches where they are is the loader's
+  // own scroll listener or nothing, because `?managed=1` has stopped the engine's 500 ms canvas cadence.
+  // ⚠ The ENDPOINT SET is the one recorded at the top and is passed in, so this reading cannot redraw to get it.
+  const r0 = await redraws();
+  await at(top.scroll.docH);
+  rec.live = await page.evaluate(TREE_PROBE(top.ids, false));
+  rec.redrew = (await redraws()) - r0;
+  // and the same place with a redraw FORCED, which is `position: fixed` on its own: the listener cannot help here
+  rec.bottom = await page.evaluate(TREE_PROBE(top.ids, true));
+  await home(shortened);
+  const ok = (m) => !m.err && (m.judged === 0 || (m.maxD !== null && m.maxD <= BRANCH_TOL));
+  rec.judged = { top: top.judged, live: rec.live.judged, bottom: rec.bottom.judged };
+  rec.topOk = ok(top);
+  rec.bottomOk = ok(rec.bottom);          // the `position: fixed` claim
+  rec.liveOk = ok(rec.live);              // fixed AND redrawn in time
+  rec.redrawOk = rec.redrew >= 1;         // the scroll listener's own claim
+  rec.spaceOk = rec.bottom.canvas.position === 'fixed';
+  rec.verdict = !rec.topOk ? `THE BRANCHES MISS THEIR NODES AT THE TOP OF THE PAGE (max ${top.maxD} px over ${top.judged}, ${top.painted} painted)`
+    : !rec.spaceOk ? `THE CANVAS IS NOT IN VIEWPORT SPACE (position: ${rec.bottom.canvas.position})`
+    : !rec.bottomOk ? `THE BRANCHES MISS THEIR NODES WHEN SCROLLED (max ${rec.bottom.maxD} px over ${rec.bottom.judged}, at scroll ${rec.bottom.scroll.doc})`
+    : !rec.redrawOk ? 'A SCROLL REDREW NOTHING (the loader listener is gone; the engine has none)'
+    : !rec.liveOk ? `THE BRANCHES LAG THE SCROLL (max ${rec.live.maxD} px before any redraw of ours)`
+    : rec.bottom.judged === 0 ? `on its nodes at the top; abstains when scrolled (no node on screen)`
+    : `on its nodes at both ends (max ${top.maxD} px at the top, ${rec.bottom.maxD} px at scroll ${rec.bottom.scroll.doc}, over ${rec.bottom.judged} of ${top.ids.length} endpoint(s)), redrawn by the loader`;
+  return rec;
+}
+
 async function gateMobile(browser, base, ids) {
   const rows = [];
   for (const id of ids) {
@@ -1579,6 +1777,16 @@ async function gateMobile(browser, base, ids) {
           await look(typeof t === 'string' ? `tab:${t}` : `open:${t.click}`);
         }
       }
+      // --- leg 3b (U9): THE TREE CANVAS FOLLOWS THE PAGE (docs/mobile.md, "the tree canvas"). Back on the tree,
+      // with the deepest save open — the state where a tree has branches at all. It runs here, before the legs
+      // that act, because it SCROLLS the page and puts it back, and because leg 6 presses a prestige button.
+      await page.evaluate(() => { try { showTab('none'); } catch (e) { /* engines differ; the canvas still measures */ } });
+      await page.waitForTimeout(250);
+      row.tree = await treeCanvasLeg(page);
+      // ⚠ AN ABSTENTION IS NOT A PASS, and it is named as one: a game whose page does not scroll even at 400 px, or
+      // whose tree draws no branch, cannot see this defect. The verdict string says which, and the sweep counts them.
+      row.treeOk = !/^THE |^A SCROLL/.test(String(row.tree.verdict));
+
       // --- leg 4: the two opt-ins TOGETHER. They compose today, and nothing was asserting it: the mobile layout
       // has to survive the `au` side layer and its tab, and the nav bar has to survive a second side node. Only
       // for a game with an automation table — elsewhere the registry derives features but has nothing to drive.
@@ -3018,8 +3226,15 @@ async function gateMobile(browser, base, ids) {
         // occurrence it took, `collide` that another key took the same one) \u2014 never out of the store
         const rows = [];
         for (const l of ui.cards()) for (const r of ui.resources(l)) rows.push({ layer: l, ...r });
-        const clean = rows.filter((r) => r.claimed !== null && !r.collide).map((r) => `${r.layer}.${r.key}`);
-        const collided = rows.filter((r) => r.claimed !== null && r.collide).map((r) => `${r.layer}.${r.key}`);
+        // ⚠ (U9) A DECLARED ROW IS NOT A CANDIDATE FOR THE MEMORY, and this leg is where that had to be said.
+        // The global-currency row CAN claim an occurrence out of the layer's prose (`claimed !== null`) and can be
+        // unambiguous about it, so before this filter it looked exactly like a key the store must remember — and
+        // the roster sweep reddened `the-universal-tree-voidcons0le-is-dumb` on `p.@points` saying so, which is
+        // what a 171-game gate is for. It is not remembered BY DESIGN: U8's memory keeps a row that would
+        // otherwise vanish, and a declaration does not depend on what the prose states this tick.
+        const cand = rows.filter((r) => !r.global);
+        const clean = cand.filter((r) => r.claimed !== null && !r.collide).map((r) => `${r.layer}.${r.key}`);
+        const collided = cand.filter((r) => r.claimed !== null && r.collide).map((r) => `${r.layer}.${r.key}`);
         const flat = (m) => { const o = []; for (const l in m) for (const k of m[l]) o.push(`${l}.${k}`); return o.sort(); };
         const h = () => tmtLoader.hash();
         const c0 = await h(), c1 = await h();           // the same abstention rule leg M uses
@@ -3233,7 +3448,7 @@ async function gateMobile(browser, base, ids) {
       // the mobile page must load as cleanly as the plain one: judged against the SAME manifest allowances as G1
       const j = judgeLoad(readManifest(id), base, structuredClone({ ...stats.of(page) }), await page.evaluate(() => ({ skipped: tmtLoader.skipped, pageErrors: tmtLoader.pageErrors })));
       row.loadVerdict = { ok: j.ok, failedNotDeclared: j.failedBad, blockedNotDeclared: j.blockedBad, errorsAfterReady: j.errorsAfterReady, errorsAfterReadySample: j.errorsAfterReadySample };
-      row.ok = !!(row.ready && !row.error && row.inertOk && row.stateOk && row.geometryOk && row.navOk && row.bothOk && row.navbarOnlyOk && row.layersOk && j.ok);
+      row.ok = !!(row.ready && !row.error && row.inertOk && row.stateOk && row.geometryOk && row.navOk && row.bothOk && row.navbarOnlyOk && row.layersOk && row.treeOk && j.ok);
     } catch (e) {
       row.exception = String((e && e.stack) || e).slice(0, 600);
     } finally { await context.close(); }
@@ -3522,6 +3737,16 @@ async function main() {
       console.log(`M1 navbar-only leg (${DESKTOP.width}\u00d7${DESKTOP.height}, no touch): ${rows.filter((r) => r.navbarOnlyOk).length}/${rows.length} green over ${nbViews} view(s), each against the same view of the plain desktop page`);
       const cards = rows.reduce((n, r) => n + ((r.layers && r.layers.phone && r.layers.phone.cards.length) || 0), 0);
       const chips = rows.reduce((n, r) => n + ((r.layers && r.layers.phone && r.layers.phone.chips) || 0), 0);
+      // (U9) THE TREE CANVAS. ⚠ An ABSTENTION is counted and named, never folded into the green: a game whose
+      // page does not scroll (even at 390×400) or whose tree draws no branch cannot see this defect at all.
+      const trJ = rows.filter((r) => r.tree && !/abstains/.test(String(r.tree.verdict)));
+      const trRed = rows.filter((r) => r.tree && r.treeOk === false);
+      const trAbs = rows.filter((r) => r.tree && /abstains/.test(String(r.tree.verdict)));
+      const trShort = trJ.filter((r) => r.tree.shortened);
+      const trInner = rows.filter((r) => r.tree && r.tree.top && (r.tree.top.innerScrollers || []).length);
+      const trMax = trJ.length ? Math.max(...trJ.map((r) => (r.tree.bottom && r.tree.bottom.maxD) || 0)) : null;
+      console.log(`M1 tree canvas (U9 — node centre to the nearest PAINTED branch pixel, at the top of the page AND scrolled to the bottom; tolerance ${BRANCH_TOL} px): ${trJ.length - trRed.length}/${trJ.length} judged green over ${trJ.reduce((n, r) => n + ((r.tree.bottom && r.tree.bottom.judged) || 0), 0)} on-screen node(s), worst ${trMax === null ? '—' : trMax + ' px'}; ${trShort.length} judged at ${SHORT_VIEW.width}×${SHORT_VIEW.height} because the page does not scroll at ${PHONE.height}; ${trAbs.length} ABSTAINED${trAbs.length ? ` (${trAbs.slice(0, 4).map((r) => `${r.id}: ${r.tree.verdict}`).join('; ')}${trAbs.length > 4 ? `, …(${trAbs.length})` : ''})` : ''}${trRed.length ? ` (RED: ${trRed.map((r) => `${r.id} ${r.tree.verdict}`).join('; ')})` : ''}`);
+      console.log(`M1 tree canvas redraw (U9 — the loader's own passive scroll listener; NO engine listens on scroll, and \`?managed=1\` has stopped the 500 ms cadence): ${trJ.filter((r) => r.tree.redrawOk).length}/${trJ.length} redrew on the scroll; ${trJ.filter((r) => r.tree.spaceOk).length}/${trJ.length} have the canvas in VIEWPORT space; ${trInner.length} game(s) still scroll something inside #app${trInner.length ? `: ${trInner.slice(0, 4).map((r) => `${r.id} ${JSON.stringify(r.tree.top.innerScrollers)}`).join('; ')}` : ' — so the 6 games whose y1 reads #treeTab.scrollTop are unaffected'}`);
       console.log(`M1 layers leg: ${rows.filter((r) => r.layersOk).length}/${rows.length} green over ${cards} card(s) and ${chips} chip(s), at ${PHONE.width}px with touch and at ${DESKTOP.width}px without`);
       // U2b: the chips MIRROR THE NORMAL VIEW — the sequence, the dividers, the milestone corners, and the two
       // discriminators (a count that fell, an order that moved) on the reference games.
@@ -3534,6 +3759,13 @@ async function main() {
       const seqRed = rows.filter((r) => ll(r) && !ll(r).seqOk).map((r) => r.id);
       const divRed = rows.filter((r) => ll(r) && !ll(r).dividerOk).map((r) => r.id);
       const radRed = rows.filter((r) => ll(r) && !ll(r).radiusOk).map((r) => r.id);
+      // (U9) the DECLARED global-currency rows, over whatever cards each game's state actually showed.
+      // ⚠ This is a count over the LIST's own cards, not over the roster's layers — a layer whose card the list
+      // does not show (locked, not `layerShown`) declares nothing here. The roster-wide census is docs/mobile.md's.
+      const gCards = rows.flatMap((r) => ((ll(r) || {}).resGlobalCards || []).map((x) => `${r.id}/${x}`));
+      const gLabels = gCards.reduce((o, x) => { const k = x.split(':').pop(); o[k] = (o[k] || 0) + 1; return o; }, {});
+      const gPer = rows.map((r) => ((ll(r) || {}).resGlobalCards || []).length).filter((n) => n > 0);
+      console.log(`M1 layers global currency (U9 — a row-0 layer whose \`baseAmount\` SOURCE reads the global \`player.points\`; the label is the author's own \`baseResource\`): ${gCards.length} declared card(s) on ${gPer.length}/${rows.length} game(s)${gPer.filter((n) => n > 1).length ? `, ${gPer.filter((n) => n > 1).length} of them with MORE THAN ONE (the row appears on each: ⚖ open for the user)` : ''}; labels ${JSON.stringify(gLabels)}${gCards.length ? `; e.g. ${gCards.slice(0, 6).join(', ')}` : ' — ABSTAINS: no card in this run declares one'}`);
       console.log(`M1 layers order: chip sequence equals the tabFormat-derived order in ${rows.length - seqRed.length}/${rows.length}${seqRed.length ? ` (RED: ${seqRed.join(', ')})` : ''}; dividers correct in ${rows.length - divRed.length}/${rows.length}${divRed.length ? ` (RED: ${divRed.join(', ')})` : ''}; milestone corners differ in ${rows.length - radRed.length}/${rows.length}${radRed.length ? ` (RED: ${radRed.join(', ')})` : ''}`);
       const ps = rows.reduce((n, r) => n + ((ll(r) && ll(r).pseudoChips) || 0), 0);
       // U2d: THE COLLAPSED CARD. U2b's `+N`-starvation report is gone with the card it described.
