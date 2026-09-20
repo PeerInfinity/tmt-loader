@@ -825,15 +825,27 @@
     }
     return raw;
   }
-  function codeText(code, values) {
+  // ⚠ V5: THE SENTENCE IS BUILT AS PARTS — its literal text and its VALUES kept apart — so the view can put each value
+  // in a box of its own (the no-jump floors, below) without formatting anything twice: `codeText` is the parts joined,
+  // and `explainStats.formats` counts exactly what it counted before. `k` is set on a part that is a NUMBER (a formatted
+  // quantity, or a plain number such as a count or a number of seconds); an id list or a layer name is plain text.
+  function codeParts(code, values) {
     explainStats.texts++;
     var C = CODES[code] || CODES.unknown;
-    var q = C.quantities || [];
-    return C.text.replace(/\{(\w+)\}/g, function (_, k) {
-      if (!values || values[k] === undefined || values[k] === null) return '?';
-      return q.indexOf(k) >= 0 ? fmt(values[k]) : plain(values[k]);
-    });
+    var q = C.quantities || [], out = [], re = /\{(\w+)\}/g, i = 0, m;
+    while ((m = re.exec(C.text)) !== null) {
+      if (m.index > i) out.push({ s: C.text.slice(i, m.index), k: null });
+      var k = m[1], v = values ? values[k] : undefined;
+      if (v === undefined || v === null) out.push({ s: '?', k: null });
+      else if (q.indexOf(k) >= 0) out.push({ s: fmt(v), k: k });
+      else out.push({ s: plain(v), k: typeof v === 'number' ? k : null });
+      i = re.lastIndex;
+    }
+    if (i < C.text.length) out.push({ s: C.text.slice(i), k: null });
+    return out;
   }
+  function codeText(code, values) { return joinParts(codeParts(code, values)); }
+  function joinParts(ps) { var t = ''; for (var i = 0; i < ps.length; i++) t += ps[i].s; return t; }
   function plain(v) { return Array.isArray(v) ? v.join(', ') : String(v); }
   T.reasonText = function (last) { return last ? codeText(last.code, last.values) : ''; };
 
@@ -3644,6 +3656,9 @@
     if (!featureUnlocked(f)) return isOnSaved(f) ? 'armed' : 'locked';
     return 'off';
   }
+  // ⚠ V5: `parts` is the sentence's own parts (`codeParts`), so the view can box each number; `text` is them joined
+  // — the same string, formatted once.
+  function lastRow(L) { var ps = codeParts(L.code, L.values); return { code: L.code, text: joinParts(ps), values: jsonValues(L.values), tick: L.tick, at: L.at, parts: ps }; }
   T.explain = function () {
     var out = [], now = Number(player.timePlayed) || 0, limit = neverFiredLimit();
     for (var i = 0; i < features.length; i++) {
@@ -3666,7 +3681,7 @@
         // V3: the stall watch's row for this feature — `null` when the watch is off, so a run without it renders
         // exactly the rows it rendered before.
         escalation: escalationOf(f),
-        last: f.last ? { code: f.last.code, text: codeText(f.last.code, f.last.values), values: jsonValues(f.last.values), tick: f.last.tick, at: f.last.at } : null,
+        last: f.last ? lastRow(f.last) : null,
         acted: acted, lastActedAt: f.lastActedAt,
         // on + unlocked for long enough, and it has still never done anything. A configuration that CANNOT fire is
         // survey §4.6, and it is the one thing a list of reasons cannot say by itself: every individual reason is
@@ -3773,15 +3788,86 @@
   // so on the one line — an ESCALATED feature (the watch changed what it decides by, and the player has to be able
   // to see that without opening 59 blocks) and a NEVER-FIRED one (the flag exists because every individual reason
   // looks reasonable while the feature is dead).
-  function collapsedBlock(r) {
+  // ---- V5 PART 2: A LAYOUT THAT DOES NOT JUMP -----------------------------------------------------------------------
+  // ⚖ THE USER (2026-09-20): "the layout keeps shifting as the data keeps changing. Somewhere else we set up code to
+  // prevent UI elements from shrinking after the first time they grow. Can we implement something like this here?"
+  // ⛔ WHAT JUMPS, MEASURED BEFORE ANYTHING WAS BUILT (gates-v5 part 2, constructed on a PAUSED page, because the
+  // UI arc's three unconstructed tries all measured nothing): TWO problems, and they need TWO fixes.
+  //   (b) SENTENCES AND LINES are what move the page. A reason line swapping to a shorter sentence moved all 63 blocks
+  //       below it on ptr by 38 px at 390 px; a "never fired" line appearing moved them by 32. A digit floor does
+  //       nothing for either. ⇒ each LINE of a block is a SLOT that remembers the longest thing it has shown and keeps
+  //       that thing's height, as an invisible copy stacked in the same grid cell ("ghost"): a reserved line whose
+  //       height only grows, and a line that disappears leaves its height behind. ⛔ No element is measured — this file
+  //       touches no DOM (docs/contract.md) — the browser's own grid sizing takes the max of the two.
+  //   (a) NUMBERS moved nothing vertically in any construction (even 9.99e9 → 1.00e1000 in three places), but they
+  //       shift every word after them sideways. ⇒ the UI arc's technique, as its requirements: every number in its
+  //       OWN box — the digits alone, the × / % / s / unit left outside it in the sentence — with tabular figures and
+  //       an inline `min-width` in `ch` that only ever GROWS: never a cap, never the renderable worst case.
+  //       ⚠ `ch` is one character here, not only one digit: the tab's font is Inconsolata (monospace) on all four games
+  //       measured, where `.`, `e`, `,` and `-` are exactly 1ch; gates-v5 part 7 records the font on every game judged.
+  // ⛔ THE FLOORS LIVE COMPONENT-SIDE — on the `tmtl-editors` instance, keyed by feature id + line (+ value), exactly as
+  // `tmtl-number` keeps its draft and V3 keeps the collapse map (TRAP (ii): the tab re-renders every tick, so a floor
+  // kept in the rendered string is gone on the next one). NOT in `player`, not in `runtimeState()`. ⚖ They RESET when
+  // the Advanced subtab is left or the page reloads — the instance goes with it — and that is the point at which the
+  // whole view is re-laid anyway; a floor carried over would keep the widths of numbers from a state the player has
+  // moved away from (a big reset shrinks everything at once). The layer list's floors are per session for the same
+  // reason. The header (a `display-text`, not a component) keeps its own and drops it whenever the tab is off screen.
+  var FLOORS_ON = true;
+  /** The control switch for gates-v5 part 2's CONTROL rows — a page-side flag, never saved. */
+  T.setViewFloors = function (on) { FLOORS_ON = !!on; invalidateView(); return FLOORS_ON; };
+  T.newFloors = function () { return { w: Object.create(null), g: Object.create(null) }; };
+  var NUM_STYLE = 'display:inline-block;font-variant-numeric:tabular-nums;white-space:nowrap;text-align:right';
+  /** One number in its own box, reserving the widest it has been under this key. */
+  function numHTML(F, key, text) {
+    var t = String(text), mw = 0;
+    if (F && FLOORS_ON) { mw = F.w[key] || 0; if (t.length > mw) F.w[key] = mw = t.length; }
+    return '<span class="tmtl-num" data-k="' + esc(key) + '" style="' + NUM_STYLE + (mw ? ';min-width:' + mw + 'ch' : '') + '">' + esc(t) + '</span>';
+  }
+  /** A sentence from its parts, every NUMBER boxed (see `codeParts`). */
+  function partsHTML(F, key, parts) {
+    var o = '';
+    for (var i = 0; i < parts.length; i++) o += parts[i].k ? numHTML(F, key + '.' + parts[i].k, parts[i].s) : esc(parts[i].s);
+    return o;
+  }
+  function lastHTML(F, key, last) {
+    if (!last) return '';
+    if (!last.parts) return esc(last.text);
+    return partsHTML(F, key + ':' + last.code, last.parts);
+  }
+  /**
+   * One LINE of the view, which keeps the height of the longest thing it has shown. `html` is the line ('' when the
+   * line is absent this time), `len` its plain length. ⚠ The ghost is the longest by CHARACTER COUNT, which on the same
+   * line with the same styles is the one that wraps the most.
+   */
+  function slotHTML(F, key, html, len, inline) {
+    if (!F || !FLOORS_ON) return html || '';
+    var g = F.g[key];
+    if (html && (!g || len >= g.len)) { F.g[key] = { len: len, html: html }; return html; }
+    if (!g) return '';
+    var box = inline ? 'span' : 'div', disp = inline ? 'inline-grid' : 'grid';
+    return '<' + box + ' class="tmtl-slot" style="display:' + disp + ';text-align:left;max-width:100%">'
+      + (html ? '<' + box + ' style="grid-area:1/1;min-width:0">' + html + '</' + box + '>' : '')
+      + '<' + box + ' class="tmtl-ghost" aria-hidden="true" style="grid-area:1/1;min-width:0;visibility:hidden">' + g.html + '</' + box + '>'
+      + '</' + box + '>';
+  }
+  var plainLen = function (html) { return String(html).replace(/<[^>]*>/g, '').replace(/&[a-z#0-9]+;/g, 'x').length; };
+  function line(F, fid, key, html) { return slotHTML(F, fid + '|' + key, html, html ? plainLen(html) : 0); }
+  // A feature that cannot run yet is ONE LINE. There are 78 of them on ptr at a fresh save and 3 that are doing
+  // anything; a full block each would bury the three.
+  // ⚠ IT IS NO LONGER ONLY FOR `locked` / `excluded` (V3 Part 3): the player can collapse any block, so the state
+  // word is the ROW's rather than one of two literals, and the two things that must stay visible while collapsed say
+  // so on the one line — an ESCALATED feature (the watch changed what it decides by, and the player has to be able
+  // to see that without opening 59 blocks) and a NEVER-FIRED one (the flag exists because every individual reason
+  // looks reasonable while the feature is dead).
+  function collapsedBlock(r, F) {
     var bits = '';
     if (r.policy && r.policy.escalated) bits += ' ' + chip('ESCALATED', '#a06a3e');
     if (r.neverFired) bits += ' <span style="color:#c08a3e">⚠ never fired</span>';
-    return '<div class="tmtl-collapsed" style="opacity:' + (r.state === 'on' ? '.85' : '.6') + ';padding:2px 0;text-align:left">' + esc(r.title) + ' <span style="opacity:.6;font-size:.85em">' + esc(r.id) + '</span> — '
-      + chip(r.state.toUpperCase(), STATE_BG[r.state]) + bits + ' <span style="font-size:.9em">' + esc(r.last ? r.last.text : '') + '</span></div>';
+    return line(F, r.id, 'col', '<div class="tmtl-collapsed" style="opacity:' + (r.state === 'on' ? '.85' : '.6') + ';padding:2px 0;text-align:left">' + esc(r.title) + ' <span style="opacity:.6;font-size:.85em">' + esc(r.id) + '</span> — '
+      + chip(r.state.toUpperCase(), STATE_BG[r.state]) + bits + ' <span style="font-size:.9em">' + lastHTML(F, r.id + '|col', r.last) + '</span></div>');
   }
-  function featureBlock(r) {
-    var p = r.policy, bits = [];
+  function featureBlock(r, F) {
+    var p = r.policy, bits = [], id = r.id;
     // ⚠ the table's entry and the generic derivation's shown BESIDE what is in force, and only when they DIFFER —
     // survey §4.5. Equal values side by side is noise; a difference is the whole reason the table has that row.
     bits.push('<b>' + esc(p.inForce) + '</b>');
@@ -3805,9 +3891,10 @@
     // has a left border too — so the count came back ONE too high (7 blocks against 6 feature rows) and the leg went
     // red on a view that was rendering perfectly. Same shape as §18.4 item 9's `Read-only.`: a gate keyed to
     // something that is not the thing it is asking about. The class is what it is asking about.
+    // ⚠ V5: EVERY LINE BELOW GOES THROUGH `line()`, present or not, so a line that disappears leaves its height.
     var o = ['<div class="tmtl-block" style="border-left:3px solid ' + STATE_BG[r.state] + ';background:rgba(127,178,217,.08);border-radius:4px;padding:6px 8px;margin:0 0 8px 0;text-align:left">'];
-    o.push('<div style="text-align:left">' + chip(r.state.toUpperCase(), STATE_BG[r.state]) + ' <b>' + esc(r.title) + '</b> <span style="opacity:.55;font-size:.85em">' + esc(r.id) + '</span></div>');
-    o.push('<div style="text-align:left;font-size:.9em;opacity:.85">policy ' + bits.join(' · ') + '</div>');
+    o.push(line(F, id, 'title', '<div style="text-align:left">' + chip(r.state.toUpperCase(), STATE_BG[r.state]) + ' <b>' + esc(r.title) + '</b> <span style="opacity:.55;font-size:.85em">' + esc(r.id) + '</span></div>'));
+    o.push(line(F, id, 'policy', '<div style="text-align:left;font-size:.9em;opacity:.85">policy ' + bits.join(' · ') + '</div>'));
     // ---- V4: the two PREDICATE controls and the priority, in the READ-ONLY half -------------------------------------
     // ⚠ WHOSE PREDICATE IT IS is on the line, for the reason the reason code carries it: the slot has four possible
     // sources and "gate X" could not tell a player whether they had typed X themselves.
@@ -3815,25 +3902,47 @@
     // as `false` to `holds()`, which is indistinguishable from a condition legitimately not met, and the block is
     // where the difference has to be visible. The message is the ENGINE's; it is escaped like every other string.
     var ctl = r.control;
-    if (ctl && ctl['while'].value) o.push('<div style="text-align:left;font-size:.9em;opacity:.85">acts only while <code>' + esc(ctl['while'].value) + '</code> <span style="opacity:.7">(' + esc(CTL_WORD[ctl['while'].owner] || ctl['while'].owner) + ')</span>'
-      + (ctl['while'].error ? ' <span style="color:#d07a7a">⚠ ' + esc(ctl['while'].error) + '</span>' : ctl['while'].holds === false ? ' <span style="color:#c08a3e">— false now</span>' : '') + '</div>');
-    else if (r.gate) o.push('<div style="text-align:left;font-size:.9em;opacity:.85">gate <code>' + esc(r.gate) + '</code></div>');
-    if (ctl && ctl.until.value) o.push('<div style="text-align:left;font-size:.9em;opacity:.85">stops once <code>' + esc(ctl.until.value) + '</code> <span style="opacity:.7">(' + esc(CTL_WORD[ctl.until.owner] || ctl.until.owner) + ')</span>'
-      + (ctl.until.error ? ' <span style="color:#d07a7a">⚠ ' + esc(ctl.until.error) + '</span>' : ctl.until.stopped ? ' <span style="color:#c08a3e">— STOPPED at ' + esc(ctl.until.hitAt) + ' s</span>' : '') + '</div>');
-    if (ctl && ctl.priority.owner) o.push('<div style="text-align:left;font-size:.9em;opacity:.85">priority <b>' + esc(ctl.priority.effective) + '</b> <span style="opacity:.7">(' + esc(CTL_WORD[ctl.priority.owner] || ctl.priority.owner) + '; its kind’s place is ' + esc(ctl.priority.kindPlace) + ') — within this layer only</span></div>');
-    if (r.after && r.after.length) o.push('<div style="text-align:left;font-size:.9em;opacity:.85">after ' + r.after.map(esc).join(', ') + '</div>');
-    o.push('<div style="text-align:left;margin-top:3px"><b>now:</b> ' + esc(r.last ? r.last.text : 'nothing decided yet') + '</div>');
-    o.push('<div style="text-align:left;font-size:.9em;opacity:.7">acted ' + r.acted + (r.lastActedAt === null ? '' : ' · last at ' + r.lastActedAt + ' s') + (r.eligibleFor === null ? '' : ' · on for ' + r.eligibleFor + ' s') + '</div>');
-    if (r.neverFired) o.push('<div style="text-align:left;font-size:.9em;color:#c08a3e">⚠ never fired — on and unlocked this whole time, and it has never acted</div>');
-    if (r.escalation && r.escalation.rung) o.push('<div style="text-align:left;font-size:.9em;color:#c08a3e">the stall watch has this feature on rung ' + r.escalation.rung + ' of ' + r.escalation.of
-      + ' since ' + r.escalation.since + ' s — it returns to <b>' + esc(r.escalation.primary) + '</b> once progress resumes and holds</div>');
-    else if (r.escalation && r.escalation.candidate) o.push('<div style="text-align:left;font-size:.9em;opacity:.7">the stall watch is watching this feature — it is waiting, so a stall would escalate it</div>');
+    var wl = '';
+    if (ctl && ctl['while'].value) wl = '<div style="text-align:left;font-size:.9em;opacity:.85">acts only while <code>' + esc(ctl['while'].value) + '</code> <span style="opacity:.7">(' + esc(CTL_WORD[ctl['while'].owner] || ctl['while'].owner) + ')</span>'
+      + (ctl['while'].error ? ' <span style="color:#d07a7a">⚠ ' + esc(ctl['while'].error) + '</span>' : ctl['while'].holds === false ? ' <span style="color:#c08a3e">— false now</span>' : '') + '</div>';
+    else if (r.gate) wl = '<div style="text-align:left;font-size:.9em;opacity:.85">gate <code>' + esc(r.gate) + '</code></div>';
+    o.push(line(F, id, 'while', wl));
+    o.push(line(F, id, 'until', ctl && ctl.until.value ? '<div style="text-align:left;font-size:.9em;opacity:.85">stops once <code>' + esc(ctl.until.value) + '</code> <span style="opacity:.7">(' + esc(CTL_WORD[ctl.until.owner] || ctl.until.owner) + ')</span>'
+      + (ctl.until.error ? ' <span style="color:#d07a7a">⚠ ' + esc(ctl.until.error) + '</span>' : ctl.until.stopped ? ' <span style="color:#c08a3e">— STOPPED at ' + esc(ctl.until.hitAt) + ' s</span>' : '') + '</div>' : ''));
+    o.push(line(F, id, 'prio', ctl && ctl.priority.owner ? '<div style="text-align:left;font-size:.9em;opacity:.85">priority <b>' + esc(ctl.priority.effective) + '</b> <span style="opacity:.7">(' + esc(CTL_WORD[ctl.priority.owner] || ctl.priority.owner) + '; its kind’s place is ' + esc(ctl.priority.kindPlace) + ') — within this layer only</span></div>' : ''));
+    o.push(line(F, id, 'after', r.after && r.after.length ? '<div style="text-align:left;font-size:.9em;opacity:.85">after ' + r.after.map(esc).join(', ') + '</div>' : ''));
+    o.push(line(F, id, 'now', '<div style="text-align:left;margin-top:3px"><b>now:</b> ' + (r.last ? lastHTML(F, id + '|now', r.last) : 'nothing decided yet') + '</div>'));
+    // ⚠ V5: `last at` IS ROUNDED TO A TENTH. It printed the raw float (`115100.98603999999 s`), whose length changed
+    // with the float noise from one act to the next — a line that re-wrapped for no reason a player could see.
+    o.push(line(F, id, 'acted', '<div style="text-align:left;font-size:.9em;opacity:.7">acted ' + numHTML(F, id + '|acted', r.acted)
+      + (r.lastActedAt === null ? '' : ' · last at ' + numHTML(F, id + '|lastAt', r1(r.lastActedAt)) + ' s')
+      + (r.eligibleFor === null ? '' : ' · on for ' + numHTML(F, id + '|onFor', r.eligibleFor) + ' s') + '</div>'));
+    o.push(line(F, id, 'never', r.neverFired ? '<div style="text-align:left;font-size:.9em;color:#c08a3e">⚠ never fired — on and unlocked this whole time, and it has never acted</div>' : ''));
+    var el = '';
+    if (r.escalation && r.escalation.rung) el = '<div style="text-align:left;font-size:.9em;color:#c08a3e">the stall watch has this feature on rung ' + r.escalation.rung + ' of ' + r.escalation.of
+      + ' since ' + r.escalation.since + ' s — it returns to <b>' + esc(r.escalation.primary) + '</b> once progress resumes and holds</div>';
+    else if (r.escalation && r.escalation.candidate) el = '<div style="text-align:left;font-size:.9em;opacity:.7">the stall watch is watching this feature — it is waiting, so a stall would escalate it</div>';
+    o.push(line(F, id, 'esc', el));
     // ⚠ AUTHOR-WRITTEN TEXT THROUGH `v-html`. Escaped, like every other table string above (`off` reasons, gate
     // predicates) and like the GAME's own layer names and feature titles.
-    if (r.provenance) o.push('<div style="text-align:left;font-size:.85em;opacity:.65;font-style:italic;margin-top:3px">' + esc(r.provenance) + '</div>');
+    o.push(line(F, id, 'prov', r.provenance ? '<div style="text-align:left;font-size:.85em;opacity:.65;font-style:italic;margin-top:3px">' + esc(r.provenance) + '</div>' : ''));
     o.push('</div>');
     return o.join('');
   }
+  /** The modifier's readout beside its buttons (the stall fallback's clock, the row cycle's turn) — one slot, numbers
+   *  boxed. It was Vue text until V5, and its numbers move every tick. */
+  T.modReadoutHTML = function (r, fl) {
+    var F = fl || null, id = r.id, h = '';
+    if (r.stall && r.stall.why) h = esc(r.stall.why);
+    else if (r.stall) h = 'typical ' + numHTML(F, id + '|st.t', r.stall.typical) + ' s over ' + numHTML(F, id + '|st.n', r.stall.remembered) + ' own-rule reset(s) · '
+      + numHTML(F, id + '|st.e', r.stall.elapsed) + ' s of ' + numHTML(F, id + '|st.need', r.stall.need) + ' s';
+    if (r.turn && r.turn.why) h += (h ? ' · ' : '') + esc(r.turn.why);
+    else if (r.turn) h += (h ? ' · ' : '') + 'its turn now · ' + numHTML(F, id + '|tu.l', r.turn.left) + ' of ' + numHTML(F, id + '|tu.m', r.turn.mine) + ' left · row ' + esc(r.turn.row) + ': '
+      + numHTML(F, id + '|tu.n', r.turn.members.length) + ' member(s)' + (r.turn.demand ? ', on demand' : '');
+    return slotHTML(F, id + '|mod', h, h ? plainLen(h) : 0, true);
+  };
+  /** Any one-line readout, as a slot — the stall watch's status sentence uses it. */
+  T.slotHTML = function (fl, key, text) { return slotHTML(fl || null, key, text ? esc(text) : '', text ? String(text).length : 0, true); };
   // ---- THE EDITORS (V2 Part 3) — the loader registers its OWN Vue input components ---------------------------------
   // ⚖ CORRECTED MID-SLICE (user, 2026-09-19): the brief's first plan was to build the controls out of `clickable`s,
   // because only 154 of the 171 games register `text-input` and 152 register `drop-down`. The user asked why the
@@ -3893,23 +4002,33 @@
   function auViewGen() { return advancedShown() ? ++viewGen : 0; }
 
   // ---- the read-only half: V1's blocks, unchanged, exposed so a component can render one -------------------------
+  // ⚠ V5: the header's FLOORS. It is a `display-text` function, not a component, so they live here — and they are
+  // DROPPED whenever the Advanced view is off screen, which is when the component's own floors go too.
+  var HDR_F = null;
   function advancedHeaderHTML() {
-    if (!advancedShown()) return '';
+    if (!advancedShown()) { HDR_F = null; return ''; }
+    if (!HDR_F) HDR_F = T.newFloors();
     var rows = explainForView(true);   // the redraw IS the refresh point — see explainForView
     var running = 0, never = 0, edited = 0, escalated = 0;
     for (var i = 0; i < rows.length; i++) { if (rows[i].state === 'on') running++; if (rows[i].neverFired) never++; if (rows[i].policy && rows[i].policy.saved) edited++; if (rows[i].policy && rows[i].policy.escalated) escalated++; }
+    var F = HDR_F;
     return '<div class="tmtl-root" style="' + ROOT_STYLE + '">'
       + '<div style="opacity:.75;font-size:.9em;margin-bottom:6px;text-align:left">' + esc(ADV_INTRO) + '</div>'
-      + '<div style="margin-bottom:4px;text-align:left">Profile <b>' + esc(T.profileName) + '</b> · ' + running + ' of ' + rows.length + ' running'
-      + (never ? ' · <b style="color:#c08a3e">' + never + ' never fired</b>' : '')
-      + (edited ? ' · <b style="color:#7fb2d9">' + edited + ' edited</b>' : '')
-      + (escalated ? ' · <b style="color:#a06a3e">' + escalated + ' escalated</b>' : '') + '</div></div>';
+      + line(F, '', 'hdr', '<div style="margin-bottom:4px;text-align:left">Profile <b>' + esc(T.profileName) + '</b> · ' + numHTML(F, 'hdr.run', running) + ' of ' + numHTML(F, 'hdr.all', rows.length) + ' running'
+      + (never ? ' · <b style="color:#c08a3e">' + numHTML(F, 'hdr.never', never) + ' never fired</b>' : '')
+      + (edited ? ' · <b style="color:#7fb2d9">' + numHTML(F, 'hdr.edited', edited) + ' edited</b>' : '')
+      + (escalated ? ' · <b style="color:#a06a3e">' + numHTML(F, 'hdr.esc', escalated) + ' escalated</b>' : '') + '</div>') + '</div>';
   }
   T.advancedHTML = advancedHeaderHTML;
   // ⚠ THE CALLER DECIDES (V3 Part 3). Until V3 the choice was the STATE's alone; now it is the player's, held
   // component-side and defaulting to the state's answer — so this function takes the flag rather than deciding.
   // ⛑ The one-argument call still behaves exactly as it did, which is what keeps every other consumer working.
-  T.featureBlockHTML = function (r, collapsed) { return (collapsed === undefined ? (r.state === 'locked' || r.state === 'excluded') : !!collapsed) ? collapsedBlock(r) : featureBlock(r); };
+  // ⚠ V5: `fl` is the caller's FLOORS (`T.newFloors()`, held component-side). Without it the block renders exactly
+  // as it did, plus the number boxes, which reserve nothing.
+  T.featureBlockHTML = function (r, collapsed, fl) {
+    var F = fl || null;
+    return (collapsed === undefined ? (r.state === 'locked' || r.state === 'excluded') : !!collapsed) ? collapsedBlock(r, F) : featureBlock(r, F);
+  };
   T.advancedRows = explainForView;
 
   // ---- the components ---------------------------------------------------------------------------------------------
@@ -4086,7 +4205,9 @@
       computed: {
         r: function () { return this.data.row; },
         // ⚠ THE COLLAPSE FLAG IS A PROP, HELD BY `tmtl-editors` — see TRAP (ii) there. This component only renders it.
-        html: function () { return T.featureBlockHTML(this.data.row, this.data.collapsed); },
+        html: function () { return T.featureBlockHTML(this.data.row, this.data.collapsed, this.data.fl); },
+        // V5: the modifier's readout, as one slot with its numbers boxed (see `T.modReadoutHTML`)
+        modReadout: function () { return T.modReadoutHTML(this.data.row, this.data.fl); },
         editable: function () { var r = this.data.row; return !this.data.collapsed && r.state !== 'excluded' && r.state !== 'locked'; },
         rungs: function () {
           var r = this.data.row, e = r.escalation, out = [];
@@ -4205,10 +4326,7 @@
         +   '</div>'
         +   '<div v-if="mods.length" style="text-align:left;font-size:.9em">'
         +     '<button v-for="m in modRows" :key="m.id" type="button" class="tmtl-mod" :data-fid="data.row.id" :data-mod="m.id" :data-on="m.on ? 1 : 0" style="' + BTN_STYLE + '" :title="m.help" @click="toggleMod(m.id)" @keydown.stop>{{ (m.on ? \'remove \' : \'add \') + \'“\' + m.label + \'”\' }}</button>'
-        +     '<span v-if="data.row.stall && data.row.stall.why" style="opacity:.7;margin-left:6px">{{ data.row.stall.why }}</span>'
-        +     '<span v-else-if="data.row.stall" style="opacity:.7;margin-left:6px">typical {{ data.row.stall.typical }} s over {{ data.row.stall.remembered }} own-rule reset(s) · {{ data.row.stall.elapsed }} s of {{ data.row.stall.need }} s</span>'
-        +     '<span v-if="data.row.turn && data.row.turn.why" style="opacity:.7;margin-left:6px">{{ data.row.turn.why }}</span>'
-        +     '<span v-else-if="data.row.turn" style="opacity:.7;margin-left:6px">its turn now · {{ data.row.turn.left }} of {{ data.row.turn.mine }} left · row {{ data.row.turn.row }}: {{ data.row.turn.members.length }} member(s){{ data.row.turn.demand ? \', on demand\' : \'\' }}</span>'
+        +     '<span v-if="modReadout" class="tmtl-modread" style="opacity:.7;margin-left:6px" v-html="modReadout"></span>'
         +   '</div>'
         // ---- the per-feature CONTROLS (V4): the pause, the stop and the priority ----------------------------------
         // ⚖ §13b, the user's own two requests. ⚠ Every press carries `@keydown.stop`, and the text boxes are
@@ -4257,6 +4375,8 @@
       props: ['data'],
       computed: {
         w: function () { return this.data.watch; },
+        // V5: the status sentence changes as the watch does — one slot, so it keeps its tallest height
+        wText: function () { return T.slotHTML(this.data.fl, 'watch', this.data.watch.text); },
         fields: function () {
           var o = this.data.watch.options, out = [];
           var ps = T.watchParams();
@@ -4283,7 +4403,7 @@
         + '<div style="text-align:left">'
         +   '<button type="button" class="tmtl-watch-toggle" :data-on="w.on ? 1 : 0" style="' + BTN_STYLE + '" @click="toggleWatch" @keydown.stop>{{ w.on ? \'the stall watch is ON\' : \'the stall watch is off\' }}</button>'
         +   '<button v-if="!w.on" type="button" class="tmtl-track-toggle" :data-on="w.options.saved.track ? 1 : 0" style="' + BTN_STYLE + ';margin-left:4px" @click="toggleTrack" @keydown.stop>{{ w.options.saved.track ? \'progress tracker ON\' : \'progress tracker off\' }}</button>'
-        +   '<span style="opacity:.8;margin-left:6px">{{ w.text }}</span>'
+        +   '<span style="opacity:.8;margin-left:6px" v-html="wText"></span>'
         + '</div>'
         + '<div v-if="w.on" style="text-align:left"><tmtl-number v-for="f in fields" :key="f.key" :data="f"></tmtl-number></div>'
         + '<div v-if="w.on && w.escalated.length" style="text-align:left;color:#c08a3e">escalated: <span v-for="e in w.escalated" :key="e.id">{{ e.id }} \u2192 {{ e.policy }} (rung {{ e.rung }} of {{ e.of }}) </span></div>'
@@ -4403,6 +4523,9 @@
       // `T.storage.raw` once, at `created`, so a reload comes back where the player left it.
       data: function () { return { fold: Object.create(null), gen: 0 }; },
       created: function () {
+        // ⛔ V5: THE NO-JUMP FLOORS, held HERE and deliberately NOT in `data` — a reactive object written during a
+        // render would re-trigger it. One per instance: they go when the Advanced subtab does (see `numHTML`).
+        this.fl = T.newFloors();
         var p = T.collapsePrefs();
         for (var i = 0; i < p.open.length; i++) this.fold[p.open[i]] = false;
         for (var j = 0; j < p.closed.length; j++) this.fold[p.closed[j]] = true;
@@ -4442,19 +4565,20 @@
             var l = rows[i].layer;
             var name = l;
             try { name = layers[l] && layers[l].name ? String(layers[l].name) : l; } catch (e) { name = l; }
-            out.push({ row: rows[i], head: l !== prev, layerName: name, clock: clock, gen: gen, collapsed: this.isFolded(rows[i].id) });
+            out.push({ row: rows[i], head: l !== prev, layerName: name, clock: clock, gen: gen, collapsed: this.isFolded(rows[i].id), fl: this.fl });
             prev = l;
           }
           return out;
         },
         watch: function () { return T.watchState(); },
+        floors: function () { return this.fl; },
         // ⚠ the same per-tick rows `blocks` is built from, so the reset's COUNT of what a press would cost cannot
         // disagree with what the player is looking at.
         rowsNow: function () { return this.blocks.map(function (b) { return b.row; }); },
         folded: function () { var b = this.blocks, n = 0; for (var i = 0; i < b.length; i++) if (b[i].collapsed) n++; return n; },
       },
       template: '<div class="tmtl-root" style="' + ROOT_STYLE + '">'
-        + '<tmtl-watch :data="{watch: watch}"></tmtl-watch>'
+        + '<tmtl-watch :data="{watch: watch, fl: floors}"></tmtl-watch>'
         // ⚖ Q1's second half: expand all / collapse all, and they set EVERY block including the ones whose default is
         // the other way — `collapse all` then `expand all` has to be reachable from any state.
         + '<div style="text-align:left;margin-bottom:6px;font-size:.9em">'
