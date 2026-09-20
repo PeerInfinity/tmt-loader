@@ -98,6 +98,13 @@ const LEGS = [
   { key: 'ptr all/M11 + 600×1', id: 'ptr', o: { profile: 'all', diff: 1, ticks: 600, 'from-snapshot': SNAP('ptr', 'M11'), explain: true } },
   { key: 'ptr all/M15 + 600×1', id: 'ptr', o: { profile: 'all', diff: 1, ticks: 600, 'from-snapshot': SNAP('ptr', 'M15'), explain: true } },
   { key: 'ptr fresh 400×1, --auto-opt exclude=buyables:t', id: 'ptr', o: { profile: 'all', diff: 1, ticks: 400, 'auto-opt': 'exclude=buyables:t', explain: true } },
+  // ⛔ R2's `waiting:gain-unit`, witnessed on a REAL GAME rather than constructed — and the configuration that
+  // witnesses it is the one R2 measured as a DEADLOCK (gate R2-S3): `gain>=2x-unit` on `reset:p` waits for a gain
+  // of 2 prestige points, PTR generates no points until a prestige upgrade is bought, and no prestige upgrade can
+  // be bought before the first prestige. So the refusal holds for every tick of the leg, which is exactly what a
+  // witness needs. No table names `gain>=Nx-unit`, so the leg has to name it — a fixture witness beats a
+  // construction wherever one exists (§18.4's rule, applied to this slice's own new code).
+  { key: 'ptr fresh 400×1, --auto-opt policy:reset:p=gain>=2x-unit (R2: the empty-purse bar, and the deadlock)', id: 'ptr', o: { profile: 'all', diff: 1, ticks: 400, 'auto-opt': 'policy:reset:p=gain>=2x-unit', explain: true } },
   { key: 'something fresh 600×1 (profile all)', id: 'something', o: { profile: 'all', diff: 1, ticks: 600, explain: true } },
 ];
 
@@ -198,7 +205,12 @@ async function part2() {
 
 // ---- Part 3: inertness ------------------------------------------------------------------------------------------
 async function part3() {
-  const o = { profile: 'all', diff: 1, ticks: 12000, 'from-snapshot': SNAP('ptr', 'M15'), ladder: 'tools/harness/ladder/ptr.json', to: 'M16' };
+// ⛔ THE PIN NAMES ITS CONFIGURATION (§14d.2 item 14, again — R2). This leg's 24179 / `9e2eadb7c58c0078` was
+// measured when the table left `reset:q` on the DERIVED `gain>=2x`. R2 moved that entry to `gain>=2` and the same
+// leg now reaches M16 at 17058, so the pin is reproduced by NAMING the policy it was measured under rather than
+// by inheriting whatever the table says today. The claim this row makes is about THIS slice's own change being
+// inert, not about which default ships; the shipped table's L1 leg is pinned by `gates-r2 --part 2`.
+  const o = { profile: 'all', diff: 1, ticks: 12000, 'auto-opt': 'policy:reset:q=gain>=2x', 'from-snapshot': SNAP('ptr', 'M15'), ladder: 'tools/harness/ladder/ptr.json', to: 'M16' };
   const [A, B] = await Promise.all([job('ptr', o), job('ptr', o)]);
   const twice = A.ticks === B.ticks && A.hashGame === B.hashGame && A.hash === B.hash && JSON.stringify(A.hook?.actions) === JSON.stringify(B.hook?.actions);
   row({ gate: 'V1-3 the M15 → M16 leg is TWICE EQUAL and lands on the PRE-SLICE hashGame', id: 'ptr', leg: 'profile all, diff 1', ok: !!A.ok && !!B.ok && twice && A.ticks === M16_PIN.ticks && A.hashGame === M16_PIN.hashGame,
