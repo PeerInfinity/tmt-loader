@@ -4973,3 +4973,93 @@ Reading this section: Every cell is ONE run.mjs process (an L1 leg is ~14,000 ti
 | R2-W the watch on L2 — watch=1 | ptr | L2: a FRESH game, diff 1, profile all, 8000 ticks, 1 run(s) | 6718 | 6718 | 1 | `82eee26f947b2b2e` | GREEN | M07 2657 · M08 4602 · M09 6234 · M10 5742 · M11 6645 · M12 6718; ONE run; the same table with the watch ON at its declared K = 10; resets reset:p 1533 reset:g 277 reset:b 556 reset:s 17 reset:t 14 reset:e 8; end pts 0, p 1.231e28, gp 0, t 8 e 1676 s 8, uo [0,0,0]; ticks_ms 197478; wall 198s; load 3.41→2.44; pool 4 |
 | R2-W the watch on L1 — the table as it stands (control) | ptr | L1: from all/M15.json, diff 1, profile all, 14000 ticks, 1 run(s) | 29204 | 29204 | 1 | `f733a6c102a5c10f` | GREEN | M16 17058 · M17 23492 · M18 25598 · M19 25937 · M20 26612 · M21 — · M22 29204; ONE run; the winning table, the watch OFF (the control); resets reset:p 2353 reset:g 299 reset:b 501 reset:s 92 reset:t 102 reset:e 224 reset:sb 25 reset:q 13; end q 16/26 total (best 16), QL 3, q ms [0,1,2,3,4,5], h LOCKED, TE 0 of 0 (xtc 0), t.best 0, s.best 0, sb 0, EP 0 enh 0, GP 0, uo [0,0,0], native [e.auto true t.autoExt true t.auto true s.auto true sb.auto true]; ticks_ms 290197; wall 291s; load 2.44→4.2; pool 4 |
 | R2-W the watch on L1 — watch=1 | ptr | L1: from all/M15.json, diff 1, profile all, 14000 ticks, 1 run(s) | 30048 | 30048 | 1 | `a104beb628873be7` | GREEN | M16 — · M17 — · M18 — · M19 — · M20 — · M21 — · M22 —; ONE run; the same table with the watch ON at its declared K = 10; resets reset:p 8692 reset:g 299 reset:b 501 reset:s 35 reset:t 40 reset:e 2412 reset:sb 1; end q 0/0 total (best 0), QL 0, q ms [], h LOCKED, TE 7.253e18 of 7.253e18 (xtc 16), t.best 13, s.best 13, sb 1, EP 1.717e40 enh 26, GP 1.573e162, uo [0,0,0], native [e.auto false t.autoExt false t.auto false s.auto false sb.auto false]; ticks_ms 582190; wall 583s; load 2.44→1.15; pool 4 |
+
+## 2026-09-20T07:19:15Z — gate R2 part cells — the defaults sweep, scored over whole stretches — commit `392937988` — 2/2 green
+
+Reading this section: Every cell is ONE run.mjs process (an L1 leg is ~14,000 ticks at 13–19 ms/tick on a quiet box), run TWICE; a cell whose two runs disagree on the marks, the end game-second or the end hashGame is RED. L1 = from snapshots/ptr/all/M15.json (16048 game-s) → M22, 14,000 ticks, diff 1, --profile all, the stall watch OFF; M16 is a COLUMN of that same run, never a starting point (a fixture bakes in the policy that produced it — plan §23). L2 = a FRESH game → M12, the opening's regression column (§14d.6). L3 = Something Tree S01–S05 with games-auto/something.js unchanged — the generality control, where "no change" is the result. A cell's label is the whole --auto-opt string it ran, so a row names the configuration it measured (§14d.2 item 14). "—" for a mark means NOT REACHED inside the leg, which is a result and not a failure: the curve beside it is the deliverable. ticks_ms and the 1-minute load are on every row; the pool changes ms/tick and never changes game-seconds.
+
+| gate | game | leg | ticks | gameSeconds | diff | hash | result | notes |
+|---|---|---|---|---|---|---|---|---|
+| R2-S4 the WATCH as the net under the winning table on L1 — the table as it stands (control) | ptr | L1: from all/M15.json, diff 1, profile all, 14000 ticks, 2 run(s) | 29204 | 29204 | 1 | `f733a6c102a5c10f` | GREEN | M16 17058 · M17 23492 · M18 25598 · M19 25937 · M20 26612 · M21 — · M22 29204; twice equal: true (run 2 29204s/f733a6c102a5c10f); the winning table, the watch OFF — the control; resets reset:p 2353 reset:g 299 reset:b 501 reset:s 92 reset:t 102 reset:e 224 reset:sb 25 reset:q 13; end q 16/26 total (best 16), QL 3, q ms [0,1,2,3,4,5], h LOCKED, TE 0 of 0 (xtc 0), t.best 0, s.best 0, sb 0, EP 0 enh 0, GP 0, uo [0,0,0], native [e.auto true t.autoExt true t.auto true s.auto true sb.auto true]; ticks_ms 301097; wall 302s; load 0.12→4.11; pool 4 |
+| R2-S4 the WATCH as the net under the winning table on L1 — watch=1 | ptr | L1: from all/M15.json, diff 1, profile all, 14000 ticks, 2 run(s) | 30048 | 30048 | 1 | `a104beb628873be7` | GREEN | M16 — · M17 — · M18 — · M19 — · M20 — · M21 — · M22 —; twice equal: true (run 2 30048s/a104beb628873be7); the same table with the watch ON at its declared K = 10; resets reset:p 8692 reset:g 299 reset:b 501 reset:s 35 reset:t 40 reset:e 2412 reset:sb 1; end q 0/0 total (best 0), QL 0, q ms [], h LOCKED, TE 7.253e18 of 7.253e18 (xtc 16), t.best 13, s.best 13, sb 1, EP 1.717e40 enh 26, GP 1.573e162, uo [0,0,0], native [e.auto false t.autoExt false t.auto false s.auto false sb.auto false]; ticks_ms 611154; wall 612s; load 0.12→2.29; pool 4 |
+
+## 2026-09-20T07:23:32Z — gate R2 part 2 — the defaults sweep, scored over whole stretches — commit `392937988` (tree DIRTY) — 14/14 green
+
+Reading this section: Every cell is ONE run.mjs process (an L1 leg is ~14,000 ticks at 13–19 ms/tick on a quiet box), run TWICE; a cell whose two runs disagree on the marks, the end game-second or the end hashGame is RED. L1 = from snapshots/ptr/all/M15.json (16048 game-s) → M22, 14,000 ticks, diff 1, --profile all, the stall watch OFF; M16 is a COLUMN of that same run, never a starting point (a fixture bakes in the policy that produced it — plan §23). L2 = a FRESH game → M12, the opening's regression column (§14d.6). L3 = Something Tree S01–S05 with games-auto/something.js unchanged — the generality control, where "no change" is the result. A cell's label is the whole --auto-opt string it ran, so a row names the configuration it measured (§14d.2 item 14). "—" for a mark means NOT REACHED inside the leg, which is a result and not a failure: the curve beside it is the deliverable. ticks_ms and the 1-minute load are on every row; the pool changes ms/tick and never changes game-seconds.
+
+| gate | game | leg | ticks | gameSeconds | diff | hash | result | notes |
+|---|---|---|---|---|---|---|---|---|
+| R2-2 the rung L1 run 1 (fixtures written from it) | ptr | from all/M15.json, 14000 ticks, diff 1 | 29204 | 29204 | 1 | `f733a6c102a5c10f` | GREEN | M16 17058 · M17 23492 · M18 25598 · M19 25937 · M20 26612 · M21 — · M22 29204; resets reset:p 2353 reset:g 299 reset:b 501 reset:s 92 reset:t 102 reset:e 224 reset:sb 25 reset:q 13; end q 16/26 total (best 16), QL 3, q ms [0,1,2,3,4,5], h LOCKED, TE 0 of 0 (xtc 0), t.best 0, s.best 0, sb 0, EP 0 enh 0, GP 0, uo [0,0,0], native [e.auto true t.autoExt true t.auto true s.auto true sb.auto true]; ticks_ms 250216; wall 251s; load 2.29→2.03; pool 2 |
+| R2-2 the rung L1 run 2 — TWICE EQUAL | ptr | from all/M15.json, 14000 ticks, diff 1 | 29204 | 29204 | 1 | `f733a6c102a5c10f` | GREEN | M16 17058 · M17 23492 · M18 25598 · M19 25937 · M20 26612 · M21 — · M22 29204; equal to run 1: true; ticks_ms 251081; wall 252s; load 2.29→2.03; pool 2 |
+| R2-2 fixture snapshots/ptr/all/M16.json | ptr | from run 1, hashGame agreed by run 2 | 17058 | 17058 | 1 | `e4e0d1ee6c8eeeb8` | GREEN | OLD 24179/9e2eadb7c58c0078 → NEW 17058/e4e0d1ee6c8eeeb8 — MOVED by this slice’s defaults; run 2 17058/e4e0d1ee6c8eeeb8; written |
+| R2-2 fixture snapshots/ptr/all/M17.json | ptr | from run 1, hashGame agreed by run 2 | 23492 | 23492 | 1 | `62e51a3bb96b3aea` | GREEN | NEW (no previous fixture) 23492/62e51a3bb96b3aea; run 2 23492/62e51a3bb96b3aea; written |
+| R2-2 fixture snapshots/ptr/all/M18.json | ptr | from run 1, hashGame agreed by run 2 | 25598 | 25598 | 1 | `782b864a5e91ae07` | GREEN | NEW (no previous fixture) 25598/782b864a5e91ae07; run 2 25598/782b864a5e91ae07; written |
+| R2-2 fixture snapshots/ptr/all/M19.json | ptr | from run 1, hashGame agreed by run 2 | 25937 | 25937 | 1 | `3530c79b64b11bd9` | GREEN | NEW (no previous fixture) 25937/3530c79b64b11bd9; run 2 25937/3530c79b64b11bd9; written |
+| R2-2 fixture snapshots/ptr/all/M20.json | ptr | from run 1, hashGame agreed by run 2 | 26612 | 26612 | 1 | `560d6bd34b4e619b` | GREEN | NEW (no previous fixture) 26612/560d6bd34b4e619b; run 2 26612/560d6bd34b4e619b; written |
+| R2-2 fixture snapshots/ptr/all/M22.json | ptr | from run 1, hashGame agreed by run 2 | 29204 | 29204 | 1 | `f733a6c102a5c10f` | GREEN | NEW (no previous fixture) 29204/f733a6c102a5c10f; run 2 29204/f733a6c102a5c10f; written |
+| R2-2 predicates re-evaluated at the M16 fixture (§14d.2 item 6) | ptr | 0 ticks from the fixture, every R2 mark | 17058 | 17058 | 1 | `e4e0d1ee6c8eeeb8` | GREEN | M16 true · M17 false · M18 false · M19 false · M20 false · M21 false · M22 false |
+| R2-2 predicates re-evaluated at the M17 fixture (§14d.2 item 6) | ptr | 0 ticks from the fixture, every R2 mark | 23492 | 23492 | 1 | `62e51a3bb96b3aea` | GREEN | M16 false · M17 true · M18 false · M19 false · M20 false · M21 false · M22 false |
+| R2-2 predicates re-evaluated at the M18 fixture (§14d.2 item 6) | ptr | 0 ticks from the fixture, every R2 mark | 25598 | 25598 | 1 | `782b864a5e91ae07` | GREEN | M16 false · M17 true · M18 true · M19 false · M20 false · M21 false · M22 false |
+| R2-2 predicates re-evaluated at the M19 fixture (§14d.2 item 6) | ptr | 0 ticks from the fixture, every R2 mark | 25937 | 25937 | 1 | `3530c79b64b11bd9` | GREEN | M16 false · M17 true · M18 true · M19 true · M20 false · M21 false · M22 false |
+| R2-2 predicates re-evaluated at the M20 fixture (§14d.2 item 6) | ptr | 0 ticks from the fixture, every R2 mark | 26612 | 26612 | 1 | `560d6bd34b4e619b` | GREEN | M16 false · M17 true · M18 true · M19 true · M20 true · M21 false · M22 false |
+| R2-2 predicates re-evaluated at the M22 fixture (§14d.2 item 6) | ptr | 0 ticks from the fixture, every R2 mark | 29204 | 29204 | 1 | `f733a6c102a5c10f` | GREEN | M16 false · M17 true · M18 true · M19 true · M20 true · M21 false · M22 true |
+
+## 2026-09-20T07:24:26Z — the ladder as reached (`node tools/harness/ladder-summary.mjs --ladder tools/harness/ladder/ptr.json`) — commit `392937988` (tree DIRTY) — 53 marks, snapshots: all 21, frontier 1, pinned 9
+
+Reading this section: `diff` = the coarsest calibrated diff within 2 % of diff 1's game-seconds (null = not calibrated yet); a snapshot column is the committed fixture at the first tick the mark held in that configuration (tools/harness/snapshots/ptr/<set>/<mark>.json).
+
+| mark | name | predicate | diff | all (all, every kind): ticks / game-s / hashGame @ commit | frontier (all, policy:reset:p=interval>=10;policy:reset:t=interval>=5;policy:reset:e=interval>=5;policy:reset:s=interval>=5;policy:buyables:e=buy;exclude=buyables:t): ticks / game-s / hashGame @ commit | pinned (all, kinds=reset,upgrades,buyables): ticks / game-s / hashGame @ commit |
+|---|---|---|---|---|---|---|
+| M01 | p unlocked | `player.p.unlocked` | 1 | 1 / 1 / `4422c0570ad19300` @ fb46f48b ×1 | — | 1 / 1 / `4422c0570ad19300` @ fb46f48b ×1 |
+| M02 | b and g unlocked | `player.b.unlocked && player.g.unlocked` | 1 | 1361 / 1361 / `7b9f1114d17a0166` @ fb46f48b ×1 | — | 1361 / 1361 / `7b9f1114d17a0166` @ fb46f48b ×1 |
+| M03 | keep-upgrade milestones | `hasMilestone('b',0) && hasMilestone('g',0)` | 1 | 2360 / 2360 / `25f914a09d1019b1` @ fb46f48b ×1 | — | 2360 / 2360 / `25f914a09d1019b1` @ fb46f48b ×1 |
+| M04 | passive PP | `hasMilestone('g',1)` | 1 | 2629 / 2629 / `f6877f3437d5a9a5` @ fb46f48b ×1 | — | 2629 / 2629 / `f6877f3437d5a9a5` @ fb46f48b ×1 |
+| M05 | buy-max b/g | `hasMilestone('b',1) && hasMilestone('g',2)` | 1 | 2936 / 2936 / `3e5f28bd379c52e0` @ fb46f48b ×1 | — | 2936 / 2936 / `3e5f28bd379c52e0` @ fb46f48b ×1 |
+| M06 | row-2 threshold | `player.points.gte('1e120')` | 1 | 3540 / 3540 / `269f7a1f881afc96` @ fb46f48b ×1 | — | 3540 / 3540 / `269f7a1f881afc96` @ fb46f48b ×1 |
+| M07 | first row-2 layer | `player.s.unlocked` | 1 | 3550 / 3550 / `ff624de18438f176` @ fb46f48b ×1 | — | 3550 / 3550 / `ff624de18438f176` @ fb46f48b ×1 |
+| M08 | auto-generators available | `hasMilestone('s',3)` | 1 | 6037 / 6037 / `b6fc0204a69bc54a` @ fb46f48b ×1 | — | 6037 / 6037 / `b6fc0204a69bc54a` @ fb46f48b ×1 |
+| M09 | all three (a33) | `hasAchievement('a',33)` | 1 | 8035 / 8035 / `208197f46f08ed88` @ fb46f48b ×1 | — | 8035 / 8035 / `6511fcca2c6ae896` @ fb46f48b ×1 |
+| M10 | native toggles adopted | `player.b.auto === true && player.g.auto === true` | — | 7323 / 7323 / `4c4862471f38549b` @ fb46f48b ×1 | — | — |
+| M11 | e11 before Enhancers | `hasUpgrade('e',11)` | 1 | 14745 / 14745 / `60e89bd9d98b9403` @ d9b2ca177 (dirty) ×1 | — | — |
+| M12 | tax refunded | `player.t.unlockOrder === 0 && player.e.unlockOrder === 0` | 1 | 14909 / 14909 / `922b876ce42bc16d` @ d9b2ca177 (dirty) ×1 | — | — |
+| M13 | Space pool used right | `hasUpgrade('s',13) && hasUpgrade('s',15) && layers.s.space().lte(0) && (function(){for(var j=14;j>11;j--){if(!player.g.power.gte(tmp.s.buyables[j].cost))continue;for(var i=11;i<j;i++)if(player.s.buyables[i].gt(0))return false}return true})()` | 1 | 14132 / 14132 / `3d5adabdb62887fe` @ d9b2ca177 (dirty) ×1 | — | — |
+| M14 | keep b/g upgrades; resets-nothing | `hasMilestone('e',2) && hasMilestone('t',4) && hasMilestone('s',4)` | 1 | 14879 / 14879 / `56d4ffc9a4ca5f1c` @ d9b2ca177 (dirty) ×1 | — | — |
+| M15 | Super Boosters | `player.sb.unlocked` | 1 | 16048 / 16048 / `12bb98b74a18f7c5` @ d9b2ca177 (dirty) ×1 | — | — |
+| M16 | row-2 push | `player.sb.best.gte(5) && player.t.best.gte(17) && player.s.best.gte(17)` | 1 | 17058 / 17058 / `e4e0d1ee6c8eeeb8` @ 392937988 (dirty) ×1 | — | — |
+| M17 | Quirks | `player.q.unlocked` | — | 23492 / 23492 / `62e51a3bb96b3aea` @ 392937988 (dirty) ×1 | — | — |
+| M18 | q ms 0–1 | `hasMilestone('q',1)` | — | 25598 / 25598 / `782b864a5e91ae07` @ 392937988 (dirty) ×1 | — | — |
+| M19 | q ms 3 | `hasMilestone('q',3) && player.t.auto && player.s.auto` | — | 25937 / 25937 / `3530c79b64b11bd9` @ 392937988 (dirty) ×1 | — | — |
+| M20 | Hindrances visible | `hasMilestone('q',4)` | — | 26612 / 26612 / `560d6bd34b4e619b` @ 392937988 (dirty) ×1 | — | — |
+| M21 | h unlocked | `player.h.unlocked` | — | — | — | — |
+| M22 | q ms 5 | `hasMilestone('q',5)` | — | 29204 / 29204 / `f733a6c102a5c10f` @ 392937988 (dirty) ×1 | — | — |
+| M23 | H11 Upgrade Desert | `hasChallenge('h',11)` | — | — | — | — |
+| M24 | q11–q13 | `hasUpgrade('q',13)` | — | — | — | — |
+| M25 | H12 Speed Demon | `hasChallenge('h',12)` | — | — | — | — |
+| M26 | q14, q21, q22 | `hasUpgrade('q',22)` | — | — | — | — |
+| M27 | H21 Out of Room | `hasChallenge('h',21)` | — | — | — | — |
+| M28 | q24, q31, q32 | `hasUpgrade('q',32)` | — | — | — | — |
+| M29 | H22 Descension | `hasChallenge('h',22)` | — | — | — | — |
+| M30 | Super Generators | `hasUpgrade('q',33) && player.sg.unlocked` | — | — | — | — |
+| M31 | q ms 6–7 | `hasMilestone('q',7) && player.s.autoBld` | — | — | — | — |
+| M32 | Quirk Improvements | `hasUpgrade('q',44)` | — | — | — | — |
+| M33 | Timeless ×10 (a64) | `challengeCompletions('h',31) >= 10` | — | — | — | — |
+| M34 | Solarity and Subspace (a62) | `player.o.unlocked && player.ss.unlocked` | — | — | — | — |
+| M35 | first row-4 reset (a71) | `player.m.unlocked \|\| player.ba.unlocked` | — | — | — | — |
+| M36 | both; Time Warp; m ms 1; ba ms 1–3 | `player.m.unlocked && player.ba.unlocked && hasMilestone('m',1) && hasMilestone('ba',3)` | — | — | — | — |
+| M37 | Phantom Souls, first Wraith | `getBuyableAmount('ps',11).gte(1)` | — | — | — | — |
+| M38 | H32 Option D | `challengeCompletions('h',32) >= 1` | — | — | — | — |
+| M39 | H41, H42 | `hasChallenge('h',41) && hasChallenge('h',42)` | — | — | — | — |
+| M40 | a74 | `hasAchievement('a',74)` | — | — | — | — |
+| M41 | Honour | `player.hn.unlocked` | — | — | — | — |
+| M42 | hn ms 2, 4, 5, 7 | `hasMilestone('hn',7)` | — | — | — | — |
+| M43 | Begin Again | `hasUpgrade('hn',11)` | — | — | — | — |
+| M44 | Nebula and Hyperspace (a92) | `player.n.unlocked && player.hs.unlocked` | — | — | — | — |
+| M45 | Imperium | `player.i.unlocked` | — | — | — | — |
+| M46 | Mastery | `player.ma.unlocked` | — | — | — | — |
+| M47 | ma ms 0, 4, 5 | `hasMilestone('ma',5)` | — | — | — | — |
+| M48 | Machines; Energy & Neurons visible | `player.mc.unlocked` | — | — | — | — |
+| M49 | Gears, ge ms 3 | `hasMilestone('ge',3)` | — | — | — | — |
+| M50 | Energy, Neurons (The Brain), Ideas | `player.en.unlocked && player.ne.unlocked && player.id.unlocked` | — | — | — | — |
+| M51 | Robots, AI, Civilizations | `player.r.unlocked && player.ai.unlocked && player.c.unlocked` | — | — | — | — |
+| M52 | the furthest guide | `player.points.gte('1e1000000000000000')` | — | — | — | — |
+| M53 | **endgame** | `player.points.gte(new Decimal('e3.14e16'))` | — | — | — | — |
