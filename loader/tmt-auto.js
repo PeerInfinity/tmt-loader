@@ -3051,7 +3051,10 @@
         // located `input.tmtl-input` with `.first()` and typed into whichever feature happened to be drawn first,
         // then reported that the value had not committed — the leg was measuring the wrong block.
         + '<input type="text" class="tmtl-input" :data-fid="data.fid" :data-param="data.which + \':\' + data.name" :data-rung="data.rung || 0"'
-        + ' :data-control="data.control || \'\'" :placeholder="data.placeholder || \'\'"'
+        // ⚠ `|| null`, NOT `|| ''`: Vue 2 REMOVES an attribute bound to null and RENDERS one bound to the empty
+        // string, so `[data-control]` would match every parameter field in the block. Measured — `gates-v4 --part 6`
+        // counted three "helper pick-lists" where two exist, because the strategy picker carried `data-control=""`.
+        + ' :data-control="data.control || null" :placeholder="data.placeholder || \'\'"'
         + ' :value="draft" :title="data.help || data.label" :style="fieldStyle"'
         + ' @input="draft = $event.target.value" @change="commit" @focus="onFocus" @blur="onBlur"'
         + ' @keydown.stop="onKey" @keyup.stop @keypress.stop>'
@@ -3084,7 +3087,7 @@
         },
       },
       template: '<span style="display:inline-block;text-align:left;max-width:100%">'
-        + '<select class="tmtl-select" :data-fid="data.fid" :data-rung="data.rung || 0" :data-control="data.control || \'\'" :value="data.value" style="' + SELECT_STYLE + '"'
+        + '<select class="tmtl-select" :data-fid="data.fid" :data-rung="data.rung || 0" :data-control="data.control || null" :value="data.value" style="' + SELECT_STYLE + '"'
         + ' @change="onChange" @keydown.stop @keyup.stop>'
         + '<option v-for="o in data.options" :value="o.id" :disabled="!o.available">{{ o.label }}{{ o.available ? \'\' : \' — \' + o.why }}</option>'
         + '</select>'

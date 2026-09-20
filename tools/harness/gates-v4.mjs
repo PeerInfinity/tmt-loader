@@ -585,8 +585,13 @@ async function part6(browser, base) {
         comps: tmtLoader.componentNames.length,
         warn: (document.querySelector('.tmtl-watch-warn') || {}).textContent || '',
       }), target);
-      check(shape.rows === shape.controls.length && shape.helpers === 2 && shape.comps === 6,
-        `${shape.rows} control row(s) for ${JSON.stringify(shape.controls)}, ${shape.helpers} helper pick-list(s) (one per predicate), ${shape.comps} component(s) — no new component family`);
+      // ⚠ ONE HELPER LIST PER *PREDICATE* CONTROL, counted from the schema rather than from a literal — a fourth
+      // control of either type would move this row rather than slip past it. ⚠ And the loader binds `data-control`
+      // to `null` when there is none, because Vue RENDERS an attribute bound to `''`: with `|| ''` this selector
+      // also matched the strategy picker and read three helper lists where two exist (measured).
+      const preds = shape.controls.length - 1;   // `priority` is the one `count`
+      check(shape.rows === shape.controls.length && shape.helpers === preds && shape.boxes === shape.controls.length && shape.comps === 6,
+        `${shape.rows} control row(s) for ${JSON.stringify(shape.controls)}, ${shape.boxes} field(s), ${shape.helpers} helper pick-list(s) (one per predicate, expected ${preds}), ${shape.comps} component(s) — no new component family`);
       // ⚖ V4 Part 4: the watch's label, which R2 owed
       check(/experimental — not a safety net/.test(shape.warn) && shape.warn.length > 80,
         `the stall watch reads as EXPERIMENTAL beside its own switch, with the reason: "${shape.warn.replace(/\s+/g, ' ').slice(0, 140)}…"`);
@@ -596,7 +601,14 @@ async function part6(browser, base) {
       // ptr. The predicate below CONTAINS the letters the games bind, so typing it IS the hotkey leg.
       const src = id === 'ptr' ? "player.p.points.gte(0)" : 'player.points.gte(0)';
       const box = page.locator(`#app input.tmtl-input[data-fid="${CSS_ESC(target)}"][data-control="while"]`).first();
-      const before = await page.evaluate(() => ({ hash: tmtLoader.hashGame(), acts: JSON.stringify(tmtLoader.hookStats().actions) }));
+      // ⚠ `stateJSON()`, NOT `hashGame()`. In the PAGE the hash goes through SubtleCrypto and returns a PROMISE, so
+      // comparing two of them compares two objects that are never `===` — measured: the first cut of this row read
+      // `hashGame [object Object] vs [object Object]` and was red on a page that was behaving perfectly.
+      // `stateJSON(gameState)` is synchronous, is the same serialisation `hashGame` is taken OF, and masks the clock.
+      // ⚠ AND IT MUST BE `gameState`, NOT THE BARE CALL — measured, and it is the whole point of the leg being about
+      // the GAME: committing the predicate writes `player.au.edits` and `player.au.disclosed`, so a bare
+      // `stateJSON()` moves BECAUSE THE FEATURE WORKED. `hashGame`'s own exclusion is what this row is asking about.
+      const before = await page.evaluate(() => ({ state: tmtLoader.stateJSON(tmtLoader.gameState), acts: JSON.stringify(tmtLoader.hookStats().actions) }));
       await box.click({ timeout: 5000 });
       await box.fill('');
       await page.keyboard.type(src, { delay: 8 });
@@ -604,11 +616,12 @@ async function part6(browser, base) {
       await redraw(page);
       await page.waitForTimeout(200);
       const typed = await page.evaluate((fid) => ({ saved: tmtLoader.savedControl(fid, 'while'), owner: tmtLoader.controlState(fid)['while'].owner,
-        hash: tmtLoader.hashGame(), acts: JSON.stringify(tmtLoader.hookStats().actions) }), target);
+        state: tmtLoader.stateJSON(tmtLoader.gameState), acts: JSON.stringify(tmtLoader.hookStats().actions) }), target);
       check(typed.saved === src && typed.owner === 'you',
         `a predicate TYPED through the real component committed to the save: ${JSON.stringify(typed.saved)} (owner ${typed.owner})`);
-      check(typed.hash === before.hash && typed.acts === before.acts,
-        `⛔ and the game's own HOTKEYS did not fire while it was typed (the text contains the letters both engines bind): hashGame ${typed.hash} vs ${before.hash}, actions unchanged ${typed.acts === before.acts}`);
+      check(typed.state === before.state && typed.acts === before.acts,
+        `⛔ and the game's own HOTKEYS did not fire while it was typed (the text contains the letters both engines bind): `
+        + `the GAME's own state (hashGame's, without player.au) is byte-identical ${typed.state === before.state} (${before.state.length} chars), actions unchanged ${typed.acts === before.acts}`);
 
       // ---- a REFUSAL keeps the previous value, on the page ------------------------------------------------------
       await box.click({ timeout: 5000 });
