@@ -26,7 +26,11 @@ import { appendSection } from './summary.mjs';
 import { runCells } from './sweep.mjs';
 entryOnly(import.meta.url);
 
-const a = parseArgs(process.argv.slice(2), ['no-summary', 'no-write']);
+// ⛔ `assert` DECLARED A BOOLEAN (R3b-1). Without it `parseArgs` gives the flag the NEXT token as its value, so
+// CI's `--assert --pool 4` made `a.assert` the string "--pool" (truthy by luck) and SWALLOWED the pool size —
+// every part here has been running at the default pool, and a battery whose `--assert` came last would have
+// exited 0 over a red run. Measured on `gates-r3b`, where it did exactly that.
+const a = parseArgs(process.argv.slice(2), ['no-summary', 'no-write', 'assert']);
 const PART = String(a.part || '1');
 const commit = headCommit(), dirty = treeDirty();
 const rows = [];

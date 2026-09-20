@@ -26,7 +26,13 @@ import { appendSection } from './summary.mjs';
 import { runCells } from './sweep.mjs';
 entryOnly(import.meta.url);
 
-const a = parseArgs(process.argv.slice(2), ['no-summary', 'no-write']);
+// ⛔ `assert` IS DECLARED A BOOLEAN, AND CI FOUND OUT WHY. `parseArgs` gives an undeclared flag the NEXT token as
+// its value — so `--no-summary --assert | tee` left `a.assert` UNDEFINED and the battery exited 0 over a run that
+// printed `VERDICT: rows 2/10 of 9 expected`. The job was green and the gate was red. (`gates-r3.mjs` has the same
+// omission with the opposite symptom: `--assert --pool 4` makes `assert` the string "--pool" — truthy, so the
+// refusal works — and swallows the pool size.) ⚠ A checkmark is not a verdict; this is that lesson inside the
+// tool that produces the checkmark.
+const a = parseArgs(process.argv.slice(2), ['no-summary', 'no-write', 'assert']);
 const PART = String(a.part || '1');
 const commit = headCommit(), dirty = treeDirty();
 const rows = [];
@@ -35,7 +41,7 @@ const row = (r) => { rows.push(r); console.log(`${r.ok ? 'GREEN' : 'RED  '} ${r.
 // ⛔ THE FLOOR EACH PART MUST REACH (`--assert`, CI): a battery that dies part-way prints fewer rows, and fewer rows
 // is fewer reds. ⚠ RE-MEASURED AGAINST WHAT EACH PART ACTUALLY EMITS rather than against what its author expected —
 // CI has caught exactly this on five slices running (plan §30.3).
-const ROWS = { 1: 9, 2: 9, 3: 6, 4: 4, 5: 5, 6: 2 };
+const ROWS = { 1: 9, 2: 10, 3: 6, 4: 4, 5: 5, 6: 2 };
 
 const READING = [
   'Every cell is ONE run.mjs process, run TWICE unless the row says otherwise; a cell whose two runs disagree on the',
@@ -168,30 +174,33 @@ async function part1() {
 // member act?" answered yes about thirteen resets that happened in a previous process. `f.lastActedAt` lives
 // OUTSIDE `runtimeState()` (V1's readout memory), so it is null at the start of every process and `!== null` means
 // "acted in THIS leg" — which is what every one of these rows is actually asking.
-const FAM_EVAL = `({cyc: tmtLoader.cycleState(), acts: tmtLoader.hookStats().actions, rt: (function(){var n=0;for(var l in layers){if(layers[l].tmtLoaderLayer)continue;if(player[l]&&player[l].resetTime!==undefined)n++;}return n;})(), on: (function(){var o={};tmtLoader.explain().forEach(function(r){if(r.kind==='reset'&&r.state==='on')o[r.id]=(layers[r.layer]||{}).row;});return o;})(), acted: (function(){var o={};tmtLoader.explain().forEach(function(r){if(r.kind==='reset')o[r.id]=r.lastActedAt===undefined?null:r.lastActedAt;});return o;})(), last: (function(){var o={};tmtLoader.explain().forEach(function(r){if(r.kind==='reset')o[r.id]=r.last?r.last.code:null;});return o;})()})`;
+const FAM_EVAL = `({cyc: tmtLoader.cycleState(), acts: tmtLoader.hookStats().actions, turnCodes: (tmtLoader.explainStats().codes['waiting:turn'] || 0), rt: (function(){var n=0;for(var l in layers){if(layers[l].tmtLoaderLayer)continue;if(player[l]&&player[l].resetTime!==undefined)n++;}return n;})(), on: (function(){var o={};tmtLoader.explain().forEach(function(r){if(r.kind==='reset'&&r.state==='on')o[r.id]=(layers[r.layer]||{}).row;});return o;})(), acted: (function(){var o={};tmtLoader.explain().forEach(function(r){if(r.kind==='reset')o[r.id]=r.lastActedAt===undefined?null:r.lastActedAt;});return o;})(), last: (function(){var o={};tmtLoader.explain().forEach(function(r){if(r.kind==='reset')o[r.id]=r.last?r.last.code:null;});return o;})()})`;
 const PATIENT = 'gain>=1e300';   // a bar no layer in either family can clear — the "patient policy" every R2 leg needs
 const FAMILIES = [
   { id: 'ptr', family: '2.2.1-style — ZERO layers carry `player[l].resetTime`', rowKey: '3', carrier: 'reset:q', other: 'reset:h', wantRT: 0,
     flags: { diff: 1, ticks: Number(a.p2ticks || 4000), profile: 'all', stall: 1000000, 'wall-ms': 300000,
       'from-snapshot': path.join(SNAP_ALL, 'M22.json'), eval: FAM_EVAL } },
-  { id: 'collection-of-everything', family: '2.7-style — 17 layers carry `player[l].resetTime`', rowKey: '1', carrier: 'reset:bam', other: 'reset:mush', wantRT: 1,
+  // ⚠ `mush` AND `w`, NOT `bam`: measured on this build, `reset:bam` stops being active part-way through the leg,
+  // and a row whose only carrier has gone leaves no cycle record at all — the row then reads `ABSENT` and says
+  // nothing about the mechanism. The carrier has to be a member that is still there at the stop.
+  { id: 'collection-of-everything', family: '2.7-style — 17 layers carry `player[l].resetTime`', rowKey: '1', carrier: 'reset:mush', other: 'reset:w', wantRT: 1,
     flags: { diff: 1, ticks: Number(a.p2ticks2 || 1500), profile: 'all', stall: 1000000, 'wall-ms': 300000, eval: FAM_EVAL } },
 ];
 async function part2() {
   for (const F of FAMILIES) {
     const legs = [
       { key: 'R1', name: 'the cycle BINDS EVERY MEMBER of the row',
-        opt: `policy:${F.carrier}=always|turn@5/${GUARD}`,
-        note: `only \`${F.carrier}\` carries the modifier. R1 holds iff the row's OTHER active resets are members anyway and yield — the planner's void cell left an eager one out and it fired 44 times, wiping the row below before the member whose turn it was could use it` },
-      { key: 'R2', name: 'a member is EAGER inside its turn',
-        opt: `policy:${F.carrier}=${PATIENT}|turn@2/${GUARD};policy:${F.other}=${PATIENT}|turn@2/${GUARD}`,
-        note: `both named members keep a primary no layer can ever clear (\`${PATIENT}\`). R2 holds iff the turns are spent ANYWAY — the turn is the patience, and a policy that decided inside a turn would deadlock the cycle at round 1` },
-      { key: 'R3', name: 'a member that cannot act RELEASES the turn',
+        opt: `policy:${F.carrier}=always|turn@5/${GUARD};policy:${F.other}=always`,
+        note: `only \`${F.carrier}\` carries the modifier, and \`${F.other}\` is given a policy that can always fire so the ENGINE is the only thing that can refuse it. R1 holds iff \`${F.other}\` is a member anyway and WAITS — the planner's void cell left an eager one out and it fired 44 times, wiping the row below before the member whose turn it was could use it` },
+      { key: 'R2', name: 'a member decides by its OWN policy inside its turn',
+        opt: `policy:${F.carrier}=${PATIENT}|turn@2/${GUARD};policy:${F.other}=always|turn@2/${GUARD}`,
+        note: `the carrier keeps a primary no layer of either family can ever clear (\`${PATIENT}\`) and the other is eager. R2 holds iff the patient member does NOT act — the turn is not a licence — and does NOT block: it yields the moment its own rule says no, so the eager member goes on acting` },
+      { key: 'R3', name: 'a member the cycle cannot use does not stop the rotation',
         opt: `policy:${F.carrier}=always|turn@9/${GUARD};policy:${F.other}=always|turn@9/${GUARD};while:${F.carrier}=false`,
-        note: `a PERMANENT block, constructed: \`${F.carrier}\` is paused for the whole leg. A cycle that could not release would hand it turn after turn and the rotation would stop dead on it` },
+        note: `a PERMANENT block, constructed: \`${F.carrier}\` is paused for the whole leg. A cycle that could not move past it would hand it turn after turn and the rotation would stop dead` },
       { key: 'R4', name: 'the turn memory is the LOADER’s own',
         opt: `policy:${F.carrier}=always|turn@2/${GUARD};policy:${F.other}=always|turn@2/${GUARD}`,
-        note: `the record is \`cycleState().own\` / \`.turns\` — the member's OWN completed turns. ⛔ The tempting engine field is \`player[l].resetTime\`, and this row reports how many layers of THIS game carry it: a memory read from it would be \`undefined\` on a 2.2.1 game and a number on a 2.7 one, which is exactly how six of the planner's probe cells measured nothing and looked like a result` },
+        note: `the record is \`cycleState().own\` / \`.turns\` — the median wait between that member's OWN resets. ⛔ The tempting engine field is \`player[l].resetTime\`, and this row reports how many layers of THIS game carry it: a memory read from it would be \`undefined\` on a 2.2.1 game and a number on a 2.7 one, which is exactly how six of the planner's probe cells measured nothing and looked like a result` },
     ];
     for (const L of legs) {
       const lines = await runCells({ id: F.id, cells: [cell(L.opt, L.note)], flags: Object.entries(F.flags), pool: 1, repeat: 1 });
@@ -201,31 +210,36 @@ async function part2() {
       const A = (e && e.acts) || {};
       const AT = (e && e.acted) || {};           // lastActedAt: null unless the feature acted in THIS process
       const LAST = (e && e.last) || {};
+      const TC = e ? e.turnCodes : 0;            // how many `waiting:turn` DECISIONS the whole leg made
       const rt = e ? e.rt : null;
       const didAct = (id) => AT[id] !== null && AT[id] !== undefined;
       let ok = !!l.ok && !!C && !C.dormant;
       let why = '';
-      if (ok && L.key === 'R1') { ok = C.members.length >= 2 && didAct(F.other); why = `members ${C.members.length}, ${F.other} last acted at ${AT[F.other]}`; }
-      if (ok && L.key === 'R2') { ok = C.round >= 3 && didAct(F.carrier) && didAct(F.other); why = `round ${C.round}, ${F.carrier} last acted at ${AT[F.carrier]}, ${F.other} at ${AT[F.other]}`; }
+      if (ok && L.key === 'R1') { ok = C.members.length >= 2 && didAct(F.other) && TC > 0;
+        why = `${C.members.length} members, ${F.other} acted at ${AT[F.other]}, and the leg made ${TC} \`waiting:turn\` decisions — which cannot happen at all unless a non-carrier is bound`; }
+      if (ok && L.key === 'R2') { ok = C.round >= 2 && !didAct(F.carrier) && didAct(F.other);
+        why = `round ${C.round}; the patient ${F.carrier} did NOT act (lastActedAt ${AT[F.carrier]}, reading \`${LAST[F.carrier]}\`) and did not block — ${F.other} acted at ${AT[F.other]}`; }
       // ⚠ WHAT THIS ROW DOES NOT ASSERT, AND WHY — TWO CLAUSES, BOTH REMOVED BY MEASUREMENT.
-      //   · "and another member acted" is a claim about the GAME, not about the scheduler, and it is FALSE on
-      //     `collection-of-everything`: pausing `reset:bam` starves the whole of its row 1 (measured: every other
-      //     row-1 reset acts ZERO times), because that is what that tree's row 1 is.
+      //   · "and another member acted" is a claim about the GAME, not the scheduler, and it is FALSE on
+      //     `collection-of-everything`: pausing a row-1 reset can starve the whole of its row, because that is
+      //     what that tree's row 1 is.
       //   · "and the paused member reads `blocked:gate`" is a claim about the PAUSE, and it is false whenever the
       //     paused layer's node stops being shown mid-leg: `runLayer` asks `active(f)` BEFORE it evaluates any
-      //     predicate, so such a member reads `locked` — which is a STRONGER form of "the cycle cannot use it",
-      //     not a weaker one. Measured on `collection-of-everything`, where the row also drops from five members
-      //     to four. The code is REPORTED in the row instead.
-      // What is left is the scheduler's own property, and it holds on any game: a member the cycle cannot use
-      // never HOLDS the turn, never completes one, never acts, and the rotation goes on moving — at least one
-      // full turn per member.
-      if (ok && L.key === 'R3') { ok = C.round >= C.members.length && !didAct(F.carrier)
+      //     predicate, so such a member reads `locked` — a STRONGER form of "the cycle cannot use it". Reported.
+      //   · AND A THIRD, removed by the mechanism this slice measured its way to: "the rotation keeps moving, at
+      //     least one full turn per member". It does not have to. A holder waiting on the ENGINE keeps its turn
+      //     for as long as it takes — that is the whole point, and on ptr `reset:h` legitimately holds row 3's
+      //     turn while Time Energy climbs. Asserting the rotation moves would be asserting the starvation back in.
+      // What is left is the claim that is about the PAUSE: the cycle steps over a member it may not use, rather
+      // than handing it a turn. `round >= 2` says a turn was granted at all, to somebody who is not the carrier.
+      if (ok && L.key === 'R3') { ok = C.round >= 2 && !didAct(F.carrier)
         && C.holder !== F.carrier && !(C.turns[F.carrier] > 0);
-        why = `round ${C.round} over ${C.members.length} member(s); the paused ${F.carrier} reads \`${LAST[F.carrier]}\`, never held the turn (holder ${C.holderLayer}), completed ${C.turns[F.carrier]} turns and did not act in this leg (lastActedAt ${AT[F.carrier]}); the row's other members acted at ${JSON.stringify(AT)}`; }
-      if (ok && L.key === 'R4') { ok = Object.values(C.own).some((v) => v !== null) && (F.wantRT ? rt > 0 : rt === 0); why = `own ${JSON.stringify(C.own)}, turns ${JSON.stringify(C.turns)}, layers carrying player[l].resetTime: ${rt}`; }
+        why = `round ${C.round} over ${C.members.length} member(s); the paused ${F.carrier} reads \`${LAST[F.carrier]}\`, never held the turn (holder ${C.holderLayer}), remembers ${C.turns[F.carrier]} resets and did not act in this leg`; }
+      if (ok && L.key === 'R4') { ok = Object.values(C.own).some((v) => v !== null) && (F.wantRT ? rt > 0 : rt === 0);
+        why = `own ${JSON.stringify(C.own)}, resets remembered ${JSON.stringify(C.turns)}, layers carrying player[l].resetTime: ${rt}`; }
       row({ gate: `R3b-${L.key} ${L.name}`, id: F.id, leg: `${F.family}, row ${F.rowKey}, ${F.flags.ticks} ticks, ONE run`, ok,
         ticks: l.ticks, gameSeconds: l.gameSeconds, diff: 1, hash: l.hashGame,
-        notes: `cell \`${L.opt}\`; ${L.note}; ${why}; cycle rows [${Object.keys((e && e.cyc) || {}).join(',')}]; row ${F.rowKey} ${C ? `members [${C.members.join(', ')}] · ${C.round} turns · holder ${C.holderLayer} · own ${JSON.stringify(C.own)} · skip ${JSON.stringify(C.skip)}` : 'ABSENT'}; active resets by row ${JSON.stringify((e && e.on) || {})}; ${acts(l)}; ${box(l)}${l.error ? '; ERROR ' + l.error : ''}` });
+        notes: `cell \`${L.opt}\`; ${L.note}; ${why}; ⚠ action counts CONTINUE across a resume, so this row reads \`lastActedAt\` (null until the feature acts in THIS process), not \`hookStats().actions\` (${JSON.stringify(A)}); cycle rows [${Object.keys((e && e.cyc) || {}).join(',')}]; row ${F.rowKey} ${C ? `members [${C.members.join(', ')}] · ${C.round} turns · holder ${C.holderLayer} · own ${JSON.stringify(C.own)} · skip ${JSON.stringify(C.skip)}` : 'ABSENT'}; active resets by row ${JSON.stringify((e && e.on) || {})}; ${acts(l)}; ${box(l)}${l.error ? '; ERROR ' + l.error : ''}` });
     }
   }
   // ⛔ THE ROW THAT SAYS WHY THE 2.7 LEG IS NOT ON `something`, and it is a MEASUREMENT, not a note: it goes RED the
