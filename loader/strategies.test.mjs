@@ -101,7 +101,10 @@ test('checkParam names its refusal for every declared type, and every default pa
   for (const S of [...T.strategies(), ...T.modifiers()]) {
     for (const p of S.params) {
       assert.equal(T.checkParam(S.kind, S.id, p.name, p.default), null, `${S.id}.${p.name}: its own default is refused`);
-      assert.ok(T.checkParam(S.kind, S.id, p.name, 'banana'), `${S.id}.${p.name}: accepted "banana"`);
+      // ⚠ V5: a `predicate` parameter (a side one) accepts `banana` — it IS an expression; its refusal is one that
+      // does not compile
+      const bad = p.type === 'predicate' ? 'banana(' : 'banana';
+      assert.ok(T.checkParam(S.kind, S.id, p.name, bad), `${S.id}.${p.name}: accepted "${bad}"`);
       if (p.min !== null && p.min !== undefined && Number(p.min) > 0) assert.ok(T.checkParam(S.kind, S.id, p.name, '0'), `${S.id}.${p.name}: accepted 0 under a minimum of ${p.min}`);
       if (p.max !== null && p.max !== undefined) assert.ok(T.checkParam(S.kind, S.id, p.name, String(Number(p.max) + 1)), `${S.id}.${p.name}: accepted a value over its maximum`);
     }

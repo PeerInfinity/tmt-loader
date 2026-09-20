@@ -321,13 +321,8 @@
     // when the attempt failed: `gain>=Nx`'s shape, on the one resource the engine guarantees a challenge has
     // (`player[layer].points`), with R2's empty-purse floor on it (a multiple of nothing is no condition at all).
     // `R = 1` is the exit-only control.
-    { kind: 'challenges', template: 'give-up@{b}/{h}/{r}x', label: 'Give up when it stops getting closer',
-      help: 'Leave a challenge without completing it once the attempt has stopped closing the distance to its goal — and wait until the layer is stronger before trying that challenge again.',
-      params: [
-        { name: 'b', type: 'fraction', placeholder: 'B', default: '0.1', label: 'must close this fraction of what is left' },
-        { name: 'h', type: 'seconds', placeholder: 'H', default: '30', label: 'within this many seconds' },
-        { name: 'r', type: 'factor', placeholder: 'R', default: '2', min: 1, label: 'retry once the layer holds this multiple of what it held' },
-      ] },
+    // ⛔ V5: THE ROW ABOVE IS NOW GENERATED — one per RETRY CONDITION (`RETRY_CONDITIONS`, below this table). The
+    // first of them is R3a's row, byte for byte: same template, same id, same labels, same defaults.
     // ---- R3b: THE ROW CYCLE — same-row resets that wipe each other's input TAKE TURNS ---------------------------
     // ⚖ THE USER'S IDEA, VERBATIM (2026-09-20): "Another idea is to cycle through which same-row resource to do the
     // next reset. … There are a few different ways we could do this." — and, on the planner's ranked recommendation,
@@ -410,6 +405,94 @@
         { name: 'n', type: 'count', placeholder: 'N', default: '5', min: 1, label: 'resets remembered' },
       ] },
   ];
+  // ---- V5: RETRY CONDITIONS — what a challenge that was given up waits for before it is tried again ------------------
+  // ⚖ THE USER'S REQUEST, VERBATIM (2026-09-20): "In the advanced automation tab, we will want more options for the
+  // condition to wait for before retrying challenges. Another option might be total resets on the current highest
+  // row."
+  // ⛔ A CONDITION IS A ROW, AND EACH ROW BECOMES ONE MODIFIER. The give-up half (`B` and `H`) is R3a's and is shared;
+  // the retry half is the row's own template SUFFIX, its own parameters and its own `wait` function. So the picker's
+  // buttons, the parameter editors, the validator, the round-trip and the docs gate all see an ordinary modifier row,
+  // and a later condition is one more entry here and NO UI code (⚖ minimize hardcoding).
+  // ⛔ THE FIRST ROW IS R3a's RULE, UNCHANGED, AND IT STAYS THE DEFAULT: same template (`give-up@{b}/{h}/{r}x`), same
+  // id, same record (the layer's strength as a STRING, exactly as R3a wrote it), same reason code. No default moves
+  // in this slice, and every pinned number is measured to reproduce (gates-v5).
+  // `wait(f, params, id, rec)` → null when the challenge may be tried again, else `{code, values}` — the refusal,
+  // in V1's vocabulary. `seed(f, params, now)` → the record written AT THE GIVE-UP (`startHeld` is the strength the
+  // failed attempt started from, which is what R3a's rule compares against).
+  var GIVE_UP_BH = [
+    { name: 'b', type: 'fraction', placeholder: 'B', default: '0.1', label: 'must close this fraction of what is left' },
+    { name: 'h', type: 'seconds', placeholder: 'H', default: '30', label: 'within this many seconds' },
+  ];
+  var RETRY_CONDITIONS = [
+    { suffix: '{r}x', label: 'Give up when it stops getting closer',
+      help: 'Leave a challenge without completing it once the attempt has stopped closing the distance to its goal — and wait until the layer is stronger before trying that challenge again.',
+      params: [{ name: 'r', type: 'factor', placeholder: 'R', default: '2', min: 1, label: 'retry once the layer holds this multiple of what it held' }],
+      seed: function (f, P, now, startHeld) { return startHeld; },
+      wait: function (f, P, id, rec) {
+        var need = D(retryHeld(rec)).times(Number(P.r));
+        return D(player[f.layer].points).gte(need) ? null : { code: 'waiting:retry', values: { id: id, layer: f.layer, had: player[f.layer].points, need: need } };
+      } },
+    // ⚖ ASSUMPTION (planner, plan §36 — the user was asked and did not answer; cheap to overturn): "the current highest
+    // row" is the highest row with an unlocked layer that this automation can reset, AT THE MOMENT OF THE GIVE-UP, and
+    // it is FROZEN for that wait — so the bar cannot jump when a new row opens mid-wait. The other reading is the
+    // next row, one suffix away (`-now`), so the choice is the player's and the default is neither.
+    // ⛔ WHAT IS COUNTED IS THIS AUTOMATION'S OWN RESETS. A reset the player clicks, or one the game's own auto-reset
+    // makes, is NOT counted, and that is not an oversight: no engine field declares a reset on every family —
+    // `player.<l>.resetTime` exists only on the 2.7-style engine and ptr has none (plan §31a's six void cells), and
+    // `total` / `best` are the GAME's own `startData` on 2.2.1 (only 2.7's `getStartLayerData` adds them). A count
+    // built on either would be a different rule on different games. The readout names the layers it counts, so a
+    // count that is not moving (a member whose reset the game's own autobuyer does) is visible for what it is.
+    { suffix: '{n}resets', label: 'Give up when it stops getting closer; retry after N resets of the highest row',
+      help: 'As the first give-up rule, but the challenge is tried again once this automation has made N resets of the highest row it could reset when the attempt was given up (that row is fixed for the wait). Resets you click, or that the game makes by itself, are not counted.',
+      params: [{ name: 'n', type: 'count', placeholder: 'N', default: '10', min: 1, label: 'retry after this many resets of the highest row' }],
+      seed: function (f, P, now, startHeld) { return resetsSeed(startHeld, false); },
+      wait: function (f, P, id, rec) { return resetsWait(f, P, id, rec, false); } },
+    { suffix: '{n}resets-now', label: 'Give up when it stops getting closer; retry after N resets of the highest row NOW',
+      help: 'As the row above, except that the row counted is the highest one right now — if a new row opens during the wait, its resets are the ones that count from then on.',
+      params: [{ name: 'n', type: 'count', placeholder: 'N', default: '10', min: 1, label: 'retry after this many resets of the highest row' }],
+      seed: function (f, P, now, startHeld) { return resetsSeed(startHeld, true); },
+      wait: function (f, P, id, rec) { return resetsWait(f, P, id, rec, true); } },
+    // ⚖ 13d.2 — A CLOCK IS A PROXY, and it is labelled as one. Offered because a player may want exactly this; never a
+    // default, and its help says what it stands in for.
+    { suffix: '{t}s', label: 'Give up when it stops getting closer; retry after T seconds',
+      help: 'As the first give-up rule, but the challenge is tried again once this many game-seconds have passed since it was given up. ⚠ A clock is a PROXY for "the run is stronger now" — it waits the same whether the run grew or not.',
+      params: [{ name: 't', type: 'seconds', placeholder: 'T', default: '600', min: 0, label: 'retry after this many game-seconds' }],
+      seed: function (f, P, now, startHeld) { return { held: startHeld, at: now }; },
+      wait: function (f, P, id, rec) {
+        var r = retryObject(rec), now = Number(player.timePlayed) || 0;
+        if (r.at === undefined) r.at = now;              // a condition chosen after the give-up starts its clock here
+        var el = now - r.at, t = Number(P.t);
+        return el >= t ? null : { code: 'waiting:retry-clock', values: { id: id, elapsed: r1(el), need: t } };
+      } },
+    // ⛔ THE GENERAL FORM IS V4's PREDICATE TYPE. A predicate has no grammar and cannot sit inside a policy string (`|`
+    // is the modifier separator), so its parameter is declared `side: true` — it is stored BESIDE the policy, in the
+    // same `player.au.edits[<id>]` object (`args`), and edited by the same field. Empty is "no condition": the
+    // challenge is tried again at once, which is R3a's `R = 1` exit-only control.
+    // ⚠ WHAT IS NOT OFFERED, AND WHY: "retry once the challenge's own goal looks reachable from outside it". The
+    // progress an attempt WOULD make cannot be read from the outside state without entering the challenge and rolling
+    // back (a rollback is harness-only — docs/planner.md), so a row claiming it would be a guess.
+    { suffix: 'when', label: 'Give up when it stops getting closer; retry when a condition holds',
+      help: 'As the first give-up rule, but the challenge is tried again once the condition you type holds (a JavaScript expression, like the pause and stop conditions). Empty means no condition — it is tried again at once. It cannot be “when the challenge would now succeed”: that can only be known by entering it.',
+      params: [{ name: 'w', type: 'predicate', side: true, default: '', label: 'retry once this is true' }],
+      seed: function (f, P, now, startHeld) { return { held: startHeld }; },
+      wait: function (f, P, id, rec) {
+        var c = sidePredicate(f, 'w');
+        if (!c.src) return null;
+        var v = evalPredicate(c);
+        if (v.error) return { code: 'blocked:retry-when', values: { id: id, src: c.src } };
+        return v.value ? null : { code: 'waiting:retry-when', values: { id: id, src: c.src } };
+      } },
+  ];
+  (function () {
+    var rows = RETRY_CONDITIONS.map(function (R) {
+      return { kind: 'challenges', template: 'give-up@{b}/{h}/' + R.suffix, label: R.label, help: R.help, retry: R,
+        params: GIVE_UP_BH.map(function (p) { return Object.assign({}, p); }).concat(R.params.map(function (p) { return Object.assign({}, p); })) };
+    });
+    // after the reset kind's modifiers, where R3a's single row used to be
+    var cut = 0;
+    for (var k = 0; k < MODIFIERS.length; k++) if (MODIFIERS[k].template === 'stall>={k}x/{n}') cut = k + 1;
+    Array.prototype.splice.apply(MODIFIERS, [cut, 0].concat(rows));
+  })();
   // ---- the per-feature CONTROLS (V4) — not policies, and that is why they are their own table -------------------------
   // ⚖ THE USER'S REQUEST, VERBATIM (2026-09-15, plan §13): "an option to stop doing the resets after a specific
   // amount of the currency has been earned" — that is `until`. §13b asks for it on EVERY kind, latching, with a
@@ -497,7 +580,7 @@
   function strategyJSON(S) {
     return { id: S.id, kind: S.kind, template: S.template, label: S.label, help: S.help, pattern: S.pattern,
       layerTypes: S.layerTypes ? S.layerTypes.slice() : null, why: S.why || null, escalate: S.escalate !== false,
-      params: S.params.map(function (p) { return { name: p.name, type: p.type, placeholder: p.placeholder, default: p.default, min: p.min === undefined ? PARAM_TYPES[p.type].min : p.min, max: p.max === undefined ? (PARAM_TYPES[p.type].max === undefined ? null : PARAM_TYPES[p.type].max) : p.max, label: p.label, valueKind: PARAM_TYPES[p.type].kind }; }) };
+      params: S.params.map(function (p) { return { name: p.name, type: p.type, placeholder: p.placeholder, default: p.default, min: p.min === undefined ? PARAM_TYPES[p.type].min : p.min, max: p.max === undefined ? (PARAM_TYPES[p.type].max === undefined ? null : PARAM_TYPES[p.type].max) : p.max, label: p.label, valueKind: PARAM_TYPES[p.type].kind }; }).map(function (j, i) { if (S.params[i].side) j.side = true; return j; }) };
   }
   T.strategies = function (kind) { return (kind ? strategiesOf(kind) : STRATEGIES).map(strategyJSON); };
   T.modifiers = function (kind) { return (kind ? modifiersOf(kind) : MODIFIERS).map(strategyJSON); };
@@ -522,8 +605,10 @@
     for (var i = 0; i < rows.length; i++) {
       var m = new RegExp('^' + rows[i].pattern + '$').exec(s);
       if (!m) continue;
-      var p = {};
-      for (var j = 0; j < rows[i].params.length; j++) p[rows[i].params[j].name] = m[j + 1];
+      var p = {}, g = 0;
+      // ⚠ V5: a `side` parameter (a predicate) has NO capture group — it is stored beside the string — so the groups
+      // are read off by a counter of the parameters that DO have one, in template order.
+      for (var j = 0; j < rows[i].params.length; j++) if (!rows[i].params[j].side) p[rows[i].params[j].name] = m[++g];
       return { id: rows[i].id, params: p };
     }
     return null;
@@ -648,6 +733,14 @@
     'waiting:progress':   { text: 'In challenge {id} — {pct}% of the way to its goal; it must close {need}% of what is left, and {held} s of {hold} s have gone by', values: ['id', 'pct', 'need', 'held', 'hold'] },
     'acted:challenge-give-up': { text: 'Gave up challenge {id} at {pct}% of its goal — it closed under {need}% of what was left for {hold} s', values: ['id', 'pct', 'need', 'hold'] },
     'waiting:retry':      { text: 'Waiting — challenge {id} failed with {had} of {layer}; it will be tried again at {need}', values: ['id', 'layer', 'had', 'need'], quantities: ['had', 'need'], demand: 'layer' },
+    // ⛔ V5: THE OTHER RETRY CONDITIONS, one code each, and each says WHICH condition it is and HOW FAR ALONG. None
+    // declares a `demand`: a count over a ROW names no single layer it is waiting on, and the row cycle's demand link
+    // (R3b) is exactly the place a second reading of it would do damage.
+    'waiting:retry-resets': { text: 'Waiting — challenge {id} failed; it is tried again after {need} resets of row {row} by this automation: {done} of {need} so far ({layers})', values: ['id', 'done', 'need', 'row', 'layers'] },
+    'waiting:retry-clock':  { text: 'Waiting — challenge {id} failed; it is tried again {need} s after it was given up: {elapsed} s so far', values: ['id', 'elapsed', 'need'] },
+    'waiting:retry-when':   { text: 'Waiting — challenge {id} failed; it is tried again once {src} holds', values: ['id', 'src'] },
+    // a retry condition that THROWS is not one that is false (V4's rule for `while` / `until`, and the same reason)
+    'blocked:retry-when':   { text: 'Blocked — the retry condition {src} for challenge {id} could not be evaluated', values: ['id', 'src'] },
     // ⛔ THE ONE STATE A PAUSE ON THIS KIND CAN LEAVE BEHIND, AND IT IS MEASURED. Entering a challenge is not
     // idempotent: it puts the GAME into a mode that only this feature will take it out of. A `while` that goes false
     // while the game is inside one therefore means "stop entering" AND "never leave" — R3a measured a run stranded
@@ -1504,13 +1597,111 @@
     if (held >= h) return { give: true, code: 'acted:challenge-give-up', values: { id: id, pct: pct(p), need: pct(b), hold: h } };
     return { give: false, code: 'waiting:progress', values: { id: id, pct: pct(p), need: pct(b), held: r1(held), hold: h } };
   }
-  /** After a give-up: how strong the layer must be before this challenge is tried again, or null if it may be. */
-  function retryNeed(f, G, id) {
+  /** After a give-up: `{code, values}` while this challenge must still wait, or null once it may be tried again.
+   *  ⛔ V5: the condition is the MODIFIER ROW's own (`RETRY_CONDITIONS`); this function only finds the record. */
+  function retryWait(f, G, id) {
     var rec = chFailed[f.id];
     if (!rec || rec[id] === undefined) return null;
-    var r = Number(G.params.r);
-    var need = D(rec[id]).times(r);
-    return D(player[f.layer].points).gte(need) ? null : need;
+    var M = byStrategyId(f.kind, G.id);
+    if (!M || !M.retry) return null;
+    var r = rec[id];
+    // a condition that keeps state (a count, a clock) turns R3a's string record into an object the first time it reads
+    // it; R3a's own row never does, so its record stays exactly what it wrote
+    if (M.retry !== RETRY_CONDITIONS[0] && typeof r === 'string') r = rec[id] = { held: r };
+    return M.retry.wait(f, G.params, id, r);
+  }
+  /** The record written AT THE GIVE-UP. R3a's row writes exactly what R3a wrote — the strength as a STRING. */
+  function retrySeed(f, G, startHeld) {
+    var M = byStrategyId(f.kind, G.id);
+    var R = M && M.retry ? M.retry : RETRY_CONDITIONS[0];
+    return R.seed(f, G.params, Number(player.timePlayed) || 0, startHeld);
+  }
+  /** The strength the failed attempt started from, from either shape of record. */
+  function retryHeld(rec) { return typeof rec === 'string' ? rec : (rec && rec.held !== undefined ? rec.held : '1'); }
+  /** An OBJECT record, from either shape — a condition switched on AFTER the give-up finds R3a's string and keeps it. */
+  function retryObject(rec) { return typeof rec === 'string' ? { held: rec } : (rec || {}); }
+  // ---- the reset COUNT (V5) ---------------------------------------------------------------------------------------
+  // ⛔ THE LOADER'S OWN MEMORY, AND AN INCREMENT, NEVER A DIFFERENCE AGAINST A BASE. `stats.actions` is the loader's
+  // per-feature action count; it is in `runtimeState()` and it CONTINUES ACROSS A RESUME (R3b-1 §33), while a run that
+  // resumes WITHOUT the runtime record starts it at zero again. A count kept as "actions now − actions at the give-up"
+  // would go negative on the second kind of resume; so the record keeps the last value it SAW per feature and adds
+  // only what it has seen grow, and a counter that went backwards is re-read rather than subtracted. The record is in
+  // `runtimeState().challengeFailed` only while a wait is live, keyed by feature and challenge, so a resumed run
+  // continues the count where the uninterrupted one would have been.
+  /** The highest row with an unlocked layer this automation can reset, and that row's reset features. */
+  function highestResetRow() {
+    var best = null, fids = [], layersOf = [];
+    for (var i = 0; i < features.length; i++) {
+      var g = features[i];
+      if (g.kind !== 'reset' || !isTreeLayer(g.layer)) continue;
+      var u = false;
+      try { u = !!(player[g.layer] && player[g.layer].unlocked); } catch (e) { u = false; }
+      if (!u) continue;
+      var row = Number(layers[g.layer].row);
+      if (best === null || row > best) { best = row; fids = []; layersOf = []; }
+      if (row === best) { fids.push(g.id); layersOf.push(g.layer); }
+    }
+    return { row: best, fids: fids, layers: layersOf };
+  }
+  function actionsOf(fid) { return Number(stats.actions[fid]) || 0; }
+  function resetsSeed(startHeld, live) {
+    var H = highestResetRow(), seen = {};
+    // the LIVE reading watches every reset feature, because the row it counts can change under it
+    var watch = live ? features.filter(function (g) { return g.kind === 'reset'; }).map(function (g) { return g.id; }) : H.fids;
+    for (var i = 0; i < watch.length; i++) seen[watch[i]] = actionsOf(watch[i]);
+    return { held: startHeld, row: H.row, fids: H.fids.slice(), layers: H.layers.slice(), done: 0, seen: seen };
+  }
+  function resetsWait(f, P, id, rec, live) {
+    var r = rec;
+    // a condition chosen AFTER the give-up (R3a's string record) seeds its count HERE — `attemptOf`'s precedent: the
+    // only moment this process can honestly name is the one it can see
+    if (r.seen === undefined) { var s0 = resetsSeed(r.held, live); for (var k0 in s0) r[k0] = s0[k0]; }
+    if (live) { var H = highestResetRow(); r.row = H.row; r.fids = H.fids.slice(); r.layers = H.layers.slice(); }
+    var inRow = {};
+    for (var i = 0; i < r.fids.length; i++) inRow[r.fids[i]] = true;
+    for (var fid in r.seen) {
+      var n = actionsOf(fid), was = Number(r.seen[fid]) || 0;
+      if (n > was && inRow[fid]) r.done += n - was;
+      r.seen[fid] = n;                                   // a counter that went BACKWARDS is re-read, never subtracted
+    }
+    if (live) for (var j = 0; j < r.fids.length; j++) if (r.seen[r.fids[j]] === undefined) r.seen[r.fids[j]] = actionsOf(r.fids[j]);
+    var need = Math.round(Number(P.n));
+    if (r.done >= need) return null;
+    return { code: 'waiting:retry-resets', values: { id: id, done: r.done, need: need, row: r.row === null ? '—' : r.row, layers: r.layers.slice() } };
+  }
+  // ---- a SIDE parameter (V5): a predicate stored beside the policy string --------------------------------------------
+  //   the declared default ('')  <  `--auto-opt arg:<id>.<name>=`  <  the PLAYER's `player.au.edits[<id>].args[<name>]`
+  //   <  a runtime override (`setArg`) — the controls' own precedence (V4), for the same reasons.
+  function sideSaved(f, name) {
+    var e = editsOf(), a = e && e[f.id] ? e[f.id].args : undefined;
+    var v = a && typeof a === 'object' ? a[name] : undefined;
+    if (typeof v !== 'string') return null;
+    return checkPredicate(v) ? null : v;          // a save this build cannot compile is ignored, never run
+  }
+  function sideArg(f, name) {
+    if (f.args && f.args[name] !== undefined && f.args[name] !== null) return f.args[name];
+    var s = sideSaved(f, name);
+    if (s !== null) return s;
+    var o = T.options && T.options['arg:' + f.id + '.' + name];
+    return o === undefined ? '' : String(o).trim();
+  }
+  function sidePredicate(f, name) {
+    var src = sideArg(f, name);
+    if (!src) return { src: null, fn: null, error: null };
+    var c = f.predCache || (f.predCache = {}), key = 'arg:' + name;
+    if (!c[key] || c[key].src !== src) {
+      var err = null, fn = null;
+      try { fn = T.predicate(src); } catch (e) { err = String((e && e.message) || e); }
+      c[key] = { src: src, fn: fn, error: err };
+    }
+    return c[key];
+  }
+  /** Every side parameter of the modifier in force, with its value — what the editors show. */
+  function sideArgsOf(f, M) {
+    var o = {};
+    if (!M) return o;
+    for (var i = 0; i < M.params.length; i++) if (M.params[i].side) o[M.params[i].name] = sideArg(f, M.params[i].name);
+    return o;
   }
   /** What the Advanced view shows about the modifier — a READOUT, never a decision (V1's rule). */
   T.stallState = function (id) {
@@ -2360,7 +2551,7 @@
         // ⛔ THE STRENGTH THIS ATTEMPT STARTED FROM is what the retry rule compares against, and it is recorded at
         // ENTRY rather than read here: entering a challenge is a forced layer reset, so by now `player[l].points` is
         // whatever being INSIDE has left, which is a measurement of the challenge and not of the run's strength.
-        (chFailed[f.id] || (chFailed[f.id] = {}))[pick] = chAttempt[f.id].startHeld;
+        (chFailed[f.id] || (chFailed[f.id] = {}))[pick] = retrySeed(f, G, chAttempt[f.id].startHeld);
         startChallenge(l, pick);
         cs.gaveUp++;
         delete chAttempt[f.id];
@@ -2368,8 +2559,8 @@
       }
       if (pick === null) return { act: false, code: 'nothing-to-do', values: { kind: 'challenges', layer: l } };
       if (G) {
-        var need = retryNeed(f, G, pick);
-        if (need !== null) return { act: false, code: 'waiting:retry', values: { id: pick, layer: l, had: player[l].points, need: need } };
+        var w = retryWait(f, G, pick);
+        if (w !== null) return { act: false, code: w.code, values: w.values };
       }
       if (typeof canEnterChallenge === 'function' && !canEnterChallenge(l, pick)) return { act: false, code: 'blocked:enter', values: { id: pick } };
       var before = G ? layerHeld(l) : null;
@@ -2643,7 +2834,9 @@
     for (var ai in chAttempt) { ca[ai] = Object.assign({}, chAttempt[ai]); nca++; }
     if (nca) o.challengeAttempt = ca;
     var cg = {}, ncg = 0;
-    for (var gi in chFailed) { cg[gi] = Object.assign({}, chFailed[gi]); ncg++; }
+    // ⚠ V5: a record may now be an OBJECT (a reset count, a clock), so the copy is DEEP — a shallow one would hand
+    // the caller the live counters. R3a's string records serialise exactly as before.
+    for (var gi in chFailed) { cg[gi] = JSON.parse(JSON.stringify(chFailed[gi])); ncg++; }
     if (ncg) o.challengeFailed = cg;
     // ---- V3: the progress tracker's and the stall watch's memory ------------------------------------------------
     // ⛔ EACH BLOCK APPEARS ONLY WHEN IT HAS SOMETHING TO SAY, for V2's reason and with V2's consequence: a run with
@@ -2709,7 +2902,7 @@
     for (k in chAttempt) delete chAttempt[k];
     for (k in rt.challengeAttempt || {}) chAttempt[k] = Object.assign({}, rt.challengeAttempt[k]);
     for (k in chFailed) delete chFailed[k];
-    for (k in rt.challengeFailed || {}) chFailed[k] = Object.assign({}, rt.challengeFailed[k]);
+    for (k in rt.challengeFailed || {}) chFailed[k] = JSON.parse(JSON.stringify(rt.challengeFailed[k]));
     // ---- V3 ------------------------------------------------------------------------------------------------------
     // ⚠ A RECORD WITHOUT A `progress` BLOCK LEAVES THE TRACKER UNARMED, which is what a pre-V3 snapshot means and
     // what a run with the tracker off means. It then arms fresh at the first tick, seeds from whatever the save
@@ -3170,6 +3363,32 @@
     return { ok: true, policy: policyOf(f), error: null };
   };
   T.savedPolicy = function (id) { var f = byId[id]; if (!f) throw new Error('no feature "' + id + '"'); return savedPolicyOf(f); };
+  // ---- V5: a SIDE parameter's save — the same `edits[<id>]` object, one more field (`args`), merged ----------------
+  function setSavedArg(f, name, value) {
+    var e = editsOf();
+    if (!e) return { ok: false, policy: policyOf(f), error: 'this save has no automation store yet (player.' + AU + '.edits)' };
+    var v = value === null || value === undefined ? '' : String(value).trim();
+    var cur = e[f.id] && e[f.id].args && typeof e[f.id].args === 'object' ? Object.assign({}, e[f.id].args) : {};
+    if (v === '') delete cur[name]; else cur[name] = v;
+    var left = 0;
+    for (var k in cur) left++;
+    writeEdit(f.id, 'args', left ? cur : null);
+    player[AU].disclosed = true;
+    invalidateView();
+    return { ok: true, policy: policyOf(f), error: null };
+  }
+  T.savedArg = function (id, name) { var f = byId[id]; if (!f) throw new Error('no feature "' + id + '"'); var v = sideSaved(f, name); return v === null ? null : v; };
+  /** The RUNTIME override of a side parameter (never saved) — the harness's lever, as `setControl` is for a control. */
+  T.setArg = function (id, name, value) {
+    var f = byId[id];
+    if (!f) throw new Error('no feature "' + id + '"');
+    var w = value === null || value === undefined ? null : checkPredicate(String(value).trim());
+    if (w) throw new Error('setArg ' + id + '.' + name + ' — ' + w);
+    if (!f.args) f.args = {};
+    if (value === null || value === undefined) delete f.args[name]; else f.args[name] = String(value).trim();
+    invalidateView();
+    return sideArg(f, name);
+  };
   /** Change ONE parameter of the strategy in force and save the result. `{ok, policy, error}`; a refusal keeps the
    *  previous value in force and SAYS why — a typed value the strategy cannot parse is never silently dropped. */
   T.setSavedParam = function (id, name, value, which) {
@@ -3183,6 +3402,7 @@
     var why = null;
     try { why = checkParam(S, name, value); } catch (e) { return { ok: false, policy: policyOf(f), error: String(e.message || e) }; }
     if (why) return { ok: false, policy: policyOf(f), error: why };
+    if (paramOf(S, name).side) return setSavedArg(f, name, value);
     var next = { id: P.id, params: Object.assign({}, P.params), modifier: P.modifier ? { id: P.modifier.id, params: Object.assign({}, P.modifier.params) } : null };
     (onMod ? next.modifier.params : next.params)[name] = String(value).trim();
     return T.setSavedPolicy(id, formatPolicy(f.kind, next));
@@ -3251,6 +3471,8 @@
     var S = byStrategyId(f.kind, onMod ? P.modifier.id : P.id), why = null;
     try { why = checkParam(S, name, value); } catch (e) { return { ok: false, error: String(e.message || e) }; }
     if (why) return { ok: false, error: why };
+    // ⚠ V5: a SIDE parameter belongs to the FEATURE, not to one rung's string — the same field, whichever rung shows it
+    if (paramOf(S, name).side) { var ra = setSavedArg(f, name, value); return { ok: ra.ok, error: ra.error }; }
     var next = { id: P.id, params: Object.assign({}, P.params), modifier: P.modifier ? { id: P.modifier.id, params: Object.assign({}, P.modifier.params) } : null };
     (onMod ? next.modifier.params : next.params)[name] = String(value).trim();
     list[i] = formatPolicy(f.kind, next);
@@ -3302,7 +3524,7 @@
     if (i < 0) return null;
     var P = parsePolicy(f.kind, list[i]);
     return { policy: list[i], strategy: P ? P.id : null, params: P ? Object.assign({}, P.params) : null,
-      modifier: P && P.modifier ? { id: P.modifier.id, params: Object.assign({}, P.modifier.params) } : null,
+      modifier: P && P.modifier ? { id: P.modifier.id, params: Object.assign({}, P.modifier.params, sideArgsOf(f, byStrategyId(f.kind, P.modifier.id))) } : null,
       options: strategiesOf(f.kind).map(function (S) { var a = availability(f, S); return { id: S.id, label: S.label, help: S.help, available: a.ok && S.escalate !== false, why: a.ok ? (S.escalate === false ? 'a do-nothing strategy is never an escalation rung' : null) : a.why, inForce: !!(P && P.id === S.id), params: strategyJSON(S).params }; }) };
   };
 
@@ -3436,7 +3658,7 @@
         policy: { inForce: f.policy, table: f.policyTable, derived: f.policyDerived, alternatives: f.policies.slice(1),
           saved: savedPolicyOf(f), runtime: f.policyRuntime, base: f.policy0, escalated: watchPolicy(f),
           strategy: pp ? pp.id : null, params: pp ? Object.assign({}, pp.params) : null,
-          modifier: pp && pp.modifier ? { id: pp.modifier.id, params: Object.assign({}, pp.modifier.params) } : null },
+          modifier: pp && pp.modifier ? { id: pp.modifier.id, params: Object.assign({}, pp.modifier.params, sideArgsOf(f, byStrategyId(f.kind, pp.modifier.id))) } : null },
         stall: T.stallState(f.id),
         // R3b: the ROW CYCLE's row for this feature — `null` unless its policy carries a cycle modifier, so a run
         // without one renders exactly the rows it rendered before (R3a's `readout` rule, one modifier on).

@@ -41,7 +41,8 @@ const row = (r) => { rows.push(r); console.log(`${r.ok ? 'GREEN' : 'RED  '} ${r.
 // more for its two new codes: 10 → 11, and CI found that too (run 35511982551: `unwitnessed: blocked:predicate,
 // stopped:until`, four slices out of four).
 // R3a added TWO witness legs for its four new codes: 11 → 13.
-const ROWS = { 1: 14, 2: 3, 3: 2, '3p': 2, 4: 4, 6: 1 };
+// V5 added FOUR, one per new retry code (`waiting:retry-resets`, `-clock`, `-when`, `blocked:retry-when`): 14 → 18.
+const ROWS = { 1: 18, 2: 3, 3: 2, '3p': 2, 4: 4, 6: 1 };
 
 const SNAP = (id, m) => `tools/harness/snapshots/${id}/all/${m}.json`;
 // M15 → M16: R1′'s own leg, and the one long ptr leg V1's inertness is measured on (plan §14d).
@@ -142,6 +143,19 @@ const LEGS = [
     o: { profile: 'all', diff: 1, ticks: 400, 'from-snapshot': SNAP('ptr', 'M22'), 'auto-opt': 'policy:challenges:h=sequential|give-up@0.1/30/2x', explain: true } },
   { key: 'ptr all/M22 + 400×1, --auto-opt policy:challenges:h=sequential ; while:challenges:h=<not in a challenge> (R3a: the stranded pause)', id: 'ptr',
     o: { profile: 'all', diff: 1, ticks: 400, 'from-snapshot': SNAP('ptr', 'M22'), 'auto-opt': 'policy:challenges:h=sequential;while:challenges:h=player.h.activeChallenge === null', explain: true } },
+  // ⛔ V5's FOUR NEW RETRY CODES, each on the SAME real leg as R3a's retry bar — `all/M22.json`, where `challenges:h`
+  // enters H11, wins it, walks into H12, gives it up and then WAITS — with only the retry condition changed. One leg
+  // per code because one feature can wait on one condition at a time. The predicate's two legs name it through
+  // `--auto-opt arg:<id>.w=`, the side parameter's harness lever (the policy string cannot carry a predicate).
+  // ⚠ A FIXTURE WITNESS BEATS A CONSTRUCTION wherever one exists (§18.4's rule).
+  { key: 'ptr all/M22 + 400×1, --auto-opt policy:challenges:h=sequential|give-up@0.1/30/5resets (V5: retry after N resets of the highest row)', id: 'ptr',
+    o: { profile: 'all', diff: 1, ticks: 400, 'from-snapshot': SNAP('ptr', 'M22'), 'auto-opt': 'policy:challenges:h=sequential|give-up@0.1/30/5resets', explain: true } },
+  { key: 'ptr all/M22 + 400×1, --auto-opt policy:challenges:h=sequential|give-up@0.1/30/600s (V5: retry after a clock)', id: 'ptr',
+    o: { profile: 'all', diff: 1, ticks: 400, 'from-snapshot': SNAP('ptr', 'M22'), 'auto-opt': 'policy:challenges:h=sequential|give-up@0.1/30/600s', explain: true } },
+  { key: 'ptr all/M22 + 400×1, --auto-opt policy:challenges:h=sequential|give-up@0.1/30/when ; arg:challenges:h.w=<false> (V5: retry when a condition holds)', id: 'ptr',
+    o: { profile: 'all', diff: 1, ticks: 400, 'from-snapshot': SNAP('ptr', 'M22'), 'auto-opt': 'policy:challenges:h=sequential|give-up@0.1/30/when;arg:challenges:h.w=player.h.points.gte("1e1000")', explain: true } },
+  { key: 'ptr all/M22 + 400×1, --auto-opt policy:challenges:h=sequential|give-up@0.1/30/when ; arg:challenges:h.w=<throws> (V5: a retry condition that throws)', id: 'ptr',
+    o: { profile: 'all', diff: 1, ticks: 400, 'from-snapshot': SNAP('ptr', 'M22'), 'auto-opt': 'policy:challenges:h=sequential|give-up@0.1/30/when;arg:challenges:h.w=player.nosuchlayer.points.gte(1)', explain: true } },
   { key: 'something fresh 600×1 (profile all)', id: 'something', o: { profile: 'all', diff: 1, ticks: 600, explain: true } },
 ];
 
