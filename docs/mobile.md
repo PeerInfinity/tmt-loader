@@ -1210,7 +1210,7 @@ table either way: ⚖ MINIMIZE HARDCODING.
 ⚠ **Two resources can still print the same number** where the layer states it twice; both are kept (the card is
 reporting quantities and both are right) and the attribution between them is by key order alone. The gate counts it.
 
-**Over the roster**: **274 candidate Decimals, 15 shown, on 9 cards across 9 games**, 8 of them sharing a value
+**Over the roster, RE-MEASURED at `1c9a6a0e5`** (CI run 35517664193, 171/171, 0 RED, `ptr` at `all/M22` = **30,618** ticks): **276 candidate Decimals, 15 DETECTED rows on 9 cards across 9 games**, 8 of them sharing a value
 with a sibling. ⚠ **THIS FIGURE MOVES WITH THE FIXTURES AND NOTHING PINS IT.** It was `16 shown on 10 cards` when
 U7 measured it, at a tree where `ptr`'s deepest recorded snapshot was `all/M16` (16,048 ticks). R2 re-cut the
 defaults and added M17–M20 and M22, and `deepestSnapshot()` selects by TICKS, so the sweep now reads `ptr` at
@@ -1220,6 +1220,15 @@ did not move. ⚠ **The yield is low BY CONSTRUCTION**: 169 of the 171 games are
 every amount on every layer is zero and the text cannot attribute any of them — `the-infinity-tree` alone
 contributes 32 candidates and shows none. The two games with recorded deep snapshots are where the feature has
 anything to report.
+
+⚠ **AND THE THIRD RE-MEASUREMENT FOUND IT HAD NOT MOVED.** `all/M22` was regenerated again by V4b (29,204 → **30,618** ticks, `player.h.unlocked` now true). The DETECTED figure is **15 rows on 9 cards across 9 games at both** — unchanged. Only `resCandidates` moved, 274 → 276. That is a result worth keeping: the sentence was re-measured because the selector had moved, not because the number had, and finding it unmoved is the only way to know which. ⛔ The figure that DID change is a different one — the roster total `resShown` is now **167**, because U9's DECLARED rows are counted as resources too. Quote the split, never the total:
+
+| | rows | cards | games |
+|---|---|---|---|
+| DETECTED (U7/U8, the occurrence budget) | **15** | 9 | 9 |
+| DECLARED (U9, the global currency) | **152** | 152 | 143 |
+
+⚠ A declared row is **one per card by construction** (one per layer), so 0 cards carry two. The `all vs one` question the user has open is about a GAME showing several such CARDS: **6 games do at these states**, against 28 that could by the static census.
 
 ⚖ **And the roster is what the label question WAS decided on.** The gate lifts the adjacent words and
 reports them; over all 171 games the lift produced **2 right out of 13**: `ptr t.energy → Time Energy` and
