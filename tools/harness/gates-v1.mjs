@@ -41,7 +41,7 @@ const row = (r) => { rows.push(r); console.log(`${r.ok ? 'GREEN' : 'RED  '} ${r.
 // more for its two new codes: 10 → 11, and CI found that too (run 35511982551: `unwitnessed: blocked:predicate,
 // stopped:until`, four slices out of four).
 // R3a added TWO witness legs for its four new codes: 11 → 13.
-const ROWS = { 1: 13, 2: 3, 3: 2, '3p': 2, 4: 4, 6: 1 };
+const ROWS = { 1: 14, 2: 3, 3: 2, '3p': 2, 4: 4, 6: 1 };
 
 const SNAP = (id, m) => `tools/harness/snapshots/${id}/all/${m}.json`;
 // M15 → M16: R1′'s own leg, and the one long ptr leg V1's inertness is measured on (plan §14d).
@@ -105,6 +105,14 @@ const LEGS = [
   { key: 'ptr all/M11 + 600×1', id: 'ptr', o: { profile: 'all', diff: 1, ticks: 600, 'from-snapshot': SNAP('ptr', 'M11'), explain: true } },
   { key: 'ptr all/M15 + 600×1', id: 'ptr', o: { profile: 'all', diff: 1, ticks: 600, 'from-snapshot': SNAP('ptr', 'M15'), explain: true } },
   { key: 'ptr fresh 400×1, --auto-opt exclude=buyables:t', id: 'ptr', o: { profile: 'all', diff: 1, ticks: 400, 'auto-opt': 'exclude=buyables:t', explain: true } },
+  // ⛔ R3b's `waiting:turn`, witnessed on a REAL GAME rather than constructed — and one `--auto-opt` entry is all
+  // it takes, which is itself the claim. The ROW CYCLE binds every active reset feature of the row, so naming the
+  // modifier on `reset:t` alone puts all five of PTR's row-2 resets (t, e, s, sb, sg) into one cycle at `all/M15`,
+  // where every one of them is unlocked and acting. Four of the five are then out of turn on any given tick, and
+  // `waiting:turn` is what they say. ⚠ A leg that named the modifier on EVERY member would witness the code just
+  // as well and would prove nothing about R1 — this one is red if a non-carrier is not bound.
+  { key: 'ptr all/M15 + 600×1, the ROW CYCLE on row 2 (named on reset:t only)', id: 'ptr',
+    o: { profile: 'all', diff: 1, ticks: 600, 'from-snapshot': SNAP('ptr', 'M15'), 'auto-opt': 'policy:reset:t=always|turn@3/3x/5', explain: true } },
   // ⛔ R2's `waiting:gain-unit`, witnessed on a REAL GAME rather than constructed — and the configuration that
   // witnesses it is the one R2 measured as a DEADLOCK (gate R2-S3): `gain>=2x-unit` on `reset:p` waits for a gain
   // of 2 prestige points, PTR generates no points until a prestige upgrade is bought, and no prestige upgrade can
