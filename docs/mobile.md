@@ -485,6 +485,11 @@ which is the second store the brief ruled out, and a key nothing in the UI could
 consequence is benign and worth stating: a cleared game comes back with every card closed, which is exactly what a
 first load does.
 
+⚠ **A SECOND key now lives in that namespace, under the same rules** — `tmt-loader:<id>:ui.au.collapsed`, which
+blocks of the automation tab's `Advanced` view the player has folded (V3, `docs/automation.md`). It is the same
+pattern deliberately: the same store, `storage.raw`, every read and write wrapped, nothing in `player`, and the
+same consequence — a cleared game comes back with today's defaults.
+
 ⚠ **It found a defect of its own, and the defect is the persistence's, not U2d's.** A card **built open** hides its
 whole action row, and a `display: none` row has no layout — `getBoundingClientRect()` reports every button at the
 same zero top, so the build-time fit pass cannot see where the browser wrapped them and marks none. MEASURED on

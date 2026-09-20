@@ -57,6 +57,7 @@ behaviour are unchanged (the core only gained `tmtLoader.runtimeState()` / `rest
 | `--planner-opt "k=v;k2=v2"` | the planner's options (`k`, `screenK`, the score weights, the clocks — `docs/planner.md`); an unknown key throws |
 | `--planner-ladder <file>` | the ladder JSON becomes `tmtLoader.plannerLadder`, the sticky goal source |
 | `--planner-k <n>` / `--knowledge-out` / `--goals-out` | P1a: the producer window, and the dumps written at the stop |
+| `--ladder-labels <file>` | (V3, set for you by `--ladder`) the ladder JSON becomes `tmtLoader.ladder`, the PROGRESS TRACKER's label source — an event carries the names of any marks it satisfied. Read by nothing unless the tracker is armed, so a run without `track=1` / `watch=1` is byte-identical |
 | `--rounds-out <file>` | the planner's report at the stop: mode, options, reached / abandoned marks, clocks, divergences and the full round log (`docs/planner.md`, "reading a round log") |
 
 A driven run's one-line result gains `planner: {mode, rounds, commits, divergences, reached, options, wallMs,
@@ -87,7 +88,25 @@ statistics (action counts continue). Since P1b it also carries, **only when they
 process would drop the configuration the planner committed), the runtime `enabled` overrides, and `extra.planner` —
 whatever a later layer registered with `tmtLoader.registerRuntime`. A run that uses none of them writes exactly the
 record it wrote before, so every committed snapshot stays valid. `runtime.monitor` is the stall detector's seen-set, buyable maxima and last-progress
-point, so a resumed run stalls where the uninterrupted one does. `dirty` ignores `tools/harness/snapshots` and
+point, so a resumed run stalls where the uninterrupted one does.
+
+⛔ **The detector's RULE now lives in the core, and the monitor is held to it** (V3). `--stall-seen`'s rule — progress
+is something NEW EVER HELD: an unlock, an upgrade, a milestone, an achievement, a challenge completion, or a buyable
+above its own run maximum — is `tmtLoader.progress()` (`docs/automation.md`), and `gates-v3 --part 1` compares the two
+event for event on ptr and on something: the seen-set, the buyable maxima and the TICK the last progress landed on.
+⚠ **`MONITOR_SRC`'s own text is deliberately NOT replaced**: it has to go on reproducing every committed
+`stall.lastProgress` pin (`gates-p1a --part 0`'s **10531** among them) and a resumed run restores its memory from a
+snapshot an older build wrote. Two implementations of one rule, with a gate that compares them, is the honest form of
+"one definition" while the second copy is load-bearing for pins a slice may not move.
+
+⚠ **One MEASURED difference, and each is right about a different question.** The monitor is seeded from a snapshot's
+own `runtime.monitor`, so it CONTINUES the memory of the run that wrote the fixture; the core's tracker arms when it
+is switched on and seeds from the save in front of it. Resuming `all/M16.json` gives identical seen-sets (107 = 107)
+and DIFFERENT buyable maxima over 8 keys — a buyable the original run once held and a reset took away is above the
+snapshot's live value. `gates-v3 --part 1` therefore compares them on FRESH legs.
+⚠ **The tracker's own memory rides in `runtime.auto`** (`progress` and `watch` blocks) and, like every V1/V2 block,
+appears ONLY when it has something to say — so a run with the tracker off writes exactly the record it wrote before
+V3 and every committed snapshot stays valid (`gates-v3 --part 2` asserts the record's KEY SET, not just its values). `dirty` ignores `tools/harness/snapshots` and
 `tools/harness/results`.
 
 `--from-snapshot` boots through the existing `--load-from` path — one child calls the game's own

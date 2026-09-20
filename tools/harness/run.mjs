@@ -83,6 +83,10 @@ export function runNode(id, o = {}) {
     // --until-all: stop when EVERY mark of the slice holds (marks need not hold in ladder order: M10 precedes M09 when
     // the toggles kind runs); default: stop when --to holds
     if (o['until-all']) { delete o['marks-continue']; delete o['stop-mark']; } else { o['marks-continue'] = true; o['stop-mark'] = entries[entries.length - 1].id; }
+    // ⚠ THE WHOLE LADDER FILE GOES TO THE CORE AS WELL (V3), not just the slice: the progress tracker labels an event
+    // with the NAME of any mark it satisfies, which is the same thing the page does with `tmtLoader.ladder`. It reaches
+    // nothing unless the tracker is armed, so no recorded run moves.
+    o['ladder-labels'] = path.resolve(String(o.ladder));
     ladder = { file: path.relative(REPO, path.resolve(String(o.ladder))), from: o.from || null, to: entries[entries.length - 1].id, ids: entries.map((e) => e.id) };
   }
   const res = runNodeRaw(id, o);
@@ -153,7 +157,7 @@ function runNodeRaw(id, o) {
   if (o.planner) args.push(o.planner === true ? '--planner' : `--planner=${o.planner}`);
   for (const k of ['planner-mode', 'planner-opt']) if (o[k] != null) args.push(`--${k}`, String(o[k]));
   if (o['stop-snapshot']) args.push('--stop-snapshot');
-  for (const k of ['planner-ladder', 'planner-script']) if (o[k] != null) args.push(`--${k}`, path.resolve(String(o[k])));
+  for (const k of ['planner-ladder', 'planner-script', 'ladder-labels'] ) if (o[k] != null) args.push(`--${k}`, path.resolve(String(o[k])));
   if (o['planner-k'] != null) args.push('--planner-k', String(o['planner-k']));
   // the child runs with cwd = os.tmpdir(): every file argument is made absolute here
   for (const k of ['state-out', 'player-out', 'ids-out', 'save-storage', 'knowledge-out', 'goals-out', 'rounds-out']) if (o[k] != null) args.push(`--${k}`, path.resolve(String(o[k])));

@@ -220,6 +220,9 @@ const PLANNER_MODE = (() => {
 })();
 if (A.planner) {
   if (A['planner-ladder']) globalThis.tmtLoader.plannerLadder = JSON.parse(fs.readFileSync(A['planner-ladder'], 'utf8'));
+  // the LADDER as the progress tracker's label source (V3) — what `loader/page.js` fetches for the 2 games that have
+  // one. Read by nothing unless the tracker is armed, so a run without `track=1` / `watch=1` is byte-identical.
+  if (A['ladder-labels']) globalThis.tmtLoader.ladder = JSON.parse(fs.readFileSync(A['ladder-labels'], 'utf8'));
   try {
     run(fs.readFileSync(path.join(REPO, 'loader/tmt-planner.js'), 'utf8'), 'loader/tmt-planner.js');
     R.planner = { loaded: true, mode: PLANNER_MODE };

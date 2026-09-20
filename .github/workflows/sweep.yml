@@ -710,6 +710,134 @@ jobs:
           retention-days: 14
 
   # ---------------------------------------------------------------------------------------------------------------
+  # V3 — the PROGRESS TRACKER, the STALL WATCH and the collapsible Advanced blocks (plan §21).
+  #
+  # ⚖ WHAT IS IN CI AND WHAT IS NOT, and why, for the same reason V2's split has:
+  #   · parts 1, 2 and 3 are CHEAP and every one of them is a claim a later slice will lean on — that the core's
+  #     progress rule IS the harness detector's, that V3 switched off leaves every committed snapshot valid, and that
+  #     the escalation machine does what it says on a CONSTRUCTED state no real fixture reaches. They run here.
+  #   · part 5 is the PAGE, and the page is where V1's and V2's real defects were found (an unwitnessed vocabulary, a
+  #     `null` that killed four engines' `load()`, a stale view — §18.4 item 11). It runs here.
+  #   · ⛔ part 4 does NOT: it is ~40 minutes of ladder legs whose whole point is to REPORT numbers for R2's sweep,
+  #     and a measurement table is not a gate. It is run by hand and quoted in the as-built with the head it ran at.
+  #   · ⛔ part 6 does NOT, for V2 part 6's reason: a 171-game page walk needs sharding and a merge assertion to be
+  #     honest, and it is the one-off witness that the three subtabs open across the roster.
+  #
+  # ⛔ `--assert` on every part: exiting 1 on a red row does NOT catch a battery that stopped part-way — it prints
+  # fewer rows, and fewer rows is fewer reds. Each part declares the row count it emits.
+  # ---------------------------------------------------------------------------------------------------------------
+  v3-node:
+    name: V3 progress + watch — headless (parts 1, 2, 3)
+    needs: fast
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      # ⚠ `npm ci` but NO `playwright install`: these parts import the package and never launch a browser.
+      - run: npm ci
+
+      - name: Part 3 — the machine, constructed on the stub
+        shell: bash  # bash -eo pipefail: without it `| tee` reports the pipe's status and a refusal is lost
+        run: |
+          set -o pipefail
+          node tools/harness/gates-v3.mjs --part 3 --no-summary --assert | tee v3-3.txt
+
+      - name: Part 1 — the core's progress rule ≡ the harness monitor's
+        shell: bash
+        run: |
+          set -o pipefail
+          node tools/harness/gates-v3.mjs --part 1 --no-summary --assert --pool 2 | tee v3-1.txt
+
+      - name: Part 2 — inertness, and no full-hash pin moved
+        shell: bash
+        run: |
+          set -o pipefail
+          node tools/harness/gates-v3.mjs --part 2 --no-summary --assert --pool 2 | tee v3-2.txt
+
+      - name: Summary
+        if: always()
+        shell: bash
+        run: |
+          {
+            echo '## V3 progress + watch — headless'
+            echo ''
+            echo '```'
+            cat v3-3.txt v3-1.txt v3-2.txt 2>/dev/null | grep -E 'VERDICT|REFUSED|^RED|green$' || echo 'no output'
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload the rows
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: v3-node
+          path: tools/harness/results/tmp/gates-v3-part*-last.json
+          if-no-files-found: warn
+          retention-days: 14
+
+  v3-page:
+    name: V3 progress + watch — in the page (part 5)
+    needs: fast
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - run: npm ci
+
+      - name: Cache the Playwright browser
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+
+      - run: npx playwright install --with-deps chromium
+
+      # ⚠ The collapse arm is PAIRED against the thing that breaks it: the tab re-renders every tick, so the leg
+      # ticks, switches subtab and RELOADS before it believes the fold survived.
+      - name: Part 5 — the watch toggles, a list edit persists, Progress renders, every block folds
+        shell: bash
+        run: |
+          set -o pipefail
+          node tools/harness/gates-v3.mjs --part 5 --no-summary --assert | tee v3-5.txt
+
+      - name: Summary
+        if: always()
+        shell: bash
+        run: |
+          {
+            echo '## V3 progress + watch — in the page'
+            echo ''
+            echo '```'
+            cat v3-5.txt 2>/dev/null | grep -E 'VERDICT|REFUSED|^RED|green$' || echo 'no output'
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload the rows
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: v3-page
+          path: tools/harness/results/tmp/gates-v3-part*-last.json
+          if-no-files-found: warn
+          retention-days: 14
+
+  # ---------------------------------------------------------------------------------------------------------------
   # S1 part 1 — the automation anchors. 52 checks, 197 s locally, and EVERY slice this arc has run it by hand to
   # prove no anchor moved. That is exactly the check that should not depend on a human remembering.
   #

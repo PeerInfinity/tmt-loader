@@ -72,18 +72,24 @@
     });
   };
 
+  // ⚠ ONE HOOK SLOT, SET BY THE AUTOMATION SECTION BELOW (V3): the progress tracker arms before the first `gameLoop`
+  // and polls after each one, which is exactly where the harness's own monitor calls `check()`. It stays `null` in
+  // contract-only mode, where this file returns long before the tracker exists.
+  var onTick = null;
   // One tick = exactly the census/probe loop. `n` repeats it (one page.evaluate for a whole run).
   T.tick = function (diff, n) {
     diff = Number(diff);
     if (!(diff >= 0)) throw new Error('tick(diff): diff must be a number >= 0');
     n = n === undefined ? 1 : Number(n);
     var hasFix = typeof fixNaNs === 'function';
+    if (onTick) onTick('before');
     for (var i = 0; i < n; i++) {
       updateTemp();
       gameLoop(diff);
       if (hasFix) fixNaNs();
       T.ticks++;
       T.gameSeconds = Math.round((T.gameSeconds + diff) * 1e9) / 1e9;
+      if (onTick) onTick('after');
     }
     return { ticks: T.ticks, gameSeconds: T.gameSeconds };
   };
@@ -222,10 +228,13 @@
     // --- the rest --------------------------------------------------------------------------------------------------
     { kind: 'toggles', template: 'on', label: 'Turn them on', help: 'Turn on every toggle the held milestones grant.' },
     { kind: 'challenges', template: 'sequential', label: 'One after another', help: 'Enter the first unlocked, incomplete challenge and leave it the moment it can be completed.' },
-    { kind: 'challenges', template: 'off', label: 'Off', help: 'Do nothing with this layer’s challenges.' },
+    // ⚠ `escalate: false` (V3): a strategy whose whole content is "do nothing" is never an automatic escalation
+    // RUNG — answering a stall by stopping is not an answer. It is a fact this ROW declares, so the watch's derived
+    // list needs no knowledge of which rows they are (⚖ minimize hardcoding). A player may still pick it by hand.
+    { kind: 'challenges', template: 'off', label: 'Off', help: 'Do nothing with this layer’s challenges.', escalate: false },
     { kind: 'clickables', template: 'when', label: 'When the table says', help: 'Click each clickable this game’s table lists, whenever its condition holds.',
       needs: function (f) { return f.clickList && f.clickList.length ? null : 'this game’s table lists no clickables for this feature'; } },
-    { kind: 'clickables', template: 'off', label: 'Off', help: 'Do nothing with this layer’s clickables.' },
+    { kind: 'clickables', template: 'off', label: 'Off', help: 'Do nothing with this layer’s clickables.', escalate: false },
   ];
   // ---- the MODIFIERS: a strategy that rides ON another one ----------------------------------------------------------
   // ⚖ THE USER'S RULE, VERBATIM (2026-09-19): "If we are stuck waiting a long time for resources to double their
@@ -288,7 +297,7 @@
   /** The table itself, as plain JSON — what the picker, the editors, the docs gate and the unit tests all read. */
   function strategyJSON(S) {
     return { id: S.id, kind: S.kind, template: S.template, label: S.label, help: S.help, pattern: S.pattern,
-      layerTypes: S.layerTypes ? S.layerTypes.slice() : null, why: S.why || null,
+      layerTypes: S.layerTypes ? S.layerTypes.slice() : null, why: S.why || null, escalate: S.escalate !== false,
       params: S.params.map(function (p) { return { name: p.name, type: p.type, placeholder: p.placeholder, default: p.default, min: p.min === undefined ? PARAM_TYPES[p.type].min : p.min, max: p.max === undefined ? (PARAM_TYPES[p.type].max === undefined ? null : PARAM_TYPES[p.type].max) : p.max, label: p.label, valueKind: PARAM_TYPES[p.type].kind }; }) };
   }
   T.strategies = function (kind) { return (kind ? strategiesOf(kind) : STRATEGIES).map(strategyJSON); };
@@ -847,11 +856,14 @@
     var p = progressOf(g, P, d);
     return { f: g, progress: p === null ? -1 : p };
   }
+  // ⚠ `g.kind`, NOT the literal `'reset'` (V3): the stall WATCH reuses this arbiter for features of every kind, and
+  // a hardcoded kind would have looked up a `reset` row for an `upgrades` feature. A kind whose strategies declare no
+  // `progress` has no fraction and ranks last, which is the same answer `unlocks-purchase` already gets.
   function progressOf(g, P, d) {
     var t = tmp[g.layer] || {};
-    if (t.type === 'static') return ratio(t.baseAmount, t.nextAt);
-    var S = byStrategyId('reset', P.id);
-    return S && S.progress ? S.progress(g, d.values) : null;
+    if (g.kind === 'reset' && t.type === 'static') return ratio(t.baseAmount, t.nextAt);
+    var S = P ? byStrategyId(g.kind, P.id) : null;
+    return S && S.progress ? S.progress(g, d && d.values) : null;
   }
   function r1(x) { return Math.round(Number(x) * 10) / 10; }
   /** What the Advanced view shows about the modifier — a READOUT, never a decision (V1's rule). */
@@ -865,6 +877,552 @@
       elapsed: c === null ? null : r1(c.elapsed), need: c === null ? null : r1(c.need),
       why: c === null ? 'no reset by this feature’s own rule yet, so there is nothing to be late against' : null };
   };
+
+  // ---- THE PROGRESS TRACKER (V3 Part 1) — ONE definition of "the game made progress" -------------------------------
+  // ⛔ THE HARNESS HAD THIS FIRST AND NOW READS THE CORE'S. `tools/harness/policy.mjs`'s `MONITOR_SRC` carries the L1
+  // stall detector's `--stall-seen` rule: progress is something NEW EVER HELD in this run — a layer unlocked, an
+  // upgrade, a milestone, an achievement, a challenge completion, or a buyable above its own run maximum. Re-buying
+  // what a reset took away is NOT progress, which is the whole reason the rule is a SEEN-SET and not a signature.
+  // It needs no ladder file, so it works on all 171 games; 2 of them have a ladder.
+  // ⚠ TWO SPELLINGS OF ONE INTENTION DRIFT — `hashGame` became `tmtLoader.gameState` for exactly this reason (V1
+  // §16.3 item 3). The rule now lives HERE, `T.progressKeys()` publishes the id alphabet, and the harness's monitor
+  // is held to it by `gates-v3 --part 1`. ⚠ The monitor's own text is NOT replaced: it must keep reproducing every
+  // committed `stall.lastProgress` pin (`gates-p1a --part 0`'s 10531 among them), and a resumed run restores the
+  // monitor's memory from a snapshot written by an older build. So there are two IMPLEMENTATIONS of one rule with a
+  // gate that compares them event for event, which is the honest form of "the harness reads the core's" when the
+  // harness's copy is load-bearing for pins this slice may not move (V3 §21, and the ⚖ re-record is the user's).
+  //
+  // ⛔ OFF BY DEFAULT, AND IT LEAVES NO TRACE WHEN OFF. The tracker's memory lives in `runtimeState()` and the block
+  // appears ONLY while the tracker is armed, so a run that never uses it writes byte-for-byte the record it wrote
+  // before V3 — every committed snapshot stays valid, and CI's anchors are the proof (`gates-v3 --part 2`).
+  //
+  // ⛔ THE PER-TICK WORK IS INCREMENTAL, AND A COUNTER IS WHAT SAYS SO (V1's rule for `formats`, in a new place).
+  // A full walk of every held id happens exactly ONCE, when the tracker arms. After that a tick reads three ARRAY
+  // LENGTHS per layer and walks only the TAIL of a list that grew, plus the (small) challenge and buyable maps. So
+  // `progressStats().fullScans` is **1** after a run of any length, and `tails` is bounded by the number of events —
+  // not by the tick count. ⚠ A hold array that SHRANK (a reset wiped it) re-points the length and re-walks the tail
+  // when it grows back; every id in it is already in the seen-set, so nothing is counted twice. That is the seen-set
+  // rule, not an optimisation: it is what makes a reset-and-rebuy loop stall rather than read as progress.
+  // ⚠ AND THE CLAIM THE COUNTERS MAKE IS NOT "tails are bounded by the events" — MEASURED, and it is false: PTR's
+  // `reset:p` fires 8 times in 200 ticks, each one WIPES `player.p.upgrades`, and the re-buy grows the list again, so
+  // a tail is walked per regrowth. The honest claim is the one `tailItems` states: the per-tick element work is
+  // bounded by what THE GAME CHANGED that tick, never by what it holds — 174 items over 400 polls on that leg, with
+  // `fullScans` at 1. A mutant that re-walks the save per tick reds `fullScans`; one that drops the length check
+  // multiplies `tailItems` by the size of the save.
+  var PROG_KINDS = [['upgrades', 'upg'], ['milestones', 'ms'], ['achievements', 'ach']];
+  // ⚠ THE EVENT LIST IS BOUNDED AND THE COUNTS ARE EXACT. A late PTR run holds thousands of things; the view wants
+  // the newest ones. So the list keeps the newest `EVENT_CAP` events and `total` / `dropped` / `byKind` are counted
+  // over ALL of them — a bound that silently changed a count would make the readout a lie. `?autoOpt=progressEvents=<n>`
+  // moves it (the same lever `neverFiredSeconds` uses).
+  var EVENT_CAP = 200;
+  function eventCap() { var v = T.autoOptions && T.autoOptions.progressEvents, n = v === undefined ? NaN : Number(v); return isFinite(n) && n > 0 ? Math.floor(n) : EVENT_CAP; }
+  // ⚠ `GAP_N` IS THE WATCH'S `n` — the tracker keeps at most that many usable gaps, so the two cannot disagree about
+  // which gaps the median is over. The tracker itself never decides anything; `stalled` is reported, not acted on.
+  var polledLoop = -1;
+  var prog = null;   // null until armed; then {seen, bmax, lens, events, total, byKind, dropped, gaps, gapDirty, lastAt, firstAt, marks}
+  var progStats = { fullScans: 0, polls: 0, tails: 0, tailItems: 0, markChecks: 0 };
+  T.progressStats = function () { return { fullScans: progStats.fullScans, polls: progStats.polls, tails: progStats.tails, tailItems: progStats.tailItems, markChecks: progStats.markChecks, armed: prog !== null }; };
+  /** The id alphabet, as DATA — what a key of the seen-set looks like, for the gate that compares the two copies. */
+  T.progressKeys = function () { return { unlocked: '<layer>:u', upgrade: '<layer>:upg:<id>', milestone: '<layer>:ms:<id>', achievement: '<layer>:ach:<id>', challenge: '<layer>:ch:<id>:<completions>', buyable: '<layer>:<id> above its run maximum' }; };
+
+  function progressTracked() {
+    // `?autoOpt=track=1` / `--auto-opt track=1` is the harness's and a gate's lever, and it OUTRANKS the save the way
+    // every other autoOpt does. The watch needs the tracker, so turning the watch on arms it.
+    var o = T.autoOptions || {};
+    if (watchArmed()) return true;
+    if (o.track !== undefined) return truthy(o.track);
+    var w = watchSettings();
+    return w.track === true;
+  }
+  function truthy(v) { return !(v === false || v === 'false' || v === '0' || v === 0 || v === '' || v === undefined || v === null); }
+  /** Arm the tracker: ONE full walk of everything already held, which is the run's starting point, not progress. */
+  function armProgress() {
+    var now = Number(player.timePlayed) || 0;
+    prog = { seen: {}, bmax: {}, lens: {}, events: [], total: 0, byKind: {}, dropped: 0, gaps: [], gapDirty: true, lastAt: now, firstAt: now, marks: {} };
+    progStats.fullScans++;
+    scanProgress(true);
+    // ⛔ THE SEED IS NOT PROGRESS and the FIRST GAP DOES NOT COUNT. `gapDirty` starts true, so the stretch from the
+    // arming point to the first event never feeds `typicalGap` — the run was already however far along it was, and a
+    // resumed run would otherwise measure a gap the uninterrupted run never had (⚠ the brief's rule, and §18.4 item 2's
+    // reason for it). A restore that CARRIES the tracker's memory carries `gapDirty` too, so a resume is faithful.
+    // ⚠ `gapDirty` IS RE-SET **AFTER** THE SCAN, not before it. MEASURED by this file's own leg 3: the arming walk
+    // goes through `addSeen` → `pushEvent` for every id already held, and `pushEvent`'s last act is
+    // `gapDirty = anyEscalated()` — which is false at arming time. So seeding a save that holds anything at all
+    // CLEARED the flag, and the first gap (41 game-seconds in the leg) fed the median. Everything the seed wrote is
+    // discarded here, the flag included.
+    prog.total = 0; prog.events.length = 0; prog.dropped = 0; prog.byKind = {}; prog.gaps.length = 0; prog.gapDirty = true;
+  }
+  T.progressArm = function () { if (prog === null) armProgress(); return prog !== null; };
+  /** One incremental pass. Cheap by construction: three lengths per layer plus the two small numeric maps. */
+  function pollProgress() { if (prog === null) return false; progStats.polls++; return scanProgress(false); }
+  // ⛔ THE POLL POINT, TWICE, AND BOTH ARE LOAD-BEARING.
+  //   · `runLayer` polls once per `gameLoop`, BEFORE the first feature of that loop decides — which is what lets the
+  //     watch act on this tick's stall rather than the last one's;
+  //   · `T.tick` polls again AFTER `gameLoop`, which is exactly where the harness's monitor calls `check()`. Without
+  //     it the core would be one tick behind the monitor for anything the engine grants after the `au` slot, and
+  //     `gates-v3 --part 1` asserts the two are EQUAL event for event, not equal within a tick.
+  // The scan is idempotent (it is a comparison against the seen-set), so polling twice adds no event twice; it costs
+  // two incremental passes per tick, and `progressStats().polls` is what says so out loud.
+  function progressTickHook(when) {
+    if (!progressTracked()) { if (prog !== null) { prog = null; clearWatch(); } return; }
+    if (prog === null) armProgress();            // ⚠ BEFORE the first gameLoop: the same state the monitor seeds from
+    else if (when === 'after') pollProgress();
+  }
+  /** The light form the hot path reads — `T.progress()` copies the whole event list and is a READOUT, not a sensor. */
+  function progressNow() {
+    if (prog === null) return { stalled: false, typicalGap: null, threshold: null, sinceLast: null, total: 0 };
+    var now = Number(player.timePlayed) || 0, typ = typicalGap(), k = Number(watchParam('k'));
+    return { stalled: typ !== null && (now - prog.lastAt) >= k * typ, typicalGap: typ === null ? null : typ,
+      threshold: typ === null ? null : k * typ, sinceLast: now - prog.lastAt, total: prog.total };
+  }
+
+  /** The scan. `full` walks every held id (arming only); otherwise only what the lengths say changed. */
+  function scanProgress(full) {
+    var grew = false, l, P, i, k, n;
+    for (l in layers) {
+      var L = layers[l];
+      if (!L || L.tmtLoaderLayer) continue;
+      P = player[l];
+      if (!P) continue;
+      var st = prog.lens[l] || (prog.lens[l] = { u: 0, upg: 0, ms: 0, ach: 0 });
+      if (P.unlocked) { if (!st.u) { st.u = 1; if (addSeen(l + ':u', 'unlocked', l, null)) grew = true; } } else st.u = 0;
+      for (i = 0; i < PROG_KINDS.length; i++) {
+        var arr = P[PROG_KINDS[i][0]], kind = PROG_KINDS[i][1];
+        if (!arr || typeof arr.length !== 'number') continue;
+        n = arr.length;
+        var from = full ? 0 : st[kind];
+        if (n > st[kind] || full) {
+          progStats.tails++;
+          progStats.tailItems += n - from;
+          for (k = from; k < n; k++) if (addSeen(l + ':' + kind + ':' + arr[k], kind, l, arr[k])) grew = true;
+        }
+        st[kind] = n;
+      }
+      // ⚠ THE CHALLENGE AND BUYABLE MAPS ARE WALKED EVERY POLL, and that is not a full scan of the save: they are
+      // per-layer numeric maps with a handful of keys (ptr's largest is 6), there is no length to compare them by,
+      // and a buyable's own maximum is the one piece of state the rule keeps of its own.
+      for (k in (P.challenges || {})) if (Number(P.challenges[k]) > 0) { if (addSeen(l + ':ch:' + k + ':' + P.challenges[k], 'ch', l, k)) grew = true; }
+      for (k in (P.buyables || {})) {
+        // ⚠ `Number(<the game's big-number type>)` — EXACTLY what the harness's monitor does, because the two are
+        // compared event for event. A Decimal coerces through its own `toString`; a value past 1e308 reads Infinity,
+        // and Infinity > Infinity is false, so a buyable that huge simply stops being progress. The monitor has that
+        // property today and the core must have the SAME one, not a better one.
+        var bk = l + ':' + k, v = Number(P.buyables[k]);
+        // ⚠ A BUYABLE IS NOT IN THE SEEN-SET — its own running maximum IS its memory, which is the split the monitor
+        // makes too (`bmax` beside `seen`). Keeping `<l>:<id>@<amount>` in the set instead would grow one key per
+        // level ever reached (PTR's boosters pass 50) and would make `progressMonitorState().seen` incomparable with
+        // the monitor's. So the maximum moves and the event is pushed directly.
+        if (v > (prog.bmax[bk] === undefined ? 0 : prog.bmax[bk])) { prog.bmax[bk] = v; pushEvent('buy', l, k, bk + '@' + v); grew = true; }
+      }
+    }
+    return grew;
+  }
+  // ⚠ A BUYABLE'S EVENT ID CARRIES ITS AMOUNT (`<l>:<id>@<n>`) so the timeline can show "Boosters reached 52" more
+  // than once, while the SEEN-SET question is answered by `bmax` — the same split the monitor makes (`bmax` outside
+  // `seen`). Everything else is identified by the id alone, because holding it twice is not a thing.
+  function addSeen(key, kind, l, id) {
+    if (prog.seen[key]) return false;
+    prog.seen[key] = 1;
+    pushEvent(kind, l, id, key);
+    return true;
+  }
+  function pushEvent(kind, l, id, key) {
+    var now = Number(player.timePlayed) || 0;
+    // the GAP that just ended. ⛔ A gap that ended while the watch had ANY feature escalated does not feed
+    // `typicalGap` — a rescue's duration is not evidence of what normal looks like (the same guard `stall>=Kx/N`
+    // already has), and neither does the first gap after arming or a load.
+    var dt = now - prog.lastAt;
+    if (dt > 0) {
+      prog.gaps.push({ dt: Math.round(dt * 1e6) / 1e6, dirty: !!prog.gapDirty });
+      while (prog.gaps.length > gapWindow()) prog.gaps.shift();
+    }
+    prog.lastAt = now;
+    prog.gapDirty = anyEscalated();
+    prog.total++;
+    prog.byKind[kind] = (prog.byKind[kind] || 0) + 1;
+    var ev = { at: Math.round(now * 1e6) / 1e6, kind: kind, layer: l, id: id === null || id === undefined ? null : String(id), key: key, tick: T.ticks, marks: ladderMarksNow() };
+    prog.events.push(ev);
+    if (prog.events.length > eventCap()) { prog.events.shift(); prog.dropped++; }
+  }
+  /** How many gaps the median is over — the watch's own `n`, so the two cannot disagree. */
+  function gapWindow() { var n = Math.round(Number(watchParam('n'))); return isFinite(n) && n >= 1 ? n : 5; }
+  /** The median of the last `n` gaps that are usable evidence, or null when there are none yet. */
+  function typicalGap() {
+    if (prog === null) return null;
+    var xs = [];
+    for (var i = 0; i < prog.gaps.length; i++) if (!prog.gaps[i].dirty) xs.push(prog.gaps[i].dt);
+    return xs.length ? median(xs) : null;
+  }
+  // ---- the LADDER's mark names as labels (2 of 171 games have one) --------------------------------------------------
+  // ⚠ THE VIEW IS COMPLETE WITHOUT A LADDER, and 169 of the 171 games have none. `tmtLoader.ladder` is set by the HOST
+  // (loader/page.js fetches `tools/harness/ladder/<id>.json` and ignores a 404; the harness passes its own `--ladder`
+  // file) — this file never fetches anything, exactly as it never touches the DOM. A mark is `{id, name, predicate}`
+  // and its predicate is compiled by `T.predicate`, the same mini-language a table gate and a ladder mark already
+  // share. ⛔ EVALUATED ONLY WHEN AN EVENT FIRES, never per tick: a mark is a state predicate, an event is when the
+  // state changed, and `progressStats().markChecks` is what says the cost is per EVENT.
+  function ladderMarks() {
+    var L = T.ladder;
+    return L && L.marks && typeof L.marks.length === 'number' ? L.marks : null;
+  }
+  function ladderMarksNow() {
+    var ms = ladderMarks();
+    if (!ms) return null;
+    var out = null;
+    for (var i = 0; i < ms.length; i++) {
+      var m = ms[i];
+      if (!m || !m.id || typeof m.predicate !== 'string') continue;
+      if (prog.marks[m.id]) continue;
+      progStats.markChecks++;
+      var fn;
+      try { fn = T.predicate(m.predicate); } catch (e) { continue; }
+      if (!holds(fn)) continue;
+      prog.marks[m.id] = Math.round((Number(player.timePlayed) || 0) * 1e6) / 1e6;
+      (out || (out = [])).push(m.name ? m.id + ' — ' + m.name : m.id);
+    }
+    return out;
+  }
+  /** THE READOUT. Newest first, with the counts exact whatever the bound dropped. */
+  T.progress = function () {
+    if (prog === null) return { armed: false, events: [], total: 0, dropped: 0, byKind: {}, lastAt: null, sinceLast: null, typicalGap: null, gaps: [], stalled: false, cap: eventCap(), marks: {} };
+    var now = Number(player.timePlayed) || 0, typ = typicalGap(), k = Number(watchParam('k'));
+    var ev = prog.events.slice().reverse();
+    return { armed: true, events: ev, total: prog.total, dropped: prog.dropped, byKind: Object.assign({}, prog.byKind),
+      lastAt: r1(prog.lastAt), firstAt: r1(prog.firstAt), sinceLast: r1(now - prog.lastAt),
+      typicalGap: typ === null ? null : r1(typ), gaps: prog.gaps.map(function (g) { return { dt: r1(g.dt), dirty: g.dirty }; }),
+      stalled: typ !== null && (now - prog.lastAt) >= k * typ, threshold: typ === null ? null : r1(k * typ),
+      cap: eventCap(), marks: Object.assign({}, prog.marks), keys: Object.keys(prog.seen).length };
+  };
+  /** What the harness's monitor calls its own state, in the monitor's shape, so a gate can compare them directly. */
+  T.progressMonitorState = function () {
+    if (prog === null) return null;
+    return { seen: Object.keys(prog.seen).sort(), bmax: Object.assign({}, prog.bmax), lastGs: prog.lastAt };
+  };
+
+  // ---- THE STALL WATCH (V3 Part 2) — the GAME stops progressing, so a waiting feature changes what it decides BY ----
+  // ⚖ THE USER'S RULE, VERBATIM (2026-09-19): *"Another idea is to have an option to keep track of when progress seems
+  // to be stalled, and switch to a strategy that's less likely to get stuck."* — accepted as an OPTION, OFF BY DEFAULT.
+  //
+  // ⛔ "LESS LIKELY TO GET STUCK" IS NOT A PROPERTY A STRATEGY HAS UNIVERSALLY, AND THAT IS MEASURED, not argued:
+  // `always` is the arm that never waits on PTR's `q` (M22 at 30958) and the arm that WALLS row 1 on `p` (it resets at
+  // 10 points, so points never reach the 200 that b and g need — A1-3); `gain>=2x` is the exact reverse (it wins row 1
+  // and row 2's `e`, and stalls `q` at M19 for 11,500 game-seconds). So there is no "safe" strategy to fall back to,
+  // and this is an ORDERED ESCALATION LIST per feature with a way BACK, not a one-way switch (plan §18.2's table is
+  // the measurement that rules the one-way version out).
+  //
+  // ---- THE MACHINE, EXACTLY ----------------------------------------------------------------------------------------
+  // Per feature: one integer RUNG. 0 = its own policy (the primary — derived / table / `--auto-opt` / the player's
+  // saved choice, whichever V2's precedence resolves to); rung i > 0 = the i-th entry of its escalation list, which is
+  // a COMPLETE policy string, parameters and modifier included.
+  //
+  //   primary ──(the GAME is stalled AND this feature is the arbiter's pick)──▶ rung 1 ──(same again)──▶ rung 2 …
+  //      ▲                                                                        │
+  //      └──(progress resumed, and has held for the cool-off)───────────────────────┘
+  //      └──(the player edits this feature by hand)────────────────────────────────┘
+  //
+  //   · STALLED is the tracker's word: `sinceLast ≥ K × typicalGap`, `typicalGap` the median of the last `n` gaps that
+  //     are usable evidence. With no usable gap yet there is no threshold and NOTHING escalates.
+  //   · ONE ESCALATION PER STALL EVENT. After escalating, the watch will not escalate again until either progress
+  //     resumes or the stall has lasted another whole `K × typicalGap` — a stall that outlives its own threshold twice
+  //     is a second stall event, and the next rung is the answer to it.
+  //   · THE COOL-OFF IS MEASURED IN TYPICAL GAPS, not in seconds (⚖ minimize hardcoding: a number of seconds would be
+  //     a constant with no meaning on a game nobody has measured). `cool` is a FACTOR: once progress has resumed, a
+  //     feature returns to its primary after `cool × typicalGap` game-seconds with the game still progressing. At the
+  //     default 1 that is "the game has been going at its normal rate for one normal gap".
+  //   · A HAND EDIT WINS. Any of `setSavedPolicy` / `setSavedStrategy` / `setSavedParam` / `setSavedModifier` /
+  //     `setEscalation` on a feature puts that feature straight back on rung 0 — the player just told the watch what
+  //     they want, and leaving them on a rung would show them a policy they did not choose.
+  //
+  // ---- PRECEDENCE, extending V2's ----------------------------------------------------------------------------------
+  //   derived  <  the game's table  <  `--auto-opt policy:<id>=`  <  the player's saved choice  <  THE WATCH'S RUNG  <
+  //   a runtime override (`setPolicy`, the planner's committed epoch).
+  // ⛔ The rung sits UNDER the runtime override on purpose, for V2's reason: a measurement that named a configuration
+  // must measure that configuration. And it sits OVER the save because that is what the option the player switched on
+  // is FOR — with the order the other way round the watch could never move anything a player had tuned.
+  //
+  // ---- WHERE THE STATE LIVES ---------------------------------------------------------------------------------------
+  //   the player's CHOICES → `player.au.edits` (V2's one key): each feature's list at `edits[<id>].escalate`, and the
+  //     option itself at the RESERVED entry `edits['*']` (below). ⛔ NOTHING IS ADDED TO `startData`, so a fresh boot
+  //     and every committed snapshot are byte-identical and no full-hash pin moves — which is the claim
+  //     `gates-v3 --part 2` measures rather than inherits.
+  //   the watch's own STATE (which rung, the clocks) → `runtimeState()`, and only while it has something to say.
+  var WATCH_KEY = '*';
+  // ⛔ WHY A RESERVED KEY INSIDE `edits` AND NOT A NEW `player.au` FIELD. A new key in the `au` layer's `startData`
+  // moves the FULL state hash, and `gates-p1a --part 0` pins one — a pin move is ⚖ the USER's, and the brief says to
+  // stop and report rather than spend one. `edits` is `{}` at every boot and gains a key only when the player writes
+  // one, so putting the option there costs NOTHING until it is used. `'*'` can never collide with a feature id, which
+  // is always `<kind>:<layer>` with `kind` one of the six; every reader of `edits` looks a feature up BY ID
+  // (`savedPolicyOf`, `setSavedPolicy`), so the entry is invisible to all of them.
+  // ⚠ The DEFAULTS below are provisional and justified, and ⚖ R2's sweep owns the real ones — this slice moves none.
+  var WATCH_PARAMS = [
+    { name: 'k', type: 'factor', default: '3', min: 1, label: 'stalled after K× the typical gap',
+      why: 'the same proxy `stall>=Kx/N`’s K is: three times longer than this game’s own progress has been taking is not a wait, it is a stall' },
+    { name: 'n', type: 'count', default: '5', min: 1, label: 'progress gaps remembered',
+      why: 'short enough to follow a changing game, long enough that one unusual gap does not move the median — `stall>=Kx/N`’s N, for the same reason' },
+    { name: 'cool', type: 'factor', default: '1', min: 0, label: 'return to the primary after this many typical gaps',
+      why: 'a feature should not be yanked back by one lucky item; one typical gap of renewed progress is by construction “the game is moving at its normal rate again”, and it needs no constant in any game’s own units' },
+  ];
+  var WATCH_ROW = { template: 'the stall watch', params: WATCH_PARAMS };
+  T.watchParams = function () { return WATCH_PARAMS.map(function (p) { var t = PARAM_TYPES[p.type]; return { name: p.name, type: p.type, default: p.default, min: p.min === undefined ? t.min : p.min, max: p.max === undefined ? (t.max === undefined ? null : t.max) : p.max, label: p.label, why: p.why, valueKind: t.kind }; }); };
+  function watchParamRow(name) { for (var i = 0; i < WATCH_PARAMS.length; i++) if (WATCH_PARAMS[i].name === name) return WATCH_PARAMS[i]; return null; }
+  function watchSettings() { var e = editsOf(); var w = e && e[WATCH_KEY]; return w && typeof w === 'object' ? w : {}; }
+  /** One watch parameter's value in force: `--auto-opt watch<Name>=` beats the save beats the declared default. */
+  function watchParam(name) {
+    var row = watchParamRow(name);
+    if (!row) return null;
+    var o = T.autoOptions || {}, ov = o['watch' + name.charAt(0).toUpperCase() + name.slice(1)];
+    if (ov !== undefined && !checkParam(WATCH_ROW, name, ov)) return String(ov).trim();
+    var s = watchSettings()[name];
+    if (typeof s === 'string' && !checkParam(WATCH_ROW, name, s)) return s;
+    return row.default;
+  }
+  /** Is the watch on? `?autoOpt=watch=1` (a gate's and the harness's lever) beats the save; OFF is the default. */
+  function watchArmed() {
+    var o = T.autoOptions || {};
+    if (o.watch !== undefined) return truthy(o.watch);
+    return watchSettings().watch === true;
+  }
+  T.watchOn = watchArmed;
+  T.watchTracking = progressTracked;
+  /** Write one of the player's watch choices. `{ok, error}`; a refusal changes nothing and says why (V2's rule). */
+  T.setWatchOption = function (name, value) {
+    var e = editsOf();
+    if (!e) return { ok: false, error: 'this save has no automation store yet (player.' + AU + '.edits)' };
+    var flags = { watch: 1, track: 1 };
+    if (!flags[name] && !watchParamRow(name)) return { ok: false, error: '"' + name + '" is not a watch setting (' + Object.keys(flags).concat(WATCH_PARAMS.map(function (p) { return p.name; })).join(', ') + ')' };
+    var why = null;
+    if (!flags[name]) { try { why = checkParam(WATCH_ROW, name, value); } catch (err) { why = String(err.message || err); } }
+    if (why) return { ok: false, error: why };
+    var next = Object.assign({}, watchSettings());
+    if (flags[name]) next[name] = !!value; else next[name] = String(value).trim();
+    // ⚠ Vue.set, because `edits['*']` is a key ADDED to an object after creation and 22 of the 171 engines assign
+    // plainly (U6, measured) — the same reason every per-feature entry is written this way.
+    setIn(e, WATCH_KEY, next);
+    player[AU].disclosed = true;
+    if (progressTracked()) T.progressArm(); else { prog = null; clearWatch(); }
+    invalidateView();
+    return { ok: true, error: null, settings: T.watchOptions() };
+  };
+  T.watchOptions = function () {
+    var w = watchSettings(), o = { watch: watchArmed(), track: progressTracked(), saved: { watch: w.watch === true, track: w.track === true } };
+    for (var i = 0; i < WATCH_PARAMS.length; i++) o[WATCH_PARAMS[i].name] = watchParam(WATCH_PARAMS[i].name);
+    return o;
+  };
+
+  // ---- the ESCALATION LIST -----------------------------------------------------------------------------------------
+  // ⛔ DERIVED, NOT TYPED, UNTIL THE PLAYER TYPES ONE (⚖ minimize hardcoding: no layer name, no per-game literal).
+  // The order is: the game's table `alternatives` for this feature where it names any, else every OTHER strategy of
+  // this feature's kind that the table marks applicable HERE — in the table's own order, at each row's declared
+  // defaults, and skipping any row that declares `escalate: false`.
+  // ⚠ `escalate: false` IS A TABLE FACT, NOT A HARDCODE. `challenges: off` and `clickables: off` are strategies whose
+  // whole content is "do nothing", so escalating a stalled feature ONTO one would answer a stall by stopping. The row
+  // says so itself; nothing here knows which rows they are.
+  var escRung = {};        // feature id → which rung it is on (absent = 0, the primary)
+  var escSince = {};       // feature id → the game-second it reached its current rung
+  var watchClock = { stalledAt: null, escalatedAt: null, coolFrom: null, events: 0 };
+  function anyEscalated() { for (var k in escRung) if (escRung[k] > 0) return true; return false; }
+  function clearWatch() { for (var k in escRung) delete escRung[k]; for (var j in escSince) delete escSince[j]; watchClock.stalledAt = null; watchClock.escalatedAt = null; watchClock.coolFrom = null; watchClock.events = 0; }
+  /** The PLAYER's typed list for one feature, validated entry by entry, or null when they have not typed one. */
+  function savedEscalationOf(f) {
+    var e = editsOf(), v = e && e[f.id] ? e[f.id].escalate : undefined;
+    if (!v || typeof v.length !== 'number') return null;
+    // ⚠ A STORED EMPTY LIST IS HONOURED, and it means *never escalate this feature* — see `removeEscalationRung`.
+    var out = [];
+    for (var i = 0; i < v.length; i++) if (typeof v[i] === 'string' && policyOk(f.kind, v[i])) out.push(v[i]);
+    return out;
+  }
+  /** The base policy: everything V2's precedence resolves to BELOW the watch. The rung is derived FROM this. */
+  function basePolicy(f) { return savedPolicyOf(f) || f.policy0; }
+  function escalationList(f) {
+    var saved = savedEscalationOf(f);
+    if (saved) return saved;
+    var alts = [], i;
+    for (i = 1; i < f.policies.length; i++) if (typeof f.policies[i] === 'string' && policyOk(f.kind, f.policies[i])) alts.push(f.policies[i]);
+    if (alts.length) return alts;
+    // ⚠ NOT `f.policy` — that is the getter, and it reads the rung, which reads this list. The exclusion is against
+    // the BASE policy's strategy id, which is what the feature would be running with the watch switched off.
+    var P = parsePolicy(f.kind, basePolicy(f));
+    var rows = strategiesOf(f.kind), out = [];
+    for (i = 0; i < rows.length; i++) {
+      var S = rows[i];
+      if (S.escalate === false) continue;
+      if (P && S.id === P.id) continue;
+      if (!availability(f, S).ok) continue;
+      var s = fillTemplate(S, {});
+      if (policyOk(f.kind, s)) out.push(s);
+    }
+    return out;
+  }
+  T.escalationList = function (id) { var f = byId[id]; if (!f) throw new Error('no feature "' + id + '"'); return { list: escalationList(f), typed: savedEscalationOf(f) !== null, rung: escRung[id] || 0 }; };
+  /** Write the player's own escalation list for one feature (or `null` to go back to the derived one). */
+  T.setEscalation = function (id, list) {
+    var f = byId[id];
+    if (!f) throw new Error('no feature "' + id + '"');
+    var e = editsOf();
+    if (!e) return { ok: false, error: 'this save has no automation store yet (player.' + AU + '.edits)' };
+    var entry = Object.assign({}, e[id] || {});
+    if (list === null || list === undefined) delete entry.escalate;
+    else {
+      if (typeof list.length !== 'number') return { ok: false, error: 'an escalation list is a list of strategy strings' };
+      var out = [];
+      for (var i = 0; i < list.length; i++) {
+        if (typeof list[i] !== 'string' || !policyOk(f.kind, list[i])) return { ok: false, error: '"' + list[i] + '" is not a ' + f.kind + ' strategy this build knows' };
+        out.push(list[i]);
+      }
+      entry.escalate = out;
+    }
+    // a feature with nothing left in its entry loses the entry, so `edits` never keeps an empty shell
+    if (entry.policy === undefined && entry.escalate === undefined) delIn(e, id); else setIn(e, id, entry);
+    player[AU].disclosed = true;
+    handEdited(id);
+    invalidateView();
+    return { ok: true, error: null, list: escalationList(f), typed: savedEscalationOf(f) !== null };
+  };
+  /** ⛔ A HAND EDIT RETURNS THAT FEATURE TO ITS PRIMARY — the player just said what they want. */
+  function handEdited(id) { if (escRung[id]) { delete escRung[id]; delete escSince[id]; } }
+
+  // ---- the tick: poll the tracker, then decide whether to escalate -------------------------------------------------
+  // ⛔ ONCE PER `gameLoop`, BEFORE ANY FEATURE OF THAT LOOP DECIDES — `runLayer` calls it, so it runs ahead of the
+  // first feature whatever order the engines call the layers' `automate` slots in.
+  var watchLoop = -1;
+  function watchTick() {
+    if (!progressTracked()) { if (prog !== null) { prog = null; clearWatch(); } return; }
+    if (prog === null) armProgress();
+    pollProgress();
+    if (!watchArmed()) { if (anyEscalated()) clearWatch(); return; }
+    // ⚠ `progressNow()`, not `T.progress()` — the readout copies the whole bounded event list and reverses it, and
+    // this runs on a 13.5 ms/tick leg. The sensor answers four numbers.
+    var p = progressNow(), now = Number(player.timePlayed) || 0;
+    if (!p.stalled) {
+      // progress is happening (or there is no threshold yet): start the cool-off at the first such tick and bring
+      // every escalated feature home once it has held for `cool × typicalGap`.
+      watchClock.stalledAt = null;
+      if (anyEscalated()) {
+        if (watchClock.coolFrom === null) watchClock.coolFrom = now;
+        var need = Number(watchParam('cool')) * (p.typicalGap === null ? 0 : p.typicalGap);
+        if (now - watchClock.coolFrom >= need) { for (var k in escRung) { delete escRung[k]; delete escSince[k]; } watchClock.escalatedAt = null; watchClock.coolFrom = null; }
+      } else { watchClock.coolFrom = null; watchClock.escalatedAt = null; }
+      return;
+    }
+    watchClock.coolFrom = null;
+    if (watchClock.stalledAt === null) watchClock.stalledAt = now;
+    // ONE escalation per stall event: a stall that has outlived its own threshold AGAIN is the next stall event.
+    if (watchClock.escalatedAt !== null && (now - watchClock.escalatedAt) < (p.threshold === null ? Infinity : p.threshold)) return;
+    var win = watchWinner(p.threshold);
+    if (!win) return;
+    var list = escalationList(win.f), at = escRung[win.f.id] || 0;
+    if (at >= list.length) return;                      // the top rung: there is nothing further to try
+    escRung[win.f.id] = at + 1;
+    escSince[win.f.id] = now;
+    watchClock.escalatedAt = now;
+    // ⛔ THE GAP THAT IS CURRENTLY OPEN IS NOW UNUSABLE, AND MARKING IT HERE IS THE WHOLE GUARD. MEASURED by
+    // `loader/watch.test.mjs` leg 3: `pushEvent` sets `gapDirty` from `anyEscalated()` at the END of the previous
+    // gap, which is before any escalation this stall caused — so the RESCUE's own 100-game-second gap came back
+    // CLEAN and fed the median (8, 12, 100 instead of 8, 12). A rescue's duration is not evidence of what normal
+    // looks like; that is the same rule `stall>=Kx/N` already has for a fallback-fired reset, and it has to be
+    // written down at the moment the escalation happens, not inferred at the moment the gap closes.
+    if (prog !== null) prog.gapDirty = true;
+    watchClock.events++;
+    // ⚠ The rung changed the policy in force, so the parsed cache and the view both have to know.
+    win.f.policyStr = null;
+    invalidateView();
+  }
+  /** ⛔ ONLY A FEATURE THAT IS WAITING IS A CANDIDATE — V1's reason codes decide, and nothing re-derives them. */
+  // A feature that is ACTING, locked, off, yielding to the game's own auto-reset, blocked, or has nothing affordable
+  // is left alone: changing its strategy answers a stall it is not the cause of. `f.last` is the code from the tick it
+  // last ran in, which is exactly what "currently waiting" means for a feature that runs once per loop.
+  //
+  // ⛔⛔ AND IT MUST HAVE BEEN WAITING FOR AT LEAST AS LONG AS THE STALL — MEASURED, AND THE FIRST CUT WITHOUT THIS
+  // TEST WRECKED PTR'S OPENING (V3 §21, the brief's own hazard). The gap distribution of a fresh game is heavy-tailed:
+  // the first upgrades arrive 9–15 game-seconds apart, so the median over the last `n` gaps is ~14 and `K = 3` puts
+  // the threshold at ~45 — while a perfectly healthy opening has 100-second quiet stretches BY DESIGN (§14d.6). With
+  // the game-level test alone the watch fired 13 times in 9000 game-seconds, put `reset:p` on rung 2 (`always`, which
+  // resets at 10 points), and the run reached only **M07 at 2672** where the shipped table reaches **M12 at 6718** —
+  // the exact failure the measurement in plan §18.2 already named for `always` on row 1.
+  // ⚠ The fix is not a bigger constant, and it is not the median: it is that a feature which reset three seconds ago
+  // is NOT the cause of a 45-second game stall. `f.onSince` is V1's own clock for "eligible with nothing done since",
+  // which is exactly this question, and it is already reset on every action. In the opening `reset:p` acts every few
+  // seconds, so it never clears the bar and the opening is untouched; at the `q` stall it has done nothing for 11,500
+  // game-seconds and clears it by three orders of magnitude.
+  function watchCandidate(g, threshold) {
+    if (!active(g)) return null;
+    if (!g.last || String(g.last.code).indexOf('waiting:') !== 0) return null;
+    if (g.gate && !holds(g.gate)) return null;
+    if (!escalationList(g).length) return null;
+    if (threshold !== null && threshold !== undefined) {
+      if (g.onSince === null) return null;
+      if (((Number(player.timePlayed) || 0) - g.onSince) < threshold) return null;
+    }
+    // the ARBITER's number is V2's, unchanged: how far into its own target this refusal is (`progressOf`).
+    var P = parsedOf(g), p = null;
+    try { p = progressOf(g, P, { values: g.last.values }); } catch (e) { p = null; }
+    return { f: g, progress: p === null ? -1 : p };
+  }
+  /** ⛔ V2's ARBITER, REUSED — highest progress fraction first, ties by registration order. Not a second one. */
+  function watchWinner(threshold) { return pickByProgress(features, function (g) { return watchCandidate(g, threshold); }); }
+  function pickByProgress(list, candidateOf) {
+    var best = null;
+    for (var i = 0; i < list.length; i++) {
+      var c = candidateOf(list[i]);
+      if (!c) continue;
+      if (best === null || c.progress > best.progress) best = c;
+    }
+    return best;
+  }
+  /** The policy the watch has put in force for this feature, or null when it is on its primary. */
+  function watchPolicy(f) {
+    var at = escRung[f.id];
+    if (!at) return null;
+    var list = escalationList(f);
+    return list[at - 1] || null;
+  }
+  // ---- the WATCH's own state words, enumerated as DATA ---------------------------------------------------------------
+  // ⚠ THEY ARE NOT REASON CODES, and that distinction is deliberate — see §21. V1's vocabulary is the set of values a
+  // DECISION returns, and `gates-v1 --part 1 / --part 2` define it that way (every code witnessed as a decision, and
+  // `acted:*` ⇔ the feature acted). The watch does not decide anything a feature does; it changes what a feature
+  // decides BY, so its words live in their own enumerated table with their own witness leg and V1's two gates keep
+  // meaning what they mean.
+  var WATCH_CODES = {
+    'watch:off':       'Off — the stall watch is not switched on',
+    'watch:armed':     'Watching — not enough progress measured yet to say what a normal gap is',
+    'watch:moving':    'Watching — the game is progressing ({sinceLast} s since the last of {total}, typically {typicalGap} s)',
+    'watch:stalled':   'STALLED — {sinceLast} s since the last progress, against a typical {typicalGap} s (threshold {threshold} s)',
+    'watch:escalated': '{n} feature(s) escalated — the stall watch changed what they decide by',
+    'watch:cooling':   'Cooling off — progress resumed {since} s ago; {n} escalated feature(s) return to their own rule at {need} s',
+  };
+  T.watchCodes = function () { return Object.assign({}, WATCH_CODES); };
+  T.watchState = function () {
+    var p = T.progress(), now = Number(player.timePlayed) || 0;
+    var esc = [], k;
+    for (k in escRung) if (escRung[k] > 0) esc.push({ id: k, rung: escRung[k], of: escalationList(byId[k]).length, policy: watchPolicy(byId[k]), since: r1(escSince[k]) });
+    esc.sort(function (a, b) { return a.id < b.id ? -1 : a.id > b.id ? 1 : 0; });
+    var code = !watchArmed() ? 'watch:off'
+      : watchClock.coolFrom !== null && esc.length ? 'watch:cooling'
+      : p.stalled ? 'watch:stalled'
+      : p.typicalGap === null ? 'watch:armed' : 'watch:moving';
+    var need = Number(watchParam('cool')) * (p.typicalGap === null ? 0 : p.typicalGap);
+    var values = { sinceLast: p.sinceLast, total: p.total, typicalGap: p.typicalGap, threshold: p.threshold, n: esc.length,
+      since: watchClock.coolFrom === null ? null : r1(now - watchClock.coolFrom), need: r1(need) };
+    return { on: watchArmed(), tracking: progressTracked(), code: code, text: watchText(code, values), values: values,
+      escalated: esc, events: watchClock.events, options: T.watchOptions(),
+      stalledSince: watchClock.stalledAt === null ? null : r1(watchClock.stalledAt),
+      escalatedAt: watchClock.escalatedAt === null ? null : r1(watchClock.escalatedAt) };
+  };
+  function watchText(code, values) {
+    return String(WATCH_CODES[code] || code).replace(/\{(\w+)\}/g, function (_, n) { return values && values[n] !== undefined && values[n] !== null ? String(values[n]) : '?'; });
+  }
+  /** One feature's watch row, for `explain()` — null when the watch has nothing to say about it. */
+  function escalationOf(f) {
+    if (!watchArmed()) return null;
+    var list = escalationList(f), at = escRung[f.id] || 0;
+    if (!list.length && !at) return null;
+    return { rung: at, of: list.length, list: list.slice(), typed: savedEscalationOf(f) !== null,
+      policy: at ? watchPolicy(f) : null, primary: basePolicy(f), since: at ? r1(escSince[f.id]) : null,
+      // ⚠ THE SAME BAR THE DECISION USES, or the view would promise an escalation that can never happen.
+      candidate: !!watchCandidate(f, progressNow().threshold),
+      waitingFor: f.onSince === null ? null : r1((Number(player.timePlayed) || 0) - f.onSince) };
+  }
+  T.escalationState = function (id) { var f = byId[id]; if (!f) throw new Error('no feature "' + id + '"'); return escalationOf(f); };
+
   // unlocks-purchase: the points after this reset (held + resetGain) afford the cheapest unowned unlocked upgrade of the
   // layer, or the next level of one of its unlocked buyables — both only where costed in the layer's own points.
   function resetBuysSomething(l) {
@@ -1109,6 +1667,12 @@
     stats.calls[l] = (stats.calls[l] || 0) + 1;
     (via === 'slot' ? stats.viaSlot : stats.viaFallback)[l] = ((via === 'slot' ? stats.viaSlot : stats.viaFallback)[l] || 0) + 1;
     if (T.profileName === 'off') return;
+    // ⛔ ONCE PER `gameLoop`, AHEAD OF THE FIRST FEATURE OF THAT LOOP (V3). `runLayer` is called from each layer's own
+    // `automate` wrapper and from the `au` layer's fallback, so this is the earliest point that is guaranteed to come
+    // before any feature decides, whatever order the engines walk the layers in. `watchTick` polls the progress
+    // tracker and then escalates at most one waiting feature — so a feature's very next decision is made under the
+    // rung the stall it is part of just bought.
+    if (watchLoop !== loopNo) { watchLoop = loopNo; watchTick(); }
     for (var i = 0; i < features.length; i++) {
       var f = features[i];
       if (f.layer !== l) continue;
@@ -1206,6 +1770,22 @@
     for (var qi in stallSince) { ss[qi] = stallSince[qi]; nss++; }
     if (nss) o.stallSince = ss;
     if (stallFired.loop >= 0) o.stallFired = { loop: stallFired.loop, layer: stallFired.layer };
+    // ---- V3: the progress tracker's and the stall watch's memory ------------------------------------------------
+    // ⛔ EACH BLOCK APPEARS ONLY WHEN IT HAS SOMETHING TO SAY, for V2's reason and with V2's consequence: a run with
+    // the tracker off writes EXACTLY the record it wrote before V3, so every snapshot committed in this repo stays
+    // valid and every pinned resume reproduces. `gates-v3 --part 2` measures that rather than asserting it.
+    // ⚠ `gapDirty` IS PART OF THE MEMORY on purpose. Without it a resumed run would re-apply the "the first gap after
+    // a load does not count" rule to a gap the uninterrupted run was already halfway through, and the two would
+    // measure different medians from the same state.
+    if (prog !== null) o.progress = { seen: Object.keys(prog.seen), bmax: Object.assign({}, prog.bmax),
+      lens: JSON.parse(JSON.stringify(prog.lens)), events: JSON.parse(JSON.stringify(prog.events)),
+      total: prog.total, byKind: Object.assign({}, prog.byKind), dropped: prog.dropped,
+      gaps: JSON.parse(JSON.stringify(prog.gaps)), gapDirty: !!prog.gapDirty, lastAt: prog.lastAt, firstAt: prog.firstAt,
+      marks: Object.assign({}, prog.marks) };
+    var er = {}, ne = 0;
+    for (var ei in escRung) if (escRung[ei] > 0) { er[ei] = escRung[ei]; ne++; }
+    if (ne) o.watch = { rung: er, since: Object.assign({}, escSince), clock: { stalledAt: watchClock.stalledAt, escalatedAt: watchClock.escalatedAt, coolFrom: watchClock.coolFrom, events: watchClock.events } };
+    else if (watchClock.events) o.watch = { rung: {}, since: {}, clock: { stalledAt: watchClock.stalledAt, escalatedAt: watchClock.escalatedAt, coolFrom: watchClock.coolFrom, events: watchClock.events } };
     if (runtimeHooks.length) { o.extra = {}; for (var i = 0; i < runtimeHooks.length; i++) o.extra[runtimeHooks[i].name] = runtimeHooks[i].get(); }
     return o;
   };
@@ -1232,6 +1812,31 @@
     for (k in rt.rateHold || {}) rateHold[k] = Number(rt.rateHold[k]);
     stallFired.loop = rt.stallFired ? Number(rt.stallFired.loop) : -1;
     stallFired.layer = rt.stallFired ? rt.stallFired.layer : null;
+    // ---- V3 ------------------------------------------------------------------------------------------------------
+    // ⚠ A RECORD WITHOUT A `progress` BLOCK LEAVES THE TRACKER UNARMED, which is what a pre-V3 snapshot means and
+    // what a run with the tracker off means. It then arms fresh at the first tick, seeds from whatever the save
+    // already holds, and treats the stretch from there as the first gap (which does not count).
+    prog = null;
+    if (rt.progress) {
+      var g = rt.progress;
+      prog = { seen: {}, bmax: Object.assign({}, g.bmax || {}), lens: JSON.parse(JSON.stringify(g.lens || {})),
+        events: (g.events || []).slice(), total: Number(g.total) || 0, byKind: Object.assign({}, g.byKind || {}),
+        dropped: Number(g.dropped) || 0, gaps: (g.gaps || []).slice(), gapDirty: !!g.gapDirty,
+        lastAt: Number(g.lastAt) || 0, firstAt: Number(g.firstAt) || 0, marks: Object.assign({}, g.marks || {}) };
+      for (var si = 0; si < (g.seen || []).length; si++) prog.seen[g.seen[si]] = 1;
+    }
+    clearWatch();
+    if (rt.watch) {
+      for (k in rt.watch.rung || {}) if (byId[k]) { escRung[k] = Number(rt.watch.rung[k]); byId[k].policyStr = null; }
+      for (k in rt.watch.since || {}) escSince[k] = Number(rt.watch.since[k]);
+      var wc = rt.watch.clock || {};
+      watchClock.stalledAt = wc.stalledAt === null || wc.stalledAt === undefined ? null : Number(wc.stalledAt);
+      watchClock.escalatedAt = wc.escalatedAt === null || wc.escalatedAt === undefined ? null : Number(wc.escalatedAt);
+      watchClock.coolFrom = wc.coolFrom === null || wc.coolFrom === undefined ? null : Number(wc.coolFrom);
+      watchClock.events = Number(wc.events) || 0;
+    }
+    watchLoop = -1;
+    polledLoop = -1;
     for (var i = 0; i < runtimeHooks.length; i++) runtimeHooks[i].set((rt.extra || {})[runtimeHooks[i].name]);
     return true;
   };
@@ -1338,7 +1943,12 @@
     // a save written by a later version, or by hand, must not be able to run a policy this build cannot validate
     return policyOk(f.kind, v) ? v : null;
   }
-  function policyOf(f) { return f.policyRuntime !== null ? f.policyRuntime : (savedPolicyOf(f) || f.policy0); }
+  // ⛔ PRECEDENCE, EXTENDED ONCE BY V3 AND STILL IN ONE PLACE:
+  //   derived  <  the game's table  <  `--auto-opt policy:<id>=`  <  the player's SAVED choice  <  the stall WATCH's
+  //   current rung  <  a runtime override (`setPolicy`).
+  // `basePolicy(f)` is everything below the watch, and the watch's own list is derived FROM it — which is also why
+  // `escalationList` must never read `f.policy` (that getter is this function, and it reads the rung).
+  function policyOf(f) { return f.policyRuntime !== null ? f.policyRuntime : (watchPolicy(f) || basePolicy(f)); }
   /** The parsed form of whatever is in force, cached against the string it was parsed from. */
   function parsedOf(f) {
     var s = policyOf(f);
@@ -1353,10 +1963,21 @@
     if (!f) throw new Error('no feature "' + id + '"');
     var e = editsOf();
     if (!e) return { ok: false, policy: policyOf(f), error: 'this save has no automation store yet (player.' + AU + '.edits)' };
-    if (policy === null || policy === undefined) { delIn(e, id); player[AU].disclosed = true; invalidateView(); return { ok: true, policy: policyOf(f), error: null }; }
+    // ⚠ THE PER-FEATURE ENTRY IS MERGED, NOT REPLACED (V3): `escalate` is a second field of the same object, and a
+    // policy write that overwrote the whole entry would silently drop the list the player typed.
+    var entry = Object.assign({}, e[id] || {});
+    if (policy === null || policy === undefined) {
+      delete entry.policy;
+      if (entry.escalate === undefined) delIn(e, id); else setIn(e, id, entry);
+      player[AU].disclosed = true; handEdited(id); invalidateView(); return { ok: true, policy: policyOf(f), error: null };
+    }
     if (typeof policy !== 'string' || !policyOk(f.kind, policy)) return { ok: false, policy: policyOf(f), error: '"' + policy + '" is not a ' + f.kind + ' strategy this build knows' };
-    setIn(e, id, { policy: policy });
+    entry.policy = policy;
+    setIn(e, id, entry);
     player[AU].disclosed = true;
+    // ⛔ A HAND EDIT RETURNS THIS FEATURE TO ITS PRIMARY (V3, ⚖ the brief): the player has just said what they want,
+    // and leaving them on an escalation rung would show them a policy they did not choose.
+    handEdited(id);
     invalidateView();
     return { ok: true, policy: policyOf(f), error: null };
   };
@@ -1409,6 +2030,173 @@
     });
   };
 
+
+  // ---- editing an escalation LIST, rung by rung (V3 Part 2) ----------------------------------------------------------
+  // ⛔ EVERY ONE OF THESE GOES THROUGH `T.setEscalation`, which validates each entry and puts the feature back on its
+  // primary — so there is ONE write path and one refusal message, exactly as V2's four policy writers all end in
+  // `setSavedPolicy`. ⚠ The FIRST edit of a DERIVED list materialises it: the list the player sees is the list they
+  // start from, and a derived list that silently reverted after one edit would be the worst of both.
+  function rungList(f) { return escalationList(f).slice(); }
+  function rungIndex(list, rung) { var i = Math.round(Number(rung)) - 1; return i >= 0 && i < list.length ? i : -1; }
+  T.setEscalationStrategy = function (id, rung, strategyId) {
+    var f = byId[id];
+    if (!f) throw new Error('no feature "' + id + '"');
+    var S = byStrategyId(f.kind, strategyId);
+    if (!S || S.kind !== f.kind) return { ok: false, error: '"' + strategyId + '" is not a ' + f.kind + ' strategy' };
+    var a = availability(f, S);
+    if (!a.ok) return { ok: false, error: a.why };
+    var list = rungList(f), i = rungIndex(list, rung);
+    if (i < 0) return { ok: false, error: 'this feature has no rung ' + rung };
+    var was = parsePolicy(f.kind, list[i]);
+    list[i] = formatPolicy(f.kind, { id: S.id, params: {}, modifier: was && was.modifier ? was.modifier : null });
+    return T.setEscalation(id, list);
+  };
+  T.setEscalationParam = function (id, rung, name, value, which) {
+    var f = byId[id];
+    if (!f) throw new Error('no feature "' + id + '"');
+    var list = rungList(f), i = rungIndex(list, rung);
+    if (i < 0) return { ok: false, error: 'this feature has no rung ' + rung };
+    var P = parsePolicy(f.kind, list[i]);
+    if (!P) return { ok: false, error: 'rung ' + rung + ' cannot be parsed' };
+    var onMod = which === 'modifier';
+    if (onMod && !P.modifier) return { ok: false, error: 'that rung has no modifier to edit' };
+    var S = byStrategyId(f.kind, onMod ? P.modifier.id : P.id), why = null;
+    try { why = checkParam(S, name, value); } catch (e) { return { ok: false, error: String(e.message || e) }; }
+    if (why) return { ok: false, error: why };
+    var next = { id: P.id, params: Object.assign({}, P.params), modifier: P.modifier ? { id: P.modifier.id, params: Object.assign({}, P.modifier.params) } : null };
+    (onMod ? next.modifier.params : next.params)[name] = String(value).trim();
+    list[i] = formatPolicy(f.kind, next);
+    return T.setEscalation(id, list);
+  };
+  /** Append a rung. With no strategy named, the first one of the kind that is available and not already listed. */
+  T.addEscalationRung = function (id, strategyId) {
+    var f = byId[id];
+    if (!f) throw new Error('no feature "' + id + '"');
+    var list = rungList(f), pick = null;
+    if (strategyId) { var S = byStrategyId(f.kind, strategyId); if (!S || S.kind !== f.kind) return { ok: false, error: '"' + strategyId + '" is not a ' + f.kind + ' strategy' }; if (!availability(f, S).ok) return { ok: false, error: availability(f, S).why }; pick = fillTemplate(S, {}); }
+    else {
+      var rows = strategiesOf(f.kind);
+      for (var i = 0; i < rows.length && pick === null; i++) {
+        if (rows[i].escalate === false || !availability(f, rows[i]).ok) continue;
+        var s = fillTemplate(rows[i], {});
+        if (list.indexOf(s) < 0) pick = s;
+      }
+      if (pick === null) return { ok: false, error: 'every strategy this feature can use is already a rung' };
+    }
+    list.push(pick);
+    return T.setEscalation(id, list);
+  };
+  T.removeEscalationRung = function (id, rung) {
+    var f = byId[id];
+    if (!f) throw new Error('no feature "' + id + '"');
+    var list = rungList(f), i = rungIndex(list, rung);
+    if (i < 0) return { ok: false, error: 'this feature has no rung ' + rung };
+    list.splice(i, 1);
+    // ⚠ AN EMPTY TYPED LIST IS NOT "NO LIST" — it is *never escalate this feature*, and it has to be storable, or
+    // removing the last rung would silently hand the player the DERIVED list back and the feature would go on
+    // escalating. `savedEscalationOf` therefore honours a stored `[]`, and `escalationList` returns it.
+    return T.setEscalation(id, list);
+  };
+  T.moveEscalationRung = function (id, rung, dir) {
+    var f = byId[id];
+    if (!f) throw new Error('no feature "' + id + '"');
+    var list = rungList(f), i = rungIndex(list, rung), j = i + (Number(dir) > 0 ? 1 : -1);
+    if (i < 0) return { ok: false, error: 'this feature has no rung ' + rung };
+    if (j < 0 || j >= list.length) return { ok: false, error: 'that rung is already at the end of the list' };
+    var t = list[i]; list[i] = list[j]; list[j] = t;
+    return T.setEscalation(id, list);
+  };
+  /** One rung's editable shape, for the page: the picker's options and one field per parameter. */
+  T.rungChoices = function (id, rung) {
+    var f = byId[id];
+    if (!f) throw new Error('no feature "' + id + '"');
+    var list = escalationList(f), i = rungIndex(list, rung);
+    if (i < 0) return null;
+    var P = parsePolicy(f.kind, list[i]);
+    return { policy: list[i], strategy: P ? P.id : null, params: P ? Object.assign({}, P.params) : null,
+      modifier: P && P.modifier ? { id: P.modifier.id, params: Object.assign({}, P.modifier.params) } : null,
+      options: strategiesOf(f.kind).map(function (S) { var a = availability(f, S); return { id: S.id, label: S.label, help: S.help, available: a.ok && S.escalate !== false, why: a.ok ? (S.escalate === false ? 'a do-nothing strategy is never an escalation rung' : null) : a.why, inForce: !!(P && P.id === S.id), params: strategyJSON(S).params }; }) };
+  };
+
+  // ---- WHICH BLOCKS ARE COLLAPSED (V3 Part 3, ⚖ the user's Q1) -------------------------------------------------------
+  // ⚖ THE USER'S WORDS (2026-09-19): *"I also want to make each block in the advanced automation section collapsible,
+  // and have an expand all / collapse all button."*
+  // ⛔ THE STATE IS NOT IN `player`, AND THAT IS THE WHOLE REASON THIS IS THREE LINES OF STORAGE RATHER THAN A SAVE
+  // KEY. `hashGame` excludes only the top-level `au`, so a per-feature expand map under `player.au` would move every
+  // pinned FULL hash in the repo — at **59 keys** on `the-omega-tree`, which is the widest Advanced view measured.
+  // The store is `loader/layerlist.js`'s pattern, reused verbatim: `T.storage.raw`, inside the loader's OWN namespace
+  // (`tmt-loader:<id>:`), so two games cannot share a block's state and this file invents no second mechanism.
+  // ⚠ EVERY READ AND EVERY WRITE IS WRAPPED. Storage can throw and can come back empty — a private window, blocked
+  // site data, a quota — and a view with nothing stored renders exactly as it did before this existed. In NODE there
+  // is no `storage.raw` at all (`boot.mjs` supplies `prefix` and `list` only), so `prefKey()` is null, both calls are
+  // no-ops, and the headless view keeps today's defaults. That is deliberate: which blocks a player has open is not
+  // something a harness run should be able to move.
+  // ⚠ IT IS A CONSEQUENCE, recorded rather than left to be found: the key is inside what "clear this game's save"
+  // clears, because that namespace IS what it clears. A cleared game comes back with today's defaults.
+  var COLLAPSE_KEY = 'ui.au.collapsed';
+  // ⛔ TWO LISTS, NOT ONE, because the DEFAULT is not uniform: a locked or excluded feature is collapsed today and
+  // everything else is open (V1's rule, unchanged — "there are 78 of them on ptr at a fresh save and 3 that are doing
+  // anything"). A single "collapsed" list could not express "I opened a locked one", and `collapse all` followed by
+  // `expand all` has to come back to the same place a first load would.
+  var collapsePrefs = null;
+  function collapsePrefKey() { var st = T.storage; return st && st.prefix && st.raw ? st.prefix + COLLAPSE_KEY : null; }
+  function collapseRead() {
+    if (collapsePrefs) return collapsePrefs;
+    collapsePrefs = { open: {}, closed: {} };
+    try {
+      var k = collapsePrefKey();
+      var raw = k && T.storage.raw.getItem.call(localStorage, k);
+      var v = raw ? JSON.parse(raw) : null;
+      if (v && typeof v === 'object') for (var side in { open: 1, closed: 1 }) {
+        var list = v[side];
+        if (list && typeof list.length === 'number') for (var i = 0; i < list.length; i++) if (typeof list[i] === 'string') collapsePrefs[side][list[i]] = true;
+      }
+    } catch (e) { /* no storage, or a value we did not write: the view renders with today's defaults */ }
+    return collapsePrefs;
+  }
+  function collapseWrite() {
+    try {
+      var k = collapsePrefKey();
+      if (!k) return;
+      var p = collapseRead(), open = Object.keys(p.open), closed = Object.keys(p.closed);
+      if (open.length || closed.length) T.storage.raw.setItem.call(localStorage, k, JSON.stringify({ open: open, closed: closed }));
+      else T.storage.raw.removeItem.call(localStorage, k);   // nothing remembered is nothing to remember
+    } catch (e) { /* a full or read-only store costs the preference, never the view */ }
+  }
+  /** Today's rule, and the ONE place it is written: a feature that cannot run yet is one line. */
+  function collapsedByDefault(r) { return r.state === 'locked' || r.state === 'excluded'; }
+  function isCollapsed(r) {
+    var p = collapseRead();
+    if (p.open[r.id]) return false;
+    if (p.closed[r.id]) return true;
+    return collapsedByDefault(r);
+  }
+  T.collapsed = function (id) { var rows = explainForView(); for (var i = 0; i < rows.length; i++) if (rows[i].id === id) return isCollapsed(rows[i]); return null; };
+  T.collapsePrefs = function () { var p = collapseRead(); return { open: Object.keys(p.open), closed: Object.keys(p.closed) }; };
+  /** Set one block. `null` puts it back on the default, which is what keeps the store small. */
+  T.setCollapsed = function (id, on) {
+    var rows = explainForView(), r = null;
+    for (var i = 0; i < rows.length; i++) if (rows[i].id === id) r = rows[i];
+    if (!r) throw new Error('no feature row "' + id + '"');
+    var p = collapseRead();
+    delete p.open[id]; delete p.closed[id];
+    if (on !== null && on !== undefined && !!on !== collapsedByDefault(r)) (!!on ? p.closed : p.open)[id] = true;
+    collapseWrite();
+    return isCollapsed(r);
+  };
+  /** Expand all / collapse all — every block the view is showing, defaults included. */
+  T.setCollapsedAll = function (on) {
+    var rows = explainForView(), p = collapseRead(), n = 0;
+    for (var i = 0; i < rows.length; i++) {
+      var r = rows[i];
+      delete p.open[r.id]; delete p.closed[r.id];
+      if (!!on !== collapsedByDefault(r)) (!!on ? p.closed : p.open)[r.id] = true;
+      n++;
+    }
+    collapseWrite();
+    return n;
+  };
+
   // ---- T.explain() — the readout, headless first (V1) -----------------------------------------------------------------
   // ⛔ THE PAGE RENDERS THIS, it does not compute its own. One row per registered feature, in the same order the
   // tab draws them, plus one per feature the table EXCLUDED (which is never registered and would otherwise have no
@@ -1458,10 +2246,13 @@
         // V2: `saved` is the PLAYER's own choice (null when they have not made one), and `strategy` / `params` are
         // what `inForce` parses to — so the tab renders the editors from `explain()` like everything else.
         policy: { inForce: f.policy, table: f.policyTable, derived: f.policyDerived, alternatives: f.policies.slice(1),
-          saved: savedPolicyOf(f), runtime: f.policyRuntime, base: f.policy0,
+          saved: savedPolicyOf(f), runtime: f.policyRuntime, base: f.policy0, escalated: watchPolicy(f),
           strategy: pp ? pp.id : null, params: pp ? Object.assign({}, pp.params) : null,
           modifier: pp && pp.modifier ? { id: pp.modifier.id, params: Object.assign({}, pp.modifier.params) } : null },
         stall: T.stallState(f.id),
+        // V3: the stall watch's row for this feature — `null` when the watch is off, so a run without it renders
+        // exactly the rows it rendered before.
+        escalation: escalationOf(f),
         last: f.last ? { code: f.last.code, text: codeText(f.last.code, f.last.values), values: jsonValues(f.last.values), tick: f.last.tick, at: f.last.at } : null,
         acted: acted, lastActedAt: f.lastActedAt,
         // on + unlocked for long enough, and it has still never done anything. A configuration that CANNOT fire is
@@ -1478,8 +2269,8 @@
       out.push({
         id: id, title: id, layer: id.slice(c + 1), kind: id.slice(0, c),
         state: 'excluded',
-        policy: { inForce: null, table: null, derived: null, alternatives: [], saved: null, runtime: null, base: null, strategy: null, params: null, modifier: null },
-        stall: null,
+        policy: { inForce: null, table: null, derived: null, alternatives: [], saved: null, runtime: null, base: null, escalated: null, strategy: null, params: null, modifier: null },
+        stall: null, escalation: null,
         last: { code: 'off:excluded', text: codeText('off:excluded', { reason: T.autoExcluded[id] }), values: { reason: T.autoExcluded[id] }, tick: T.ticks, at: now },
         acted: 0, lastActedAt: null, neverFired: false, eligibleFor: null,
         gate: null, after: [],
@@ -1544,6 +2335,9 @@
   }
   // ⚠ V1's word was "Read-only." — V2 is the slice that stopped it being true.
   var ADV_INTRO = 'What each feature decided on the last tick it was asked, and why — and the strategy it decides by, which you can change here.';
+  var PROG_INTRO = 'Everything this session has held for the first time, newest first — an unlock, an upgrade, a milestone, an achievement, a challenge completion or a buyable past its own best. Re-buying what a reset took away is not progress, which is what makes a stall visible.';
+  // ⚠ THE PLAYER'S WORDS FOR THE SIX KINDS, and the only place they are written. The IDs beside them are the GAME's own.
+  var PROG_LABEL = { unlocked: 'unlocked', upg: 'upgrade', ms: 'milestone', ach: 'achievement', ch: 'challenge', buy: 'buyable' };
   // ⚠ ONE BLOCK PER FEATURE, NOT A WIDE TABLE — it has to read at 390 px with no horizontal scroll, and under
   // `?mobile=1` the layer list draws this tab through its own reader, which skips a `display-text` entirely. So the
   // layout is ordinary flow with `overflow-wrap`, no column widths and no element wider than its parent.
@@ -1551,9 +2345,17 @@
   var STATE_BG = { on: '#4f9a6a', off: '#3d6f91', armed: '#8a6d3b', locked: '#666666', excluded: '#5a4a4a' };
   // A feature that cannot run yet is ONE LINE. There are 78 of them on ptr at a fresh save and 3 that are doing
   // anything; a full block each would bury the three.
+  // ⚠ IT IS NO LONGER ONLY FOR `locked` / `excluded` (V3 Part 3): the player can collapse any block, so the state
+  // word is the ROW's rather than one of two literals, and the two things that must stay visible while collapsed say
+  // so on the one line — an ESCALATED feature (the watch changed what it decides by, and the player has to be able
+  // to see that without opening 59 blocks) and a NEVER-FIRED one (the flag exists because every individual reason
+  // looks reasonable while the feature is dead).
   function collapsedBlock(r) {
-    return '<div style="opacity:.6;padding:2px 0;text-align:left">' + esc(r.title) + ' <span style="opacity:.6;font-size:.85em">' + esc(r.id) + '</span> — '
-      + chip(r.state === 'excluded' ? 'EXCLUDED' : 'LOCKED', STATE_BG[r.state]) + ' <span style="font-size:.9em">' + esc(r.last ? r.last.text : '') + '</span></div>';
+    var bits = '';
+    if (r.policy && r.policy.escalated) bits += ' ' + chip('ESCALATED', '#a06a3e');
+    if (r.neverFired) bits += ' <span style="color:#c08a3e">⚠ never fired</span>';
+    return '<div style="opacity:' + (r.state === 'on' ? '.85' : '.6') + ';padding:2px 0;text-align:left">' + esc(r.title) + ' <span style="opacity:.6;font-size:.85em">' + esc(r.id) + '</span> — '
+      + chip(r.state.toUpperCase(), STATE_BG[r.state]) + bits + ' <span style="font-size:.9em">' + esc(r.last ? r.last.text : '') + '</span></div>';
   }
   function featureBlock(r) {
     var p = r.policy, bits = [];
@@ -1564,6 +2366,9 @@
     // makes "one press returns it to the default" a visible offer rather than a guess.
     if (p.saved) bits.push(chip('EDITED', '#7fb2d9') + ' default ' + esc(p.base));
     if (p.runtime) bits.push(chip('OVERRIDDEN', '#8a6d3b') + ' by a runtime setting');
+    // V3: an ESCALATED feature is visibly different from an EDITED one and from an OVERRIDDEN one, and it names the
+    // rule it came FROM — the stall watch moved it, so the player's own answer has to stay on screen beside it.
+    if (p.escalated) bits.push(chip('ESCALATED', '#a06a3e') + ' by the stall watch · its own rule is ' + esc(r.escalation ? r.escalation.primary : '?'));
     if (p.table !== null && p.table !== p.inForce) bits.push('table says ' + esc(p.table));
     if (p.derived !== null && p.derived !== p.inForce) bits.push('derived would be ' + esc(p.derived));
     if (p.alternatives.length) bits.push('alt ' + p.alternatives.map(esc).join(', '));
@@ -1580,6 +2385,9 @@
     o.push('<div style="text-align:left;margin-top:3px"><b>now:</b> ' + esc(r.last ? r.last.text : 'nothing decided yet') + '</div>');
     o.push('<div style="text-align:left;font-size:.9em;opacity:.7">acted ' + r.acted + (r.lastActedAt === null ? '' : ' · last at ' + r.lastActedAt + ' s') + (r.eligibleFor === null ? '' : ' · on for ' + r.eligibleFor + ' s') + '</div>');
     if (r.neverFired) o.push('<div style="text-align:left;font-size:.9em;color:#c08a3e">⚠ never fired — on and unlocked this whole time, and it has never acted</div>');
+    if (r.escalation && r.escalation.rung) o.push('<div style="text-align:left;font-size:.9em;color:#c08a3e">the stall watch has this feature on rung ' + r.escalation.rung + ' of ' + r.escalation.of
+      + ' since ' + r.escalation.since + ' s — it returns to <b>' + esc(r.escalation.primary) + '</b> once progress resumes and holds</div>');
+    else if (r.escalation && r.escalation.candidate) o.push('<div style="text-align:left;font-size:.9em;opacity:.7">the stall watch is watching this feature — it is waiting, so a stall would escalate it</div>');
     // ⚠ AUTHOR-WRITTEN TEXT THROUGH `v-html`. Escaped, like every other table string above (`off` reasons, gate
     // predicates) and like the GAME's own layer names and feature titles.
     if (r.provenance) o.push('<div style="text-align:left;font-size:.85em;opacity:.65;font-style:italic;margin-top:3px">' + esc(r.provenance) + '</div>');
@@ -1648,16 +2456,20 @@
   function advancedHeaderHTML() {
     if (!advancedShown()) return '';
     var rows = explainForView(true);   // the redraw IS the refresh point — see explainForView
-    var running = 0, never = 0, edited = 0;
-    for (var i = 0; i < rows.length; i++) { if (rows[i].state === 'on') running++; if (rows[i].neverFired) never++; if (rows[i].policy && rows[i].policy.saved) edited++; }
+    var running = 0, never = 0, edited = 0, escalated = 0;
+    for (var i = 0; i < rows.length; i++) { if (rows[i].state === 'on') running++; if (rows[i].neverFired) never++; if (rows[i].policy && rows[i].policy.saved) edited++; if (rows[i].policy && rows[i].policy.escalated) escalated++; }
     return '<div style="text-align:left;max-width:100%;overflow-wrap:anywhere;word-break:break-word">'
       + '<div style="opacity:.75;font-size:.9em;margin-bottom:6px;text-align:left">' + esc(ADV_INTRO) + '</div>'
       + '<div style="margin-bottom:4px;text-align:left">Profile <b>' + esc(T.profileName) + '</b> · ' + running + ' of ' + rows.length + ' running'
       + (never ? ' · <b style="color:#c08a3e">' + never + ' never fired</b>' : '')
-      + (edited ? ' · <b style="color:#7fb2d9">' + edited + ' edited</b>' : '') + '</div></div>';
+      + (edited ? ' · <b style="color:#7fb2d9">' + edited + ' edited</b>' : '')
+      + (escalated ? ' · <b style="color:#a06a3e">' + escalated + ' escalated</b>' : '') + '</div></div>';
   }
   T.advancedHTML = advancedHeaderHTML;
-  T.featureBlockHTML = function (r) { return r.state === 'locked' || r.state === 'excluded' ? collapsedBlock(r) : featureBlock(r); };
+  // ⚠ THE CALLER DECIDES (V3 Part 3). Until V3 the choice was the STATE's alone; now it is the player's, held
+  // component-side and defaulting to the state's answer — so this function takes the flag rather than deciding.
+  // ⛑ The one-argument call still behaves exactly as it did, which is what keeps every other consumer working.
+  T.featureBlockHTML = function (r, collapsed) { return (collapsed === undefined ? (r.state === 'locked' || r.state === 'excluded') : !!collapsed) ? collapsedBlock(r) : featureBlock(r); };
   T.advancedRows = explainForView;
 
   // ---- the components ---------------------------------------------------------------------------------------------
@@ -1691,7 +2503,13 @@
   var BTN_STYLE = CONTROL + ';margin:0 1px;padding:1px 6px;font-family:inherit;font-size:.9em;cursor:pointer';
 
   var COMPONENTS = {
-    // ONE parameter. `data` = {fid, which, name, value, label, type, min, max}
+    // ONE parameter. `data` = {fid, which, name, value, label, type, min, max} plus, since V3, an optional TARGET:
+    //   · nothing        → the feature's saved policy (`setSavedParam`) — V2's behaviour, unchanged
+    //   · `rung: <n>`    → that escalation rung's own parameter (`setEscalationParam`)
+    //   · `watch: true`  → one of the stall watch's three settings (`setWatchOption`)
+    // ⛔ ONE COMPONENT, NOT THREE. Everything that makes this field correct is in it — trap (ii)'s draft that survives
+    // the per-tick re-render, trap (i)'s hotkey guard, the per-type step rule and the clamp to the row's own bounds —
+    // and a second copy of it for rungs would be a second place for each of those to be got wrong.
     // ⚠ TRAP (ii) — RE-RENDER WHILE TYPING. The Advanced tab re-renders on every tick, so a field bound straight to
     // the saved value would have a half-typed `1e` parsed out from under the caret. The field is bound to LOCAL
     // state and commits on change / Enter / blur; the watcher refuses to overwrite the draft while the field has
@@ -1704,9 +2522,15 @@
         onFocus: function () { this.editing = true; setFocused(true); },
         onBlur: function () { this.commit(); this.editing = false; setFocused(false); },
         onKey: function (e) { if (e.key === 'Enter') this.commit(); else if (e.key === 'Escape') { this.draft = String(this.data.value); this.error = null; } },
+        write: function (v) {
+          var d = this.data;
+          if (d.watch) return T.setWatchOption(d.name, v);
+          if (d.rung) return T.setEscalationParam(d.fid, d.rung, d.name, v, d.which);
+          return T.setSavedParam(d.fid, d.name, v, d.which);
+        },
         commit: function () {
           if (this.draft === String(this.data.value)) { this.error = null; return; }
-          var r = T.setSavedParam(this.data.fid, this.data.name, this.draft, this.data.which);
+          var r = this.write(this.draft);
           this.error = r.ok ? null : r.error;
           if (r.ok) this.draft = String(this.data.value);
         },
@@ -1725,7 +2549,7 @@
           else if (t === 'count') next = String(clamp(Math.round(Number(v)) + dir));
           else if (t === 'fraction') next = String(clamp(Number(v) + dir * 0.05));
           else next = String(clamp(Number(v) * (dir > 0 ? 1.5 : 1 / 1.5) + dir * 0.5));
-          var r = T.setSavedParam(this.data.fid, this.data.name, next, this.data.which);
+          var r = this.write(next);
           this.error = r.ok ? null : r.error;
           if (r.ok) this.draft = String(this.data.value);
         },
@@ -1735,7 +2559,7 @@
         // ⚠ `data-fid` / `data-param` are how a GATE points at ONE feature's field. The first cut of `gates-v2`
         // located `input.tmtl-input` with `.first()` and typed into whichever feature happened to be drawn first,
         // then reported that the value had not committed — the leg was measuring the wrong block.
-        + '<input type="text" class="tmtl-input" :data-fid="data.fid" :data-param="data.which + \':\' + data.name"'
+        + '<input type="text" class="tmtl-input" :data-fid="data.fid" :data-param="data.which + \':\' + data.name" :data-rung="data.rung || 0"'
         + ' :value="draft" :title="data.label" style="' + FIELD_STYLE + '"'
         + ' @input="draft = $event.target.value" @change="commit" @focus="onFocus" @blur="onBlur"'
         + ' @keydown.stop="onKey" @keyup.stop @keypress.stop>'
@@ -1744,7 +2568,8 @@
         + '<span v-if="error" class="tmtl-error" style="color:#d07a7a;font-size:.85em;display:block;white-space:normal">{{ error }}</span>'
         + '</span>',
     },
-    // The STRATEGY PICKER. `data` = {fid, value, options: [{id, label, help, available, why}]}
+    // The STRATEGY PICKER. `data` = {fid, value, options: [{id, label, help, available, why}]} and, since V3, an
+    // optional `rung: <n>` — the same picker editing one escalation rung instead of the policy in force.
     // ⚠ An unavailable strategy is SHOWN, disabled, with the reason in its own label — `gain>=Nx` can never fire on
     // a static layer (plan §14d.5), and a picker that silently omitted it would leave the player wondering.
     'tmtl-select': {
@@ -1752,12 +2577,13 @@
       data: function () { return { error: null }; },
       methods: {
         onChange: function (e) {
-          var r = T.setSavedStrategy(this.data.fid, e.target.value);
+          var r = this.data.rung ? T.setEscalationStrategy(this.data.fid, this.data.rung, e.target.value)
+            : T.setSavedStrategy(this.data.fid, e.target.value);
           this.error = r.ok ? null : r.error;
         },
       },
       template: '<span style="display:inline-block;text-align:left">'
-        + '<select class="tmtl-select" :data-fid="data.fid" :value="data.value" style="' + SELECT_STYLE + '"'
+        + '<select class="tmtl-select" :data-fid="data.fid" :data-rung="data.rung || 0" :value="data.value" style="' + SELECT_STYLE + '"'
         + ' @change="onChange" @keydown.stop @keyup.stop>'
         + '<option v-for="o in data.options" :value="o.id" :disabled="!o.available">{{ o.label }}{{ o.available ? \'\' : \' — \' + o.why }}</option>'
         + '</select>'
@@ -1769,8 +2595,32 @@
       props: ['data'],
       computed: {
         r: function () { return this.data.row; },
-        html: function () { return T.featureBlockHTML(this.data.row); },
-        editable: function () { var r = this.data.row; return r.state !== 'excluded' && r.state !== 'locked'; },
+        // ⚠ THE COLLAPSE FLAG IS A PROP, HELD BY `tmtl-editors` — see TRAP (ii) there. This component only renders it.
+        html: function () { return T.featureBlockHTML(this.data.row, this.data.collapsed); },
+        editable: function () { var r = this.data.row; return !this.data.collapsed && r.state !== 'excluded' && r.state !== 'locked'; },
+        rungs: function () {
+          var r = this.data.row, e = r.escalation, out = [];
+          if (!e) return out;
+          for (var i = 1; i <= e.list.length; i++) {
+            var c = T.rungChoices(r.id, i);
+            if (!c) continue;
+            var fields = [], add = function (which, id, params) {
+              var all = which === 'modifier' ? T.modifiers(r.kind) : T.strategies(r.kind), S = null;
+              for (var j = 0; j < all.length; j++) if (all[j].id === id) S = all[j];
+              if (!S) return;
+              for (var k = 0; k < S.params.length; k++) {
+                var pp = S.params[k];
+                fields.push({ key: i + ':' + which + ':' + pp.name, fid: r.id, rung: i, which: which, name: pp.name, type: pp.type,
+                  label: pp.label, min: pp.min, max: pp.max, value: (params && params[pp.name] !== undefined) ? params[pp.name] : pp.default });
+              }
+            };
+            if (c.strategy) add('primary', c.strategy, c.params);
+            if (c.modifier) add('modifier', c.modifier.id, c.modifier.params);
+            out.push({ key: r.id + '#' + i, n: i, picker: { fid: r.id, rung: i, value: c.strategy, options: c.options }, fields: fields, on: e.rung === i, policy: c.policy });
+          }
+          return out;
+        },
+        esc: function () { return this.data.row.escalation; },
         picker: function () {
           var r = this.data.row;
           return { fid: r.id, kind: r.kind, value: r.policy.strategy, options: T.strategyChoices(r.id) };
@@ -1799,10 +2649,23 @@
       methods: {
         toggleMod: function () { T.setSavedModifier(this.data.row.id, this.modOn ? null : this.mods[0].id); },
         toDefault: function () { T.setSavedPolicy(this.data.row.id, null); },
+        toggleOpen: function () { this.$emit('toggle', this.data.row.id); },
+        addRung: function () { var r = T.addEscalationRung(this.data.row.id); this.rungError = r.ok ? null : r.error; },
+        dropRung: function (n) { var r = T.removeEscalationRung(this.data.row.id, n); this.rungError = r.ok ? null : r.error; },
+        moveRung: function (n, d) { var r = T.moveEscalationRung(this.data.row.id, n, d); this.rungError = r.ok ? null : r.error; },
+        listToDefault: function () { T.setEscalation(this.data.row.id, null); this.rungError = null; },
       },
+      data: function () { return { rungError: null }; },
       template: '<div style="text-align:left">'
         + '<h3 v-if="data.head" style="margin:14px 0 4px 0;text-align:left">{{ data.layerName }} <span style="opacity:.5;font-size:.7em">{{ data.row.layer }}</span></h3>'
-        + '<div v-html="html"></div>'
+        // ⚖ Q1: every block collapses, one press each. The chevron is BESIDE the block rather than inside the HTML,
+        // because the block is a `v-html` string and a handler cannot live in one.
+        + '<div style="display:flex;align-items:flex-start;gap:4px;text-align:left">'
+        +   '<button type="button" class="tmtl-fold" :data-fid="data.row.id" :data-open="data.collapsed ? 0 : 1"'
+        +   ' :title="data.collapsed ? \'show this feature\' : \'collapse this feature\'" style="' + BTN_STYLE + ';flex:0 0 auto;margin-top:2px"'
+        +   ' @click="toggleOpen" @keydown.stop>{{ data.collapsed ? \'+\' : \'\\u2212\' }}</button>'
+        +   '<div style="flex:1 1 auto;min-width:0" v-html="html"></div>'
+        + '</div>'
         + '<div v-if="editable" style="text-align:left;margin:-6px 0 10px 0;padding:0 0 0 11px">'
         +   '<div style="text-align:left;margin-bottom:2px">'
         +     '<span style="opacity:.75;font-size:.85em;margin-right:4px">strategy</span>'
@@ -1817,11 +2680,141 @@
         +     '<span v-if="data.row.stall && data.row.stall.why" style="opacity:.7;margin-left:6px">{{ data.row.stall.why }}</span>'
         +     '<span v-else-if="data.row.stall" style="opacity:.7;margin-left:6px">typical {{ data.row.stall.typical }} s over {{ data.row.stall.remembered }} own-rule reset(s) · {{ data.row.stall.elapsed }} s of {{ data.row.stall.need }} s</span>'
         +   '</div>'
+        // ---- the ESCALATION LIST (V3): the rungs the stall watch would try, in order ------------------------------
+        +   '<div v-if="esc" class="tmtl-esc" :data-fid="data.row.id" style="text-align:left;font-size:.9em;margin-top:4px;border-top:1px dashed rgba(127,178,217,.35);padding-top:3px">'
+        +     '<div style="opacity:.75">if the game stalls, try in order <span v-if="!esc.typed" style="opacity:.7">(derived — nothing typed here yet)</span>'
+        +       '<button v-if="esc.typed" type="button" class="tmtl-esc-default" :data-fid="data.row.id" style="' + BTN_STYLE + ';margin-left:6px" @click="listToDefault" @keydown.stop>use the derived list</button>'
+        +     '</div>'
+        +     '<div v-for="g in rungs" :key="g.key" class="tmtl-rung" :data-fid="data.row.id" :data-rung="g.n" style="text-align:left;padding:1px 0">'
+        +       '<span :style="g.on ? \'color:#c08a3e;font-weight:bold\' : \'opacity:.7\'">{{ g.n }}.</span> '
+        +       '<tmtl-select :data="g.picker"></tmtl-select>'
+        // ⚠ `data-fid` / `data-rung` ON THE BUTTON ITSELF, not only on the row that contains it — V2 §Part 4's rule,
+        // and the first cut of `gates-v3 --part 5` timed out on exactly this: the attributes were on the wrapper and
+        // `button.tmtl-rung-del[data-fid=…]` matched nothing while five such buttons were on screen.
+        +       '<button type="button" class="tmtl-rung-up" :data-fid="data.row.id" :data-rung="g.n" style="' + BTN_STYLE + '" title="earlier" @click="moveRung(g.n, -1)" @keydown.stop>\u2191</button>'
+        +       '<button type="button" class="tmtl-rung-down" :data-fid="data.row.id" :data-rung="g.n" style="' + BTN_STYLE + '" title="later" @click="moveRung(g.n, 1)" @keydown.stop>\u2193</button>'
+        +       '<button type="button" class="tmtl-rung-del" :data-fid="data.row.id" :data-rung="g.n" style="' + BTN_STYLE + '" title="remove this rung" @click="dropRung(g.n)" @keydown.stop>\u00d7</button>'
+        +       '<span v-if="g.on" style="color:#c08a3e;margin-left:4px">\u25c0 in force now</span>'
+        +       '<div v-if="g.fields.length" style="text-align:left"><tmtl-number v-for="f in g.fields" :key="f.key" :data="f"></tmtl-number></div>'
+        +     '</div>'
+        +     '<div v-if="!rungs.length" style="opacity:.7">nothing \u2014 this feature is never escalated</div>'
+        +     '<button type="button" class="tmtl-rung-add" :data-fid="data.row.id" style="' + BTN_STYLE + '" @click="addRung" @keydown.stop>add a rung</button>'
+        +     '<span v-if="rungError" class="tmtl-error" style="color:#d07a7a;margin-left:6px">{{ rungError }}</span>'
+        +   '</div>'
+        + '</div></div>',
+    },
+    // ---- THE STALL WATCH's own controls (V3) ------------------------------------------------------------------------
+    // ⚠ IT IS A COMPONENT, NOT PART OF THE HEADER STRING. The header is a `display-text` function — that is where V1's
+    // lazy guard lives and `gates-v1 --part 3p` measures it — and a string cannot carry a click handler.
+    'tmtl-watch': {
+      props: ['data'],
+      computed: {
+        w: function () { return this.data.watch; },
+        fields: function () {
+          var o = this.data.watch.options, out = [];
+          var ps = T.watchParams();
+          for (var i = 0; i < ps.length; i++) out.push({ key: 'w:' + ps[i].name, watch: true, fid: null, which: 'watch', name: ps[i].name,
+            type: ps[i].type, label: ps[i].label, min: ps[i].min, max: ps[i].max, value: o[ps[i].name] });
+          return out;
+        },
+      },
+      methods: {
+        toggleWatch: function () { var r = T.setWatchOption('watch', !this.data.watch.on); this.error = r.ok ? null : r.error; },
+        toggleTrack: function () { var r = T.setWatchOption('track', !this.data.watch.options.saved.track); this.error = r.ok ? null : r.error; },
+      },
+      data: function () { return { error: null }; },
+      template: '<div class="tmtl-watch" style="text-align:left;margin:0 0 8px 0;padding:4px 6px;border-left:3px solid #a06a3e;background:rgba(160,106,62,.1);border-radius:4px">'
+        + '<div style="text-align:left">'
+        +   '<button type="button" class="tmtl-watch-toggle" :data-on="w.on ? 1 : 0" style="' + BTN_STYLE + '" @click="toggleWatch" @keydown.stop>{{ w.on ? \'the stall watch is ON\' : \'the stall watch is off\' }}</button>'
+        +   '<button v-if="!w.on" type="button" class="tmtl-track-toggle" :data-on="w.options.saved.track ? 1 : 0" style="' + BTN_STYLE + ';margin-left:4px" @click="toggleTrack" @keydown.stop>{{ w.options.saved.track ? \'progress tracker ON\' : \'progress tracker off\' }}</button>'
+        +   '<span style="opacity:.8;margin-left:6px">{{ w.text }}</span>'
+        + '</div>'
+        + '<div v-if="w.on" style="text-align:left"><tmtl-number v-for="f in fields" :key="f.key" :data="f"></tmtl-number></div>'
+        + '<div v-if="w.on && w.escalated.length" style="text-align:left;color:#c08a3e">escalated: <span v-for="e in w.escalated" :key="e.id">{{ e.id }} \u2192 {{ e.policy }} (rung {{ e.rung }} of {{ e.of }}) </span></div>'
+        + '<span v-if="error" class="tmtl-error" style="color:#d07a7a;font-size:.85em;display:block">{{ error }}</span>'
+        + '</div>',
+    },
+    // ---- the PROGRESS subtab (V3 Part 1) ---------------------------------------------------------------------------
+    // ⚠ IT RENDERS `T.progress()` AND COMPUTES NOTHING OF ITS OWN, which is V1's rule and is why the timeline is
+    // testable in Node (`gates-v3 --part 5` compares the rendered rows against the API's).
+    // ⚠ THE LABELS ARE THE ENGINE'S OWN. A layer's name comes from `layers[l].name` and an item is named by its own
+    // numeric id — this view introduces no second naming scheme for anything the game declares (U7's open question
+    // about a prose-name lift is the user's, and nothing here settles it).
+    'tmtl-progress': {
+      props: ['layer', 'data'],
+      computed: {
+        p: function () {
+          var clock = 0;
+          try { clock = tmp[AU].auViewGen; } catch (e) { clock = player.timePlayed; }
+          var p = T.progress();
+          p.clock = clock;
+          p.rows = p.events.map(function (e) {
+            var name = e.layer;
+            try { name = layers[e.layer] && layers[e.layer].name ? String(layers[e.layer].name) : e.layer; } catch (err) { name = e.layer; }
+            return { key: e.key + '@' + e.at, at: e.at, what: PROG_LABEL[e.kind] || e.kind, layerName: name, layer: e.layer, id: e.id, marks: e.marks };
+          });
+          p.watch = T.watchState();
+          return p;
+        },
+      },
+      methods: { arm: function () { T.setWatchOption('track', true); } },
+      template: '<div style="text-align:left;max-width:100%;overflow-wrap:anywhere;word-break:break-word">'
+        + '<div style="opacity:.75;font-size:.9em;margin-bottom:6px;text-align:left">' + '' + PROG_INTRO + '</div>'
+        + '<div v-if="!p.armed" style="text-align:left">'
+        +   '<button type="button" class="tmtl-track-on" style="' + BTN_STYLE + '" @click="arm" @keydown.stop>start tracking progress</button>'
+        +   '<span style="opacity:.75;margin-left:6px">nothing is recorded while the tracker is off, and a run that never uses it costs nothing.</span>'
+        + '</div>'
+        + '<div v-else style="text-align:left">'
+        +   '<div style="text-align:left;margin-bottom:4px"><b>{{ p.total }}</b> thing(s) first held in this session'
+        +     '<span v-if="p.lastAt !== null"> \u00b7 last progress <b>{{ p.sinceLast }}</b> game-s ago (at {{ p.lastAt }} s)</span>'
+        +     '<span v-if="p.typicalGap !== null"> \u00b7 typical gap <b>{{ p.typicalGap }}</b> s</span>'
+        +     '<span v-if="p.stalled" style="color:#c08a3e"> \u00b7 <b>STALLED</b> (over {{ p.threshold }} s)</span>'
+        +   '</div>'
+        +   '<div style="text-align:left;font-size:.9em;opacity:.8;margin-bottom:4px">{{ p.watch.text }}</div>'
+        +   '<div v-if="p.dropped" style="text-align:left;font-size:.85em;opacity:.7">showing the newest {{ p.cap }} \u2014 {{ p.dropped }} older event(s) are counted above and not listed</div>'
+        +   '<div v-for="r in p.rows" :key="r.key" class="tmtl-prog-row" style="text-align:left;padding:1px 0;border-bottom:1px solid rgba(127,178,217,.12)">'
+        +     '<span style="opacity:.65;font-size:.85em">{{ r.at }} s</span> '
+        +     '<b>{{ r.layerName }}</b> <span style="opacity:.55;font-size:.85em">{{ r.layer }}</span> '
+        +     '<span>{{ r.what }}</span><span v-if="r.id !== null"> {{ r.id }}</span>'
+        +     '<span v-if="r.marks" style="color:#7fb2d9"> \u2014 {{ r.marks.join(", ") }}</span>'
+        +   '</div>'
+        +   '<div v-if="!p.rows.length" style="opacity:.7;text-align:left">nothing yet \u2014 the tracker records what the game has not held before, and the save it started from does not count.</div>'
         + '</div></div>',
     },
     // The LIST. One instance for the whole Advanced view, so the input elements keep their identity across ticks.
     'tmtl-editors': {
       props: ['layer', 'data'],
+      // ⛔⛔ TRAP (ii), AND THE COLLAPSE MAP IS EXACTLY WHAT IT IS ABOUT. The Advanced tab re-renders every tick, so a
+      // fold state held in the rendered HTML string is gone on the next one. It lives HERE, component-side, keyed by
+      // feature id, surviving every re-render the way `tmtl-number` holds its draft — and it is SEEDED from
+      // `T.storage.raw` once, at `created`, so a reload comes back where the player left it.
+      data: function () { return { fold: Object.create(null), gen: 0 }; },
+      created: function () {
+        var p = T.collapsePrefs();
+        for (var i = 0; i < p.open.length; i++) this.fold[p.open[i]] = false;
+        for (var j = 0; j < p.closed.length; j++) this.fold[p.closed[j]] = true;
+      },
+      methods: {
+        // ⚠ `gen` is what makes Vue re-render: a key ADDED to a plain object is not reactive in Vue 2 (the same rule
+        // that made `armLocked` invisible until V1 seeded it — U6, measured on 22 of the 171 engines).
+        toggle: function (id) {
+          var now = this.isFolded(id);
+          this.fold[id] = !now;
+          T.setCollapsed(id, !now);
+          this.gen++;
+        },
+        all: function (on) {
+          var rows = T.advancedRows();
+          for (var i = 0; i < rows.length; i++) this.fold[rows[i].id] = !!on;
+          T.setCollapsedAll(on);
+          this.gen++;
+        },
+        isFolded: function (id) {
+          if (this.fold[id] !== undefined) return this.fold[id];
+          var c = T.collapsed(id);
+          return c === null ? false : c;
+        },
+      },
       computed: {
         blocks: function () {
           // ⚠ `player.timePlayed` is read on purpose: it is what makes this computed re-evaluate every tick, which
@@ -1831,19 +2824,29 @@
           // is what keeps the reason line LIVE and what makes an out-of-band change visible on a paused page.
           var clock = 0;
           try { clock = tmp[AU].auViewGen; } catch (e) { clock = player.timePlayed; }
-          var rows = explainForView(), out = [], prev = null;
+          var rows = explainForView(), out = [], prev = null, gen = this.gen;
           for (var i = 0; i < rows.length; i++) {
             var l = rows[i].layer;
             var name = l;
             try { name = layers[l] && layers[l].name ? String(layers[l].name) : l; } catch (e) { name = l; }
-            out.push({ row: rows[i], head: l !== prev, layerName: name, clock: clock });
+            out.push({ row: rows[i], head: l !== prev, layerName: name, clock: clock, gen: gen, collapsed: this.isFolded(rows[i].id) });
             prev = l;
           }
           return out;
         },
+        watch: function () { return T.watchState(); },
+        folded: function () { var b = this.blocks, n = 0; for (var i = 0; i < b.length; i++) if (b[i].collapsed) n++; return n; },
       },
       template: '<div style="text-align:left;max-width:100%;overflow-wrap:anywhere;word-break:break-word">'
-        + '<tmtl-feature v-for="b in blocks" :key="b.row.id" :data="b"></tmtl-feature>'
+        + '<tmtl-watch :data="{watch: watch}"></tmtl-watch>'
+        // ⚖ Q1's second half: expand all / collapse all, and they set EVERY block including the ones whose default is
+        // the other way — `collapse all` then `expand all` has to be reachable from any state.
+        + '<div style="text-align:left;margin-bottom:6px;font-size:.9em">'
+        +   '<button type="button" class="tmtl-expand-all" style="' + BTN_STYLE + '" @click="all(false)" @keydown.stop>expand all</button>'
+        +   '<button type="button" class="tmtl-collapse-all" style="' + BTN_STYLE + '" @click="all(true)" @keydown.stop>collapse all</button>'
+        +   '<span style="opacity:.7;margin-left:6px">{{ folded }} of {{ blocks.length }} collapsed</span>'
+        + '</div>'
+        + '<tmtl-feature v-for="b in blocks" :key="b.row.id" :data="b" @toggle="toggle"></tmtl-feature>'
         + '</div>',
     },
   };
@@ -2107,6 +3110,10 @@
     return hasClicks ? 'when' : 'off';
   }
 
+  // ⛔ INSTALLED HERE, NOT WHERE `T.tick` IS DEFINED: the tracker lives below the contract-only early return, so a
+  // page without `?automation=1` leaves `onTick` null and `T.tick` does exactly what it did before V3.
+  onTick = progressTickHook;
+
   if (typeof addLayer === 'function' && typeof layers === 'object' && !layers[AU]) {
     derive();
     addLayer(AU, {
@@ -2192,6 +3199,18 @@
         // anywhere — and this component never wanted one.
         // ⚠ V1 could not hit this: its Advanced content was `[['display-text', fn]]`, with no null in it.
         'tmtl-editors',
+      ] },
+      // ⛔ THE THIRD KEY, AND `Simple` STAYS FIRST. Both engines select `Object.keys(tabFormat)[0]` in
+      // `getStartPlayer` and repair an old save to it in `fixSave`, so the ORDER here is what decides which subtab a
+      // first load shows — and every pinned number was measured with `Simple` on screen. A fourth subtab (the
+      // advanced planner's round log, P2) joins the same way; neither of the first two has to move for it.
+      // ⚠ THE BARE COMPONENT FORM AGAIN, with no `data`: `['tmtl-progress', null]` would put a `null` into the object
+      // four engines walk into `tmp` and kill their `load()` (§18.4 item 11 — `the-necromantree`,
+      // `the-prestige-tree`, `the-christmas-tree`, `the-romeo-julliet-tree`; `&&` binds tighter than `||` and
+      // `typeof null === "object"`). There is no `null` anywhere in this tab format, and CI's
+      // `G1 load — automation page` is what says so over all 171.
+      Progress: { content: [
+        'tmtl-progress',
       ] },
       },
       automate: auAutomate,

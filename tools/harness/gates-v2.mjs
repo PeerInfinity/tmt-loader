@@ -36,6 +36,10 @@ const row = (r) => { rows.push(r); console.log(`${r.ok ? 'GREEN' : 'RED  '} ${r.
 // that dies part-way prints fewer rows, and fewer rows is fewer reds. These are the exact counts each part emits.
 const ROWS = { 1: 3, 2: 13, 3: 5, 4: 8, 5: 3, 6: 1 };
 
+// ⚠ V3 ADDED TWO COMPONENTS (`tmtl-watch`, `tmtl-progress`), so what was the literal 4 here is now a DECLARED count
+// in one place. It is deliberately not read off `tmtLoader.componentNames` — a gate that asks the thing it is judging
+// how many it should have is not a gate.
+const COMPONENTS_EXPECTED = 6;
 const SNAP = (id, m) => `tools/harness/snapshots/${id}/all/${m}.json`;
 // The R1′ leg V1's inertness is measured on, and V2's after it (plan §14d, §16.1).
 const M16_PIN = { ticks: 24179, hashGame: '9e2eadb7c58c0078' };
@@ -288,7 +292,7 @@ async function part4(browser, base) {
         engineHas: ['text-input', 'slider', 'drop-down'].filter((n) => !!(window.Vue && Vue.options.components[n])),
         ours: tmtLoader.componentNames, vue: Vue.version,
       }));
-      check(present.selects > 0 && present.ours.length === 4,
+      check(present.selects > 0 && present.ours.length === COMPONENTS_EXPECTED,
         `the loader's own components rendered: ${present.selects} picker(s), ${JSON.stringify(present.ours)} — Vue ${present.vue}, this engine's own inputs: ${present.engineHas.join(', ') || 'NONE of text-input / slider / drop-down'}`);
 
       // ---- a real SELECT of a different strategy ------------------------------------------------------------
@@ -618,7 +622,7 @@ async function part6(browser, base, ids) {
       } finally { await context.close(); }
     } catch (e) { abstained.push(`${id}: ${String(e.message).slice(0, 90)}`); continue; }
     const ok = r.rendered && r.unknown.length === 0 && r.extra <= 0 && r.scrollX === false
-      && r.components.length === 4
+      && r.components.length === COMPONENTS_EXPECTED
       && (r.editable === 0 || (r.selects >= 1 && r.accepted && (r.accepted.ok === null || (r.accepted.ok && r.accepted.cleared))));
     judged.push({ id, ok, r });
     if (!ok) row({ gate: 'V2-6 roster: the editable Advanced subtab', id, leg: 'profile all, 30 ticks', ok: false, notes: JSON.stringify(r).slice(0, 700) });

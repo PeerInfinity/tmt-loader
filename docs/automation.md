@@ -88,14 +88,16 @@ SUPPLIED). Both engines' `column` / `row` render **any registered component by n
 `:layer` and `:data` — ptr `js/components.js:71-73`, something `:60-72`), so a component the LOADER registers appears
 inside a `tabFormat` exactly like an engine one. Censused quote-agnostically over `games/`: **all 171 of the 171
 games register `Vue.component("column")`**, which is the premise the whole design rests on. `tmt-auto.js` registers
-four components, namespaced so nothing can collide:
+**six** components (four since V2, two more since V3), namespaced so nothing can collide:
 
 | component | what it is |
 |---|---|
-| `tmtl-editors` | the whole Advanced list — ONE instance, so the input elements keep their identity across ticks |
-| `tmtl-feature` | one feature: V1's read-only block (`v-html`), then the picker, the parameter editors and the modifier press |
-| `tmtl-select` | the strategy picker (a `<select>`) |
-| `tmtl-number` | one parameter: a text field with `−` / `+` steps, bound to LOCAL state and committed on change / Enter / blur |
+| `tmtl-editors` | the whole Advanced list — ONE instance, so the input elements keep their identity across ticks, and since V3 the one that HOLDS which blocks are folded |
+| `tmtl-feature` | one feature: V1's read-only block (`v-html`), then the picker, the parameter editors, the modifier press and (V3) the escalation list |
+| `tmtl-select` | the strategy picker (a `<select>`) — for the policy in force, or (V3, with `data.rung`) for one escalation rung |
+| `tmtl-number` | one parameter: a text field with `−` / `+` steps, bound to LOCAL state and committed on change / Enter / blur. Since V3 it writes to one of THREE targets — the saved policy, an escalation rung, or a stall-watch setting — because everything that makes it correct (the draft that survives the re-render, the hotkey guard, the per-type step, the clamp) would otherwise be got wrong twice more |
+| `tmtl-watch` | (V3) the stall watch's own controls: the on/off press, the tracker's, the three settings and the state line |
+| `tmtl-progress` | (V3) the `Progress` subtab's timeline |
 
 ⚖ **They wear the GAME's theme, not the browser's** (user, 2026-09-19: *"light text on a dark background"*). An
 `<input>`, a `<select>` and a `<button>` come with the browser's own colours — black on white — which is wrong
@@ -151,6 +153,181 @@ redraw every 10 (`gates-v1 --part 3p`): **0 formats on Simple against 2721 with 
 switching subtab would move it again mid-run. `hashGame` therefore excludes `player.subtabs.au` as well as
 `player.au`, in ONE shared definition (`tmtLoader.gameState`, `docs/contract.md`). ⚠ Measured before the change:
 `player.subtabs.au` was ABSENT on both engines, so deleting the key reproduces the historical bytes exactly.
+
+### `Progress` — what this session has held for the first time (V3)
+
+The third subtab, and the sensor the stall watch runs on. **Progress = something NEW EVER HELD in this session**: a
+layer unlocked, an upgrade, a milestone, an achievement, a challenge completion, or a buyable above its own running
+maximum. ⛔ **Re-buying what a reset took away is NOT progress** — the rule is a SEEN-SET, not a signature of the
+save, which is exactly what makes a reset-and-rebuy loop read as a stall rather than as activity.
+
+⛔ **It is the harness's own stall-detector rule** (`--stall-seen`, `tools/harness/policy.mjs` `MONITOR_SRC`), brought
+into the core so there is ONE definition to read — the same move `hashGame` → `tmtLoader.gameState` made in V1.
+`gates-v3 --part 1` compares the two event for event on ptr and on something: the seen-set, the buyable maxima, and
+the tick the last progress landed on. The monitor's own text is *not* replaced, because it has to go on reproducing
+every committed `stall.lastProgress` pin (`gates-p1a --part 0`'s **10531** among them) and a resumed run restores it
+from a snapshot an older build wrote.
+
+⚠ **One measured difference between the two, and each is right about a different question.** The harness monitor is
+seeded from a snapshot's own `runtime.monitor` block, so it CONTINUES the memory of the run that wrote the fixture;
+the core's tracker arms when it is switched on and seeds from the save in front of it. Resuming `all/M16.json` gives
+identical seen-sets (107 = 107) and DIFFERENT buyable maxima over 8 keys — a buyable the original run once held and a
+reset took away is above the snapshot's live value. `gates-v3 --part 1` therefore runs on FRESH legs.
+
+```js
+tmtLoader.progress()   // { armed, events: [{at, kind, layer, id, key, tick, marks}], total, dropped, byKind,
+                       //   lastAt, sinceLast, typicalGap, gaps: [{dt, dirty}], stalled, threshold, cap, marks }
+```
+
+- **OFF by default**, and it leaves no trace when off: the memory is in `runtimeState()` and the block appears only
+  while the tracker is armed, so a run that never uses it writes byte-for-byte the record it wrote before V3 and every
+  committed snapshot stays valid (`gates-v3 --part 2`, which also asserts the record's KEY SET).
+- **The per-tick work is incremental.** One full walk of everything already held, when the tracker arms; after that a
+  tick reads three array LENGTHS per layer and walks only the tail of a list that grew, plus the (small) challenge and
+  buyable maps. `tmtLoader.progressStats()` returns `{fullScans, polls, tails, tailItems, markChecks}` and
+  **`fullScans` is 1 after a run of any length** — the counter is the cost gate, the way `formats` is V1's.
+  ⚠ The claim is NOT "tails are bounded by the events": PTR's `reset:p` fires 8 times in 200 ticks, each wipes
+  `player.p.upgrades`, and the re-buy grows the list again. `tailItems` states the honest one — the per-tick element
+  work is bounded by what the GAME CHANGED that tick, never by what it holds.
+- **The event list is bounded and the counts are exact.** The newest `cap` events are kept (200; `?autoOpt=progressEvents=<n>`);
+  `total`, `dropped` and `byKind` are counted over all of them. A bound that could change a count would make the
+  readout a lie.
+- **`typicalGap` is the median of the last `n` gaps that are usable evidence**, and two kinds are not: a gap that
+  ended while the stall watch had any feature ESCALATED (a rescue's duration is not evidence of what normal looks
+  like — the same rule `stall>=Kx/N` has for a fallback-fired reset), and the first gap after arming or a load.
+  `gaps[i].dirty` is that flag, and it rides in `runtimeState()` so a resume measures the same median.
+- **Ladder marks as labels.** Where `tools/harness/ladder/<id>.json` exists — **2 of the 171 games** — the host hands
+  it to the core (`loader/page.js` fetches it and ignores a 404; `run.mjs --ladder` passes it as `--ladder-labels`)
+  and an event carries the names of any marks it satisfied. ⛔ Evaluated only when an EVENT fires, never per tick;
+  `markChecks` says so. The view is complete without one, which is what the other 169 games get.
+- **The labels are the engine's own.** A layer's name is `layers[l].name` and an item is named by its own numeric id.
+  This view introduces no second naming scheme for anything the game declares.
+
+### The stall watch — an OPTION that changes what a WAITING feature decides by (V3)
+
+⚖ **The user's words** (2026-09-19): *"Another idea is to have an option to keep track of when progress seems to be
+stalled, and switch to a strategy that's less likely to get stuck."* **OFF by default.**
+
+⛔ **"Less likely to get stuck" is not a property a strategy has universally, and that is MEASURED.** `always` is the
+arm that never waits on PTR's `q` (M22 at 30958) and the arm that WALLS row 1 on `p` (it resets at 10 points, so
+points never reach the 200 that b and g need); `gain>=2x` is the exact reverse (plan §18.2). So there is no safe
+strategy to fall back to, and the watch carries an **ordered escalation list per feature with a way back**.
+
+**The machine.** Each feature sits on a RUNG. Rung 0 is its own policy (whatever V2's precedence resolves to); rung
+*i* is the *i*-th entry of its escalation list, which is a COMPLETE policy string — parameters and modifier included.
+
+```
+primary ──(the GAME is stalled AND this feature is the arbiter's pick)──▶ rung 1 ──(again)──▶ rung 2 …
+   ▲                                                                        │
+   ├──(progress resumed, and has held for the cool-off)──────────────────────┘
+   └──(the player edits this feature by hand)────────────────────────────────┘
+```
+
+- **Stalled** is the tracker's word: `sinceLast ≥ K × typicalGap`. With no usable gap yet there is no threshold and
+  nothing escalates.
+- **One escalation per stall event.** After escalating, the watch will not escalate again until either progress
+  resumes or the stall has lasted another whole `K × typicalGap` — a stall that outlives its own threshold twice is a
+  second stall event. The others re-decide on the next tick.
+- **Only a feature that is WAITING is a candidate**, and V1's reason codes decide it: the feature's last code must
+  start `waiting:`. One that is acting, locked, off, yielding, blocked or has nothing affordable is left alone.
+- ⛔ **…and it must have been waiting at least as long as the stall.** Measured, and the first cut without this test
+  WRECKED PTR's opening: the opening's gaps are 9–15 game-seconds so the median puts the threshold at ~21–45, while a
+  healthy opening has 100-second quiet stretches BY DESIGN (§14d.6). The watch fired 13 times in 9000 game-seconds,
+  put `reset:p` on `always`, and the run reached only **M07 at 2672** where the shipped table reaches **M12 at 6718**.
+  A feature that reset three seconds ago is not the cause of a 45-second game stall; `f.onSince` is V1's own clock for
+  exactly that question.
+- **The arbiter is V2's, reused, not a second one**: of the candidates, the highest **progress fraction** first, ties
+  by registration order. A kind whose strategies declare no `progress` has no fraction and ranks last.
+- **The cool-off is measured in TYPICAL GAPS, not in seconds** (⚖ minimize hardcoding: a number of seconds would be a
+  constant with no meaning on a game nobody has measured). Once progress resumes, a feature returns to its primary
+  after `cool × typicalGap` with the game still progressing.
+- **A hand edit wins.** Any saved-policy or escalation-list write puts that feature straight back on rung 0.
+- ⚠ **A feature the watch escalated onto a rule that ACTS stops climbing**, because its last code is then `acted:*`
+  and it is no longer a candidate. That is the machine being right: a rescue that worked is not a stall.
+
+**Its relationship to `stall>=Kx/N`.** The modifier watches ONE feature's own reset interval and fires ONE reset; the
+watch watches the GAME and changes what a feature decides BY. Both may be on. ⛔ **The watch is upstream**: it sets
+the policy string before the feature decides, and the rung is a COMPLETE string — so while a feature is escalated the
+modifier in force is the RUNG's, not the saved one, and a rung with no modifier suspends `stall>=Kx/N` for as long as
+the rescue lasts. `loader/watch.test.mjs` drives both directions.
+
+**Precedence**, extending V2's:
+
+| | wins over | what it is |
+|---|---|---|
+| the generic derivation | — | `defaultPolicy(kind, layer)` |
+| the game's table | the derivation | `autoTable.policies[<id>]` |
+| `--auto-opt policy:<id>=` | the table | a harness leg's or a sweep's pin |
+| the player's saved choice | all of the above | `player.au.edits[<id>].policy` |
+| **the stall watch's current rung** | the save | while it is escalated — that is what the option is FOR |
+| a runtime override | everything | `setPolicy` — a measurement that named a configuration must measure it |
+
+**Defaults, and where they live.** The option is OFF. With it on and **no list edited**, a feature's list is DERIVED:
+the game's table `alternatives` where it names any, else every other strategy of the kind the table marks applicable
+here, in the table's order, at each row's declared defaults. ⚠ A strategy row may declare **`escalate: false`** — the
+two `off` rows do — because answering a stall by stopping is not an answer; it is a fact the TABLE states, so nothing
+in the watch knows which rows they are (⚖ minimize hardcoding: no layer name, no per-game literal).
+
+⛔ **NOTHING WAS ADDED TO `startData`, so no full-hash pin moved.** The player's watch settings live at a RESERVED
+entry inside V2's one key — `player.au.edits['*']` — which does not exist until they switch something on, and a
+feature's own list is `player.au.edits[<id>].escalate`, a second FIELD of the same per-feature object V2 shaped for
+exactly this. `'*'` can never collide with a feature id (always `<kind>:<layer>`), and every reader of `edits` looks a
+feature up by id. `gates-v3 --part 2` measures the `player.au` key set on a fresh boot and on the frontier fixture.
+
+| setting | type | provisional default | what it is a proxy for (⚖ 13d.2) |
+|---|---|---|---|
+| `k` | factor | *(see plan §21 — chosen by measurement against the opening and the `q` stall)* | K times longer than this game's own progress has been taking is not a wait, it is a stall |
+| `n` | count | `5` | short enough to follow a changing game, long enough that one unusual gap does not move the median — `stall>=Kx/N`'s N, for the same reason |
+| `cool` | factor | `1` | one typical gap of renewed progress is by construction "the game is moving at its normal rate again", and it needs no constant in any game's own units |
+
+Levers: `?autoOpt=watch=1` / `track=1` / `watchK=` / `watchN=` / `watchCool=` (and `--auto-opt` headless) outrank the
+save, the way every other `autoOpt` does.
+
+**The watch's own state words** are enumerated DATA (`tmtLoader.watchCodes()`): `watch:off`, `watch:armed`,
+`watch:moving`, `watch:stalled`, `watch:cooling`, `watch:escalated`. ⛔ **They are NOT reason codes**, and the
+distinction is deliberate: V1's vocabulary is the set of values a DECISION returns, and `gates-v1 --part 1 / --part 2`
+define it that way (every code witnessed as a decision, `acted:*` ⇔ the feature acted). The watch decides nothing a
+feature does — it changes what a feature decides BY — so its words have their own table and their own witness leg, and
+V1's two gates go on meaning what they mean. What appears on a feature's ROW is CONTEXT: `explain()` gains
+`escalation: {rung, of, list, typed, policy, primary, since, candidate, waitingFor}` and `policy.escalated`.
+
+**Reading and writing it:** `tmtLoader.progress()`, `progressStats()`, `progressKeys()`, `progressMonitorState()`,
+`watchState()`, `watchOptions()`, `watchParams()`, `watchCodes()`, `escalationList(id)`, `escalationState(id)`;
+`setWatchOption(name, value)`, `setEscalation(id, list | null)`, `setEscalationStrategy(id, rung, strategyId)`,
+`setEscalationParam(id, rung, name, value[, 'modifier'])`, `addEscalationRung(id[, strategyId])`,
+`removeEscalationRung(id, rung)`, `moveEscalationRung(id, rung, dir)`, `rungChoices(id, rung)`. Each write returns
+`{ok, error}` and ⛔ **a refusal changes nothing and says why** — V2's rule. ⚠ An empty TYPED list is honoured and
+means *never escalate this feature*; clearing it with `setEscalation(id, null)` goes back to the derived one.
+
+### Collapsible blocks in the Advanced view (V3)
+
+⚖ **The user's words** (2026-09-19, queued as Q1): *"I also want to make each block in the advanced automation section
+collapsible, and have an expand all / collapse all button."*
+
+Every block has a fold press; the header has **expand all** and **collapse all**, which set every block including the
+ones whose default is the other way. A collapsed block still shows its state chip and the one-line reason, and an
+**ESCALATED** or **never fired** feature stays visible while collapsed — those are the two things a player must not
+have to open 59 blocks to find.
+
+- **The default is unchanged**: locked and excluded features are collapsed, everything else is open, so a first load
+  after this change looks exactly like the one before it.
+- ⛔ **The state is NOT in `player`.** `hashGame` excludes only the top-level `au`, so a per-feature fold map under
+  `player.au` would move every pinned FULL hash in the repo — at **59 keys** on `the-omega-tree`, the widest Advanced
+  view measured. It is `loader/layerlist.js`'s pattern reused verbatim: `T.storage.raw`, in the loader's own
+  namespace (`tmt-loader:<id>:`), key `ui.au.collapsed`, **every read and every write wrapped** because storage can
+  throw and can come back empty. In Node there is no `storage.raw` at all, so both calls are no-ops and a harness run
+  cannot move which blocks a player has open.
+- ⚠ **Two lists, not one** (`{open, closed}`), because the default is not uniform: a single "collapsed" list could not
+  express *"I opened a locked one"*, and *collapse all* then *expand all* has to be reachable from any state.
+- ⚠ **TRAP (ii) is what makes it non-trivial**: the Advanced tab re-renders every tick, so a fold state held in the
+  rendered HTML string is gone on the next one. It lives in `tmtl-editors`'s component data, keyed by feature id,
+  surviving every re-render the way `tmtl-number` holds its draft — and it is seeded from storage once, at `created`.
+- ⚠ **A consequence, recorded rather than left to be found** (`docs/mobile.md`'s rule): the key is inside what
+  *"clear this game's save"* clears, because that namespace IS what it clears. A cleared game comes back with today's
+  defaults.
+- The engines' hotkeys cannot fire from the new presses: every one carries `@keydown.stop`, as V2's do.
+
+`tmtLoader.collapsePrefs()`, `collapsed(id)`, `setCollapsed(id, on | null)`, `setCollapsedAll(on)`.
 
 ### The reason vocabulary
 

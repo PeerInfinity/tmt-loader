@@ -178,6 +178,22 @@ async function boot(id) {
     await insertScript({ src: abs(manifest.auto) }, manifest.auto);
     T.loaded.push(manifest.auto);
   }
+  if (AUTOMATION) {
+    // ---- the LADDER, where this game has one (V3) ------------------------------------------------------------------
+    // ⚠ TWO OF THE 171 GAMES HAVE A LADDER (`tools/harness/ladder/<id>.json`, ptr and something), and the Progress
+    // timeline uses its mark NAMES as labels on the events that satisfy them. So this is an OPTIONAL fetch whose 404
+    // costs nothing: 169 games take the branch below and the view is complete without it. ⛔ `loader/tmt-auto.js`
+    // fetches nothing itself — it never touches the DOM or the network, which is what `docs/contract.md` says — so the
+    // HOST is what hands it the file, exactly as the host hands it the manifest and the options.
+    // ⚠ NOT through `fetchText`, which THROWS on a non-200 and would take the whole boot down on 169 games.
+    try {
+      const r = await fetch(abs(`tools/harness/ladder/${id}.json`), { cache: 'no-cache' });
+      if (r.ok) {
+        const L = JSON.parse(await r.text());
+        if (L && Array.isArray(L.marks)) { T.ladder = L; T.loaded.push(`tools/harness/ladder/${id}.json`); }
+      } else T.skipped.push(`tools/harness/ladder/${id}.json (${r.status})`);
+    } catch (e) { T.skipped.push(`tools/harness/ladder/${id}.json (${String(e.message || e).slice(0, 60)})`); }
+  }
   step('script loader/tmt-auto.js');
   await insertScript({ src: abs('loader/tmt-auto.js') }, 'loader/tmt-auto.js');
   T.loaded.push('loader/tmt-auto.js');
