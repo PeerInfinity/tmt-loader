@@ -36,7 +36,9 @@ const row = (r) => { rows.push(r); console.log(`${r.ok ? 'GREEN' : 'RED  '} ${r.
 // are deliberately the exact counts each part emits today, not a lower bound — a part that grows a leg has to come
 // here and say so, which is the point. (Same reasoning as `gateCoverage`'s per-game row-count check for `gates-a1`;
 // this battery's rows are not per-game, so it needs its own floor.)
-const ROWS = { 1: 9, 2: 3, 3: 2, '3p': 2, 4: 4, 6: 1 };
+// ⚠ A DECLARED ROW COUNT IS PART OF THE GATE (a battery that stops part-way prints fewer rows, and fewer rows is
+// fewer reds) — so ADDING a leg moves it, and CI says so. R2 added one witness leg to part 1: 9 → 10.
+const ROWS = { 1: 10, 2: 3, 3: 2, '3p': 2, 4: 4, 6: 1 };
 
 const SNAP = (id, m) => `tools/harness/snapshots/${id}/all/${m}.json`;
 // M15 → M16: R1′'s own leg, and the one long ptr leg V1's inertness is measured on (plan §14d).

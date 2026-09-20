@@ -160,7 +160,8 @@ async function part2() {
 
   // ⛔ THE TRACKER ONLY WATCHES. Same leg, `track=1`: the same end state and the same action counts, with a `progress`
   // block present in the record and the full-scan counter at ONE.
-  const B = await job('ptr', { ...base, 'auto-opt': 'track=1', eval: '({ rt: Object.keys(tmtLoader.runtimeState()).sort(), s: tmtLoader.progressStats(), p: tmtLoader.progress() })' });
+  // ⚠ the policy the pin NAMES has to survive this override, or the leg silently measures a different table
+  const B = await job('ptr', { ...base, 'auto-opt': `${base['auto-opt']};track=1`, eval: '({ rt: Object.keys(tmtLoader.runtimeState()).sort(), s: tmtLoader.progressStats(), p: tmtLoader.progress() })' });
   const same = B.ticks === A.ticks && B.hashGame === A.hashGame && JSON.stringify(B.hook?.actions) === JSON.stringify(A.hook?.actions);
   const scans = B.eval?.s?.fullScans;
   row({ gate: 'V3-2 the tracker ON changes NOTHING about the game, and costs one full scan', id: 'ptr', leg: 'the same leg with track=1',
