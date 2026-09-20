@@ -126,7 +126,9 @@ game rather than assuming it (`innerScrollers` in its own row; 0 across the rost
 **The measurement, and it is the one a gate at scroll 0 cannot make.** For every node the tree joins and that is
 on screen, the distance from the node's centre to the nearest pixel the canvas **actually painted** (read out of
 `getImageData`, never recomputed from `drawTreeBranch` — a probe that recomputed the endpoints would agree with the
-engine by construction). `ptr` at `tools/harness/snapshots/ptr/all/M22.json`, 390×844, document 1241 px tall:
+engine by construction). `ptr` at `tools/harness/snapshots/ptr/all/M22.json` **at 29,204 ticks** (⚠ `deepestSnapshot()` selects by TICKS
+and that fixture MOVES — the table below is measured against that tick count, and a re-measurement is owed
+whenever it changes), 390×844, document 1241 px tall:
 
 | | at the top of the page | scrolled to the bottom (S = 397) |
 |---|---|---|
@@ -2193,14 +2195,33 @@ grid, so a perfect hit reads up to √2 rather than 0) and only over nodes **on 
 viewport has no visible branch end, and judging it would measure the viewport rather than the canvas. Tolerance
 `BRANCH_TOL = 4` px against a measured worst of 1.0 (`ptr`) and 2.2 (`something`) on a correct build.
 
-⚠ **AN ABSTENTION IS NOT A PASS, and it is named.** A game whose page does not scroll, or whose tree draws no
-branch, cannot see this. 169 of the 171 games are swept at a FRESH save, one layer deep, where the document is
+⛔ **The ENDPOINTS are the ones the engine ACTUALLY DREW**, recorded by wrapping the game's own `drawTreeBranch`
+for the length of one redraw — not re-derived from `tmp[l].branches`. ⚠ **The first version did re-derive them and
+the roster sweep caught it on two games.** The engines' own condition is `tmp[layer].layerShown == true`, and `==`
+is not truthiness: `the-testy-tree`'s `b`, `c` and `d` are shown as **`"ghost"`** (TMT's own occupies-space-but-
+invisible mode), so the engine draws none of their four branches while a truthiness test claimed all four
+endpoints — and the leg reported a defect on a game that is perfectly fine. 4 of the 171 engines write the truthy
+form themselves, so no single re-derivation is right for the roster either. Recording the calls also picks up
+**component branches** (`drawComponentBranches`, the `upgrade-`/`buyable-`/`clickable-` prefixes), which a
+`tmp[l].branches` walk misses entirely. A SELF-branch is dropped — `moveTo(p); lineTo(p)` with butt caps paints no
+pixel, and `the-dressy-tree`'s `D` declares one — as is a pair either of whose elements is absent, which is
+`drawTreeBranch`'s own precondition.
+
+⚠ **AN ABSTENTION IS NOT A PASS, and it is named.** A game whose page does not scroll, or whose engine draws no
+branch (`the-testy-tree`'s ghost layers, `the-universal-tree-voidcons0le-is-dumb`'s `layerShown: false` ones),
+cannot see this. 169 of the 171 games are swept at a FRESH save, one layer deep, where the document is
 exactly the viewport — so the leg first tries shrinking the viewport to **390×400** (a short phone is a real
 phone, and it is the same claim) and only abstains when even that does not scroll. The summary prints how many
 were judged, how many were judged at the short viewport, and how many abstained with the reason.
 
 ⚠ The leg also reports `innerScrollers` — anything inside `#app` that still scrolls under our layout — because the
 6 games whose branch offset reads `#treeTab.scrollTop` would need a different answer if one did. It is 0.
+
+⚠ **And U8's leg P had to learn about it too.** The declared row CAN claim an occurrence out of the layer's prose
+and be unambiguous about it, so before this slice it looked exactly like a key the store must remember; the roster
+sweep reddened `the-universal-tree-voidcons0le-is-dumb` on `p.@points` saying so. Leg P now judges candidates only
+— a declared row is never remembered, because U8's memory keeps a row that would otherwise vanish and a
+declaration cannot.
 
 **2. Leg 6 — the DECLARED global-currency row.** It joins the other-resources assertion rather than sitting beside
 it, and it is judged in BOTH directions, which is what a build that simply never emits the row would fail:

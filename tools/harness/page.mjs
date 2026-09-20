@@ -1544,32 +1544,55 @@ const TIP_PROBE = `(${function () {
 // judging it would measure the viewport rather than the canvas.
 const BRANCH_TOL = 4;          // px. MEASURED on a correct build: 1.0 on ptr, 2.2 on something (2 px sampling grid)
 const SHORT_VIEW = { width: 390, height: 400 };  // a phone in landscape-ish height: what makes a short game scroll at all
-const TREE_PROBE = `(() => {
+/**
+ * ⛔ THE ENDPOINTS ARE THE ONES THE ENGINE ACTUALLY DREW, recorded by wrapping the game's own `drawTreeBranch`
+ * for the length of one redraw — NOT re-derived from `tmp[l].branches`.
+ * ⚠ MEASURED, and it is why this probe was rewritten: the engines' own condition is `tmp[layer].layerShown ==
+ * true`, and `==` is not truthiness. `the-testy-tree` has four branch pairs whose layers are shown as something
+ * that is truthy but not `true`, so a probe reading `tmp[l].branches` off the shown layers claimed four endpoints
+ * the engine draws nothing for — and the leg reported a defect on a game that is perfectly fine. (4 of the 171
+ * engines write the truthy form, so no single re-derivation is right for the roster either.)
+ * ✅ It also picks up COMPONENT branches (`drawComponentBranches`, `upgrade-`/`buyable-`/`clickable-` prefixes)
+ * for free, which a `tmp[l].branches` walk misses entirely.
+ * ⚠ A SELF-branch is dropped: `moveTo(p); lineTo(p)` with butt caps paints no pixel (the-dressy-tree's `D`
+ * declares one). So is a pair either of whose elements is absent — `drawTreeBranch`'s own precondition.
+ *
+ * `ids` = null records them; an array reuses a recorded set (the reading that must NOT force a redraw).
+ * `force` = run the game's own `resizeCanvas()` first. ⚠ `resizeCanvas`, not `drawTree`: the canvas carries the
+ * engine's `v-if`, so the tab switching in leg 3 hands the tree a brand-new element at the HTML default of
+ * 300×150, and under `?managed=1` the 500 ms cadence that would size it is stopped. Measured: `drawTree()` alone
+ * painted ptr's whole tree into that bitmap, with 7 of 7 judged nodes outside it.
+ */
+const TREE_PROBE = (ids, force) => `(() => {
   const S = (f, d) => { try { const v = f(); return v === undefined ? d : v; } catch (e) { return d; } };
   const cv = document.querySelector('canvas.canvas') || document.getElementById('treeCanvas');
   if (!cv) return { err: 'no tree canvas' };
+  let pairs = ${ids ? JSON.stringify(ids) : 'null'};
+  const rec = [];
+  const orig = window.drawTreeBranch;
+  if (pairs === null && typeof orig === 'function') {
+    window.drawTreeBranch = function (num1, data, prefix) {
+      const o = String(Array.isArray(data) ? data[0] : data);
+      const a = (prefix || '') + String(num1), b = (prefix || '') + o;
+      if (a !== b && document.getElementById(a) && document.getElementById(b)) { rec.push(a); rec.push(b); }
+      return orig.apply(this, arguments);
+    };
+  }
+  let drew = 'not forced';
+  if (${force ? 'true' : 'false'}) { try { resizeCanvas(); drew = 'resizeCanvas'; } catch (e) { try { drawTree(); drew = 'drawTree'; } catch (e2) { drew = 'THREW ' + e2.message; } } }
+  else if (pairs === null) { try { drawTree(); drew = 'drawTree (to record)'; } catch (e) { drew = 'THREW ' + e.message; } }
+  if (typeof orig === 'function') window.drawTreeBranch = orig;
+  if (pairs === null) pairs = rec.filter((x, i) => rec.indexOf(x) === i);
   const cs = getComputedStyle(cv), r = cv.getBoundingClientRect();
-  const out = { canvas: { attr: cv.width + 'x' + cv.height, css: +r.width.toFixed(1) + 'x' + +r.height.toFixed(1),
+  const out = { drew, ids: pairs,
+    canvas: { attr: cv.width + 'x' + cv.height, css: +r.width.toFixed(1) + 'x' + +r.height.toFixed(1),
       left: +r.left.toFixed(1), top: +r.top.toFixed(1), position: cs.position, zIndex: cs.zIndex },
     scroll: { innerH: innerHeight, doc: document.documentElement.scrollTop, body: document.body.scrollTop,
       docH: document.documentElement.scrollHeight } };
-  // the endpoints of the branches the engine WOULD DRAW, built from PAIRS rather than from the layers that own
-  // them, and only from pairs that PAINT. ⚠ MEASURED on the-dressy-tree, whose D declares
-  // branches: ['D', 'S']: one SELF-branch (a zero-length line: moveTo(p); lineTo(p) with butt caps paints no
-  // pixel) and one to a layer with no element at all. Counting the owning layer unconditionally produced a single
-  // 'endpoint' with no ink anywhere, and the leg reported a defect about a branch that does not exist.
-  // A pair counts only when the two ends DIFFER and both elements are in the DOM — the second is drawTreeBranch's
-  // own precondition (it returns early on a null element).
-  const ends = new Set();
-  S(() => { for (const l in layers) { if (!tmp[l].layerShown || !tmp[l].branches) continue;
-    for (const b in tmp[l].branches) { const d = tmp[l].branches[b], o = String(Array.isArray(d) ? d[0] : d);
-      if (o === String(l)) continue;                         // a SELF-branch: moveTo(p); lineTo(p) paints nothing
-      if (!document.getElementById(l) || !document.getElementById(o)) continue;
-      ends.add(String(l)); ends.add(o); } } }, null);
   const nodes = [];
-  for (const l of ends) { const el = document.getElementById(l); if (!el) continue;
+  for (const id of pairs) { const el = document.getElementById(id); if (!el) continue;
     const q = el.getBoundingClientRect(); if (!q.width && !q.height) continue;
-    nodes.push({ id: l, cx: q.left + q.width / 2, cy: q.top + q.height / 2 }); }
+    nodes.push({ id, cx: q.left + q.width / 2, cy: q.top + q.height / 2 }); }
   out.ends = nodes.length;
   const px = [];
   try { const g = cv.getContext('2d').getImageData(0, 0, cv.width, cv.height).data;
@@ -1578,6 +1601,8 @@ const TREE_PROBE = `(() => {
       if (g[(y * cv.width + x) * 4 + 3] > 8) px.push([r.left + x / sx, r.top + y / sy]);
   } catch (e) { return { ...out, err: 'getImageData: ' + e.message }; }
   out.painted = px.length;
+  // ⚠ ONLY THE NODES ON SCREEN. A node scrolled out of the viewport has no visible branch end, and judging it
+  // would measure the viewport rather than the canvas.
   const vis = nodes.filter((n) => n.cy >= 0 && n.cy <= innerHeight && n.cx >= 0 && n.cx <= innerWidth);
   out.judged = vis.length;
   out.nodes = vis.map((n) => { let best = Infinity;
@@ -1588,8 +1613,8 @@ const TREE_PROBE = `(() => {
   out.offCanvas = vis.filter((n) => !(n.cx >= r.left && n.cx <= r.right && n.cy >= r.top && n.cy <= r.bottom)).length;
   const ds = out.nodes.map((n) => n.d).filter((x) => x !== null);
   out.maxD = ds.length ? +Math.max(...ds).toFixed(1) : null;
-  // and whether anything INSIDE the app scrolls under our layout — the 7 games whose y1 reads
-  // #treeTab.scrollTop would need a different answer if one did (mobile.css §1 sets the columns to overflow: visible)
+  // and whether anything INSIDE the app scrolls under our layout — the 6 games whose y1 reads
+  // '#treeTab'.scrollTop would need a different answer if one did (mobile.css §1 sets the columns to overflow: visible)
   out.innerScrollers = [...document.querySelectorAll('#app *')]
     .filter((e) => e.scrollHeight > e.clientHeight + 2 && /auto|scroll/.test(getComputedStyle(e).overflowY))
     .map((e) => (e.id || String(e.className) || e.tagName) + ' ' + e.scrollHeight + '/' + e.clientHeight).slice(0, 4);
@@ -1599,16 +1624,10 @@ const TREE_PROBE = `(() => {
 /** The whole leg, on the phone page with the deepest save open and the tree showing. */
 async function treeCanvasLeg(page) {
   const redraws = () => page.evaluate(() => { const u = window.tmtLoader.navbarUI; return u && u.treeRedraws ? u.treeRedraws() : null; });
-  // ⚠ `resizeCanvas`, which SIZES the bitmap and then draws. The canvas carries the engine's `v-if`, so the tab
-  // switching leg 3 just did handed the tree a brand-new element at the HTML default of 300×150, and under
-  // `?managed=1` the engine's own 500 ms cadence is stopped and will never size it. Measured: `drawTree()`
-  // alone painted ptr's whole tree into that 300×150 bitmap, with 7 of 7 judged nodes outside it.
-  const force = () => page.evaluate(() => { try { resizeCanvas(); } catch (e) { try { drawTree(); } catch (e2) { /* no canvas here */ } } });
   const at = async (y) => { await page.evaluate((v) => scrollTo(0, v), y); await page.waitForTimeout(160); };
   await at(0);
-  await force();
-  await page.waitForTimeout(120);
-  let top = await page.evaluate(TREE_PROBE);
+  let top = await page.evaluate(TREE_PROBE(null, true));
+  await page.waitForTimeout(80);
   // ⚠ A GAME WHOSE PAGE DOES NOT SCROLL CANNOT SEE THIS AT ALL. Most of the roster boots one layer deep, where the
   // document is exactly the viewport. Shrink the viewport rather than abstain: a short phone is a real phone, and
   // it is the same claim. Restored before the leg returns.
@@ -1616,29 +1635,28 @@ async function treeCanvasLeg(page) {
   if (!top.err && top.scroll.docH <= top.scroll.innerH + 2) {
     await page.setViewportSize(SHORT_VIEW);
     await page.waitForTimeout(250);
-    await force();
-    await page.waitForTimeout(120);
-    const t2 = await page.evaluate(TREE_PROBE);
+    const t2 = await page.evaluate(TREE_PROBE(null, true));
     if (!t2.err && t2.scroll.docH > t2.scroll.innerH + 2) { shortened = true; top = t2; }
     else await page.setViewportSize(PHONE);
   }
   const rec = { shortened, viewport: shortened ? SHORT_VIEW : PHONE, top };
-  if (top.err) { await page.setViewportSize(PHONE); await at(0); return { ...rec, verdict: `abstains (${top.err})` }; }
+  const home = async (v) => { if (v) await page.setViewportSize(PHONE); await at(0); };
+  if (top.err) { await home(shortened); return { ...rec, verdict: `abstains (${top.err})` }; }
   rec.scrollable = top.scroll.docH > top.scroll.innerH + 2;
-  if (!rec.scrollable) { await page.setViewportSize(PHONE); await at(0);
+  if (!rec.scrollable) { await home(shortened);
     return { ...rec, verdict: `abstains (the page does not scroll at ${top.scroll.innerH} px: ${top.scroll.docH} px of document)` }; }
+  if (!top.ids.length) { await home(shortened);
+    return { ...rec, verdict: `abstains (the engine drew no branch: ${top.drew}, ${top.painted} painted pixel(s))` }; }
   // the LIVE reading: scrolled, and NOT redrawn by us — whatever put the branches where they are is the loader's
-  // own scroll listener or nothing, because `?managed=1` has stopped the engine's 500 ms canvas cadence outright.
+  // own scroll listener or nothing, because `?managed=1` has stopped the engine's 500 ms canvas cadence.
+  // ⚠ The ENDPOINT SET is the one recorded at the top and is passed in, so this reading cannot redraw to get it.
   const r0 = await redraws();
   await at(top.scroll.docH);
-  rec.live = await page.evaluate(TREE_PROBE);
+  rec.live = await page.evaluate(TREE_PROBE(top.ids, false));
   rec.redrew = (await redraws()) - r0;
   // and the same place with a redraw FORCED, which is `position: fixed` on its own: the listener cannot help here
-  await force();
-  await page.waitForTimeout(120);
-  rec.bottom = await page.evaluate(TREE_PROBE);
-  await page.setViewportSize(PHONE);
-  await at(0);
+  rec.bottom = await page.evaluate(TREE_PROBE(top.ids, true));
+  await home(shortened);
   const ok = (m) => !m.err && (m.judged === 0 || (m.maxD !== null && m.maxD <= BRANCH_TOL));
   rec.judged = { top: top.judged, live: rec.live.judged, bottom: rec.bottom.judged };
   rec.topOk = ok(top);
@@ -1646,13 +1664,13 @@ async function treeCanvasLeg(page) {
   rec.liveOk = ok(rec.live);              // fixed AND redrawn in time
   rec.redrawOk = rec.redrew >= 1;         // the scroll listener's own claim
   rec.spaceOk = rec.bottom.canvas.position === 'fixed';
-  rec.verdict = !rec.topOk ? `THE BRANCHES MISS THEIR NODES AT THE TOP OF THE PAGE (max ${top.maxD} px over ${top.judged})`
+  rec.verdict = !rec.topOk ? `THE BRANCHES MISS THEIR NODES AT THE TOP OF THE PAGE (max ${top.maxD} px over ${top.judged}, ${top.painted} painted)`
     : !rec.spaceOk ? `THE CANVAS IS NOT IN VIEWPORT SPACE (position: ${rec.bottom.canvas.position})`
     : !rec.bottomOk ? `THE BRANCHES MISS THEIR NODES WHEN SCROLLED (max ${rec.bottom.maxD} px over ${rec.bottom.judged}, at scroll ${rec.bottom.scroll.doc})`
     : !rec.redrawOk ? 'A SCROLL REDREW NOTHING (the loader listener is gone; the engine has none)'
     : !rec.liveOk ? `THE BRANCHES LAG THE SCROLL (max ${rec.live.maxD} px before any redraw of ours)`
     : rec.bottom.judged === 0 ? `on its nodes at the top; abstains when scrolled (no node on screen)`
-    : `on its nodes at both ends (max ${top.maxD} px at the top, ${rec.bottom.maxD} px at scroll ${rec.bottom.scroll.doc}, over ${rec.bottom.judged} nodes), redrawn by the loader`;
+    : `on its nodes at both ends (max ${top.maxD} px at the top, ${rec.bottom.maxD} px at scroll ${rec.bottom.scroll.doc}, over ${rec.bottom.judged} of ${top.ids.length} endpoint(s)), redrawn by the loader`;
   return rec;
 }
 
@@ -3208,8 +3226,15 @@ async function gateMobile(browser, base, ids) {
         // occurrence it took, `collide` that another key took the same one) \u2014 never out of the store
         const rows = [];
         for (const l of ui.cards()) for (const r of ui.resources(l)) rows.push({ layer: l, ...r });
-        const clean = rows.filter((r) => r.claimed !== null && !r.collide).map((r) => `${r.layer}.${r.key}`);
-        const collided = rows.filter((r) => r.claimed !== null && r.collide).map((r) => `${r.layer}.${r.key}`);
+        // ⚠ (U9) A DECLARED ROW IS NOT A CANDIDATE FOR THE MEMORY, and this leg is where that had to be said.
+        // The global-currency row CAN claim an occurrence out of the layer's prose (`claimed !== null`) and can be
+        // unambiguous about it, so before this filter it looked exactly like a key the store must remember — and
+        // the roster sweep reddened `the-universal-tree-voidcons0le-is-dumb` on `p.@points` saying so, which is
+        // what a 171-game gate is for. It is not remembered BY DESIGN: U8's memory keeps a row that would
+        // otherwise vanish, and a declaration does not depend on what the prose states this tick.
+        const cand = rows.filter((r) => !r.global);
+        const clean = cand.filter((r) => r.claimed !== null && !r.collide).map((r) => `${r.layer}.${r.key}`);
+        const collided = cand.filter((r) => r.claimed !== null && r.collide).map((r) => `${r.layer}.${r.key}`);
         const flat = (m) => { const o = []; for (const l in m) for (const k of m[l]) o.push(`${l}.${k}`); return o.sort(); };
         const h = () => tmtLoader.hash();
         const c0 = await h(), c1 = await h();           // the same abstention rule leg M uses
