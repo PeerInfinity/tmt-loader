@@ -893,7 +893,7 @@ for the same refusal.
 | | `unlocks-purchase` | … only when `player[l].points + tmp[l].resetGain` affords the cheapest unowned, unlocked upgrade of `l`, or the next level of one of its unlocked buyables — both only where costed in the layer's own points (no `currencyInternalName` / `currencyLocation` / `currencyLayer`); else wait |
 | | **`rate-peak@B/H`** | the currency-per-second optimum, with no threshold in the layer's own units. `rate = tmp[l].resetGain / (game-seconds since this feature's own last reset)`, `best` = the highest rate since that reset; reset once `(gain + 1) / elapsed < best × (1 − B)` has held **continuously** for `H` game-seconds. See below |
 | | **`… \| stall>=Kx/N`** (a MODIFIER) | on top of any of the above: if the primary rule has been waiting `K ×` as long as this feature's own resets usually take, reset anyway — but only the stalled feature closest to its target goes first. See below |
-| | **`… \| turn@W/Kx/N`** (a MODIFIER) | the ROW CYCLE: reset only while it is this layer's turn among the resets of its ROW, and then reset as often as the ENGINE allows for `W` of them. Out of turn the reason is `waiting:turn`; in turn the member's own policy does not decide. See below |
+| | **`… \| turn@W/Kx/N`** (a MODIFIER) | the ROW CYCLE: reset only while it is this layer's turn among the resets of its ROW, and take `W` resets per turn. Out of turn the reason is `waiting:turn`; IN turn the member still follows its own rule, and gives the turn up at once if that rule says no while the engine would allow. See below |
 | | **`… \| turn-demand@W/Kx/N`** (a MODIFIER) | the same, plus: whenever a decision NAMES a member's layer as what it is waiting on, that member gets the next turn. See below |
 | `upgrades` | `cheapest-first` | buys unlocked, unowned, affordable upgrades, cheapest `tmp` cost first (ties by id) |
 | | `order` | only the table's `order[]`, in that order |
@@ -1039,10 +1039,25 @@ other one needed. What decides is whose TURN it is.
   a cycle that counted one member would silently have replaced `reset:q`'s measured `gain>=2` with `always` for the
   whole M15→M21 stretch — which R2 measured reaching M16 NEVER.
 
-**Inside its turn a member is EAGER.** Its own policy does not decide; the ENGINE does (`tmp[l].canReset`, the
-native-autobuyer yield and the `after` siblings, exactly as always). The turn IS the patience. Measured the other
-way, a patient rule inside a turn never fires at all — `gain>=2x` on a layer whose gain is small against what it
-holds — so the turn is never spent and the cycle deadlocks. `acted:reset` names `in-turn` as the rule that fired it.
+**Inside its turn a member decides by its OWN policy.** The cycle says WHO may act and HOW OFTEN; it does not say
+what to wait for. ⛔ The first cut of this slice made the holder EAGER ("the turn is the patience") and the
+whole-stretch sweep measured what that costs: it silently replaces PTR's `reset:q` policy `gain>=2` with `always`
+for every turn, and `q` then resets for ONE quirk instead of two — 249 quirks from 244 resets against the control's
+559 from 279. **A member that should be eager says so with the policy `always`**, which is a choice a table or a
+player makes and which carries its own provenance (⚖ minimize hardcoding).
+
+**A holder that COULD act and whose own rule says no yields the turn at once** — and this is what makes a patient
+member safe without a clock and without making anybody eager. The two ways a holder can fail to use its turn are
+not the same thing:
+
+| the holder is refused by | what it means | what the cycle does |
+|---|---|---|
+| the **ENGINE** (`cannot-reset`, `yielding:native`, `blocked:after`) | it is waiting on a RESOURCE | it KEEPS the turn — that is what a turn is FOR. PTR's `h` needs ~1,450 quiet game-seconds for Time Energy to reach 1e30, and it only gets them because holding the turn is what stops `q` wiping row 2 |
+| its **own policy** (`waiting:gain`, `waiting:rate`, `waiting:interval`, …) | it could reset and chose not to | it YIELDS at once — there is nothing for it to wait for that another member's turn would spoil. No skip, no memory, and it is eligible again immediately |
+
+Without the second row a patient policy on a cycle member holds its row for ever (measured on the stub: `gain>=100x`
+on a member that can reset once takes the turn and never gives it back). That is the deadlock the "be eager"
+requirement was invented for, met without a number.
 
 **Precedence — where the cycle sits in the chain.**
 
@@ -1059,27 +1074,29 @@ holds — so the turn is never spent and the cycle deadlocks. `acted:reset` name
   and it is named rather than smoothed: a `stall>=Kx/N` on a cycle member cannot be carried in the same string, and
   a **stall-watch rung** on a cycle member's reset is INERT while the cycle is live.
 
-**The guard — `K` and `N`, and it is not optional.** A member that has not acted for `K ×` as long as its own turns
-usually take RELEASES the turn, and is skipped for one whole rotation so that a demand which can never be met
-cannot hand it straight back.
+**The guard — `K` and `N`, and WHAT IT IS LATE AGAINST was decided by measurement.** A member that has not acted
+for `K ×` as long as its own RESETS usually take gives the turn up, and is skipped for one whole rotation so that a
+demand which can never be met cannot hand it straight back.
 
-- `typical` = the **median** of the last `N` of that member's own **COMPLETED** turns. ⛔ *A released turn never
-  feeds it* — `stall>=Kx/N`'s own reason one level up: a threshold fed by its own timeouts grows with them.
-- ⚠ **A typical of zero is not a bound.** A turn of weight one that is granted and spent inside the same tick is
-  zero game-seconds long — a real length, honestly recorded — and `K × 0` would release every turn on the tick it
-  was granted, before its holder's layer had even run.
-- **The first cycle has no history**, and the answer is derived rather than defaulted: with nothing positive
-  remembered for this member, the ROW's pooled turn lengths are used; with nothing remembered anywhere, there is no
-  bound to be late against and the only honest question left is the ENGINE's — **the turn is released the moment
-  its holder cannot reset and another member can.** The cycle also OPENS on a member that can act. The cost is that
-  the first rotation is demand-shaped rather than weight-shaped, which is a real difference and is measured
-  (gate R3b-R3) rather than assumed.
-- A turn therefore ends in **four** distinct ways, and they are not the same event: `complete` (the length is
-  remembered), `released` (the guard took it — nothing remembered, skipped for a rotation), `preempted` (demand
-  moved it — nothing remembered, **nothing skipped**) and `ineligible` (the member was paused, stopped, or left
-  the row). ⚠ Skipping a PREEMPTED member deadlocked the first cut outright: every member ended up skipped and the
-  one holder that could not act had nobody left to release the turn to — a scheduler that stopped scheduling, and
-  green in every hash.
+- `typical` = the **median** of the last `N` intervals between that member's **own resets** — `stall>=Kx/N`'s own
+  quantity, and ⚖ the user's rule verbatim: *"we could set the timeout threshold dynamically, based on how long
+  previous resets have taken"*.
+- ⛔ **Its OWN intervals, with no pooled fallback.** A bound has to be in the member's own units: PTR's `h` needs
+  ~1,450 quiet game-seconds and `q`'s resets are tens of seconds apart, so a pooled median hands `h` a threshold
+  two orders of magnitude too small and releases its turn before it could possibly use it — which is exactly the
+  starvation the cycle exists to end. Measured: Hindrance Spirit ends at ONE, the state before this slice.
+- ⚠ **A typical of zero is not a bound.** An interval of zero is a real measurement and `K × 0` would release
+  every turn on the tick it was granted, before its holder's layer had even run.
+- **With no interval of its own there is NO bound**: the turn is held until the member uses it. ⚠ The cost is
+  named rather than smoothed — a member that can NEVER act holds its row's turn for ever, and what protects
+  against that is the player's own `while`, the demand link, and the yield rule above; not a number this file could
+  derive. Every derived bound that was tried released `h` before it could reset.
+- A turn therefore ends in **five** distinct ways, and they are not the same event: `complete` (spent), `released`
+  (the guard took it — skipped for a rotation), `preempted` (demand moved it — **nothing skipped**), `yielded`
+  (the holder's own rule said no — nothing skipped, eligible again at once) and `ineligible` (paused, stopped, or
+  left the row). ⚠ Skipping a PREEMPTED member deadlocked the first cut outright: every member ended up skipped
+  and the one holder that could not act had nobody left to give the turn to — a scheduler that stopped scheduling,
+  and green in every hash.
 
 **DEMAND — `turn-demand@W/Kx/N`, and where it comes from.** ⚖ 13d.2 asks what a number stands for, and a weight is a
 literal. The ⚖-shaped question is *"who is actually WAITING?"* — and V1 already answers it, because every refusal

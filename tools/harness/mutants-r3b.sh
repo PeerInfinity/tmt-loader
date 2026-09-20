@@ -60,11 +60,25 @@ mutant m2-cycle-keyed-by-layer \
   "p='$AUTO';s=open(p).read();o='      var key = String(r);';assert o in s;s=s.replace(o,'      var key = String(g.layer);');open(p,'w').write(s)" \
   $UNIT
 
-# ---- R2: a member is EAGER inside its turn ---------------------------------------------------------------------
-# ⛔ THE REQUIREMENT'S OWN NEGATION, and the deadlock the planner measured: a patient rule inside a turn never fires
-# (`gain>=2x` on a layer whose gain is small against what it holds), so the turn is never spent and the cycle stops.
-mutant m3-patient-inside-the-turn \
-  "p='$AUTO';s=open(p).read();o='    if (turn) return turn.act ? { act: true, rule: %sin-turn%s } : turn;'.replace('%s',chr(39));assert o in s;s=s.replace(o,'    if (turn && !turn.act) return turn;');open(p,'w').write(s)" \
+# ---- R2: a member decides by its OWN policy inside its turn -----------------------------------------------------
+# ⛔ THE BRIEF'S OWN REQUIREMENT, AS A MUTATION, because the whole-stretch sweep overturned it: eager-in-turn
+# silently replaces PTR's measured `reset:q` policy `gain>=2` with `always` and `q` resets for ONE quirk instead of
+# two (249 quirks from 244 resets against the control's 559 from 279).
+mutant m3-eager-inside-the-turn \
+  "p='$AUTO';s=open(p).read();o='    if (turn && !turn.act) return turn;';assert o in s;s=s.replace(o,'    if (turn) return turn.act ? { act: true, rule: '+chr(39)+'always'+chr(39)+' } : turn;');open(p,'w').write(s)" \
+  $UNIT
+
+# ⛔ THE HOLDER NEVER YIELDS when its OWN rule refuses — the deadlock the stub found the moment the derived
+# bound was removed: a patient policy on a cycle member takes the turn and never gives it back, and its row stops.
+mutant m3b-no-yield-on-a-policy-refusal \
+  "p='$AUTO';s=open(p).read();o='    if (turn) turnYield(f);';assert o in s;s=s.replace(o,'');open(p,'w').write(s)" \
+  $UNIT
+
+# ⚠ … AND ITS MIRROR: the holder yields whenever it cannot act, ENGINE refusal included. That is the rule the
+# whole-stretch sweep measured as starvation — PTR's `h` is released before Time Energy can ever reach 1e30, and
+# Hindrance Spirit ends at ONE, which is the state before this slice.
+mutant m3c-yield-on-an-engine-refusal-too \
+  "p='$AUTO';s=open(p).read();o='    if (!tmp[l] || tmp[l].canReset !== true) {';assert o in s;s=s.replace(o,'    if (!tmp[l] || tmp[l].canReset !== true) { turnYield(f);');open(p,'w').write(s)" \
   $UNIT
 
 # ⚠ THE SUBTLER HALF: the cycle is checked BEFORE the engine. `waiting:turn` then hides the fact that the game
@@ -75,18 +89,19 @@ mutant m4-cycle-above-the-engine \
   $UNIT
 
 # ---- R3: the guard ---------------------------------------------------------------------------------------------
-# ⛔ A RELEASED TURN FEEDS THE TYPICAL — `stall>=Kx/N`'s own defect one level up: the bound grows with every timeout
-# and the guard stops guarding. ⚠ It is invisible on a SHORT leg (the first release is still released on time), which
-# is why the row that sees it runs long enough for the median to move.
-mutant m5-released-turn-feeds-the-typical \
-  "p='$AUTO';s=open(p).read();o=\"    if (how === 'complete' && C.since !== null) {\";assert o in s;s=s.replace(o,\"    if (how !== 'ineligible' && C.since !== null) {\");open(p,'w').write(s)" \
+# ⛔ THE TYPICAL IS THE TURN'S LENGTH RATHER THAN THE WAIT BETWEEN THE MEMBER'S OWN RESETS. A turn of weight W
+# spans W resets, so the bound comes out W times too large and the guard stops guarding at exactly the weight a
+# table is most likely to choose. ⚠ Only a leg with W > 1 can see it.
+mutant m5-the-typical-is-the-TURN-length-not-the-reset-interval \
+  "p='$AUTO';s=open(p).read();o='    var dt = (Number(player.timePlayed) || 0) - prev;';assert o in s;s=s.replace(o,'    var dt = (Number(player.timePlayed) || 0) - (C.since === null ? prev : C.since);');open(p,'w').write(s)" \
   $UNIT
 
-# ⛔ THE GUARD IS SILENT WITHOUT A TYPICAL — first-cycle blindness, which R2 §24.11 item 4 named and which this
-# slice was told not to repeat silently. The first turn is then unbounded and a holder that can never act holds for
-# ever. No second guard sees it: once one turn HAS completed the median rule takes over and every other row is green.
-mutant m6-no-first-cycle-rule \
-  "p='$AUTO';s=open(p).read();o='        else if (typ === null && !engineAllows(h)) {';assert o in s;s=s.replace(o,'        else if (false) {');open(p,'w').write(s)" \
+# ⛔ THE BOUND FALLS BACK TO THE ROW'S POOLED INTERVALS when a member has none of its own — which is the rule the
+# whole-stretch sweep condemned: PTR's `h` needs ~1,450 quiet game-seconds and `q`'s resets are tens of seconds
+# apart, so the pooled median is two orders of magnitude too small and `h`'s turn is released before it could
+# possibly use it. Hindrance Spirit ends at ONE, the state before this slice.
+mutant m6-the-bound-falls-back-to-the-ROWs-pooled-intervals \
+  "p='$AUTO';s=open(p).read();o='  function typicalTurn(C, f) { return medianPos(C.mem[f.id]); }';assert o in s;s=s.replace(o,'  function typicalTurn(C, f) { var own = medianPos(C.mem[f.id]); if (own !== null) return own; var pool = []; for (var k in C.mem) pool = pool.concat(C.mem[k]); return medianPos(pool); }');open(p,'w').write(s)" \
   $UNIT
 
 # ⚠ A TYPICAL OF ZERO IS A BOUND. This is the defect the stub found while the slice was being built: a one-reset
@@ -115,7 +130,7 @@ mutant m9-preemption-skips-the-preempted \
 # fires. ⚠ A build with this defect would be GREEN on `something` — which is why `gates-r3b --part 2` runs the same
 # four legs on BOTH engine families and why that is R4 rather than a note.
 mutant m10-typical-from-an-engine-field \
-  "p='$AUTO';s=open(p).read();o='  function ownTypical(C, f) { return medianPos(C.mem[f.id]); }';assert o in s;s=s.replace(o,'  function ownTypical(C, f) { var t = player[f.layer] && player[f.layer].resetTime; return t === undefined ? null : Number(t); }\n  function unusedOwnTypical(C, f) { return medianPos(C.mem[f.id]); }');s=s.replace('  function typicalTurn(C, f) {\n    var own = medianPos(C.mem[f.id]);','  function typicalTurn(C, f) {\n    var own = ownTypical(C, f);');open(p,'w').write(s)" \
+  "p='$AUTO';s=open(p).read();o='  function typicalTurn(C, f) { return medianPos(C.mem[f.id]); }';assert o in s;s=s.replace(o,'  function typicalTurn(C, f) { var t = player[f.layer] && player[f.layer].resetTime; return t === undefined ? null : Number(t); }');open(p,'w').write(s)" \
   $UNIT
 
 # ⛔ THE MEMORY IS NOT IN `runtimeState()`. A resumed run then takes a different path from an uninterrupted one, and
