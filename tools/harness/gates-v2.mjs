@@ -202,25 +202,47 @@ async function part3() {
     { key: 'rate-peak@0.1/60 — cut MID-HOLD', cell: 'rate-peak@0.1/60', want: ['rateBest'] },
   ];
   for (const C of CELLS) {
-    const base = { profile: 'all', diff: 1, 'from-snapshot': SNAP('ptr', 'M16'), 'auto-opt': Q(C.cell) };
+    // ⛔ FROM `all/M18.json`, NOT `all/M16.json` — and the reason is the second half of what R2 broke here. Both
+    // cells are about `reset:q`'s own runtime memory, so the leg has to start where `reset:q` can ACT. At the M16
+    // this gate was written against (24179 game-s) q was already unlocked, because the old `reset:q = gain>=2x`
+    // fired on an empty purse and unlocked it at 16917. R2's M16 is 17058 and q does not unlock until M17 at 23492,
+    // so from there `decideReset` returns `cannot-reset` before the rate rule is ever consulted and `rateBest` is
+    // empty at EVERY cut tick the probe tried (measured: 600/900/1200/1500/1800/2100/2400, all `rateBest=0`).
+    // `all/M18.json` is the first fixture where q is unlocked AND has milestones, so the memory this row is about
+    // actually exists there.
+    const base = { profile: 'all', diff: 1, 'from-snapshot': SNAP('ptr', 'M18'), 'auto-opt': Q(C.cell) };
     const RT = 'tmtLoader.runtimeState()';
     const [A, B] = await Promise.all([job('ptr', { ...base, ticks: 3000, eval: RT }), job('ptr', { ...base, ticks: 3000, eval: RT })]);
     const twice = A.ticks === B.ticks && A.hashGame === B.hashGame && JSON.stringify(A.hook?.actions) === JSON.stringify(B.hook?.actions);
     row({ gate: 'V2-3 twice equal', id: 'ptr', leg: C.key, ok: !!A.ok && !!B.ok && twice, ticks: A.ticks, hash: A.hashGame,
       notes: `run 1 ${A.ticks}/${A.hashGame}, run 2 ${B.ticks}/${B.hashGame}; actions equal ${JSON.stringify(A.hook?.actions) === JSON.stringify(B.hook?.actions)}; memory ${JSON.stringify(newMemory(A.eval))}` });
 
-    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'tmt-loader-v2-cut-'));
-    const cut = await job('ptr', { ...base, ticks: 1500, 'stop-snapshot': dir, 'stop-snapshot-name': 'CUT' });
-    const rest = await job('ptr', { profile: 'all', diff: 1, ticks: 1500, 'from-snapshot': path.join(dir, 'CUT.json'), 'auto-opt': Q(C.cell), eval: RT });
-    let mem = {};
-    try { mem = JSON.parse(fs.readFileSync(path.join(dir, 'CUT.json'), 'utf8')).runtime.auto || {}; } catch (e) { mem = {}; }
+    // ⛔ THE CUT TICK IS DERIVED, NOT A LITERAL — and the literal is what R2 broke. This leg's claim is that a run
+    // cut **MID-clock** carries its memory, so the cut has to LAND mid-clock; a fixed 1500 did, at the `all/M16.json`
+    // this gate was written against. R2 moved that fixture (24179 → 17058 game-s) and 1500 then landed just after a
+    // reset had cleared `rateBest`, so `midClock` read false and the row went red — CI run 35497627066, which is a
+    // tuned constant going stale, not a defect in the code under test. Probe instead: walk a bounded ladder of cut
+    // ticks and take the FIRST whose CUT snapshot actually carries the memory this cell is about. The row names the
+    // tick it used and every tick it tried, so a cell that finds none is still legible.
+    const CUT_TICKS = [1500, 1200, 1800, 900, 2100, 600, 2400];
+    let cut = null, mem = {}, cutAt = null, dir = null;
+    const tried = [];
+    for (const t of CUT_TICKS) {
+      dir = fs.mkdtempSync(path.join(os.tmpdir(), 'tmt-loader-v2-cut-'));
+      cut = await job('ptr', { ...base, ticks: t, 'stop-snapshot': dir, 'stop-snapshot-name': 'CUT' });
+      cutAt = t;
+      try { mem = JSON.parse(fs.readFileSync(path.join(dir, 'CUT.json'), 'utf8')).runtime.auto || {}; } catch (e) { mem = {}; }
+      tried.push(`${t}:${C.want.map((k) => `${k}=${(mem[k] && Object.keys(mem[k]).length) || 0}`).join(',')}`);
+      if (C.want.every((k) => mem[k] !== undefined && Object.keys(mem[k]).length > 0)) break;
+    }
+    const rest = await job('ptr', { profile: 'all', diff: 1, ticks: 3000 - cutAt, 'from-snapshot': path.join(dir, 'CUT.json'), 'auto-opt': Q(C.cell), eval: RT });
     const carried = ['stallIntervals', 'stallSince', 'stallFired', 'rateBest', 'rateHold'].filter((k) => mem[k] !== undefined);
     const midClock = C.want.every((k) => mem[k] !== undefined && Object.keys(mem[k]).length > 0);
     const sameMem = JSON.stringify(newMemory(rest.eval)) === JSON.stringify(newMemory(A.eval));
     const sameActs = JSON.stringify(rest.hook?.actions) === JSON.stringify(A.hook?.actions);
     const ok = !!cut.ok && !!rest.ok && rest.ticks === A.ticks && midClock && sameMem && sameActs;
     row({ gate: 'V2-3 a run cut MID-clock and resumed carries the memory, and acts identically', id: 'ptr', leg: C.key, ok, ticks: rest.ticks, hash: rest.hashGame,
-      notes: `cut at ${cut.ticks}, resumed to ${rest.ticks}; the snapshot's runtime CARRIES ${carried.join(', ') || 'NOTHING — the clock is not in runtimeState'} ${JSON.stringify(carried.reduce((o, k) => (o[k] = mem[k], o), {}))}; the cut landed MID-clock (${C.want.join(' + ')} non-empty): ${midClock}; the resumed run's own memory EQUALS the uninterrupted run's: ${sameMem} (${JSON.stringify(newMemory(rest.eval))} vs ${JSON.stringify(newMemory(A.eval))})${Object.keys(newMemory(A.eval)).length ? '' : ' ⚠ BOTH EMPTY at the stop, so this half is vacuous on this cell — a reset immediately before the end clears rate-peak\'s memory by design; what carries the claim here is the MID-CLOCK snapshot above and the action counts below, and the mutant that keeps the memory in a closure reds the first of those'}; action counts equal: ${sameActs}; ⚠ hashGame ${rest.hashGame} against ${A.hashGame} is NOT asserted — see the floor row` });
+      notes: `cut at ${cut.ticks} (tick ${cutAt} of the probe ladder; tried ${tried.join(' ')}), resumed to ${rest.ticks}; the snapshot's runtime CARRIES ${carried.join(', ') || 'NOTHING — the clock is not in runtimeState'} ${JSON.stringify(carried.reduce((o, k) => (o[k] = mem[k], o), {}))}; the cut landed MID-clock (${C.want.join(' + ')} non-empty): ${midClock}; the resumed run's own memory EQUALS the uninterrupted run's: ${sameMem} (${JSON.stringify(newMemory(rest.eval))} vs ${JSON.stringify(newMemory(A.eval))})${Object.keys(newMemory(A.eval)).length ? '' : ' ⚠ BOTH EMPTY at the stop, so this half is vacuous on this cell — a reset immediately before the end clears rate-peak\'s memory by design; what carries the claim here is the MID-CLOCK snapshot above and the action counts below, and the mutant that keeps the memory in a closure reds the first of those'}; action counts equal: ${sameActs}; ⚠ hashGame ${rest.hashGame} against ${A.hashGame} is NOT asserted — see the floor row` });
   }
   // ⛔ THE FLOOR, WITH NO AUTOMATION IN IT AT ALL. Without this row the two above would read as "we chose not to
   // check the hash"; with it, the reason is a measurement.
