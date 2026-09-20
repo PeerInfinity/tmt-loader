@@ -3035,15 +3035,24 @@ async function gateMobile(browser, base, ids) {
         const kept = collided.filter((x) => mem.indexOf(x) >= 0);
         const missed = clean.filter((x) => mem.indexOf(x) < 0);
         const stable = c0 === c1;
+        const storedKeys = stored ? flat(JSON.parse(stored)) : [];
+        // \u26d4 THE STORED BYTES THEMSELVES, and this is the half the hash cannot supply. MEASURED: a build that
+        // wrote the set into `player` instead was GREEN on the hash comparison on two of the three mutant games,
+        // because the write had already happened at an earlier render and re-writing the SAME value moves no
+        // hash at all. What distinguishes storage from `player` unconditionally is that the storage key HOLDS the
+        // set: this compares them outright. (A game with nothing to remember stores nothing, and the two agree
+        // at empty \u2014 which is a real abstention on this half and is why the verdict names the count.)
+        const storedOk = storedKeys.join(' ') === mem.slice().sort().join(' ');
         return { rows: rows.length, clean, collided, mem, emptied, withheld: collided.filter((x) => mem.indexOf(x) < 0),
-          key, storedKeys: stored ? flat(JSON.parse(stored)) : [], inPlayer: before === after, stable,
-          verdict: !stable ? 'the page does not repeat its own hash (abstains on the write-nothing half)'
-            : before !== after ? 'THE MEMORY WRITE MOVED THE GAME STATE (it is not going to storage)'
-            : emptied.length ? 'FORGETTING THE SET LEFT KEYS BEHIND'
+          key, storedKeys, storedOk, inPlayer: before === after, stable,
+          verdict: emptied.length ? 'FORGETTING THE SET LEFT KEYS BEHIND'
+            : !storedOk ? `THE MEMORY IS NOT IN STORAGE (remembered ${JSON.stringify(mem)}, ${key} holds ${JSON.stringify(storedKeys)})`
             : kept.length ? `AN AMBIGUOUS ATTRIBUTION WAS REMEMBERED: ${kept.slice(0, 4).join(', ')}`
             : missed.length ? `AN UNAMBIGUOUS ONE WAS NOT: ${missed.slice(0, 4).join(', ')}`
+            : !stable ? 'the page does not repeat its own hash (abstains on the write-nothing half)'
+            : before !== after ? 'THE MEMORY WRITE MOVED THE GAME STATE (it is not going to storage)'
             : !clean.length && !collided.length ? 'abstains (no card on this game attributes a resource at this state)'
-            : `${mem.length} remembered, ${collided.length} withheld for an ambiguous attribution; the write moved no game state` };
+            : `${mem.length} remembered (and in ${key}), ${collided.length} withheld for an ambiguous attribution; the write moved no game state` };
       });
       row.resMemOk = !/^THE |^AN |^FORGETTING/.test(String(row.resMem.verdict));
 

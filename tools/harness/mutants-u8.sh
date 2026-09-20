@@ -112,14 +112,24 @@ mutant m3-row-prints-formatwhole \
   "p='loader/layerlist.js';s=open(p).read();o='  function resAmount(v) { return fmtNum(v, false); }';assert o in s;s=s.replace(o,'  function resAmount(v) { return fmtNum(v, true); }');open(p,'w').write(s)" \
   ptr= the-cultree=res the-dressy-tree=res
 
-# (4) a remembered row keeps the string it last displayed — the "frozen value" build. The row is still there after
-#     the reset, so only the VALUE check can see it.
+# (4) a remembered row prints the string it had WHEN IT WAS LAST ATTRIBUTED — the "frozen value" build, which is
+#     the one a row that merely SURVIVES cannot distinguish itself from. The row is still there after the reset, so
+#     only the VALUE check can see it.
+#     ⚠ THE FIRST VERSION OF THIS MUTANT WAS VOID and the round said so: it skipped `syncResources`' write when the
+#     element already had text, and a reset REBUILDS that element (the key set moves), so the guard never fired and
+#     ptr came back green on every leg. The mutation has to live where the STRING is decided, not where it is
+#     painted — so it caches the attributed string per (layer, key) and reuses it while the row is remembered.
 mutant m4-remembered-row-freezes-its-string \
-  "p='loader/layerlist.js';s=open(p).read();o='      e.val.textContent = r.text;';assert o in s;s=s.replace(o,'      if (!(r.sticky && e.val.textContent)) e.val.textContent = r.text;');open(p,'w').write(s)" \
+  "p='loader/layerlist.js';s=open(p).read();o='text: resAmount(v)';assert s.count(o) == 1;s=s.replace(o,'text: (has ? ((window.__u8frozen = window.__u8frozen || {})[l + \".\" + k] = resAmount(v)) : ((window.__u8frozen = window.__u8frozen || {})[l + \".\" + k] || resAmount(v)))');open(p,'w').write(s)" \
   ptr=stickyAfter the-cultree= the-dressy-tree=
 
-# (5) the memory written into `player` instead of storage — decision 3 broken. ⚠ Leg M cannot see this (it measures
-#     a render with the set already written); leg P's forget-then-render can.
+# (5) the memory written into `player` instead of storage — decision 3 broken. ⚠ Leg M cannot see this at all: it
+#     measures a render with the set ALREADY written, and a first-sight write does not happen there.
+#     ⚠ AND THE HASH HALF OF LEG P COULD NOT SEE IT EITHER on two of the three games, which the first round
+#     MEASURED: re-writing the same value into `player` moves no hash, so only `ptr` — whose set grows between the
+#     first render and the leg — reddened. Leg P now compares the remembered set against the BYTES UNDER THE
+#     STORAGE KEY, which needs no change to be visible. `the-cultree` remembers nothing (all six of its rows
+#     collide), so it stores nothing either and genuinely cannot witness this one; the row says `0 remembered`.
 mutant m5-memory-written-into-player \
   "p='loader/layerlist.js';s=open(p).read();o='      if (any) T.storage.raw.setItem.call(localStorage, k, JSON.stringify(o));';assert o in s;s=s.replace(o,'      if (any) player.uiLayerlistResources = JSON.stringify(o);');open(p,'w').write(s)" \
-  ptr=resMem the-cultree=resMem the-dressy-tree=resMem
+  ptr=resMem the-cultree= the-dressy-tree=resMem
