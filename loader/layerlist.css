@@ -396,6 +396,39 @@
  * from an upgrade you can press, at a glance and without colour. Round stays for every other category. */
 #tmt-layerlist .tmt-layerlist-chip[data-kind="milestones"] { border-radius: 0; }
 
+/* ⚖ (U10) A BUYABLE SAYS HOW MANY YOU OWN (user, 2026-09-20), in BOTH views — the expanded chip and the
+ * collapsed action button are one object and take one string (layerlist.js, `drawChipText`).
+ * ⚠ TWO SPANS, NOT ONE RUN OF TEXT. The short name can END IN A DIGIT (`nameChips` disambiguates a collision
+ * with one), so a concatenated `N28` + `3` would be genuinely ambiguous. The × is DECORATION and lives here as
+ * a `::before` rather than in the string, which keeps `data-count` — the machine-readable value the gate reads
+ * — the number and nothing else.
+ * ⚠ THE WIDTH IS RESERVED, tabular, and only ever GROWS (⚖ U2c). `min-width` is written INLINE by
+ * layerlist.js, in `ch`, per CARD, so every buyable on a card is the same width and a growing number cannot make
+ * the row reflow under a finger; the tabular figures at the top of this file are what make a `ch` a fixed digit
+ * column. The floor is the widest count the ROSTER renders (docs/mobile.md) — nothing measured there can widen a
+ * chip at all. */
+#tmt-layerlist .tmt-layerlist-chip-name { white-space: nowrap; }
+#tmt-layerlist .tmt-layerlist-chip-count {
+  display: inline-flex;
+  align-items: baseline;
+  margin-left: .3em;
+  font-variant-numeric: tabular-nums;
+  font-weight: normal;
+  opacity: .85;
+  white-space: nowrap;
+}
+/* ⚠ THE RESERVATION IS ON THE DIGITS ALONE. `ch` is ONE DIGIT COLUMN and the × is not a digit — measured at
+ * 13 px: a digit is 7.83 px, the × is 8.5 — so a reservation written across the whole `×36` would be short by
+ * a sign's width and the chip would grow with the number anyway. The sign is constant, so it sits OUTSIDE the
+ * reserved box, as this container's `::before` (a flex item on an inline-flex container). */
+#tmt-layerlist .tmt-layerlist-chip-n { text-align: right; }
+#tmt-layerlist .tmt-layerlist-chip-count::before { content: "\00d7"; opacity: .7; margin-right: .05em; }
+/* ⚠ A buyable whose amount the engine will not give us has `data-count=""` — the box goes away rather than
+ * leaving a bare × standing for nothing. (A buyable AT ZERO is a different case and still prints `×0`: the
+ * engines define `getBuyableAmount` for it, and hiding it would be the one reading that is not honest.) */
+#tmt-layerlist .tmt-layerlist-chip[data-count=""] .tmt-layerlist-chip-count,
+#tmt-layerlist .tmt-layerlist-act[data-count=""] .tmt-layerlist-chip-count { display: none; }
+
 /* ⚖ A DIVIDER BETWEEN THE CATEGORIES (user, 2026-09-18). A flex item like the chips, emitted before the chip whose
  * category it introduces, so it can never land at either end. `aria-hidden`, because it is a rule, not a control.
  * A divider takes the visibility of the chip that follows it, so the collapsed card and the expanded one are both
