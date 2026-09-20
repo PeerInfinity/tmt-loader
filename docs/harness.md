@@ -208,7 +208,7 @@ drove a chip**. ⛔ A check nobody runs is not a check.
 
 | check | where it runs now | cost |
 |---|---|---|
-| unit tests (`npm run harness:test`) | CI, the **fast** job — and everything else `needs:` it | 138 tests, no browser (⚠ it read `46 tests`, then `75`, then `82`, every one of them stale — a count in prose that no gate reads, and it had drifted by fifty-two before U7 re-read it; U7 added four and took it to 138) |
+| unit tests (`npm run harness:test`) | CI, the **fast** job — and everything else `needs:` it | **158 tests**, no browser (⚠ it read `46 tests`, then `75`, then `82`, then `138`, every one of them stale — a count in prose that no gate reads. It had drifted by fifty-two before U7 re-read it, and by twenty again between U7 and the U8 merge. ⛔ RE-MEASURE IT AT EVERY MERGE: this row is the standing example of a count conflict that must not be resolved by picking a branch's number — U3 merged 75-vs-60 and the merged tree measured 79) |
 | G6 roster doc + G7 declined list (`games-table.mjs --check`) | CI, the fast job | 0.13 s |
 | roster FIGURES census (`census-figures.mjs`) | CI, the fast job | 1.2 s |
 | M1 mobile sweep (`--gate mobile`) | CI, ten shards + a merge | ~3 min end to end; 32–46 min locally |

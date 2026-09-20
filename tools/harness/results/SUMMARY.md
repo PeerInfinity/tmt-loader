@@ -4778,3 +4778,107 @@ Reading this section: Every cell is ONE run.mjs process (an L1 leg is ~14,000 ti
 | R2-S4 reset:e on L1 — policy:reset:e=gain>=2x-unit | ptr | L1: from all/M15.json, diff 1, profile all, 14000 ticks, 2 run(s) | 30048 | 30048 | 1 | `f30b8754522e7b9a` | GREEN | M16 23904 · M17 16917 · M18 23999 · M19 24332 · M20 — · M21 — · M22 —; twice equal: true (run 2 30048s/f30b8754522e7b9a); the empty-purse fix on e: e is row 2 and its EP purse is spent by buyables:e (the Enhancers), so the ratio is against a residue there too; resets reset:p 3357 reset:g 673 reset:b 948 reset:s 129 reset:t 143 reset:e 303 reset:sb 23 reset:q 4; end q 3/6 total (best 3), QL 2, q ms [0,1,2,3], h LOCKED, TE 2.300e30 of 2.300e30 (xtc 22), t.best 17, s.best 17, sb 5, EP 7.335e104 enh 36, GP 1.379e567, uo [0,0,0], native [e.auto true t.autoExt true t.auto true s.auto true sb.auto false]; ticks_ms 619505; wall 621s; load 7.16→13.85; pool 4 |
 | R2-S4 reset:e on L1 — policy:reset:e=rate-peak@0.1/30 | ptr | L1: from all/M15.json, diff 1, profile all, 14000 ticks, 2 run(s) | 30048 | 30048 | 1 | `0d9b1beb30d22b4b` | GREEN | M16 22511 · M17 16494 · M18 22616 · M19 22954 · M20 — · M21 — · M22 —; twice equal: true (run 2 30048s/0d9b1beb30d22b4b); V2 §18.2 measured this BEATING the shipped table on e from all/M16 (22511 vs 24179) — re-measured over a WHOLE stretch, since that fixture is the damaged one; resets reset:p 3344 reset:g 724 reset:b 996 reset:s 129 reset:t 143 reset:e 251 reset:sb 23 reset:q 4; end q 3/6 total (best 3), QL 2, q ms [0,1,2,3], h LOCKED, TE 2.188e30 of 2.188e30 (xtc 22), t.best 17, s.best 17, sb 5, EP 5.915e104 enh 36, GP 3.542e553, uo [0,0,0], native [e.auto true t.autoExt true t.auto true s.auto true sb.auto false]; ticks_ms 599379; wall 601s; load 13.85→7.52; pool 4 |
 | R2-S4 reset:e on L1 — policy:reset:e=rate-peak@0/0 | ptr | L1: from all/M15.json, diff 1, profile all, 14000 ticks, 2 run(s) | 30048 | 30048 | 1 | `7a5c3fe874bdfddc` | GREEN | M16 — · M17 — · M18 — · M19 — · M20 — · M21 — · M22 —; twice equal: true (run 2 30048s/7a5c3fe874bdfddc); the BARE rate rule, the control for the buffered cell: from all/M16 it never reached M16 in 4068 resets of e; resets reset:p 6356 reset:g 299 reset:b 501 reset:s 35 reset:t 40 reset:e 4734 reset:sb 1; end q 0/0 total (best 0), QL 0, q ms [], h LOCKED, TE 1.101e19 of 1.101e19 (xtc 17), t.best 13, s.best 13, sb 1, EP 1.115e42 enh 26, GP 0, uo [0,0,0], native [e.auto false t.autoExt false t.auto false s.auto false sb.auto false]; ticks_ms 860788; wall 862s; load 13.96→5.14; pool 4 |
+## 2026-09-20 — U8: a secondary-resource row, once shown, STAYS shown — commit `6405ab7d5`
+
+⚖ user, 2026-09-19: *"In Layers view, I want to change it so that after the first time the UI row for a secondary
+currency for a layer is displayed, it doesn't get hidden after a reset. That change would reduce layout shifting
+during resets."* Continuous with U2c's digit reservation: the same complaint, a different cause.
+
+**CI at `6405ab7d5`: run `35494311831` (dispatched at the branch — `sweep.yml` is `push: [main]` +
+`workflow_dispatch`, so a branch push runs NOTHING by itself), 23/23 jobs, `rows: 171/171 game(s); 0 RED`, 6
+abstained on the state leg (the usual six).** The round before it, `35493643723` at `4f2d0797a`, was also
+171/171 0 RED; what moved between them is a gate hole the mutant round found, below.
+
+### The cause, REPRODUCED before it was fixed
+
+A row exists only while the occurrence budget still has an unclaimed statement of the value, and the engine's own
+`points` / `best` / `total` claim FIRST. At a reset all of them and the candidate are zero, the engine's zeros
+consume every `0` the layer prints, and every candidate comes back unattributed. On `ptr` at M16,
+`doReset('q', true)` — `q`'s row is above `t`'s, so it is the call that resets `t` — takes `t.energy` 6.29e28 → 0
+and the card's row vanishes; the layer's text then reads *"You have 0 Time Energy … Your best Time Capsules is 0"*,
+whose two zeros both go to engine readouts. Structural, not a matcher bug.
+
+✅ **Remembering it is sound.** The VALUE never depended on the text: the candidate keys come straight off
+`player[layer]` and are readable at every state — only DETECTION consults prose. What is remembered is *this key is
+a resource on this layer*, a fact about the LAYER rather than the moment, and a remembered row renders the CURRENT
+number.
+
+### The three decisions, and what each one MEASURED over the roster
+
+| decision | what shipped | measured, by the gate itself |
+|---|---|---|
+| the string's SOURCE | our own `format` for EVERY row, attributed or remembered | **3 of the 16** rows change string — `the-dressy-tree Mi.clicky`, `the-danus-tree p.progress`, `the-rainbow-void-tree p.clickingMult`, all `1` → `1.00`. `formatWhole` would change **10**, and it ROUNDS a fractional resource (12.5 → `13`) |
+| what gets REMEMBERED | only a key shown with `collide === false` | the filter withholds **8** keys on **2** games: `the-cultree`'s six stats (`k.sta`, `k.str`, `k.spd`, `k.int`, `k.wis`, `k.lck`) and `the-element-tree`'s `q.protonmultiplier` / `q.neutronmultiplier`. 8 of the 16 rows remembered, 8 withheld |
+| WHERE it is kept | `storage.raw`, `tmt-loader:<id>:ui.layerlist.resources` | 171/171 `resMemKeyOk`; leg P asserts the bytes under that key ARE the remembered set, and that the writing render moves no state hash |
+
+⚠ **Why the string had to change source at all**: a row that printed the claimed string while attributed and ours
+while not would change its own string **at the instant of the reset** — the layout shift this item exists to
+remove, reintroduced at the only moment that matters.
+
+### What the roster sees, and why the gate had to DRIVE a reset
+
+**0 rows on the whole roster stand on the memory at the swept states.** Every game boots with an empty store and
+the render that shows a row is the one that records it, so a leg reading a boot state sees the fixed and unfixed
+builds as identical. Leg O therefore reaches an attributed state, DRIVES a reset and asserts the row survived:
+**4 witnesses, 167 abstentions, 0 red.**
+
+| game | how | witness |
+|---|---|---|
+| `ptr` | `doReset('sb', true)` | `g.power` 1.96e555 → `0` — the user's own "generator power" example |
+| `the-number-tree` | `layerDataReset('T')` | `T.times` 49.00 → 0.00 |
+| `equilibrium` | `layerDataReset('-')` | `-.resetCount` 1.00 → 0.00 |
+| `the-universal-tree-voidcons0le-is-dumb` | `layerDataReset('p')` | `p.matterDeposited` |
+
+⚠ **`doReset(l)` is NOT the call that clears `l`'s own data** — `rowReset` resets a layer only for a resetting
+layer on a HIGHER row — so the leg resets through the layer above where the tree has one and falls back to the
+engine's own `layerDataReset(l)` where it does not; `how` records which. ⚠ And the SECOND vacuity: a value that
+still attributes after the reset would leave the row standing on the unfixed build too, so the leg rebuilds the
+budget afterwards and abstains BY NAME (`the-dressy-tree`: *"Mi.clicky still attributes after the reset"*).
+
+**Leg P — what gets remembered, and where the write lands: 12 judged, 159 abstained, 0 red.** Both claims are about
+the MOMENT OF WRITING, which no state-reading leg can reach, so the leg forgets the set (`forgetResources()`,
+which deliberately does not re-render) and watches the very next render fill it.
+
+### The mutants — and two of them were findings
+
+Six runs on **`ptr`** (the only recorded state where a resource is attributed unambiguously AND a reset can take it
+away), **`the-cultree`** (six rows that all collide — the witness for the collide filter) and **`the-dressy-tree`**
+(the one roster row where the two formatters disagree on a game leg O abstains on), restored from a COPY taken
+before any mutation; `diff` against it after every run: IDENTICAL, 6/6.
+
+| mutant | ptr | the-cultree | the-dressy-tree | what it printed |
+|---|---|---|---|---|
+| m1 the stickiness dropped | **`stickyAfter`** (`stickyBefore` GREEN) | nothing | nothing | `THE ROW DID NOT SURVIVE THE RESET (g.power, doReset(sb, true))` |
+| m2 a collided attribution remembered | nothing | `resMem` | nothing | `AN AMBIGUOUS ATTRIBUTION WAS REMEMBERED: k.sta, k.str, k.spd, k.int` |
+| m3 the row prints `formatWhole` | nothing | `res` | `res` | `Mi.clicky: prints "1", not this key's own value "1.00"` |
+| m4 a remembered row freezes its string | `stickyAfter` | nothing | nothing | `THE SURVIVING ROW PRINTS A STALE VALUE ("1.96e555", but g.power is "0")` |
+| m5 the memory written into `player` | `resMem` | nothing | `resMem` | `THE MEMORY IS NOT IN STORAGE (remembered ["g.power","q.energy","t.energy"], … holds [])` |
+
+⚖ **m1 is the one the item is scored on, and it reddens the AFTER-reset half while leaving the BEFORE-reset one
+GREEN.** A mutant that reddened both would have been caught by the wrong assertion and would say nothing about the
+row surviving — which is why leg O reports its two halves apart.
+
+⛔ **THE FIRST ROUND FOUND A HOLE IN THE GATE, not in the card** (`4f2d0797a`, fixed at `6405ab7d5`):
+
+> **m5 was GREEN on two of the three games.** Leg P compared the state hash across the render that writes the set —
+> sound only while that write CHANGES something. The mutant's write into `player` had already happened at an
+> earlier render, and re-writing the SAME value moves no hash at all; only `ptr`, whose remembered set grows
+> between the first render and the leg, reddened. Leg P now also compares the remembered set against the BYTES
+> UNDER THE STORAGE KEY, which needs no change to be visible.
+
+⚠ **And m4 was VOID as first written.** It skipped `syncResources`' write when the element already had text, but a
+reset REBUILDS that element (the key set moves), so the guard never fired and `ptr` came back green on every leg.
+The mutation now lives where the STRING is decided rather than where it is painted.
+
+⚠ **`the-cultree` cannot witness m5 and that is a result**: it remembers nothing (all six of its rows collide), so
+it stores nothing either, and the two agree at empty. The row says `0 remembered` out loud.
+
+### What this leaves open
+
+- **A remembered key is never forgotten while the save lives.** A game that removes a key from `player[layer]`
+  simply stops rendering it (the row is emitted only for a key that is still a Decimal there), so a stale entry is
+  inert — but it stays in the stored set. Clearing the game's save clears it, and `forgetResources()` is the
+  explicit path.
+- **0 sticky rows at the swept states** means the roster sweep exercises the memory only through legs O and P. A
+  ladder state that BOOTS with rows already remembered would exercise the render path itself; none exists today.
+- ⚖ The prose label (U7) and the wrong-currency numerator (U7) are untouched by this item.
