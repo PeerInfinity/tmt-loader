@@ -153,9 +153,13 @@ test('typicalGap is the median of the last n gaps, and the FIRST gap after armin
   assert.equal(T.progress().typicalGap, 8);
   tick(ctx, 11); grant(ctx, 'a', 13); tick(ctx, 1);    // a gap of 12
   assert.equal(T.progress().typicalGap, 10, 'the median of 8 and 12');
-  const gaps = T.progress().gaps;
-  assert.equal(gaps.length, 3);
-  assert.equal(JSON.stringify(gaps.map((g) => g.dirty)), '[true,false,false]', 'the first gap is not flagged as unusable');
+  // ⛔ AN UNUSABLE GAP IS NOT IN THE WINDOW AT ALL — it is counted, and its duration is kept in a second list. The
+  // first cut stored it and filtered it, and that SILENCED the watch: a dirty gap evicted clean evidence, so after
+  // one rescue the window held nothing usable and `typicalGap` read null for ever (measured on the page, §21.5).
+  const p = T.progress();
+  assert.equal(JSON.stringify(p.gaps), '[8,12]', 'the usable window is not the two clean gaps');
+  assert.equal(p.skipped, 1, 'the first gap after arming was not counted as skipped');
+  assert.equal(JSON.stringify(p.skippedGaps), '[41]', 'the skipped gap\'s own duration is not kept');
 });
 
 test('⛔ a gap that ended while a feature was ESCALATED does not feed typicalGap, and the two medians DIFFER', () => {
@@ -177,9 +181,13 @@ test('⛔ a gap that ended while a feature was ESCALATED does not feed typicalGa
   tick(ctx, 30);                                         // stall again, escalate again
   tick(ctx, 89); grant(ctx, 'a', 15); tick(ctx, 1);      // a rescue gap of 120
   const p = T.progress();
-  const all = p.gaps.map((g) => g.dt), clean = p.gaps.filter((g) => !g.dirty).map((g) => g.dt);
-  assert.equal(JSON.stringify(clean), '[8,12]', `the clean gaps are ${JSON.stringify(clean)} of ${JSON.stringify(all)}`);
+  const clean = p.gaps, all = clean.concat(p.skippedGaps);
+  assert.equal(JSON.stringify(clean), '[8,12]', `the usable gaps are ${JSON.stringify(clean)}, the skipped ones ${JSON.stringify(p.skippedGaps)}`);
   assert.equal(p.typicalGap, 10, 'the rescue gaps fed the median');
+  assert.ok(p.skipped >= 2, `only ${p.skipped} gap(s) were skipped — the construction did not produce two rescues`);
+  // ⛔ …AND THE WATCH IS STILL LISTENING. The first cut's window held only the rescue gaps by now and `typicalGap`
+  // read null, which is the watch going permanently deaf on the game it had just rescued.
+  assert.notEqual(p.typicalGap, null, 'the guard silenced the watch');
   // …and the number the mutant would produce, asserted so the leg cannot be vacuous
   const med = (xs) => { const a = xs.slice().sort((x, y) => x - y); const h = a.length >> 1; return a.length % 2 ? a[h] : (a[h - 1] + a[h]) / 2; };
   assert.notEqual(med(all), 10, `the guard is not discriminating: the median of every gap is also ${med(all)}`);
@@ -439,7 +447,9 @@ test('the watch parameters are validated by the SAME checkParam the strategy tab
     assert.ok(r.error && r.error.length > 4, `${name}=${bad} was refused with no reason`);
   }
   assert.equal(T.setWatchOption('nonsense', 1).ok, false);
-  assert.equal(T.watchOptions().k, '3', 'a refused value reached the save');
+  // ⚠ the declared default, read from the TABLE rather than repeated here — the measurement that chose it (K=10,
+  // §21.4) would otherwise have to be edited in two places, and the one this leg cares about is "unmoved".
+  assert.equal(T.watchOptions().k, T.watchParams().find((p) => p.name === 'k').default, 'a refused value reached the save');
   assert.equal(T.setWatchOption('k', '4.5').ok, true);
   assert.equal(T.watchOptions().k, '4.5');
   // every declared parameter says what it is a proxy for (⚖ 13d.2)

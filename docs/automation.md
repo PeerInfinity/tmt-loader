@@ -195,7 +195,12 @@ tmtLoader.progress()   // { armed, events: [{at, kind, layer, id, key, tick, mar
 - **`typicalGap` is the median of the last `n` gaps that are usable evidence**, and two kinds are not: a gap that
   ended while the stall watch had any feature ESCALATED (a rescue's duration is not evidence of what normal looks
   like — the same rule `stall>=Kx/N` has for a fallback-fired reset), and the first gap after arming or a load.
-  `gaps[i].dirty` is that flag, and it rides in `runtimeState()` so a resume measures the same median.
+  ⛔ **An unusable gap never enters the window at all** — it is COUNTED (`skipped`) with its duration kept in a second
+  bounded list (`skippedGaps`), and the view says so. The first cut stored it and filtered it out at read time, and
+  that **silenced the watch for good**: a dirty gap EVICTS clean evidence, so after one rescue and its cool-off the
+  five-gap window held five rescue gaps, `typicalGap` read `null`, and `stalled` could never be true again — the
+  watch went permanently deaf on the game it had just rescued (measured on the page by `tools/harness/shots-v3.mjs`).
+  The flag rides in `runtimeState()` so a resume measures the same median.
 - **Ladder marks as labels.** Where `tools/harness/ladder/<id>.json` exists — **2 of the 171 games** — the host hands
   it to the core (`loader/page.js` fetches it and ignores a 404; `run.mjs --ladder` passes it as `--ladder-labels`)
   and an event carries the names of any marks it satisfied. ⛔ Evaluated only when an EVENT fires, never per tick;
@@ -276,7 +281,7 @@ feature up by id. `gates-v3 --part 2` measures the `player.au` key set on a fres
 
 | setting | type | provisional default | what it is a proxy for (⚖ 13d.2) |
 |---|---|---|---|
-| `k` | factor | *(see plan §21 — chosen by measurement against the opening and the `q` stall)* | K times longer than this game's own progress has been taking is not a wait, it is a stall |
+| `k` | factor | **`10`** — and MEASURED, not inherited from `stall>=Kx/N`'s 3 | ten times longer than this game's own progress has been taking is not a wait, it is a stall. ⛔ A game's gaps are HEAVY-TAILED — ptr's opening has a median of 7 game-seconds and 100-second quiet stretches by design — so a small multiple of the median lands inside normal play. Measured on ptr, both legs, watch on and nothing edited: **K=3** escalates the healthy opening 6× (M12 6718 → 6798) *and* reaches only M18 on the `q` stall; **K=6** escalates it once (6755); **K=10** escalates it **0** times and is byte-identical to the control, *and* breaks the `q` stall to **M20 at 26282** where the shipped default stops at M19 / 24607. Higher is better on BOTH legs, which is why this is a default rather than a question for R2 |
 | `n` | count | `5` | short enough to follow a changing game, long enough that one unusual gap does not move the median — `stall>=Kx/N`'s N, for the same reason |
 | `cool` | factor | `1` | one typical gap of renewed progress is by construction "the game is moving at its normal rate again", and it needs no constant in any game's own units |
 

@@ -938,7 +938,7 @@
   /** Arm the tracker: ONE full walk of everything already held, which is the run's starting point, not progress. */
   function armProgress() {
     var now = Number(player.timePlayed) || 0;
-    prog = { seen: {}, bmax: {}, lens: {}, events: [], total: 0, byKind: {}, dropped: 0, gaps: [], gapDirty: true, lastAt: now, firstAt: now, marks: {} };
+    prog = { seen: {}, bmax: {}, lens: {}, events: [], total: 0, byKind: {}, dropped: 0, gaps: [], skippedGaps: [], skipped: 0, gapDirty: true, lastAt: now, firstAt: now, marks: {} };
     progStats.fullScans++;
     scanProgress(true);
     // ⛔ THE SEED IS NOT PROGRESS and the FIRST GAP DOES NOT COUNT. `gapDirty` starts true, so the stretch from the
@@ -950,7 +950,7 @@
     // `gapDirty = anyEscalated()` — which is false at arming time. So seeding a save that holds anything at all
     // CLEARED the flag, and the first gap (41 game-seconds in the leg) fed the median. Everything the seed wrote is
     // discarded here, the flag included.
-    prog.total = 0; prog.events.length = 0; prog.dropped = 0; prog.byKind = {}; prog.gaps.length = 0; prog.gapDirty = true;
+    prog.total = 0; prog.events.length = 0; prog.dropped = 0; prog.byKind = {}; prog.gaps.length = 0; prog.skippedGaps.length = 0; prog.skipped = 0; prog.gapDirty = true;
   }
   T.progressArm = function () { if (prog === null) armProgress(); return prog !== null; };
   /** One incremental pass. Cheap by construction: three lengths per layer plus the two small numeric maps. */
@@ -1031,10 +1031,25 @@
     // the GAP that just ended. ⛔ A gap that ended while the watch had ANY feature escalated does not feed
     // `typicalGap` — a rescue's duration is not evidence of what normal looks like (the same guard `stall>=Kx/N`
     // already has), and neither does the first gap after arming or a load.
+    // ⛔⛔ AN UNUSABLE GAP IS NOT STORED AT ALL, AND THE FIRST CUT STORED IT AND FILTERED IT — WHICH SILENCED THE
+    // WATCH FOR GOOD. MEASURED by `tools/harness/shots-v3.mjs` on the page: after one rescue and its cool-off, the
+    // five-gap window held five gaps every one of which was flagged as rescue time, `typicalGap` read NULL, and
+    // `stalled` could never be true again — the watch had gone permanently deaf on a game it had just rescued. The
+    // bug is that a dirty gap EVICTS clean evidence: the window is supposed to be "the last n gaps that are usable
+    // evidence", so the unusable ones never enter it. They are COUNTED, and their durations kept in a second bounded
+    // list, because "we spent 100 and 120 game-seconds rescuing" is worth reading and is what makes the guard's own
+    // leg non-vacuous (a leg that cannot see the number the mutant would produce cannot fail on it).
     var dt = now - prog.lastAt;
     if (dt > 0) {
-      prog.gaps.push({ dt: Math.round(dt * 1e6) / 1e6, dirty: !!prog.gapDirty });
-      while (prog.gaps.length > gapWindow()) prog.gaps.shift();
+      var g = { dt: Math.round(dt * 1e6) / 1e6 };
+      if (prog.gapDirty) {
+        prog.skipped++;
+        prog.skippedGaps.push(g.dt);
+        while (prog.skippedGaps.length > gapWindow()) prog.skippedGaps.shift();
+      } else {
+        prog.gaps.push(g);
+        while (prog.gaps.length > gapWindow()) prog.gaps.shift();
+      }
     }
     prog.lastAt = now;
     prog.gapDirty = anyEscalated();
@@ -1048,10 +1063,10 @@
   function gapWindow() { var n = Math.round(Number(watchParam('n'))); return isFinite(n) && n >= 1 ? n : 5; }
   /** The median of the last `n` gaps that are usable evidence, or null when there are none yet. */
   function typicalGap() {
-    if (prog === null) return null;
+    if (prog === null || !prog.gaps.length) return null;
     var xs = [];
-    for (var i = 0; i < prog.gaps.length; i++) if (!prog.gaps[i].dirty) xs.push(prog.gaps[i].dt);
-    return xs.length ? median(xs) : null;
+    for (var i = 0; i < prog.gaps.length; i++) xs.push(prog.gaps[i].dt);
+    return median(xs);
   }
   // ---- the LADDER's mark names as labels (2 of 171 games have one) --------------------------------------------------
   // ⚠ THE VIEW IS COMPLETE WITHOUT A LADDER, and 169 of the 171 games have none. `tmtLoader.ladder` is set by the HOST
@@ -1083,12 +1098,13 @@
   }
   /** THE READOUT. Newest first, with the counts exact whatever the bound dropped. */
   T.progress = function () {
-    if (prog === null) return { armed: false, events: [], total: 0, dropped: 0, byKind: {}, lastAt: null, sinceLast: null, typicalGap: null, gaps: [], stalled: false, cap: eventCap(), marks: {} };
+    if (prog === null) return { armed: false, events: [], total: 0, dropped: 0, byKind: {}, lastAt: null, sinceLast: null, typicalGap: null, gaps: [], skipped: 0, skippedGaps: [], stalled: false, threshold: null, cap: eventCap(), marks: {} };
     var now = Number(player.timePlayed) || 0, typ = typicalGap(), k = Number(watchParam('k'));
     var ev = prog.events.slice().reverse();
     return { armed: true, events: ev, total: prog.total, dropped: prog.dropped, byKind: Object.assign({}, prog.byKind),
       lastAt: r1(prog.lastAt), firstAt: r1(prog.firstAt), sinceLast: r1(now - prog.lastAt),
-      typicalGap: typ === null ? null : r1(typ), gaps: prog.gaps.map(function (g) { return { dt: r1(g.dt), dirty: g.dirty }; }),
+      typicalGap: typ === null ? null : r1(typ), gaps: prog.gaps.map(function (g) { return r1(g.dt); }),
+      skipped: prog.skipped, skippedGaps: prog.skippedGaps.map(r1),
       stalled: typ !== null && (now - prog.lastAt) >= k * typ, threshold: typ === null ? null : r1(k * typ),
       cap: eventCap(), marks: Object.assign({}, prog.marks), keys: Object.keys(prog.seen).length };
   };
@@ -1154,8 +1170,21 @@
   // (`savedPolicyOf`, `setSavedPolicy`), so the entry is invisible to all of them.
   // ⚠ The DEFAULTS below are provisional and justified, and ⚖ R2's sweep owns the real ones — this slice moves none.
   var WATCH_PARAMS = [
-    { name: 'k', type: 'factor', default: '3', min: 1, label: 'stalled after K× the typical gap',
-      why: 'the same proxy `stall>=Kx/N`’s K is: three times longer than this game’s own progress has been taking is not a wait, it is a stall' },
+    // ⛔ K = 10, AND IT IS MEASURED, NOT INHERITED. The obvious default was `stall>=Kx/N`'s 3, and 3 is WRONG
+    // here for a reason about the DISTRIBUTION rather than about taste: a game's progress gaps are heavy-tailed
+    // (ptr's opening has a median of 7 game-seconds and quiet stretches of 100+ BY DESIGN — §14d.6), so a small
+    // multiple of the MEDIAN lands inside normal play. Measured on ptr, both legs, watch on, nothing edited:
+    //   K=3  — the opening escalates 6× and M12 slips 6718 → 6798; the `q` stall reaches only M18 (3 q resets),
+    //          because an early escalation of `reset:e` onto `interval>=5` starves the very thing q needs;
+    //   K=6  — the opening escalates 1× and M12 slips to 6755;
+    //   K=10 — the opening escalates 0× and is BYTE-IDENTICAL to the control (M12 6718, hashGame
+    //          82eee26f947b2b2e), and the `q` stall reaches M20 at 26282 where the shipped default stops at
+    //          M19 / 24607 and sits there for the remaining 11,500 game-seconds.
+    // Higher is better on BOTH legs, which is the opposite of a trade-off and is why this is a default rather than
+    // a question for R2. ⚖ R2 still owns the real one; this slice moves no table default and writes nothing into
+    // `games-auto/`.
+    { name: 'k', type: 'factor', default: '10', min: 1, label: 'stalled after K× the typical gap',
+      why: 'ten times longer than this game’s own progress has been taking is not a wait, it is a stall — and a smaller multiple of a heavy-tailed median lands inside normal play (measured: at K=3 ptr’s healthy opening escalates six times)' },
     { name: 'n', type: 'count', default: '5', min: 1, label: 'progress gaps remembered',
       why: 'short enough to follow a changing game, long enough that one unusual gap does not move the median — `stall>=Kx/N`’s N, for the same reason' },
     { name: 'cool', type: 'factor', default: '1', min: 0, label: 'return to the primary after this many typical gaps',
@@ -1780,7 +1809,8 @@
     if (prog !== null) o.progress = { seen: Object.keys(prog.seen), bmax: Object.assign({}, prog.bmax),
       lens: JSON.parse(JSON.stringify(prog.lens)), events: JSON.parse(JSON.stringify(prog.events)),
       total: prog.total, byKind: Object.assign({}, prog.byKind), dropped: prog.dropped,
-      gaps: JSON.parse(JSON.stringify(prog.gaps)), gapDirty: !!prog.gapDirty, lastAt: prog.lastAt, firstAt: prog.firstAt,
+      gaps: JSON.parse(JSON.stringify(prog.gaps)), skippedGaps: prog.skippedGaps.slice(), skipped: prog.skipped,
+      gapDirty: !!prog.gapDirty, lastAt: prog.lastAt, firstAt: prog.firstAt,
       marks: Object.assign({}, prog.marks) };
     var er = {}, ne = 0;
     for (var ei in escRung) if (escRung[ei] > 0) { er[ei] = escRung[ei]; ne++; }
@@ -1821,7 +1851,8 @@
       var g = rt.progress;
       prog = { seen: {}, bmax: Object.assign({}, g.bmax || {}), lens: JSON.parse(JSON.stringify(g.lens || {})),
         events: (g.events || []).slice(), total: Number(g.total) || 0, byKind: Object.assign({}, g.byKind || {}),
-        dropped: Number(g.dropped) || 0, gaps: (g.gaps || []).slice(), gapDirty: !!g.gapDirty,
+        dropped: Number(g.dropped) || 0, gaps: (g.gaps || []).slice(), skippedGaps: (g.skippedGaps || []).slice(),
+        skipped: Number(g.skipped) || 0, gapDirty: !!g.gapDirty,
         lastAt: Number(g.lastAt) || 0, firstAt: Number(g.firstAt) || 0, marks: Object.assign({}, g.marks || {}) };
       for (var si = 0; si < (g.seen || []).length; si++) prog.seen[g.seen[si]] = 1;
     }
@@ -2767,7 +2798,8 @@
         + '<div v-else style="text-align:left">'
         +   '<div style="text-align:left;margin-bottom:4px"><b>{{ p.total }}</b> thing(s) first held in this session'
         +     '<span v-if="p.lastAt !== null"> \u00b7 last progress <b>{{ p.sinceLast }}</b> game-s ago (at {{ p.lastAt }} s)</span>'
-        +     '<span v-if="p.typicalGap !== null"> \u00b7 typical gap <b>{{ p.typicalGap }}</b> s</span>'
+        +     '<span v-if="p.typicalGap !== null"> \u00b7 typical gap <b>{{ p.typicalGap }}</b> s over {{ p.gaps.length }}</span>'
+        +     '<span v-if="p.skipped"> \u00b7 {{ p.skipped }} stretch(es) not counted (a rescue, or the one before the first event)</span>'
         +     '<span v-if="p.stalled" style="color:#c08a3e"> \u00b7 <b>STALLED</b> (over {{ p.threshold }} s)</span>'
         +   '</div>'
         +   '<div style="text-align:left;font-size:.9em;opacity:.8;margin-bottom:4px">{{ p.watch.text }}</div>'
