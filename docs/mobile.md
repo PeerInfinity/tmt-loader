@@ -1107,6 +1107,58 @@ reports them; over all 171 games the lift produced **2 right out of 13**: `ptr t
 `wis`, `lck`) all lift the SAME wrong word `STR`, `the-element-tree`'s multipliers and `the-prestige-tree`'s
 `exponent` lift `x`, and `the-dressy-tree`'s `clicky` lifts `per click`.
 
+#### A resource row, once shown, STAYS shown (U8)
+
+⚖ user, 2026-09-19: *"In Layers view, I want to change it so that after the first time the UI row for a secondary
+currency for a layer is displayed, it doesn't get hidden after a reset. That change would reduce layout shifting
+during resets."* — the same complaint U2c's digit reservation answers, with a different cause.
+
+**The cause is STRUCTURAL, not a matcher bug.** A row exists only while the occurrence budget above still has an
+unclaimed statement of the value, and the engine's own `points` / `best` / `total` claim FIRST. At a reset all of
+them and the candidate are zero, the engine's zeros consume every `0` the layer prints, every candidate comes back
+unattributed and the row disappears. REPRODUCED on `ptr` at M16: `doReset('q', true)` — `q`'s row is above `t`'s,
+so it is the call that resets `t` — takes `t.energy` 6.29e28 → 0, and the card's resource row vanishes; the layer's
+text then reads *"You have 0 Time Energy … Your best Time Capsules is 0"*, whose two zeros both go to engine
+readouts.
+
+✅ **Remembering it is sound, and it claims nothing about the value.** The VALUE never depended on the text: the
+candidate keys come straight off `player[layer]` and are readable at every state — only DETECTION consults prose.
+So what is remembered is *this key is a resource on this layer*, a fact about the LAYER rather than about the
+moment, and a remembered row renders the CURRENT number. Nothing is extrapolated and no stale string is shown; the
+gate asserts exactly that (leg O below).
+
+**Three decisions, with what each one measured.**
+
+| decision | what shipped | measured |
+|---|---|---|
+| the string's SOURCE | **our own `format` for EVERY row**, attributed or remembered | over the roster's 16 resource rows, `format` changes **3** strings (`the-dressy-tree Mi.clicky`, `the-danus-tree p.progress`, `the-rainbow-void-tree p.clickingMult`, all `1` → `1.00`); `formatWhole` would change **10** |
+| what gets remembered | only a key shown with **`collide === false`** | **8** of the 16 rows share a value with a sibling — `the-cultree`'s six stat keys and `the-element-tree`'s two multipliers — and none of them is remembered |
+| where it is kept | `storage.raw`, key **`tmt-loader:<id>:ui.layerlist.resources`** | the write moves no game state; a cleared save forgets the set, which is correct |
+
+⚠ **Why the string had to change source at all.** Until U8 a row printed the OCCURRENCE IT CLAIMED — the GAME's
+own rendering, lifted out of the prose. A remembered row has claimed nothing and must format the value itself, and
+the two formatters disagree for a non-zero value under 1,000 (`format` → `12.00`, `formatWhole` → `12`). A row that
+printed the claimed string while attributed and ours while not would change its own string **at the instant of the
+reset** — the layout shift this item exists to remove, reintroduced at the only moment that matters. So one
+formatter for both, and `format` rather than `formatWhole` because a resource is an arbitrary Decimal and
+`formatWhole` ROUNDS a fractional one (12.5 → `13`), which is a wrong number rather than a differently-spelled one.
+
+⛔ **An ambiguous attribution is never made permanent.** `collide` says two keys claimed the same printed number,
+and which of them got the prose is decided by `player[layer]` key order ALONE. A collided row still renders — both
+quantities are right — but it is NOT written to the store, because freezing one coin-flip forever is worse than the
+flicker this fixes. On `the-cultree` the filter withholds all six of `k.sta`, `k.str`, `k.spd`, `k.int`, `k.wis`,
+`k.lck`, which are the same six the U7 label census found lifting the same wrong word.
+
+⚠ **The store is the loader's namespace, never `player`.** A per-layer key set inside `player` would move every
+pinned `hashGame` and put a UI preference into the save. It follows `ui.layerlist.expanded`'s pattern exactly,
+every read and write wrapped (storage throws, and comes back empty in a private window), and it is inside what
+"clear this game's save" clears — a cleared game comes back having forgotten which rows it had shown, which is
+what a first load does too.
+
+⚠ **What the roster sees is almost nothing, and that is the point.** At the states the sweep drives, **0** rows
+are standing on the memory: every game boots with an empty store and the same render that shows a row is the one
+that records it. The feature only shows after a RESET, which is why the gate has to drive one (leg O).
+
 #### Per-category progress in the expanded card (U7)
 
 ⚖ user, 2026-09-19: *"In Layers view, when a layer is in expanded view, can we add a row to display the progress
@@ -1913,6 +1965,40 @@ asserts the API's `dropped` records it, that the rendered row no longer names it
 back. ⚠ **Both sides of the declaration**, and the first version of this leg missed it: the list reads `cost`
 through `numFieldOf`, which falls back to the DECLARATION when `tmp` holds nothing, and a declared `cost()` is a
 function — clearing `tmp` alone left the real cost in place and the construction did nothing at all.
+
+#### What U8 added to the leg
+
+**One roster-wide assertion inside `LAYERLIST_PROBE`, and two legs of their own.**
+
+**1. The two ways onto a card, and the value (`resOk`, extended).** The probe's rebuild now reads the remembered
+set out of `localStorage` ITSELF — not from the list — and expects a row for every candidate that is either
+attributed right now or remembered from a state where it was, in `player[l]` key order, each printing what
+`player[l][key]` holds NOW. ⚠ The VALUE check is the one a remembered row needs: it is attributed to nothing in the
+prose, so "is this string in the text" cannot judge it, and a build that froze the last attributed STRING would
+pass every other check here. `resMemKey` asserts the key's namespace and `resRestated` names the rows whose own
+formatting differs from the occurrence they claimed — decision 1's cost, counted on every run.
+
+**2. Leg O — a row survives a DRIVEN reset.** ⛔ This is the leg that goes vacuous by construction if it reads a
+boot state: 169 of the 171 games are swept at a fresh save where nothing attributes, and there is no row to keep.
+So it finds a card with an unambiguously attributed row, DRIVES A RESET, and asserts the row is still there.
+⚠ The reset is the engine's own, and `doReset(l)` is NOT the call that clears `l`'s own data — `rowReset` resets a
+layer only for a resetting layer on a HIGHER row, so the leg resets through the layer above (`ptr`: `doReset('sb',
+true)`, which takes `g.power` 1.96e555 → 0) and falls back to `layerDataReset(l)` where the tree has none. `how`
+says which path ran. ⚠ And the SECOND vacuity: if the value still attributes after the reset, the row would be
+there on the unfixed build too — the leg rebuilds the budget itself afterwards and ABSTAINS by name when it would
+have (`the-dressy-tree`: *"Mi.clicky still attributes after the reset"*). The two halves are reported apart,
+`beforeOk` and `afterOk`, because the mutant that removes the stickiness must redden the AFTER row and leave the
+BEFORE one green.
+
+**3. Leg P — what gets remembered, and where the write lands.** Both claims are about the MOMENT OF WRITING, which
+no state-reading leg can reach, so the leg FORGETS the set (`forgetResources()`, which deliberately does not
+re-render) and watches the very next render fill it:
+- ⛔ **no ambiguous attribution is remembered**, and the withheld keys are NAMED (`the-cultree`: 6). ⚠ A leg that
+  only read the store could not see this — the probe's own expectation reads the SAME store, so a build that
+  remembered a collided key would move the expectation with it and stay green.
+- ⛔ **the write goes to storage, not to `player`**: the state hash is taken across exactly the render that writes.
+  ⚠ Leg M cannot see this either — it measures a full render with the set already written, where a first-sight
+  write does not happen at all.
 
 ### The state leg needs a control
 

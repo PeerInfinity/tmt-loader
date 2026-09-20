@@ -703,16 +703,35 @@ const LAYERLIST_PROBE = `(${function () {
     }
     return null;
   };
-  /** The resources the card SHOULD show, and the string each should print, in `player[l]`'s own key order. */
+  // (U8) THE REMEMBERED SET, read straight out of the game's own namespace rather than asked of the list — which
+  // is also what asserts WHERE it lives: a build that kept this in `player` would come back empty here, and leg M
+  // (a full render writes nothing) would redden as well.
+  const MEM_KEY = 'ui.layerlist.resources';
+  const memRaw = () => S(() => { const st = window.tmtLoader.storage;
+    return { key: st.prefix + MEM_KEY, value: st.raw.getItem.call(localStorage, st.prefix + MEM_KEY) }; }, { key: null, value: null });
+  const memOf = (l) => S(() => { const o = JSON.parse(memRaw().value || '{}');
+    return Array.isArray(o[l]) ? o[l] : []; }, []);
+  /** The resources the card SHOULD show, and the string each should print, in `player[l]`'s own key order.
+   *  ⚠ (U8) TWO WAYS ONTO THE ROW, and the string is OURS either way: a key whose value the layer's text still
+   *  states, and a key the store REMEMBERS from a state where it did. A text this pass could not read claims
+   *  nothing and leaves the remembered rows standing, which is the post-reset case. */
   const resExpect = (l, text) => {
     const pl = S(() => player[l], null);
-    if (!pl || typeof pl !== 'object' || !text) return [];
+    if (!pl || typeof pl !== 'object') return [];
     const budget = Object.create(null);
-    for (const k of ENGINE_AMOUNTS) { const v = S(() => pl[k], null); if (isDec(v)) takeOcc(text, budget, v); }
-    const out = [];
-    for (const k of candKeys(l)) {
+    if (text) for (const k of ENGINE_AMOUNTS) { const v = S(() => pl[k], null); if (isDec(v)) takeOcc(text, budget, v); }
+    const claim = Object.create(null), byText = Object.create(null);
+    if (text) for (const k of candKeys(l)) {
       const t = takeOcc(text, budget, S(() => pl[k], null));
-      if (t !== null) out.push({ key: k, text: t });
+      if (t === null) continue;
+      claim[k] = t; byText[t] = (byText[t] || 0) + 1;
+    }
+    const mem = memOf(l), out = [];
+    for (const k of candKeys(l)) {
+      const has = claim[k] !== undefined;
+      if (!has && mem.indexOf(k) < 0) continue;
+      out.push({ key: k, text: F(S(() => pl[k], null), false), claimed: has ? claim[k] : null,
+        collide: has && byText[claim[k]] > 1, sticky: !has });
     }
     return out;
   };
@@ -908,16 +927,25 @@ const LAYERLIST_PROBE = `(${function () {
       && reset.lineHeight > 0 && reset.h1 >= reset.lineHeight - 1 && reset.h2 >= reset.lineHeight - 1);
     // ---- U7 item 2: the other resources ---------------------------------------------------------------------
     const resEls = [...c.querySelectorAll('.tmt-layerlist-resource')];
-    const gotRes = resEls.map((e) => ({ key: e.dataset.key, text: e.querySelector('.tmt-layerlist-resource-value').textContent }));
+    const gotRes = resEls.map((e) => ({ key: e.dataset.key, text: e.querySelector('.tmt-layerlist-resource-value').textContent,
+      sticky: e.dataset.sticky === 'yes' }));
     const text = S(() => String(window.tmtLoader.layerListUI.resourceText(l)), '');
     const cands = candKeys(l);
-    // every rendered resource must be a CANDIDATE and its value must really be in the layer's own text; and no
-    // candidate whose value IS in that text may be missing. Both directions, so neither a filter that admits
-    // everything nor one that admits nothing can pass.
+    // every rendered resource must be a CANDIDATE, must PRINT ITS OWN CURRENT VALUE, and must have got onto the
+    // card one of the two admitted ways — its value stated in the layer's own text right now, or the store
+    // remembering it from a state where it was. And no candidate that qualifies either way may be missing. Both
+    // directions, so neither a filter that admits everything nor one that admits nothing can pass.
+    // ⚠ (U8) THE VALUE CHECK IS THE ONE A REMEMBERED ROW NEEDS. A sticky row is not attributed to anything in the
+    // prose, so "is this string in the text" cannot judge it; what must hold is that the row states what
+    // `player[l][key]` holds NOW. A build that froze the last attributed STRING would pass every other check here.
     const resBad = [];
     for (const r of gotRes) {
       if (cands.indexOf(r.key) < 0) { resBad.push(`${r.key}: not a candidate (engine key or not a Decimal)`); continue; }
-      if (!atNumber(text, r.text)) resBad.push(`${r.key}: "${r.text}" is not stated in this layer's own text`);
+      const v = S(() => player[l][r.key], null);
+      const own = F(v, false);
+      if (r.text !== own) resBad.push(`${r.key}: prints "${r.text}", not this key's own value "${own}"`);
+      if (!r.sticky && !atNumber(text, own) && !atNumber(text, F(v, true))) resBad.push(`${r.key}: rendered as ATTRIBUTED, but "${own}" is not stated in this layer's own text`);
+      if (r.sticky && memOf(l).indexOf(r.key) < 0) resBad.push(`${r.key}: rendered as REMEMBERED, but the store does not name it`);
     }
     // ⚠ BOTH DIRECTIONS, against the budget rebuilt above: neither a filter that admits everything nor one that
     // admits nothing can pass, and neither can one that keeps a candidate whose occurrence an engine readout or
@@ -929,7 +957,13 @@ const LAYERLIST_PROBE = `(${function () {
       if (!g) return;
       if (g.key !== w.key) resBad.push(`${i}: ${g.key} != ${w.key}`);
       else if (g.text !== w.text) resBad.push(`${w.key}: "${g.text}" != "${w.text}"`);
+      else if (g.sticky !== w.sticky) resBad.push(`${w.key}: rendered sticky=${g.sticky}, expected ${w.sticky}`);
     });
+    // ⚖ (U8) decision 1's COST, counted rather than argued: the attributed rows whose own formatting differs from
+    // the occurrence they claimed out of the layer's prose. `format` and `formatWhole` agree at 0, above 1,000 and
+    // below 0.95, so this is the one band where the row now disagrees with the words next to it.
+    const resRestated = wantRes.filter((w) => w.claimed !== null && w.claimed !== w.text)
+      .map((w) => `${l}.${w.key}: "${w.claimed}" → "${w.text}"`);
     const lift = gotRes.map((r) => ({ key: r.key, label: liftLabel(text, r.text) })).filter((x) => x.label);
     const resCollide = gotRes.filter((r) => gotRes.filter((q) => q.text === r.text).length > 1).length;
     // ---- U7 item 3: the per-category progress rows -----------------------------------------------------------
@@ -999,6 +1033,7 @@ const LAYERLIST_PROBE = `(${function () {
       // --- U7 ---
       reset, resetOk,
       resources: gotRes, wantRes, resBad, resCands: cands.length, resLift: lift, resCollide,
+      resSticky: gotRes.filter((r) => r.sticky).length, resMem: memOf(l), resRestated,
       prog: gotProg, wantProg, progBad, progOk: progBad.length === 0, cheapestWitness, progDropped,
       progHow: wantProg.map((w) => w.how),
       cardWidth: Math.round(cardR.width) };
@@ -1106,6 +1141,17 @@ const LAYERLIST_PROBE = `(${function () {
     resShown: perCard.reduce((n, x) => n + x.resources.length, 0),
     resCards: perCard.filter((x) => x.resources.length).length,
     resCollide: perCard.reduce((n, x) => n + x.resCollide, 0),
+    // --- U8: the rows that are standing on the MEMORY rather than on the prose, and the memory itself ---------
+    resStickyRows: perCard.reduce((n, x) => n + x.resSticky, 0),
+    resStickyCards: perCard.filter((x) => x.resSticky).length,
+    // ⛔ WHERE THE MEMORY LIVES, asserted rather than assumed: the game's OWN namespace, never `player`.
+    resMemKey: memRaw().key,
+    resMemKeyOk: /^tmt-loader:[^:]+:ui\.layerlist\.resources$/.test(String(memRaw().key || '')),
+    resMemKeys: perCard.reduce((n, x) => n + x.resMem.length, 0),
+    // ⚖ the collide filter's WITHHOLDING: candidates attributed but ambiguously, which are therefore NOT
+    // remembered. 0 here is not a pass, it is "this state had no ambiguous attribution to withhold".
+    resWithheld: perCard.flatMap((x) => x.wantRes.filter((w) => w.collide && x.resMem.indexOf(w.key) < 0).map((w) => `${x.layer}.${w.key}`)),
+    resRestated: perCard.flatMap((x) => x.resRestated),
     // ⚖ THE LABEL IS THE KEY and the prose lift is REPORTED, never rendered — the sample the user rules on
     resLift: perCard.flatMap((x) => x.resLift.map((y) => `${x.layer}.${y.key} \u2192 ${y.label}`)).slice(0, 12),
     resSample: perCard.filter((x) => x.resources.length).slice(0, 4).map((x) => ({ layer: x.layer, res: x.resources })),
@@ -2950,6 +2996,159 @@ async function gateMobile(browser, base, ids) {
       })();
       row.lockedOk = !/CLOSED|MOVED|DID NOT OPEN|NOT RESTORED/.test(row.locked.verdict);
 
+      // --- U8 leg P: WHAT GETS REMEMBERED, AND WHERE THE WRITE LANDS ------------------------------------------
+      // Two claims a state-reading leg cannot make, both about the MOMENT OF WRITING, so the leg forgets the set
+      // first and watches the very next render fill it:
+      //  1. \u26d4 AN AMBIGUOUS ATTRIBUTION IS NEVER MADE PERMANENT. `collide` says two keys claimed the same printed
+      //     number and the attribution between them is by `player[l]` key order ALONE; remembering one of those
+      //     freezes a coin-flip forever, which is worse than the flicker this item removes. The withheld keys are
+      //     NAMED \u2014 8 rows across the roster share a value at the swept states, so the filter has work to do.
+      //     \u26a0 A leg that only read the store could not see this: the probe's own expectation reads the SAME store,
+      //     so a build that remembered a collided key would move the expectation with it and stay green.
+      //  2. \u26d4 THE WRITE GOES TO STORAGE, NOT TO `player`. Leg M measures a full render with the set already
+      //     written, where a first-sight write does not happen at all \u2014 so it cannot see this either. Here the
+      //     render right after the forget is the one that writes every key the game can attribute, and the state
+      //     hash is taken across exactly that.
+      row.resMem = await page.evaluate(async () => {
+        const ui = window.tmtLoader.layerListUI;
+        if (!ui || !ui.forgetResources) return { verdict: 'abstains (the list does not expose forgetResources())' };
+        const S = (f, d) => { try { const v = f(); return v === undefined ? d : v; } catch (e) { return d; } };
+        ui.open(); ui.refresh();
+        // the collided / unambiguous split, rebuilt here out of the list's OWN per-row report (`claimed` is the
+        // occurrence it took, `collide` that another key took the same one) \u2014 never out of the store
+        const rows = [];
+        for (const l of ui.cards()) for (const r of ui.resources(l)) rows.push({ layer: l, ...r });
+        const clean = rows.filter((r) => r.claimed !== null && !r.collide).map((r) => `${r.layer}.${r.key}`);
+        const collided = rows.filter((r) => r.claimed !== null && r.collide).map((r) => `${r.layer}.${r.key}`);
+        const flat = (m) => { const o = []; for (const l in m) for (const k of m[l]) o.push(`${l}.${k}`); return o.sort(); };
+        const h = () => tmtLoader.hash();
+        const c0 = await h(), c1 = await h();           // the same abstention rule leg M uses
+        ui.forgetResources();
+        const emptied = flat(ui.resourceMemory());
+        const before = await h();
+        ui.refresh();
+        const after = await h();
+        const mem = flat(ui.resourceMemory());
+        const st = S(() => window.tmtLoader.storage, null);
+        const key = st ? st.prefix + 'ui.layerlist.resources' : null;
+        const stored = S(() => st.raw.getItem.call(localStorage, key), null);
+        const kept = collided.filter((x) => mem.indexOf(x) >= 0);
+        const missed = clean.filter((x) => mem.indexOf(x) < 0);
+        const stable = c0 === c1;
+        return { rows: rows.length, clean, collided, mem, emptied, withheld: collided.filter((x) => mem.indexOf(x) < 0),
+          key, storedKeys: stored ? flat(JSON.parse(stored)) : [], inPlayer: before === after, stable,
+          verdict: !stable ? 'the page does not repeat its own hash (abstains on the write-nothing half)'
+            : before !== after ? 'THE MEMORY WRITE MOVED THE GAME STATE (it is not going to storage)'
+            : emptied.length ? 'FORGETTING THE SET LEFT KEYS BEHIND'
+            : kept.length ? `AN AMBIGUOUS ATTRIBUTION WAS REMEMBERED: ${kept.slice(0, 4).join(', ')}`
+            : missed.length ? `AN UNAMBIGUOUS ONE WAS NOT: ${missed.slice(0, 4).join(', ')}`
+            : !clean.length && !collided.length ? 'abstains (no card on this game attributes a resource at this state)'
+            : `${mem.length} remembered, ${collided.length} withheld for an ambiguous attribution; the write moved no game state` };
+      });
+      row.resMemOk = !/^THE |^AN |^FORGETTING/.test(String(row.resMem.verdict));
+
+      // --- U8 leg O: A RESOURCE ROW, ONCE SHOWN, SURVIVES A RESET ----------------------------------------------
+      // \u26d4 THE WAY THIS LEG GOES VACUOUS, and it is the reason it is written as a DRIVEN one. 169 of the 171 games
+      // are swept at a FRESH save, where every amount is zero, nothing attributes and there is no row to keep: a
+      // leg that read a boot state would see the same thing on the fixed and the unfixed build and pass on both.
+      // So it reaches a state where a resource IS attributed, DRIVES A RESET, and asserts the row is still there.
+      //
+      // \u26a0 THE RESET IS THE ENGINE'S OWN, and `doReset(l)` is NOT the call that clears l's own data: `rowReset`
+      // resets a layer only for a resetting layer on a HIGHER row (`tmp[layer].row > tmp[lr].row`). So the leg
+      // resets through the layer above where the tree has one \u2014 on `ptr` at M16 that is `doReset('q', true)`, which
+      // takes `t.energy` 6.29e28 \u2192 0 \u2014 and falls back to the engine's own `layerDataReset(l)` where it does not.
+      // `how` says which path ran, so a game that stops witnessing the real one is a change this reports.
+      //
+      // \u26a0 AND THE SECOND WAY IT GOES VACUOUS: if the value STILL attributes after the reset (a layer whose text
+      // states a zero nothing else claims), the row would be there on the unfixed build too. The leg rebuilds the
+      // occurrence budget itself, after the reset, and abstains by name when the key would have attributed anyway.
+      //
+      // \u26a0 IT RUNS LAST AND DOES NOT PUT THE GAME BACK. A real reset is not restorable by assignment, and every
+      // other leg has already run; what it must not do is leave a FALSE row standing, which is why `afterValue`
+      // asserts the surviving row prints `player[l][key]`'s value as it is NOW, not the string it had before.
+      row.resSticky = await page.evaluate(() => {
+        const ui = window.tmtLoader.layerListUI;
+        if (!ui) return { verdict: 'abstains (no layerListUI)' };
+        const S = (f, d) => { try { const v = f(); return v === undefined ? d : v; } catch (e) { return d; } };
+        ui.open(); ui.refresh();
+        // the probe's own attribution, rebuilt here rather than asked of the list
+        const ENGINE_KEYS = { points: 1, best: 1, total: 1, unlocked: 1, resetTime: 1, forceTooltip: 1, noRespecConfirm: 1,
+          buyables: 1, clickables: 1, spentOnBuyables: 1, upgrades: 1, milestones: 1, lastMilestone: 1, primeMiles: 1,
+          achievements: 1, challenges: 1, grid: 1, prevTab: 1, activeChallenge: 1, subtabs: 1, infoboxes: 1 };
+        const isDec = (v) => S(() => !!v && typeof v === 'object' && typeof v.toNumber === 'function', false);
+        const F = (v, whole) => S(() => (whole ? String(formatWhole(v)) : String(format(v))), '');
+        const countNum = (text, sub) => { if (!sub) return 0; let n = 0;
+          for (let i = text.indexOf(sub); i >= 0; i = text.indexOf(sub, i + 1)) {
+            if (i > 0 && /[0-9.,]/.test(text.charAt(i - 1))) continue;
+            const a = text.charAt(i + sub.length);
+            if (a && /[0-9.,eE]/.test(a)) continue;
+            n++; }
+          return n; };
+        const attributed = (l) => {                       // {key: claimedString} for this layer, at this instant
+          const pl = S(() => player[l], null), out = {};
+          if (!pl) return out;
+          const text = S(() => String(ui.resourceText(l)), '');
+          if (!text) return out;
+          const budget = Object.create(null);
+          const take = (v) => { const forms = [F(v, false), F(v, true)];
+            for (let i = 0; i < forms.length; i++) { const f = forms[i];
+              if (!f || (i === 1 && f === forms[0])) continue;
+              if (budget[f] === undefined) budget[f] = countNum(text, f);
+              if (budget[f] > 0) { budget[f]--; return f; } }
+            return null; };
+          for (const k of ['points', 'best', 'total', 'spentOnBuyables']) { const v = S(() => pl[k], null); if (isDec(v)) take(v); }
+          const seen = {};
+          for (const k in pl) { if (ENGINE_KEYS[k]) continue; const v = S(() => pl[k], null); if (!isDec(v)) continue;
+            const t = take(v); if (t !== null) { out[k] = t; seen[t] = (seen[t] || 0) + 1; } }
+          for (const k in out) if (seen[out[k]] > 1) delete out[k];   // ambiguous: never remembered, never asserted
+          return out;
+        };
+        const rowsOf = (l) => [...document.querySelectorAll(`.tmt-layerlist-card[data-layer="${CSS.escape(l)}"] .tmt-layerlist-resource`)]
+          .map((e) => ({ key: e.dataset.key, text: e.querySelector('.tmt-layerlist-resource-value').textContent,
+            sticky: e.dataset.sticky === 'yes' }));
+        // the witness: a card showing a row for a key that is attributed UNAMBIGUOUSLY right now
+        let layer = null, key = null;
+        for (const l of ui.cards()) {
+          const att = attributed(l), shown = rowsOf(l);
+          const hit = shown.find((r) => att[r.key] !== undefined);
+          if (hit) { layer = l; key = hit.key; break; }
+        }
+        if (!layer) return { cards: ui.cards().length,
+          verdict: 'abstains (no card on this game attributes a resource unambiguously at this state \u2014 the fresh save of most of the roster)' };
+        const before = rowsOf(layer).find((r) => r.key === key);
+        const rowOf = (l) => S(() => Number(tmp[l].row), null);
+        const mine = rowOf(layer);
+        const above = ui.cards().find((x) => rowOf(x) !== null && mine !== null && rowOf(x) > mine && S(() => !!player[x].unlocked, false)) || null;
+        let how = null, drove = null;
+        if (above) { how = `doReset(${above}, true)`; drove = S(() => { doReset(above, true); return true; }, false); }
+        else { how = `layerDataReset(${layer})`; drove = S(() => { layerDataReset(layer); return true; }, false); }
+        S(() => updateTemp());
+        ui.refresh();
+        const att2 = attributed(layer);
+        const after = rowsOf(layer).find((r) => r.key === key);
+        const value = F(S(() => player[layer][key], null), false);
+        const wouldAttribute = att2[key] !== undefined;
+        return { layer, key, how, drove, above,
+          before: before ? { text: before.text, sticky: before.sticky } : null,
+          after: after ? { text: after.text, sticky: after.sticky } : null,
+          value, wouldAttribute,
+          beforeOk: !!before,
+          afterOk: !!after && after.text === value,
+          verdict: !drove ? `abstains (the reset itself threw: ${how})`
+            : !before ? 'THE ROW WAS NOT THERE BEFORE THE RESET'
+            : wouldAttribute ? `abstains (${layer}.${key} still attributes after the reset \u2014 this state cannot tell a remembered row from an attributed one)`
+            : !after ? `THE ROW DID NOT SURVIVE THE RESET (${layer}.${key}, ${how})`
+            : after.text !== value ? `THE SURVIVING ROW PRINTS A STALE VALUE ("${after.text}", but ${layer}.${key} is "${value}")`
+            : !after.sticky ? `the row survived but is not marked REMEMBERED (${layer}.${key})`
+            : `${layer}.${key} survived ${how}: "${before.text}" \u2192 "${after.text}", remembered` };
+      });
+      // \u26a0 THE TWO HALVES ARE NAMED APART, and that is what the mutant is scored against: removing the stickiness
+      // must redden the AFTER-reset row while leaving the BEFORE-reset one green. A mutant that reddens both has
+      // been caught by the wrong assertion and says nothing about the row surviving.
+      row.resStickyOk = !/^THE |^the row survived but/.test(String(row.resSticky.verdict));
+      row.resStickyBeforeOk = row.resSticky.beforeOk !== false;
+      row.resStickyAfterOk = row.resSticky.afterOk !== false || /abstains/.test(String(row.resSticky.verdict));
+
       await page.evaluate(() => { const ui = window.tmtLoader.layerListUI; if (ui) ui.close(); });
       const llDesk = nb.layerList;
       // one card per shown layer, in the row the engine names, with distinct chips on each card and the button in
@@ -2973,7 +3172,8 @@ async function gateMobile(browser, base, ids) {
         && L.skinOk && L.actSkinOk && L.ctrSkinOk
         // U7: the reset line's split and its two reserved line boxes, the other-resources filter in BOTH
         // directions, and the progress rows against the probe's own fourth rebuild
-        && L.resetOk && L.resOk && L.progOk);
+        // U8: … and the remembered set is keyed inside THIS game's own storage namespace
+        && L.resetOk && L.resOk && L.progOk && L.resMemKeyOk);
       // GEOMETRY, at each width on that width's own terms: the phone demands nothing escapes and nothing is under
       // 44 px (the same bar the other phone views are held to); the desktop is judged against the PLAIN desktop
       // page, which is the layout this game's author shipped (leg 5's rule).
@@ -3006,7 +3206,10 @@ async function gateMobile(browser, base, ids) {
         && row.counterWayOk && row.msCounterOk && row.lockedOk
         // U7: the reset block's height against the game's own string, and a full render with the two new readers
         // in it still writing nothing
-        && row.resetHeightOk && row.renderInertOk && row.multiResOk);
+        && row.resetHeightOk && row.renderInertOk && row.multiResOk
+        // U8: and a resource row that was shown is still there after a DRIVEN reset, printing its current value;
+        // and what the memory took in is the unambiguous attributions only, written to storage and not to `player`
+        && row.resStickyOk && row.resMemOk);
       row.layersScreenshot = path.relative(REPO, llShot);
 
       const shot = path.join(REPO, `tools/harness/results/${id}-mobile.png`);

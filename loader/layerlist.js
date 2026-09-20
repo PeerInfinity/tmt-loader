@@ -111,6 +111,81 @@
     } catch (e) { /* a full or read-only store costs the preference, never the list */ }
   }
 
+  // ---------------------------------------------------------------- (U8) a resource row, once shown, STAYS shown
+  // ⚖ "after the first time the UI row for a secondary currency for a layer is displayed, it doesn't get hidden
+  // after a reset. That change would reduce layout shifting during resets." (user, 2026-09-19) — the same
+  // complaint U2c's digit reservation answers, with a different cause.
+  //
+  // WHAT MAKES THE ROW VANISH, and it is structural rather than a matcher bug: `resourcesOf` emits a row only
+  // while the layer's own text still has an unclaimed occurrence of the resource's value, and the ENGINE's amounts
+  // claim first. At a reset `points`, `best`, `total` and the candidate are all zero, the engine's zeros consume
+  // every `0` the text states, and every candidate comes back unattributed. MEASURED on `ptr` at its M16 snapshot:
+  // `doReset('q', true)` (q's row is above t's, so it resets t) takes `t.energy` 6.29e28 → 0 and the card's
+  // resource row disappears — the layer's text then reads "You have 0 Time Energy … Your best Time Capsules is 0",
+  // whose two zeros both go to engine readouts.
+  //
+  // ⚠ WHY REMEMBERING IT IS SOUND, AND WHAT IT DOES NOT CLAIM. The VALUE never depended on the text: `keys` comes
+  // straight off `player[l]` and is readable at every state. Only DETECTION consults prose. So what is remembered
+  // is "this key is a resource on this layer" — a fact about the LAYER, not about the moment — and a remembered
+  // row always renders the current number. Nothing is extrapolated and no stale value is ever shown.
+  //
+  // ⛔ AND ONLY AN UNAMBIGUOUS ONE IS REMEMBERED. `r.collide` says two keys claimed the same printed number, and
+  // the attribution between those two is by `player[l]` key order ALONE. A key is written to the store the first
+  // time it is shown with `collide === false`; a collided row still renders (both quantities are right) but is not
+  // made permanent, because freezing one coin-flip forever is worse than the flicker this fixes.
+  //
+  // ⚠ THE STORE IS `storage.raw` IN THE GAME'S OWN NAMESPACE, exactly as `PREF_KEY` above — never `player`. A
+  // per-layer key set inside `player` would move every pinned `hashGame` and put a UI preference into the save.
+  // Every read and write is wrapped: storage throws, and comes back empty in a private window. A cleared save
+  // forgetting the set is CORRECT — it is the same namespace "clear this game's save" clears, and a first load has
+  // nothing remembered either.
+  var RES_KEY = 'ui.layerlist.resources';
+  var NO_KEYS = Object.create(null);
+  var seenRes = null;   // {layer: {key: true}}; null until the first read, an object forever after
+  function seenKey() {
+    var st = T.storage;
+    return st && st.prefix && st.raw ? st.prefix + RES_KEY : null;
+  }
+  function seenRead() {
+    if (seenRes) return seenRes;
+    seenRes = Object.create(null);
+    try {
+      var k = seenKey();
+      var raw = k && T.storage.raw.getItem.call(localStorage, k);
+      var o = raw ? JSON.parse(raw) : null;
+      if (o && typeof o === 'object') {
+        for (var l in o) {
+          var list = o[l];
+          if (!list || typeof list.length !== 'number') continue;
+          var m = seenRes[l] = Object.create(null);
+          for (var i = 0; i < list.length; i++) if (typeof list[i] === 'string') m[list[i]] = true;
+        }
+      }
+    } catch (e) { /* no storage, or a value we did not write: nothing is remembered, which is a first load */ }
+    return seenRes;
+  }
+  function seenWrite() {
+    try {
+      var k = seenKey();
+      if (!k) return;
+      var all = seenRead(), o = {}, any = false;
+      for (var l in all) { var ks = Object.keys(all[l]); if (ks.length) { o[l] = ks; any = true; } }
+      if (any) T.storage.raw.setItem.call(localStorage, k, JSON.stringify(o));
+      else T.storage.raw.removeItem.call(localStorage, k);
+    } catch (e) { /* a full or read-only store costs the memory, never the row */ }
+  }
+  /** The keys remembered for one layer. Read on the render path, so it allocates nothing when there are none. */
+  function seenOf(l) { return seenRead()[l] || NO_KEYS; }
+  /** Remember one key — and WRITE ONLY WHEN THE SET REALLY GREW. This runs inside every render of every card. */
+  function seenAdd(l, k) {
+    var all = seenRead();
+    if (all[l] && all[l][k]) return false;
+    if (!all[l]) all[l] = Object.create(null);
+    all[l][k] = true;
+    seenWrite();
+    return true;
+  }
+
   // ---------------------------------------------------------------- reading the engine, never trusting it
   // Every read of game data goes through this: `tmp[l].foo` can throw (a getter a layer defines, a tmp entry the
   // engine has not built yet), and one layer's throw must not cost the list.
@@ -1082,6 +1157,23 @@
     return null;
   }
 
+  /** (U8) THE STRING A RESOURCE ROW PRINTS — OURS, FOR EVERY ROW, attributed or remembered.
+   *  ⚠ IT CHANGES SOURCE, and that is the decision rather than an implementation detail. Until U8 a row printed
+   *  the OCCURRENCE IT CLAIMED, i.e. the GAME's own rendering of the number, lifted out of the layer's prose. A
+   *  remembered row has claimed nothing, so it has to format the value itself — and the two formatters can
+   *  disagree: `takeOccurrence` accepts `format` OR `formatWhole`, which differ for a non-zero value under 1000
+   *  (`format` gives `12.00`, `formatWhole` gives `12`). A row that printed the claimed string while attributed
+   *  and ours while not would CHANGE ITS OWN STRING at the moment of the reset — which is the layout shift this
+   *  item exists to remove, reintroduced at the only instant that matters.
+   *  ⚖ So ONE formatter for both, at the cost of sometimes disagreeing with the layer's own prose. MEASURED over
+   *  the whole roster at the states the sweep drives (171 games, fresh + deep views, 16 rows in all): printing
+   *  `format` changes **3** of those 16 strings — `the-dressy-tree Mi.clicky`, `the-danus-tree p.progress` and
+   *  `the-rainbow-void-tree p.clickingMult`, all `1` → `1.00` — where `formatWhole` would change **10**.
+   *  ⚠ `format`, not `formatWhole`: a resource is an arbitrary Decimal and `formatWhole` ROUNDS a fractional one
+   *  (12.5 → `13`), which is a wrong number rather than a differently-spelled one. The two agree at 0, above
+   *  1,000 and below 0.95, so the disagreement is confined to that one band. */
+  function resAmount(v) { return fmtNum(v, false); }
+
   /** THE LAYER'S OTHER RESOURCES — every Decimal in `player[l]` the engine did not put there whose value the
    *  layer's own text states, in `player[l]`'s own key order.
    *  ⚠ THE LABEL IS THE KEY, and that is a DECISION rather than a limitation of the scan. The prose name
@@ -1102,24 +1194,35 @@
       keys.push(k);
     }
     if (!keys.length) return [];
+    // ⚠ (U8) NO LONGER `if (!text) return []`. A layer whose display text this pass could not read still has its
+    // `player[l]` values, and a REMEMBERED key renders from the value; an empty text simply claims nothing.
     var text = displayTextOf(l);
-    if (!text) return [];
     var budget = Object.create(null);
-    ENGINE_AMOUNT_KEYS.forEach(function (k) {
+    if (text) ENGINE_AMOUNT_KEYS.forEach(function (k) {
       var v = safe(function () { return p[k]; }, null);
       if (isDecimalAmt(v)) takeOccurrence(text, budget, v);
     });
-    var out = [], byText = Object.create(null);
-    keys.forEach(function (k) {
-      var v = safe(function () { return p[k]; }, null);
-      var shown = takeOccurrence(text, budget, v);
+    // PASS ONE: who claims what. Two resources CAN print the same number where the layer states it twice; the card
+    // is reporting quantities and both are right, and `collide` records that the attribution between them is by
+    // key order alone — which is also what keeps such a key OUT of the remembered set.
+    var claim = Object.create(null), byText = Object.create(null);
+    if (text) keys.forEach(function (k) {
+      var shown = takeOccurrence(text, budget, safe(function () { return p[k]; }, null));
       if (shown === null) return;
+      claim[k] = shown;
       byText[shown] = (byText[shown] || 0) + 1;
-      out.push({ layer: l, key: k, value: v, text: shown });
     });
-    // two resources CAN still print the same number where the layer states it twice; the card is reporting
-    // quantities and both are right, and this records that the attribution between them is by key order alone
-    out.forEach(function (r) { r.collide = byText[r.text] > 1; });
+    // PASS TWO: the rows, in `player[l]`'s own key order — the SAME order for a remembered row as for an
+    // attributed one, so a row does not move along the line the moment it stops being attributable.
+    var sticky = seenOf(l), out = [];
+    keys.forEach(function (k) {
+      var shown = claim[k], has = shown !== undefined, collide = has && byText[shown] > 1;
+      if (has && !collide) seenAdd(l, k);
+      if (!has && !sticky[k]) return;
+      var v = safe(function () { return p[k]; }, null);
+      out.push({ layer: l, key: k, value: v, text: resAmount(v), claimed: has ? shown : null,
+        collide: collide, sticky: !has });
+    });
     return out;
   }
 
@@ -1743,6 +1846,11 @@
       e.val.textContent = r.text;
       e.box.title = r.key + ': ' + r.text;
       e.box.dataset.collide = r.collide ? 'yes' : 'no';
+      // (U8) whether this row is REMEMBERED right now — written here and not in `drawResources`, because a row
+      // flips between attributed and remembered without the KEY SET moving, which is the only thing a rebuild
+      // watches. It is reported, never styled: a row the player has already seen must not change appearance
+      // depending on whether the layer's prose happens to state its number this tick.
+      e.box.dataset.sticky = r.sticky ? 'yes' : 'no';
       var want = Math.max(r.text.length, rec.resReserved[r.key] || 0);
       if (want !== rec.resReserved[r.key]) { rec.resReserved[r.key] = want; e.val.style.minWidth = want + 'ch'; }
     });
@@ -2130,7 +2238,17 @@
       resetLines: function (l) { return resetLines(resetText(l)); },
       // (U7) the layer's OTHER resources, and the text they were detected in. The text is what a caller lifts a
       // prose label out of; the list itself ships the KEY as the label (see `resourcesOf`).
-      resources: function (l) { return resourcesOf(l).map(function (r) { return { layer: r.layer, key: r.key, text: r.text, collide: r.collide }; }); },
+      resources: function (l) { return resourcesOf(l).map(function (r) { return { layer: r.layer, key: r.key, text: r.text, collide: r.collide, sticky: r.sticky, claimed: r.claimed }; }); },
+      /** (U8) The keys this game has already shown unambiguously, per layer — the remembered set itself, read out
+       *  of the loader's own namespace. */
+      resourceMemory: function () { var all = seenRead(), o = {}; for (var l in all) o[l] = Object.keys(all[l]); return o; },
+      /** (U8) FORGET IT — the cache and the stored key together, which is the pre-U8 behaviour back for this game.
+       *  ⚠ BOTH HALVES OR NEITHER: clearing only the stored key would leave the in-memory map standing and the
+       *  rows would not move, which is also why the gate's own leg cannot do this from outside.
+       *  ⚠ AND IT DOES NOT RE-RENDER. The next render fills the set again from whatever the layers' text states
+       *  then — which is the one moment the WRITE itself can be watched, and the gate's leg P watches exactly it.
+       *  A `refresh()` in here would have re-armed the set before any caller could look at it. */
+      forgetResources: function () { seenRes = Object.create(null); seenWrite(); return true; },
       resourceText: displayTextOf,
       // (U7) the per-category progress rows, with the rule that chose each one
       progress: progressOf,
