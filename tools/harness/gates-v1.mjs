@@ -40,7 +40,8 @@ const row = (r) => { rows.push(r); console.log(`${r.ok ? 'GREEN' : 'RED  '} ${r.
 // fewer reds) — so ADDING a leg moves it, and CI says so. R2 added one witness leg to part 1: 9 → 10. V4 added one
 // more for its two new codes: 10 → 11, and CI found that too (run 35511982551: `unwitnessed: blocked:predicate,
 // stopped:until`, four slices out of four).
-const ROWS = { 1: 11, 2: 3, 3: 2, '3p': 2, 4: 4, 6: 1 };
+// R3a added TWO witness legs for its four new codes: 11 → 13.
+const ROWS = { 1: 13, 2: 3, 3: 2, '3p': 2, 4: 4, 6: 1 };
 
 const SNAP = (id, m) => `tools/harness/snapshots/${id}/all/${m}.json`;
 // M15 → M16: R1′'s own leg, and the one long ptr leg V1's inertness is measured on (plan §14d).
@@ -120,6 +121,19 @@ const LEGS = [
   // not two more entries in CONSTRUCTED below.
   { key: 'ptr fresh 400×1, --auto-opt until:reset:p=… ; while:reset:b=<throws> (V4: the stop and the bad predicate)', id: 'ptr',
     o: { profile: 'all', diff: 1, ticks: 400, 'auto-opt': 'until:reset:p=player.p.points.gte(5);while:reset:b=player.nosuchlayer.gte(1)', explain: true } },
+  // ⛔ R3a's FOUR NEW CODES, ON TWO REAL LEGS, and it has to be two because they are two different states of ONE
+  // feature. The first runs the give-up modifier from `all/M22.json`, where `challenges:h` is the only feature that
+  // can enter anything: it enters H11, wins it, enters H12, fails to close on its goal, LEAVES it, and then defers
+  // the next attempt — `waiting:progress`, `acted:challenge-give-up` and `waiting:retry` in one 400-tick leg, with
+  // `acted:challenge-enter` / `acted:challenge-exit` / `in-challenge` witnessed on a FIXTURE for the first time
+  // (they have been CONSTRUCTED-only since V1, because ptr's table leaves the kind `off`).
+  // The second is the STRANDED pause — a `while` that reads "only act when I am not in a challenge", which is the
+  // shape a player writes and which R3a measured trapping a run inside a challenge it wins in 65 game-seconds.
+  // ⚠ A FIXTURE WITNESS BEATS A CONSTRUCTION wherever one exists (§18.4's rule), which is why these are legs.
+  { key: 'ptr all/M22 + 400×1, --auto-opt policy:challenges:h=sequential|give-up@0.1/30/2x (R3a: the exit rule and its retry bar)', id: 'ptr',
+    o: { profile: 'all', diff: 1, ticks: 400, 'from-snapshot': SNAP('ptr', 'M22'), 'auto-opt': 'policy:challenges:h=sequential|give-up@0.1/30/2x', explain: true } },
+  { key: 'ptr all/M22 + 400×1, --auto-opt policy:challenges:h=sequential ; while:challenges:h=<not in a challenge> (R3a: the stranded pause)', id: 'ptr',
+    o: { profile: 'all', diff: 1, ticks: 400, 'from-snapshot': SNAP('ptr', 'M22'), 'auto-opt': 'policy:challenges:h=sequential;while:challenges:h=player.h.activeChallenge === null', explain: true } },
   { key: 'something fresh 600×1 (profile all)', id: 'something', o: { profile: 'all', diff: 1, ticks: 600, explain: true } },
 ];
 

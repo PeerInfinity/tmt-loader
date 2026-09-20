@@ -418,7 +418,11 @@ every value through `format()` printed *"the cheapest upgrade is 21.00 at 20.00"
 | `blocked:enter` / `blocked:exit` | the engine refuses to enter / to leave that challenge |
 | `yielding:native` | `tmp[l].autoPrestige` — the game's own auto-reset is doing it |
 | `cannot-reset` | `tmp[l].canReset` is false, with the two numbers the engine compared |
-| `in-challenge` | a challenge is active and not completable yet |
+| `in-challenge` | a challenge is active and not completable yet — and with no `give-up` modifier this is the WHOLE of what a feature inside a challenge can say, which is why a run could sit inside PTR's H12 for 11,878 game-seconds without the readout changing |
+| `waiting:progress` | (R3a) the `give-up@B/H/Rx` modifier: how far this attempt has come as a percentage of the challenge's own goal, what fraction of the remaining distance a window must close, and how much of `H` has gone by |
+| `acted:challenge-give-up` | (R3a) it LEFT a challenge without completing it, with the percentage it reached |
+| `waiting:retry` | (R3a) that challenge was given up, and the layer it belongs to is not yet `R×` as strong as it was when the attempt began |
+| `paused:in-challenge` | (R3a) a `while` or an `until` is stopping this feature while the game is INSIDE a challenge it entered. It names the challenge and which of the two controls did it, because a pause does not leave a challenge and the run is stranded until the player clears the condition |
 | `waiting:gain` / `waiting:gain-x` | the `gain>=N` / `gain>=Nx` threshold, with the gain and what it needs |
 | `waiting:gain-unit` | `gain>=Nx-unit` while the layer holds **less than one** of its own resource: the bar is N of the resource, not N× nothing. A SEPARATE code, because the two bars are different questions and a reader has to be able to tell which one is refusing |
 | `waiting:interval` | seconds elapsed of the interval |
@@ -847,9 +851,12 @@ something, `gates-v2 --part 1`): the strategies are generic, so no game can have
 
 ### MODIFIERS: a strategy that rides on another one
 
-A `reset` policy may carry **one modifier**, appended with `|`: `gain>=2x|stall>=3x/5`. The primary strategy still
-decides; the modifier only speaks when the primary has refused. There is one today (`stall>=Kx/N`, below) and the
-grammar, the validator and the editors take another from one more table row.
+A policy may carry **one modifier**, appended with `|`: `gain>=2x|stall>=3x/5`, `sequential|give-up@0.1/30/2x`. The
+primary strategy still decides; the modifier only speaks when the primary has refused. There are two today —
+`stall>=Kx/N` on `reset` and `give-up@B/H/Rx` on `challenges`, both below — and the grammar, the validator and the
+editors took the second from one more table row and no code at all (⚖ minimize hardcoding: `T.modifiers(kind)` is
+what the Advanced view renders, so a modifier on a new kind needs no new `tmtl-*` component and `componentNames`
+does not move).
 
 | Kind | Policy | What it does each tick |
 |---|---|---|
@@ -873,7 +880,8 @@ grammar, the validator and the editors take another from one more table row.
 | | `reserve>=N` | as `buy`, but nothing while the layer holds no more than **N** of its own points — an explicit reserve where `buy-unless-saving` derives one. The layer's points is the one currency a generic reserve can read, so a buyable costed in another layer's currency is still gated on this layer's points. Added for the advanced planner, which sets N to the threshold it is protecting (`docs/planner.md`) |
 | | `reserve>=next-upgrade` | as `reserve>=N` with **N read from the game**: the cost of the cheapest unowned, unlocked upgrade of the layer costed in the layer's own points (`tmp[l].upgrades[id].cost`), re-read every tick; no such upgrade = no reserve. The generic form of "save for the upgrade, spend the surplus" — unlike `buy-unless-saving`, which stops buying altogether while any own-currency upgrade costs more than is held. ⚖ minimize hardcoding: the number is never in the table (R1′, PTR `buyables:e`) |
 | `toggles` | `on` | for each held milestone (`hasMilestone(l, id)`) that declares `toggles`, sets every `player[layer][field]` that is `false` to `true` — what the game's toggle button does. The milestone only UNLOCKS the button; the field stays false until clicked |
-| `challenges` | `sequential` | the first challenge in `order[]` (else id order) that is unlocked with completions below `completionLimit` (default 1): enter it with `startChallenge` when none of the layer's challenges is active; while it is active, exit-and-complete with `startChallenge` once `canCompleteChallenge` holds (and `canExitChallenge` where the engine has it). A challenge the player entered by hand is left alone. Enters / exits are counted in `hookStats().challenges` |
+| `challenges` | `sequential` | the first challenge in `order[]` (else id order) that is unlocked with completions below `completionLimit` (default 1): enter it with `startChallenge` when none of the layer's challenges is active; while it is active, exit-and-complete with `startChallenge` once `canCompleteChallenge` holds (and `canExitChallenge` where the engine has it). A challenge the player entered by hand is left alone. Enters / exits / give-ups are counted in `hookStats().challenges` |
+| | **`… \| give-up@B/H/Rx`** (a MODIFIER) | on top of `sequential`: leave a challenge that has stopped closing the distance to its goal, and do not try it again until the layer is `R×` stronger than it was at the failed attempt. See below |
 | | `off` | nothing |
 | `clickables` | `when` | for each `{id, when}` the table lists for the layer: `clickClickable(l, id)` when the clickable is unlocked, `canClick`, and `when` holds |
 | | `off` | nothing |
@@ -975,6 +983,86 @@ primary has been saying no for too long. A policy that REPLACED the primary woul
 `rateHold`. ⛔ Each appears **only when it has something to say**, and intervals are recorded only for a feature whose
 policy carries the modifier — so a run that uses neither new strategy writes byte-for-byte the record it wrote before
 V2, and every snapshot committed in this repo stays valid.
+
+### `give-up@B/H/Rx` — the challenge EXIT rule, and its retry rule (R3a), a MODIFIER
+
+⛔ **What it is for.** `sequential` has an ENTRY rule — the first unlocked, incomplete challenge — and, before R3a,
+no exit rule at all: it left a challenge only by WINNING it. On PTR, from `snapshots/ptr/all/M22.json`, it completes
+H11 "Upgrade Desert" in 65 game-seconds and walks straight into H12 "Speed Demon", which H11 has just unlocked and
+which it is far too weak for; and it stays. Measured twice equal: **11,878 game-seconds inside H12**, the currency
+flat at 1e2334 against a goal of 1e3550, `reset:q` 13 (none after entry) against the shipped table's 247. That is
+the shape of every later challenge in the game, not a PTR accident.
+
+⚖ **Everything it reads is the ENGINE's own declaration about the challenge.** The goal is `tmp[l].challenges[id].goal`;
+the quantity it is scored on is whichever of `currencyLocation[name]` / `player[currencyLayer][name]` / `player[name]`
+/ `player.points` the challenge declares — the same four-branch lookup `canCompleteChallenge` itself does. No
+challenge id, no per-game threshold, and nothing that is not either derived or a buffer the player set.
+
+**The quantity that moves is an EXPONENT.** A challenge's goal is orders of magnitude away from its currency, so the
+rule works in `p = log(amount) / log(goal)`: 0 below one unit of the currency, 1 at the goal.
+
+⛔ **And it is NOT `rate-peak` in disguise — the curve was measured before the rule was written, and the obvious
+shape is wrong.** `p` is FRONT-LOADED: PTR's H11 goes 0 → 0.43 → 0.78 → 0.92 in thirty game-seconds and then crawls
+to 1.0 over the next thirty-five. Its best AVERAGE rate is always the first ten seconds' and nothing later comes
+near it, so any rule anchored to the best rate since entry abandons H11 at **99.7 % of its goal, five seconds from
+the reward** (measured). What separates H11 from H12 is not the rate: it is whether `p` is still MOVING. H12 is flat
+to seventeen digits from eighty game-seconds after entry onward. So the rule asks about the REMAINING DISTANCE:
+
+> in the last `H` game-seconds, did this attempt close **more than** a fraction `B` of what was left to close?
+
+If it did, the window succeeds and starts again from here. If it did not, the clock runs, and at `H` the feature
+leaves the challenge without completing it (`acted:challenge-give-up`).
+
+| | meaning | default | what it is a proxy for (⚖ 13d.2) |
+|---|---|---|---|
+| `B` | the VALUE buffer: a window must close **more than** `B ×` the distance that was left at its start | `0.1` | how fast an attempt has to be closing before it counts as still progressing. It is what separates a CRAWL (1e-9 of the gap per window — a challenge that would be reached in a billion seconds) from a CLIMB |
+| `H` | the TIME buffer, in GAME-seconds: how long a failing window is given before the attempt is conceded | `30` | how long a pause in progress must last before it is a plateau rather than the gap before the next step |
+| `R` | the RETRY bar: that challenge is not entered again until the layer it belongs to holds `R ×` what it held when the failed attempt began | `2` | "is the run meaningfully stronger than it was last time" — `gain>=Nx`'s own shape, on the one resource the engine guarantees a challenge's layer has, with R2's empty-purse floor on it (`R × max(held, 1)`) |
+
+**`@0/H` is the BARE rule and the CONTROL**, exactly as `rate-peak@0/0` is: with `B = 0` a window succeeds if `p` moved
+at all, so the rule gives up only when progress has stopped dead. **`R = 1` is the exit-only control** — it re-enters
+the moment it has left.
+
+⛔ **`R` is why the rule is not an oscillator.** `sequential` re-picks the challenge it has just left on the very next
+tick, so an exit rule with no retry rule is a loop that enters, fails and leaves for ever — at two forced layer resets
+a cycle, which on PTR is worse than staying.
+
+**Memory** (`tmtLoader.runtimeState()`, never the save): `challengeAttempt` (the attempt in progress — the challenge,
+when it began, the window's anchor, and the layer's strength at entry) and `challengeFailed` (per challenge, the
+strength the failed attempt began from, as a STRING, for the reason `rateBest` is one). ⛔ Each appears **only when it
+has something to say**, and nothing writes into either unless a `give-up` modifier is in force — so a run whose
+tables name no modifier writes byte-for-byte the record it wrote before R3a, and every snapshot committed in this
+repo stays valid.
+
+⚠ **A run that finds itself inside a challenge it has no record of SEEDS the window at that tick** — a snapshot taken
+mid-attempt, a player who entered by hand and then switched the modifier on, a `--no-runtime` control. The
+alternative is an attempt that looks as if it began at time zero, which would be given up on the first tick.
+`stallSince` does the same thing for the same reason.
+
+### ⚠ What a PAUSE means on the `challenges` kind (R3a)
+
+`while` and `until` are per-FEATURE and are evaluated BEFORE the kind decides, so a false one means the feature does
+**nothing** — and inside a challenge, "nothing" is STAYING there. The decision, and the reason for it:
+
+- **A `while` that goes false inside a challenge means STOP ENTERING, never LEAVE.** `while` is one mechanism shared
+  by six kinds and its whole contract is "the feature does nothing while this is false". Making it act would make a
+  pause destructive on exactly one kind — leaving a challenge is a forced layer reset — and a pause that resets a
+  layer is not a pause.
+- **But it is no longer silent.** Measured: `while: player.h.activeChallenge === null` on PTR's `challenges:h` — the
+  shape a player writes for "only act when I am not in one" — enters H11 and then sits inside a challenge it
+  completes in 65 game-seconds for the whole remaining 3,935 game-seconds of the leg, reporting `blocked:gate` and
+  nothing else. The reason is now **`paused:in-challenge`**, which names the challenge and which of the two controls
+  stopped the feature.
+- ⇒ **The EXIT belongs to the kind's own decision, not to a control.** That is what `give-up@B/H/Rx` is.
+
+**What the two controls CAN say** (measured, R3a gate part 2, 4,000-tick legs from `all/M22.json`):
+
+| the control | what it does |
+|---|---|
+| a FEATURE-level `while` with the goal conditions for one challenge | blocks **every** challenge of the layer, the trivial ones included — one predicate per feature cannot say "this challenge now, that one later" |
+| the same written per COMPLETION (`challengeCompletions(l, id) < 1 \|\| …`) | **works**: §5d′'s own form expresses a schedule by level, and PTR completes H11 and never enters H12 |
+| a `while` that can go false while inside | strands the run (above) |
+| an `until` | the same schedule as the per-completion `while`, with no way back — a latch is a strictly weaker entry rule |
 
 **`buy` vs `buyMax`.** TMT 2.2.1 calls `buyMaxBuyable` only from autobuyers — no component calls it — and Prestige
 Tree's `buyMax()` bodies raise the amount to the affordable target **without subtracting the cost** (they are the

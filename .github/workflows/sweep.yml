@@ -710,6 +710,129 @@ jobs:
           retention-days: 14
 
   # ---------------------------------------------------------------------------------------------------------------
+  # R3a — the challenge GIVE-UP rule, its RETRY bar, and what a PAUSE on the `challenges` kind leaves behind (plan §30).
+  #
+  # ⚖ WHAT IS IN CI AND WHAT IS NOT, by V2's, V3's and V4's rule:
+  #   · part 2 is the one whose CLAIM later slices lean on — that `while` / `until` give an ENTRY schedule and
+  #     structurally cannot give an EXIT, and that a stranded pause says so instead of reading as an ordinary gate.
+  #     Its four legs are 4,000 ticks each from `all/M22.json` and it also RUNS the stub battery that constructs the
+  #     two curves a real leg only gives one of. It runs here.
+  #   · part 5 is INERTNESS: the fresh opening and V4's own M15 → M22 rung, unchanged. A slice that adds a modifier
+  #     to a kind must not move a run that never names it, and that is exactly the kind of claim CI has caught four
+  #     slices running. It runs here.
+  #   · part 7 is the PAGE: that V2's generic editors render the new modifier with no new `tmtl-*` family. It runs here.
+  #   · ⛔ parts 1, 3 and q do NOT: they are MEASUREMENT TABLES (V3 part 4's rule) of 12,000-tick legs, four to six
+  #     cells, every cell twice — ~40 minutes each. They are run by hand and quoted in the as-built with their head.
+  #   · ⛔ part 4 WRITES fixtures, and part 6 walks a roster sample. Both by hand, for those reasons.
+  #
+  # ⛔ `--assert` on every part: exiting 1 on a red row does NOT catch a battery that stopped part-way.
+  # ---------------------------------------------------------------------------------------------------------------
+  r3-node:
+    name: R3a challenges — headless (parts 2, 5)
+    needs: fast
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      # ⚠ `npm ci` but NO `playwright install`: these parts import the package and never launch a browser.
+      - run: npm ci
+
+      - name: "Part 2 — what `while` / `until` can and cannot say, and the exit rule on the stub"
+        shell: bash  # bash -eo pipefail: without it `| tee` reports the pipe's status and a refusal is lost
+        run: |
+          set -o pipefail
+          node tools/harness/gates-r3.mjs --part 2 --no-summary --assert --pool 4 | tee r3-2.txt
+
+      - name: "Part 5 — inertness: the fresh opening and M15 → M22"
+        shell: bash
+        run: |
+          set -o pipefail
+          node tools/harness/gates-r3.mjs --part 5 --no-summary --assert --pool 2 | tee r3-5.txt
+
+      - name: Summary
+        if: always()
+        shell: bash
+        run: |
+          {
+            echo '## R3a challenges — headless'
+            echo ''
+            echo '```'
+            cat r3-2.txt r3-5.txt 2>/dev/null | grep -E 'VERDICT|REFUSED|^RED|green$' || echo 'no output'
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload the rows
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: r3-node
+          path: tools/harness/results/tmp/gates-r3-part*-last.json
+          if-no-files-found: warn
+          retention-days: 14
+
+  r3-page:
+    name: R3a challenges — in the page (part 7)
+    needs: fast
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - run: npm ci
+
+      - name: Cache the Playwright browser
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+
+      - run: npx playwright install --with-deps chromium
+
+      # ⚠ The claim is that a modifier on a NEW kind needed no new component: `componentNames` must not move, and
+      # the Advanced view's own source (`tmtLoader.modifiers(kind)`) must carry the row on both reference games.
+      - name: "Part 7 — the new modifier through V2's generic editors, on ptr AND something"
+        shell: bash
+        run: |
+          set -o pipefail
+          node tools/harness/gates-r3.mjs --part 7 --no-summary --assert | tee r3-7.txt
+
+      - name: Summary
+        if: always()
+        shell: bash
+        run: |
+          {
+            echo '## R3a challenges — in the page'
+            echo ''
+            echo '```'
+            cat r3-7.txt 2>/dev/null | grep -E 'VERDICT|REFUSED|^RED|green$' || echo 'no output'
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload the rows
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: r3-page
+          path: tools/harness/results/tmp/gates-r3-part*-last.json
+          if-no-files-found: warn
+          retention-days: 14
+
+  # ---------------------------------------------------------------------------------------------------------------
   # V4 — the per-feature CONTROLS (`while`, `until`, `priority`) and the M21 pause (plan §27).
   #
   # ⚖ WHAT IS IN CI AND WHAT IS NOT, by V2's and V3's rule:

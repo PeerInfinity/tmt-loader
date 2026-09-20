@@ -200,7 +200,15 @@
   };
   var STRATEGIES = [
     // --- reset -----------------------------------------------------------------------------------------------------
-    { kind: 'reset', template: 'always', label: 'Always', help: 'Reset the moment the game allows it.' },
+    // ⚠ R3a, PART 3 — THE ROW'S OWN HELP NOW SAYS WHAT `always` COSTS, because a player can pick it from the
+    // picker and the cost is invisible from the row. MEASURED TWICE on PTR (plan §27.12 item 3, the user hit it by
+    // hand, and §30's sweep): `reset:h` at `always` ends with 38 of its own resource and every quirk FROZEN at 10,
+    // `reset:q` reading "Cannot reset — 1.42e336 of 1.00e512" for the rest of the run. Both layers are row 3 and
+    // both draw on row 2, `h`'s requirement is fixed and cheap while `q`'s is neither — so the cheap reset takes the
+    // shared input away again long before the dear one can ever meet its own. The wording names no layer and no
+    // game: it is the general shape, and it is the second instance of it this arc has met (§27.6 is the first).
+    { kind: 'reset', template: 'always', label: 'Always',
+      help: 'Reset the moment the game allows it. ⚠ Where this reset also wipes what a SIBLING layer is still accumulating, the layer with the cheaper requirement starves the one with the dearer — it takes the shared input away again long before the slower layer can meet its own requirement.' },
     { kind: 'reset', template: 'gain>={n}', label: 'Gain at least N', help: 'Wait until the reset would yield at least this much of the layer’s own resource.',
       params: [{ name: 'n', type: 'quantity', placeholder: 'N', default: '1', label: 'gain at least' }],
       progress: function (f, v) { return ratio(v && v.gain, v && v.need); } },
@@ -272,10 +280,53 @@
   // primary has been saying no for K times as long as this feature's own resets have been taking. A policy that
   // REPLACED the primary would lose exactly the rule the player chose.
   var MODIFIERS = [
-    { kind: 'reset', template: 'stall>={k}x/{n}', label: 'Fall back when stalled', help: 'If this feature’s own rule has been waiting K times longer than its resets usually take, reset anyway — but only the stalled feature closest to its target goes first.',
+    // ⚠ `readout: 'stall'` — R3a. `T.stallState(id)` is called for EVERY feature by `explain()`, and until this
+    // slice it could assume that "has a modifier" meant "has THIS modifier". With a second modifier on another kind,
+    // a `challenges` feature carrying `give-up` was answered with the stall fallback's readout — *"no reset by this
+    // feature's own rule yet"*, about a feature that does not reset. Nothing threw: it was a false sentence in the
+    // Advanced view, which is the class of defect V1 exists to prevent. The ROW says which readout is its own.
+    { kind: 'reset', template: 'stall>={k}x/{n}', label: 'Fall back when stalled', readout: 'stall', help: 'If this feature’s own rule has been waiting K times longer than its resets usually take, reset anyway — but only the stalled feature closest to its target goes first.',
       params: [
         { name: 'k', type: 'factor', placeholder: 'K', default: '3', min: 1, label: 'stalled after K× the usual wait' },
         { name: 'n', type: 'count', placeholder: 'N', default: '5', min: 1, label: 'resets remembered' },
+      ] },
+    // ---- R3a: the challenge GIVE-UP rule — the exit `sequential` never had ------------------------------------
+    // ⛔ THE BOTTLENECK, MEASURED (plan §29, reproduced twice by R3a). `sequential` has an ENTRY rule (“the first
+    // unlocked, incomplete challenge”) and NO EXIT rule. On PTR it completes H11 in 65 game-seconds and then walks
+    // straight into H12, which H11 has just unlocked and which it is far too weak for — and it STAYS: 11,878
+    // game-seconds with the currency flat at 1e2334 against a goal of 1e3550, every quirk frozen, because inside a
+    // challenge the rest of the tree cannot climb. It is the shape of every later challenge, not a PTR accident.
+    //
+    // ⚖ MINIMIZE HARDCODING: every term is the ENGINE'S OWN DECLARATION ABOUT THIS CHALLENGE — its `goal`, the
+    // currency it is measured in (`currencyInternalName` / `currencyLayer` / `currencyLocation`, the same four-branch
+    // lookup `canCompleteChallenge` itself does) and the layer the challenge belongs to. No challenge id, no
+    // per-game threshold, and no clock that is not a buffer the player set.
+    //
+    // ⛔ AND IT IS NOT `rate-peak` IN DISGUISE — R3a MEASURED THE CURVE BEFORE WRITING THE RULE, and the obvious
+    // shape is wrong. Progress toward a goal is an EXPONENT question (1e2334 of 1e3550), so the quantity that moves
+    // is `p = log(amount) / log(goal)`; but p is FRONT-LOADED. PTR's H11 goes 0 → 0.43 → 0.78 → 0.92 in thirty
+    // game-seconds and then crawls to 1.0 over the next thirty-five — so the best AVERAGE rate is always the first
+    // few seconds', and any rule anchored to it condemns a challenge that is about to be won. (Measured: with
+    // `p / elapsed` and `best` since entry, H11 is abandoned at 99.7 % of its goal, five seconds from the reward.)
+    // What separates H11 from H12 is not the rate, it is whether p is STILL MOVING: H12 is flat to seventeen digits
+    // from 80 game-seconds after entry onward. So the rule asks a question about the REMAINING DISTANCE:
+    //   in the last H game-seconds, did this attempt close more than a fraction B of what was left to close?
+    // ⚖ B and H are the two buffers the user asked for by name for `rate-peak` (plan §18), with B's meaning rotated
+    // onto the quantity that moves here; `@0/H` is the bare rule ("give up only when progress stops dead") and is
+    // the control every measurement of the other settings is against, exactly as `rate-peak@0/0` is.
+    //
+    // ⛔ AND R IS WHY THE RULE IS NOT AN OSCILLATOR. `sequential` re-picks the challenge it has just left on the
+    // very next tick, so an exit rule with no retry rule is a loop that enters, fails and leaves for ever — at two
+    // forced layer resets a cycle. R defers the next attempt until the challenge's OWN LAYER holds R× what it held
+    // when the attempt failed: `gain>=Nx`'s shape, on the one resource the engine guarantees a challenge has
+    // (`player[layer].points`), with R2's empty-purse floor on it (a multiple of nothing is no condition at all).
+    // `R = 1` is the exit-only control.
+    { kind: 'challenges', template: 'give-up@{b}/{h}/{r}x', label: 'Give up when it stops getting closer',
+      help: 'Leave a challenge without completing it once the attempt has stopped closing the distance to its goal — and wait until the layer is stronger before trying that challenge again.',
+      params: [
+        { name: 'b', type: 'fraction', placeholder: 'B', default: '0.1', label: 'must close this fraction of what is left' },
+        { name: 'h', type: 'seconds', placeholder: 'H', default: '30', label: 'within this many seconds' },
+        { name: 'r', type: 'factor', placeholder: 'R', default: '2', min: 1, label: 'retry once the layer holds this multiple of what it held' },
       ] },
   ];
   // ---- the per-feature CONTROLS (V4) — not policies, and that is why they are their own table -------------------------
@@ -501,6 +552,21 @@
     'yielding:native':    { text: "Yielding — the game's own auto-reset is resetting {layer}",     values: ['layer'] },
     'cannot-reset':       { text: 'Cannot reset — {have} of {need}',                              values: ['have', 'need'], quantities: ['have', 'need'] },
     'in-challenge':       { text: 'In challenge {id} — not completable yet',                      values: ['id'] },
+    // ⛔ R3a: THE FOUR CODES THE `challenges` KIND HAD NO WAY TO SAY. `in-challenge` above is the WHOLE of what a
+    // feature inside a challenge could report before this slice, and it is the same sentence whether the attempt is
+    // winning, hopeless or abandoned — which is why a run could sit inside PTR's H12 for 11,878 game-seconds and
+    // never say anything but "not completable yet".
+    // ⚖ `pct` and `need` are PERCENTAGES OF THIS CHALLENGE'S OWN GOAL, not quantities of the game: they are already
+    // dimensionless, so they must not go through `format()` (the `quantities` rule above, read the other way).
+    'waiting:progress':   { text: 'In challenge {id} — {pct}% of the way to its goal; it must close {need}% of what is left, and {held} s of {hold} s have gone by', values: ['id', 'pct', 'need', 'held', 'hold'] },
+    'acted:challenge-give-up': { text: 'Gave up challenge {id} at {pct}% of its goal — it closed under {need}% of what was left for {hold} s', values: ['id', 'pct', 'need', 'hold'] },
+    'waiting:retry':      { text: 'Waiting — challenge {id} failed with {had} of {layer}; it will be tried again at {need}', values: ['id', 'layer', 'had', 'need'], quantities: ['had', 'need'] },
+    // ⛔ THE ONE STATE A PAUSE ON THIS KIND CAN LEAVE BEHIND, AND IT IS MEASURED. Entering a challenge is not
+    // idempotent: it puts the GAME into a mode that only this feature will take it out of. A `while` that goes false
+    // while the game is inside one therefore means "stop entering" AND "never leave" — R3a measured a run stranded
+    // inside PTR's H11, a challenge it completes in 65 game-seconds, for the whole remaining 3,935 of its leg, with
+    // `blocked:gate` as its only reason. The reason line now names the challenge and which control did it.
+    'paused:in-challenge': { text: 'Paused inside challenge {id} — the “{which}” condition {src} stops this feature, and a pause does not leave a challenge', values: ['id', 'which', 'src'] },
     // running, and the policy says not yet
     'waiting:gain':       { text: 'Waiting — gain {gain} of {need}',                              values: ['gain', 'need'], quantities: ['gain', 'need'] },
     'waiting:gain-x':     { text: 'Waiting — gain {gain} of {need} ({n}× the {have} held)',        values: ['gain', 'need', 'n', 'have'], quantities: ['gain', 'need', 'have'] },
@@ -959,12 +1025,107 @@
     return S && S.progress ? S.progress(g, d && d.values) : null;
   }
   function r1(x) { return Math.round(Number(x) * 10) / 10; }
+
+  // ---- R3a: the challenge GIVE-UP rule's own reading of the engine --------------------------------------------------
+  // ⛔ THE FOUR-BRANCH LOOKUP IS THE ENGINE'S, NOT OURS. `canCompleteChallenge` (games/ptr/js/game.js:275, and the
+  // same function in 2.7) decides a challenge by comparing ONE quantity against `goal`, and which quantity that is
+  // the challenge itself declares: `currencyLocation[name]`, else `player[currencyLayer][name]`, else `player[name]`,
+  // else `player.points`. A give-up rule that measured anything ELSE would be judging the attempt by a number the
+  // game does not score it on — so this mirrors that lookup and nothing more.
+  function challengeTmp(l, id) { var t = tmp[l]; return (t && t.challenges && t.challenges[id]) || null; }
+  function challengeAmount(l, id) {
+    var c = challengeTmp(l, id);
+    if (!c) return null;
+    try {
+      var name = c.currencyInternalName;
+      if (!name) return player.points;
+      if (c.currencyLocation) return c.currencyLocation[name];
+      if (c.currencyLayer) return player[c.currencyLayer][name];
+      return player[name];
+    } catch (e) { return null; }           // a fork whose challenge names a store this save has not got
+  }
+  // ⚠ `log10(0)` IS NaN IN break_eternity, AND FORMATTING A NaN SETS THE GAME'S OWN PANIC FLAG (`player.hasNaN`,
+  // the same trap `fmt` carries a guard for). Below one unit of the currency there is no exponent to speak of and
+  // the honest answer is zero, so the log is never taken there.
+  function log10Of(x) {
+    if (x === null || x === undefined) return null;
+    var d;
+    try { d = D(x); } catch (e) { return null; }
+    if (!d || typeof d.log10 !== 'function' || typeof d.lt !== 'function') return null;
+    var v;
+    try { if (d.lt(D(1))) return 0; v = Number(d.log10()); } catch (e) { return null; }
+    return isFinite(v) ? v : null;
+  }
+  /** How far this attempt has come, as a fraction of the GOAL'S OWN EXPONENT: 0 below one unit, 1 at the goal. */
+  function challengeProgress(l, id) {
+    var c = challengeTmp(l, id);
+    if (!c) return null;
+    var g = log10Of(c.goal);
+    if (g === null || !(g > 0)) return null;     // a goal of one unit or less has no exponent to be a fraction of
+    var a = log10Of(challengeAmount(l, id));
+    return a === null ? null : a / g;
+  }
+  /** The layer's own resource, floored at one unit — R2's empty-purse lesson: a multiple of nothing is no condition. */
+  function layerHeld(l) { var h = D(player[l] && player[l].points); return h.lt(D(1)) ? D(1) : h; }
+
+  var chAttempt = {};   // feature id → {id, at, held, anchorAt, anchorP} — the attempt in progress
+  var chFailed = {};    // feature id → {<challenge id>: "<the layer's own points when that attempt began>"}
+  var pct = function (x) { return Math.round(Number(x) * 1000) / 10; };
+
+  /** The attempt record, SEEDED at the first tick the rule runs for a challenge it has no record of. */
+  // ⚠ A RESUMED RUN CAN FIND ITSELF INSIDE A CHALLENGE IT HAS NO MEMORY OF — a snapshot taken mid-attempt, a player
+  // who entered by hand and then switched the modifier on, or a `--no-runtime` control. Seeding the window HERE is
+  // `stallSince`'s own precedent and its own reason: the alternative is an attempt that looks as if it began at
+  // time zero, which would give up on the first tick. The cost is one window, which is what the first attempt is
+  // for anyway.
+  function attemptOf(f, id, now) {
+    var m = chAttempt[f.id];
+    // ⚠ `startHeld` IS SEEDED FROM THE PRESENT ON A SEEDED ATTEMPT, and that is the honest reading: the retry rule
+    // asks "is the layer stronger than it was when this failed", and for an attempt whose start nothing recorded the
+    // only strength this process can honestly name is the one it can see.
+    if (!m || m.id !== id) m = chAttempt[f.id] = { id: id, at: now, held: null, anchorAt: now, anchorP: null, startHeld: String(layerHeld(f.layer)) };
+    return m;
+  }
+  /**
+   * The give-up decision for the challenge this feature is inside. `G` is the parsed MODIFIER.
+   * Returns {give, code, values}; `give` true means leave it without completing it.
+   */
+  function decideGiveUp(f, G, id) {
+    var l = f.layer, now = Number(player.timePlayed) || 0;
+    var m = attemptOf(f, id, now);
+    var p = challengeProgress(l, id);
+    // a challenge whose goal or currency this engine does not publish cannot be judged — and saying so is better
+    // than guessing: the feature reports exactly what it reported before this slice.
+    if (p === null) return { give: false, code: 'in-challenge', values: { id: id } };
+    if (m.anchorP === null) m.anchorP = p;
+    var b = Number(G.params.b), h = Number(G.params.h);
+    var gap = 1 - m.anchorP;
+    var need = gap > 0 ? b * gap : 0;
+    var closed = p - m.anchorP;
+    // ⚠ STRICTLY GREATER. With B = 0 (`@0/H`, the bare rule and the control) a plateau closes exactly 0 of 0,
+    // and `>=` would call that progress and never give up — which is the very state the rule exists to leave.
+    if (closed > need) { m.anchorAt = now; m.anchorP = p; m.held = null; return { give: false, code: 'waiting:progress', values: { id: id, pct: pct(p), need: pct(b), held: 0, hold: h } }; }
+    if (m.held === null) m.held = m.anchorAt;
+    var held = now - m.held;
+    if (held >= h) return { give: true, code: 'acted:challenge-give-up', values: { id: id, pct: pct(p), need: pct(b), hold: h } };
+    return { give: false, code: 'waiting:progress', values: { id: id, pct: pct(p), need: pct(b), held: r1(held), hold: h } };
+  }
+  /** After a give-up: how strong the layer must be before this challenge is tried again, or null if it may be. */
+  function retryNeed(f, G, id) {
+    var rec = chFailed[f.id];
+    if (!rec || rec[id] === undefined) return null;
+    var r = Number(G.params.r);
+    var need = D(rec[id]).times(r);
+    return D(player[f.layer].points).gte(need) ? null : need;
+  }
   /** What the Advanced view shows about the modifier — a READOUT, never a decision (V1's rule). */
   T.stallState = function (id) {
     var f = byId[id];
     if (!f) throw new Error('no feature "' + id + '"');
     var P = parsedOf(f);
     if (!P || !P.modifier) return null;
+    var M = byStrategyId(f.kind, P.modifier.id);
+    if (!M || M.readout !== 'stall') return null;     // R3a: a modifier's readout belongs to its own ROW
     var c = stallClock(f, P), m = stallMem[f.id] || [];
     return { modifier: P.modifier.id, armed: c !== null, remembered: m.length, since: stallSince[f.id] === undefined ? null : r1(stallSince[f.id]), typical: c === null ? null : r1(c.typical),
       elapsed: c === null ? null : r1(c.elapsed), need: c === null ? null : r1(c.need),
@@ -1762,8 +1923,15 @@
     // sequential: the first challenge (order[] else id order) that is unlocked and below its completion limit — enter it
     // when no challenge of the layer is active; while it is active, exit-and-complete once it can be completed. A
     // challenge the feature did not choose (entered by hand) is left alone.
+    // ⛔ R3a: WITH THE `give-up@B/H/Rx` MODIFIER the same rule gains an EXIT and a RETRY rule. Both ride on the
+    // refusal, exactly as the reset kind's stall modifier does — the primary still decides who to enter and when to
+    // exit-and-complete, and the modifier only speaks where `sequential` alone had nothing to say.
+    // ⚠ READ THROUGH `parsedOf`, NOT OFF THE POLICY STRING. With a modifier the string is `sequential|give-up@…`,
+    // and the old `f.policy !== 'sequential'` test would have reported the whole feature `off:policy`.
     challenges: function (f) {
-      if (f.policy !== 'sequential') return { act: false, code: 'off:policy', values: { policy: f.policy } };
+      var P = parsedOf(f);
+      if (!P || P.id !== 'sequential') return { act: false, code: 'off:policy', values: { policy: f.policy } };
+      var G = P.modifier;
       var l = f.layer, C = tmp[l] && tmp[l].challenges;
       if (!C || !player[l].unlocked) return { act: false, code: 'nothing-to-do', values: { kind: 'challenges', layer: l } };
       var ids = f.order ? f.order.slice() : numIds(layers[l].challenges);
@@ -1774,20 +1942,46 @@
         var limit = c.completionLimit === undefined ? 1 : Number(c.completionLimit);
         if (Number(player[l].challenges[ids[i]] || 0) < limit) { pick = ids[i]; break; }
       }
-      var cs = stats.challenges[f.id] || (stats.challenges[f.id] = { enter: 0, exit: 0 });
+      var cs = stats.challenges[f.id] || (stats.challenges[f.id] = { enter: 0, exit: 0, gaveUp: 0 });
+      if (cs.gaveUp === undefined) cs.gaveUp = 0;
       var act = player[l].activeChallenge;
       if (act !== null && act !== undefined && act !== 0 && act !== false) {
         if (pick === null || Number(act) !== pick) return { act: false, code: 'in-challenge', values: { id: Number(act) } };
-        if (!canCompleteChallenge(l, pick)) return { act: false, code: 'in-challenge', values: { id: pick } };
+        if (canCompleteChallenge(l, pick)) {
+          if (typeof canExitChallenge === 'function' && !canExitChallenge(l, pick)) return { act: false, code: 'blocked:exit', values: { id: pick } };
+          startChallenge(l, pick);
+          cs.exit++;
+          delete chAttempt[f.id];
+          return { act: true, n: 1, code: 'acted:challenge-exit', values: { id: pick } };
+        }
+        if (!G) return { act: false, code: 'in-challenge', values: { id: pick } };
+        var g = decideGiveUp(f, G, pick);
+        if (!g.give) return { act: false, code: g.code, values: g.values };
+        // ⚠ THE ENGINE STILL HAS THE LAST WORD ON LEAVING. `canExitChallenge` is the same guard the exit-and-complete
+        // path asks, and a challenge a fork refuses to let go of is not one a rule here can walk out of.
         if (typeof canExitChallenge === 'function' && !canExitChallenge(l, pick)) return { act: false, code: 'blocked:exit', values: { id: pick } };
+        // ⛔ THE STRENGTH THIS ATTEMPT STARTED FROM is what the retry rule compares against, and it is recorded at
+        // ENTRY rather than read here: entering a challenge is a forced layer reset, so by now `player[l].points` is
+        // whatever being INSIDE has left, which is a measurement of the challenge and not of the run's strength.
+        (chFailed[f.id] || (chFailed[f.id] = {}))[pick] = chAttempt[f.id].startHeld;
         startChallenge(l, pick);
-        cs.exit++;
-        return { act: true, n: 1, code: 'acted:challenge-exit', values: { id: pick } };
+        cs.gaveUp++;
+        delete chAttempt[f.id];
+        return { act: true, n: 1, code: g.code, values: g.values };
       }
       if (pick === null) return { act: false, code: 'nothing-to-do', values: { kind: 'challenges', layer: l } };
+      if (G) {
+        var need = retryNeed(f, G, pick);
+        if (need !== null) return { act: false, code: 'waiting:retry', values: { id: pick, layer: l, had: player[l].points, need: need } };
+      }
       if (typeof canEnterChallenge === 'function' && !canEnterChallenge(l, pick)) return { act: false, code: 'blocked:enter', values: { id: pick } };
+      var before = G ? layerHeld(l) : null;
       startChallenge(l, pick);
-      if (Number(player[l].activeChallenge) === pick) { cs.enter++; return { act: true, n: 1, code: 'acted:challenge-enter', values: { id: pick } }; }
+      if (Number(player[l].activeChallenge) === pick) {
+        cs.enter++;
+        if (G) { delete chAttempt[f.id]; attemptOf(f, pick, Number(player.timePlayed) || 0).startHeld = String(before); }
+        return { act: true, n: 1, code: 'acted:challenge-enter', values: { id: pick } };
+      }
       return { act: false, code: 'blocked:enter', values: { id: pick } };
     },
     // when: the table's {id, when} list for the layer: click when the clickable is unlocked, canClick, and `when` holds.
@@ -1840,6 +2034,33 @@
     if (v.value) return null;
     return { code: 'blocked:gate', values: { gate: c.src, owner: controlOwner(f, 'while') } };
   }
+  // ---- R3a: what a PAUSE on this kind LEAVES BEHIND --------------------------------------------------------------
+  // ⚖ THE DECISION, AND THE REASON IT GOES THIS WAY. A `while` that goes false while the game is inside a challenge
+  // means STOP ENTERING, never LEAVE — because `while` is ONE mechanism shared by six kinds and its whole contract is
+  // "the feature does nothing while this is false". Making it act would make a pause destructive on exactly one kind
+  // (leaving a challenge is a forced layer RESET), and a pause that resets a layer is not a pause.
+  // ⛔ BUT SILENCE WAS THE DEFECT, AND IT IS MEASURED. R3a put `while: player.h.activeChallenge === null` on PTR's
+  // `challenges:h` — the shape a player writes for "only act when I am not in one" — and the run entered H11, went
+  // false, and sat inside a challenge it completes in 65 game-seconds for the remaining 3,935 of the leg, reporting
+  // `blocked:gate` and nothing else. So the KIND declares when a pause has stranded the game, and the reason line
+  // says so and names which control did it. Only `challenges` declares one, and that is not an accident of this
+  // game: it is the only kind whose act puts the GAME into a mode that only this feature will take it out of.
+  var STRANDED = {
+    challenges: function (f) {
+      var a = player[f.layer] && player[f.layer].activeChallenge;
+      return a === null || a === undefined || a === 0 || a === false ? null : Number(a);
+    },
+  };
+  /** The `paused:in-challenge` values, or null when this pause strands nothing. */
+  function strandedBy(f, stop) {
+    if (!STRANDED[f.kind]) return null;
+    var which = stop.code === 'stopped:until' ? 'until' : stop.code === 'blocked:gate' ? 'while' : null;
+    if (!which) return null;             // a predicate that THREW keeps its own code — that is the bigger news
+    var id = STRANDED[f.kind](f);
+    if (id === null) return null;
+    return { id: id, which: which, src: which === 'until' ? stop.values.until : stop.values.gate };
+  }
+
   // ---- V4: PRIORITY — the order a LAYER's features act in, inside one tick ------------------------------------------
   // ⛔ CACHED PER `gameLoop`, NOT PER LAYER CALL, and there is a measurement behind the shape: `runLayer` is called
   // once per hooked layer per loop, so re-sorting inside it would be O(layers × features log features) every tick
@@ -1894,10 +2115,8 @@
       // ⚠ A RUN-TIME THROW IS CONTAINED TO ITS OWN FEATURE and never reads as `false` — `continue`, not `throw`, so
       // every other feature of the layer still decides this tick (the brief's Part 1(b), and it is what a player
       // who mistypes one predicate needs: one dead feature, not a dead tick).
-      var stop = untilStep(f);
-      if (stop) { say(f, stop.code, stop.values); continue; }
-      var pause = whileStep(f);
-      if (pause) { say(f, pause.code, pause.values); continue; }
+      var stop = untilStep(f) || whileStep(f);
+      if (stop) { var strand = strandedBy(f, stop); say(f, strand ? 'paused:in-challenge' : stop.code, strand || stop.values); continue; }
       var r = EXEC[f.kind](f);
       say(f, r.code, r.values);
       if (r.n) {
@@ -1936,7 +2155,7 @@
   }
   T.hookStats = function () {
     var ch = {};
-    for (var k in stats.challenges) ch[k] = { enter: stats.challenges[k].enter, exit: stats.challenges[k].exit };
+    for (var k in stats.challenges) ch[k] = { enter: stats.challenges[k].enter, exit: stats.challenges[k].exit, gaveUp: stats.challenges[k].gaveUp || 0 };
     return { hooked: hookOrder.slice(), loops: stats.loops, calls: Object.assign({}, stats.calls), viaSlot: Object.assign({}, stats.viaSlot), viaFallback: Object.assign({}, stats.viaFallback), doubles: stats.doubles, actions: Object.assign({}, stats.actions), challenges: ch };
   };
 
@@ -1998,6 +2217,20 @@
     for (var qi in stallSince) { ss[qi] = stallSince[qi]; nss++; }
     if (nss) o.stallSince = ss;
     if (stallFired.loop >= 0) o.stallFired = { loop: stallFired.loop, layer: stallFired.layer };
+    // ---- R3a: the challenge give-up rule's memory ----------------------------------------------------------------
+    // ⛔ THE SAME RULE, FOR THE SAME REASON, WITH THE SAME CONSEQUENCE (V2's and V3's): each block appears only when
+    // it has something to say, and nothing writes into either object unless a `give-up` modifier is in force — so a
+    // run whose tables name no modifier writes EXACTLY the record it wrote before this slice, every snapshot
+    // committed in this repo stays valid, and `gates-v3 --part 2`'s key-set row does not move.
+    // ⚠ The failed-attempt strengths are STRINGS, like `rateBest`, because a Decimal held in memory and one
+    // round-tripped through JSON are not guaranteed to be the same number — and a resumed run has to take the path
+    // the uninterrupted one took.
+    var ca = {}, nca = 0;
+    for (var ai in chAttempt) { ca[ai] = Object.assign({}, chAttempt[ai]); nca++; }
+    if (nca) o.challengeAttempt = ca;
+    var cg = {}, ncg = 0;
+    for (var gi in chFailed) { cg[gi] = Object.assign({}, chFailed[gi]); ncg++; }
+    if (ncg) o.challengeFailed = cg;
     // ---- V3: the progress tracker's and the stall watch's memory ------------------------------------------------
     // ⛔ EACH BLOCK APPEARS ONLY WHEN IT HAS SOMETHING TO SAY, for V2's reason and with V2's consequence: a run with
     // the tracker off writes EXACTLY the record it wrote before V3, so every snapshot committed in this repo stays
@@ -2050,6 +2283,10 @@
     for (k in rt.rateHold || {}) rateHold[k] = Number(rt.rateHold[k]);
     stallFired.loop = rt.stallFired ? Number(rt.stallFired.loop) : -1;
     stallFired.layer = rt.stallFired ? rt.stallFired.layer : null;
+    for (k in chAttempt) delete chAttempt[k];
+    for (k in rt.challengeAttempt || {}) chAttempt[k] = Object.assign({}, rt.challengeAttempt[k]);
+    for (k in chFailed) delete chFailed[k];
+    for (k in rt.challengeFailed || {}) chFailed[k] = Object.assign({}, rt.challengeFailed[k]);
     // ---- V3 ------------------------------------------------------------------------------------------------------
     // ⚠ A RECORD WITHOUT A `progress` BLOCK LEAVES THE TRACKER UNARMED, which is what a pre-V3 snapshot means and
     // what a run with the tracker off means. It then arms fresh at the first tick, seeds from whatever the save
@@ -3225,6 +3462,9 @@
         },
         mods: function () { return T.modifiers(this.data.row.kind); },
         modOn: function () { return !!this.data.row.policy.modifier; },
+        // ⚖ R3a: the button NAMES the modifier it toggles, from the table — it used to say "the stall fallback"
+        // whatever kind it was on, and the second modifier made that a lie on every `challenges` feature.
+        modLabel: function () { var m = this.mods; return m.length ? '“' + m[0].label + '”' : 'the modifier'; },
         edited: function () { return !!this.data.row.policy.saved; },
         // ---- V4: the three per-feature CONTROLS, rendered GENERICALLY from `T.controls()` ------------------------
         // ⚖ minimize hardcoding, the same way V2's parameter editors are built from the strategy table: a fourth
@@ -3284,7 +3524,7 @@
         +     '<tmtl-number v-for="f in fields" :key="f.key" :data="f"></tmtl-number>'
         +   '</div>'
         +   '<div v-if="mods.length" style="text-align:left;font-size:.9em">'
-        +     '<button type="button" class="tmtl-mod" :data-fid="data.row.id" style="' + BTN_STYLE + '" @click="toggleMod" @keydown.stop>{{ modOn ? \'remove the stall fallback\' : \'add the stall fallback\' }}</button>'
+        +     '<button type="button" class="tmtl-mod" :data-fid="data.row.id" style="' + BTN_STYLE + '" @click="toggleMod" @keydown.stop>{{ (modOn ? \'remove \' : \'add \') + modLabel }}</button>'
         +     '<span v-if="data.row.stall && data.row.stall.why" style="opacity:.7;margin-left:6px">{{ data.row.stall.why }}</span>'
         +     '<span v-else-if="data.row.stall" style="opacity:.7;margin-left:6px">typical {{ data.row.stall.typical }} s over {{ data.row.stall.remembered }} own-rule reset(s) · {{ data.row.stall.elapsed }} s of {{ data.row.stall.need }} s</span>'
         +   '</div>'
@@ -3827,7 +4067,16 @@
     if (kind === 'upgrades') return hasOrder ? 'order-then-cheapest' : 'cheapest-first';
     if (kind === 'buyables') return 'buy';
     if (kind === 'toggles') return 'on';
-    if (kind === 'challenges') return hasOrder ? 'sequential' : 'off';
+    // ⚖ R3a, PART 1 ITEM 5 — THE DERIVED DEFAULT, AND WHAT MOVED AND WHAT DID NOT.
+    // ⛔ WITHOUT an `order` it stays `off`. A KIND default reaches every game on the roster, and the roster is 171
+    // games nobody has swept; the failure that matters — a challenge that can never be completed trapping the run
+    // — is exactly what the exit rule removes ON PTR, which is one game. A bounded sample is not a licence to switch
+    // a kind on everywhere (gate R3a-6 says what it bounded), and §27.6's answer to the same question was the same.
+    // ✅ WITH an `order` it now carries the EXIT RULE. A table that names a challenge sequence has already opted
+    // into entering them, and until this slice that opt-in had no way OUT: `sequential` left a challenge only by
+    // winning it. So the opt-in path is the one place a moved default can only help, and it reaches no game that
+    // has not asked for it (measured: no table on the roster declares a challenge `order` today).
+    if (kind === 'challenges') return hasOrder ? 'sequential|give-up@0.1/30/2x' : 'off';
     return hasClicks ? 'when' : 'off';
   }
 

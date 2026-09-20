@@ -200,6 +200,13 @@ says nothing about the semicolon. Write the predicate as a single expression (`&
 statement) — a player typing into the tab is unaffected, because a saved predicate never goes through an option
 string.
 
+⚠ **AND A `--vary` CELL MAY NOT CONTAIN A VERTICAL BAR** — R3a's own trap, the same shape one level up.
+`sweep.mjs` splits an axis's values on `|`, which is also the MODIFIER separator in a policy string and the `||`
+of every predicate anyone would write. So `--vary "policy:challenges:h=sequential|give-up@0.1/30/2x"` is two cells,
+neither of which is a policy, and `--vary "while:<id>=a || b"` is two halves of one predicate. A value carrying a
+bar goes in `--opt` (which is passed through verbatim) or in a battery's own cell list — `gates-r3.mjs` runs its
+cells that way for exactly this reason.
+
 `tools/harness/sweep.mjs` runs that shape: **`--vary` may be repeated** (each occurrence is an AXIS, and the cells are
 their cross product) and **`--repeat N`** runs every cell N times and reports `twiceEqual`. Every line carries
 `ticks_ms` and the box's 1-minute load at the start and end of its own child, because a full pool changes ms/tick and
@@ -216,7 +223,7 @@ drove a chip**. ⛔ A check nobody runs is not a check.
 
 | check | where it runs now | cost |
 |---|---|---|
-| unit tests (`npm run harness:test`) | CI, the **fast** job — and everything else `needs:` it | **180 tests**, no browser — RE-MEASURED on this tree by V4, which added twenty (`loader/controls.test.mjs`); R2 read 160 and added two (⚠ it read `46 tests`, then `75`, then `82`, then `138`, then `158`, every one of them stale — a count in prose that no gate reads. It had drifted by fifty-two before U7 re-read it, and by twenty again between U7 and the U8 merge. ⛔ RE-MEASURE IT AT EVERY MERGE: this row is the standing example of a count conflict that must not be resolved by picking a branch's number — U3 merged 75-vs-60 and the merged tree measured 79) |
+| unit tests (`npm run harness:test`) | CI, the **fast** job — and everything else `needs:` it | **201 tests**, no browser — RE-MEASURED on this tree by R3a, which added sixteen (`loader/challenges.test.mjs`, the challenge give-up rule) on top of V4's twenty (`loader/controls.test.mjs`); ⚠ the number V4 wrote here was **180** and the tree it was written on measured **185**, which is the drift this row exists to catch; R2 read 160 and added two (⚠ it read `46 tests`, then `75`, then `82`, then `138`, then `158`, every one of them stale — a count in prose that no gate reads. It had drifted by fifty-two before U7 re-read it, and by twenty again between U7 and the U8 merge. ⛔ RE-MEASURE IT AT EVERY MERGE: this row is the standing example of a count conflict that must not be resolved by picking a branch's number — U3 merged 75-vs-60 and the merged tree measured 79) |
 | G6 roster doc + G7 declined list (`games-table.mjs --check`) | CI, the fast job | 0.13 s |
 | roster FIGURES census (`census-figures.mjs`) | CI, the fast job | 1.2 s |
 | M1 mobile sweep (`--gate mobile`) | CI, ten shards + a merge | ~3 min end to end; 32–46 min locally |

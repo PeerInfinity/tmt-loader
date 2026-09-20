@@ -28,6 +28,10 @@ export class Decimal {
   times(o) { return new Decimal(this.v * new Decimal(o).v); }
   plus(o) { return new Decimal(this.v + new Decimal(o).v); }
   div(o) { return new Decimal(this.v / new Decimal(o).v); }
+  // ⚠ R3a: the challenge give-up rule takes the LOG of a challenge's goal and of its currency, so `log10` is one
+  // of "the methods the registry calls" and belongs here. break_eternity returns NaN for `log10(0)`; so does this,
+  // and the loader guards the same way against both.
+  log10() { return new Decimal(Math.log10(this.v)); }
   toString() { return String(this.v); }
 }
 
@@ -62,9 +66,20 @@ export function bootStub(layers, opts = {}) {
       player[l].buyables[id] = new Decimal(Number(player[l].buyables[id]) + 1);
     },
     clickClickable(l, id) { player[l].clickables[id] = new Decimal(Number(player[l].clickables[id]) + 1); ctx.clicked.push(`${l}:${id}`); },
+    // ⚠ R3a FIDELITY FIX. This used to count a COMPLETION on every exit, which no engine does: both engines'
+    // `completeChallenge` bails without counting when `canCompleteChallenge` is false (games/ptr/js/game.js:298).
+    // It never mattered while nothing could leave a challenge it had not won — and the give-up rule is exactly that,
+    // so a stub that counted a give-up as a win would have made the retry rule untestable (the challenge would be
+    // complete and never picked again) and the test would have been green on undefined behaviour.
     startChallenge(l, id) {
-      if (Number(player[l].activeChallenge) === id) { player[l].challenges[id] = (player[l].challenges[id] || 0) + 1; player[l].activeChallenge = null; }
-      else player[l].activeChallenge = id;
+      if (Number(player[l].activeChallenge) === id) {
+        if (ctx.canCompleteChallenge(l, id)) {
+          const c = tmp[l] && tmp[l].challenges && tmp[l].challenges[id];
+          const lim = c && c.completionLimit !== undefined ? Number(c.completionLimit) : 1;
+          if ((player[l].challenges[id] || 0) < lim) player[l].challenges[id] = (player[l].challenges[id] || 0) + 1;
+        }
+        player[l].activeChallenge = null;
+      } else player[l].activeChallenge = id;
     },
     canCompleteChallenge: (l, id) => !!ctx.completable[`${l}:${id}`],
     canEnterChallenge: (l, id) => ctx.enterable[`${l}:${id}`] !== false,
