@@ -5400,3 +5400,58 @@ a hardcoded name is right about it, and a mutant that reddened both would say no
 
 ⚠ **A first round ran with the ORIGINAL width leg and `m6` was GREEN** — that is what found the vacuous floor
 above. The round in this table is the re-run after the fix.
+
+## 2026-09-21 — U11: a layer never opened showed chips its tab would not draw, and the card glows on a reset — commit `4df70e120`
+
+⚖ user, 2026-09-20, item 1: *"after the page first loads, the Layers view shows the chips for 9 different
+buyables in the space energy layer … if the space energy panel is then opened and closed, then the Layers view
+will correctly only show the chips for the 5 space building buyables that are actually available."*
+⚖ item 2: *"… the circle for that layer to briefly get a glow effect after that layer resets … fade over a
+second. … if it's cheap, then we could also apply the glow effect for one second to the x / y summary chips
+after a purchase in that category is made."*
+
+**CI at `4df70e120`: run `35561415713` (dispatched at `u11-chips-glow`), 44/44 jobs green; the merge + roster
+assertion job printed `rows: 171/171 game(s); 0 RED; 6 abstained on the state leg` (the usual six).** Every figure
+below is from that run's ten `m1-shard-*` JSON artifacts (171 rows, one commit), not from a local run.
+
+### Item 1 — ONE engine family skips a closed tab's `unlocked`
+
+| | |
+|---|---|
+| engines whose `updateTempData` skips `unlocked` (all but upgrades) while `player.tab != layer` | **3** — `ptr`, `prestige-tree-ng`, `the-extended-tree` (13 distinct bodies on the roster; the other 168 evaluate every `unlocked` every tick) |
+| the brief's exposure census (a buyable declaring an `unlocked` function) | 687 of 841 buyables, 79 games — EXPOSURE, not staleness |
+| `updateBuyableTemp(l)` on every ptr layer at M25 (the brief's first design) | `tmp.s.buyables` still 10 × `true`, hash unchanged — **INERT**: it calls `updateTempData` without `layer`, so the skip fires there too |
+| the fix | the list asks the component's own `unlocked()` on those 3 engines, for a layer that is not `player.tab` — derived from `String(updateTempData)` |
+| leg Q at the fresh save | **171/171 green**; stale `tmp.unlocked` present on 3 (24 / 16 / 16); the list's own read moved no hash on **171/171** |
+| leg Q at the deepest snapshot | **2/2 green**; `ptr` `all/M25.json` 54 stale — unfixed (m1) its chips DIFFER: `s 24→20, h 9→4, q 15→13` — **the one discriminating reading on the roster** |
+| leg M `renderInert` (the write-nothing claim, with the new calls on the render path) | **171/171 unchanged, 0 abstained**; `layersInert` 171/171 |
+| cost, ptr M25, base `24425a697` → item 1 `c6dab6c60`, 3 alternating rounds | observer **1.72/1.72/1.86 → 1.54/1.47/1.59 ms**, full pass **6.39/6.43/7.38 → 6.07/6.12/6.12** — net CHEAPER: 216 → 163 drawn components |
+
+### Item 2 — both halves built; the cost is at noise level
+
+| | |
+|---|---|
+| signal: `player[l].resetTime` falls (zeroed by `doReset` and by `layerDataReset`'s `layOver`) | **158** engines — the sweep's own count equals the static census |
+| signal: the layer's points fall to 0 (no `resetTime`) | **13** — 12 lit (6 constructed), 1 abstained (`distance-incremental`'s `r`: its start data is not zero) |
+| leg R: lit within one sample, gone 1.15 s later with samples still coming, quiet before | **170/171**, 1 abstained |
+| `prefers-reduced-motion: reduce` | **170/170** seen and not animated |
+| the summary chip, a constructed +1 | **105** lit and faded (95 upgrades, 10 buyables); 66 abstain (nothing to buy at that state) |
+| cost, item 1 → item 2 (both halves), 3 alternating rounds, full pass | ptr M25 6.09 → 6.00 · the-yes-tree 6.54 → 6.64 · the-infinity-tree 4.94 → 4.98 ms: **≤ 0.004 ms per card per sync**, against U7's +0.10 to +0.23 |
+
+The fade is `opacity` on a `::before` (compositor-only; the first build animated `box-shadow` and was replaced
+before measuring); restarts flip between two identical animations, so none forces layout.
+
+## U11 mutant round (`bash tools/harness/mutants-u11.sh <out>`) — commit `e6357147d` (+ m7 at its own commit; the loader files are identical) — control + 7/7
+
+Every mutant `restored: diff is empty`. ⚠ A FIRST round was VOID — a later header edit had swallowed the script's
+copy/restore block, so the mutations STACKED; this table is the re-run.
+
+| mutant | reddens | stays green |
+|---|---|---|
+| `m1-unlocked-from-tmp-only` (the fix reverted) | `ptr` `never` | `the-burning-tree` (all 14 buyables default) |
+| `m2-skip-never-derived` | `ptr` `never` | `the-burning-tree` |
+| `m3-glow-on-a-level-not-an-edge` | `ptr`, `the-yes-tree` `glow` + `rmotion` — *IT GLOWED WITH NO RESET* (the quiet window) | counter |
+| `m4-reduced-motion-ignored` | `ptr`, `the-yes-tree` `rmotion` | `glow` |
+| `m5-glow-never-starts` | `ptr`, `the-yes-tree` `glow` + `rmotion` | counter |
+| `m6-counter-glow-on-a-level` | `ptr`, `the-yes-tree` `counter` | `glow`, `rmotion` |
+| `m7-retrigger-every-sample-after-an-event` (the retrigger guard removed) | `ptr`, `the-yes-tree` `glow` — ***STILL GLOWING after 1 s — 6 starts for one reset*** — and `rmotion` (its quiet window sees the stuck card) | counter |
