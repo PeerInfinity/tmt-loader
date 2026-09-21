@@ -401,13 +401,13 @@ async function part6() {
       const wantFields = ['modifier:b', 'modifier:h', 'modifier:k', 'modifier:n', 'modifier:w'];
       const fieldsOk = JSON.stringify(seen.modFields.slice().sort()) === JSON.stringify(wantFields);
       const btnOk = seen.buttons.length === seen.mods.length
-        && seen.buttons.some((b) => b.mod === `${kind}@W/Kx/N` && b.on === '1' && /remove/.test(b.text))
+        && seen.buttons.some((b) => b.mod === `${kind}@W/Kx/N/B/H` && b.on === '1' && /remove/.test(b.text))
         && seen.buttons.some((b) => b.mod === 'stall>=Kx/N' && b.on === '0' && /add/.test(b.text));
       const ok = !errs.length && !seen.error && seen.components === 7 && fieldsOk && btnOk
         && seen.mods.includes('turn@W/Kx/N/B/H') && seen.mods.includes('turn-demand@W/Kx/N/B/H');
       row({ gate: `R3b-6 the page on ${id}: the CYCLE through V2’s GENERIC editors`, id, leg: 'index.html?mod=<id>&automation=1, Advanced, the feature armed', ok,
         ticks: null, gameSeconds: null, diff: null, hash: null,
-        notes: `policy \`always|${kind}@7/4x/6\`; target ${seen.target} (state ${seen.state}); reset modifiers ${JSON.stringify(seen.mods)}; ONE BUTTON PER ROW: ${JSON.stringify(seen.buttons)}; the cycle's three parameter editors rendered: ${JSON.stringify(seen.modFields)}; the readout line "${seen.turnLine}"; V4 control rows still ${seen.ctlFields}; componentNames ${seen.components} (⛔ UNCHANGED: no new tmtl-* family); console errors ${errs.length}${seen.error ? '; EVAL ERROR ' + seen.error : ''}${errs.length ? ': ' + errs.slice(0, 2).join(' | ') : ''}` });
+        notes: `policy \`always|${kind}@7/4x/6/0.25/45\`; target ${seen.target} (state ${seen.state}); reset modifiers ${JSON.stringify(seen.mods)}; ONE BUTTON PER ROW: ${JSON.stringify(seen.buttons)}; the cycle's five parameter editors rendered: ${JSON.stringify(seen.modFields)}; the readout line "${seen.turnLine}"; V4 control rows still ${seen.ctlFields}; componentNames ${seen.components} (⛔ UNCHANGED: no new tmtl-* family); console errors ${errs.length}${seen.error ? '; EVAL ERROR ' + seen.error : ''}${errs.length ? ': ' + errs.slice(0, 2).join(' | ') : ''}` });
       await page.close();
     }
   } finally { await browser.close(); srv.stop(); }
