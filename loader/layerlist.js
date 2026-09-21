@@ -321,6 +321,49 @@
   function declOf(kind, l, id) { return safe(function () { return layers[l][kind][id]; }, null); }
   function tmpOf(kind, l, id) { return safe(function () { return tmp[l][kind][id]; }, null); }
 
+  // ---------------------------------------------------------------- (U11) A `tmp.unlocked` THE ENGINE NEVER COMPUTED
+  // ⚖ "after the page first loads, the Layers view shows the chips for 9 different buyables in the space energy
+  // layer … if the space energy panel is then opened and closed, then the Layers view will correctly only show the
+  // chips for the 5 … that are actually available" (user, 2026-09-20).
+  //
+  // ⛔ THE CAUSE IS ONE ENGINE FAMILY'S OWN OPTIMISATION, not the list and not `updateBuyableTemp`. The PTR family's
+  // `updateTempData` (`ptr`, `prestige-tree-ng`, `the-extended-tree` — 3 of 171, and the only 3 whose body has
+  // this clause; the other 168 re-evaluate every `unlocked` on every tick) opens with
+  //     if ((…display… || …description… || (item == "unlocked" && pre2 != "upgrades")) && player.tab != layer) continue;
+  // i.e. every `unlocked` EXCEPT an upgrade's is evaluated only while that layer's tab is the open one. Until it
+  // has been, `tmp` holds `setupTemp`'s seed for a function — `new Decimal(1)`, which is TRUTHY — so every buyable,
+  // clickable, challenge, milestone and achievement that declares an `unlocked()` reads as unlocked. After the tab
+  // HAS been open once it holds the value from then, and goes stale again as the game moves on.
+  // ⚠ `updateBuyableTemp(l)` does NOT help and was measured not to (docs/mobile.md, U11): it calls
+  // `updateTempData` without the `layer` argument, so `player.tab != undefined` is true and `unlocked` is skipped
+  // THERE TOO. Evaluating the whole temp pass ourselves is therefore not the narrow fix; it is not a fix at all.
+  //
+  // So on THOSE engines, for a layer that is NOT the open tab, the list asks the declaration itself — the same
+  // function, called the way the engine calls it (`layerData[item]()`, so `this` is the component). Everywhere else
+  // it keeps reading `tmp`, which is what the engine itself draws from. Calling it is calling GAME code: it is
+  // `safe()`d, falls back to the `tmp` reading on a throw, and rides inside the `withoutRaisingNaN` of every pass.
+  // The skip is DERIVED from the engine's own source, the way U10 derives the tree tab's name — never a game list.
+  var skipsUnlocked = null;
+  function engineSkipsUnlocked() {
+    if (skipsUnlocked === null) {
+      skipsUnlocked = safe(function () {
+        var s = typeof updateTempData === 'function' ? String(updateTempData) : '';
+        return /item\s*==+\s*['"]unlocked['"]/.test(s) && /player\.tab\s*!=+\s*layer/.test(s);
+      }, false);
+    }
+    return skipsUnlocked;
+  }
+  function unlockedOf(kind, l, id, t) {
+    var fromTmp = function () { return safe(function () { var u = t.unlocked; return u === undefined ? true : !!u; }, true); };
+    if (kind === 'upgrades' || !engineSkipsUnlocked()) return fromTmp();
+    if (safe(function () { return player.tab === l; }, false)) return fromTmp(); // the engine computes it this tick
+    var d = declOf(kind, l, id);
+    var f = safe(function () { return d.unlocked; }, undefined);
+    if (typeof f !== 'function') return fromTmp();
+    var v = safe(function () { return { v: !!f.call(d) }; }, null);
+    return v ? v.v : fromTmp();
+  }
+
   /** The component ids of one category, in the order the engine draws them.
    *  · the grid categories (`upgrades` / `buyables` / `challenges`) render `v-for row` then `v-for col` at
    *    `row*10+col`, so the numeric id IS the row/column position and ascending numeric id is reading order;
@@ -431,7 +474,7 @@
   function chipState(kind, l, id) {
     var t = tmpOf(kind, l, id);
     if (!t) return null;
-    var unlocked = safe(function () { var u = t.unlocked; return u === undefined ? true : !!u; }, true);
+    var unlocked = unlockedOf(kind, l, id, t); // (U11) not `tmp` alone: see `engineSkipsUnlocked`
     if (kind === 'upgrades') {
       if (!unlocked) {
         // ⚠ `unlocked === false` does NOT mean hidden. PTR renders a SECOND button for a pseudo-unlocked upgrade

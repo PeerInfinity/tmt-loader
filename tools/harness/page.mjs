@@ -409,6 +409,21 @@ const LAYERLIST_PROBE = `(${function () {
   const DEF = ['infoboxes', 'main-display', 'prestige-button', 'resource-display', 'milestones', '@mid',
     'clickables', 'buyables', 'upgrades', 'challenges', 'achievements'];
   const S = (f, d) => { try { const v = f(); return v === undefined ? d : v; } catch (e) { return d; } };
+  // (U11) WHETHER A NON-UPGRADE IS UNLOCKED, in the engine's own terms. The PTR family's `updateTempData` evaluates
+  // `unlocked` (every category but upgrades) only for the layer whose tab is OPEN, so for any other layer `tmp`
+  // holds `setupTemp`'s truthy `Decimal(1)` seed or the value from the last time that tab was open — and a LOCKED
+  // layer's tab can never be opened, so its seed is permanent (ptr's `o`: nine buyables, every `unlocked()` false).
+  // The tab itself would draw by the declaration, so that is the reference there; `tmp` everywhere else.
+  const skipsUnl = S(() => { const s = String(updateTempData); return /item\s*==+\s*['"]unlocked['"]/.test(s) && /player\.tab\s*!=+\s*layer/.test(s); }, false);
+  const unlocked = (kind, l, id) => {
+    const viaTmp = () => S(() => { const u = tmp[l][kind][id].unlocked; return u === undefined ? true : !!u; }, true);
+    if (kind === 'upgrades' || !skipsUnl || S(() => player.tab === l, false)) return viaTmp();
+    const d = S(() => layers[l][kind][id], null);
+    const f = S(() => d.unlocked, undefined);
+    if (typeof f !== 'function') return viaTmp();
+    const v = S(() => ({ v: !!f.call(d) }), null);
+    return v ? v.v : viaTmp();
+  };
   const ids = (kind, l) => {
     const src = S(() => layers[l][kind], null) || S(() => tmp[l][kind], null);
     if (!src || typeof src !== 'object') return [];
@@ -429,7 +444,7 @@ const LAYERLIST_PROBE = `(${function () {
   const drawn = (kind, l, id) => {            // the three visibility rules, in the engine's own terms
     const t = S(() => tmp[l][kind][id], null);
     if (!t) return false;
-    const unl = S(() => t.unlocked === undefined ? true : !!t.unlocked, true);
+    const unl = unlocked(kind, l, id);                                    // (U11) not `tmp` alone
     if (kind === 'upgrades' && !unl) return S(() => typeof pseudoUnl === 'function' && !!pseudoUnl(l, Number(id)), false);
     if (!unl) return false;
     if (kind === 'milestones') return S(() => typeof milestoneShown === 'function' ? !!milestoneShown(l, id) : true, true);
@@ -616,7 +631,7 @@ const LAYERLIST_PROBE = `(${function () {
     return true;                                     // starting a challenge costs nothing in either engine
   };
   const skinExpect = (kind, l, id) => {
-    const unl = S(() => { const u = tmp[l][kind][id].unlocked; return u === undefined ? true : !!u; }, true);
+    const unl = unlocked(kind, l, id);               // (U11) not `tmp` alone
     if (kind === 'upgrades' && !unl) {               // the engines' SECOND upgrade button, `{pseudo, plocked|can}`
       const pc = S(() => !!tmp[l].upgrades[id].pseudoCan, false);
       return { key: 'pseudo', bg: bgOf(`${l} upg pseudo ${pc ? 'can' : 'plocked'}`) };
@@ -1940,6 +1955,54 @@ async function gateMobile(browser, base, ids) {
       if (snapshot) {
         const r2 = await pageLoadFrom(page, snapshot.player);
         if (!r2.ready) throw new Error(`not ready after loadFrom: ${JSON.stringify(r2.error)}`);
+        // --- U11 leg Q: A LAYER NEVER OPENED SHOWS THE CHIPS IT WILL SHOW ONCE IT HAS BEEN --------------------
+        // ⚖ "after the page first loads, the Layers view shows the chips for 9 different buyables in the space
+        // energy layer … if the space energy panel is then opened and closed, [it] will correctly only show … 5"
+        // (user, 2026-09-20). ⛔ IT HAS TO RUN HERE, on the page the snapshot just reloaded, BEFORE the loop below
+        // opens every tab: that loop is exactly what corrects the engine's `tmp`, and it is why every leg after it
+        // (leg 6 included) could never see this. `updateTemp()` stands in for the tick the page is paused out of —
+        // the tick is what evaluates an open tab's `unlocked`, and `gameLoop` is not needed for it and would move
+        // the game. `stale` counts the components whose `tmp.unlocked` disagrees with their own `unlocked()` at the
+        // never-opened reading: it is what says whether this game could discriminate at all (0 = the leg is
+        // vacuous here, as it is on every engine that evaluates every `unlocked` on every tick).
+        row.neverOpened = await page.evaluate(async () => {
+          const ui = tmtLoader.layerListUI;
+          const Ls = ui.groups().flatMap((g) => g.layers);
+          const chips = () => Object.fromEntries(Ls.map((l) => [l, ui.chipsOf(l).map((c) => c.key).join(' ')]));
+          const h = () => tmtLoader.hash();
+          const c0 = await h(), c1 = await h();
+          const before = chips();
+          const after0 = await h();
+          const tab = player.tab, hadNaN = player.hasNaN;
+          let stale = 0;
+          for (const l of Ls) {
+            if (l === tab) continue;
+            for (const k of ['buyables', 'clickables', 'challenges', 'milestones', 'achievements']) {
+              let d; try { d = layers[l][k]; } catch (e) { continue; }
+              if (!d || typeof d !== 'object') continue;
+              for (const id of Object.keys(d)) {
+                try {
+                  const f = d[id] && d[id].unlocked;
+                  if (typeof f === 'function' && !!f.call(d[id]) !== !!tmp[l][k][id].unlocked) stale++;
+                } catch (e) { /* game code; a throw is not a witness */ }
+              }
+            }
+          }
+          for (const l of Ls) { try { showTab(l); updateTemp(); showTab(tab); updateTemp(); } catch (e) { /* engines differ */ } }
+          try { player.tab = tab; if (hadNaN === false) player.hasNaN = false; } catch (e) { /* not this engine's */ }
+          const after = chips();
+          const diff = Ls.filter((l) => before[l] !== after[l]).map((l) => {
+            const b = before[l].split(' '), a = after[l].split(' ');
+            return { layer: l, before: b.length, after: a.length, onlyBefore: b.filter((x) => !a.includes(x)).slice(0, 6), onlyAfter: a.filter((x) => !b.includes(x)).slice(0, 6) };
+          });
+          const stable = c0 === c1, inert = !stable || c1 === after0;
+          return { layers: Ls.length, stale, diff, stable, inert,
+            verdict: !inert ? 'READING THE LIST MOVED THE STATE HASH'
+              : diff.length ? `THE CHIPS DIFFER once the tab has been opened (${diff.map((d) => `${d.layer} ${d.before}→${d.after}`).join(', ')})`
+              : stale ? `equal on ${Ls.length} layer(s), ${stale} stale \`tmp.unlocked\` at the never-opened reading`
+              : `equal on ${Ls.length} layer(s) — no stale \`tmp.unlocked\` at this state (vacuous here)` };
+        });
+        row.neverOpenedOk = !/^READING|^THE CHIPS/.test(row.neverOpened.verdict);
         // every tab the save can open: the tree, each unlocked layer, and the system tabs the engine offers
         const tabs = await page.evaluate(() => {
           const out = ['none'];
@@ -3675,7 +3738,9 @@ async function gateMobile(browser, base, ids) {
         && row.resetHeightOk && row.renderInertOk && row.multiResOk
         // U8: and a resource row that was shown is still there after a DRIVEN reset, printing its current value;
         // and what the memory took in is the unambiguous attributions only, written to storage and not to `player`
-        && row.resStickyOk && row.resMemOk);
+        && row.resStickyOk && row.resMemOk
+        // U11: a layer never opened shows the chips it will show once it has been (absent without a snapshot)
+        && row.neverOpenedOk !== false);
       row.layersScreenshot = path.relative(REPO, llShot);
 
       const shot = path.join(REPO, `tools/harness/results/${id}-mobile.png`);
@@ -4093,7 +4158,13 @@ async function main() {
       const vr = (f) => rows.reduce((o, r) => { const v = r.rules && r.rules[f] && r.rules[f].verdict; if (v) o[v] = (o[v] || 0) + 1; return o; }, {});
       console.log(`M1 layers visibility rules (constructed, judged against the probe's own expectation): msDisplay='never' → ${JSON.stringify(vr('ms'))}; pseudoUnl forced true → ${JSON.stringify(vr('pseudo'))}; a clickable given a real amount → ${JSON.stringify(vr('clickable'))}; a buyable given 1e400 → ${JSON.stringify(vr('bigAmount'))}; ${rows.filter((r) => r.rules && r.rules.restored === false).length} game(s) did not restore`);
       const llAbst = rows.filter((r) => r.layersInert && !r.layersInert.stable).map((r) => r.id);
-      console.log(`M1 layers inertness: ${rows.filter((r) => r.layersInert && r.layersInert.verdict === 'unchanged').length} unchanged state hash across opening the list, ${rows.filter((r) => r.layersInert && r.layersInert.verdict === 'MOVED').length} moved, ${llAbst.length} abstained${llAbst.length ? ` (the page does not repeat its own hash: ${llAbst.join(', ')})` : ''}`);
+      // (U11) leg Q. ⚠ The JUDGED count is the one that matters: a game with no stale `tmp.unlocked` at its
+      // snapshot scores the fixed and the unfixed build the same.
+      const nq = rows.filter((r) => r.neverOpened);
+      const nqJ = nq.filter((r) => r.neverOpened.stale > 0);
+      const nqRed = nq.filter((r) => !r.neverOpenedOk);
+      console.log(`M1 layers never opened (U11 — the chip set before any tab is opened equals the set after each layer's tab has been opened and closed; the list's own read moves no hash): ${nq.length - nqRed.length}/${nq.length} green; ${nqJ.length} game(s) with a stale \`tmp.unlocked\` to judge on (${nqJ.map((r) => `${r.id}: ${r.neverOpened.stale}`).join(', ') || 'none — VACUOUS'}); ${nq.filter((r) => !r.neverOpened.stable).length} abstained on the hash${nqRed.length ? ` (RED: ${nqRed.map((r) => `${r.id} ${r.neverOpened.verdict}`).join('; ')})` : ''}`);
+      console.log(`M1 layers inertness:${rows.filter((r) => r.layersInert && r.layersInert.verdict === 'unchanged').length} unchanged state hash across opening the list, ${rows.filter((r) => r.layersInert && r.layersInert.verdict === 'MOVED').length} moved, ${llAbst.length} abstained${llAbst.length ? ` (the page does not repeat its own hash: ${llAbst.join(', ')})` : ''}`);
       const noCand = rows.filter((r) => r.resetVerdict && r.resetVerdict.startsWith('no candidate')).map((r) => r.id);
       console.log(`M1 layers reset press: ${rows.filter((r) => r.resetVerdict === 'moved').length} moved player[l].points, ${rows.filter((r) => r.resetVerdict === 'NOT MOVED').length} did not, ${noCand.length} abstained${noCand.length ? ` (nothing could reset: ${noCand.join(', ')})` : ''}`);
       for (const r of rows.filter((x) => !x.ok)) console.log(`  ${r.id}: treeButton=${r.treeButton ? r.treeButton.verdict : "—"} counts=${r.layers && r.layers.phone ? r.layers.phone.countOk : "—"}${r.layers && r.layers.phone && r.layers.phone.countOk === false ? " " + JSON.stringify(r.layers.phone.countBad) : ""} reader=${r.rules && r.rules.countReader ? r.rules.countReader.verdict : "—"} layers=${r.layersOk} digits=${r.digits ? r.digits.verdict : '—'}${r.digits && !r.digitsOk ? ' ' + JSON.stringify(r.digits) : ''} tips=${r.tips ? `${r.tips.phoneVerdict} / desktop ${r.tips.desktopVerdict} / tap ${r.tips.tap.verdict} / hover ${r.tips.hover.verdict}` : '—'}${r.tips && !r.tipsOk ? ' ' + JSON.stringify(r.tips) : ''} persist=${r.persist ? r.persist.verdict : '—'}${r.persist && !r.persistOk ? ' ' + JSON.stringify(r.persist) : ''} fit=${r.fitOk}${r.fitWidths && !r.fitOk ? ' ' + JSON.stringify(r.fitWidths) : ''} stability=${r.stabilityOk}${r.stability && !r.stabilityOk ? ' ' + JSON.stringify(r.stability) : ''} throttle=${r.throttleOk}${r.throttle && !r.throttleOk ? ' ' + JSON.stringify(r.throttle) : ''} counter=${r.counterVerdict}${r.counterMove && r.counterVerdict === 'NOT MOVED' ? ' ' + JSON.stringify(r.counterMove) : ''}${r.chipBaseline && !(r.chipBaseline.fell && r.chipBaseline.orderMoved) ? ` chipBaseline=${JSON.stringify(r.chipBaseline)}` : ''}${r.layers && !r.layersOk ? ' ' + JSON.stringify(r.layers) : ''}${r.resetVerdict && r.resetVerdict !== 'moved' ? ` reset=${r.resetVerdict} ${JSON.stringify(r.reset)}` : ''} inert=${r.inertOk} both=${r.bothOk}${r.both ? ' ' + JSON.stringify(r.both) : ''} navbarOnly=${r.navbarOnlyOk}${r.navbarOnly && !r.navbarOnlyOk ? ' ' + JSON.stringify(r.navbarOnly) : ''} state=${r.stateVerdict}${r.state ? ` (plain ${r.state.plain} / control ${r.state.plainControl} / mobile ${r.state.mobile})` : ''} geometry=${r.geometryOk} nav=${r.navOk} load=${r.loadVerdict && r.loadVerdict.ok}${r.worst && r.worst.length ? ` worst=${JSON.stringify(r.worst)}` : ''}${r.exception ? ` exception=${r.exception}` : ''}`);
