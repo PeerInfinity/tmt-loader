@@ -1,0 +1,261 @@
+{
+ "generated": true,
+ "generator": "tools/currency-data.mjs",
+ "generatorVersion": 1,
+ "formatVersion": 1,
+ "game": "arc-tree",
+ "upstream": {
+  "repo": "peacefulwar/Arc-Tree",
+  "commit": "eb5125d4dc7820ae4453e1066743596a60e8afc5"
+ },
+ "states": [
+  "fresh"
+ ],
+ "seeds": [
+  1
+ ],
+ "summary": {
+  "buyables": 17,
+  "scored": 13,
+  "price": 8,
+  "requirement": 5,
+  "unknown": 4,
+  "own": 1,
+  "foreign": 12,
+  "several": 0,
+  "impure": 0
+ },
+ "buyables": {
+  "kou": {
+   "11": {
+    "pays": "player.points",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.points",
+    "how": "unlock+lift-1",
+    "from": [
+     "fresh"
+    ]
+   }
+  },
+  "lab": {
+   "11": {
+    "pays": "player.lab.power",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.lab.power",
+    "how": "unlock+lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "12": {
+    "pays": "player.points",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.points",
+    "how": "unlock+lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "13": {
+    "pays": "player.mem.points",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.mem.points",
+    "how": "unlock+lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "21": {
+    "pays": "player.light.points",
+    "cost": "requirement",
+    "by": [
+     "rollback",
+     "trace"
+    ],
+    "scored": true,
+    "how": "unlock+lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "22": {
+    "pays": "player.dark.points",
+    "cost": "requirement",
+    "by": [
+     "rollback",
+     "trace"
+    ],
+    "scored": true,
+    "how": "unlock+lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "23": {
+    "pays": "player.zero.points",
+    "cost": "requirement",
+    "by": [
+     "rollback",
+     "trace"
+    ],
+    "scored": true,
+    "how": "unlock+lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "31": {
+    "pays": "player.kou.points",
+    "cost": "requirement",
+    "by": [
+     "rollback",
+     "trace"
+    ],
+    "scored": true,
+    "how": "unlock+lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "32": {
+    "pays": "player.lethe.points",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.lethe.points",
+    "how": "unlock+lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "33": {
+    "pays": "player.axium.points",
+    "cost": "requirement",
+    "by": [
+     "rollback",
+     "trace"
+    ],
+    "scored": true,
+    "how": "unlock+lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "41": {
+    "pays": "player.lab.points",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.lab.points",
+    "how": "unlock+lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "42": {
+    "pays": "player.lab.power",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.lab.power",
+    "how": "unlock+lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "43": {
+    "pays": "player.world.points",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.world.points",
+    "how": "unlock+lift-1",
+    "from": [
+     "fresh"
+    ]
+   }
+  },
+  "axium": {
+   "11": {
+    "pays": null,
+    "cost": "unknown",
+    "by": [],
+    "scored": false,
+    "why": "not affordable, and it publishes no usable cost to lift towards",
+    "from": [
+     "fresh"
+    ]
+   },
+   "21": {
+    "pays": null,
+    "cost": "unknown",
+    "by": [],
+    "scored": false,
+    "why": "not affordable, and it publishes no usable cost to lift towards",
+    "from": [
+     "fresh"
+    ]
+   },
+   "22": {
+    "pays": null,
+    "cost": "unknown",
+    "by": [],
+    "scored": false,
+    "why": "not affordable, and it publishes no usable cost to lift towards",
+    "from": [
+     "fresh"
+    ]
+   },
+   "31": {
+    "pays": null,
+    "cost": "unknown",
+    "by": [],
+    "scored": false,
+    "why": "not affordable, and it publishes no usable cost to lift towards",
+    "from": [
+     "fresh"
+    ]
+   }
+  }
+ }
+}

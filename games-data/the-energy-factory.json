@@ -1,0 +1,258 @@
+{
+ "generated": true,
+ "generator": "tools/currency-data.mjs",
+ "generatorVersion": 1,
+ "formatVersion": 1,
+ "game": "the-energy-factory",
+ "upstream": {
+  "repo": "CharizUniv/The-Modding-Tree",
+  "commit": "3c2ff551f63ef2aee7e0977acaf5674062c83cb8"
+ },
+ "states": [
+  "fresh"
+ ],
+ "seeds": [
+  1
+ ],
+ "summary": {
+  "buyables": 18,
+  "scored": 6,
+  "price": 6,
+  "requirement": 0,
+  "unknown": 12,
+  "own": 0,
+  "foreign": 6,
+  "several": 0,
+  "impure": 0
+ },
+ "buyables": {
+  "energy": {
+   "11": {
+    "pays": "player.points",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.points",
+    "how": "affordable",
+    "from": [
+     "fresh"
+    ]
+   },
+   "12": {
+    "pays": "player.points",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.points",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "13": {
+    "pays": "player.points",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.points",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "21": {
+    "pays": "player.points",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.points",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "22": {
+    "pays": "player.points",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.points",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "23": {
+    "pays": "player.points",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.points",
+    "how": "lift-2",
+    "from": [
+     "fresh"
+    ]
+   },
+   "41": {
+    "pays": null,
+    "cost": "unknown",
+    "by": [],
+    "scored": false,
+    "pick": "player.points",
+    "why": "not affordable, and no lift of up to three candidates to 10× the cost makes it so",
+    "from": [
+     "fresh"
+    ]
+   }
+  },
+  "surge": {
+   "11": {
+    "pays": null,
+    "cost": "unknown",
+    "by": [],
+    "scored": false,
+    "pick": "player.points",
+    "why": "not affordable, and no lift of up to three candidates to 10× the cost makes it so",
+    "from": [
+     "fresh"
+    ]
+   },
+   "12": {
+    "pays": null,
+    "cost": "unknown",
+    "by": [],
+    "scored": false,
+    "pick": "player.points",
+    "why": "not affordable, and no lift of up to three candidates to 10× the cost makes it so",
+    "from": [
+     "fresh"
+    ]
+   },
+   "21": {
+    "pays": null,
+    "cost": "unknown",
+    "by": [],
+    "scored": false,
+    "pick": "player.points",
+    "why": "not affordable, and no lift of up to three candidates to 10× the cost makes it so",
+    "from": [
+     "fresh"
+    ]
+   },
+   "22": {
+    "pays": null,
+    "cost": "unknown",
+    "by": [],
+    "scored": false,
+    "pick": "player.points",
+    "why": "not affordable, and no lift of up to three candidates to 10× the cost makes it so",
+    "from": [
+     "fresh"
+    ]
+   }
+  },
+  "auto": {
+   "11": {
+    "pays": null,
+    "cost": "unknown",
+    "by": [],
+    "scored": false,
+    "how": "affordable",
+    "why": "no field fell by the published cost",
+    "from": [
+     "fresh"
+    ]
+   },
+   "12": {
+    "pays": null,
+    "cost": "unknown",
+    "by": [],
+    "scored": false,
+    "how": "affordable",
+    "why": "no field fell by the published cost",
+    "from": [
+     "fresh"
+    ]
+   },
+   "13": {
+    "pays": null,
+    "cost": "unknown",
+    "by": [],
+    "scored": false,
+    "how": "affordable",
+    "why": "no field fell by the published cost",
+    "from": [
+     "fresh"
+    ]
+   },
+   "14": {
+    "pays": null,
+    "cost": "unknown",
+    "by": [],
+    "scored": false,
+    "how": "affordable",
+    "why": "no field fell by the published cost",
+    "from": [
+     "fresh"
+    ]
+   },
+   "15": {
+    "pays": null,
+    "cost": "unknown",
+    "by": [],
+    "scored": false,
+    "how": "affordable",
+    "why": "no field fell by the published cost",
+    "from": [
+     "fresh"
+    ]
+   },
+   "16": {
+    "pays": null,
+    "cost": "unknown",
+    "by": [],
+    "scored": false,
+    "how": "affordable",
+    "why": "no field fell by the published cost",
+    "from": [
+     "fresh"
+    ]
+   },
+   "24": {
+    "pays": null,
+    "cost": "unknown",
+    "by": [],
+    "scored": false,
+    "how": "affordable",
+    "why": "no field fell by the published cost",
+    "from": [
+     "fresh"
+    ]
+   }
+  }
+ }
+}

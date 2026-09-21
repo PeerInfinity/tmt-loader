@@ -1,12 +1,12 @@
 // The Node CLI (plan §4). Spawns boot.mjs — ONE game per child process — and re-spawns with a pre-stub on a
 // ReferenceError in load() (≤ 12, the census's scripts/3-boot.mjs loop). EVERY state claim carries ticks + gameSeconds.
 //   node run.mjs <id> [--ticks N] [--diff d] [--leg idle|policy] [--until "<js>"] [--profile off|all|saved] [--json out]
-//                     [--exclude au] [--auto-opt "k=v;k2=v2"] [--no-auto] [--no-automation | --automation 0]
+//                     [--exclude au] [--auto-opt "k=v;k2=v2"] [--no-auto] [--no-currency] [--no-automation | --automation 0]
 //   automation (the page's ?automation=1) is ON by default here; --no-automation boots the plain page's contract-only mode
 //                     [--storage in.json] [--load-from player.json] [--save --save-storage out.json]
 //                     [--state-out f] [--player-out f] [--ids-out f]
 //                     [--ladder ladder.json [--from <mark>] [--to <mark>]] [--snapshots <dir>] [--from-snapshot <file>]
-//                     [--predicates list.json] [--eval "<js>"] [--explain]
+//                     [--predicates list.json] [--eval "<js>"] [--explain] [--random-seed N]
 //                     [--planner | --planner=auto|suggest] [--planner-mode m] [--planner-opt "k=v"] [--planner-ladder ladder.json]
 //                     [--planner-script f.js] [--knowledge-out f] [--goals-out f] [--rounds-out f]
 //                     [--stop-snapshot <dir> [--stop-snapshot-name <name>]]  — a snapshot of the STOP (stall / wall /
@@ -141,6 +141,7 @@ function runNodeRaw(id, o) {
   if (o.exclude) args.push('--exclude', String(o.exclude));
   if (o['auto-opt']) args.push('--auto-opt', String(o['auto-opt']));
   if (o['no-auto']) args.push('--no-auto');
+  if (o['no-currency']) args.push('--no-currency');
   if (!automationOn(o)) args.push('--no-automation');
   if (o.marks) args.push('--marks', path.resolve(String(o.marks)));
   if (o['marks-continue']) args.push('--marks-continue');
@@ -159,6 +160,7 @@ function runNodeRaw(id, o) {
   if (o['stop-snapshot']) args.push('--stop-snapshot');
   for (const k of ['planner-ladder', 'planner-script', 'ladder-labels'] ) if (o[k] != null) args.push(`--${k}`, path.resolve(String(o[k])));
   if (o['planner-k'] != null) args.push('--planner-k', String(o['planner-k']));
+  if (o['random-seed'] != null) args.push('--random-seed', String(o['random-seed']));
   // the child runs with cwd = os.tmpdir(): every file argument is made absolute here
   for (const k of ['state-out', 'player-out', 'ids-out', 'save-storage', 'knowledge-out', 'goals-out', 'rounds-out']) if (o[k] != null) args.push(`--${k}`, path.resolve(String(o[k])));
   if (o.save) args.push('--save');
@@ -188,7 +190,7 @@ function runNodeRaw(id, o) {
 }
 
 async function main() {
-  const a = parseArgs(process.argv.slice(2), ['save', 'no-auto', 'no-automation', 'marks-continue', 'stall-seen', 'no-runtime', 'until-all', 'planner', 'explain']);
+  const a = parseArgs(process.argv.slice(2), ['save', 'no-auto', 'no-currency', 'no-automation', 'marks-continue', 'stall-seen', 'no-runtime', 'until-all', 'planner', 'explain']);
   const id = a._[0];
   if (!id) { console.error('usage: node run.mjs <id> [--ticks N] [--diff d] [--until "<js>"] [--json out] …'); process.exit(2); }
   const res = runNode(id, a);

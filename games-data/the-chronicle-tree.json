@@ -1,0 +1,320 @@
+{
+ "generated": true,
+ "generator": "tools/currency-data.mjs",
+ "generatorVersion": 1,
+ "formatVersion": 1,
+ "game": "the-chronicle-tree",
+ "upstream": {
+  "repo": "catfish-in-a-nutshell/The-Chronicle-Tree",
+  "commit": "416e097542685aa8cc82433dba7432db075af2b7"
+ },
+ "states": [
+  "fresh"
+ ],
+ "seeds": [
+  1
+ ],
+ "summary": {
+  "buyables": 19,
+  "scored": 18,
+  "price": 18,
+  "requirement": 0,
+  "unknown": 1,
+  "own": 13,
+  "foreign": 5,
+  "several": 0,
+  "impure": 0
+ },
+ "buyables": {
+  "p": {
+   "11": {
+    "pays": "player.p.points",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.p.points",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "12": {
+    "pays": "player.p.points",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.p.points",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "13": {
+    "pays": "player.i.gold",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.i.gold",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "14": {
+    "pays": "player.i.food",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.i.food",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   }
+  },
+  "mp": {
+   "11": {
+    "pays": "player.mp.points",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.mp.points",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "21": {
+    "pays": "player.mp.points",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.mp.points",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "22": {
+    "pays": "player.mp.points",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.mp.points",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "23": {
+    "pays": "player.mp.points",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.mp.points",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   }
+  },
+  "r": {
+   "11": {
+    "pays": "player.r.points",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.r.points",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "12": {
+    "pays": "player.r.points",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.r.points",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "13": {
+    "pays": "player.r.points",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.r.points",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "21": {
+    "pays": "player.r.points",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.r.points",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "22": {
+    "pays": "player.r.points",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.r.points",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "23": {
+    "pays": "player.r.points",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.r.points",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "31": {
+    "pays": "player.r.points",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.r.points",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   }
+  },
+  "i": {
+   "11": {
+    "pays": null,
+    "cost": "unknown",
+    "by": [],
+    "scored": false,
+    "why": "no buy() function",
+    "from": [
+     "fresh"
+    ]
+   }
+  },
+  "s": {
+   "11": {
+    "pays": "player.s.sloth",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.s.sloth",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "12": {
+    "pays": "player.s.sloth",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.s.sloth",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "13": {
+    "pays": "player.s.sloth",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.s.sloth",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   }
+  }
+ }
+}

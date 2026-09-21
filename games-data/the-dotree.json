@@ -1,0 +1,203 @@
+{
+ "generated": true,
+ "generator": "tools/currency-data.mjs",
+ "generatorVersion": 1,
+ "formatVersion": 1,
+ "game": "the-dotree",
+ "upstream": {
+  "repo": "AppleLord1/The-Modding-Tree",
+  "commit": "f4ff3ec7d0584bccf96916722a880b4a00d64d3b"
+ },
+ "states": [
+  "fresh"
+ ],
+ "seeds": [
+  1
+ ],
+ "summary": {
+  "buyables": 13,
+  "scored": 7,
+  "price": 5,
+  "requirement": 2,
+  "unknown": 6,
+  "own": 7,
+  "foreign": 0,
+  "several": 0,
+  "impure": 0
+ },
+ "buyables": {
+  "c": {
+   "11": {
+    "pays": "player.c.points",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.c.points",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "21": {
+    "pays": "player.c.points",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.c.points",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "22": {
+    "pays": "player.c.points",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.c.points",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "23": {
+    "pays": "player.c.points",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.c.points",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "24": {
+    "pays": "player.c.points",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.c.points",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   }
+  },
+  "v": {
+   "11": {
+    "pays": null,
+    "cost": "unknown",
+    "by": [],
+    "scored": false,
+    "how": "affordable",
+    "why": "no field fell by the published cost",
+    "from": [
+     "fresh"
+    ]
+   },
+   "12": {
+    "pays": null,
+    "cost": "unknown",
+    "by": [],
+    "scored": false,
+    "how": "affordable",
+    "why": "no field fell by the published cost",
+    "from": [
+     "fresh"
+    ]
+   },
+   "13": {
+    "pays": null,
+    "cost": "unknown",
+    "by": [],
+    "scored": false,
+    "how": "affordable",
+    "why": "no field fell by the published cost",
+    "from": [
+     "fresh"
+    ]
+   },
+   "51": {
+    "pays": null,
+    "cost": "unknown",
+    "by": [],
+    "scored": false,
+    "how": "lift-1",
+    "why": "buy() changed nothing",
+    "from": [
+     "fresh"
+    ]
+   },
+   "52": {
+    "pays": null,
+    "cost": "unknown",
+    "by": [],
+    "scored": false,
+    "how": "lift-1",
+    "why": "buy() changed nothing",
+    "from": [
+     "fresh"
+    ]
+   },
+   "53": {
+    "pays": null,
+    "cost": "unknown",
+    "by": [],
+    "scored": false,
+    "how": "lift-1",
+    "why": "buy() changed nothing",
+    "from": [
+     "fresh"
+    ]
+   }
+  },
+  "cb": {
+   "11": {
+    "pays": "player.cb.points",
+    "cost": "requirement",
+    "by": [
+     "rollback",
+     "trace"
+    ],
+    "scored": true,
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "31": {
+    "pays": "player.cb.points",
+    "cost": "requirement",
+    "by": [
+     "rollback",
+     "trace"
+    ],
+    "scored": true,
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   }
+  }
+ }
+}

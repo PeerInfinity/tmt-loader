@@ -69,6 +69,14 @@ jobs:
       - name: G6 + G7 — the roster doc and the declined list
         run: node tools/games-table.mjs --check
 
+      # C1 (§40-R ruling B): every per-game table validates against the schema the loader itself declares (one schema,
+      # one validator — extracted from `loader/tmt-auto.js`), and the generated currency data's index names exactly
+      # the files it has. No boot and no history; the roster regeneration and the provenance gate are the `c1-data` job.
+      - name: C1 — the tables against their schema; the currency data's index
+        run: |
+          node tools/auto-tables.mjs --check
+          node tools/currency-data.mjs --check-index
+
       # The figures the docs QUOTE, regenerated from the tree. Three of them shipped wrong in this arc by two
       # different authors and no gate could have caught any of them, because the sweep drives games and a number in
       # prose has nothing behind it.
@@ -411,7 +419,7 @@ jobs:
         shell: bash  # bash -eo pipefail: without it `| tee` reports the pipe's status and the refusal is lost
         run: |
           set -o pipefail
-          SET=$(ls games-auto/*.js | xargs -n 1 basename | sed 's/\.js$//' | tr '\n' ' ')
+          SET=$(ls games-auto/*.json | xargs -n 1 basename | sed 's/\.json$//' | tr '\n' ' ')
           test -n "$SET" || { echo 'games-auto/ named no game at all'; exit 1; }
           echo "A1_SET=${SET% }" >> "$GITHUB_ENV"
           echo "derived set: $SET"
@@ -1043,6 +1051,164 @@ jobs:
         with:
           name: r3b2-rule
           path: tools/harness/results/gates-r3b2-part*.json
+          if-no-files-found: warn
+          retention-days: 14
+
+  # ---------------------------------------------------------------------------------------------------------------
+  # C1 — THE CURRENCY READER as GENERATED data, and the per-game tables as JSON with a schema.
+  # ⛔ `c1-data` REGENERATES THE WHOLE ROSTER (171 boots, --jobs 4) and fails on any committed `games-data/<id>.json` a
+  # regeneration would change — that is what "fresh by construction" means. It checks out the WHOLE HISTORY because
+  # the provenance gate asks `git merge-base --is-ancestor` of every record's commit. `--assert` on every part: each
+  # declares the row count it emits, and a battery that stopped part-way prints fewer rows, which is fewer reds.
+  # ---------------------------------------------------------------------------------------------------------------
+  c1-data:
+    name: C1 currency data — freshness, accuracy, coverage, schema (parts 3, 1, 2, 6)
+    needs: fast
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Part 3 — the roster regenerated and compared; the tables' schema; the provenance gate
+        shell: bash
+        run: |
+          set -o pipefail
+          node tools/harness/gates-c1.mjs --part 3 --no-summary --assert --pool 4 | tee c1-3.txt
+
+      - name: Part 1 — the reader's accuracy on the named sample (trace purity, upgrades)
+        shell: bash
+        run: |
+          set -o pipefail
+          node tools/harness/gates-c1.mjs --part 1 --no-summary --assert --pool 4 | tee c1-1.txt
+
+      - name: Part 2 — the roster coverage against the probe's control
+        shell: bash
+        run: |
+          set -o pipefail
+          node tools/harness/gates-c1.mjs --part 2 --no-summary --assert --pool 4 | tee c1-2.txt
+
+      - name: Part 6 — the schema legs (each failure BY NAME)
+        shell: bash
+        run: |
+          set -o pipefail
+          node tools/harness/gates-c1.mjs --part 6 --no-summary --assert | tee c1-6.txt
+
+      - name: Summary
+        if: always()
+        shell: bash
+        run: |
+          {
+            echo '## C1 — the currency data and the tables'
+            echo ''
+            echo '```'
+            cat c1-3.txt c1-1.txt c1-2.txt c1-6.txt 2>/dev/null | grep -E 'VERDICT|REFUSED|^RED|^GREEN' || echo 'no output'
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload the rows
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: c1-data
+          path: tools/harness/results/gates-c1-part*.json
+          if-no-files-found: warn
+          retention-days: 14
+
+  # C1 part 4 — INERTNESS to the hash: the opening and M15 → 37048 under the shipped table, each WITH the generated
+  # data (twice) and with `--no-currency` (the behaviour before C1). Six runs; the two long ones are ~21,000 ticks.
+  c1-inert:
+    name: C1 inertness — headless (part 4)
+    needs: fast
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Part 4 — the opening and M15 → 37048, with and without the data
+        shell: bash
+        run: |
+          set -o pipefail
+          node tools/harness/gates-c1.mjs --part 4 --no-summary --assert --pool 4 | tee c1-4.txt
+
+      - name: Summary
+        if: always()
+        shell: bash
+        run: |
+          {
+            echo '## C1 — inertness'
+            echo ''
+            echo '```'
+            cat c1-4.txt 2>/dev/null | grep -E 'VERDICT|REFUSED|^RED|^GREEN' || echo 'no output'
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload the rows
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: c1-inert
+          path: tools/harness/results/gates-c1-part*.json
+          if-no-files-found: warn
+          retention-days: 14
+
+  # C1 parts 5 and 7 — the CONSUMERS (the planner's rows; a booster reserve over all/M10 → M16) and the Something
+  # Tree interval rider (⚖ 13d.2). REPORT, NOT DECIDE: no table entry changes on either row.
+  c1-consumers:
+    name: C1 consumers + the interval rider — headless (parts 5, 7)
+    needs: fast
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Part 5 — the planner's buy rows; a booster reserve on buyables:t
+        shell: bash
+        run: |
+          set -o pipefail
+          node tools/harness/gates-c1.mjs --part 5 --no-summary --assert --pool 4 | tee c1-5.txt
+
+      - name: Part 7 — Something Tree's two intervals against the target-driven rules
+        shell: bash
+        run: |
+          set -o pipefail
+          node tools/harness/gates-c1.mjs --part 7 --no-summary --assert --pool 4 | tee c1-7.txt
+
+      - name: Summary
+        if: always()
+        shell: bash
+        run: |
+          {
+            echo '## C1 — consumers and the rider'
+            echo ''
+            echo '```'
+            cat c1-5.txt c1-7.txt 2>/dev/null | grep -E 'VERDICT|REFUSED|^RED|^GREEN' || echo 'no output'
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload the rows
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: c1-consumers
+          path: tools/harness/results/gates-c1-part*.json
           if-no-files-found: warn
           retention-days: 14
 

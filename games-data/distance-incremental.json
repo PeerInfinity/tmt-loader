@@ -1,0 +1,45 @@
+{
+ "generated": true,
+ "generator": "tools/currency-data.mjs",
+ "generatorVersion": 1,
+ "formatVersion": 1,
+ "game": "distance-incremental",
+ "upstream": {
+  "repo": "meme0846/Distance-Incremental",
+  "commit": "2d3a18e5d38582c986c5ce79d5b5dd6dd29f48be"
+ },
+ "states": [
+  "fresh"
+ ],
+ "seeds": [
+  1
+ ],
+ "summary": {
+  "buyables": 1,
+  "scored": 1,
+  "price": 0,
+  "requirement": 1,
+  "unknown": 0,
+  "own": 1,
+  "foreign": 0,
+  "several": 0,
+  "impure": 0
+ },
+ "buyables": {
+  "ro": {
+   "11": {
+    "pays": "player.ro.points",
+    "cost": "requirement",
+    "by": [
+     "rollback",
+     "trace"
+    ],
+    "scored": true,
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   }
+  }
+ }
+}

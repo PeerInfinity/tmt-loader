@@ -318,20 +318,22 @@ test('the anchor reader wants ONE button that is both, not two buttons that are 
 });
 
 // ---------------------------------------------------------------------------------------------------------------
-// V1: the set the `a1` CI job DERIVES. The job runs `gates-a1 --part 2` over `ls games-auto/*.js`, so what makes
+// V1: the set the `a1` CI job DERIVES. The job runs `gates-a1 --part 2` over `ls games-auto/*.json` (C1: the tables
+// are JSON documents; the schema lives in `schemas/`, NOT beside them, so it can never be read as a game), so what makes
 // that derivation right is that the directory and the manifests' `auto` fields name the same games. A table the
 // loader never loads would be gated as if it were live; a manifest pointing at a file that is not there would drop
 // a game out of the job with nothing to notice it.
 // ---------------------------------------------------------------------------------------------------------------
 test('games-auto/ and the manifests\' `auto` fields name the same games — what the a1 CI job derives its set from', () => {
-  const dir = fs.readdirSync(path.join(REPO, 'games-auto')).filter((f) => f.endsWith('.js')).map((f) => f.replace(/\.js$/, '')).sort();
+  const dir = fs.readdirSync(path.join(REPO, 'games-auto')).filter((f) => f.endsWith('.json')).map((f) => f.replace(/\.json$/, '')).sort();
+  assert.deepEqual(fs.readdirSync(path.join(REPO, 'games-auto')).filter((f) => !f.endsWith('.json')), [], 'games-auto/ holds something that is not a table');
   const ids = JSON.parse(read('manifests/index.json')).map((g) => g.id);
   const declared = ids.filter((id) => JSON.parse(read(`manifests/${id}.json`)).auto).sort();
   assert.deepEqual(dir, declared,
     `games-auto/ holds [${dir.join(', ')}] and the manifests declare auto for [${declared.join(', ')}]`);
   for (const id of declared) {
     const rel = JSON.parse(read(`manifests/${id}.json`)).auto;
-    assert.equal(rel, `games-auto/${id}.js`, `manifests/${id}.json points its table at ${rel}`);
+    assert.equal(rel, `games-auto/${id}.json`, `manifests/${id}.json points its table at ${rel}`);
     assert.ok(fs.existsSync(path.join(REPO, rel)), `${rel} does not exist`);
   }
   assert.ok(dir.length >= 2, `only ${dir.length} game(s) have a table — the a1 job would be gating almost nothing`);

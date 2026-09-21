@@ -1,0 +1,216 @@
+{
+ "generated": true,
+ "generator": "tools/currency-data.mjs",
+ "generatorVersion": 1,
+ "formatVersion": 1,
+ "game": "the-doors-tree",
+ "upstream": {
+  "repo": "ThePrestigeTreeGuy/The-Modding-Tree",
+  "commit": "51bbdff4beb42847d99e1dd903669bc81e948fbe"
+ },
+ "states": [
+  "fresh"
+ ],
+ "seeds": [
+  1
+ ],
+ "summary": {
+  "buyables": 12,
+  "scored": 12,
+  "price": 12,
+  "requirement": 0,
+  "unknown": 0,
+  "own": 12,
+  "foreign": 0,
+  "several": 0,
+  "impure": 0
+ },
+ "buyables": {
+  "d": {
+   "11": {
+    "pays": "player.d.points",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.d.points",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "12": {
+    "pays": "player.d.points",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.d.points",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "13": {
+    "pays": "player.d.points",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.d.points",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   }
+  },
+  "c": {
+   "11": {
+    "pays": "player.c.points",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.c.points",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "12": {
+    "pays": "player.c.points",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.c.points",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "13": {
+    "pays": "player.c.points",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.c.points",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "21": {
+    "pays": "player.c.points",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.c.points",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "22": {
+    "pays": "player.c.points",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.c.points",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "23": {
+    "pays": "player.c.points",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.c.points",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   }
+  },
+  "r": {
+   "11": {
+    "pays": "player.r.points",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.r.points",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "12": {
+    "pays": "player.r.points",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.r.points",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "13": {
+    "pays": "player.r.points",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.r.points",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   }
+  }
+ }
+}

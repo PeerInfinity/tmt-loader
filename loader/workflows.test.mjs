@@ -313,3 +313,19 @@ test('⛔ the a1 job asks the gate to prove what it COVERED, not just that nothi
   assert.match(j.a1, /--assert\b/, 'the a1 job does not assert its coverage — fewer games is fewer rows is fewer reds');
   assert.match(j.a1, /set -o pipefail/, 'the gate is piped into tee without pipefail, so the refusal is lost');
 });
+
+test('⛔ C1: the fast job checks the tables\' schema and the currency index as STEPS, and three C1 jobs run the battery', () => {
+  const j = jobs(wf('sweep.yml'));
+  const steps = j.fast.split(/^ {6}- /m).slice(1);
+  for (const cmd of ['node tools/auto-tables.mjs --check', 'node tools/currency-data.mjs --check-index']) {
+    assert.ok(steps.some((st) => st.includes(cmd) && !st.includes('GITHUB_STEP_SUMMARY')), `the fast job no longer runs \`${cmd}\` as a step`);
+  }
+  const want = { 'c1-data': [3, 1, 2, 6], 'c1-inert': [4], 'c1-consumers': [5, 7] };
+  for (const [name, parts] of Object.entries(want)) {
+    assert.ok(j[name], `sweep.yml has no \`${name}\` job`);
+    assert.deepEqual(needs(j[name]), ['fast'], `the ${name} job does not wait for the fast checks`);
+    for (const p of parts) assert.match(j[name], new RegExp(`gates-c1\\.mjs --part ${p} [^\\n]*--assert`), `${name} does not run part ${p} with --assert`);
+  }
+  // the provenance gate asks `merge-base --is-ancestor` of every record's commit: a depth-1 checkout makes every record RED
+  assert.match(j['c1-data'], /fetch-depth: 0/, 'the c1-data job checks out one commit — the provenance gate cannot see the history');
+});

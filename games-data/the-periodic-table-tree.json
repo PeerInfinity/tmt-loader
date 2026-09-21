@@ -1,0 +1,331 @@
+{
+ "generated": true,
+ "generator": "tools/currency-data.mjs",
+ "generatorVersion": 1,
+ "formatVersion": 1,
+ "game": "the-periodic-table-tree",
+ "upstream": {
+  "repo": "qcy00hou12/The-Periodic-Table-Tree",
+  "commit": "33487105ff61e61e863584f42206f9085cc3f2ac"
+ },
+ "states": [
+  "fresh"
+ ],
+ "seeds": [
+  1,
+  2,
+  3
+ ],
+ "summary": {
+  "buyables": 21,
+  "scored": 8,
+  "price": 8,
+  "requirement": 0,
+  "unknown": 13,
+  "own": 1,
+  "foreign": 7,
+  "several": 0,
+  "impure": 0
+ },
+ "buyables": {
+  "Li": {
+   "11": {
+    "pays": null,
+    "cost": "unknown",
+    "by": [],
+    "scored": false,
+    "pick": [
+     "player.Li.H2",
+     "player.Li.points"
+    ],
+    "how": "affordable",
+    "why": "no field fell by the published cost",
+    "from": [
+     "fresh"
+    ]
+   },
+   "12": {
+    "pays": null,
+    "cost": "unknown",
+    "by": [],
+    "scored": false,
+    "pick": "player.Li.points",
+    "how": "affordable",
+    "why": "no field fell by the published cost",
+    "from": [
+     "fresh"
+    ]
+   },
+   "13": {
+    "pays": null,
+    "cost": "unknown",
+    "by": [],
+    "scored": false,
+    "pick": "player.Li.points",
+    "how": "affordable",
+    "why": "no field fell by the published cost",
+    "from": [
+     "fresh"
+    ]
+   },
+   "14": {
+    "pays": null,
+    "cost": "unknown",
+    "by": [],
+    "scored": false,
+    "pick": [
+     "player.Li.H2",
+     "player.Li.R1",
+     "player.Li.points"
+    ],
+    "how": "affordable",
+    "why": "no field fell by the published cost (2 fell by something else)",
+    "from": [
+     "fresh"
+    ]
+   },
+   "15": {
+    "pays": null,
+    "cost": "unknown",
+    "by": [],
+    "scored": false,
+    "pick": "player.Li.points",
+    "how": "affordable",
+    "why": "no field fell by the published cost",
+    "from": [
+     "fresh"
+    ]
+   },
+   "16": {
+    "pays": null,
+    "cost": "unknown",
+    "by": [],
+    "scored": false,
+    "pick": "player.Li.points",
+    "how": "affordable",
+    "why": "no field fell by the published cost",
+    "from": [
+     "fresh"
+    ]
+   }
+  },
+  "Be": {
+   "11": {
+    "pays": "player.Be.points",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.Be.points",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "12": {
+    "pays": "player.Be.BerylliumPlates",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.Be.BerylliumPlates",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "13": {
+    "pays": "player.Be.BerylliumPlates",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.Be.BerylliumPlates",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "14": {
+    "pays": "player.Be.BerylliumPlates",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.Be.BerylliumPlates",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "15": {
+    "pays": "player.Be.BerylliumPlates",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.Be.BerylliumPlates",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "16": {
+    "pays": "player.Be.BerylliumPlates",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.Be.BerylliumPlates",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "21": {
+    "pays": null,
+    "cost": "unknown",
+    "by": [],
+    "scored": false,
+    "pick": [
+     "player.Be.ALight",
+     "player.Be.basaltrock",
+     "player.Be.bunknown",
+     "player.Be.gHeliumHydride",
+     "player.Be.jDiamond",
+     "player.Be.jupiterHelium",
+     "player.Be.lWaterCloud",
+     "player.Be.metalliccore",
+     "player.Be.methaneGas",
+     "player.Be.moltenIron",
+     "player.Be.neptuneSlush",
+     "player.Be.plutonium",
+     "player.Be.solarBar",
+     "player.Be.sulfuricAcid",
+     "player.Be.uranusAmmonia"
+    ],
+    "how": "affordable",
+    "why": "no field fell by the published cost",
+    "from": [
+     "fresh"
+    ]
+   }
+  },
+  "B": {
+   "11": {
+    "pays": null,
+    "cost": "unknown",
+    "by": [],
+    "scored": false,
+    "why": "not affordable, and it publishes no usable cost to lift towards",
+    "from": [
+     "fresh"
+    ]
+   },
+   "12": {
+    "pays": null,
+    "cost": "unknown",
+    "by": [],
+    "scored": false,
+    "why": "not affordable, and it publishes no usable cost to lift towards",
+    "from": [
+     "fresh"
+    ]
+   },
+   "13": {
+    "pays": null,
+    "cost": "unknown",
+    "by": [],
+    "scored": false,
+    "why": "not affordable, and it publishes no usable cost to lift towards",
+    "from": [
+     "fresh"
+    ]
+   },
+   "14": {
+    "pays": "player.B.Boron",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.B.Boron",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "15": {
+    "pays": "player.B.Boron",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.B.Boron",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "21": {
+    "pays": null,
+    "cost": "unknown",
+    "by": [],
+    "scored": false,
+    "pick": "player.B.Boron",
+    "how": "affordable",
+    "why": "no field fell by the published cost (1 fell by something else)",
+    "from": [
+     "fresh"
+    ]
+   },
+   "22": {
+    "pays": null,
+    "cost": "unknown",
+    "by": [],
+    "scored": false,
+    "pick": "player.B.Boron",
+    "how": "affordable",
+    "why": "no field fell by the published cost",
+    "from": [
+     "fresh"
+    ]
+   },
+   "23": {
+    "pays": null,
+    "cost": "unknown",
+    "by": [],
+    "scored": false,
+    "pick": "player.B.Boron",
+    "how": "affordable",
+    "why": "no field fell by the published cost",
+    "from": [
+     "fresh"
+    ]
+   }
+  }
+ }
+}

@@ -254,13 +254,13 @@
     { kind: 'upgrades', template: 'order-then-cheapest', label: 'The table’s order, then cheapest', help: 'Buy the table’s listed upgrades first, then everything else cheapest first.',
       needs: function (f) { return f.order && f.order.length ? null : 'this game’s table declares no upgrade order for this feature'; } },
     // --- buyables --------------------------------------------------------------------------------------------------
-    { kind: 'buyables', template: 'buy', label: 'Buy', help: 'Buy each unlocked buyable as often as it can be afforded — what a click does.' },
-    { kind: 'buyables', template: 'buyMax', label: 'Buy max', help: 'Use the game’s own buy-max where the buyable has one, otherwise buy one at a time.' },
-    { kind: 'buyables', template: 'highest-first', label: 'Highest id first', help: 'Buy as above but from the highest id down, so a shared pool is not sunk into the cheapest one.' },
-    { kind: 'buyables', template: 'buy-unless-saving', label: 'Buy unless saving for an upgrade', help: 'Buy nothing while this layer has an unowned upgrade in its own currency that costs more than it holds.' },
-    { kind: 'buyables', template: 'reserve>={n}', label: 'Buy above a reserve of N', help: 'Buy only with the points above this reserve of the layer’s own currency.',
-      params: [{ name: 'n', type: 'quantity', placeholder: 'N', default: '0', label: 'reserve' }] },
-    { kind: 'buyables', template: 'reserve>=next-upgrade', label: 'Buy above the next upgrade’s cost', help: 'Buy only with the points above whatever this layer’s cheapest unowned upgrade costs right now.' },
+    { kind: 'buyables', template: 'buy', label: 'Buy', help: 'Buy each unlocked buyable as often as it can be afforded — what a click does.', progress: buyableProgress },
+    { kind: 'buyables', template: 'buyMax', label: 'Buy max', help: 'Use the game’s own buy-max where the buyable has one, otherwise buy one at a time.', progress: buyableProgress },
+    { kind: 'buyables', template: 'highest-first', label: 'Highest id first', help: 'Buy as above but from the highest id down, so a shared pool is not sunk into the cheapest one.', progress: buyableProgress },
+    { kind: 'buyables', template: 'buy-unless-saving', label: 'Buy unless saving for an upgrade', help: 'Buy nothing while this layer has an unowned upgrade in its own currency that costs more than it holds.', progress: buyableProgress },
+    { kind: 'buyables', template: 'reserve>={n}', label: 'Buy above a reserve of N', help: 'Buy only with the points above this reserve of the currency the buyable really pays in (the layer’s own, where that is unknown).',
+      params: [{ name: 'n', type: 'quantity', placeholder: 'N', default: '0', label: 'reserve' }], progress: buyableProgress },
+    { kind: 'buyables', template: 'reserve>=next-upgrade', label: 'Buy above the next upgrade’s cost', help: 'Buy only with the points above whatever the next unowned upgrade in the same currency costs right now.', progress: buyableProgress },
     // --- the rest --------------------------------------------------------------------------------------------------
     { kind: 'toggles', template: 'on', label: 'Turn them on', help: 'Turn on every toggle the held milestones grant.' },
     { kind: 'challenges', template: 'sequential', label: 'One after another', help: 'Enter the first unlocked, incomplete challenge and leave it the moment it can be completed.' },
@@ -806,8 +806,14 @@
     'waiting:when':       { text: 'Waiting — no clickable of {layer} is ready',                   values: ['layer'] },
     'holding:reserve':    { text: 'Holding — {have} under the reserve {reserve}',                 values: ['have', 'reserve'], quantities: ['have', 'reserve'] },
     'holding:saving':     { text: 'Holding — {have} while upgrade {id} costs {cost}',             values: ['have', 'id', 'cost'], quantities: ['have', 'cost'] },
+    // C1: a reserve on a FOREIGN currency names the field it protects — `holding:reserve` is kept, word for word, for
+    // the layer's own points, which is every reserve that existed before the currency reader.
+    'holding:reserve-in': { text: 'Holding — {have} of {currency} under the reserve {reserve}',   values: ['have', 'currency', 'reserve'], quantities: ['have', 'reserve'] },
     // running, and there is nothing to act on
     'nothing-affordable': { text: 'Nothing affordable — the cheapest {kind} is {id} at {cost}',   values: ['kind', 'id', 'cost'], quantities: ['cost'] },
+    // C1: a BUYABLE's refusal says which currency it is waiting on — and "unknown" is its own sentence, never a guess
+    'nothing-affordable:paid-in':          { text: 'Nothing affordable — the cheapest buyable is {id} at {cost}, paid in {currency} ({have} held)', values: ['id', 'cost', 'currency', 'have'], quantities: ['cost', 'have'] },
+    'nothing-affordable:currency-unknown': { text: 'Nothing affordable — the cheapest buyable is {id} at {cost}; which currency pays for it is unknown', values: ['id', 'cost'], quantities: ['cost'] },
     'nothing-to-do':      { text: 'Nothing to do — {kind} of {layer}: nothing is unlocked and unowned', values: ['kind', 'layer'] },
     // it acted — one code per kind, so `acted` is as enumerable as every refusal
     // ⚠ `rule` (V2) is WHICH rule fired it — the strategy's own id, or the modifier's when the stall fallback did.
@@ -1027,6 +1033,60 @@
   // An upgrade / buyable costed in the layer's own points (no currencyInternalName / currencyLocation / currencyLayer):
   // the only costs `unlocks-purchase` can compare against the layer's points without reading the item's own code.
   function ownCurrency(def) { return def && def.currencyInternalName === undefined && def.currencyLocation === undefined && def.currencyLayer === undefined; }
+
+  // ---- C1: WHICH FIELD A BUYABLE REALLY PAYS IN ---------------------------------------------------------------------
+  // ⛔ A buyable declares no currency to the engine (`currencyInternalName` is an UPGRADE field), and "the layer's own
+  // points" is wrong for 374 of 973 resolvable buyables over 52 games. The answer is GENERATED harness-side — three
+  // instruments, scored by a rollback buy (`tools/currency-data.mjs`, docs/automation.md "The currency reader") — and
+  // the HOST hands it in as `tmtLoader.currencyData` (`games-data/<id>.json`; this file fetches nothing).
+  // ⛔ THREE-VALUED, AND AN ABSTENTION IS TODAY'S BEHAVIOUR: only a SCORED single field is an answer. Several fields,
+  // none, an unscored read, or no data at all return null, and every consumer then does exactly what it did before
+  // C1 — the layer's own points — byte for byte.
+  function paysIn(l, id) {
+    var d = T.currencyData, e = d && d.buyables && d.buyables[l] && d.buyables[l][String(id)];
+    return e && e.scored === true && typeof e.pays === 'string' ? e.pays : null;
+  }
+  T.paysIn = paysIn;
+  /** The generated entry itself (`{pays, cost, by, scored, …}`), or null — what the UI arc's card row reads. */
+  T.currencyOf = function (l, id) {
+    var d = T.currencyData, e = d && d.buyables && d.buyables[l] && d.buyables[l][String(id)];
+    return e ? JSON.parse(JSON.stringify(e)) : null;
+  };
+  function readPlayerPath(p) {
+    var parts = String(p).split('.');
+    if (parts[0] !== 'player') return undefined;
+    var o = player;
+    for (var i = 1; i < parts.length; i++) { if (o === undefined || o === null) return undefined; o = o[parts[i]]; }
+    return o;
+  }
+  // An upgrade's DECLARED currency as a path — the engine's own canAffordPurchase, minus `currencyLocation` (an object,
+  // not a path: null, i.e. never matched).
+  function upgradePath(l, U) {
+    if (ownCurrency(U)) return 'player.' + l + '.points';
+    if (U.currencyLocation !== undefined || !U.currencyInternalName) return null;
+    return U.currencyLayer ? 'player.' + U.currencyLayer + '.' + U.currencyInternalName : 'player.' + U.currencyInternalName;
+  }
+  // `reserve>=next-upgrade` in a FOREIGN currency: the cheapest unowned, unlocked upgrade of ANY tree layer whose
+  // declared currency is that field. For `player.<l>.points` it is `cheapestOwnUpgradeCost(l)` plus any upgrade
+  // elsewhere that declares the same field — the same question, asked of the whole tree.
+  function cheapestUpgradeIn(path) {
+    var best = null;
+    for (var l2 in layers) {
+      if (!isTreeLayer(l2)) continue;
+      var L2 = layers[l2];
+      if (!L2.upgrades || !(tmp[l2] && tmp[l2].upgrades)) continue;
+      var ids = numIds(L2.upgrades);
+      for (var i = 0; i < ids.length; i++) {
+        if (!buyableUpgrade(l2, ids[i]) || upgradePath(l2, L2.upgrades[ids[i]]) !== path) continue;
+        var c = D(tmp[l2].upgrades[ids[i]].cost);
+        if (best === null || c.lt(best)) best = c;
+      }
+    }
+    return best;
+  }
+  // A buyable's progress toward its cheapest unbought level: what its currency holds over the price — ABSTAINING
+  // (null, which ranks last) wherever the currency is unknown, which is the fraction's whole honesty.
+  function buyableProgress(f, v) { return v && v.currency && v.have !== undefined && v.have !== null ? ratio(v.have, v.cost) : null; }
 
   // ⛔ WHICH TWO NUMBERS A REFUSED RESET SHOWS — MEASURED, AND THE FIRST CUT OF V1 GOT IT WRONG. A **static**
   // layer's `canReset` compares `baseAmount` against **`nextAt`**, not `requires`: `requires` is the FIRST
@@ -2568,11 +2628,30 @@
       // policy is named `reserve`, so it holds.
       var rsv = /^reserve>=(.*)$/.exec(f.policy);
       var lim = null;
-      if (rsv) {
+      // ⛔ C1: A RESERVE PROTECTS THE CURRENCY THE BUYABLE REALLY PAYS IN. Until C1 it could only read the layer's own
+      // points, so nothing could protect a FOREIGN one (R1′ §14d.9 item 6: PTR's Extra Time Capsules spend the
+      // Boosters M15 needs). `foreign` is true only when the GENERATED data names a scored field other than the layer's
+      // points for some buyable of this layer; otherwise this is the code that ran before C1, line for line — an
+      // unknown currency is today's behaviour, and that is what `gates-c1` part 4 measures to the hash.
+      var ownPath = 'player.' + l + '.points', foreign = false;
+      if (rsv) { var bids = numIds(L.buyables); for (var bi = 0; bi < bids.length; bi++) { var pp = paysIn(l, bids[bi]); if (pp && pp !== ownPath) { foreign = true; break; } } }
+      var limIn = {};
+      var limFor = function (path) {
+        if (!(path in limIn)) limIn[path] = rsv[1] === 'next-upgrade' ? (path === ownPath ? cheapestOwnUpgradeCost(l) : cheapestUpgradeIn(path)) : D(rsv[1]);
+        return limIn[path];
+      };
+      var heldIn = null;
+      if (rsv && !foreign) {
         lim = rsv[1] === 'next-upgrade' ? cheapestOwnUpgradeCost(l) : D(rsv[1]);
         if (lim !== null && D(player[l].points).lte(lim)) return { act: false, code: 'holding:reserve', values: { have: player[l].points, reserve: lim } };
       }
-      var reserved = function () { return lim !== null && D(player[l].points).lte(lim); };
+      var reserved = !foreign ? function () { return lim !== null && D(player[l].points).lte(lim); } : function (id) {
+        var path = paysIn(l, id) || ownPath, lm = limFor(path), have = readPlayerPath(path);
+        if (lm === null || have === undefined || have === null) return false;
+        var r = D(have).lte(lm);
+        if (r) heldIn = { path: path, have: have, reserve: lm };
+        return r;
+      };
       var ids = f.order ? f.order.slice() : numIds(L.buyables);
       if (f.policy === 'highest-first' && !f.order) ids.reverse();
       var n = 0, bought = [], held = false, seen = 0, minC = null, minId = null, autoed = [];
@@ -2597,7 +2676,7 @@
         // Falsy is the whole of "no", and that is what the 155 games with no declaration rely on.
         if (B[id].autoed) { autoed.push(id); continue; }
         seen++;
-        if (reserved()) { held = true; break; }
+        if (reserved(id)) { held = true; break; }
         // ⚠ the cheapest UNBOUGHT candidate, tracked only while nothing has been bought — once something has, the
         // answer is `acted:` and this costs nothing more.
         if (n === 0 && B[id].cost !== undefined) { try { var c = D(B[id].cost); if (minC === null || c.lt(minC)) { minC = c; minId = id; } } catch (e) { /* a cost this engine will not compare */ } }
@@ -2613,15 +2692,22 @@
           if (String(player[l].buyables[id]) === before) break;
           n++;
           if (bought[bought.length - 1] !== id) bought.push(id);
-          if (reserved()) { held = true; break; }
+          if (reserved(id)) { held = true; break; }
         }
         if (held) break;
       }
       if (n) return { act: true, n: n, code: 'acted:buyables', values: { n: n, ids: bought } };
+      if (held && heldIn) return { act: false, code: 'holding:reserve-in', values: { have: heldIn.have, currency: heldIn.path, reserve: heldIn.reserve } };
       if (held) return { act: false, code: 'holding:reserve', values: { have: player[l].points, reserve: lim } };
       // every unlocked buyable of this layer is the GAME's to buy — the same sentence `reset` already says
       if (!seen && autoed.length) return { act: false, code: 'yielding:native', values: { layer: l } };
       if (!seen) return { act: false, code: 'nothing-to-do', values: { kind: 'buyables', layer: l } };
+      // C1: the refusal names the currency the cheapest buyable is waiting on, or says it is unknown
+      if (minId !== null) {
+        var cur = paysIn(l, minId);
+        if (cur) return { act: false, code: 'nothing-affordable:paid-in', values: { id: minId, cost: minC, currency: cur, have: readPlayerPath(cur) } };
+        return { act: false, code: 'nothing-affordable:currency-unknown', values: { id: minId, cost: minC } };
+      }
       return { act: false, code: 'nothing-affordable', values: { kind: 'buyable', id: minId, cost: minC } };
     },
     // on: for each milestone of the layer that declares `toggles: [[layer, field], …]` and is held, set every such
@@ -4775,8 +4861,89 @@
   buildClickables();
 
   // ---- derivation: features from the engine's own data + the per-game DATA table ------------------------------------------
-  // tmtLoader.autoTable (games-auto/<id>.js, inserted BEFORE this file; absent = `{}`) — every key in docs/automation.md.
-  var TABLE_KEYS = ['id', 'unlockOrder', 'policies', 'alternatives', 'order', 'gates', 'off', 'keep', 'clickables', 'options', 'kindOrder', 'provenance'];
+  // tmtLoader.autoTable — the parsed `games-auto/<id>.json` the HOST hands in before this file runs (the page fetches it,
+  // the harness reads it; absent = `{}`) — every key in docs/automation.md, "The two tables".
+  // <table-schema> ⛔ ONE SOURCE (C1, §40-R ruling B). This block is PURE — it touches no game global — because it is
+  // run twice: here, at load, on the table the host hands in; and by `tools/auto-tables.mjs`, which extracts it
+  // between the two marker comments, writes `schemas/games-auto.schema.json` from TABLE_SCHEMA (`--check` fails if
+  // the committed file differs) and validates every `games-auto/<id>.json` with the SAME `schemaErrors`. The key list
+  // the derivation checks (`TABLE_KEYS`) is read off TABLE_SCHEMA.properties, so there is no second list to drift.
+  // The schema is a JSON Schema (draft 2020-12) subset: type, const, enum, pattern, minItems, required, properties,
+  // additionalProperties, items, oneOf. `x-experimental` marks what is ACCEPTED but NOT FROZEN: the cycle / give-up
+  // modifiers inside a policy string, and every `challenges:*` entry — the next rungs may still move them.
+  var TABLE_FORMAT_VERSIONS = [1];
+  var PROVENANCE_RECORD = {
+    oneOf: [
+      { type: 'object', required: ['gate', 'commit', 'note'], additionalProperties: false,
+        description: 'A measured entry: the SUMMARY gate id that measured it (or, for a gate that ran only in CI, `run`), the commit it was measured at (must be an ancestor of HEAD), the digest step where there is one, and one line of text.',
+        properties: {
+          gate: { type: 'string', pattern: '^\\S.*$' },
+          commit: { type: 'string', pattern: '^[0-9a-f]{7,40}$' },
+          digest: { type: 'string' },
+          run: { type: 'string', pattern: '^[0-9]+$', description: 'the CI run whose job output holds the rows, for a gate that writes none to results/SUMMARY.md' },
+          note: { type: 'string', pattern: '^\\S' } } },
+      { type: 'object', required: ['unverified', 'note'], additionalProperties: false,
+        description: 'An entry that predates provenance and has no measured row behind it — listed, never given an invented gate id.',
+        properties: { unverified: { const: true }, note: { type: 'string', pattern: '^\\S' } } },
+    ],
+  };
+  var TABLE_SCHEMA = {
+    $schema: 'https://json-schema.org/draft/2020-12/schema',
+    $id: 'https://peerinfinity.github.io/tmt-loader/schemas/games-auto.schema.json',
+    title: 'tmt-loader per-game automation table (games-auto/<id>.json)',
+    description: 'DATA only: what a game does not declare to the engine. Every key is documented in docs/automation.md, "The two tables".',
+    type: 'object', required: ['formatVersion', 'id'], additionalProperties: false,
+    'x-experimental': ['the `|turn@…` and `|give-up@…` modifiers inside a `policies` / `alternatives` string (R3b, R3a)', 'every `challenges:*` entry of `policies`, `alternatives`, `order` and `gates`', 'whether a table may state `until` / `priority` — today only `while` has a table form, `gates` (unanswered, left open)'],
+    properties: {
+      formatVersion: { enum: TABLE_FORMAT_VERSIONS, description: 'the loader refuses a version it does not know, by name' },
+      id: { type: 'string', pattern: '^[a-z0-9-]+$' },
+      unlockOrder: { type: 'array', items: { type: 'array', minItems: 2, items: { type: 'string' } } },
+      kindOrder: { type: 'array', items: { enum: ['toggles', 'reset', 'upgrades', 'buyables', 'challenges', 'clickables'] } },
+      policies: { type: 'object', additionalProperties: { type: 'string', pattern: '^\\S' } },
+      alternatives: { type: 'object', additionalProperties: { type: 'array', items: { type: 'string' } } },
+      order: { type: 'object', additionalProperties: { type: 'array', items: { type: 'integer' } } },
+      gates: { type: 'object', additionalProperties: { type: 'string', pattern: '^\\S' } },
+      off: { type: 'object', additionalProperties: { type: 'string', pattern: '^\\S' } },
+      keep: { type: 'object', additionalProperties: { type: 'object', required: ['layer', 'id'], additionalProperties: false, properties: { layer: { type: 'string' }, id: { type: ['integer', 'string'] } } } },
+      clickables: { type: 'object', additionalProperties: { type: 'array', items: { type: 'object', required: ['id', 'when'], additionalProperties: false, properties: { id: { type: ['integer', 'string'] }, when: { type: 'string' } } } } },
+      options: { type: 'object', additionalProperties: { type: ['string', 'number', 'boolean'] } },
+      provenance: { type: 'object', description: 'keyed by feature id, `unlockOrder:<i>` or `kindOrder`; a record or a list of records', additionalProperties: { oneOf: [PROVENANCE_RECORD, { type: 'array', minItems: 1, items: PROVENANCE_RECORD }] } },
+    },
+  };
+  function schemaType(v) { return v === null ? 'null' : Array.isArray(v) ? 'array' : typeof v === 'number' ? (Math.floor(v) === v ? 'integer' : 'number') : typeof v; }
+  /** Every way `v` fails `s`, as `<path>: <why>` lines. Empty = valid. */
+  function schemaErrors(v, s, p) {
+    p = p || '$';
+    var out = [], k, i;
+    if (s.oneOf) {
+      var fits = 0, why = [];
+      for (i = 0; i < s.oneOf.length; i++) { var e = schemaErrors(v, s.oneOf[i], p); if (!e.length) fits++; else why.push(e[0]); }
+      if (fits !== 1) out.push(p + ': ' + (fits ? 'matches more than one form' : 'matches no allowed form (' + why.join(' | ') + ')'));
+      return out;
+    }
+    if ('const' in s && JSON.stringify(v) !== JSON.stringify(s.const)) return [p + ': must be ' + JSON.stringify(s.const)];
+    if (s.enum && s.enum.indexOf(v) < 0) return [p + ': ' + JSON.stringify(v) + ' is not one of ' + JSON.stringify(s.enum)];
+    if (s.type) {
+      var t = schemaType(v), ok = [].concat(s.type).some(function (x) { return x === t || (x === 'number' && t === 'integer'); });
+      if (!ok) return [p + ': must be ' + [].concat(s.type).join(' or ') + ', not ' + t];
+    }
+    if (s.pattern && typeof v === 'string' && !new RegExp(s.pattern).test(v)) out.push(p + ': does not match ' + s.pattern);
+    if (Array.isArray(v)) {
+      if (s.minItems && v.length < s.minItems) out.push(p + ': needs at least ' + s.minItems + ' items');
+      if (s.items) for (i = 0; i < v.length; i++) out = out.concat(schemaErrors(v[i], s.items, p + '[' + i + ']'));
+    } else if (v && typeof v === 'object') {
+      (s.required || []).forEach(function (r) { if (!(r in v)) out.push(p + ': missing "' + r + '"'); });
+      for (k in v) {
+        if (s.properties && s.properties[k]) out = out.concat(schemaErrors(v[k], s.properties[k], p + '.' + k));
+        else if (s.additionalProperties === false) out.push(p + ': unknown key "' + k + '" (known: ' + Object.keys(s.properties || {}).join(', ') + ')');
+        else if (s.additionalProperties && typeof s.additionalProperties === 'object') out = out.concat(schemaErrors(v[k], s.additionalProperties, p + '.' + k));
+      }
+    }
+    return out;
+  }
+  // </table-schema>
+  var TABLE_KEYS = Object.keys(TABLE_SCHEMA.properties);
+  T.tableSchema = TABLE_SCHEMA;
   var KIND_LABEL = { toggles: 'milestone toggles', upgrades: 'upgrades', buyables: 'buyables', challenges: 'challenges', clickables: 'clickables', reset: 'reset' };
   function hasNumIds(obj) { return !!obj && typeof obj === 'object' && numIds(obj).length > 0; }
   function isTreeLayer(l) { var L = layers[l]; return !!L && !L.tmtLoaderLayer && L.row !== undefined && L.row !== null && L.row !== '' && !isNaN(L.row); }
@@ -4842,6 +5009,14 @@
     if (typeof table !== 'object' || Array.isArray(table)) throw new Error('autoTable must be an object');
     var src = 'autoTable' + (table.id ? ' "' + table.id + '"' : '');
     for (var key in table) if (TABLE_KEYS.indexOf(key) < 0) throw new Error(src + ': unknown key "' + key + '" (known: ' + TABLE_KEYS.join(', ') + ')');
+    // ⛔ C1: a table that says nothing about its FORMAT, or names a version this loader does not read, is refused by
+    // name — never read as if it were the version we know. An ABSENT table (`{}`) is the derived defaults, not a table.
+    if (Object.keys(table).length) {
+      if (table.formatVersion === undefined) throw new Error(src + ': no formatVersion (this loader reads ' + TABLE_FORMAT_VERSIONS.join(', ') + ')');
+      if (TABLE_FORMAT_VERSIONS.indexOf(table.formatVersion) < 0) throw new Error(src + ': formatVersion ' + JSON.stringify(table.formatVersion) + ' is not one this loader reads (' + TABLE_FORMAT_VERSIONS.join(', ') + ')');
+      var schemaWhy = schemaErrors(table, TABLE_SCHEMA, 'autoTable');
+      if (schemaWhy.length) throw new Error(src + ': ' + schemaWhy.slice(0, 3).join('; ') + (schemaWhy.length > 3 ? ' (and ' + (schemaWhy.length - 3) + ' more)' : ''));
+    }
     if (table.id !== undefined && T.id && table.id !== T.id) throw new Error(src + ': id does not match the game "' + T.id + '"');
     T.autoOptions = Object.assign({}, table.options || {}, T.options || {});
 
@@ -4865,15 +5040,33 @@
     ['policies', 'alternatives', 'order', 'gates', 'off', 'keep', 'provenance'].forEach(function (k) {
       if (table[k] === undefined) return;
       if (typeof table[k] !== 'object' || Array.isArray(table[k])) throw new Error(src + ': ' + k + ' must be an object keyed by feature id');
-      for (var id in table[k]) known(k, id);
+      for (var id in table[k]) {
+        // provenance may also cover the two table-wide entries: each `unlockOrder` list, and `kindOrder`
+        if (k === 'provenance' && (id === 'kindOrder' || /^unlockOrder:\d+$/.test(id))) {
+          if (id !== 'kindOrder' && !(table.unlockOrder && table.unlockOrder[Number(id.slice(12))])) throw new Error(src + ': provenance names ' + id + ', which this table does not have');
+          continue;
+        }
+        known(k, id);
+      }
     });
     // `provenance` (V1): ONE line per feature saying WHERE its entry in this table came from — the SUMMARY row or
     // the plan § that measured it. ⚖ minimize hardcoding already required that as a source comment; this makes it
     // DATA, so the au tab's Advanced view can show the player why a default is what it is instead of leaving it in
     // a file nobody reading the game will open. Unknown feature ids throw, exactly as `off` does — and an id the
     // table EXCLUDES is still a derived candidate, so an exclusion may carry its provenance too.
-    for (var pk in (table.provenance || {})) if (typeof table.provenance[pk] !== 'string' || !table.provenance[pk]) throw new Error(src + ': provenance.' + pk + ' needs a non-empty one-line string');
-    T.autoProvenance = Object.assign({}, table.provenance || {});
+    // ⛔ C1: provenance is STRUCTURED — `{gate, commit, digest?, run?, note}` or `{unverified: true, note}`, or a list of
+    // them (the schema above) — so "every literal has a measurement behind it" is a GATE (`tools/auto-tables.mjs`), not
+    // something a reader looks for. The tab still shows ONE line per feature, rendered here from the records;
+    // `autoProvenanceRecords` keeps the records themselves.
+    T.autoProvenance = {};
+    T.autoProvenanceRecords = {};
+    for (var pk in (table.provenance || {})) {
+      var recs = [].concat(table.provenance[pk]);
+      T.autoProvenanceRecords[pk] = recs;
+      T.autoProvenance[pk] = recs.map(function (r) {
+        return r.note + (r.unverified ? ' (unverified: no measured row behind it)' : ' (gate ' + r.gate + (r.run ? ', CI run ' + r.run : '') + ' at ' + String(r.commit).slice(0, 9) + (r.digest ? '; digest ' + r.digest : '') + ')');
+      }).join(' \u2014 ');
+    }
     var clk = table.clickables || {};
     for (var cl in clk) {
       known('clickables', 'clickables:' + cl);

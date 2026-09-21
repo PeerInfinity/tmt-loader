@@ -1,0 +1,58 @@
+{
+ "generated": true,
+ "generator": "tools/currency-data.mjs",
+ "generatorVersion": 1,
+ "formatVersion": 1,
+ "game": "the-rpg-tree",
+ "upstream": {
+  "repo": "skralg/The-Modding-Tree",
+  "commit": "094195d91c7da75c79e8562894c2ddaa787b6c5b"
+ },
+ "states": [
+  "fresh"
+ ],
+ "seeds": [
+  1
+ ],
+ "summary": {
+  "buyables": 2,
+  "scored": 0,
+  "price": 0,
+  "requirement": 0,
+  "unknown": 2,
+  "own": 0,
+  "foreign": 0,
+  "several": 0,
+  "impure": 0
+ },
+ "buyables": {
+  "pve": {
+   "11": {
+    "pays": null,
+    "cost": "unknown",
+    "by": [],
+    "scored": false,
+    "pick": "player.pve.points",
+    "how": "affordable",
+    "why": "no field fell by the published cost",
+    "from": [
+     "fresh"
+    ]
+   }
+  },
+  "pvp": {
+   "11": {
+    "pays": null,
+    "cost": "unknown",
+    "by": [],
+    "scored": false,
+    "pick": "player.pvp.points",
+    "how": "affordable",
+    "why": "no field fell by the published cost",
+    "from": [
+     "fresh"
+    ]
+   }
+  }
+ }
+}

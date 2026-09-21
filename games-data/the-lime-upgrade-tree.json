@@ -1,0 +1,96 @@
+{
+ "generated": true,
+ "generator": "tools/currency-data.mjs",
+ "generatorVersion": 1,
+ "formatVersion": 1,
+ "game": "the-lime-upgrade-tree",
+ "upstream": {
+  "repo": "mirc3a22000/the-lime-upgrade-tree",
+  "commit": "e502847fd2c84d3ff36a3068adc140cb66a0038b"
+ },
+ "states": [
+  "fresh"
+ ],
+ "seeds": [
+  1
+ ],
+ "summary": {
+  "buyables": 5,
+  "scored": 0,
+  "price": 0,
+  "requirement": 0,
+  "unknown": 5,
+  "own": 0,
+  "foreign": 0,
+  "several": 0,
+  "impure": 0
+ },
+ "buyables": {
+  "lemons": {
+   "11": {
+    "pays": null,
+    "cost": "unknown",
+    "by": [],
+    "scored": false,
+    "pick": "player.lemons.points",
+    "how": "lift-1",
+    "why": "no field fell by the published cost (1 fell by something else)",
+    "from": [
+     "fresh"
+    ]
+   },
+   "12": {
+    "pays": null,
+    "cost": "unknown",
+    "by": [],
+    "scored": false,
+    "pick": "player.lemons.points",
+    "how": "lift-1",
+    "why": "no field fell by the published cost (1 fell by something else)",
+    "from": [
+     "fresh"
+    ]
+   }
+  },
+  "Infinity": {
+   "11": {
+    "pays": null,
+    "cost": "unknown",
+    "by": [],
+    "scored": false,
+    "pick": "player.Infinity.mass",
+    "how": "lift-1",
+    "why": "no field fell by the published cost (1 fell by something else)",
+    "from": [
+     "fresh"
+    ]
+   }
+  },
+  "orange": {
+   "11": {
+    "pays": null,
+    "cost": "unknown",
+    "by": [],
+    "scored": false,
+    "pick": "player.orange.points",
+    "how": "lift-1",
+    "why": "no field fell by the published cost (1 fell by something else)",
+    "from": [
+     "fresh"
+    ]
+   },
+   "12": {
+    "pays": null,
+    "cost": "unknown",
+    "by": [],
+    "scored": false,
+    "pick": "player.orange.points",
+    "how": "lift-1",
+    "why": "no field fell by the published cost (1 fell by something else)",
+    "from": [
+     "fresh"
+    ]
+   }
+  }
+ }
+}

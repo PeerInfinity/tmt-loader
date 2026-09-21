@@ -1,0 +1,47 @@
+{
+ "generated": true,
+ "generator": "tools/currency-data.mjs",
+ "generatorVersion": 1,
+ "formatVersion": 1,
+ "game": "zavrsni-rad",
+ "upstream": {
+  "repo": "TZR-byte/Inkrementalka",
+  "commit": "41343d9729e7ce8f35526a91ff06f674b7d742e0"
+ },
+ "states": [
+  "fresh"
+ ],
+ "seeds": [
+  1
+ ],
+ "summary": {
+  "buyables": 1,
+  "scored": 1,
+  "price": 1,
+  "requirement": 0,
+  "unknown": 0,
+  "own": 1,
+  "foreign": 0,
+  "several": 0,
+  "impure": 0
+ },
+ "buyables": {
+  "Screen": {
+   "11": {
+    "pays": "player.Screen.points",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.Screen.points",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   }
+  }
+ }
+}

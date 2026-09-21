@@ -1,0 +1,47 @@
+{
+ "generated": true,
+ "generator": "tools/currency-data.mjs",
+ "generatorVersion": 1,
+ "formatVersion": 1,
+ "game": "the-fysc-tree",
+ "upstream": {
+  "repo": "liquidcashews/the-fysc-tree",
+  "commit": "298048c992cff48dd4b268ef2a19c0d99ba996bc"
+ },
+ "states": [
+  "fresh"
+ ],
+ "seeds": [
+  1
+ ],
+ "summary": {
+  "buyables": 1,
+  "scored": 1,
+  "price": 1,
+  "requirement": 0,
+  "unknown": 0,
+  "own": 1,
+  "foreign": 0,
+  "several": 0,
+  "impure": 0
+ },
+ "buyables": {
+  "hexzd": {
+   "11": {
+    "pays": "player.hexzd.points",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.hexzd.points",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   }
+  }
+ }
+}

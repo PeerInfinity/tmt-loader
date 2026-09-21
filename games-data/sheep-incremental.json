@@ -1,0 +1,43 @@
+{
+ "generated": true,
+ "generator": "tools/currency-data.mjs",
+ "generatorVersion": 1,
+ "formatVersion": 1,
+ "game": "sheep-incremental",
+ "upstream": {
+  "repo": "notadragon/counting-sheep-tree",
+  "commit": "d2b4372b768206e8b28e4248d9001b6003fdf71b"
+ },
+ "states": [
+  "fresh"
+ ],
+ "seeds": [
+  1
+ ],
+ "summary": {
+  "buyables": 1,
+  "scored": 0,
+  "price": 0,
+  "requirement": 0,
+  "unknown": 1,
+  "own": 0,
+  "foreign": 0,
+  "several": 0,
+  "impure": 0
+ },
+ "buyables": {
+  "s": {
+   "11": {
+    "pays": null,
+    "cost": "unknown",
+    "by": [],
+    "scored": false,
+    "how": "affordable",
+    "why": "no field fell by the published cost",
+    "from": [
+     "fresh"
+    ]
+   }
+  }
+ }
+}

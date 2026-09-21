@@ -4,12 +4,12 @@
 //   node boot.mjs <id> [--ticks N] [--diff d] [--leg idle|policy] [--prestubs a,b] [--until "<js>"]
 //                      [--storage in.json] [--import player.json] [--save] [--save-storage out.json]
 //                      [--state-out f] [--player-out f] [--ids-out f] [--census]
-//                      [--profile off|all|saved] [--exclude k1,k2] [--auto-opt "k=v;k2=v2"] [--no-auto] [--no-automation]
+//                      [--profile off|all|saved] [--exclude k1,k2] [--auto-opt "k=v;k2=v2"] [--no-auto] [--no-currency] [--no-automation]
 //                      [--marks marks.json ([[name, "<js>"], …])] [--marks-continue] [--stall <game-seconds> [--stall-seen]] [--wall-ms <ms>]
 //                      [--stop-mark <name>] [--snapshots] [--runtime runtime.json] [--predicates list.json] [--eval "<js>"]
 //                      [--planner | --planner=auto|suggest] [--planner-mode auto|suggest|off] [--planner-opt "k=v;k2=v2"]
 //                      [--planner-ladder ladder.json] [--planner-script f.js] [--knowledge-out f] [--goals-out f] [--rounds-out f]
-//                      [--stop-snapshot] [--explain]
+//                      [--stop-snapshot] [--explain] [--random-seed N]
 //   --explain: `tmtLoader.explain()` at the stop (R.explain) — one row per feature with the reason its last decision
 //   returned (docs/automation.md). R.explain_stats is recorded on EVERY automation run and BEFORE that dump, because
 //   `formats` must be 0 for a run that never opened the tab.
@@ -49,7 +49,7 @@ for (let i = 0; i < argv.length; i++) {
   const a = argv[i];
   if (!a.startsWith('--')) A._.push(a);
   else if (a.indexOf('=') > 2) A[a.slice(2, a.indexOf('='))] = a.slice(a.indexOf('=') + 1);   // --planner=auto
-  else if (['save', 'census', 'no-auto', 'no-automation', 'marks-continue', 'stall-seen', 'snapshots', 'planner', 'stop-snapshot', 'explain'].includes(a.slice(2))) A[a.slice(2)] = true;
+  else if (['save', 'census', 'no-auto', 'no-currency', 'no-automation', 'marks-continue', 'stall-seen', 'snapshots', 'planner', 'stop-snapshot', 'explain'].includes(a.slice(2))) A[a.slice(2)] = true;
   else A[a.slice(2)] = argv[++i];
 }
 const ID = A._[0];
@@ -135,6 +135,15 @@ globalThis.console = new Proxy(CONSOLE_KEEP, { get: (t, k) => (typeof t[k] === '
 const sha256hex = (s) => crypto.createHash('sha256').update(s).digest('hex');
 for (const k of ['process', 'require', 'module', 'exports', 'fetch', 'Buffer', 'global', 'WebAssembly']) { try { delete globalThis[k]; } catch {} }
 const run = (code, filename) => vm.runInThisContext(code, { filename });
+// --random-seed N (C1, tools/currency-data.mjs): a SEEDED Math.random, counting its calls into R.randomCalls, installed
+// before any game file runs. A game that draws randomness while it boots or while a reader runs can give a different
+// answer on every boot (The Gaming Tree picks a buyable's paying item at random); the generator reads such a game under
+// several seeds and abstains wherever they disagree. Absent = the engine's own Math.random, untouched.
+if (A['random-seed'] !== undefined) {
+  let s = Number(A['random-seed']) >>> 0;
+  R.randomSeed = s; R.randomCalls = 0;
+  Math.random = function () { R.randomCalls++; s = (s + 0x6D2B79F5) >>> 0; let x = s; x = Math.imul(x ^ (x >>> 15), x | 1); x ^= x + Math.imul(x ^ (x >>> 7), x | 61); return ((x ^ (x >>> 14)) >>> 0) / 4294967296; };
+}
 // The manifest's prestubs first, then any names the parent learned from an earlier attempt's ReferenceError.
 R.prestubs = [...new Set([...(manifest.headless?.prestubs || []), ...(A.prestubs ? A.prestubs.split(',') : [])])];
 for (const n of R.prestubs) globalThis[n] = stub(n);
@@ -193,11 +202,22 @@ globalThis.tmtLoader = {
   pause() { return 0; }, resume() { return 0; },
   storage: { prefix: storageShim.prefix, list: () => storageShim.list(lsStore), clear: () => storageShim.clear(lsStore) },
 };
-// the per-game automation table (manifest.auto): DATA, inserted before tmt-auto.js as the page does (tmt-auto.js derives
-// the features from it); --no-auto = no table (derived defaults only)
+// the per-game automation table (manifest.auto = games-auto/<id>.json, C1): a JSON DOCUMENT, parsed into
+// tmtLoader.autoTable before tmt-auto.js runs, as the page does (tmt-auto.js validates it and derives the features from
+// it); --no-auto = no table (derived defaults only)
 if (AUTOMATION && manifest.auto && !A['no-auto']) {
-  try { run(fs.readFileSync(path.join(REPO, manifest.auto), 'utf8'), manifest.auto); R.auto = manifest.auto; }
+  try { globalThis.tmtLoader.autoTable = JSON.parse(fs.readFileSync(path.join(REPO, manifest.auto), 'utf8')); R.auto = manifest.auto; }
   catch (e) { R.file_errors.push({ file: manifest.auto, error: String(e.message).slice(0, 200) }); }
+}
+// the GENERATED currency data (C1, games-data/<id>.json): the same file the page fetches, by the same index, in
+// automation mode only. --no-currency = none (every buyable's currency unknown: the behaviour before C1 — the control
+// `gates-c1` part 4 compares against, to the hash).
+if (AUTOMATION && !A['no-currency']) {
+  try {
+    const idx = JSON.parse(fs.readFileSync(path.join(REPO, 'games-data/index.json'), 'utf8'));
+    globalThis.tmtLoader.currencyData = idx.games.includes(ID) ? JSON.parse(fs.readFileSync(path.join(REPO, `games-data/${ID}.json`), 'utf8')) : null;
+    R.currency = globalThis.tmtLoader.currencyData ? `games-data/${ID}.json` : null;
+  } catch (e) { R.file_errors.push({ file: 'games-data', error: String(e.message).slice(0, 200) }); R.autoLoadError = 'games-data: ' + String(e.message).slice(0, 200); }
 }
 try { run(fs.readFileSync(path.join(REPO, 'loader/tmt-auto.js'), 'utf8'), 'loader/tmt-auto.js'); }
 catch (e) { R.file_errors.push({ file: 'loader/tmt-auto.js', error: String(e.message).slice(0, 200) }); R.autoLoadError = String(e.message).slice(0, 300); }

@@ -40,7 +40,7 @@ try {
       const wantAuto = !!m.auto;
       const ok = automation
         ? r.ok && r.auNodes === 1 && r.playerAu === true && r.gamesAutoRequests.length === (wantAuto ? 1 : 0)
-        : r.ok && r.auNodes === 0 && r.playerAu === false && r.gamesAutoRequests.length === 0 && (L1_TREE_NODES[id] === undefined || r.layerNodes === L1_TREE_NODES[id]);
+        : r.ok && r.auNodes === 0 && r.playerAu === false && r.gamesAutoRequests.length === 0 && !(r.gamesDataRequests || []).length && (L1_TREE_NODES[id] === undefined || r.layerNodes === L1_TREE_NODES[id]);
       row({ gate: automation ? 'L2-1 G1 load WITH ?automation=1 (control)' : 'L2-1 G1 load, plain page (no flag)', id, ok, ticks: r.ticks, gameSeconds: Math.round(r.ticks * 0.05 * 1e9) / 1e9, diff: 0.05, hash: null,
         notes: `ready ${r.loadMs} ms; ${r.layerNodes} \`${LAYER_NODE_SELECTOR}\`${!automation && L1_TREE_NODES[id] !== undefined ? ` (L1: ${L1_TREE_NODES[id]})` : ''}; \`${AU_NODE_SELECTOR}\` × ${r.auNodes}; player.au ${r.playerAu ? 'present' : 'absent'}; games-auto requests ${r.gamesAutoRequests.length}${r.gamesAutoRequests.length ? ' (' + r.gamesAutoRequests.map((u) => new URL(u).pathname).join(', ') + ')' : ''}; ${r.requests} requests, ${r.blocked} blocked, ${r.failed.length} failed, ${r.pageErrors.length} page errors` });
     }

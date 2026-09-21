@@ -1,0 +1,774 @@
+{
+ "generated": true,
+ "generator": "tools/currency-data.mjs",
+ "generatorVersion": 1,
+ "formatVersion": 1,
+ "game": "universal-reconstruction",
+ "upstream": {
+  "repo": "murapix/Universal-Reconstruction",
+  "commit": "a8cd02c2fd080bc0a4be6fb8ed2da583b7bf82c4"
+ },
+ "states": [
+  "fresh"
+ ],
+ "seeds": [
+  1
+ ],
+ "summary": {
+  "buyables": 56,
+  "scored": 56,
+  "price": 56,
+  "requirement": 0,
+  "unknown": 0,
+  "own": 0,
+  "foreign": 56,
+  "several": 0,
+  "impure": 0
+ },
+ "buyables": {
+  "skyrmion": {
+   "111": {
+    "pays": "player.skyrmion.pion.points",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "trace"
+    ],
+    "scored": true,
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "112": {
+    "pays": "player.skyrmion.pion.points",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "trace"
+    ],
+    "scored": true,
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "113": {
+    "pays": "player.skyrmion.pion.points",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "trace"
+    ],
+    "scored": true,
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "114": {
+    "pays": "player.skyrmion.pion.points",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "trace"
+    ],
+    "scored": true,
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "121": {
+    "pays": "player.skyrmion.pion.points",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "trace"
+    ],
+    "scored": true,
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "122": {
+    "pays": "player.skyrmion.pion.points",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "trace"
+    ],
+    "scored": true,
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "123": {
+    "pays": "player.skyrmion.pion.points",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "trace"
+    ],
+    "scored": true,
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "124": {
+    "pays": "player.skyrmion.pion.points",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "trace"
+    ],
+    "scored": true,
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "131": {
+    "pays": "player.skyrmion.pion.points",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "trace"
+    ],
+    "scored": true,
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "132": {
+    "pays": "player.skyrmion.pion.points",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "trace"
+    ],
+    "scored": true,
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "133": {
+    "pays": "player.skyrmion.pion.points",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "trace"
+    ],
+    "scored": true,
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "134": {
+    "pays": "player.skyrmion.pion.points",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "trace"
+    ],
+    "scored": true,
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "141": {
+    "pays": "player.skyrmion.pion.points",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "trace"
+    ],
+    "scored": true,
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "142": {
+    "pays": "player.skyrmion.pion.points",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "trace"
+    ],
+    "scored": true,
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "143": {
+    "pays": "player.skyrmion.pion.points",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "trace"
+    ],
+    "scored": true,
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "144": {
+    "pays": "player.skyrmion.pion.points",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "trace"
+    ],
+    "scored": true,
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "211": {
+    "pays": "player.skyrmion.spinor.points",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "trace"
+    ],
+    "scored": true,
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "212": {
+    "pays": "player.skyrmion.spinor.points",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "trace"
+    ],
+    "scored": true,
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "213": {
+    "pays": "player.skyrmion.spinor.points",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "trace"
+    ],
+    "scored": true,
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "214": {
+    "pays": "player.skyrmion.spinor.points",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "trace"
+    ],
+    "scored": true,
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "221": {
+    "pays": "player.skyrmion.spinor.points",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "trace"
+    ],
+    "scored": true,
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "222": {
+    "pays": "player.skyrmion.spinor.points",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "trace"
+    ],
+    "scored": true,
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "223": {
+    "pays": "player.skyrmion.spinor.points",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "trace"
+    ],
+    "scored": true,
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "224": {
+    "pays": "player.skyrmion.spinor.points",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "trace"
+    ],
+    "scored": true,
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "231": {
+    "pays": "player.skyrmion.spinor.points",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "trace"
+    ],
+    "scored": true,
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "232": {
+    "pays": "player.skyrmion.spinor.points",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "trace"
+    ],
+    "scored": true,
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "233": {
+    "pays": "player.skyrmion.spinor.points",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "trace"
+    ],
+    "scored": true,
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "234": {
+    "pays": "player.skyrmion.spinor.points",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "trace"
+    ],
+    "scored": true,
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "241": {
+    "pays": "player.skyrmion.spinor.points",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "trace"
+    ],
+    "scored": true,
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "242": {
+    "pays": "player.skyrmion.spinor.points",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "trace"
+    ],
+    "scored": true,
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "243": {
+    "pays": "player.skyrmion.spinor.points",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "trace"
+    ],
+    "scored": true,
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "244": {
+    "pays": "player.skyrmion.spinor.points",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "trace"
+    ],
+    "scored": true,
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   }
+  },
+  "fome": {
+   "11": {
+    "pays": "player.fome.fome.protoversal.points",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "trace"
+    ],
+    "scored": true,
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "12": {
+    "pays": "player.fome.fome.protoversal.points",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "trace"
+    ],
+    "scored": true,
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "13": {
+    "pays": "player.fome.fome.protoversal.points",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "trace"
+    ],
+    "scored": true,
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "14": {
+    "pays": "player.fome.fome.protoversal.points",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.fome.fome.protoversal.points",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "21": {
+    "pays": "player.fome.fome.infinitesimal.points",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "trace"
+    ],
+    "scored": true,
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "22": {
+    "pays": "player.fome.fome.infinitesimal.points",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "trace"
+    ],
+    "scored": true,
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "23": {
+    "pays": "player.fome.fome.infinitesimal.points",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "trace"
+    ],
+    "scored": true,
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "24": {
+    "pays": "player.fome.fome.infinitesimal.points",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.fome.fome.infinitesimal.points",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "31": {
+    "pays": "player.fome.fome.subspatial.points",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "trace"
+    ],
+    "scored": true,
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "32": {
+    "pays": "player.fome.fome.subspatial.points",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "trace"
+    ],
+    "scored": true,
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "33": {
+    "pays": "player.fome.fome.subspatial.points",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "trace"
+    ],
+    "scored": true,
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "34": {
+    "pays": "player.fome.fome.subspatial.points",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.fome.fome.subspatial.points",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "41": {
+    "pays": "player.fome.fome.subplanck.points",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "trace"
+    ],
+    "scored": true,
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "42": {
+    "pays": "player.fome.fome.subplanck.points",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "trace"
+    ],
+    "scored": true,
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "43": {
+    "pays": "player.fome.fome.subplanck.points",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "trace"
+    ],
+    "scored": true,
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "44": {
+    "pays": "player.fome.fome.subplanck.points",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.fome.fome.subplanck.points",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "51": {
+    "pays": "player.fome.fome.quantum.points",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "trace"
+    ],
+    "scored": true,
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "52": {
+    "pays": "player.fome.fome.quantum.points",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "trace"
+    ],
+    "scored": true,
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "53": {
+    "pays": "player.fome.fome.quantum.points",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "trace"
+    ],
+    "scored": true,
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "54": {
+    "pays": "player.fome.fome.quantum.points",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.fome.fome.quantum.points",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   }
+  },
+  "inflaton": {
+   "11": {
+    "pays": "player.fome.fome.subspatial.points",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "trace"
+    ],
+    "scored": true,
+    "how": "lift-2",
+    "from": [
+     "fresh"
+    ]
+   },
+   "12": {
+    "pays": "player.fome.fome.subspatial.points",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "trace"
+    ],
+    "scored": true,
+    "how": "lift-2",
+    "from": [
+     "fresh"
+    ]
+   },
+   "13": {
+    "pays": "player.fome.fome.quantum.points",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "trace"
+    ],
+    "scored": true,
+    "how": "lift-2",
+    "from": [
+     "fresh"
+    ]
+   },
+   "14": {
+    "pays": "player.fome.fome.subspatial.points",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "trace"
+    ],
+    "scored": true,
+    "how": "lift-2",
+    "from": [
+     "fresh"
+    ]
+   }
+  }
+ }
+}

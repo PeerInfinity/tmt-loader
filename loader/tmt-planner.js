@@ -433,6 +433,20 @@
     return { dimension: 'player.' + name, how: 'currencyInternalName on player' };
   }
 
+  // ⛔ C1: A BUYABLE'S CURRENCY IS READ FROM THE GENERATED DATA (`games-data/<id>.json`, via `tmtLoader.currencyOf`),
+  // not from `currencyOf` above — which mirrors the engine's UPGRADE-only `canAffordPurchase` and so named "the
+  // layer's own points" for every buyable, six of PTR's eight `buy` rows at M24 wrongly. A SCORED single field is
+  // the dimension; a scored multi-currency price is the first field with the rest in `multi`; an abstention keeps the
+  // old convention and SAYS it is one, so no row the planner drives on loses its dimension.
+  function buyableCurrencyOf(l, id, thing) {
+    var g = typeof T.currencyOf === 'function' ? T.currencyOf(l, id) : null;
+    if (g && g.scored && typeof g.pays === 'string') return { dimension: g.pays, how: 'the generated currency data (a ' + g.cost + ', by ' + g.by.join(' + ') + ')' };
+    if (g && g.scored && Array.isArray(g.pays)) return { dimension: g.pays[0], how: 'the generated currency data (a multi-currency ' + g.cost + ')', multi: g.pays.slice() };
+    var c = currencyOf(l, thing);
+    if (g) c.how += ' — a CONVENTION: the currency reader abstained (' + (g.why || 'unscored') + ')';
+    return c;
+  }
+
   // The dimension a layer's requirement is measured in: the fields layers[l].baseAmount() reads. One numeric read is
   // the dimension; several make it multi (recorded, not guessed).
   function baseDimension(l) {
@@ -445,6 +459,362 @@
     return { dimension: tr.numeric[0], how: 'traced through baseAmount(), several fields read', multi: tr.numeric.slice() };
   }
   P.baseDimension = baseDimension;
+
+  // ---- C1: the purchase-CURRENCY reader (docs/automation.md, "The currency reader") --------------------------------
+  // ⛔ A BUYABLE DECLARES NO CURRENCY TO THE ENGINE. `currencyInternalName` is an UPGRADE field (0 of 841 buyable
+  // definitions over 102 games carry it), and "it costs the layer's own points" is a convention that is wrong for 374
+  // of 973 resolvable buyables over 52 games (probe `buyable-currency-from-buy-source`). So the answer is READ, by three
+  // instruments, and only the third is ground truth:
+  //   1. CANDIDATES — `traceReads(canAfford)`: every `player` field the affordability check READS (reads are not the
+  //      spend: PTR's `s` 11 reads `player.g.power` AND, through `layers.s.space()`, `player.s.spent`);
+  //   2. THE PICK — the decrement target in the `buy()` source, comment-stripped, by the probe's pattern plus three
+  //      more (a local alias of a `player` object, `-=` on a number, `addPoints(…, negative)`);
+  //   3. THE SCORE — on a rolled-back copy, make the buyable affordable (it is, or ONE candidate raised to ten times
+  //      the published cost makes it so, or all of them together), run its own `buy()`, and find **the field that fell
+  //      BY THE COST** — never "a field that fell": a `buy()` that decrements something incidental, or by something
+  //      other than the cost, would be read as the currency and reproduce the defect this reader exists to remove.
+  // Three-valued: `pays` is a path, a list (a multi-currency price), or null — and it is the SCORE's answer or null.
+  // An unscored read ABSTAINS (`pays: null, scored: false`); the pick and the candidates are kept beside it as
+  // evidence, never promoted. HARNESS-ONLY, like everything in this file: the rollback cannot run in the page.
+  function stripComments(src) {
+    var out = '', i = 0, n = src.length, q = null;
+    while (i < n) {
+      var ch = src[i], nx = src[i + 1];
+      if (q) { out += ch; if (ch === '\\') { out += nx === undefined ? '' : nx; i += 2; continue; } if (ch === q) q = null; i++; continue; }
+      if (ch === '"' || ch === "'" || ch === '`') { q = ch; out += ch; i++; continue; }
+      if (ch === '/' && nx === '/') { while (i < n && src[i] !== '\n') i++; continue; }
+      if (ch === '/' && nx === '*') { i += 2; while (i < n && !(src[i] === '*' && src[i + 1] === '/')) i++; i += 2; continue; }
+      out += ch; i++;
+    }
+    return out;
+  }
+  var PATH_RE = '(?:\\.[A-Za-z_$][\\w$]*|\\[[^\\]]+\\])';
+  var DEC_RE = new RegExp('(player' + PATH_RE + '+)\\s*=\\s*\\1\\s*\\.\\s*(sub|minus|subtract)\\s*\\(', 'g');
+  var MINUSEQ_RE = new RegExp('(player' + PATH_RE + '+)\\s*-=', 'g');
+  var ALIAS_RE = new RegExp('(?:let|var|const)\\s+([A-Za-z_$][\\w$]*)\\s*=\\s*(player' + PATH_RE + '*)\\s*[;,\\n]', 'g');
+  var ADDPOINTS_RE = /addPoints\s*\(\s*([^,()]+?)\s*,\s*(-|[^)]*?\.neg\s*\(\s*\)|[^)]*?\.(?:times|mul)\s*\(\s*-)/g;
+  // `[this.layer]` → `.<l>`; `["x"]` → `.x`; `this.layer` alone → `<l>`. Anything still bracketed is a DYNAMIC index
+  // this reader cannot resolve, and it says so rather than guessing.
+  function normPath(p, l) {
+    var s = String(p).replace(/\s+/g, '').replace(/\[this\.layer\]/g, '.' + l).replace(/\[(["'])([\w$]+)\1\]/g, '.$2');
+    return /\[/.test(s) ? { path: null, raw: s } : { path: s, raw: s };
+  }
+  // The argument of the call that starts at `open` (the index of its `(`), by bracket depth.
+  function callArg(src, open) {
+    var d = 0;
+    for (var i = open; i < src.length; i++) { if (src[i] === '(') d++; else if (src[i] === ')') { d--; if (!d) return src.slice(open + 1, i); } }
+    return src.slice(open + 1);
+  }
+  var COST_RE = /cost/i;
+  /** Instrument 2: the decrement targets in a buy() source. [{path|null, raw, how, costArg}] */
+  function decrementsIn(fn, l) {
+    var src = stripComments(Function.prototype.toString.call(fn)), out = [], m, seen = {};
+    var push = function (raw, how, arg) {
+      var n = normPath(raw, l), k = n.raw;
+      if (seen[k]) { if (arg !== undefined && COST_RE.test(arg)) seen[k].costArg = true; return; }
+      seen[k] = { path: n.path, raw: n.raw, how: how, costArg: arg !== undefined && COST_RE.test(arg) };
+      out.push(seen[k]);
+    };
+    DEC_RE.lastIndex = 0;
+    while ((m = DEC_RE.exec(src))) push(m[1], 'assign-sub', callArg(src, DEC_RE.lastIndex - 1));
+    MINUSEQ_RE.lastIndex = 0;
+    while ((m = MINUSEQ_RE.exec(src))) push(m[1], 'minus-eq', src.slice(MINUSEQ_RE.lastIndex, src.indexOf(';', MINUSEQ_RE.lastIndex) < 0 ? undefined : src.indexOf(';', MINUSEQ_RE.lastIndex)));
+    ALIAS_RE.lastIndex = 0;
+    var aliases = [];
+    while ((m = ALIAS_RE.exec(src))) aliases.push([m[1], m[2]]);
+    aliases.forEach(function (a) {
+      var re = new RegExp('(?:^|[^\\w$.])(' + a[0].replace(/\$/g, '\\$') + PATH_RE + '+)\\s*=\\s*\\1\\s*\\.\\s*(sub|minus|subtract)\\s*\\(', 'g'), mm;
+      while ((mm = re.exec(src))) push(a[1] + mm[1].slice(a[0].length), 'alias', callArg(src, re.lastIndex - 1));
+    });
+    ADDPOINTS_RE.lastIndex = 0;
+    while ((m = ADDPOINTS_RE.exec(src))) {
+      var who = m[1].replace(/\s+/g, ''), lay = who === 'this.layer' ? l : (/^(["'])([\w$]+)\1$/.exec(who) || [])[2];
+      var arg = callArg(src, src.indexOf('(', m.index));
+      if (lay) push('player.' + lay + '.points', 'addPoints-negative', arg); else push('player[' + who + '].points', 'addPoints-negative', arg);
+    }
+    return { src: src, found: out };
+  }
+  function leaves(obj, path, depth, out) {
+    if (depth > 5 || !obj || typeof obj !== 'object') return out;
+    var ks = Object.keys(obj);
+    for (var i = 0; i < ks.length; i++) {
+      var v = obj[ks[i]], p = path + '.' + ks[i];
+      if (isDec(v) || typeof v === 'number') out[p] = v;
+      else if (v && typeof v === 'object' && !Array.isArray(v)) leaves(v, p, depth + 1, out);
+    }
+    return out;
+  }
+  // A published cost as its PARTS: a number / Decimal is one part; an object of them (PTR's `i` and `hs` publish
+  // `{ib, nb, hb}` / `{hs, ba}`) is a multi-currency price, one part per key. null = nothing usable.
+  function costParts(cost) {
+    var ok = function (x) { try { return numLike(x) && D(x).gt(0) && isFinite(Number(D(x).log10())); } catch (e) { return false; } };
+    if (cost === undefined || cost === null) return null;
+    if (numLike(cost)) return ok(cost) ? [D(cost)] : null;
+    if (typeof cost === 'object' && !Array.isArray(cost)) {
+      var ps = [];
+      for (var k in cost) if (ok(cost[k])) ps.push(D(cost[k]));
+      return ps.length ? ps : null;
+    }
+    return null;
+  }
+  // The fields whose value fell by exactly one of the cost's parts (relative 1e-9), and every field that fell at all.
+  function fellBy(before, after, parts) {
+    var exact = [], any = [];
+    for (var p in before) {
+      if (!(p in after)) continue;
+      var b = D(before[p]), a = D(after[p]);
+      if (!a.lt(b)) continue;
+      any.push(p);
+      var d = b.sub(a);
+      // ⚠ Above 9e15 break_eternity keeps a LOGARITHM (layer 1), and a difference of two such numbers is only as exact
+      // as the log's own double: at PTR's `s` 16 (1e30,000,000) the relative error of `10c − 9c` is ~1e-8, not 1e-15.
+      // So the tolerance is taken in log10, scaled by the magnitude; below 1e300 it is the plain relative 1e-9.
+      if (parts && parts.some(function (c) {
+        if (d.lte(0)) return false;
+        var lc = Number(c.log10()), ld = Number(d.log10());
+        return Math.abs(lc) < 300 ? d.sub(c).abs().lte(c.times(1e-9)) : Math.abs(ld - lc) <= Math.max(1e-9, Math.abs(lc) * 1e-13);
+      })) exact.push(p);
+    }
+    return { exact: exact, any: any };
+  }
+  // Subsets of 1..k of a list, smallest first (the lift search: ONE raised field is the strongest evidence).
+  function subsets(list, k) {
+    var out = [];
+    var rec = function (start, cur) {
+      if (cur.length) out.push(cur.slice());
+      if (cur.length === k) return;
+      for (var i = start; i < list.length; i++) { cur.push(list[i]); rec(i + 1, cur); cur.pop(); }
+    };
+    rec(0, []);
+    out.sort(function (a, b) { return a.length - b.length; });
+    return out;
+  }
+  function lifted(v, target) {
+    if (isDec(v)) return D(v).gte(target) ? v : D(target);
+    if (typeof v === 'number') return v >= Number(target) ? v : Number(target);
+    return v;
+  }
+  function callOn(o, name) { var f = o[name]; return typeof f === 'function' ? f.call(o) : f; }
+  /**
+   * readBuyable(l, id, {score}) — the three instruments on one buyable. `score: false` runs only the two cheap ones.
+   * Every perturbation happens inside an excursion (the rollback); the canAfford() trace runs OUTSIDE one, and its
+   * purity is measured, not assumed (`pure`).
+   */
+  function readBuyable(l, id, opts) {
+    opts = opts || {};
+    var B = layers[l].buyables[id], r = { layer: l, id: String(id) };
+    if (typeof B.buy !== 'function') { r.pays = null; r.cost = 'unknown'; r.by = []; r.scored = false; r.why = 'no buy() function'; return r; }
+    // instrument 1 — the candidates, and whether reading them moved anything
+    var before = JSON.stringify(player), tr = traceReads(function () { return callOn(B, 'canAfford'); });
+    r.pure = JSON.stringify(player) === before;
+    var own = 'player.' + l + '.buyables.' + id;
+    r.candidates = tr.numeric.filter(function (p) { return p !== own; });
+    // instrument 2 — the pick
+    var dec = decrementsIn(B.buy, l), afSrc = typeof B.canAfford === 'function' ? stripComments(Function.prototype.toString.call(B.canAfford)) : '';
+    var resolved = dec.found.filter(function (d) { return d.path; });
+    r.pick = resolved.length === 1 ? resolved[0].path : resolved.length > 1 ? resolved.map(function (d) { return d.path; }) : null;
+    r.pickHow = dec.found.map(function (d) { return d.how; });
+    if (dec.found.some(function (d) { return !d.path; })) r.unresolved = dec.found.filter(function (d) { return !d.path; }).map(function (d) { return d.raw; });
+    var subtractsCost = dec.found.some(function (d) { return d.costArg; });
+    var comparesCost = COST_RE.test(afSrc) && /\.(gte|gt|lte|lt|cmp|eq|neq|max|min)\s*\(|>=|<=|[<>]/.test(afSrc);
+    r.static = { subtractsCost: subtractsCost, comparesCost: comparesCost };
+    var t = tmp[l] && tmp[l].buyables && tmp[l].buyables[id];
+    var parts = costParts(t ? t.cost : undefined), costOk = !!parts;
+    r.published = costOk ? (parts.length === 1 ? dstr(parts[0]) : parts.map(dstr)) : null;
+    if (opts.score === false) { r.pays = null; r.cost = 'unknown'; r.by = []; r.scored = false; r.why = 'not scored'; return r; }
+    // instrument 3 — the score, on a rolled-back copy. The LIFT raises candidates to ten times the largest part of the
+    // published cost: one field first, then pairs, then triples (PTR's `s` needs Generator Power AND building space,
+    // and raising `player.s.spent` with them closes the space again, so "all of them at once" is not the fallback it
+    // looks like). ⚠ The CONTEXT lift is what a locked layer needs before any of that can be asked: its own
+    // `player[l].unlocked` and the buyable's evaluated `unlocked` set true — on the copy only, and said in `how`.
+    var seenReads = null;
+    var s = P.excursion(function () {
+      var af = function () { try { return !!callOn(B, 'canAfford'); } catch (e) { return false; } };
+      var how = null, lift = [];
+      if (af()) how = 'affordable';
+      else if (costOk) {
+        var target = parts.reduce(function (m, c) { return c.gt(m) ? c : m; }, D(0)).times(10);
+        var ctx = false;
+        // ⛔ A TRACE SEES ONLY THE BRANCH THAT RAN. `a.gte(cost) && space().gt(0)` short-circuits on the first term, so
+        // the fields `space()` reads are not candidates until the first term is TRUE. The search therefore re-traces
+        // after every raise: a state is a set of raised fields, its children add one field the state's own trace read,
+        // breadth first (one raised field is the strongest evidence), at most three deep.
+        var origin = {};
+        seenReads = r.candidates.slice();
+        r.candidates.forEach(function (p) { origin[p] = getPath(p); });
+        var tryLift = function () {
+          var queue = [[]], seenSets = {}, tries = 0;
+          while (queue.length && tries < 64) {
+            var set = queue.shift(), key = set.slice().sort().join('|');
+            if (seenSets[key]) continue;
+            seenSets[key] = 1; tries++;
+            var saved = set.map(function (p) { return getPath(p); });
+            set.forEach(function (p, j) { if (!(p in origin)) origin[p] = saved[j]; setPath(p, lifted(saved[j], target)); });
+            var tr2 = traceReads(function () { return callOn(B, 'canAfford'); });
+            tr2.numeric.forEach(function (p) { if (p !== own && seenReads.indexOf(p) < 0) seenReads.push(p); });
+            if (!tr2.error && tr2.value) return set;
+            if (set.length < 3) tr2.numeric.forEach(function (p) { if (p !== own && set.indexOf(p) < 0 && numLike(getPath(p))) queue.push(set.concat([p])); });
+            set.forEach(function (p, j) { setPath(p, saved[j]); });
+          }
+          return null;
+        };
+        lift = tryLift();
+        if (!lift) {
+          if (player[l] && player[l].unlocked === false) { player[l].unlocked = true; ctx = true; }
+          if (t && t.unlocked === false) { t.unlocked = true; ctx = true; }
+          if (ctx) lift = tryLift();
+        }
+        // ⛔ TIGHTEN: a field raised to 10× the LARGEST part swallows a small one — PTR's `hs` 11 costs {hs: 1, ba: 1e360},
+        // and 1e361 − 1 is 1e361, so the Hindrance Spirit it really spends would read as not spent. Each raised field
+        // is lowered to 10× the smallest part that keeps the buyable affordable.
+        if (lift && lift.length && parts.length > 1) {
+          var asc = parts.slice().sort(function (x, y) { return x.cmp(y); });
+          lift.forEach(function (p) {
+            var cur = getPath(p), base = origin[p];
+            for (var k = 0; k < asc.length; k++) {
+              var cand = lifted(base, asc[k].times(10));
+              if (isDec(cand) ? D(cand).gte(cur) : Number(cand) >= Number(cur)) break;
+              setPath(p, cand);
+              if (af()) { cur = cand; break; }
+              setPath(p, cur);
+            }
+          });
+        }
+        if (lift) how = (ctx ? 'unlock+' : '') + (lift.length ? 'lift-' + lift.length : 'affordable');
+      }
+      if (!how) return { scorable: false, why: costOk ? 'not affordable, and no lift of up to three candidates to 10\u00d7 the cost makes it so' : 'not affordable, and it publishes no usable cost to lift towards' };
+      // ⚠ The EVALUATED copy of `canAfford` is stale after a lift, and a `buy()` may re-check it (Plague Tree's 303
+      // buyables do: `if (tmp[this.layer].buyables[this.id].canAfford) …`). `canAfford()` has just been evaluated TRUE
+      // on this copy, so its evaluated copy is set to match — what the engine's next updateTemp would write.
+      var tb = tmp[l] && tmp[l].buyables && tmp[l].buyables[id];
+      if (tb) { if ('canAfford' in tb) tb.canAfford = true; if ('canBuy' in tb) tb.canBuy = true; }
+      var amt0 = JSON.stringify(player);
+      var b0 = leaves(player, 'player', 0, {});
+      var err = null;
+      try { B.buy.call(B); } catch (e) { err = String(e && e.message || e).slice(0, 120); }
+      var b1 = leaves(player, 'player', 0, {});
+      var bought = JSON.stringify(player) !== amt0;   // ⚠ ANY change: a spell (PTR's `m`) spends and moves no amount
+      var f = fellBy(b0, b1, parts);
+      return { scorable: true, how: how, lift: lift || [], bought: bought, error: err, exact: f.exact, fell: f.any };
+    });
+    r.score = s;
+    // the CANDIDATES are every field any trace of the search read — the first trace alone stops at the first false term
+    if (seenReads) r.candidates = seenReads.slice().sort();
+    if (s.exact) s.exact.sort();
+    if (Array.isArray(r.pick)) r.pick.sort();
+    // the requirement's compared field: which candidate, set to zero, makes the ORIGINAL (lifted) state unaffordable
+    if (s.scorable && !s.exact.length && s.bought && r.static.comparesCost) {
+      s.needed = P.excursion(function () {
+        var out = [], target = costOk ? parts.reduce(function (m, c) { return c.gt(m) ? c : m; }, D(0)).times(10) : null;
+        if (/^unlock\+/.test(s.how)) { if (player[l]) player[l].unlocked = true; var t3 = tmp[l] && tmp[l].buyables && tmp[l].buyables[id]; if (t3) t3.unlocked = true; }
+        if (s.lift.length && target) s.lift.forEach(function (p) { setPath(p, lifted(getPath(p), target)); });
+        var reads = traceReads(function () { return callOn(B, 'canAfford'); }).numeric.filter(function (p) { return p !== 'player.' + l + '.buyables.' + id; });
+        for (var i = 0; i < reads.length; i++) {
+          var p = reads[i], v = getPath(p);
+          if (!numLike(v)) continue;
+          setPath(p, isDec(v) ? D(0) : 0);
+          var ok = false;
+          try { ok = !!callOn(B, 'canAfford'); } catch (e) { ok = false; }
+          setPath(p, v);
+          if (!ok) out.push(p);
+        }
+        return out;
+      });
+    }
+    // the verdict
+    var by = [], pays = null, kind = 'unknown', scored = false;
+    if (s.scorable && s.bought && s.exact.length) {
+      pays = s.exact.length === 1 ? s.exact[0] : s.exact.slice();
+      kind = 'price'; scored = true; by.push('rollback');
+      var same = function (x) { return JSON.stringify(x) === JSON.stringify(pays); };
+      if (same(r.pick)) by.push('regex');
+      if ((Array.isArray(pays) ? pays : [pays]).every(function (p) { return r.candidates.indexOf(p) >= 0; })) by.push('trace');
+    } else if (s.scorable && s.bought && s.needed && s.needed.length === 1 && !subtractsCost) {
+      pays = s.needed[0]; kind = 'requirement'; scored = true; by.push('rollback');
+      if (r.candidates.indexOf(pays) >= 0) by.push('trace');
+    } else {
+      r.why = !s.scorable ? s.why : !s.bought ? 'buy() changed nothing' + (s.error ? ' (it threw: ' + s.error + ')' : '')
+        : s.exact.length ? '' : 'no field fell by the published cost' + (s.fell.length ? ' (' + s.fell.length + ' fell by something else)' : '');
+    }
+    r.pays = pays; r.cost = kind; r.by = by; r.scored = scored;
+    return r;
+  }
+  P.readBuyable = readBuyable;
+  /**
+   * readUpgrades() — C1's question for UPGRADES: an upgrade DOES declare its currency to the engine (currencyOf above
+   * mirrors canAffordPurchase), so the reader is needed only where that declaration is contradicted. On a rolled-back
+   * copy each upgrade with a usable cost is made affordable (its declared field raised to 10× the cost, its layer and
+   * its evaluated `unlocked` set true), bought through the ENGINE'S OWN buyUpgrade, and the field that fell by the cost
+   * is compared with the declared one: agree / contradicted / nothing fell / unscorable.
+   */
+  P.readUpgrades = function () {
+    var out = [], ls = allLayers(), buy = api('buyUpgrade') || api('buyUpg');
+    if (!buy) return { error: 'this engine has no buyUpgrade()' };
+    for (var i = 0; i < ls.length; i++) {
+      var l = ls[i], L = layers[l];
+      if (!L || !L.upgrades || typeof L.upgrades !== 'object' || !player[l]) continue;
+      var ids = Object.keys(L.upgrades).filter(function (k) { return !isNaN(k) && L.upgrades[k] && typeof L.upgrades[k] === 'object'; });
+      for (var j = 0; j < ids.length; j++) {
+        var id = ids[j], U = L.upgrades[id], tu = tmp[l] && tmp[l].upgrades && tmp[l].upgrades[id];
+        var r = { layer: l, id: String(id) };
+        try {
+          var decl = currencyOf(l, U);
+          r.declared = decl.dimension; r.declaredHow = decl.how;
+          var parts = costParts(tu ? tu.cost : undefined);
+          if (!parts || !decl.dimension) { r.verdict = 'unscorable'; r.why = !parts ? 'no usable cost' : 'the declared currency is not a path'; out.push(r); continue; }
+          if (U.pseudoUnl !== undefined) { r.verdict = 'unscorable'; r.why = 'a pseudo-upgrade'; out.push(r); continue; }
+          r.truth = P.excursion(function () {
+            var v = getPath(decl.dimension);
+            if (!numLike(v)) return { fell: null, why: 'the declared field is not a number here' };
+            setPath(decl.dimension, lifted(v, parts[0].times(10)));
+            if (player[l].unlocked === false) player[l].unlocked = true;
+            if (tu && tu.unlocked === false) tu.unlocked = true;
+            var b0 = leaves(player, 'player', 0, {}), n0 = (player[l].upgrades || []).length;
+            try { buy(l, Number(id)); } catch (e) { return { fell: null, why: 'buyUpgrade threw: ' + String(e && e.message || e).slice(0, 80) }; }
+            if ((player[l].upgrades || []).length === n0) return { fell: null, why: 'the engine did not buy it' };
+            var f = fellBy(b0, leaves(player, 'player', 0, {}), parts);
+            return { fell: f.exact.sort(), other: f.any.length - f.exact.length };
+          });
+          if (!r.truth.fell) { r.verdict = 'unscorable'; r.why = r.truth.why; }
+          else if (!r.truth.fell.length) r.verdict = 'nothing-fell';
+          else r.verdict = r.truth.fell.length === 1 && r.truth.fell[0] === decl.dimension ? 'agree' : 'contradicted';
+        } catch (e) { r.verdict = 'unscorable'; r.why = 'the reader threw: ' + String(e && e.message || e).slice(0, 120); }
+        out.push(r);
+      }
+    }
+    return { rows: out };
+  };
+  /** Does tracing every buyable's canAfford() move the game? hashGame before and after, OUTSIDE any excursion. */
+  P.tracePurity = function () {
+    var before = P.hashes().hashGame, moved = [], ls = allLayers();
+    for (var i = 0; i < ls.length; i++) {
+      var L = layers[ls[i]];
+      if (!L || !L.buyables || typeof L.buyables !== 'object') continue;
+      for (var id in L.buyables) {
+        if (isNaN(id) || !L.buyables[id] || typeof L.buyables[id] !== 'object') continue;
+        var h0 = P.hashes().hashGame, B = L.buyables[id];
+        traceReads(function () { return callOn(B, 'canAfford'); });
+        if (P.hashes().hashGame !== h0) moved.push(ls[i] + '/' + id);
+      }
+    }
+    return { before: before, after: P.hashes().hashGame, moved: moved };
+  };
+  P.decrementsIn = function (fn, l) { var d = decrementsIn(fn, l); return d.found; };
+  /** Every buyable of every tree layer, in walk order. */
+  P.readCurrencies = function (opts) {
+    var out = [], ls = allLayers();
+    for (var i = 0; i < ls.length; i++) {
+      var l = ls[i], L = layers[l];
+      if (!L || !L.buyables || typeof L.buyables !== 'object') continue;
+      var ids = Object.keys(L.buyables).filter(function (k) { return !isNaN(k) && L.buyables[k] && typeof L.buyables[k] === 'object'; });
+      ids.sort(function (a, b) { return Number(a) - Number(b); });
+      for (var j = 0; j < ids.length; j++) {
+        try { out.push(readBuyable(l, ids[j], opts)); }
+        catch (e) { out.push({ layer: l, id: ids[j], pays: null, cost: 'unknown', by: [], scored: false, why: 'the reader threw: ' + String(e && e.message || e).slice(0, 160) }); }
+      }
+    }
+    return out;
+  };
 
   // ---- Part 2: the knowledge walk --------------------------------------------------------------------------------
   function owned(l, id) { var u = player[l] && player[l].upgrades || []; return u.indexOf(Number(id)) >= 0 || u.indexOf(String(id)) >= 0; }
@@ -507,7 +877,7 @@
           id = ids[j];
           var B = tmpItem(l, 'buyables', id);
           var bUnl = itemUnlocked(L.buyables[id], B);
-          var cb = currencyOf(l, B || L.buyables[id]);
+          var cb = buyableCurrencyOf(l, id, B || L.buyables[id]);
           var brow = { id: 'buy:' + l + ':' + id, kind: 'buy', layer: l, item: id, dimension: cb.dimension, dimensionHow: cb.how,
             threshold: B && B.cost !== undefined ? dstr(B.cost) : null, held: cb.dimension ? dstr(getPath(cb.dimension)) : null,
             amount: player[l].buyables ? dstr(player[l].buyables[id]) : null, source: 'tmp.buyables[' + id + '].cost' };

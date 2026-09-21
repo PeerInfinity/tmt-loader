@@ -1,0 +1,47 @@
+{
+ "generated": true,
+ "generator": "tools/currency-data.mjs",
+ "generatorVersion": 1,
+ "formatVersion": 1,
+ "game": "the-exponential-tree",
+ "upstream": {
+  "repo": "SD-Redstone/The-Exponential-Tree",
+  "commit": "55db5670566b9302f0c69aba1ce9897f4c5c6ac5"
+ },
+ "states": [
+  "fresh"
+ ],
+ "seeds": [
+  1
+ ],
+ "summary": {
+  "buyables": 1,
+  "scored": 1,
+  "price": 1,
+  "requirement": 0,
+  "unknown": 0,
+  "own": 1,
+  "foreign": 0,
+  "several": 0,
+  "impure": 0
+ },
+ "buyables": {
+  "e": {
+   "11": {
+    "pays": "player.e.points",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.e.points",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   }
+  }
+ }
+}

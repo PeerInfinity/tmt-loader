@@ -1,0 +1,104 @@
+{
+ "generated": true,
+ "generator": "tools/currency-data.mjs",
+ "generatorVersion": 1,
+ "formatVersion": 1,
+ "game": "collection-of-everything",
+ "upstream": {
+  "repo": "XtremeRusher/The-Modding-Tree",
+  "commit": "f8c385fcdacc30109690a4865a906a2092477074"
+ },
+ "states": [
+  "fresh"
+ ],
+ "seeds": [
+  1
+ ],
+ "summary": {
+  "buyables": 4,
+  "scored": 4,
+  "price": 4,
+  "requirement": 0,
+  "unknown": 0,
+  "own": 0,
+  "foreign": 4,
+  "several": 0,
+  "impure": 0
+ },
+ "buyables": {
+  "s": {
+   "11": {
+    "pays": "player.points",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "trace"
+    ],
+    "scored": true,
+    "pick": [
+     "player.points",
+     "player.st.stShard",
+     "player.w.points"
+    ],
+    "how": "affordable",
+    "from": [
+     "fresh"
+    ]
+   },
+   "12": {
+    "pays": "player.points",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "trace"
+    ],
+    "scored": true,
+    "pick": [
+     "player.points",
+     "player.st.stShard",
+     "player.w.points"
+    ],
+    "how": "affordable",
+    "from": [
+     "fresh"
+    ]
+   },
+   "21": {
+    "pays": "player.points",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "trace"
+    ],
+    "scored": true,
+    "pick": [
+     "player.points",
+     "player.st.stShard",
+     "player.w.points"
+    ],
+    "how": "affordable",
+    "from": [
+     "fresh"
+    ]
+   },
+   "22": {
+    "pays": "player.points",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "trace"
+    ],
+    "scored": true,
+    "pick": [
+     "player.points",
+     "player.st.stShard",
+     "player.w.points"
+    ],
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   }
+  }
+ }
+}

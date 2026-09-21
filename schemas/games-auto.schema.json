@@ -1,0 +1,268 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://peerinfinity.github.io/tmt-loader/schemas/games-auto.schema.json",
+  "title": "tmt-loader per-game automation table (games-auto/<id>.json)",
+  "description": "DATA only: what a game does not declare to the engine. Every key is documented in docs/automation.md, \"The two tables\".",
+  "type": "object",
+  "required": [
+    "formatVersion",
+    "id"
+  ],
+  "additionalProperties": false,
+  "x-experimental": [
+    "the `|turn@…` and `|give-up@…` modifiers inside a `policies` / `alternatives` string (R3b, R3a)",
+    "every `challenges:*` entry of `policies`, `alternatives`, `order` and `gates`",
+    "whether a table may state `until` / `priority` — today only `while` has a table form, `gates` (unanswered, left open)"
+  ],
+  "properties": {
+    "formatVersion": {
+      "enum": [
+        1
+      ],
+      "description": "the loader refuses a version it does not know, by name"
+    },
+    "id": {
+      "type": "string",
+      "pattern": "^[a-z0-9-]+$"
+    },
+    "unlockOrder": {
+      "type": "array",
+      "items": {
+        "type": "array",
+        "minItems": 2,
+        "items": {
+          "type": "string"
+        }
+      }
+    },
+    "kindOrder": {
+      "type": "array",
+      "items": {
+        "enum": [
+          "toggles",
+          "reset",
+          "upgrades",
+          "buyables",
+          "challenges",
+          "clickables"
+        ]
+      }
+    },
+    "policies": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "string",
+        "pattern": "^\\S"
+      }
+    },
+    "alternatives": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "array",
+        "items": {
+          "type": "string"
+        }
+      }
+    },
+    "order": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "array",
+        "items": {
+          "type": "integer"
+        }
+      }
+    },
+    "gates": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "string",
+        "pattern": "^\\S"
+      }
+    },
+    "off": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "string",
+        "pattern": "^\\S"
+      }
+    },
+    "keep": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "required": [
+          "layer",
+          "id"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "layer": {
+            "type": "string"
+          },
+          "id": {
+            "type": [
+              "integer",
+              "string"
+            ]
+          }
+        }
+      }
+    },
+    "clickables": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "required": [
+            "id",
+            "when"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "id": {
+              "type": [
+                "integer",
+                "string"
+              ]
+            },
+            "when": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    },
+    "options": {
+      "type": "object",
+      "additionalProperties": {
+        "type": [
+          "string",
+          "number",
+          "boolean"
+        ]
+      }
+    },
+    "provenance": {
+      "type": "object",
+      "description": "keyed by feature id, `unlockOrder:<i>` or `kindOrder`; a record or a list of records",
+      "additionalProperties": {
+        "oneOf": [
+          {
+            "oneOf": [
+              {
+                "type": "object",
+                "required": [
+                  "gate",
+                  "commit",
+                  "note"
+                ],
+                "additionalProperties": false,
+                "description": "A measured entry: the SUMMARY gate id that measured it (or, for a gate that ran only in CI, `run`), the commit it was measured at (must be an ancestor of HEAD), the digest step where there is one, and one line of text.",
+                "properties": {
+                  "gate": {
+                    "type": "string",
+                    "pattern": "^\\S.*$"
+                  },
+                  "commit": {
+                    "type": "string",
+                    "pattern": "^[0-9a-f]{7,40}$"
+                  },
+                  "digest": {
+                    "type": "string"
+                  },
+                  "run": {
+                    "type": "string",
+                    "pattern": "^[0-9]+$",
+                    "description": "the CI run whose job output holds the rows, for a gate that writes none to results/SUMMARY.md"
+                  },
+                  "note": {
+                    "type": "string",
+                    "pattern": "^\\S"
+                  }
+                }
+              },
+              {
+                "type": "object",
+                "required": [
+                  "unverified",
+                  "note"
+                ],
+                "additionalProperties": false,
+                "description": "An entry that predates provenance and has no measured row behind it — listed, never given an invented gate id.",
+                "properties": {
+                  "unverified": {
+                    "const": true
+                  },
+                  "note": {
+                    "type": "string",
+                    "pattern": "^\\S"
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "required": [
+                    "gate",
+                    "commit",
+                    "note"
+                  ],
+                  "additionalProperties": false,
+                  "description": "A measured entry: the SUMMARY gate id that measured it (or, for a gate that ran only in CI, `run`), the commit it was measured at (must be an ancestor of HEAD), the digest step where there is one, and one line of text.",
+                  "properties": {
+                    "gate": {
+                      "type": "string",
+                      "pattern": "^\\S.*$"
+                    },
+                    "commit": {
+                      "type": "string",
+                      "pattern": "^[0-9a-f]{7,40}$"
+                    },
+                    "digest": {
+                      "type": "string"
+                    },
+                    "run": {
+                      "type": "string",
+                      "pattern": "^[0-9]+$",
+                      "description": "the CI run whose job output holds the rows, for a gate that writes none to results/SUMMARY.md"
+                    },
+                    "note": {
+                      "type": "string",
+                      "pattern": "^\\S"
+                    }
+                  }
+                },
+                {
+                  "type": "object",
+                  "required": [
+                    "unverified",
+                    "note"
+                  ],
+                  "additionalProperties": false,
+                  "description": "An entry that predates provenance and has no measured row behind it — listed, never given an invented gate id.",
+                  "properties": {
+                    "unverified": {
+                      "const": true
+                    },
+                    "note": {
+                      "type": "string",
+                      "pattern": "^\\S"
+                    }
+                  }
+                }
+              ]
+            }
+          }
+        ]
+      }
+    }
+  }
+}

@@ -90,7 +90,17 @@ export function bootStub(layers, opts = {}) {
     addLayer(id, def) { layers[id] = def; player[id] = Object.assign({ upgrades: [], milestones: [], challenges: {}, clickables: {}, buyables: {} }, def.startData ? def.startData() : {}); tmp[id] = { type: def.type }; },
     resets: [], clicked: [], completable: {}, enterable: {}, exitable: {}, fired, numIds,
   });
-  ctx.tmtLoader = { id: opts.id || 'stub', automation: true, options: opts.options || {}, autoTable: opts.autoTable, manifest: { headless: {} }, sha256hex: null };
+  // C1: a shipped table must state its formatVersion (the loader refuses one that does not). A unit test's table is
+  // built in code, so the stub stamps the version the loader reads (and the game's id, which the schema requires)
+  // unless the test states one itself — a test that wants the refusal passes `formatVersion` explicitly (`null` = omit).
+  function stubTable(t, id) {
+    if (!t || typeof t !== 'object' || Array.isArray(t) || !Object.keys(t).length) return t;
+    if (!('id' in t)) t = Object.assign({ id }, t);
+    if (!('formatVersion' in t)) return Object.assign({ formatVersion: 1 }, t);
+    if (t.formatVersion === null) { const c = Object.assign({}, t); delete c.formatVersion; return c; }
+    return t;
+  }
+  ctx.tmtLoader = { id: opts.id || 'stub', automation: true, options: opts.options || {}, autoTable: stubTable(opts.autoTable, opts.id || 'stub'), manifest: { headless: {} }, sha256hex: null };
   // what `getStartPlayer()` does: every declared layer gets its startData plus the per-kind stores the engines add.
   for (const l in layers) player[l] = Object.assign({ upgrades: [], milestones: [], challenges: {}, clickables: {}, buyables: {} }, layers[l].startData ? layers[l].startData() : { unlocked: true });
   for (const l in layers) for (const k of ['buyables', 'clickables']) for (const id of numIds(layers[l][k])) player[l][k][id] = new Decimal(0);

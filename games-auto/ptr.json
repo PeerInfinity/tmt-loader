@@ -1,0 +1,184 @@
+{
+  "formatVersion": 1,
+  "id": "ptr",
+  "unlockOrder": [
+    [
+      "g",
+      "b"
+    ],
+    [
+      "s",
+      "t",
+      "e"
+    ]
+  ],
+  "kindOrder": [
+    "toggles",
+    "reset",
+    "upgrades",
+    "buyables",
+    "challenges",
+    "clickables"
+  ],
+  "policies": {
+    "reset:p": "gain>=2x",
+    "reset:b": "gain>=1",
+    "reset:g": "gain>=1",
+    "reset:t": "always",
+    "reset:s": "always",
+    "reset:e": "gain>=2x",
+    "buyables:e": "reserve>=next-upgrade",
+    "reset:q": "gain>=2|turn@10/30x/5/0/100",
+    "reset:h": "always|turn@1/30x/5/0/100",
+    "challenges:h": "sequential|give-up@0.1/30/2x"
+  },
+  "gates": {
+    "reset:q": "!hasMilestone('q',4) || player.h.unlocked",
+    "challenges:h": "hasMilestone('q',5)"
+  },
+  "alternatives": {
+    "reset:p": [
+      "interval>=10",
+      "always",
+      "gain>=1"
+    ],
+    "reset:b": [
+      "keepsUpgrades"
+    ],
+    "reset:g": [
+      "keepsUpgrades"
+    ],
+    "reset:t": [
+      "interval>=5",
+      "gain>=1"
+    ],
+    "reset:e": [
+      "interval>=5",
+      "unlocks-purchase",
+      "always",
+      "gain>=1"
+    ],
+    "reset:s": [
+      "interval>=5",
+      "gain>=1"
+    ],
+    "buyables:e": [
+      "buy",
+      "buy-unless-saving"
+    ],
+    "reset:q": [
+      "gain>=2x-unit",
+      "rate-peak@0/0",
+      "gain>=2x",
+      "always",
+      "gain>=2",
+      "gain>=2|turn@20/30x/5/0/100"
+    ],
+    "reset:h": [
+      "always",
+      "gain>=2x",
+      "always|turn@1/30x/5/0/0"
+    ],
+    "challenges:h": [
+      "sequential",
+      "off"
+    ]
+  },
+  "keep": {
+    "reset:b": {
+      "layer": "b",
+      "id": 0
+    },
+    "reset:g": {
+      "layer": "g",
+      "id": 0
+    }
+  },
+  "off": {},
+  "provenance": {
+    "reset:p": {
+      "gate": "R1′-2.3",
+      "commit": "d9b2ca177835d5c50d2ec02489f3a5dc761c0dd1",
+      "note": "R1′ (SUMMARY gate R1′-2.3, and S1-2's sweep): `gain>=2x` reached A1-3's three marks at 918 / 1627 / 2112 game-s against `interval>=10`'s 1361 / 2360 / 2936, and M11 at 15582 against 15782 — the target-driven rule ⚖ 13d.2 asks for."
+    },
+    "reset:b": {
+      "gate": "A1-3",
+      "commit": "3bc12bf77976cf60ba440664de1f421a29222e4f",
+      "note": "A1 table (SUMMARY gate A1-3): a static layer's gain is 1 per reset and its requirement paces it, so b resets whenever it can. Its `keep` entry is b milestone 0 (\"8 Boosters\": keep Prestige Upgrades on reset), which gates `keepsUpgrades` — the (ii) mark of the same A1-3 rows (A1 §11e.8)."
+    },
+    "reset:g": {
+      "gate": "A1-3",
+      "commit": "3bc12bf77976cf60ba440664de1f421a29222e4f",
+      "note": "A1 table (SUMMARY gate A1-3): as `reset:b`; `unlockOrder [g, b]` puts g first — 1361 / 2360 / 2936 game-s against b-first's 1532 / 2491 / 3067, ahead at every p interval tried. Its `keep` entry is g milestone 0 (\"8 Generators\": keep Prestige Upgrades on reset), which gates `keepsUpgrades` — the (ii) mark of the same A1-3 rows (A1 §11e.8)."
+    },
+    "reset:t": {
+      "gate": "R1′-2.3",
+      "commit": "d9b2ca177835d5c50d2ec02489f3a5dc761c0dd1",
+      "note": "A2-3, re-measured at the frontier (SUMMARY gate R1′-2.3): `always` reaches M16 at 24212 against `interval>=5`'s 24236 — a tie to within 0.1 %, and constant-free."
+    },
+    "reset:s": {
+      "gate": "R1′-2.3",
+      "commit": "d9b2ca177835d5c50d2ec02489f3a5dc761c0dd1",
+      "note": "A2-3, re-measured at the frontier (SUMMARY gate R1′-2.3): `always` reaches M16 at 24203 against `interval>=5`'s 24236 — the same tie."
+    },
+    "reset:e": {
+      "gate": "R1′-2.3",
+      "commit": "d9b2ca177835d5c50d2ec02489f3a5dc761c0dd1",
+      "note": "R1′ (SUMMARY gate R1′-2.3): e is row 2's only NORMAL layer, so its gain follows how high points climbed and an interval reset spends that climb every 5 s. `gain>=2x` reaches every remaining mark of the rung (M11 14745 · M12 14909 · M15 16048 · M16 24179); `interval>=5` and `always` reach none of them."
+    },
+    "buyables:e": {
+      "gate": "R1′-1",
+      "commit": "9a30dc31cef30eb777d5a74bde9184b51b257171",
+      "note": "R1′ (SUMMARY gate R1′-1, row \"C the Enhance reserve only\"; the id R1′-2.2 this line used to cite is in no SUMMARY row): the reserve is READ from the game, never written here. `reserve>=next-upgrade` ends 47 EP held with 3 Enhancers against `buy`'s 11 EP with 4 — and a literal `reserve>=25` is byte-identical to `buy`, because once e11 is owned the next upgrade costs 400."
+    },
+    "buyables:t": {
+      "gate": "R1′-1",
+      "commit": "9a30dc31cef30eb777d5a74bde9184b51b257171",
+      "note": "R1′ (SUMMARY gate R1′-1, row \"B Extra Time Capsules only\"; the id R1′-2.4 this line used to cite is in no SUMMARY row) LIFTED the exclusion this table used to carry. With it: t upgrades [11], Time Energy 6300 at its cap, `t.unlockOrder` 1. Without it: 11 Extra Time Capsules, cap 2.49e9, t upgrades [11,12,13,14,15,23] and `t.unlockOrder` 0 — the t half of M12."
+    },
+    "reset:q": [
+      {
+        "gate": "R2-S1",
+        "commit": "d656e5c9943cf4f91b2e7f957398b14b32066dfc",
+        "note": "R2: the derived `gain>=2x` is `gain >= 0` while q holds nothing, so it unlocked q at 16917 and a row-3 reset wiped row 2 — M16 24179 and then nothing past M19. `gain>=2` reaches M16 at 17058, M20 at 26594 and M22 at 29194; 2 is q milestone 0's own requirement (2 total quirks)."
+      },
+      {
+        "gate": "V4-m21",
+        "commit": "d30741b05c74b045702705f2fa099b537278bba0",
+        "note": "V4 added the PAUSE (`gates`): without it M21 is never reached and M22 lands at 29204; with it M21 lands at 28058 and M22 at 30618, M16–M20 unmoved to the second. The +1414 game-s at M22 is the 1446 game-s Time Energy needs to reach 1e30 with row 2 intact — the game's cost, not the rule's."
+      },
+      {
+        "gate": "R3b2-2",
+        "commit": "3842e441ad3c8ca5ee5227bc9622c07136da52f6",
+        "run": "35553187707",
+        "note": "R3b-2 added the ROW CYCLE (nine cells at ONE horizon, every cell twice equal): with `turn@10` the run reaches M25 (H12 \"Speed Demon\") at 35778, which no cell without a cycle reaches at all, with M22–M24 unmoved to the second, 636 quirks against 559 and 1000 Hindrance Spirit against 1. W = 5 moves M22–M24 by +358 game-s; W = 20 and W = 40 reach M25 later with less Hindrance Spirit. The derived `turn-demand` variant LOSES (no M22, 10 quirks)."
+      }
+    ],
+    "reset:h": {
+      "gate": "R3b2-2",
+      "commit": "3842e441ad3c8ca5ee5227bc9622c07136da52f6",
+      "run": "35553187707",
+      "note": "R3b-2 (CI run 35553187707 — R3b-2 wrote no SUMMARY rows), scored over a WHOLE STRETCH from `all/M15.json` → 37048, every cell twice equal: `reset:h` had no entry before this slice and inherited the derived `gain>=2x`, which on an empty purse is `gain >= 0` and so fires once and never again — 91 quirks, 4 Hindrance Spirit, seven turns and no M25. With `always` INSIDE ITS TURN the same configuration reaches M25 at 35778 with 636 quirks and 1000 Hindrance Spirit. `always` is safe only because the cycle bounds it: on its own it is the starvation the user hit by hand (44 Hindrance Spirit, quirks frozen at 10)."
+    },
+    "challenges:h": {
+      "gate": "R3a-1",
+      "commit": "0e236daf0add75cfd5ef6fc6b2c66f32089353e4",
+      "note": "R3a (SUMMARY gate R3a-1), scored over a WHOLE STRETCH from `all/M22.json` → M26, every cell twice equal: bare `sequential` completes H11 in 65 game-s and then sits inside H12 for 11,878 game-s with the currency flat at 1e2334 against a goal of 1e3550 and every quirk frozen — it has an entry rule and no exit rule. With the give-up modifier the same run leaves H12 when it stops closing the distance and defers the next attempt until the layer is twice as strong, and the tree goes back to farming: 532 `reset:q` and 1065 total quirks against the trapped run's 13 and 26. The gate is the digest's own advice (L3.9) minus the half measurement showed to be wrong: the 25-quirk milestone matters, the 10 hindrance spirit does not."
+    },
+    "unlockOrder:0": {
+      "gate": "A1-3",
+      "commit": "3bc12bf77976cf60ba440664de1f421a29222e4f",
+      "note": "[g, b]: g first reached both unlocked / b0+g0 / both best ≥ 15 at 1361 / 2360 / 2936 game-s against b first's 1532 / 2491 / 3067, ahead at every p interval tried."
+    },
+    "unlockOrder:1": {
+      "gate": "A2-3",
+      "commit": "b695e4780e3f983d261c4516071f01d13752c873",
+      "note": "[s, t, e]: s,t,e reaches the three A2-3 marks at 3550 / 6037 / 8035; s,e,t 3550 / 6037 / —; t,e,s and e,t,s never reach (ii)."
+    },
+    "kindOrder": {
+      "gate": "S1-2k",
+      "commit": "245ed3b2bbe841774552e787956797464ec151ea",
+      "note": "Every A1/A2 number was measured with a layer's reset BEFORE its purchases; S1-2k measured the generic order faster (ptr A1-3 at 1322 / 2321 / 2893 against 1361 / 2360 / 2936) and the table keeps reset-first so those pinned numbers stay reproducible."
+    }
+  }
+}

@@ -1,0 +1,793 @@
+{
+ "generated": true,
+ "generator": "tools/currency-data.mjs",
+ "generatorVersion": 1,
+ "formatVersion": 1,
+ "game": "the-tearonq-i-have-no-creative-names",
+ "upstream": {
+  "repo": "QnoraeT/The-Modding-Tree",
+  "commit": "543aa356b18a9240c182cc5581a0298557ed93b4"
+ },
+ "states": [
+  "fresh"
+ ],
+ "seeds": [
+  1
+ ],
+ "summary": {
+  "buyables": 55,
+  "scored": 51,
+  "price": 51,
+  "requirement": 0,
+  "unknown": 4,
+  "own": 8,
+  "foreign": 43,
+  "several": 0,
+  "impure": 0
+ },
+ "buyables": {
+  "p": {
+   "11": {
+    "pays": "player.points",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.points",
+    "how": "affordable",
+    "from": [
+     "fresh"
+    ]
+   },
+   "12": {
+    "pays": "player.points",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.points",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "13": {
+    "pays": "player.points",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.points",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "14": {
+    "pays": "player.points",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.points",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "15": {
+    "pays": "player.points",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.points",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "21": {
+    "pays": "player.p.essence",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.points",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "22": {
+    "pays": "player.p.essence",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.points",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "23": {
+    "pays": "player.p.essence",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.points",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "31": {
+    "pays": "player.p.essence",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.points",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "32": {
+    "pays": "player.p.essence",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.points",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "33": {
+    "pays": "player.p.essence",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.points",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "41": {
+    "pays": "player.p.essence",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.points",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "42": {
+    "pays": "player.p.essence",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.points",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "43": {
+    "pays": "player.p.essence",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.points",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "51": {
+    "pays": null,
+    "cost": "unknown",
+    "by": [],
+    "scored": false,
+    "pick": "player.points",
+    "how": "lift-1",
+    "why": "no field fell by the published cost (1 fell by something else)",
+    "from": [
+     "fresh"
+    ]
+   },
+   "52": {
+    "pays": null,
+    "cost": "unknown",
+    "by": [],
+    "scored": false,
+    "pick": "player.points",
+    "how": "lift-1",
+    "why": "no field fell by the published cost (2 fell by something else)",
+    "from": [
+     "fresh"
+    ]
+   },
+   "61": {
+    "pays": "player.p.points",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.points",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "62": {
+    "pays": "player.p.energy",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.points",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "63": {
+    "pays": "player.p.energy",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.points",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "64": {
+    "pays": "player.p.energy",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.points",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "65": {
+    "pays": "player.p.energy",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.points",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "66": {
+    "pays": "player.p.energy",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.points",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "67": {
+    "pays": "player.p.energy",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.points",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "68": {
+    "pays": "player.p.energy",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.points",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "69": {
+    "pays": null,
+    "cost": "unknown",
+    "by": [],
+    "scored": false,
+    "pick": "player.points",
+    "how": "lift-1",
+    "why": "no field fell by the published cost (1 fell by something else)",
+    "from": [
+     "fresh"
+    ]
+   },
+   "71": {
+    "pays": "player.points",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.points",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "72": {
+    "pays": "player.p.points",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.points",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "73": {
+    "pays": "player.p.treePoints",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.points",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "81": {
+    "pays": "player.p.hsPoints",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.points",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "82": {
+    "pays": "player.p.hsPoints",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.points",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "83": {
+    "pays": "player.p.hsPoints",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.points",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "91": {
+    "pays": null,
+    "cost": "unknown",
+    "by": [],
+    "scored": false,
+    "pick": "player.points",
+    "how": "lift-1",
+    "why": "no field fell by the published cost (1 fell by something else)",
+    "from": [
+     "fresh"
+    ]
+   }
+  },
+  "l": {
+   "11": {
+    "pays": "player.l.rollPoints",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "trace"
+    ],
+    "scored": true,
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "12": {
+    "pays": "player.l.energy",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "trace"
+    ],
+    "scored": true,
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "13": {
+    "pays": "player.l.energy",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "trace"
+    ],
+    "scored": true,
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "14": {
+    "pays": "player.l.energy",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "trace"
+    ],
+    "scored": true,
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "15": {
+    "pays": "player.l.energy",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "trace"
+    ],
+    "scored": true,
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "16": {
+    "pays": "player.l.energy",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "trace"
+    ],
+    "scored": true,
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "17": {
+    "pays": "player.l.energy",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "trace"
+    ],
+    "scored": true,
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "18": {
+    "pays": "player.l.energy",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "trace"
+    ],
+    "scored": true,
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "21": {
+    "pays": "player.l.rollPoints",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "trace"
+    ],
+    "scored": true,
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "22": {
+    "pays": "player.l.rollPoints",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "trace"
+    ],
+    "scored": true,
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "23": {
+    "pays": "player.l.rollPoints",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "trace"
+    ],
+    "scored": true,
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "31": {
+    "pays": "player.l.rollPoints",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "trace"
+    ],
+    "scored": true,
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "32": {
+    "pays": "player.l.rollPoints",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "trace"
+    ],
+    "scored": true,
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "33": {
+    "pays": "player.l.rollPoints",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "trace"
+    ],
+    "scored": true,
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "41": {
+    "pays": "player.l.rollPoints",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "trace"
+    ],
+    "scored": true,
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "42": {
+    "pays": "player.l.rollPoints",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "trace"
+    ],
+    "scored": true,
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "43": {
+    "pays": "player.l.rollPoints",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "trace"
+    ],
+    "scored": true,
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   }
+  },
+  "q": {
+   "11": {
+    "pays": "player.q.points",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.q.points",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "12": {
+    "pays": "player.q.points",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.q.points",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "13": {
+    "pays": "player.q.points",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.q.points",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "21": {
+    "pays": "player.q.points",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.q.points",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "22": {
+    "pays": "player.q.points",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.q.points",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "23": {
+    "pays": "player.q.points",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.q.points",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   }
+  }
+ }
+}

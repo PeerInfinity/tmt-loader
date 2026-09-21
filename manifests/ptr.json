@@ -100,7 +100,7 @@
     "trace_fields": 20
   },
   "patches": [],
-  "auto": "games-auto/ptr.js",
+  "auto": "games-auto/ptr.json",
   "generated": {
     "by": "tmt-fork-census scripts/manifest.mjs",
     "commit": "27c6654",

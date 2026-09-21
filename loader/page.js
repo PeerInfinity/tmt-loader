@@ -9,7 +9,7 @@ const SELF = new URL('.', location.href);
 const params = new URLSearchParams(location.search);
 const MOD = params.get('mod');
 const MANAGED = params.get('managed') === '1';
-// ?automation=1 opts in to the automation tools (the registry, the `au` side layer, games-auto/<id>.js). Without it the
+// ?automation=1 opts in to the automation tools (the registry, the `au` side layer, games-auto/<id>.json, games-data/<id>.json). Without it the
 // page is the game plus the contract (docs/contract.md): no layer, no DOM, nothing in the save.
 // ?mobile=1 opts in to the mobile LAYOUT (docs/mobile.md): loader/mobile.css, the single column and master-detail.
 // ?navbar=1 opts in to the bottom NAV BAR alone (loader/navbar.css + loader/navbar.js after tmt-auto.js) AND the
@@ -172,11 +172,28 @@ async function boot(id) {
     for (const f of files) { step(`modFile ${f}`); await insertScript({ src: f }, f, { skippable: true }); if (!T.skipped.includes(f)) T.loaded.push(f); }
   }
   if (AUTOMATION && manifest.auto) {
-    // the per-game automation table (games-auto/<id>.js): DATA (tmtLoader.autoTable), inserted BEFORE tmt-auto.js, which
-    // reads it when it derives the features — before onload, so load() picks up the hooks and the au layer
-    step(`script ${manifest.auto}`);
-    await insertScript({ src: abs(manifest.auto) }, manifest.auto);
+    // the per-game automation table (games-auto/<id>.json, C1): a JSON DOCUMENT, fetched and parsed into
+    // tmtLoader.autoTable BEFORE tmt-auto.js runs, which validates it against its own schema when it derives the
+    // features — before onload, so load() picks up the hooks and the au layer. ⛔ ORDER MATTERS and is unchanged from
+    // the script it replaces; a table that does not parse fails the load here, by name, as a bad script did.
+    step(`table ${manifest.auto}`);
+    const text = await fetchText(abs(manifest.auto), manifest.auto);
+    try { T.autoTable = JSON.parse(text); } catch (e) { throw new Error(`${manifest.auto}: not JSON — ${e.message}`); }
     T.loaded.push(manifest.auto);
+  }
+  if (AUTOMATION) {
+    // ---- the GENERATED currency data (C1, games-data/<id>.json) -------------------------------------------------------
+    // Which field each buyable really pays in, scored harness-side by a rollback (tools/currency-data.mjs). Automation
+    // mode only — ⛔ the PLAIN page fetches nothing new. EAGER, unlike the ladder, because tmt-auto.js reads it in its
+    // decisions from the first tick, and node ≡ page parity needs the page to decide with exactly what the harness
+    // reads. The INDEX says which games have a file (103 of 171), so a game without one makes no request that fails.
+    step('currency data games-data/index.json');
+    const cIndex = JSON.parse(await fetchText(abs('games-data/index.json'), 'games-data/index.json'));
+    T.currencyData = null;
+    if (cIndex && Array.isArray(cIndex.games) && cIndex.games.indexOf(id) >= 0) {
+      step(`currency data games-data/${id}.json`);
+      T.currencyData = JSON.parse(await fetchText(abs(`games-data/${id}.json`), `games-data/${id}.json`));
+    }
   }
   if (AUTOMATION) {
     // ---- the LADDER, where this game has one (V3) ------------------------------------------------------------------

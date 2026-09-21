@@ -98,6 +98,10 @@ const CONSTRUCTED = [
   // ARBITER's state needs TWO reset features stalled in the same tick, which no recorded state has. All three are
   // constructed in `loader/reasons.test.mjs`, which this part RUNS and requires green.
   'waiting:rate', 'waiting:stall-clock', 'waiting:stall-yield',
+  // C1's three, constructed in `loader/currency.test.mjs` (which this part also RUNS and requires green): no table
+  // sets a reserve on a buyable that pays a FOREIGN currency (`holding:reserve-in`), and the two refusals that name a
+  // buyable's currency — or say it is unknown — are constructed there against their mutants, whatever a leg shows.
+  'holding:reserve-in', 'nothing-affordable:paid-in', 'nothing-affordable:currency-unknown',
 ];
 const LEGS = [
   { key: 'ptr fresh 400×1 (profile all)', id: 'ptr', o: { profile: 'all', diff: 1, ticks: 400, explain: true } },
@@ -175,7 +179,7 @@ async function part1() {
   }
   // the unit tests that construct the rest — run in the same process tree as the claim they support
   const unit = await new Promise((resolve) => {
-    const c = spawn(process.execPath, ['--test', 'loader/reasons.test.mjs'], { cwd: REPO, stdio: ['ignore', 'pipe', 'pipe'] });
+    const c = spawn(process.execPath, ['--test', 'loader/reasons.test.mjs', 'loader/currency.test.mjs'], { cwd: REPO, stdio: ['ignore', 'pipe', 'pipe'] });
     let o = '';
     c.stdout.on('data', (d) => { o += d; });
     c.stderr.on('data', (d) => { o += d; });
@@ -183,7 +187,7 @@ async function part1() {
   });
   const pass = (/^# pass (\d+)/m.exec(unit.out) || [])[1];
   const fail = (/^# fail (\d+)/m.exec(unit.out) || [])[1];
-  row({ gate: 'V1-1 the constructed codes: loader/reasons.test.mjs (stub engine)', id: '—', leg: `${CONSTRUCTED.length} code(s) constructed`, ok: unit.code === 0 && fail === '0',
+  row({ gate: 'V1-1 the constructed codes: loader/reasons.test.mjs + loader/currency.test.mjs (stub engine)', id: '—', leg: `${CONSTRUCTED.length} code(s) constructed`, ok: unit.code === 0 && fail === '0',
     notes: `${pass} passed, ${fail} failed; constructs ${CONSTRUCTED.join(', ')}` });
 
   // …and the verdict: the union covers the whole vocabulary, nothing is `unknown`, nothing is unwitnessed.
@@ -191,7 +195,7 @@ async function part1() {
   const witnessed = new Set([...Object.keys(first), ...(unit.code === 0 ? CONSTRUCTED : [])]);
   const missing = all.filter((c) => c !== 'unknown' && !witnessed.has(c));
   const claimedButSeen = CONSTRUCTED.filter((c) => first[c]);   // a note, not a failure: a fixture found one anyway
-  const table = all.map((c) => `${c} ← ${first[c] || (CONSTRUCTED.includes(c) ? 'CONSTRUCTED (reasons.test.mjs)' : c === 'unknown' ? 'never, by design' : 'NOTHING')}`);
+  const table = all.map((c) => `${c} ← ${first[c] || (CONSTRUCTED.includes(c) ? 'CONSTRUCTED (reasons.test.mjs / currency.test.mjs)' : c === 'unknown' ? 'never, by design' : 'NOTHING')}`);
   row({ gate: 'V1-1 EVERY code witnessed by name', id: '—', leg: `${all.length} codes`, ok: missing.length === 0 && !first.unknown,
     notes: `unwitnessed: ${missing.join(', ') || 'none'}; unknown witnessed: ${!!first.unknown}; ⚠ listed as constructed but a fixture showed it too: ${claimedButSeen.join(', ') || 'none'}\n  ${table.join('\n  ')}` });
 }

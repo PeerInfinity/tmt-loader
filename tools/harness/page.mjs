@@ -116,11 +116,13 @@ async function gateLoad(browser, base, ids, { automation = false, allowHosts = [
       const r = await openGame(page, base, id, { managed: true, automation });
       Object.assign(row, { ready: r.ready, error: r.error, loadMs: r.ms });
       row.layerNodes = await page.locator(LAYER_NODE_SELECTOR).count();
-      // the automation opt-in: the plain page has no au node, no player.au and never requests games-auto/
+      // the automation opt-in: the plain page has no au node, no player.au and never requests games-auto/ — nor (C1)
+      // the generated currency data in games-data/, which only an automation page fetches
       row.auNodes = await page.locator(AU_NODE_SELECTOR).count();
       row.playerAu = await page.evaluate(() => typeof player !== 'undefined' && player && 'au' in player);
       row.gamesAutoRequests = stats.urls.filter((u) => /\/games-auto\//.test(u));
-      row.optInOk = automation ? true : row.auNodes === 0 && !row.playerAu && row.gamesAutoRequests.length === 0;
+      row.gamesDataRequests = stats.urls.filter((u) => /\/games-data\//.test(u));
+      row.optInOk = automation ? true : row.auNodes === 0 && !row.playerAu && row.gamesAutoRequests.length === 0 && row.gamesDataRequests.length === 0;
       const shot = path.join(REPO, `tools/harness/results/${id}-load.png`);
       await page.screenshot({ path: shot });
       row.screenshot = path.relative(REPO, shot);

@@ -1,0 +1,845 @@
+{
+ "generated": true,
+ "generator": "tools/currency-data.mjs",
+ "generatorVersion": 1,
+ "formatVersion": 1,
+ "game": "the-gaming-tree",
+ "upstream": {
+  "repo": "medsal15/The-Gaming-Tree",
+  "commit": "2a07a20117aa944b69814f3195b2b23ce94530b6"
+ },
+ "states": [
+  "fresh"
+ ],
+ "seeds": [
+  1,
+  2,
+  3
+ ],
+ "summary": {
+  "buyables": 61,
+  "scored": 42,
+  "price": 42,
+  "requirement": 0,
+  "unknown": 19,
+  "own": 1,
+  "foreign": 21,
+  "several": 20,
+  "impure": 0
+ },
+ "buyables": {
+  "lo": {
+   "11": {
+    "pays": [
+     "player.lo.items.slime_core_shard.amount",
+     "player.lo.items.slime_goo.amount"
+    ],
+    "cost": "price",
+    "by": [
+     "rollback",
+     "trace"
+    ],
+    "scored": true,
+    "how": "lift-2",
+    "from": [
+     "fresh"
+    ]
+   },
+   "12": {
+    "pays": [
+     "player.lo.items.slime_core_shard.amount",
+     "player.lo.items.slime_goo.amount"
+    ],
+    "cost": "price",
+    "by": [
+     "rollback",
+     "trace"
+    ],
+    "scored": true,
+    "how": "lift-2",
+    "from": [
+     "fresh"
+    ]
+   },
+   "13": {
+    "pays": [
+     "player.lo.items.slime_core.amount",
+     "player.lo.items.slime_goo.amount"
+    ],
+    "cost": "price",
+    "by": [
+     "rollback",
+     "trace"
+    ],
+    "scored": true,
+    "how": "lift-2",
+    "from": [
+     "fresh"
+    ]
+   },
+   "21": {
+    "pays": null,
+    "cost": "unknown",
+    "by": [],
+    "scored": false,
+    "why": "not affordable, and no lift of up to three candidates to 10× the cost makes it so",
+    "from": [
+     "fresh"
+    ]
+   },
+   "22": {
+    "pays": null,
+    "cost": "unknown",
+    "by": [],
+    "scored": false,
+    "why": "not affordable, and no lift of up to three candidates to 10× the cost makes it so",
+    "from": [
+     "fresh"
+    ]
+   },
+   "23": {
+    "pays": null,
+    "cost": "unknown",
+    "by": [],
+    "scored": false,
+    "why": "not affordable, and no lift of up to three candidates to 10× the cost makes it so",
+    "from": [
+     "fresh"
+    ]
+   },
+   "31": {
+    "pays": [
+     "player.lo.items.red_fabric.amount",
+     "player.lo.items.slime_goo.amount"
+    ],
+    "cost": "price",
+    "by": [
+     "rollback",
+     "trace"
+    ],
+    "scored": true,
+    "how": "lift-2",
+    "from": [
+     "fresh"
+    ]
+   },
+   "32": {
+    "pays": [
+     "player.lo.items.pyrite_coin.amount",
+     "player.lo.items.red_fabric.amount"
+    ],
+    "cost": "price",
+    "by": [
+     "rollback",
+     "trace"
+    ],
+    "scored": true,
+    "how": "lift-2",
+    "from": [
+     "fresh"
+    ]
+   },
+   "33": {
+    "pays": null,
+    "cost": "unknown",
+    "by": [],
+    "scored": false,
+    "why": "not affordable, and no lift of up to three candidates to 10× the cost makes it so",
+    "from": [
+     "fresh"
+    ]
+   },
+   "41": {
+    "pays": [
+     "player.lo.items.red_fabric.amount",
+     "player.lo.items.rotten_flesh.amount"
+    ],
+    "cost": "price",
+    "by": [
+     "rollback",
+     "trace"
+    ],
+    "scored": true,
+    "how": "lift-2",
+    "from": [
+     "fresh"
+    ]
+   },
+   "42": {
+    "pays": null,
+    "cost": "unknown",
+    "by": [],
+    "scored": false,
+    "why": "not affordable, and no lift of up to three candidates to 10× the cost makes it so",
+    "from": [
+     "fresh"
+    ]
+   },
+   "43": {
+    "pays": [
+     "player.lo.items.brain.amount",
+     "player.lo.items.rusty_gear.amount",
+     "player.lo.items.slime_core.amount"
+    ],
+    "cost": "price",
+    "by": [
+     "rollback",
+     "trace"
+    ],
+    "scored": true,
+    "how": "lift-3",
+    "from": [
+     "fresh"
+    ]
+   },
+   "51": {
+    "pays": null,
+    "cost": "unknown",
+    "by": [],
+    "scored": false,
+    "why": "not affordable, and no lift of up to three candidates to 10× the cost makes it so",
+    "from": [
+     "fresh"
+    ]
+   },
+   "52": {
+    "pays": null,
+    "cost": "unknown",
+    "by": [],
+    "scored": false,
+    "why": "not affordable, and no lift of up to three candidates to 10× the cost makes it so",
+    "from": [
+     "fresh"
+    ]
+   },
+   "53": {
+    "pays": null,
+    "cost": "unknown",
+    "by": [],
+    "scored": false,
+    "why": "not affordable, and it publishes no usable cost to lift towards",
+    "from": [
+     "fresh"
+    ]
+   },
+   "61": {
+    "pays": [
+     "player.lo.items.normal_log.amount",
+     "player.lo.items.soaked_log.amount"
+    ],
+    "cost": "price",
+    "by": [
+     "rollback",
+     "trace"
+    ],
+    "scored": true,
+    "how": "lift-2",
+    "from": [
+     "fresh"
+    ]
+   },
+   "62": {
+    "pays": [
+     "player.lo.items.normal_log.amount",
+     "player.lo.items.plank.amount"
+    ],
+    "cost": "price",
+    "by": [
+     "rollback",
+     "trace"
+    ],
+    "scored": true,
+    "how": "lift-2",
+    "from": [
+     "fresh"
+    ]
+   },
+   "63": {
+    "pays": [
+     "player.lo.items.coal.amount",
+     "player.lo.items.gold_ore.amount",
+     "player.lo.items.plank.amount"
+    ],
+    "cost": "price",
+    "by": [
+     "rollback",
+     "trace"
+    ],
+    "scored": true,
+    "how": "lift-3",
+    "from": [
+     "fresh"
+    ]
+   },
+   "71": {
+    "pays": null,
+    "cost": "unknown",
+    "by": [],
+    "scored": false,
+    "why": "not affordable, and no lift of up to three candidates to 10× the cost makes it so",
+    "from": [
+     "fresh"
+    ]
+   },
+   "72": {
+    "pays": null,
+    "cost": "unknown",
+    "by": [],
+    "scored": false,
+    "why": "not affordable, and no lift of up to three candidates to 10× the cost makes it so",
+    "from": [
+     "fresh"
+    ]
+   },
+   "73": {
+    "pays": null,
+    "cost": "unknown",
+    "by": [],
+    "scored": false,
+    "why": "not affordable, and no lift of up to three candidates to 10× the cost makes it so",
+    "from": [
+     "fresh"
+    ]
+   },
+   "81": {
+    "pays": [
+     "player.lo.items.brain.amount",
+     "player.lo.items.holy_water.amount"
+    ],
+    "cost": "price",
+    "by": [
+     "rollback",
+     "trace"
+    ],
+    "scored": true,
+    "how": "lift-2",
+    "from": [
+     "fresh"
+    ]
+   },
+   "82": {
+    "pays": null,
+    "cost": "unknown",
+    "by": [],
+    "scored": false,
+    "why": "not affordable, and no lift of up to three candidates to 10× the cost makes it so",
+    "from": [
+     "fresh"
+    ]
+   },
+   "83": {
+    "pays": [
+     "player.lo.items.holy_water.amount",
+     "player.lo.items.normal_log.amount"
+    ],
+    "cost": "price",
+    "by": [
+     "rollback",
+     "trace"
+    ],
+    "scored": true,
+    "how": "lift-2",
+    "from": [
+     "fresh"
+    ]
+   },
+   "91": {
+    "pays": [
+     "player.lo.items.leaf.amount",
+     "player.lo.items.plank.amount"
+    ],
+    "cost": "price",
+    "by": [
+     "rollback",
+     "trace"
+    ],
+    "scored": true,
+    "how": "lift-2",
+    "from": [
+     "fresh"
+    ]
+   },
+   "92": {
+    "pays": [
+     "player.lo.items.leaf.amount",
+     "player.lo.items.normal_log.amount"
+    ],
+    "cost": "price",
+    "by": [
+     "rollback",
+     "trace"
+    ],
+    "scored": true,
+    "how": "lift-2",
+    "from": [
+     "fresh"
+    ]
+   },
+   "93": {
+    "pays": [
+     "player.lo.items.plank.amount",
+     "player.lo.items.seed.amount"
+    ],
+    "cost": "price",
+    "by": [
+     "rollback",
+     "trace"
+    ],
+    "scored": true,
+    "how": "lift-2",
+    "from": [
+     "fresh"
+    ]
+   }
+  },
+  "to": {
+   "11": {
+    "pays": "player.lo.items.normal_log.amount",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "trace"
+    ],
+    "scored": true,
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "12": {
+    "pays": "player.lo.items.slime_core_shard.amount",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "trace"
+    ],
+    "scored": true,
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "13": {
+    "pays": null,
+    "cost": "unknown",
+    "by": [],
+    "scored": false,
+    "why": "the game draws randomness, and seeds 1, 2, 3 give different answers",
+    "from": [
+     "fresh"
+    ]
+   },
+   "21": {
+    "pays": "player.lo.items.stone.amount",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "trace"
+    ],
+    "scored": true,
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "22": {
+    "pays": "player.lo.items.plank.amount",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "trace"
+    ],
+    "scored": true,
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "23": {
+    "pays": "player.lo.items.copper_ore.amount",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "trace"
+    ],
+    "scored": true,
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "31": {
+    "pays": "player.lo.items.stone_brick.amount",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "trace"
+    ],
+    "scored": true,
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "32": {
+    "pays": "player.lo.items.copper_ingot.amount",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "trace"
+    ],
+    "scored": true,
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "33": {
+    "pays": "player.lo.items.iron_ore.amount",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "trace"
+    ],
+    "scored": true,
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "41": {
+    "pays": "player.lo.items.iron_ingot.amount",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "trace"
+    ],
+    "scored": true,
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "42": {
+    "pays": "player.lo.items.bronze_ingot.amount",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "trace"
+    ],
+    "scored": true,
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "43": {
+    "pays": "player.lo.items.steel_ingot.amount",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "trace"
+    ],
+    "scored": true,
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   }
+  },
+  "fr": {
+   "11": {
+    "pays": "player.lo.items.ice.amount",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "trace"
+    ],
+    "scored": true,
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "12": {
+    "pays": "player.lo.items.icestone.amount",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "trace"
+    ],
+    "scored": true,
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "13": {
+    "pays": "player.lo.items.rust_ingot.amount",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "trace"
+    ],
+    "scored": true,
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "21": {
+    "pays": "player.lo.items.ice.amount",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "trace"
+    ],
+    "scored": true,
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "22": {
+    "pays": "player.lo.items.icestone.amount",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "trace"
+    ],
+    "scored": true,
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "23": {
+    "pays": "player.lo.items.rust_ingot.amount",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "trace"
+    ],
+    "scored": true,
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "31": {
+    "pays": "player.lo.items.ice.amount",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "trace"
+    ],
+    "scored": true,
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "32": {
+    "pays": "player.lo.items.icestone.amount",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "trace"
+    ],
+    "scored": true,
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "33": {
+    "pays": "player.lo.items.rust_ingot.amount",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "trace"
+    ],
+    "scored": true,
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "41": {
+    "pays": "player.fr.points",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "trace"
+    ],
+    "scored": true,
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   }
+  },
+  "clo": {
+   "11": {
+    "pays": [
+     "player.lo.items.slime_core.amount",
+     "player.lo.items.slime_core_shard.amount",
+     "player.lo.items.slime_goo.amount"
+    ],
+    "cost": "price",
+    "by": [
+     "rollback",
+     "trace"
+    ],
+    "scored": true,
+    "how": "lift-3",
+    "from": [
+     "fresh"
+    ]
+   },
+   "12": {
+    "pays": [
+     "player.lo.items.pyrite_coin.amount",
+     "player.lo.items.red_fabric.amount",
+     "player.lo.items.rusty_gear.amount"
+    ],
+    "cost": "price",
+    "by": [
+     "rollback",
+     "trace"
+    ],
+    "scored": true,
+    "how": "lift-3",
+    "from": [
+     "fresh"
+    ]
+   },
+   "13": {
+    "pays": [
+     "player.lo.items.brain.amount",
+     "player.lo.items.iron_ore.amount",
+     "player.lo.items.rotten_flesh.amount"
+    ],
+    "cost": "price",
+    "by": [
+     "rollback",
+     "trace"
+    ],
+    "scored": true,
+    "how": "lift-3",
+    "from": [
+     "fresh"
+    ]
+   },
+   "14": {
+    "pays": [
+     "player.lo.items.leaf.amount",
+     "player.lo.items.normal_log.amount",
+     "player.lo.items.seed.amount"
+    ],
+    "cost": "price",
+    "by": [
+     "rollback",
+     "trace"
+    ],
+    "scored": true,
+    "how": "lift-3",
+    "from": [
+     "fresh"
+    ]
+   },
+   "21": {
+    "pays": null,
+    "cost": "unknown",
+    "by": [],
+    "scored": false,
+    "why": "not affordable, and no lift of up to three candidates to 10× the cost makes it so",
+    "from": [
+     "fresh"
+    ]
+   },
+   "22": {
+    "pays": null,
+    "cost": "unknown",
+    "by": [],
+    "scored": false,
+    "why": "not affordable, and no lift of up to three candidates to 10× the cost makes it so",
+    "from": [
+     "fresh"
+    ]
+   },
+   "31": {
+    "pays": "player.s.points",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.s.points",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "41": {
+    "pays": null,
+    "cost": "unknown",
+    "by": [],
+    "scored": false,
+    "why": "not affordable, and no lift of up to three candidates to 10× the cost makes it so",
+    "from": [
+     "fresh"
+    ]
+   },
+   "42": {
+    "pays": null,
+    "cost": "unknown",
+    "by": [],
+    "scored": false,
+    "why": "not affordable, and no lift of up to three candidates to 10× the cost makes it so",
+    "from": [
+     "fresh"
+    ]
+   },
+   "51": {
+    "pays": [
+     "player.lo.items.normal_log.amount",
+     "player.lo.items.plank.amount",
+     "player.lo.items.soaked_log.amount"
+    ],
+    "cost": "price",
+    "by": [
+     "rollback",
+     "trace"
+    ],
+    "scored": true,
+    "how": "lift-3",
+    "from": [
+     "fresh"
+    ]
+   },
+   "61": {
+    "pays": null,
+    "cost": "unknown",
+    "by": [],
+    "scored": false,
+    "why": "not affordable, and no lift of up to three candidates to 10× the cost makes it so",
+    "from": [
+     "fresh"
+    ]
+   },
+   "62": {
+    "pays": null,
+    "cost": "unknown",
+    "by": [],
+    "scored": false,
+    "why": "not affordable, and no lift of up to three candidates to 10× the cost makes it so",
+    "from": [
+     "fresh"
+    ]
+   }
+  }
+ }
+}

@@ -1,0 +1,382 @@
+{
+ "generated": true,
+ "generator": "tools/currency-data.mjs",
+ "generatorVersion": 1,
+ "formatVersion": 1,
+ "game": "the-pro-tree",
+ "upstream": {
+  "repo": "CrazyHighNumbers69/The-Modding-Tree",
+  "commit": "06ca3439716974eba550862c36c50bb1a2f64ef2"
+ },
+ "states": [
+  "fresh"
+ ],
+ "seeds": [
+  1
+ ],
+ "summary": {
+  "buyables": 34,
+  "scored": 0,
+  "price": 0,
+  "requirement": 0,
+  "unknown": 34,
+  "own": 0,
+  "foreign": 0,
+  "several": 0,
+  "impure": 0
+ },
+ "buyables": {
+  "s": {
+   "11": {
+    "pays": null,
+    "cost": "unknown",
+    "by": [],
+    "scored": false,
+    "why": "the reader threw: Decimal is not defined",
+    "from": [
+     "fresh"
+    ]
+   },
+   "12": {
+    "pays": null,
+    "cost": "unknown",
+    "by": [],
+    "scored": false,
+    "why": "the reader threw: Decimal is not defined",
+    "from": [
+     "fresh"
+    ]
+   },
+   "13": {
+    "pays": null,
+    "cost": "unknown",
+    "by": [],
+    "scored": false,
+    "why": "the reader threw: Decimal is not defined",
+    "from": [
+     "fresh"
+    ]
+   },
+   "14": {
+    "pays": null,
+    "cost": "unknown",
+    "by": [],
+    "scored": false,
+    "why": "the reader threw: Decimal is not defined",
+    "from": [
+     "fresh"
+    ]
+   },
+   "15": {
+    "pays": null,
+    "cost": "unknown",
+    "by": [],
+    "scored": false,
+    "why": "the reader threw: Decimal is not defined",
+    "from": [
+     "fresh"
+    ]
+   }
+  },
+  "u": {
+   "11": {
+    "pays": null,
+    "cost": "unknown",
+    "by": [],
+    "scored": false,
+    "why": "the reader threw: Decimal is not defined",
+    "from": [
+     "fresh"
+    ]
+   },
+   "12": {
+    "pays": null,
+    "cost": "unknown",
+    "by": [],
+    "scored": false,
+    "why": "the reader threw: Decimal is not defined",
+    "from": [
+     "fresh"
+    ]
+   },
+   "13": {
+    "pays": null,
+    "cost": "unknown",
+    "by": [],
+    "scored": false,
+    "why": "the reader threw: Decimal is not defined",
+    "from": [
+     "fresh"
+    ]
+   },
+   "14": {
+    "pays": null,
+    "cost": "unknown",
+    "by": [],
+    "scored": false,
+    "why": "the reader threw: Decimal is not defined",
+    "from": [
+     "fresh"
+    ]
+   }
+  },
+  "w": {
+   "11": {
+    "pays": null,
+    "cost": "unknown",
+    "by": [],
+    "scored": false,
+    "why": "the reader threw: Decimal is not defined",
+    "from": [
+     "fresh"
+    ]
+   },
+   "12": {
+    "pays": null,
+    "cost": "unknown",
+    "by": [],
+    "scored": false,
+    "why": "the reader threw: Decimal is not defined",
+    "from": [
+     "fresh"
+    ]
+   }
+  },
+  "y": {
+   "11": {
+    "pays": null,
+    "cost": "unknown",
+    "by": [],
+    "scored": false,
+    "why": "the reader threw: Decimal is not defined",
+    "from": [
+     "fresh"
+    ]
+   },
+   "12": {
+    "pays": null,
+    "cost": "unknown",
+    "by": [],
+    "scored": false,
+    "why": "the reader threw: Decimal is not defined",
+    "from": [
+     "fresh"
+    ]
+   }
+  },
+  "re": {
+   "11": {
+    "pays": null,
+    "cost": "unknown",
+    "by": [],
+    "scored": false,
+    "why": "the reader threw: Decimal is not defined",
+    "from": [
+     "fresh"
+    ]
+   },
+   "12": {
+    "pays": null,
+    "cost": "unknown",
+    "by": [],
+    "scored": false,
+    "why": "the reader threw: Decimal is not defined",
+    "from": [
+     "fresh"
+    ]
+   },
+   "21": {
+    "pays": null,
+    "cost": "unknown",
+    "by": [],
+    "scored": false,
+    "why": "the reader threw: Decimal is not defined",
+    "from": [
+     "fresh"
+    ]
+   },
+   "22": {
+    "pays": null,
+    "cost": "unknown",
+    "by": [],
+    "scored": false,
+    "why": "the reader threw: Decimal is not defined",
+    "from": [
+     "fresh"
+    ]
+   }
+  },
+  "su": {
+   "11": {
+    "pays": null,
+    "cost": "unknown",
+    "by": [],
+    "scored": false,
+    "why": "the reader threw: Decimal is not defined",
+    "from": [
+     "fresh"
+    ]
+   },
+   "12": {
+    "pays": null,
+    "cost": "unknown",
+    "by": [],
+    "scored": false,
+    "why": "the reader threw: Decimal is not defined",
+    "from": [
+     "fresh"
+    ]
+   },
+   "13": {
+    "pays": null,
+    "cost": "unknown",
+    "by": [],
+    "scored": false,
+    "why": "the reader threw: Decimal is not defined",
+    "from": [
+     "fresh"
+    ]
+   },
+   "14": {
+    "pays": null,
+    "cost": "unknown",
+    "by": [],
+    "scored": false,
+    "why": "the reader threw: Decimal is not defined",
+    "from": [
+     "fresh"
+    ]
+   },
+   "15": {
+    "pays": null,
+    "cost": "unknown",
+    "by": [],
+    "scored": false,
+    "why": "the reader threw: Decimal is not defined",
+    "from": [
+     "fresh"
+    ]
+   },
+   "16": {
+    "pays": null,
+    "cost": "unknown",
+    "by": [],
+    "scored": false,
+    "why": "the reader threw: Decimal is not defined",
+    "from": [
+     "fresh"
+    ]
+   },
+   "17": {
+    "pays": null,
+    "cost": "unknown",
+    "by": [],
+    "scored": false,
+    "why": "the reader threw: Decimal is not defined",
+    "from": [
+     "fresh"
+    ]
+   },
+   "18": {
+    "pays": null,
+    "cost": "unknown",
+    "by": [],
+    "scored": false,
+    "why": "the reader threw: Decimal is not defined",
+    "from": [
+     "fresh"
+    ]
+   },
+   "21": {
+    "pays": null,
+    "cost": "unknown",
+    "by": [],
+    "scored": false,
+    "why": "the reader threw: Decimal is not defined",
+    "from": [
+     "fresh"
+    ]
+   },
+   "22": {
+    "pays": null,
+    "cost": "unknown",
+    "by": [],
+    "scored": false,
+    "why": "the reader threw: Decimal is not defined",
+    "from": [
+     "fresh"
+    ]
+   },
+   "23": {
+    "pays": null,
+    "cost": "unknown",
+    "by": [],
+    "scored": false,
+    "why": "the reader threw: Decimal is not defined",
+    "from": [
+     "fresh"
+    ]
+   },
+   "24": {
+    "pays": null,
+    "cost": "unknown",
+    "by": [],
+    "scored": false,
+    "why": "the reader threw: Decimal is not defined",
+    "from": [
+     "fresh"
+    ]
+   },
+   "25": {
+    "pays": null,
+    "cost": "unknown",
+    "by": [],
+    "scored": false,
+    "why": "the reader threw: Decimal is not defined",
+    "from": [
+     "fresh"
+    ]
+   },
+   "26": {
+    "pays": null,
+    "cost": "unknown",
+    "by": [],
+    "scored": false,
+    "why": "the reader threw: Decimal is not defined",
+    "from": [
+     "fresh"
+    ]
+   },
+   "27": {
+    "pays": null,
+    "cost": "unknown",
+    "by": [],
+    "scored": false,
+    "why": "the reader threw: Decimal is not defined",
+    "from": [
+     "fresh"
+    ]
+   },
+   "28": {
+    "pays": null,
+    "cost": "unknown",
+    "by": [],
+    "scored": false,
+    "why": "the reader threw: Decimal is not defined",
+    "from": [
+     "fresh"
+    ]
+   },
+   "29": {
+    "pays": null,
+    "cost": "unknown",
+    "by": [],
+    "scored": false,
+    "why": "the reader threw: Decimal is not defined",
+    "from": [
+     "fresh"
+    ]
+   }
+  }
+ }
+}
