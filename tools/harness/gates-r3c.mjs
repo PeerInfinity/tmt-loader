@@ -28,7 +28,7 @@
 // the default that loses it. The named-table cell is the proof that a pin which NAMES the old configuration
 // (`lib.mjs` SOMETHING_OLD_TABLE, used by `gates-s1`) reproduces the old numbers to the hash.
 import path from 'node:path';
-import { REPO, parseArgs, writeJSON, headCommit, treeDirty, entryOnly, SOMETHING_OLD_TABLE } from './lib.mjs';
+import { REPO, parseArgs, writeJSON, headCommit, treeDirty, entryOnly, SOMETHING_OLD_TABLE, PRE_F1 } from './lib.mjs';
 import { appendSection } from './summary.mjs';
 import { runCells } from './sweep.mjs';
 entryOnly(import.meta.url);
@@ -39,6 +39,10 @@ const a = parseArgs(process.argv.slice(2), ['no-summary', 'no-write', 'assert'])
 const KNOWN = new Set(['_', 'part', 'pool', 'no-summary', 'no-write', 'assert', 'ticks', 'repeat', 'cell', 'horizon', 'from', 'fixture']);
 for (const k of Object.keys(a)) if (!KNOWN.has(k)) { console.error(`REFUSED: unknown flag --${k}`); process.exit(2); }
 const PART = String(a.part ?? '0');
+// ⚖ F1: this gate PREDATES F1. Its PINNED parts name the configuration they measured (lib.mjs PRE_F1 — no passive
+// yield, the old derived default — appended to every leg by run.mjs via TMT_NAMED_CONFIG), and every part resumes from
+// the fixtures it was written against, preserved byte-for-byte under snapshots/ptr/pre-f1/ (all/ is F1's fresh chain).
+if (['0', '1'].includes(PART)) process.env.TMT_NAMED_CONFIG = PRE_F1;   // part 0 is R3c's measurement of the PRE-F1 derivation
 const POOL = Number(a.pool || 4);
 const commit = headCommit(), dirty = treeDirty();
 const rows = [];
@@ -47,7 +51,7 @@ const row = (r) => { rows.push(r); console.log(`${r.ok ? 'GREEN' : 'RED  '} ${r.
 // ⛔ THE FLOOR EACH PART MUST REACH (`--assert`), counted from what the part EMITS.
 // Part 0: eight cells + a verdict. Part 1: three cells + a verdict (one cell and no verdict under `--cell`).
 // Part 1m: the three cells re-read + the pinned control + the verdict. Part 2: four cells + a verdict; 2m: four + verdict.
-const ROWS = { 0: 9, 1: 4, '1m': 5, 2: 5, '2m': 5, '2p': 4 };
+const ROWS = { 0: 10, 1: 4, '1m': 5, 2: 5, '2m': 5, '2p': 4 };
 const CELL = a.cell === undefined ? null : Number(a.cell);
 const HORIZON = a.horizon === undefined ? null : Number(a.horizon);
 if (CELL !== null && HORIZON === null) { console.error('REFUSED: --cell needs --horizon <game-seconds> — a shard that took its horizon from itself would agree with itself (R3b-2)'); process.exit(2); }
@@ -60,6 +64,8 @@ const OLD = { gs: 579, hashGame: '524822d719ceea18', marks: { S01: 6, S02: 308, 
 // What the derived defaults do, measured twice equal at R3c — the new value of every re-recorded control. A move of the
 // derivation MOVES this row, which is what a control for the derivation is for.
 const DERIVED = { gs: 3000, hashGame: '03c4ee9de249916b', marks: { S01: 6, S02: null, S03: null, S04: null, S05: null } };
+// F1 (gate R3c-0 cell 8, measured twice equal at F1's head): the post-F1 derivation reaches every mark with no table.
+const F1_DERIVED = { gs: 874, hashGame: 'a44f1bd5010a4344', marks: { S01: 6, S02: 484, S03: 485, S04: 485, S05: 874 } };
 const RESET_FIRST = 'kindOrder=toggles,reset,upgrades,buyables,challenges,clickables';
 async function part0() {
   const cells = [
@@ -71,6 +77,9 @@ async function part0() {
     { label: 'policy:buyables:fundamental=buyMax', opt: 'policy:buyables:fundamental=buyMax', note: 'one override' },
     { label: RESET_FIRST, opt: RESET_FIRST, note: 'one override: the old kind order' },
     { label: 'policy:reset:unlock=always;policy:reset:fundamental=interval>=5', opt: 'policy:reset:unlock=always;policy:reset:fundamental=interval>=5', note: 'two overrides' },
+    // ⚖ F1: the derivation AS IT SHIPS since F1, named out loud (its two keys outrank the part's PRE_F1) — the control
+    // this game is FOR. `gain>=2x|stall>=5x/5` restores the whole ladder with no table (plan §48).
+    { label: 'F1: the derivation as it ships since F1', opt: 'passiveYield=0;resetDefault=gain>=2x|stall>=5x/5', note: 'the derived default since F1' },
   ];
   const lines = await runCells({ id: 'something', cells, flags: Object.entries(ST), pool: POOL, repeat: 2, stop: 'S05',
     onRun: (c, l) => console.log(`[PROGRESS] ${c.label || '(derived)'} run ${l.run} → ${l.ok ? `${l.gameSeconds}s ${l.hashGame}` : 'FAILED ' + l.error}`) });
@@ -84,6 +93,7 @@ async function part0() {
     if (i === 1) { ok = ok && l.gameSeconds === OLD.gs && l.hashGame === OLD.hashGame && sameMarks(l, OLD.marks); claim = `= the old table's pins ${OLD.gs} / ${OLD.hashGame}`; }
     if (i === 2) { ok = ok && SMARKS.every((m) => l.marks?.[m] != null); claim = 'reaches EVERY mark — the one override that restores the ladder'; }
     if (i >= 3 && i <= 6) { ok = ok && l.marks?.S02 == null; claim = 'does NOT reach S02 — this default is not the one that loses it'; }
+    if (i === 8) { ok = ok && l.gameSeconds === F1_DERIVED.gs && l.hashGame === F1_DERIVED.hashGame && sameMarks(l, F1_DERIVED.marks); claim = `= F1's derived value ${F1_DERIVED.gs} / ${F1_DERIVED.hashGame}, S01–S05`; }
     verdicts.push(ok);
     row({ gate: `R3c-0 Something Tree S01–S05 — ${c.label || 'the DERIVED defaults (no table)'}`, id: 'something', leg: 'fresh, diff 1, profile all, 3000 ticks, 2 runs',
       ok, ticks: l.ticks, gameSeconds: l.gameSeconds, diff: 1, hash: l.hashGame,
@@ -104,7 +114,7 @@ async function part0() {
 // without moving M16–M24.
 const PTR_LADDER = path.join(REPO, 'tools/harness/ladder/ptr.json');
 const L15 = { diff: 1, profile: 'all', ticks: Number(a.ticks || 21000), 'wall-ms': 900000, ladder: PTR_LADDER, to: 'M31',  // a mark past the horizon: the leg must RECORD M27 and run on
-  'from-snapshot': path.join(REPO, 'tools/harness/snapshots/ptr/all/M15.json'), 'marks-continue': true, stall: 1000000,
+  'from-snapshot': path.join(REPO, 'tools/harness/snapshots/ptr/pre-f1/M15.json'),   // F1: see above 'marks-continue': true, stall: 1000000,
   eval: `({hs: String(player.h.points), qTotal: String(player.q.total), ql: String(player.q.buyables[11]), sb: String(player.sb.points), qUpg: player.q.upgrades.slice(), hChall: Object.assign({}, player.h.challenges), ch: tmtLoader.hookStats().challenges, cyc: tmtLoader.cycleState()})` };
 const PMARKS = ['M16', 'M17', 'M18', 'M19', 'M20', 'M21', 'M22', 'M23', 'M24', 'M25', 'M26', 'M27'];
 // ⛔ BOTH ENDS HAVE A KNOWN ANSWER at this horizon. `turnMark=last` is R3b-2's shipped W = 10 cell (plan §40.4, CI run
@@ -200,9 +210,10 @@ async function part1m() {
 // game-s); a CI runner does 21,000 of these ticks in ~2 minutes, so it runs there, one cell per job.
 // ⛔ F1: the fixtures Part 2f's leg is DECLARED to write — its verdict requires exactly these, so a leg that reaches one
 // more (or one fewer) mark is a finding rather than a longer row list. From `all/M15.json`: M16–M25 and M27 (M26 lands
-// past the leg's ticks); from `--fixture all/M27.json`: none of the later marks but M26.
+// past the leg's ticks); from `--fixture all/M27.json`: M26, AND M27 itself — the fixture's own mark holds on the leg's
+// first tick and is re-recorded there (CI run 35635389918: "M26, M27", which the old floor had silently accepted).
 const FIX_2F = ['M16', 'M17', 'M18', 'M19', 'M20', 'M21', 'M22', 'M23', 'M24', 'M25', 'M27'];
-const FIX_2F_FROM_FIXTURE = ['M26'];
+const FIX_2F_FROM_FIXTURE = ['M26', 'M27'];
 const L25 = { diff: 1, profile: 'all', ticks: Number(a.ticks || 50000), 'wall-ms': 600000, ladder: PTR_LADDER, to: 'M31',
   'from-snapshot': path.join(REPO, 'tools/harness/snapshots/ptr/all/M15.json'), 'marks-continue': true, stall: 1000000,
   // the price PAID for q22 — `tmp` at the check is the one the tick's purchase compared against

@@ -22,12 +22,16 @@ import os from 'node:os';
 import path from 'node:path';
 import { spawn } from 'node:child_process';
 import { chromium } from 'playwright';
-import { REPO, GAMES, parseArgs, startServer, headCommit, treeDirty, writeJSON, entryOnly, assignShards, parseShard } from './lib.mjs';
+import { REPO, GAMES, parseArgs, startServer, headCommit, treeDirty, writeJSON, entryOnly, assignShards, parseShard, PRE_F1 } from './lib.mjs';
 import { appendSection } from './summary.mjs';
 entryOnly(import.meta.url);
 
 const a = parseArgs(process.argv.slice(2), ['no-summary', 'assert']);
 const PART = String(a.part || '1');
+// ⚖ F1: this gate PREDATES F1. Its PINNED parts name the configuration they measured (lib.mjs PRE_F1 — no passive
+// yield, the old derived default — appended to every leg by run.mjs via TMT_NAMED_CONFIG), and every part resumes from
+// the fixtures it was written against, preserved byte-for-byte under snapshots/ptr/pre-f1/ (all/ is F1's fresh chain).
+if (['5'].includes(PART)) process.env.TMT_NAMED_CONFIG = PRE_F1;
 const commit = headCommit(), dirty = treeDirty();
 const rows = [];
 const row = (r) => { rows.push(r); console.log(`${r.ok ? 'GREEN' : 'RED  '} ${r.gate} ${r.id || ''} ${r.leg || ''} ticks=${r.ticks ?? '-'} hash=${r.hash ?? '-'} ${String(r.notes || '').slice(0, 900)}`); };
@@ -40,7 +44,7 @@ const ROWS = { 1: 3, 2: 13, 3: 5, 4: 8, 5: 3, 6: 1 };
 // literal 4 here is now a DECLARED count in one place. It is deliberately not read off `tmtLoader.componentNames` —
 // a gate that asks the thing it is judging how many it should have is not a gate.
 const COMPONENTS_EXPECTED = 7;
-const SNAP = (id, m) => `tools/harness/snapshots/${id}/all/${m}.json`;
+const SNAP = (id, m) => `tools/harness/snapshots/${id}/${id === 'ptr' ? 'pre-f1' : 'all'}/${m}.json`;   // F1: see above
 // The R1′ leg V1's inertness is measured on, and V2's after it (plan §14d, §16.1).
 const M16_PIN = { ticks: 24179, hashGame: '9e2eadb7c58c0078' };
 // ⚠ THE WHOLE CONFIGURATION, NOT THE ONE FEATURE THAT MOVED (plan §14d.2 item 14): every measurement below names

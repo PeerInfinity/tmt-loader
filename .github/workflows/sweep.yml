@@ -1526,7 +1526,7 @@ jobs:
         shell: bash
         run: |
           set -o pipefail
-          node tools/harness/gates-r3c.mjs --part 2 --cell ${{ matrix.cell }} --horizon 66048 \
+          node tools/harness/gates-r3c.mjs --part 2 --cell ${{ matrix.cell }} --horizon 58168 \
             --no-summary --assert --pool 2 | tee r3c-2-${{ matrix.cell }}.txt
 
       - name: Summary

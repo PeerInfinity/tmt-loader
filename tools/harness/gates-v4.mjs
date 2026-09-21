@@ -28,12 +28,16 @@ import os from 'node:os';
 import path from 'node:path';
 import { spawn } from 'node:child_process';
 import { chromium } from 'playwright';
-import { REPO, GAMES, parseArgs, startServer, headCommit, treeDirty, writeJSON, entryOnly, assignShards, parseShard } from './lib.mjs';
+import { REPO, GAMES, parseArgs, startServer, headCommit, treeDirty, writeJSON, entryOnly, assignShards, parseShard, PRE_F1 } from './lib.mjs';
 import { appendSection } from './summary.mjs';
 entryOnly(import.meta.url);
 
 const a = parseArgs(process.argv.slice(2), ['no-summary', 'assert']);
 const PART = String(a.part || '1');
+// ⚖ F1: this gate PREDATES F1. Its PINNED parts name the configuration they measured (lib.mjs PRE_F1 — no passive
+// yield, the old derived default — appended to every leg by run.mjs via TMT_NAMED_CONFIG), and every part resumes from
+// the fixtures it was written against, preserved byte-for-byte under snapshots/ptr/pre-f1/ (all/ is F1's fresh chain).
+if (['5'].includes(PART)) process.env.TMT_NAMED_CONFIG = PRE_F1;
 const commit = headCommit(), dirty = treeDirty();
 const rows = [];
 const row = (r) => { rows.push(r); console.log(`${r.ok ? 'GREEN' : 'RED  '} ${r.gate} ${r.id || ''} ${r.leg || ''} ticks=${r.ticks ?? '-'} hash=${r.hash ?? '-'} ${String(r.notes || '').slice(0, 1200)}`); };
@@ -42,7 +46,7 @@ const row = (r) => { rows.push(r); console.log(`${r.ok ? 'GREEN' : 'RED  '} ${r.
 // that dies part-way prints fewer rows, and fewer rows is fewer reds. ⚠ ADDING A LEG MOVES THIS, deliberately.
 const ROWS = { 1: 3, 2: 3, 3: 4, 4: 3, 5: 4, 6: 2, 7: 1, 8: 3 };
 
-const SNAP = (id, m) => `tools/harness/snapshots/${id}/all/${m}.json`;
+const SNAP = (id, m) => `tools/harness/snapshots/${id}/${id === 'ptr' ? 'pre-f1' : 'all'}/${m}.json`;   // F1: see above
 const PTR_LADDER = 'tools/harness/ladder/ptr.json';
 // ⛔ THE OPENING'S PIN, §14d.6 / §21.4 / §24.2 item 4 — a fresh game to M12, and it has not moved through V1, V2,
 // V3 or R2. It is the row that says "nothing edited ⇒ nothing changed" about the part of the game every player sees.

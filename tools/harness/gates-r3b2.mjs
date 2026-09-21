@@ -35,6 +35,9 @@ entryOnly(import.meta.url);
 // (plan §32.3). The non-boolean knobs are listed in the usage block above the parts that read them.
 const a = parseArgs(process.argv.slice(2), ['no-summary', 'no-write', 'assert']);
 const PART = String(a.part || '1');
+// ⚖ F1: this gate PREDATES F1. Its PINNED parts name the configuration they measured (lib.mjs PRE_F1 — no passive
+// yield, the old derived default — appended to every leg by run.mjs via TMT_NAMED_CONFIG), and every part resumes from
+// the fixtures it was written against, preserved byte-for-byte under snapshots/ptr/pre-f1/ (all/ is F1's fresh chain).
 const commit = headCommit(), dirty = treeDirty();
 const rows = [];
 const shardedCells = [];   // every cell this process actually took responsibility for, for the merge check
@@ -79,7 +82,7 @@ function shardOf(cells) {
 }
 
 const PTR_LADDER = path.join(REPO, 'tools/harness/ladder/ptr.json');
-const SNAP_ALL = path.join(REPO, 'tools/harness/snapshots/ptr/all');
+const SNAP_ALL = path.join(REPO, 'tools/harness/snapshots/ptr/pre-f1');   // F1: see above
 const POOL = Number(a.pool || 4);
 const REPEAT = Number(a.repeat || 2);
 
@@ -304,7 +307,9 @@ await PARTS[PART]();
 const red = rows.filter((r) => !r.ok).length;
 // ⛔ A SHARD DECLARES ITS OWN FLOOR, not the part's — otherwise `--assert` refuses every shard for the rows the
 // OTHER shards ran. What keeps that honest is the merge job, which reassembles the cell list.
-const expected = SHARD ? shardedCells.length : ROWS[PART];
+// ⛔ F1: a shard emits its cells AND the part's verdict row — the old floor (`<`) hid the verdict ("rows 3/2" in CI run
+// 35635389918 the day the count became exact), so the declared count is cells + 1.
+const expected = SHARD ? shardedCells.length + 1 : ROWS[PART];
 const short2 = `R3b2 part ${PART}${SHARD ? ` shard ${SHARD.i}/${SHARD.n}` : ''}: rows ${rows.length}/${expected} expected, ${red} RED`;
 console.log(`\nVERDICT: ${short2}`);
 if (SHARD) console.log(`CELLS ${SHARD.i}/${SHARD.n}: ${JSON.stringify(shardedCells)}`);

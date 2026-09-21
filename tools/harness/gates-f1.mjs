@@ -42,7 +42,9 @@ const commit = headCommit(), dirty = treeDirty();
 const rows = [];
 const row = (r) => { rows.push(r); console.log(`${r.ok ? 'GREEN' : 'RED  '} ${r.gate} ${r.id} gs=${r.gameSeconds ?? '-'} ${String(r.notes || '').slice(0, 400)}`); };
 
-const SNAP = (m) => path.join(REPO, `tools/harness/snapshots/ptr/all/${m}.json`);
+// ⚠ The resumed stretches start from the PRE-F1 fixtures — the states every earlier ranking was measured from, so this
+// gate's rows reproduce the as-built's (plan §48); F1's own fresh chain (all/) is what the NEXT rung continues from.
+const SNAP = (m) => path.join(REPO, `tools/harness/snapshots/ptr/pre-f1/${m}.json`);
 const snapGs = (m) => JSON.parse(fs.readFileSync(SNAP(m), 'utf8')).gameSeconds;
 // A STRETCH: where it starts (a fixture, or a fresh game), the marks it scores, and a game-second BUDGET past its start
 // that is the same at every tick (so a cell that does not reach its last mark reports "not by <start + budget>").

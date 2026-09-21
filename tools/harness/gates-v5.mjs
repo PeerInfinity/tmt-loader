@@ -24,7 +24,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { spawn } from 'node:child_process';
-import { REPO, GAMES, parseArgs, startServer, headCommit, treeDirty, writeJSON, entryOnly, assignShards, parseShard } from './lib.mjs';
+import { REPO, GAMES, parseArgs, startServer, headCommit, treeDirty, writeJSON, entryOnly, assignShards, parseShard, PRE_F1 } from './lib.mjs';
 import { appendSection } from './summary.mjs';
 import { runCells } from './sweep.mjs';
 entryOnly(import.meta.url);
@@ -33,6 +33,10 @@ entryOnly(import.meta.url);
 // and CI was green over a red battery). Booleans in the list; everything else takes a value.
 const a = parseArgs(process.argv.slice(2), ['no-summary', 'no-write', 'assert']);
 const PART = String(a.part || '1');
+// ⚖ F1: this gate PREDATES F1. Its PINNED parts name the configuration they measured (lib.mjs PRE_F1 — no passive
+// yield, the old derived default — appended to every leg by run.mjs via TMT_NAMED_CONFIG), and every part resumes from
+// the fixtures it was written against, preserved byte-for-byte under snapshots/ptr/pre-f1/ (all/ is F1's fresh chain).
+if (['5'].includes(PART)) process.env.TMT_NAMED_CONFIG = PRE_F1;
 const commit = headCommit(), dirty = treeDirty();
 const rows = [];
 const row = (r) => { rows.push(r); console.log(`${r.ok ? 'GREEN' : 'RED  '} ${r.gate} ${r.id || ''} ${r.leg || ''} ticks=${r.ticks ?? '-'} hash=${r.hash ?? '-'} ${String(r.notes || '').slice(0, 1400)}`); };
@@ -41,7 +45,7 @@ const row = (r) => { rows.push(r); console.log(`${r.ok ? 'GREEN' : 'RED  '} ${r.
 // rows is fewer reds. ⚠ ADDING A LEG MOVES THIS, deliberately.
 const ROWS = { 1: 6, 2: 5, 3: 2, '3s': 22, 5: 5, 7: 1 };
 
-const SNAP = (id, m) => path.join(REPO, `tools/harness/snapshots/${id}/all/${m}.json`);
+const SNAP = (id, m) => path.join(REPO, `tools/harness/snapshots/${id}/${id === 'ptr' ? 'pre-f1' : 'all'}/${m}.json`);   // F1: see above
 const PTR_LADDER = path.join(REPO, 'tools/harness/ladder/ptr.json');
 const POOL = Number(a.pool || 4);
 

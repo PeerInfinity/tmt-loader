@@ -21,12 +21,16 @@ import os from 'node:os';
 import path from 'node:path';
 import { spawn } from 'node:child_process';
 import { chromium } from 'playwright';
-import { REPO, GAMES, parseArgs, startServer, headCommit, treeDirty, writeJSON, entryOnly, gateCoverage, coverageLine, assignShards, parseShard } from './lib.mjs';
+import { REPO, GAMES, parseArgs, startServer, headCommit, treeDirty, writeJSON, entryOnly, gateCoverage, coverageLine, assignShards, parseShard, PRE_F1 } from './lib.mjs';
 import { appendSection } from './summary.mjs';
 entryOnly(import.meta.url);
 
 const a = parseArgs(process.argv.slice(2), ['no-summary', 'assert']);
 const PART = String(a.part || '1');
+// ⚖ F1: this gate PREDATES F1. Its PINNED parts name the configuration they measured (lib.mjs PRE_F1 — no passive
+// yield, the old derived default — appended to every leg by run.mjs via TMT_NAMED_CONFIG), and every part resumes from
+// the fixtures it was written against, preserved byte-for-byte under snapshots/ptr/pre-f1/ (all/ is F1's fresh chain).
+if (['3'].includes(PART)) process.env.TMT_NAMED_CONFIG = PRE_F1;
 const commit = headCommit(), dirty = treeDirty();
 const rows = [];
 const row = (r) => { rows.push(r); console.log(`${r.ok ? 'GREEN' : 'RED  '} ${r.gate} ${r.id || ''} ${r.leg || ''} ticks=${r.ticks ?? '-'} hash=${r.hash ?? '-'} ${String(r.notes || '').slice(0, 400)}`); };
@@ -45,7 +49,7 @@ const row = (r) => { rows.push(r); console.log(`${r.ok ? 'GREEN' : 'RED  '} ${r.
 // F1 added ONE, for `yielding:passive` — on the fixture where the game starts paying Prestige Points passively: 18 → 19.
 const ROWS = { 1: 19, 2: 3, 3: 2, '3p': 2, 4: 4, 6: 1 };
 
-const SNAP = (id, m) => `tools/harness/snapshots/${id}/all/${m}.json`;
+const SNAP = (id, m) => `tools/harness/snapshots/${id}/${id === 'ptr' ? 'pre-f1' : 'all'}/${m}.json`;   // F1: see above
 // M15 → M16: R1′'s own leg, and the one long ptr leg V1's inertness is measured on (plan §14d).
 const M16_PIN = { ticks: 24179, hashGame: '9e2eadb7c58c0078', hash: '2495123714005471' };
 

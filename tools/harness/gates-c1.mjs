@@ -25,7 +25,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { spawn } from 'node:child_process';
-import { REPO, parseArgs, writeJSON, headCommit, treeDirty, entryOnly } from './lib.mjs';
+import { REPO, parseArgs, writeJSON, headCommit, treeDirty, entryOnly, PRE_F1 } from './lib.mjs';
 import { appendSection } from './summary.mjs';
 import { runCells } from './sweep.mjs';
 entryOnly(import.meta.url);
@@ -35,6 +35,10 @@ const a = parseArgs(process.argv.slice(2), ['no-summary', 'no-write', 'assert'])
 const KNOWN = new Set(['_', 'part', 'no-summary', 'no-write', 'assert', 'pool', 'repeat']);
 for (const k of Object.keys(a)) if (!KNOWN.has(k)) { console.error(`REFUSED: unknown flag --${k}`); process.exit(2); }
 const PART = String(a.part || '1');
+// ⚖ F1: this gate PREDATES F1. Its PINNED parts name the configuration they measured (lib.mjs PRE_F1 — no passive
+// yield, the old derived default — appended to every leg by run.mjs via TMT_NAMED_CONFIG), and every part resumes from
+// the fixtures it was written against, preserved byte-for-byte under snapshots/ptr/pre-f1/ (all/ is F1's fresh chain).
+if (['4'].includes(PART)) process.env.TMT_NAMED_CONFIG = PRE_F1;
 const POOL = Number(a.pool || 4), REPEAT = Number(a.repeat || 2);
 const commit = headCommit(), dirty = treeDirty();
 const rows = [];
@@ -186,7 +190,7 @@ async function part3() {
 
 // ---- Part 4 ---------------------------------------------------------------------------------------------------------
 const PTR_LADDER = path.join(REPO, 'tools/harness/ladder/ptr.json');
-const SNAP = (m) => path.join(REPO, 'tools/harness/snapshots/ptr/all', m + '.json');
+const SNAP = (m) => path.join(REPO, 'tools/harness/snapshots/ptr/pre-f1', m + '.json');   // F1: see above
 const OPEN = { diff: 1, ticks: 8000, 'wall-ms': 900000, ladder: PTR_LADDER, to: 'M12', stall: 1000000 };
 const L15 = { diff: 1, ticks: 21000, 'wall-ms': 900000, ladder: PTR_LADDER, to: 'M26', 'from-snapshot': SNAP('M15'), 'marks-continue': true, stall: 1000000 };
 // ⛔ RE-RECORDED BY R3c PART 1, AS DATA: the dead-member rule's default reading moved to `high-act` (gate R3c-1, CI run

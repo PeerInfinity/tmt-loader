@@ -36,6 +36,9 @@ entryOnly(import.meta.url);
 // tool that produces the checkmark.
 const a = parseArgs(process.argv.slice(2), ['no-summary', 'no-write', 'assert']);
 const PART = String(a.part || '1');
+// ⚖ F1: this gate PREDATES F1. Its PINNED parts name the configuration they measured (lib.mjs PRE_F1 — no passive
+// yield, the old derived default — appended to every leg by run.mjs via TMT_NAMED_CONFIG), and every part resumes from
+// the fixtures it was written against, preserved byte-for-byte under snapshots/ptr/pre-f1/ (all/ is F1's fresh chain).
 const commit = headCommit(), dirty = treeDirty();
 const rows = [];
 const row = (r) => { rows.push(r); console.log(`${r.ok ? 'GREEN' : 'RED  '} ${r.gate} ${r.id} gs=${r.gameSeconds ?? '-'} ${String(r.notes || '').slice(0, 340)}`); };
@@ -59,7 +62,7 @@ const READING = [
 
 const PTR_LADDER = path.join(REPO, 'tools/harness/ladder/ptr.json');
 const SOMETHING_LADDER = path.join(REPO, 'tools/harness/ladder/something.json');
-const SNAP_ALL = path.join(REPO, 'tools/harness/snapshots/ptr/all');
+const SNAP_ALL = path.join(REPO, 'tools/harness/snapshots/ptr/pre-f1');   // F1: see above
 const POOL = Number(a.pool || 5);
 const REPEAT = Number(a.repeat || 2);
 

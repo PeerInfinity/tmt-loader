@@ -62,6 +62,16 @@ export function ladderSlice(file, from, to) {
 /** Run one game in Node. Returns the boot result plus the orchestration record. */
 export function runNode(id, o = {}) {
   o = { ...o };
+  // ⚖ F1: A GATE WRITTEN BEFORE A DEFAULT MOVED NAMES THE CONFIGURATION IT MEASURED. `TMT_NAMED_CONFIG` ("k=v;k2=v2",
+  // set by such a gate for its pinned parts — lib.mjs `PRE_F1`) is appended to this leg's `--auto-opt`; an entry the
+  // leg names ITSELF wins (a key already present is not overridden). The appended string is part of `o['auto-opt']`,
+  // so the result, and any snapshot this leg writes, records the configuration it actually ran under.
+  if (process.env.TMT_NAMED_CONFIG && automationOn(o)) {
+    const cur = o['auto-opt'] ? String(o['auto-opt']).split(';').filter(Boolean) : [];
+    const keys = new Set(cur.map((e) => e.split('=')[0]));
+    const add = process.env.TMT_NAMED_CONFIG.split(';').filter((e) => e && !keys.has(e.split('=')[0]));
+    if (add.length) o['auto-opt'] = [...cur, ...add].join(';');
+  }
   let snap = null, ladder = null;
   const tmp0 = () => fs.mkdtempSync(path.join(os.tmpdir(), 'tmt-loader-run-'));
   if (o['from-snapshot']) {
