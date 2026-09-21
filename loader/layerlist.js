@@ -1443,9 +1443,12 @@
   //   | milestones   | —                           | `requirementDescription` is PROSE. No number exists.      |
   //   | achievements | —                           | the same                                                  |
   //   | clickables   | —                           | no cost concept                                           |
-  // So: ⛔ A CATEGORY WITH NO NUMBER GETS NO ROW. "Progress" with no denominator is not a weaker row, it is a
-  // different thing; the three categories above the line are the ones a `x / y` can be honest about, and the gate
-  // reports which categories on which games produced none.
+  // So: ⛔ A CATEGORY WITH NO NUMBER CONCEPT GETS NO ROW — milestones, achievements, clickables. "Progress" with no
+  // denominator is not a weaker row, it is a different thing; the three categories above the line are the ones a
+  // `x / y` can be honest about, and the gate reports which categories on which games produced none.
+  // ⚖ (U13) OVERTURNED FOR ONE CASE ONLY: a BUYABLE whose cost we looked for and could not get keeps its row as
+  // `? / ?` (user, 2026-09-19: "Let's go with two question marks, rather than hiding the row"). ⛔ It does NOT reach
+  // the three numberless categories — they have no cost to look for, so they still get no row at all.
   //
   // ⚖ CHEAPEST WHERE A COST EXISTS AND THE CURRENCIES AGREE, FIRST-LISTED OTHERWISE — which is the user's own
   // stated fallback, so no ruling was needed to ship it. "The currencies agree" is asked on the engine's own
@@ -1502,6 +1505,47 @@
     var lr = numFieldOf('currencyLayer', decl, t);
     return str(name) + (lr ? '@' + str(lr) : '@player');
   }
+  // ---- (U13) WHAT A BUYABLE REALLY COSTS: the generated data, never a convention of ours --------------------------
+  // `games-data/<id>.json` (C1, tools/currency-data.mjs) says per buyable which field it PAYS in (`pays`: one path,
+  // several, or null) and whether its published cost is the price (`cost`: price | requirement | unknown), each
+  // scored harness-side by a rollback buy. The two are READ APART on purpose — you could know the currency and not
+  // the price — even though today they abstain on the same entries (docs/mobile.md).
+  // ⛔ NO SECOND READER: the entry comes from `tmtLoader.currencyOf`, which the automation page defines. A plain
+  // page never runs that half of loader/tmt-auto.js, so there — and only there — the same lookup is made here, over
+  // the `tmtLoader.currencyData` the host fetched when this list was first opened (page.js). Undefined until it
+  // arrives, so every buyable abstains (`? / ?`) until then, and the one refresh on arrival fills them in.
+  function currencyEntry(l, id) {
+    if (typeof T.currencyOf === 'function') return T.currencyOf(l, id);
+    var d = T.currencyData, e = d && d.buyables && d.buyables[l] && d.buyables[l][String(id)];
+    return e || null;
+  }
+  /** `path`: the ONE measured field this buyable pays in, else null (several, none, unscored, no entry, no data yet)
+   *  — `paysIn`'s own rule. `priced`: the engine's published `cost` is really what it takes (`price`) or the bar it
+   *  must clear (`requirement`); `unknown`, no entry or no data is not. */
+  function buyableCurrency(l, id) {
+    var e = currencyEntry(l, id);
+    return { path: e && e.scored === true && typeof e.pays === 'string' ? e.pays : null,
+      priced: !!e && (e.cost === 'price' || e.cost === 'requirement') };
+  }
+  function readPlayerPath(p) {
+    var parts = String(p).split('.');
+    if (parts[0] !== 'player') return null;
+    return safe(function () {
+      var o = player;
+      for (var i = 1; i < parts.length; i++) { if (o === undefined || o === null) return null; o = o[parts[i]]; }
+      return o;
+    }, null);
+  }
+  /** The measured field's name, as the card's own readouts name things: a layer's `points` is that layer's
+   *  `resource` (the card head's own label), the global one is the game's `pointsName`, and anything else is its
+   *  PATH below `player` — U7's rule for the other resources ("THE LABEL IS THE KEY"), so `ptr`'s buildings read
+   *  `g.power`, the same key the `g` card's own resource row shows. No name table: nothing here knows a game. */
+  function pathLabel(p) {
+    if (p === 'player.points') return safe(function () { return str(modInfo.pointsName); }, '') || 'points';
+    var m = /^player\.([^.]+)\.points$/.exec(p);
+    var r = m ? tipLine(safe(function () { return str(tmp[m[1]].resource); }, '')) : '';
+    return r || String(p).replace(/^player\./, '');
+  }
   function ltAmt(a, b) {
     return safe(function () { return typeof a.lt === 'function' ? !!a.lt(b) : Number(a) < Number(b); }, false);
   }
@@ -1537,6 +1581,19 @@
       g.drawn++;
       if (!unearned(e.kind, e.layer, e.id, e.state)) return;
       var decl = declOf(e.kind, e.layer, e.id), t = tmpOf(e.kind, e.layer, e.id);
+      if (e.kind === 'buyables') {
+        // (U13) THE GENERATED DATA DECIDES BOTH HALVES — see `buyableCurrency`. A cost that is not known is still a
+        // CANDIDATE: that is the `? / ?` row the ruling keeps. A cost that IS known but is no single amount is the
+        // `multiRes` case below, exactly as before.
+        var bc = buyableCurrency(e.layer, e.id);
+        var bv = bc.priced ? numFieldOf(part.num, decl, t) : null;
+        if (bc.priced && !isAmount(bv)) { if (part.multi && numFieldOf(part.multi, decl, t)) g.skipped++; return; }
+        // ⚠ Two costs compare only when the SAME measured field pays both; an unknown half is a currency of its own,
+        // so a category holding one falls back to first-listed, which is the user's stated fallback.
+        g.cand.push({ layer: e.layer, kind: e.kind, id: e.id, decl: decl, tmp: t, target: bc.priced ? bv : null,
+          path: bc.path, cur: bc.path && bc.priced ? 'path:' + bc.path : '?' + e.layer + '/' + e.id });
+        return;
+      }
       var v = numFieldOf(part.num, decl, t);
       if (!isAmount(v)) {
         // ⚠ `multiRes` — a cost in SEVERAL currencies, where `cost` itself is undefined; four games on the roster
@@ -1548,42 +1605,41 @@
       g.cand.push({ layer: e.layer, kind: e.kind, id: e.id, decl: decl, tmp: t, target: v,
         cur: currencyKey(e.layer, e.kind, decl, t, g.locs) });
     });
-    var rows = [], dropped = [];
+    var rows = [], dropped = [], suspect = [];
     order.map(function (k) { return by[k]; }).filter(function (g) { return g.cand.length; }).forEach(function (g) {
       var same = g.cand.every(function (c) { return c.cur === g.cand[0].cur; });
       var one = g.cand[0];
       if (same) g.cand.forEach(function (c) { if (ltAmt(c.target, one.target)) one = c; });
       var part = TARGET[g.kind];
-      var amt = currencyAmount(one.layer, one.kind, one.decl, one.tmp);
-      // ⛔ THE GUARD, and it is MEASURED rather than defensive. `currencyAmount` is the engines' OWN generic
-      // reader, and a game may still buy with something it never declared to the engine: `ptr`'s `s` buildings
-      // hand-roll `canAfford()` / `buy()` against `player.g.power` and declare neither `currencyInternalName` nor
-      // `currencyDisplayName`, so the generic reading gives a numerator in space energy against a cost in
-      // generator power. In every engine-GENERIC path affordability implies amount ≥ cost, so "the engine says it
-      // can be bought and our amount is short" can only mean our amount is the wrong currency — that row is
-      // dropped and counted rather than shown. ⚠ The converse is NOT a signal: a game's `canAfford` routinely ANDs
-      // a second condition (`layers.s.space().gt(0)`), so "engine says no, we say yes" is ordinary.
-      // ⚠ It cannot see the case where the game simply cannot afford the item today — that row still ships with a
-      // numerator the game does not buy with. The M1 gate counts those it can find; the limitation is recorded.
+      var buy = g.kind === 'buyables';
+      // (U13) A BUYABLE'S NUMERATOR IS THE MEASURED FIELD, or `?`. ⛔ Never `currencyAmount`'s fallback to the
+      // layer's own points: nothing in the engine declares what a buyable costs (0 of 841 buyable definitions carry
+      // `currencyInternalName`), so that fallback was a convention of ours, and on `ptr`'s `s` it shipped
+      // `17 / 6.28e350 space energy` where the game spends generator power.
+      var amt = buy ? (one.path ? readPlayerPath(one.path) : null) : currencyAmount(one.layer, one.kind, one.decl, one.tmp);
+      var haveKnown = isAmount(amt), needKnown = one.target !== null && isAmount(one.target);
+      // ⛔ THE CROSS-CHECK, NOT THE MECHANISM (U13; before it, this dropped the row). In every engine-generic path
+      // affordability implies amount ≥ cost, so "the engine says it can be bought and the field we read is short"
+      // means OUR READER is wrong. That is a defect for the gate to fail on, not a state to render around: the row
+      // still ships, and `suspect` names it. ⚠ The converse is NOT a signal — a game's `canAfford` routinely ANDs a
+      // second condition (`layers.s.space().gt(0)`), so "engine says no, we say yes" is ordinary.
       var eng = engineAfford(one.kind, one.layer, one.id);
-      if (eng === true && isAmount(amt) && !gteAmt(amt, one.target)) {
-        dropped.push({ kind: g.kind, layer: one.layer, id: one.id, why: 'currency' });
-        return;
-      }
-      var cur = part.currency ? currencyOf(part, one.layer, one.decl, one.tmp) : '';
+      if (eng === true && haveKnown && needKnown && !gteAmt(amt, one.target)) suspect.push({ kind: g.kind, layer: one.layer, id: one.id });
+      var cur = buy ? (one.path ? pathLabel(one.path) : '') : part.currency ? currencyOf(part, one.layer, one.decl, one.tmp) : '';
       var K = KINDS[g.kind];
       var title = stripTags(textOf(one.decl, one.tmp, K ? K.field : 'title')).trim() || (one.kind + ' ' + one.id);
       var C = COUNTERS[g.kind];
+      var have = haveKnown ? fmtNum(amt, part.whole) : '?', need = needKnown ? fmtNum(one.target, part.whole) : '?';
       rows.push({ kind: g.kind, layer: one.layer, id: one.id, label: C ? C.label : g.kind, name: title,
         how: g.cand.length === 1 ? 'only' : same ? 'cheapest' : 'first', candidates: g.cand.length,
-        skipped: g.skipped, currency: cur,
-        have: isAmount(amt) ? fmtNum(amt, part.whole) : '', need: fmtNum(one.target, part.whole),
-        text: (isAmount(amt) ? fmtNum(amt, part.whole) : '?') + ' / ' + fmtNum(one.target, part.whole) + (cur ? ' ' + cur : '') });
+        skipped: g.skipped, currency: cur, pays: buy ? one.path : null,
+        have: have, need: need, haveKnown: haveKnown, needKnown: needKnown,
+        text: have + ' / ' + need + (cur ? ' ' + cur : '') });
     });
     // ⚠ `multiRes` is counted per CATEGORY even where the category produced a row, so a page that skipped one is
     // never silent about it: four games on the roster declare a cost in several currencies at once.
     order.forEach(function (k) { if (by[k].skipped) dropped.push({ kind: k, layer: l, why: 'multiRes', n: by[k].skipped }); });
-    return { rows: rows, dropped: dropped };
+    return { rows: rows, dropped: dropped, suspect: suspect };
   }
 
   // ---- the overlay, and what it is anchored to
@@ -1763,7 +1819,7 @@
   // ---------------------------------------------------------------- the DOM
   var panel = null, body = null, open = false, sig = null, cards = Object.create(null);
   // the throttle's clock, and what the gate reads to tell a throttled build from an unthrottled one
-  var lastSync = 0, stats = { refreshes: 0, syncs: 0, throttled: 0, rebuilds: 0, fits: 0, tips: 0, tipsRich: 0, tipSyncs: 0, glows: 0, counterGlows: 0, resets: 0, hooks: 0, glowCarries: 0, glowsOwed: 0, glowsRelit: 0 };
+  var lastSync = 0, stats = { refreshes: 0, syncs: 0, throttled: 0, rebuilds: 0, fits: 0, tips: 0, tipsRich: 0, tipSyncs: 0, glows: 0, counterGlows: 0, resets: 0, hooks: 0, glowCarries: 0, glowsOwed: 0, glowsRelit: 0, currencyArrivals: 0 };
 
   function build() {
     if (panel) return;
@@ -2088,9 +2144,15 @@
       nm.className = 'tmt-layerlist-prog-name';
       var val = document.createElement('span');
       val.className = 'tmt-layerlist-prog-value';
+      // (U13) the two halves are elements of their own, so a `?` can carry its own class and its own reason
+      var have = document.createElement('span'), need = document.createElement('span'), cur = document.createElement('span');
+      have.className = 'tmt-layerlist-prog-have';
+      need.className = 'tmt-layerlist-prog-need';
+      cur.className = 'tmt-layerlist-prog-cur';
+      val.append(have, document.createTextNode(' / '), need, cur);
       row.append(lab, nm, val);
       rec.progressBox.appendChild(row);
-      return { key: g.kind + '/' + g.layer + '/' + g.id, box: row, name: nm, val: val };
+      return { key: g.kind + '/' + g.layer + '/' + g.id, box: row, name: nm, val: val, have: have, need: need, cur: cur };
     });
     rec.progressKeys = ps.map(function (g) { return g.kind + '/' + g.layer + '/' + g.id; }).join(' ');
     syncProgress(rec, ps);
@@ -2100,9 +2162,21 @@
       var e = rec.progressEls[i];
       if (!e) return;
       e.name.textContent = g.name;
-      e.val.textContent = g.text;
+      e.have.textContent = g.have;
+      e.need.textContent = g.need;
+      e.cur.textContent = g.currency ? ' ' + g.currency : '';
+      // ⚖ (U13) A `?` IS AN ANSWER, NOT AN APOLOGY — nearly a quarter of the roster's buyables have one. It says
+      // which half is not known and why, in the same place every other readout keeps its explanation.
+      markUnknown(e.have, !g.haveKnown, 'Not known: this game does not declare what this is bought with, and no single field was measured paying for it');
+      markUnknown(e.need, !g.needKnown, 'Not known: this game does not declare what this costs, and its published cost was not measured to be the price');
+      e.box.dataset.have = g.haveKnown ? 'known' : 'unknown';
+      e.box.dataset.need = g.needKnown ? 'known' : 'unknown';
       e.box.title = g.name + ' \u2014 ' + g.text;
     });
+  }
+  function markUnknown(el, on, why) {
+    el.classList.toggle('tmt-layerlist-prog-q', on);
+    if (on) el.title = why; else el.removeAttribute('title');
   }
 
   /** Row two. Rebuilt when the SET changes — which affordability can never do; only a purchase, an unlock or a
@@ -2568,6 +2642,7 @@
 
   function show() {
     build();
+    wantCurrency();
     // (U5) the game's palette is read HERE and cached until the list opens again: a theme is changed on the game's
     // own Options tab, and reaching that tab closes this overlay, so there is no path by which it can go stale.
     skinCache = null;
@@ -2576,6 +2651,20 @@
     rebuild();
     refresh();
     if (T.navbarUI && T.navbarUI.refresh) T.navbarUI.refresh();
+  }
+  /** (U13) THE FIRST OPEN ASKS FOR THE CURRENCY DATA — and nothing before it does (⚖ user, 2026-09-20: lazily, on
+   *  the Layers view's first open). The list renders at once with every buyable abstaining (`? / ?`, which is
+   *  correct for a question not yet answered); the answer's arrival costs ONE refresh, and none at all if the
+   *  list was closed by then (the next `show()` refreshes anyway). On an automation page the host already holds
+   *  the data and the promise is resolved, so the same line is one refresh and no request. */
+  var currencyWanted = false;
+  function wantCurrency() {
+    if (currencyWanted || typeof T.fetchCurrencyData !== 'function') return;
+    currencyWanted = true;
+    Promise.resolve(T.fetchCurrencyData()).then(function () {
+      stats.currencyArrivals++;
+      if (open) refresh();
+    }, function () { /* the host already turned a failure into `null`: the rows keep abstaining */ });
   }
   function hide() {
     if (!panel) return;
@@ -2673,7 +2762,7 @@
         rich: function () { return !!(tipEl && !tipEl.hidden && tipRich); },
         hoverable: hoverable
       },
-      stats: function () { return { refreshes: stats.refreshes, syncs: stats.syncs, throttled: stats.throttled, rebuilds: stats.rebuilds, fits: stats.fits, throttleMs: COUNTER_MS, tips: stats.tips, tipsRich: stats.tipsRich, tipSyncs: stats.tipSyncs, glows: stats.glows, counterGlows: stats.counterGlows, resets: stats.resets, hooks: stats.hooks, glowCarries: stats.glowCarries, glowsOwed: stats.glowsOwed, glowsRelit: stats.glowsRelit }; },
+      stats: function () { return { refreshes: stats.refreshes, syncs: stats.syncs, throttled: stats.throttled, rebuilds: stats.rebuilds, fits: stats.fits, throttleMs: COUNTER_MS, tips: stats.tips, tipsRich: stats.tipsRich, tipSyncs: stats.tipSyncs, glows: stats.glows, counterGlows: stats.counterGlows, resets: stats.resets, hooks: stats.hooks, glowCarries: stats.glowCarries, glowsOwed: stats.glowsOwed, glowsRelit: stats.glowsRelit, currencyArrivals: stats.currencyArrivals }; },
       // (U12) whether `doReset` / `rowReset` are the list's wrappers right now, and the last reset events it saw
       resetHook: hooked,
       glowOwed: function () { return Object.keys(glowOwed); },

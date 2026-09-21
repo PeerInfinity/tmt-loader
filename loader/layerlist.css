@@ -300,6 +300,10 @@
 #tmt-layerlist .tmt-layerlist-prog-label { flex: 0 0 auto; font-size: 11px; opacity: .72; letter-spacing: .04em; }
 #tmt-layerlist .tmt-layerlist-prog-name { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 #tmt-layerlist .tmt-layerlist-prog-value { flex: 0 0 auto; font-variant-numeric: tabular-nums; font-weight: bold; white-space: nowrap; }
+/* ⚖ (U13) A `?` IS A DELIBERATE ANSWER — "not known" — on nearly a quarter of the roster's buyables, so it is
+ * drawn as one: full weight and full colour like any number, marked only by the dotted underline that says "this
+ * one has an explanation" (its `title`), never greyed or shrunk as if it were an error. */
+#tmt-layerlist .tmt-layerlist-prog-q { text-decoration: underline dotted; text-underline-offset: 2px; cursor: help; }
 /* ⚖ MILESTONES SQUARE, THE REST ROUND is the card's own distinction — there is no milestone progress row at all
  * (a `requirementDescription` is prose and declares no number), so nothing here needs it. */
 
