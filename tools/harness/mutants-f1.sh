@@ -49,7 +49,7 @@ mutant m-f1-yield-fires-on-a-never-reset-layer "$(rep "    if (!player[l] || !pl
 mutant m-f1-off-does-not-switch-off "$(rep "else if (String(py) === 'off') passiveYieldNow = null;" "else if (String(py) === 'off') passiveYieldNow = 0;")" "$UNIT" "$PIN"
 # the other guards this slice added
 mutant m-f1-yielding-member-stays-in-the-cycle "$(rep "if (g.kind !== 'reset' || !active(g) || passiveYieldOf(g.layer) !== null) continue;" "if (g.kind !== 'reset' || !active(g)) continue;")" "$UNIT"
-mutant m-f1-yield-never-consulted "$(rep "    if (pr !== null) return { act: false, code: 'yielding:passive'" "    if (false) return { act: false, code: 'yielding:passive'")" "$UNIT"
+mutant m-f1-yield-never-consulted "$(rep "    if (pr !== null) return { act: false" "    if (false) return { act: false")" "$UNIT"
 mutant m-f1-default-back-to-gain2x "$(rep "var RESET_DEFAULT = 'gain>=2x|stall>=5x/5';" "var RESET_DEFAULT = 'gain>=2x';")" "node --test loader/strategies.test.mjs"
 mutant m-f1-fallback-counts-every-reset "$(rep "      if (d.fallback) { stallFired.loop = loopNo; stallFired.layer = f.layer; T.fallbackFires[f.id] = (T.fallbackFires[f.id] || 0) + 1; }" "      T.fallbackFires[f.id] = (T.fallbackFires[f.id] || 0) + 1; if (d.fallback) { stallFired.loop = loopNo; stallFired.layer = f.layer; }")" "$UNIT"
 mutant m-f1-maxrow-repair-never-runs "$(rep "  function auAutomate() {
