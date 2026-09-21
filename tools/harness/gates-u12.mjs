@@ -175,8 +175,9 @@ async function part2() {
         const rate = (n) => Math.round(n / m.dt * 10) / 10;
         row({ gate: 'U12-2 the reset glow with AUTOMATION ON, real time, the list open', id, leg: `${snap ? snap.file.replace(/^tools\/harness\/snapshots\//, '') : 'fresh'}, ${auto ? 'automation table' : 'derived automation'}, ${Math.round(m.dt)} s`,
           // a restart is always PAID FOR by a reset: one seen in the window, or one owed when it opened
-          ok: m.glows + m.relit <= m.resets + m.owedAtStart, ticks: null, gameSeconds: null, diff: null, hash: null,
-          notes: `${m.resets} resets through the hook (${rate(m.resets)}/s; recent by layer ${JSON.stringify(m.recentByLayer)}); glow starts ${m.glows} + re-lit at an end ${m.relit} = ${rate(m.glows + m.relit)}/s of DOM restarts; ${m.owed} absorbed into a running glow; ${m.carries} carried over a rebuild; ${m.refreshes} list refreshes; the wrapper on an early-returning doReset(${m.perCall && m.perCall.layer}): ${m.perCall ? `${m.perCall.wrappedNs} ns vs ${m.perCall.origNs} ns unwrapped` : 'not measured (no layer that cannot reset)'}` });
+          // (`glows` counts EVERY start, the re-lit ones included — both go through the same `glow()`)
+          ok: m.glows <= m.resets + m.owedAtStart, ticks: null, gameSeconds: null, diff: null, hash: null,
+          notes: `${m.resets} resets through the hook (${rate(m.resets)}/s; recent by layer ${JSON.stringify(m.recentByLayer)}); ${m.glows} glow starts = ${rate(m.glows)}/s of DOM restarts (${m.relit} of them an owed reset re-lit at its glow's end); ${m.owed} absorbed into a running glow; ${m.carries} carried over a rebuild; ${m.refreshes} list refreshes; the wrapper on an early-returning doReset(${m.perCall && m.perCall.layer}): ${m.perCall ? `${m.perCall.wrappedNs} ns vs ${m.perCall.origNs} ns unwrapped` : 'not measured (no layer that cannot reset)'}` });
       } catch (e) {
         row({ gate: 'U12-2 the reset glow with AUTOMATION ON', id, ok: false, notes: `EXCEPTION ${String(e && e.message || e).slice(0, 300)}` });
       } finally { await context.close(); }
