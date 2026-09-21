@@ -16,7 +16,8 @@
 //          from `all/M22.json` and over the whole stretch from `all/M15.json`: H12 attempts / give-ups, quirks, HS,
 //          marks. ⚖ Report, don't decide — R3b-2 owns the choice.
 // Part 5   INERTNESS (node). Nothing chosen ⇒ the opening 6718 / `82eee26f947b2b2e`, M15 → M24 and R3a's leg from M22
-//          (`dc862c221837bc17`) unmoved to the hash; `player.au` and `runtimeState()` key sets as R3b-1 left them.
+//          (`fceef65ba0f59011` — RE-RECORDED by R3b-2, see part 5) unmoved to the hash; `player.au` and
+//          `runtimeState()` key sets as R3b-1 left them.
 // Part 7   THE ROSTER (page). The Advanced tab at 390 px on every game judged: 0 interactive elements past the
 //          viewport; abstentions COUNTED and left uncaused.
 import fs from 'node:fs';
@@ -359,7 +360,16 @@ async function part3() {
 // ⛔ THE PINS, DECLARED rather than read off a run (V3's rule). The opening is §14d.6's; R3a's leg is §30's; M15 → M24
 // and Something Tree's S01–S05 were MEASURED at the pre-V5 head `f37b2029f` in a control worktree (the record says so).
 const OPEN_PIN = { gs: 6718, hashGame: '82eee26f947b2b2e' };
-const R3A_PIN = { gs: 42618, hashGame: 'dc862c221837bc17', ch: '2/1/1' };
+// ⛔ RE-RECORDED BY R3b-2, AND THE MOVE IS A TABLE ENTRY RATHER THAN A REGRESSION. This leg runs 12,000 ticks
+// from `all/M22.json` (30618 → 42618) — ALL of it past M21, which is where PTR's row 3 gains its second active
+// member — so R3b-2's cycle entry in `games-auto/ptr.js` is live for the whole of it. CI at `3842e441a` is what
+// caught the move, and the new value was reproduced TWICE on the local box (`fceef65ba0f59011`, 42618 both runs).
+// WHAT IT BOUGHT, which is why the pin moves rather than the table: the old pin's run entered H12 twice, gave up
+// once and never completed it; this one enters THIRTEEN times, gives up eleven, and **COMPLETES H12 — M25 at
+// 35176** — ending with 8797 Hindrance Spirit and 1807 total quirks against R3a's 1065. ⚠ The OPENING
+// (6718 / `82eee26f947b2b2e`) and M15 → M24 (30736 / `b73aef45c9ce7d08`, every mark to the second) are UNMOVED in
+// the same CI run — the cycle is dormant until `h` unlocks — so this is the one pin the entry touches.
+const R3A_PIN = { gs: 42618, hashGame: 'fceef65ba0f59011', ch: '13/2/11' };
 // measured at `f37b2029f` (pre-V5), 2026-09-20, in a control worktree — M24's hash is also the `all/M24` fixture's own
 const M24_PIN = { gs: 30736, hashGame: 'b73aef45c9ce7d08', marks: { M16: 17058, M17: 23492, M18: 25598, M19: 25937, M20: 26612, M21: 28058, M22: 30618, M23: 30683, M24: 30736 } };
 const S05_PIN = { gs: 579, hashGame: '524822d719ceea18', marks: { S01: 6, S02: 308, S03: 309, S04: 399, S05: 579 } };
