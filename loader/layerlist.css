@@ -489,3 +489,54 @@
  * counter, whose whole meaning is its name. */
 #tmt-layerlist .tmt-layerlist-tip-body { margin-top: 3px; opacity: .92; white-space: pre-line; }
 #tmt-layerlist .tmt-layerlist-tip-body:empty { display: none; }
+
+/* (U11) THE RESET GLOW — "the circle for that layer … briefly get a glow effect after that layer resets … fade
+ * over a second" (user, 2026-09-20). ⚖ A DECORATION, pre-authorised to be dropped if it costs; see docs/mobile.md.
+ * ⚠ ONLY `opacity` ANIMATES, so the fade is the COMPOSITOR's and repaints nothing: the glow itself is a STATIC
+ * `box-shadow` on a circle laid exactly over the badge, and that circle fades. (Animating the badge's own
+ * `box-shadow` — the first build — repaints it on every frame of the second.) It is the BUTTON's `::before` and not
+ * the badge's because the badge is `overflow: hidden` (a long symbol) and would clip a descendant's shadow. The
+ * geometry is the button's 2 px padding and the badge's 44 px border box (measured: `border-box`, and the circle
+ * lands on the badge to the pixel on ptr), centred the way the button's `align-items: center` centres the badge.
+ * `pointer-events: none`: it is paint, never a target.
+ * ⚠ RESTARTED BY ALTERNATING TWO NAMES, not by the remove-reflow-add trick: an animation whose name CHANGES starts
+ * over, so `layerlist.js` flips `-a` ↔ `-b` on each event and forces no layout. With no `fill-mode` the circle is
+ * back at `opacity: 0` when either ends, so a class left on is invisible.
+ * ⚠ `--tmt-glow` (the layer's own colour) is written only at the EVENT, never on a sync. */
+#tmt-layerlist .tmt-layerlist-open { position: relative; }
+#tmt-layerlist .tmt-layerlist-open::before {
+  content: '';
+  position: absolute;
+  left: 2px;
+  top: 50%;
+  width: 44px;
+  height: 44px;
+  margin-top: -22px;
+  box-sizing: border-box;
+  border-radius: 50%;
+  box-shadow: 0 0 6px 5px var(--tmt-glow, #fff);
+  opacity: 0;
+  pointer-events: none;
+}
+/* …and the SUMMARY CHIPS (the counters) the same way, conditional on the layer half being cheap and measured so
+ * (docs/mobile.md). A counter has no `overflow` of its own, so its `::before` simply covers its border box and
+ * takes its corners (`inherit`: 6 px, or 0 on the milestone counter). */
+#tmt-layerlist .tmt-layerlist-counter { position: relative; }
+#tmt-layerlist .tmt-layerlist-counter::before {
+  content: '';
+  position: absolute;
+  inset: -1px;
+  border-radius: inherit;
+  box-shadow: 0 0 5px 3px var(--tmt-glow, #fff);
+  opacity: 0;
+  pointer-events: none;
+}
+@keyframes tmt-layerlist-glow-a { from { opacity: 1; } to { opacity: 0; } }
+@keyframes tmt-layerlist-glow-b { from { opacity: 1; } to { opacity: 0; } }
+#tmt-layerlist .tmt-layerlist-glow-a::before { animation: tmt-layerlist-glow-a 1s ease-out; }
+#tmt-layerlist .tmt-layerlist-glow-b::before { animation: tmt-layerlist-glow-b 1s ease-out; }
+/* a decoration is exactly the case this preference exists for: no animation at all, and nothing in its place */
+@media (prefers-reduced-motion: reduce) {
+  #tmt-layerlist .tmt-layerlist-glow-a::before,
+  #tmt-layerlist .tmt-layerlist-glow-b::before { animation: none; }
+}
