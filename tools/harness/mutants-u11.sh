@@ -116,3 +116,12 @@ mutant m5-glow-never-starts \
 mutant m6-counter-glow-on-a-level \
   "p='loader/layerlist.js';s=open(p).read();o='b > Number(a) : (b && typeof b.gt === \'function\' ? !!b.gt(a) : false)';assert o in s;s=s.replace(o,'b >= Number(a) : (b && typeof b.gte === \'function\' ? !!b.gte(a) : false)');open(p,'w').write(s)" \
   ptr=counter the-yes-tree=counter
+
+# (7) THE RETRIGGER GUARD REMOVED, literally — the detector is still an edge, but once a card has fired it
+#     RESTARTS the animation on every later sample. ⚠ m3 cannot stand in for this: a level detector dies at the
+#     leg's QUIET window ("glowed with no reset") before the 1 s check is reached (a mutant with two effects dies
+#     at the first check). This one is quiet until the event, so the ONLY check that can see it is
+#     "still glowing after 1 s" — which is the check the brief asked to be proven.
+mutant m7-retrigger-every-sample-after-an-event \
+  "p='loader/layerlist.js';s=open(p).read();o='    if (fired) glow(rec);';assert o in s;s=s.replace(o,'    if (fired) rec.glowing = true;\n    if (rec.glowing) glow(rec);');open(p,'w').write(s)" \
+  ptr=glow the-yes-tree=glow
