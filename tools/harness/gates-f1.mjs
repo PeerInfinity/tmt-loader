@@ -5,8 +5,15 @@
 //                constant factor apart, or not?
 //     --part 1   THE YIELD: the same stretches with the yield ON (the default since F1) at both ticks, beside Part 0's
 //                `off` cells — plus the OPENING and the long row-3 stretch, which only fit a CI runner (`--cell`)
-//     --cell <key>  run ONE cell of any part (a CI shard: one job per cell); `--part m --from <dir>` MERGES the cell
-//                files of a part, refuses a missing one by name, and prints the part's table and verdict
+//     --part 2   THE DERIVED DEFAULT for a normal layer's reset (`resetDefault=`): Something Tree with NO table, ptr's
+//                table-less layers (the long row-3 stretch) and a BOUNDED, NAMED roster sample scored by the progress
+//                tracker's events per game-second (no ladder exists for them), seed 1
+//     --part 3   SLOW THE RESETS DOWN ON PURPOSE (⚖ ruling 2): per NORMAL layer (`p` before passive generation, `e`,
+//                `q`/`h`), a larger ratio `gain>=Nx`, `rate-peak`'s two buffers swept upward, and a minimum game-time
+//                between resets as the labelled PROXY control (⚖ 13d.2: never a default) — and the MASKING cells that
+//                slow the row that WIPES the one whose gain should compound
+//     --cell <key>  run ONE cell of any part; `--group <g>` every cell of a group (a CI shard each); `--part m --cell
+//                <part> --from <dir>` MERGES a part's cell files, refuses a missing one by name, prints its table
 //
 // ⛔ WHY THE TICK. The engine pays passive generation as `resetGain × diff` per tick and a manual reset pays `resetGain`
 // ONCE, so a reset is worth a whole tick of passive income at `diff 1` and a twentieth of it at the page's 0.05. Every
@@ -25,7 +32,7 @@ entryOnly(import.meta.url);
 
 // ⛔ EVERY FLAG THIS FILE READS IS DECLARED, and the booleans are booleans (an undeclared flag takes the NEXT token).
 const a = parseArgs(process.argv.slice(2), ['no-summary', 'no-write', 'assert']);
-const KNOWN = new Set(['_', 'part', 'pool', 'no-summary', 'no-write', 'assert', 'repeat', 'cell', 'from', 'wall-ms']);
+const KNOWN = new Set(['_', 'part', 'pool', 'no-summary', 'no-write', 'assert', 'repeat', 'cell', 'group', 'from', 'wall-ms']);
 for (const k of Object.keys(a)) if (!KNOWN.has(k)) { console.error(`REFUSED: unknown flag --${k}`); process.exit(2); }
 const PART = String(a.part ?? '0');
 const POOL = Number(a.pool || 4);
@@ -35,7 +42,6 @@ const commit = headCommit(), dirty = treeDirty();
 const rows = [];
 const row = (r) => { rows.push(r); console.log(`${r.ok ? 'GREEN' : 'RED  '} ${r.gate} ${r.id} gs=${r.gameSeconds ?? '-'} ${String(r.notes || '').slice(0, 400)}`); };
 
-const LADDER = path.join(REPO, 'tools/harness/ladder/ptr.json');
 const SNAP = (m) => path.join(REPO, `tools/harness/snapshots/ptr/all/${m}.json`);
 const snapGs = (m) => JSON.parse(fs.readFileSync(SNAP(m), 'utf8')).gameSeconds;
 // A STRETCH: where it starts (a fixture, or a fresh game), the marks it scores, and a game-second BUDGET past its start
@@ -46,7 +52,15 @@ const STRETCHES = {
   R3: { name: 'row 3 — all/M22 → M24 (H11, q11–q13)', from: 'M22', to: 'M24', marks: ['M23', 'M24'], budget: 1500 },
   O: { name: 'the OPENING — fresh → M12', from: null, to: 'M12', marks: ['M01', 'M02', 'M03', 'M04', 'M05', 'M06', 'M07', 'M08', 'M09', 'M10', 'M11', 'M12'], budget: 9000 },
   L3: { name: 'the long row-3 stretch — all/M15 → M25', from: 'M15', to: 'M25', marks: ['M16', 'M17', 'M18', 'M19', 'M20', 'M21', 'M22', 'M23', 'M24', 'M25'], budget: 21000 },
+  P: { name: 'the row-1 opening — fresh → M04 (reset:p BEFORE passive Prestige Points)', from: null, to: 'M04', marks: ['M01', 'M02', 'M03', 'M04'], budget: 4000 },
+  ST: { name: 'Something Tree — fresh → S05, NO table', id: 'something', ladder: 'something', from: null, to: 'S05', marks: ['S01', 'S02', 'S03', 'S04', 'S05'], budget: 600 },
 };
+// ⚖ THE ROSTER SAMPLE (Part 2) — BOUNDED and NAMED, chosen from the F1 census (plan §48): games with ≥ 3 normal layers
+// that declare passive generation, both engine families (2.2.1 ptr-style; 2.6 / 2.7), seed 1. No ladder exists for
+// them, so a cell is scored by the progress tracker (`track=1`): events per game-second over a fixed horizon.
+const SAMPLE = ['the-extended-tree', 'prestige-tree-ng', 'the-normal-tree', 'the-omega-tree', 'the-function-of-time-tree', 'the-pp-tree', 'the-point-tree', 'weakling-tree'];
+for (const g of SAMPLE) STRETCHES[`X:${g}`] = { name: `${g} — fresh, 600 game-s, the progress tracker`, id: g, ladder: null, from: null, to: null, marks: [], budget: 600, roster: true };
+const EVAL_PROGRESS = '({events: tmtLoader.progress().total, lastAt: tmtLoader.progress().lastAt, fallbacks: tmtLoader.fallbackFires ? Object.assign({}, tmtLoader.fallbackFires) : null})';
 const OFF = 'passiveYield=off';
 // cell key = `<stretch>@<diff>/<config>`. `ci: true` = does not fit a 10-minute LOCAL process; run by `--cell` in CI.
 const CELLS = {
@@ -64,15 +78,54 @@ const CELLS = {
     { key: 'L3@1/off', s: 'L3', diff: 1, opt: OFF, ci: true }, { key: 'L3@1/yield', s: 'L3', diff: 1, opt: '', ci: true },
     { key: 'L3@0.05/off', s: 'L3', diff: 0.05, opt: OFF, ci: true }, { key: 'L3@0.05/yield', s: 'L3', diff: 0.05, opt: '', ci: true },
   ],
+  2: [],
+  3: [],
 };
+// ---- Part 2: the DERIVED default for a normal layer's reset (`resetDefault=<policy>`; the shipped one is `gain>=2x`)
+const CANDIDATES = [
+  { tag: 'gain2x', opt: '', note: 'the shipped derived default, `gain>=2x`' },
+  { tag: 'gain2x+stall', opt: 'resetDefault=gain>=2x|stall>=3x/5', note: 'the USER’s stall fallback riding on it' },
+  { tag: 'rate-peak0/0', opt: 'resetDefault=rate-peak@0/0', note: 'the bare rate rule (the control)' },
+  { tag: 'rate-peak0.1/30', opt: 'resetDefault=rate-peak@0.1/30', note: 'the user’s two buffers, as V2 shipped them' },
+];
+for (const c of CANDIDATES) {
+  for (const d of [1, 0.05]) CELLS[2].push({ key: `ST@${d}/${c.tag}`, s: 'ST', diff: d, opt: c.opt, group: 'ST' });
+  CELLS[2].push({ key: `L3@0.05/${c.tag}`, s: 'L3', diff: 0.05, opt: c.opt, ci: true, group: `L3-${c.tag}` });
+  for (const g of SAMPLE) CELLS[2].push({ key: `X:${g}@0.05/${c.tag}`, s: `X:${g}`, diff: 0.05, opt: ['track=1', c.opt].filter(Boolean).join(';'), ci: true, group: `X:${g}` });
+}
+// ---- Part 3: SLOW THE RESETS DOWN — one layer at a time, then the masking cells, then together ---------------------
+// ⚠ The proxy control is a `while` on the core's own clock (`tmtLoader.sinceReset(id)`): it holds the feature's own
+// rule back until T game-seconds have passed since that feature last reset. It is a harness lever, never a default.
+const gap = (id, t) => `while:${id}=tmtLoader.sinceReset('${id}') >= ${t}`;
+const P3 = [
+  // p, before passive generation (the opening to M04); the control is the shipped `gain>=2x`
+  ...['2x', '4x', '8x', '16x'].map((n) => ({ s: 'P', layer: 'p', tag: `gain>=${n}`, opt: `policy:reset:p=gain>=${n}` })),
+  ...['0/0', '0.1/30', '0.3/60', '0.5/120'].map((b) => ({ s: 'P', layer: 'p', tag: `rate-peak@${b}`, opt: `policy:reset:p=rate-peak@${b}` })),
+  ...[5, 20, 60].map((t) => ({ s: 'P', layer: 'p', tag: `gap>=${t}s`, opt: gap('reset:p', t) })),
+  // e, before q ms 1 (the row-2 push); the control is the shipped `gain>=2x`
+  ...['2x', '4x', '8x', '16x'].map((n) => ({ s: 'R2', layer: 'e', tag: `gain>=${n}`, opt: `policy:reset:e=gain>=${n}` })),
+  ...['0/0', '0.1/30', '0.3/60'].map((b) => ({ s: 'R2', layer: 'e', tag: `rate-peak@${b}`, opt: `policy:reset:e=rate-peak@${b}` })),
+  ...[20, 60].map((t) => ({ s: 'R2', layer: 'e', tag: `gap>=${t}s`, opt: gap('reset:e', t) })),
+  // MASKING on row 1: the STATIC b / g wipe p — the planner's two cells, re-measured twice (they rested on one run each)
+  ...[5, 30].map((t) => ({ s: 'E', layer: 'b+g (masking p)', tag: `b,g gap>=${t}s`, opt: `${gap('reset:b', t)};${gap('reset:g', t)}` })),
+  // q / h over the long row-3 stretch: q's own ratio (it keeps its turn modifier), and the MASKING cells that slow the
+  // row that wipes row 2
+  ...['2', '4', '8'].map((n) => ({ s: 'L3', layer: 'q', tag: `q gain>=${n}`, opt: `policy:reset:q=gain>=${n}|turn@10/30x/5/0/100`, ci: true })),
+  ...[60].map((t) => ({ s: 'L3', layer: 'q+h (masking row 2)', tag: `q,h gap>=${t}s`, opt: `${gap('reset:q', t)};${gap('reset:h', t)}`, ci: true })),
+  // together, over the whole opening: the ratio doubled on BOTH normal layers
+  { s: 'O', layer: 'p+e', tag: 'p,e gain>=4x', opt: 'policy:reset:p=gain>=4x;policy:reset:e=gain>=4x', ci: true },
+];
+for (const c of P3) CELLS[3].push({ key: `${c.s}@0.05/${c.tag}`, s: c.s, diff: 0.05, opt: c.opt, layer: c.layer, ci: !!c.ci || c.s === 'P', group: c.ci || c.s === 'P' ? `P3-${c.s}${c.s === 'L3' ? '-' + c.tag : ''}` : `P3-${c.s}` });
 const allCells = () => Object.entries(CELLS).flatMap(([p, cs]) => cs.map((c) => ({ ...c, part: p })));
 
 function flagsOf(c) {
   const S = STRETCHES[c.s];
   const start = S.from ? snapGs(S.from) : 0;
-  const f = { diff: c.diff, profile: 'all', ticks: Math.ceil(S.budget / c.diff), 'wall-ms': WALL, ladder: LADDER, to: S.to, 'marks-continue': true, stall: 1e9 };
+  const f = { diff: c.diff, profile: 'all', ticks: Math.ceil(S.budget / c.diff), 'wall-ms': WALL, stall: 1e9 };
+  if (S.roster) Object.assign(f, { 'random-seed': 1, eval: EVAL_PROGRESS });
+  else Object.assign(f, { ladder: path.join(REPO, `tools/harness/ladder/${S.ladder || 'ptr'}.json`), to: S.to, 'marks-continue': true, eval: EVAL_PROGRESS });
   if (S.from) f['from-snapshot'] = SNAP(S.from);
-  return { flags: Object.entries(f), start };
+  return { flags: Object.entries(f), start, id: S.id || 'ptr' };
 }
 /** Run cells (each twice) through ONE pool of `POOL` children; one line per cell, in order. */
 async function runAll(cells) {
@@ -82,12 +135,12 @@ async function runAll(cells) {
   await Promise.all(Array.from({ length: Math.min(slots, cells.length) }, async () => {
     while (next < cells.length) {
       const i = next++, c = cells[i];
-      const { flags, start } = flagsOf(c);
+      const { flags, start, id } = flagsOf(c);
       const t0 = Date.now();
-      const [l] = await runCells({ id: 'ptr', cells: [{ label: c.key, opt: c.opt }], flags, pool: REPEAT, repeat: REPEAT, stop: null });
+      const [l] = await runCells({ id, cells: [{ label: c.key, opt: c.opt }], flags, pool: REPEAT, repeat: REPEAT, stop: null });
       out[i] = { cell: c.key, part: c.part, s: c.s, diff: c.diff, opt: c.opt, start, commit, wallS: Math.round((Date.now() - t0) / 1000),
         ok: l.ok, twiceEqual: l.twiceEqual, gameSeconds: l.gameSeconds, ticks: l.ticks, hashGame: l.hashGame, marks: l.marks, actions: l.actions,
-        walled: !!l.stall?.walled, runWallMs: (l.runs || []).map((r) => r.box?.wallMs), error: l.error || null };
+        walled: !!l.stall?.walled, eval: l.eval || null, runWallMs: (l.runs || []).map((r) => r.box?.wallMs), error: l.error || null };
       console.log(`[PROGRESS] ${c.key} → ${l.ok ? `${l.gameSeconds}s ${l.hashGame}` : 'FAILED ' + l.error} twice ${l.twiceEqual} (${out[i].wallS}s wall)`);
     }
   }));
@@ -96,15 +149,20 @@ async function runAll(cells) {
 const cellOk = (l) => !!l && !!l.ok && l.twiceEqual === true && !l.walled;
 const durs = (l) => Object.fromEntries(STRETCHES[l.s].marks.map((m) => [m, l.marks?.[m] == null ? null : Math.round((l.marks[m] - l.start) * 100) / 100]));
 const text = (l) => STRETCHES[l.s].marks.map((m) => `${m} ${l.marks?.[m] ?? `not by ${l.start + STRETCHES[l.s].budget}`}`).join(' · ');
+const score = (l) => (l.eval?.events == null ? '—' : Math.round((l.eval.events / STRETCHES[l.s].budget) * 1000) / 1000);
+/** The number a cell is RANKED by: the game-second its stretch's last mark landed (lower is better; unreached = ∞),
+ *  or, on a roster game, the tracker's events over the horizon (higher is better — returned negated). */
+const rankOf = (l) => (STRETCHES[l.s].roster ? -(l.eval?.events ?? 0) : (l.marks?.[STRETCHES[l.s].to] ?? Infinity));
+const shown = (l) => (STRETCHES[l.s].roster ? `${l.eval?.events ?? '—'} events` : `${STRETCHES[l.s].to} ${l.marks?.[STRETCHES[l.s].to] ?? 'not reached'}`);
 const resets = (l) => Object.entries(l.actions || {}).filter(([k]) => k.startsWith('reset:')).map(([k, v]) => `${k.slice(6)} ${v}`).join(' / ');
 
 // ---- the tables, from whatever cell lines are present -------------------------------------------------------------
 function tables(lines, part) {
   const by = Object.fromEntries(lines.map((l) => [l.cell, l]));
   for (const l of lines) {
-    row({ gate: `F1-${part} ${l.cell} — ${STRETCHES[l.s].name}, diff ${l.diff}, ${l.opt || 'the default (yield ON)'}`, id: 'ptr', leg: `${REPEAT} runs`,
+    row({ gate: `F1-${part} ${l.cell} — ${STRETCHES[l.s].name}, diff ${l.diff}, ${l.opt || 'the default (yield ON)'}`, id: STRETCHES[l.s].id || 'ptr', leg: `${REPEAT} runs`,
       ok: cellOk(l), ticks: l.ticks, gameSeconds: l.gameSeconds, diff: l.diff, hash: l.hashGame,
-      notes: `${text(l)}; resets ${resets(l)}; twice equal ${l.twiceEqual}${l.walled ? ' — WALLED' : ''}; wall ${l.wallS}s (runs ${JSON.stringify(l.runWallMs)} ms)${l.error ? '; ' + String(l.error).slice(-300) : ''}` });
+      notes: `${STRETCHES[l.s].roster ? `events ${l.eval?.events ?? '—'} (${score(l)}/game-s), last at ${l.eval?.lastAt ?? '—'}` : text(l)}${l.eval?.fallbacks && Object.keys(l.eval.fallbacks).length ? `; stall-fallback resets ${JSON.stringify(l.eval.fallbacks)}` : ''}; resets ${resets(l)}; twice equal ${l.twiceEqual}${l.walled ? ' — WALLED' : ''}; wall ${l.wallS}s (runs ${JSON.stringify(l.runWallMs)} ms)${l.error ? '; ' + String(l.error).slice(-300) : ''}` });
   }
   // Part 0's verdict: the ratio of each mark's stretch-duration at 0.05 to its duration at 1, per stretch
   if (part === '0') {
@@ -130,6 +188,24 @@ function tables(lines, part) {
     }
     row({ gate: 'F1-1 VERDICT (report): the yield against `passiveYield=off`, per stretch and tick', id: 'ptr', ok: lines.every(cellOk), ticks: null, gameSeconds: null, diff: null, hash: null, notes: cmp.join(' · ') });
   }
+  // Parts 2 and 3: per stretch (and, in Part 3, per layer), every candidate ranked; the best named
+  if (part === '2' || part === '3') {
+    const groups = new Map();
+    for (const l of lines) {
+      const c = CELLS[part].find((x) => x.key === l.cell);
+      const k = `${l.s}@${l.diff}${c?.layer ? ` — ${c.layer}` : ''}`;
+      if (!groups.has(k)) groups.set(k, []);
+      groups.get(k).push(l);
+    }
+    const out = [];
+    for (const [k, ls] of groups) {
+      const best = ls.slice().sort((x, y) => rankOf(x) - rankOf(y))[0];
+      const ix = ls.indexOf(best);
+      out.push(`${k}: ${ls.map((l) => `${l.cell.split('/').slice(1).join('/')} ${shown(l)}`).join(', ')} ⇒ best ${best.cell.split('/').slice(1).join('/')}${part === '3' && ls.length > 2 ? (ix === 0 ? ' (the CONTROL — rarer is not better)' : ix === ls.length - 1 ? ' (the RAREST — no interior optimum in range)' : ' (INTERIOR)') : ''}`);
+    }
+    row({ gate: part === '2' ? 'F1-2 VERDICT (report): the derived default for a normal layer, per stretch' : 'F1-3 VERDICT (report): slowing the resets, per layer — the curve and where its best sits',
+      id: 'ptr', ok: lines.every(cellOk), ticks: null, gameSeconds: null, diff: null, hash: null, notes: out.join(' ‖ ') });
+  }
 }
 
 async function main() {
@@ -144,13 +220,14 @@ async function main() {
     tables(CELLS[want].map((c) => got.get(c.key)), want);
     return finish(want, CELLS[want].length + 1);
   }
-  if (a.cell !== undefined) {
-    const c = allCells().find((x) => x.key === String(a.cell));
-    if (!c) { console.error(`REFUSED: no cell "${a.cell}" (have: ${allCells().map((x) => x.key).join(', ')})`); process.exit(2); }
-    const lines = await runAll([c]);
+  if (a.cell !== undefined || a.group !== undefined) {
+    const cs = a.cell !== undefined ? allCells().filter((x) => x.key === String(a.cell)) : allCells().filter((x) => x.group === String(a.group));
+    if (!cs.length) { console.error(`REFUSED: no ${a.cell !== undefined ? `cell "${a.cell}"` : `group "${a.group}"`} (cells: ${allCells().map((x) => `${x.key}${x.group ? ` [${x.group}]` : ''}`).join(', ')})`); process.exit(2); }
+    const lines = await runAll(cs);
     tables(lines, 'cell');
-    if (!a['no-write']) writeJSON(path.join(REPO, `tools/harness/results/gates-f1-cell-${c.key.replace(/[^A-Za-z0-9.@-]/g, '_')}.json`), { gate: 'F1 cell', commit, dirty, lines, rows });
-    return finish(`cell ${c.key}`, 1);
+    const name = a.cell !== undefined ? cs[0].key : `group-${a.group}`;
+    if (!a['no-write']) writeJSON(path.join(REPO, `tools/harness/results/gates-f1-cell-${name.replace(/[^A-Za-z0-9.@-]/g, '_')}.json`), { gate: 'F1 cell', commit, dirty, lines, rows });
+    return finish(a.cell !== undefined ? `cell ${cs[0].key}` : `group ${a.group}`, cs.length);
   }
   if (!CELLS[PART]) { console.error(`REFUSED: no part ${PART}`); process.exit(2); }
   const cells = CELLS[PART].filter((c) => !c.ci).map((c) => ({ ...c, part: PART }));

@@ -1292,6 +1292,14 @@
   var stallMem = {};              // feature id → the last n own-rule intervals, in game-seconds
   var stallSince = {};            // feature id → when the modifier first ran for it (the FIRST interval's start)
   var stallFired = { loop: -1, layer: null };   // the gameLoop a fallback reset last fired in, and by whom
+  // F1: how many resets the fallback fired, per feature — a READOUT for the gates (a fallback that fires on a PATIENT
+  // rule is the failure a stall fallback in a default must be hunted for). Not in `runtimeState()`: a count, not memory.
+  T.fallbackFires = {};
+  /** F1: game-seconds since this feature's last reset (Infinity before its first) — the proxy throttle's clock. */
+  T.sinceReset = function (id) {
+    if (!byId[id]) throw new Error('no feature "' + id + '"');
+    return lastReset[id] === undefined ? Infinity : (Number(player.timePlayed) || 0) - lastReset[id];
+  };
   // ⚠ `stallSince` EXISTS BECAUSE THE FIRST RESET OTHERWISE COSTS NOTHING AND TEACHES NOTHING. Measured on the stub
   // while building this: a feature that resets ONCE by its own rule and then waits forever has exactly ZERO
   // intervals — the one reset had no predecessor to be an interval FROM — so the fallback stayed dormant for good on
@@ -2635,7 +2643,7 @@
       // R3b: one reset spent out of this member's turn, and the interval it closes is what its guard is late
       // against. `beforeReset` is this feature's PREVIOUS own reset, captured before `lastReset` was overwritten.
       turnSpend(f, beforeReset);
-      if (d.fallback) { stallFired.loop = loopNo; stallFired.layer = f.layer; }
+      if (d.fallback) { stallFired.loop = loopNo; stallFired.layer = f.layer; T.fallbackFires[f.id] = (T.fallbackFires[f.id] || 0) + 1; }
       delete rateBest[f.id]; delete rateHold[f.id];   // a new cycle: neither the best rate nor the hold clock of the last one says anything about this one
       return { act: true, n: 1, code: 'acted:reset', values: { layer: f.layer, gain: gain, rule: d.fallback ? (P && P.modifier ? P.modifier.id : 'stall') : (d.rule || (P && P.id) || null) } };
     },
@@ -5094,6 +5102,8 @@
     kindOrderNow = kindOrder.slice();   // V4: a feature's DEFAULT `priority` is its kind's place in THIS order
     turnMarkNow = T.autoOptions.turnMark === undefined ? TURN_MARK_DEFAULT : String(T.autoOptions.turnMark);
     if (TURN_MARKS.indexOf(turnMarkNow) < 0) throw new Error(src + ': option turnMark must be one of ' + TURN_MARKS.join(', ') + ' (got "' + turnMarkNow + '")');
+    resetDefaultNow = T.autoOptions.resetDefault === undefined || T.autoOptions.resetDefault === '' ? null : String(T.autoOptions.resetDefault);
+    if (resetDefaultNow !== null && !policyOk('reset', resetDefaultNow)) throw new Error(src + ': option resetDefault "' + resetDefaultNow + '" is not a reset policy');
     // F1: `passiveYield` — `off`, or the threshold (a fraction per second, ≥ 0) the rate must EXCEED; default 0
     var py = T.autoOptions.passiveYield;
     if (py === undefined || py === '') passiveYieldNow = 0;
@@ -5261,8 +5271,12 @@
   // reset:primitive (446 / 951 vs interval>=90's 399 / 579) with no constant; unmeasured on any other game. upgrades: cheapest-first
   // (order-then-cheapest with an order[]); buyables: buy (§12e.1); toggles: on; challenges: sequential only with an
   // order[]; clickables: only with a {id, when} list.
+  // F1 Part 2: `resetDefault=<policy>` (a harness lever and a table option) replaces the NORMAL / custom layer's derived
+  // reset default, so the derived default itself can be swept with controls before it moves — a table entry and a
+  // player's edit still outrank it, exactly as they outrank the default it replaces.
+  var resetDefaultNow = null;
   function defaultPolicy(kind, l, hasOrder, hasClicks) {
-    if (kind === 'reset') return layers[l].type === 'static' ? 'always' : 'gain>=2x';
+    if (kind === 'reset') return layers[l].type === 'static' ? 'always' : (resetDefaultNow || 'gain>=2x');
     if (kind === 'upgrades') return hasOrder ? 'order-then-cheapest' : 'cheapest-first';
     if (kind === 'buyables') return 'buy';
     if (kind === 'toggles') return 'on';

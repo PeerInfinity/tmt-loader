@@ -19,7 +19,7 @@ function game(state) {
       t.type = 'normal';
       t.baseAmount = new Decimal(10); t.requires = new Decimal(1); t.nextAt = new Decimal(1);
       t.canReset = true; t.autoPrestige = false;
-      t.resetGain = new Decimal(5);
+      t.resetGain = new Decimal(state.gain && state.gain[id] !== undefined ? state.gain[id] : 5);
       t.upgrades = {}; t.buyables = {};
       if (state.pg[id] === undefined) delete t.passiveGeneration; else t.passiveGeneration = state.pg[id];
     },
@@ -111,4 +111,43 @@ test('a CYCLE member the game pays passively leaves the cycle, and its row-mate 
 test('a mistyped `passiveYield` is a HARD FAIL, not a run that quietly measures something else', () => {
   assert.throws(() => boot({ 'reset:a': 'always' }, fresh(), { passiveYield: 'of' }), /passiveYield must be "off" or a number/);
   assert.throws(() => boot({ 'reset:a': 'always' }, fresh(), { passiveYield: '-1' }), /passiveYield/);
+});
+
+// ---- F1 Parts 2–3: the levers the reset-frequency measurements need -------------------------------------------------
+
+test('`resetDefault=<policy>` replaces the DERIVED default of a NORMAL layer only — a table entry still wins', () => {
+  const s = fresh();
+  const ctx = bootStub(game(s), { id: 'stub', autoTable: { formatVersion: 1, policies: { 'reset:b': 'always' } }, options: { resetDefault: 'rate-peak@0/0' } });
+  const pol = (id) => ctx.tmtLoader.features.find((f) => f.id === id).policy;
+  assert.equal(pol('reset:a'), 'rate-peak@0/0', 'the derived default must be the option');
+  assert.equal(pol('reset:b'), 'always', 'a table entry outranks a derived default');
+  assert.throws(() => bootStub(game(fresh()), { id: 'stub', autoTable: { formatVersion: 1 }, options: { resetDefault: 'gain>=twox' } }), /resetDefault/);
+  // MUTANT: "the option is ignored" — reset:a stays `gain>=2x` and the first assert goes red.
+});
+
+test('`tmtLoader.sinceReset(id)` — game-seconds since that feature last reset; Infinity before its first', () => {
+  const ctx = boot({ 'reset:a': 'interval>=3' });
+  assert.equal(ctx.tmtLoader.sinceReset('reset:a'), Infinity);
+  tick(ctx, 1);
+  assert.equal(ctx.tmtLoader.sinceReset('reset:a'), 0, 'it reset on the first tick');
+  tick(ctx, 2);
+  assert.equal(ctx.tmtLoader.sinceReset('reset:a'), 2);
+  assert.throws(() => ctx.tmtLoader.sinceReset('reset:zz'), /no feature/);
+});
+
+test('`tmtLoader.fallbackFires` counts the resets the STALL FALLBACK fired, and nothing else', () => {
+  // `a` resets by its own rule (`gain>=10`) every tick while the gain is 10, so its typical interval is 1 s; then the
+  // gain drops to 1, its own rule refuses, and after 2× the typical the fallback resets anyway. `b` is `always`.
+  const s = fresh(); s.gain = { a: 10 };
+  const ctx = boot({ 'reset:a': 'gain>=10|stall>=2x/1', 'reset:b': 'always' }, s);
+  tick(ctx, 5);
+  const own = acts(ctx)['reset:a'];
+  assert.equal(ctx.tmtLoader.fallbackFires['reset:a'] || 0, 0, 'no fallback while the own rule fires');
+  s.gain.a = 1;
+  tick(ctx, 10);
+  const F = ctx.tmtLoader.fallbackFires;
+  assert.ok((F['reset:a'] || 0) >= 1, `the fallback must have fired: ${JSON.stringify(F)}`);
+  assert.equal(acts(ctx)['reset:a'] - own, F['reset:a'], 'every reset after the drop is a fallback reset');
+  assert.equal(F['reset:b'] || 0, 0, 'an own-rule reset is never counted');
+  // MUTANT: "every reset is counted" — reset:b is counted and the last assert goes red.
 });

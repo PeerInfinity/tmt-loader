@@ -2240,9 +2240,64 @@ jobs:
           if-no-files-found: warn
           retention-days: 14
 
+  # Parts 2 and 3 run as GROUPS (`--group`): a group is the cells that share a stretch, so one runner walks them
+  # side by side and the long row-3 cells get a job each.
+  f1-groups:
+    name: F1 group ${{ matrix.group }}
+    needs: fast
+    runs-on: ubuntu-latest
+    timeout-minutes: 100
+    strategy:
+      fail-fast: false
+      matrix:
+        group: ['ST', 'L3-gain2x', 'L3-gain2x+stall', 'L3-rate-peak0/0', 'L3-rate-peak0.1/30',
+                'X:the-extended-tree', 'X:prestige-tree-ng', 'X:the-normal-tree', 'X:the-omega-tree',
+                'X:the-function-of-time-tree', 'X:the-pp-tree', 'X:the-point-tree', 'X:weakling-tree',
+                'P3-P', 'P3-R2', 'P3-E', 'P3-O',
+                'P3-L3-q gain>=2', 'P3-L3-q gain>=4', 'P3-L3-q gain>=8', 'P3-L3-q,h gap>=60s']
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - run: npm ci
+
+      - name: "F1 group ${{ matrix.group }}, every cell twice"
+        shell: bash
+        run: |
+          set -o pipefail
+          node tools/harness/gates-f1.mjs --group '${{ matrix.group }}' --wall-ms 5400000 --pool 4 \
+            --no-summary --assert | tee f1-group.txt
+
+      - name: Summary
+        if: always()
+        shell: bash
+        run: |
+          {
+            echo '## F1 group ${{ matrix.group }}'
+            echo ''
+            echo '```'
+            cat f1-group.txt 2>/dev/null | grep -E 'VERDICT|REFUSED|^RED|^GREEN|PROGRESS' || echo 'no output'
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload the group
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: f1-group-${{ strategy.job-index }}
+          path: tools/harness/results/gates-f1-cell-*.json
+          if-no-files-found: warn
+          retention-days: 14
+
   f1-merge:
     name: F1 merge — every cell present, the tables and the verdicts
-    needs: f1-cells
+    needs: [f1-cells, f1-groups]
     if: ${{ !cancelled() }}
     runs-on: ubuntu-latest
     timeout-minutes: 10
@@ -2260,16 +2315,18 @@ jobs:
 
       - uses: actions/download-artifact@v4
         with:
-          pattern: f1-cell-*
+          pattern: f1-*
           path: cells
           merge-multiple: true
 
-      - name: Merge part 0 (the tick calibration) and part 1 (the yield)
+      - name: Merge parts 0 (the tick calibration), 1 (the yield), 2 (the derived default) and 3 (the throttle)
         shell: bash
         run: |
           set -o pipefail
           node tools/harness/gates-f1.mjs --part m --cell 0 --from cells --no-summary --assert | tee f1-m0.txt
           node tools/harness/gates-f1.mjs --part m --cell 1 --from cells --no-summary --assert | tee f1-m1.txt
+          node tools/harness/gates-f1.mjs --part m --cell 2 --from cells --no-summary --assert | tee f1-m2.txt
+          node tools/harness/gates-f1.mjs --part m --cell 3 --from cells --no-summary --assert | tee f1-m3.txt
 
       - name: Summary
         if: always()
@@ -2279,6 +2336,6 @@ jobs:
             echo '## F1 merge'
             echo ''
             echo '```'
-            cat f1-m0.txt f1-m1.txt 2>/dev/null || echo 'no output'
+            cat f1-m0.txt f1-m1.txt f1-m2.txt f1-m3.txt 2>/dev/null || echo 'no output'
             echo '```'
           } >> "$GITHUB_STEP_SUMMARY"
