@@ -199,6 +199,22 @@ under the row cycle this slice turned on. The THREE readers, by name and by sele
 ⚠ `M25.json` unlocks the same seventeen layers as `M24.json`, so even the `shardCost` estimate would not have
 moved — but that is a fact about this fixture, not about the selector, and the next one to land owes its own check.
 
+⛔ **R3c MOVED IT AGAIN, AND FOUND A FOURTH READER.** `snapshots/ptr/all/M27.json` (40,905 ticks — H21 "Out of Room"
+complete) is ptr's deepest fixture, and `all/M25.json` was RE-RECORDED (35,778 → 35,613 ticks: the dead-member
+rule's default reading moved to `high-act`). Both were written TWICE by CI (`gates-r3c --part 2f`, job
+`r3c-fixtures`), uninterrupted from `all/M15.json`, and committed from the run whose twin agreed; M16–M24 were
+rewritten by the same leg and are the SAME state as the committed files. The readers, by name and by selector:
+
+| reader | what it selects | what moves |
+|---|---|---|
+| `tools/harness/page.mjs:1991` | `deepestSnapshot('ptr')` (most TICKS) → the save the M1 page sweep opens ptr at | the UI arc's DETECTED and progress rows/cards in `docs/mobile.md` — owed a re-measurement; NOT edited by R3c |
+| `tools/harness/cost-layerlist.mjs:323` | the same call, unless `--fresh-only` | the layer-list cost figures |
+| `tools/harness/lib.mjs:191` (`shardCost`) | the same save's `player` | nothing: `ptr` has a measured cost in `shard-costs.json` |
+| ⚠ `tools/currency-data.mjs:55` (`snapshotOf`) | the highest `all/M<n>.json` by MARK NUMBER (not ticks) | `games-data/ptr.json`, which `--check` refuses when stale — regenerated at R3c: only each entry's `from` moved (`all/M25` → `all/M27`), every `pays` / `cost` and every count unchanged |
+
+⚠ Two selectors, two orders: `deepestSnapshot` sorts by ticks and `snapshotOf` by mark number. They agree today; a
+mark reached OUT of ladder order (M26 is reached after M27) makes them disagree the day its fixture lands.
+
 ## Scoring a DEFAULT: over WHOLE STRETCHES, never from the fixture the old default wrote (R2)
 
 ⛔ **A fixture bakes in the policy that produced it, and a layer UNLOCKS ON ITS FIRST RESET.** The two together make
@@ -280,7 +296,7 @@ drove a chip**. ⛔ A check nobody runs is not a check.
 
 | check | where it runs now | cost |
 |---|---|---|
-| unit tests (`npm run harness:test`) | CI, the **fast** job — and everything else `needs:` it | **258 tests**, no browser — RE-MEASURED on C1's final tree, which added sixteen (`loader/auto-tables.test.mjs` nine: the schema and the provenance gate, each failure by name; `loader/currency.test.mjs` six: the currency consumers; `loader/workflows.test.mjs` one: the C1 jobs) and changed none elsewhere; R3b-2 measured 242 on its final tree, which added five (`loader/cycle.test.mjs`, the dead-member rule) and changed none elsewhere; V5 measured 237, which added eleven (`loader/retry.test.mjs`, the RETRY conditions) and changed none of the count elsewhere (one existing row of `loader/strategies.test.mjs` now draws its refusal per TYPE, because a `predicate` accepts `banana`); R3b-1 re-measured 226 and added twenty-four (`loader/cycle.test.mjs`, the ROW CYCLE) on top of R3a's seventeen (`loader/challenges.test.mjs`, the challenge give-up rule) on top of V4's twenty (`loader/controls.test.mjs`); ⚠ the number V4 wrote here was **180** and the tree it was written on measured **185**, which is the drift this row exists to catch; R2 read 160 and added two (⚠ it read `46 tests`, then `75`, then `82`, then `138`, then `158`, every one of them stale — a count in prose that no gate reads. It had drifted by fifty-two before U7 re-read it, and by twenty again between U7 and the U8 merge. ⛔ RE-MEASURE IT AT EVERY MERGE: this row is the standing example of a count conflict that must not be resolved by picking a branch's number — U3 merged 75-vs-60 and the merged tree measured 79) |
+| unit tests (`npm run harness:test`) | CI, the **fast** job — and everything else `needs:` it | **262 tests**, no browser — RE-MEASURED on R3c's final tree, which added four (`loader/cycle.test.mjs`: the `turnMark` readings) and changed none elsewhere; C1 measured 258 on its final tree, which added sixteen (`loader/auto-tables.test.mjs` nine: the schema and the provenance gate, each failure by name; `loader/currency.test.mjs` six: the currency consumers; `loader/workflows.test.mjs` one: the C1 jobs) and changed none elsewhere; R3b-2 measured 242 on its final tree, which added five (`loader/cycle.test.mjs`, the dead-member rule) and changed none elsewhere; V5 measured 237, which added eleven (`loader/retry.test.mjs`, the RETRY conditions) and changed none of the count elsewhere (one existing row of `loader/strategies.test.mjs` now draws its refusal per TYPE, because a `predicate` accepts `banana`); R3b-1 re-measured 226 and added twenty-four (`loader/cycle.test.mjs`, the ROW CYCLE) on top of R3a's seventeen (`loader/challenges.test.mjs`, the challenge give-up rule) on top of V4's twenty (`loader/controls.test.mjs`); ⚠ the number V4 wrote here was **180** and the tree it was written on measured **185**, which is the drift this row exists to catch; R2 read 160 and added two (⚠ it read `46 tests`, then `75`, then `82`, then `138`, then `158`, every one of them stale — a count in prose that no gate reads. It had drifted by fifty-two before U7 re-read it, and by twenty again between U7 and the U8 merge. ⛔ RE-MEASURE IT AT EVERY MERGE: this row is the standing example of a count conflict that must not be resolved by picking a branch's number — U3 merged 75-vs-60 and the merged tree measured 79) |
 | G6 roster doc + G7 declined list (`games-table.mjs --check`) | CI, the fast job | 0.13 s |
 | C1 the tables' schema + the currency index (`auto-tables.mjs --check`, `currency-data.mjs --check-index`) | CI, the fast job | < 1 s |
 | C1 the currency data regenerated + the provenance gate + the reader's accuracy (`gates-c1 --part 3, 1, 2, 6`) | CI, `c1-data` (full history) | ~70 s for the regeneration locally, ~2 min per boot pass |

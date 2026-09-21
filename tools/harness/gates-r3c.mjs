@@ -17,7 +17,7 @@
 //                                               cell twice, each run writing every mark's snapshot to its own
 //                                               directory, compared file by file (from `all/M15.json` by default; a
 //                                               later fixture chains the rung on, as the ladder's fixtures always have)
-//   node tools/harness/gates-r3c.mjs --part 2p  H22 "Descension": is PREPARATION what it lacks? From `all/M27.json`,
+//   node tools/harness/gates-r3c.mjs --part 2p  H22 "Descension": is PREPARATION what it lacks? From `all/M26.json`,
 //                                               three arms of one attempt — the control, the guide's order (respec →
 //                                               Primary → enter) and a constructed UPPER BOUND (every level in Primary)
 //
@@ -322,7 +322,7 @@ const H22_ARMS = {
 };
 async function part2p() {
   const fsm = await import('node:fs'), os = await import('node:os'), { spawn } = await import('node:child_process');
-  const fixture = path.resolve(String(a.fixture || path.join(REPO, 'tools/harness/snapshots/ptr/all/M27.json')));
+  const fixture = path.resolve(String(a.fixture || path.join(REPO, 'tools/harness/snapshots/ptr/all/M26.json')));   // a state long past H21, buildings rebuilt
   if (!fsm.existsSync(fixture)) { console.error(`REFUSED: no fixture ${fixture}`); process.exit(2); }
   const ticks = Number(a.ticks || 120);
   const res = await Promise.all(Object.entries(H22_ARMS).map(async ([arm, src]) => {
