@@ -1231,6 +1231,35 @@ is). Every term is the engine's own:
 - ⚠ **`/0/0` switches the rule OFF** — a window of zero is no window — and that is what every policy string pinned
   before R3b-2 carries, so each of them reproduces to the hash.
 
+**What it does NOT need: an ENTRY rule for the challenge it unlocks.** ⛔ Measured across the nine H12 "Speed
+Demon" attempts of one stretch (peak fraction of the goal EXPONENT at each attempt, plan §40.5):
+
+| attempt | Super Boosters | Quirk Layers | Hindrance Spirit | total quirks | peak % of the goal |
+|---|---|---|---|---|---|
+| 1 | **2** | 3 | 1 | 26 | **65.7** |
+| 2 | **0** | 3 | 2 | 26 | **84.5** |
+| 3–4 | 0 | 3 | 6 → 14 | 46 → 86 | 86.4 → 88.3 |
+| 5 | 0 | **4** | 28 | 147 | **91.6** |
+| 6–8 | 0 | 4 | 74 → 408 | 167 → 307 | 93.1 → **95.1** |
+| 9 | 0 | 4 | — | — | **completed** |
+
+Three readings, and none of them is a predicate a player would write:
+- **Super Boosters going 2 → 0 is worth more than everything after it put together** (+18.8 points against +10.6
+  for the whole of the rest), which is `baseDiv12`'s `3·sb³ + 1` seen from outside. ⚠ And the automation is NOT
+  asked to stop buying them: `reset:h` and `reset:q` both wipe row 2, so the cycle ALREADY delivers a low Super
+  Booster count at every entry after the first. A `while`/`until` on `reset:sb` would buy nothing and would cost
+  row 2's strongest multiplier everywhere else.
+- **Quirk Layers 3 → 4** buys +3.3 points — it is the EXPONENT on quirk-energy regrowth, and it matters, but it is
+  one term of several.
+- `player.q.time` and `player.q.energy` read **ZERO at every entry after the first**, because entering zeroes them.
+  Whatever the tree had accumulated is not inherited, so "am I strong now" is not the question the challenge asks.
+
+⇒ **readiness is a product of several quantities that no single predicate captures — and no entry rule is needed,
+because R3a's give-up-and-retry pair already IS one.** Each failed attempt costs ~70 game-seconds, the run comes
+back stronger, and the peak climbs monotonically until one attempt lands. Eight give-ups over the stretch cost
+~560 game-seconds, about 1.5 % of it. ⚖ Plan §31/§35 named M25 as the first mark where the ADVANCED planner's
+measured candidates would plausibly earn their cost; on this evidence that is WITHDRAWN.
+
 **The rule reaches the members that never declared anything, and that is the point.** `o` and `ss` carry no policy
 in any table; they are bound at the ROW's declared defaults, so the default `H` is what releases them. A table that
 had to name them would be naming two layers, which is the `exclude=reset:o,reset:ss` override this rule removes.

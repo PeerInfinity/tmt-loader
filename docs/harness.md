@@ -176,6 +176,19 @@ the M1 page sweep and the layerlist cost sweep measure, and any figure taken fro
 one.) A rung that writes fixtures therefore owes a LIST — by name AND by selector — of what reads them; R1′, R2, V4
 and R3a each carry one in their as-built.
 
+⛔ **R3b-2 MOVED IT AGAIN: `snapshots/ptr/all/M25.json` (35,778 ticks) is now ptr's deepest fixture**, past
+`all/M24.json`'s 30,736. It is H12 "Speed Demon" completed, written by an uninterrupted leg from `all/M15.json`
+under the row cycle this slice turned on. The THREE readers, by name and by selector:
+
+| reader | what it selects | what moves |
+|---|---|---|
+| `tools/harness/page.mjs:1929` | `deepestSnapshot('ptr')` → the save the M1 page sweep opens ptr at | the DETECTED and progress rows/cards the UI arc records in `docs/mobile.md` — owed a re-measurement at this head |
+| `tools/harness/cost-layerlist.mjs:323` | the same call, unless `--fresh-only` | the layer-list cost figures |
+| `tools/harness/lib.mjs:191` (`shardCost`) | the same save's `player`, to count unlocked layers | ⚠ NOTHING here: a MEASURED cost in `tools/harness/shard-costs.json` takes precedence and `ptr` has one, so the estimate is not consulted |
+
+⚠ `M25.json` unlocks the same seventeen layers as `M24.json`, so even the `shardCost` estimate would not have
+moved — but that is a fact about this fixture, not about the selector, and the next one to land owes its own check.
+
 ## Scoring a DEFAULT: over WHOLE STRETCHES, never from the fixture the old default wrote (R2)
 
 ⛔ **A fixture bakes in the policy that produced it, and a layer UNLOCKS ON ITS FIRST RESET.** The two together make
@@ -231,7 +244,7 @@ drove a chip**. ⛔ A check nobody runs is not a check.
 
 | check | where it runs now | cost |
 |---|---|---|
-| unit tests (`npm run harness:test`) | CI, the **fast** job — and everything else `needs:` it | **237 tests**, no browser — RE-MEASURED on V5's final tree, which added eleven (`loader/retry.test.mjs`, the RETRY conditions) and changed none of the count elsewhere (one existing row of `loader/strategies.test.mjs` now draws its refusal per TYPE, because a `predicate` accepts `banana`); R3b-1 re-measured 226 and added twenty-four (`loader/cycle.test.mjs`, the ROW CYCLE) on top of R3a's seventeen (`loader/challenges.test.mjs`, the challenge give-up rule) on top of V4's twenty (`loader/controls.test.mjs`); ⚠ the number V4 wrote here was **180** and the tree it was written on measured **185**, which is the drift this row exists to catch; R2 read 160 and added two (⚠ it read `46 tests`, then `75`, then `82`, then `138`, then `158`, every one of them stale — a count in prose that no gate reads. It had drifted by fifty-two before U7 re-read it, and by twenty again between U7 and the U8 merge. ⛔ RE-MEASURE IT AT EVERY MERGE: this row is the standing example of a count conflict that must not be resolved by picking a branch's number — U3 merged 75-vs-60 and the merged tree measured 79) |
+| unit tests (`npm run harness:test`) | CI, the **fast** job — and everything else `needs:` it | **242 tests**, no browser — RE-MEASURED on R3b-2's final tree, which added five (`loader/cycle.test.mjs`, the dead-member rule) and changed none elsewhere; V5 measured 237, which added eleven (`loader/retry.test.mjs`, the RETRY conditions) and changed none of the count elsewhere (one existing row of `loader/strategies.test.mjs` now draws its refusal per TYPE, because a `predicate` accepts `banana`); R3b-1 re-measured 226 and added twenty-four (`loader/cycle.test.mjs`, the ROW CYCLE) on top of R3a's seventeen (`loader/challenges.test.mjs`, the challenge give-up rule) on top of V4's twenty (`loader/controls.test.mjs`); ⚠ the number V4 wrote here was **180** and the tree it was written on measured **185**, which is the drift this row exists to catch; R2 read 160 and added two (⚠ it read `46 tests`, then `75`, then `82`, then `138`, then `158`, every one of them stale — a count in prose that no gate reads. It had drifted by fifty-two before U7 re-read it, and by twenty again between U7 and the U8 merge. ⛔ RE-MEASURE IT AT EVERY MERGE: this row is the standing example of a count conflict that must not be resolved by picking a branch's number — U3 merged 75-vs-60 and the merged tree measured 79) |
 | G6 roster doc + G7 declined list (`games-table.mjs --check`) | CI, the fast job | 0.13 s |
 | roster FIGURES census (`census-figures.mjs`) | CI, the fast job | 1.2 s |
 | M1 mobile sweep (`--gate mobile`) | CI, ten shards + a merge | ~3 min end to end; 32–46 min locally |
