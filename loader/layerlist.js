@@ -2162,6 +2162,10 @@
       var e = rec.progressEls[i];
       if (!e) return;
       e.name.textContent = g.name;
+      // ⚠ (U13) the RULE can change under an unchanged key, so it is synced, not drawn once: before the data lands
+      // every buyable abstains and the pick is `first`; after it, `cheapest` can pick the SAME component (MEASURED on
+      // `the-energy-factory`'s `energy/11`), and a mark written only at draw time kept saying `first`.
+      e.box.dataset.how = g.how;
       e.have.textContent = g.have;
       e.need.textContent = g.need;
       e.cur.textContent = g.currency ? ' ' + g.currency : '';
