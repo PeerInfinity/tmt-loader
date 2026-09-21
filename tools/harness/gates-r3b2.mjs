@@ -234,7 +234,11 @@ async function part1() {
 // because without it half of them freeze and a frozen cell is not a measurement of a weight.
 async function part2() {
   await sweep({ gate: 'R3b2-2 ptr\'s table —', leg: 'L15', cells: [
-    cell('', 'CONTROL: the table as it SHIPS at this head — no cycle anywhere, re-measured at 37048 so its quirk count is comparable with the rows below'),
+    // ⛔ THE CONTROL SAYS WHAT IT WANTS RATHER THAN RELYING ON WHAT THE TABLE HAPPENS TO SAY. Once this slice's
+    // decision lands, `games-auto/ptr.js` NAMES a cycle on row 3 — so an empty cell is no longer "no cycle", it is
+    // "whatever ships today", and a table that changed underneath this row would silently stop being a control.
+    // The pre-cycle policies are written out instead, and they are the values R2 and V4 pinned.
+    cell('policy:reset:q=gain>=2;policy:reset:h=gain>=2x', 'CONTROL: the table WITHOUT the row cycle — `reset:q` at R2\'s `gain>=2` and `reset:h` at the derived `gain>=2x` it used to inherit, which is what shipped before R3b-2. Re-measured at 37048 so its quirk count is comparable with the rows below'),
     cell(turn(5), 'W = 5'),
     cell(turn(10), 'W = 10'),
     cell(turn(20), 'W = 20 — the oracle\'s own weight'),
@@ -282,11 +286,11 @@ async function part3() {
 // put one, so a run that names none must take exactly the path it took before — to the HASH, not to the marks.
 async function part4() {
   await sweep({ gate: 'R3b2-4 INERTNESS the opening —', leg: 'L2', cells: [
-    cell('', 'a FRESH game to M12 with the table as it ships. The opening is pinned at 6718 / `82eee26f947b2b2e` and must not move: this slice added two PARAMETERS to two modifier rows that no game\'s table names'),
+    cell('', 'a FRESH game to M12 with the table as it ships. The opening is pinned at 6718 / `82eee26f947b2b2e` and must not move — and it reaches M12 long before row 3 has two active members, so ptr\'s new cycle entry is DORMANT for the whole of it'),
   ] });
   await sweep({ gate: 'R3b2-4 INERTNESS M15 → M24 —', leg: 'L15m24', cells: [
-    cell('', 'the shipped table from `all/M15.json`, stopping AT M24. M16 17058 · M17 23492 · M18 25598 · M19 25937 · M20 26612 · M21 28058 · M22 30618 · M23 30683 · M24 30736, and `0b98a21130a0b4af` at M22'),
-    cell(turn(20, { bh: '0/0' }), 'the cycle ON with the dead-member rule OFF (`/0/0`) — the row that says the rule is INERT when its window is zero, i.e. that every measurement pinned before this slice still reproduces'),
+    cell('', 'the shipped table from `all/M15.json`, stopping AT M24 — now WITH this slice\'s cycle entry. M16 17058 · M17 23492 · M18 25598 · M19 25937 · M20 26612 · M21 28058 · M22 30618 · M23 30683 · M24 30736, and `0b98a21130a0b4af` at M22. ⚠ THE MARKS ARE UNMOVED AND THAT IS THE CLAIM: the cycle only engages once `h` unlocks at M21, so the whole M15→M21 stretch is a row with one active member, which is DORMANT'),
+    cell('policy:reset:q=gain>=2;policy:reset:h=gain>=2x', 'the PRE-CYCLE table over the same leg — the row that says which of M16–M24 the cycle entry moved, by running the values that shipped before it'),
   ] });
   const c = rows.filter((r) => r.ok).length;
   row({ gate: 'R3b2-4 VERDICT: nothing moved that this slice did not move on purpose', id: 'ptr', ok: c === rows.length, ticks: null, gameSeconds: null, diff: 1, hash: null,

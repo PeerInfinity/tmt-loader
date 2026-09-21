@@ -74,7 +74,34 @@ tmtLoader.autoTable = {
     // fallback never accumulates the history it needs. ⚠ And M21 is NOT gated by `reset:h`: `policy:reset:h=gain>=2x-unit`
     // beside this entry is byte-identical too. What gates M21 is Time Energy having to re-climb to 1e30 between q
     // resets, so the policy that farms quirks fastest is the one that never gets there (R2 part 2).
-    'reset:q': 'gain>=2',
+    // ⛔ R3b-2 — THE ROW CYCLE TURNED ON, AND IT IS THE LEVER M25 WAITED FOR. From M21 PTR's row 3 has FOUR
+    // active reset members (`h, q, o, ss`), and `h` and `q` each reset by wiping the row below, so whichever is
+    // eager takes the other's input away again (plan §24.7, §30.2, §31 — the same shape measured three times). No
+    // arrangement of per-feature POLICIES fixes it; what decides is whose TURN it is. The modifier binds every
+    // active reset of the row, so `o` and `ss` are members too WITHOUT being named here — they run at the row's
+    // declared defaults, which is also what releases them when they stop getting closer (docs/automation.md).
+    // MEASURED over a WHOLE STRETCH from `all/M15.json` → 37048, nine cells, ONE horizon, every cell TWICE equal
+    // (gate R3b2-2, CI run 35553187707, the five-shard table matrix; two cells reproduced on a second machine to
+    // the hash):
+    //   control (no cycle)   M22 30618 · M23 30683 · M24 30736 · M25 —     · 1 HS · 559 quirks · q upg [11,12,13,14]
+    //   W = 5                M22 30976 · M23 31028 · M24 31081 · M25 36156 · 1490 HS · 444 quirks · [11,12,13,14]
+    //   **W = 10 (this)**    M22 30618 · M23 30683 · M24 30736 · **M25 35778** · 1000 HS · 636 quirks · [11,12,13,14,21]
+    //   W = 20               … same marks · M25 35939 · 499 HS · 670 quirks · [11,12,13,14,21]
+    //   W = 40               … same marks · M25 35806 · 194 HS · 608 quirks · [11,12,13,14,21]
+    //   `turn-demand@20`     NO M22 · 44 HS · 10 quirks — the derived variant, and it LOSES (see below)
+    //   B = 0.1              NO M22 · 143 HS · 10 quirks — the release bar, and it starves `h` (see below)
+    //   H = 300              BYTE-IDENTICAL to H = 100 — the window is not sensitive above the knee
+    // ⇒ W = 10 reaches **M25 (H12 "Speed Demon") at 35778**, which NO cell without a cycle reaches at all, with
+    // M22–M24 unmoved to the second, twice W = 20's Hindrance Spirit and 636 quirks against the control's 559.
+    // ⚠ W = 5 MOVES M22–M24 by +358 game-seconds and the reason is the mechanism itself: it gives `h` 25 turns
+    // instead of 17 and every `reset:h` wipes row 2, so `q`'s milestones arrive later. That is why the entry is
+    // not W = 5, which buys the most Hindrance Spirit of any cell.
+    // ⚖ THE WEIGHT IS A LITERAL AND THE DERIVATION LOST ITS MEASUREMENT, which is the accepted tier-1 outcome
+    // (⚖ user 2026-09-21). `turn-demand` needs no weight at all — it hands the turn to whoever a decision NAMES as
+    // waited-on — and at this frontier the only such signal is R3a's retry bar naming `h`, which stands CONSTANTLY
+    // once H12 starts failing. So demand is not "nearly inert" here, it is ONE-SIDED, and it lands exactly on the
+    // `reset:h = always` starvation the user reported by hand. The row above is the weight's provenance.
+    'reset:q': 'gain>=2|turn@10/30x/5/0/100',
     // ⛔ R3a — THE CHALLENGE KIND, AND THE EXIT RULE IT NEEDED. `sequential` alone has an ENTRY rule ("the first
     // unlocked, incomplete challenge") and NO EXIT rule: it leaves a challenge only by WINNING it. From
     // `snapshots/ptr/all/M22.json` that completes H11 "Upgrade Desert" in 65 game-seconds and then walks straight
@@ -90,6 +117,14 @@ tmtLoader.autoTable = {
     //   `sequential` (no exit)      M23 30683 · M24 30736; then 11,878 game-s inside H12; 13 `reset:q`
     //   **this entry**              M23 30683 · M24 30736; H12 entered, given up, deferred; **532 `reset:q`,
     //                               1065 total quirks, q upgrades [11,12,13,14]** — the tree farming again
+    // ⛔ R3b-2: `reset:h` JOINS THE CYCLE, and `always` INSIDE ITS TURN IS THE MEASUREMENT, not an oversight.
+    // Before this slice `reset:h` had no entry at all and inherited the derived `gain>=2x`, which on an EMPTY purse
+    // is `gain >= 0` — so it fires once and then never again. Measured in the same table at W = 20: `gain>=2x`
+    // inside the turn ends with 91 quirks, 4 Hindrance Spirit, only SEVEN turns and NO M25, against `always`'s 670
+    // quirks and M25. ⚠ `always` is only safe BECAUSE of the cycle: on its own it is the starvation the user hit
+    // by hand (44 Hindrance Spirit, every quirk frozen at 10 — plan §30.2 item 1), and the row's own help says so.
+    // The turn is what makes an eager rule affordable; the weight of 1 against `reset:q`'s 10 is what bounds it.
+    'reset:h': 'always|turn@1/30x/5/0/100',
     'challenges:h': 'sequential|give-up@0.1/30/2x',
   },
   // ⛔ R2's WALL AT M21, BROKEN BY A PAUSE — and the whole finding is that it is a PAUSE and not a latching STOP.
@@ -143,7 +178,8 @@ tmtLoader.autoTable = {
     'reset:e': ['interval>=5', 'unlocks-purchase', 'always', 'gain>=1'],
     'reset:s': ['interval>=5', 'gain>=1'],
     'buyables:e': ['buy', 'buy-unless-saving'],
-    'reset:q': ['gain>=2x-unit', 'rate-peak@0/0', 'gain>=2x', 'always'],
+    'reset:q': ['gain>=2x-unit', 'rate-peak@0/0', 'gain>=2x', 'always', 'gain>=2', 'gain>=2|turn@20/30x/5/0/100'],
+    'reset:h': ['always', 'gain>=2x', 'always|turn@1/30x/5/0/0'],
     'challenges:h': ['sequential', 'off'],
   },
   // milestone 0 of b / g ("8 Boosters" / "8 Generators": "Keep Prestige Upgrades on reset") gates keepsUpgrades (A1 §11e.8)
@@ -182,7 +218,8 @@ tmtLoader.autoTable = {
     'reset:s': "A2-3, re-measured at the frontier (SUMMARY gate R1′-2.3): `always` reaches M16 at 24203 against `interval>=5`'s 24236 — the same tie.",
     'reset:e': "R1′ (SUMMARY gate R1′-2.3): e is row 2's only NORMAL layer, so its gain follows how high points climbed and an interval reset spends that climb every 5 s. `gain>=2x` reaches every remaining mark of the rung (M11 14745 · M12 14909 · M15 16048 · M16 24179); `interval>=5` and `always` reach none of them.",
     'buyables:e': "R1′ (SUMMARY gate R1′-2.2): the reserve is READ from the game, never written here. `reserve>=next-upgrade` ends 47 EP held with 3 Enhancers against `buy`'s 11 EP with 4 — and a literal `reserve>=25` is byte-identical to `buy`, because once e11 is owned the next upgrade costs 400.",
-    'reset:q': "R2 (SUMMARY gate R2-S1), scored over a WHOLE STRETCH from `all/M15.json` → M22: the derived `gain>=2x` is `gain >= 0` while q holds nothing, so it unlocked q at 16917 and a row-3 reset wiped row 2 — M16 24179 and then nothing past M19. `gain>=2` reaches M16 at 17058, M20 at 26594 and M22 at 29194; 2 is q milestone 0's own requirement (2 total quirks). \u2014 V4 added its PAUSE (gate V4-m21, every cell twice): without it M21 is never reached and M22 lands at 29204; with it M21 lands at 28058 and M22 at 30618, M16\u2013M20 unmoved to the second. The +1414 game-s at M22 is the 1446 game-s Time Energy needs to reach 1e30 with row 2 intact \u2014 the game's cost, not the rule's.",
+    'reset:q': "R2 (SUMMARY gate R2-S1), scored over a WHOLE STRETCH from `all/M15.json` → M22: the derived `gain>=2x` is `gain >= 0` while q holds nothing, so it unlocked q at 16917 and a row-3 reset wiped row 2 — M16 24179 and then nothing past M19. `gain>=2` reaches M16 at 17058, M20 at 26594 and M22 at 29194; 2 is q milestone 0's own requirement (2 total quirks). \u2014 V4 added its PAUSE (gate V4-m21, every cell twice): without it M21 is never reached and M22 lands at 29204; with it M21 lands at 28058 and M22 at 30618, M16\u2013M20 unmoved to the second. The +1414 game-s at M22 is the 1446 game-s Time Energy needs to reach 1e30 with row 2 intact \u2014 the game's cost, not the rule's. \u2014 R3b-2 added the ROW CYCLE (gate R3b2-2, CI run 35553187707, nine cells at ONE horizon, every cell twice equal): with `turn@10` the run reaches **M25 (H12 \"Speed Demon\") at 35778**, which no cell without a cycle reaches at all, with M22\u2013M24 unmoved to the second, 636 quirks against 559 and 1000 Hindrance Spirit against 1. W = 5 moves M22\u2013M24 by +358 game-s (25 `reset:h` instead of 17, and each one wipes row 2); W = 20 and W = 40 reach M25 later with less Hindrance Spirit. The derived `turn-demand` variant LOSES (no M22, 10 quirks): the only demand signal naming a row-3 layer here is R3a's retry bar naming `h`, which stands constantly once H12 fails, so it hands `h` every turn.",
+    'reset:h': "R3b-2 (SUMMARY gate R3b2-2, CI run 35553187707), scored over a WHOLE STRETCH from `all/M15.json` \u2192 37048, every cell twice equal: `reset:h` had no entry before this slice and inherited the derived `gain>=2x`, which on an empty purse is `gain >= 0` and so fires once and never again \u2014 91 quirks, 4 Hindrance Spirit, seven turns and no M25. With `always` INSIDE ITS TURN the same configuration reaches M25 at 35778 with 636 quirks and 1000 Hindrance Spirit. `always` is safe only because the cycle bounds it: on its own it is the starvation the user hit by hand (44 Hindrance Spirit, quirks frozen at 10).",
     'challenges:h': "R3a (SUMMARY gate R3a-1), scored over a WHOLE STRETCH from `all/M22.json` → M26, every cell twice equal: bare `sequential` completes H11 in 65 game-s and then sits inside H12 for 11,878 game-s with the currency flat at 1e2334 against a goal of 1e3550 and every quirk frozen — it has an entry rule and no exit rule. With the give-up modifier the same run leaves H12 when it stops closing the distance and defers the next attempt until the layer is twice as strong, and the tree goes back to farming: 532 `reset:q` and 1065 total quirks against the trapped run's 13 and 26. The gate is the digest's own advice (L3.9) minus the half measurement showed to be wrong: the 25-quirk milestone matters, the 10 hindrance spirit does not.",
     'buyables:t': "R1′ (SUMMARY gate R1′-2.4) LIFTED the exclusion this table used to carry. With it: t upgrades [11], Time Energy 6300 at its cap, `t.unlockOrder` 1. Without it: 11 Extra Time Capsules, cap 2.49e9, t upgrades [11,12,13,14,15,23] and `t.unlockOrder` 0 — the t half of M12.",
   },
