@@ -415,12 +415,18 @@ jobs:
       - run: npx playwright install --with-deps chromium
 
       # `--no-summary`: results/SUMMARY.md is the committed record of runs a person ran and read.
-      - name: A1 part 2 over the games that have an automation table
+      # R3c Part 0: Something Tree's table was DELETED (⚖ user 2026-09-21) and it stays in this job as the TABLE-LESS
+      # control — the au tab on a game that runs purely on the derived defaults, and the job's only 2.7 engine. It is
+      # found by its ROLE (`lib.mjs` TABLELESS_CONTROL), not typed here, and `census.test.mjs` refuses it a table.
+      - name: A1 part 2 over the games that have an automation table, plus the table-less control
         shell: bash  # bash -eo pipefail: without it `| tee` reports the pipe's status and the refusal is lost
         run: |
           set -o pipefail
           SET=$(ls games-auto/*.json | xargs -n 1 basename | sed 's/\.json$//' | tr '\n' ' ')
           test -n "$SET" || { echo 'games-auto/ named no game at all'; exit 1; }
+          CONTROL=$(node -e "import('./tools/harness/lib.mjs').then((m) => console.log(m.TABLELESS_CONTROL))")
+          test -n "$CONTROL" || { echo 'lib.mjs names no table-less control'; exit 1; }
+          SET="$SET$CONTROL"
           echo "A1_SET=${SET% }" >> "$GITHUB_ENV"
           echo "derived set: $SET"
           node tools/harness/gates-a1.mjs --part 2 $SET --no-summary --assert | tee a1.txt
@@ -1166,7 +1172,7 @@ jobs:
   # C1 parts 5 and 7 — the CONSUMERS (the planner's rows; a booster reserve over all/M10 → M16) and the Something
   # Tree interval rider (⚖ 13d.2). REPORT, NOT DECIDE: no table entry changes on either row.
   c1-consumers:
-    name: C1 consumers + the interval rider — headless (parts 5, 7)
+    name: C1 consumers — headless (part 5; part 7 RETIRED by R3c Part 0)
     needs: fast
     runs-on: ubuntu-latest
     timeout-minutes: 90
@@ -1185,21 +1191,19 @@ jobs:
           set -o pipefail
           node tools/harness/gates-c1.mjs --part 5 --no-summary --assert --pool 4 | tee c1-5.txt
 
-      - name: Part 7 — Something Tree's two intervals against the target-driven rules
-        shell: bash
-        run: |
-          set -o pipefail
-          node tools/harness/gates-c1.mjs --part 7 --no-summary --assert --pool 4 | tee c1-7.txt
+      # Part 7 (Something Tree's two interval entries against the target-driven rules) is RETIRED by R3c Part 0: the
+      # table it swept is deleted (⚖ user 2026-09-21), and `gates-c1 --part 7` now REFUSES by name rather than
+      # comparing the derived defaults with themselves.
 
       - name: Summary
         if: always()
         shell: bash
         run: |
           {
-            echo '## C1 — consumers and the rider'
+            echo '## C1 — consumers'
             echo ''
             echo '```'
-            cat c1-5.txt c1-7.txt 2>/dev/null | grep -E 'VERDICT|REFUSED|^RED|^GREEN' || echo 'no output'
+            cat c1-5.txt 2>/dev/null | grep -E 'VERDICT|REFUSED|^RED|^GREEN' || echo 'no output'
             echo '```'
           } >> "$GITHUB_STEP_SUMMARY"
 

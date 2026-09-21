@@ -865,7 +865,8 @@ order**:
 
 The generic **kind order** is `toggles → upgrades → buyables → challenges → clickables → reset` (one-off purchases before
 repeatable ones; the reset last, so a tick's purchases spend the pre-reset balance). A table may give its own
-`kindOrder` (both shipped tables do: every A1/A2 number was measured with the reset first). Features of one layer run in
+`kindOrder` (ptr's table does, and Something Tree's did until R3c deleted it: every A1/A2 number was measured with the
+reset first). Features of one layer run in
 that order inside the layer's `automate()`. Measured (S1-2k, diff 1): the generic order reaches the pinned marks slightly
 earlier than reset-first — ptr A1-3 1322 / 2321 / 2893 vs 1361 / 2360 / 2936; Something Tree 301 vs 308 to unlock:upg:12
 and 302 / 392 / 572 vs 309 / 399 / 579 to the primitive marks.
@@ -1528,8 +1529,9 @@ behind it. A feature may carry a LIST of records (ptr's `reset:q` has three: R2'
 - a record's `commit` is not an ancestor of HEAD;
 - a record's `gate` appears in no row of `tools/harness/results/SUMMARY.md` (a row whose first cell begins with the id)
   **and** the record names no CI `run` — for a gate that wrote its rows only to CI job output (R3b-2's did);
-- `unverified` records are LISTED, never failed, and never given an invented gate id (Something Tree's `reset:unlock`
-  and `buyables:fundamental`, both "A1 table").
+- `unverified` records are LISTED, never failed, and never given an invented gate id (the only two shipped ones were
+  Something Tree's `reset:unlock` and `buyables:fundamental`, both "A1 table" — gone with its table in R3c; the unit
+  leg now constructs them).
 
 ⚠ It found two stale citations on its first run: ptr's `buyables:e` and `buyables:t` cited "gate R1′-2.2" and "R1′-2.4",
 which appear in no SUMMARY row — the measurements are R1′-1's rows "C the Enhance reserve only" and "B Extra Time
@@ -1554,7 +1556,7 @@ in (gate S1-1 checks both agree at every tick, in Node and in the page): `hasUpg
 entry whose gate is in SUMMARY and whose commit is on `main` — `tools/auto-tables.mjs` says which is missing. The a1 CI
 job picks the game up by the file existing.
 
-## The two tables (measured defaults)
+## The table (measured defaults), and the TABLE-LESS control
 
 Each row's WHY is the entry's provenance record; the full narrative the `.js` files carried as comments is below the
 table, verbatim.
@@ -1570,12 +1572,49 @@ table, verbatim.
 | ptr | `reset:q` | `gain>=2\|turn@10/30x/5/0/100` + gate `!hasMilestone('q',4) \|\| player.h.unlocked` | R2 (R2-S1: `gain>=2`, q milestone 0's own requirement), V4 (V4-m21: the PAUSE that lands M21 at 28058), R3b-2 (R3b2-2, CI run 35553187707: the ROW CYCLE, weight 10, M25 at 35778) — three records |
 | ptr | `reset:h` | `always\|turn@1/30x/5/0/100` | R3b-2 (R3b2-2, CI run 35553187707): `always` inside its turn; on its own it is the starvation the user hit by hand |
 | ptr | `challenges:h` | `sequential\|give-up@0.1/30/2x` + gate `hasMilestone('q',5)` | R3a (R3a-1): the EXIT rule, and the digest's own advice (L3.9) minus the half measurement showed to be wrong |
-| something | `reset:unlock` | `always` | A1 table — **unverified** (no SUMMARY row measures it against an alternative) |
-| something | `reset:fundamental` | `interval>=5` | A1-3: `gain>=1` resets about every tick and starves unlock gain; 5 s → 308 game-s to unlock:upg:12 of 2/5/10/20/30/60 — ⚠ an INTERVAL, and C1's rider (gate C1-7, S01–S05 twice) found the constant-free `rate-peak@0/0` **54 game-s sooner at every mark S02–S05**; NOT moved, because every pinned Something Tree S01–S05 row would move with it (⚖ the user's) |
-| something | `reset:primitive` | `interval>=90` | A2-1 sweep: 90 s → 399 / 579 game-s to primitive ms 1 / ms 2 (60 → 429 / 17109; 120 → 429 / 669; 5 = 10 = `always` = `gain>=1` → 501 / —) — ⚠ an INTERVAL, and C1's rider (gate C1-7) found NO target-driven rule that matches it (each of five loses 39–372 game-s by S05, or never reaches it) |
-| something | `buyables:fundamental` | `buyMax` | A1 table (none of 11–22 defines `buyMax`: bought one at a time) — **unverified** |
 
-Everything else in both games is derived.
+Everything else in ptr is derived.
+
+### Something Tree — the table-less control (R3c Part 0)
+
+⚖ User, 2026-09-21: *"We can discard the Something Tree data"* — asked, and the reading chosen was **delete its
+automation table**. `games-auto/something.json` and the manifest's `auto` are gone, so Something Tree runs purely on the
+DERIVED defaults like the other 169 games, and it stays the arc's generality control: a control for the DERIVATION
+rather than for a tuned table. Its four entries were `reset:unlock always` (unverified), `reset:fundamental
+interval>=5`, `reset:primitive interval>=90` and `buyables:fundamental buyMax` (unverified), with the reset-first
+`kindOrder`; their records and the narrative are kept below as history.
+
+**Old → new, S01–S05, fresh, diff 1, profile all** (twice equal, R3c):
+
+| mark | the table (to R3c) | the DERIVED defaults | what loses it |
+|---|---|---|---|
+| S01 first fundamental reset | 6 | **6** | — |
+| S02 unlock:upg:12 | 308 | **never** (20,000 game-s) | `reset:unlock` = `gain>=2x` |
+| S03 primitive reset ≥ 1 | 309 | never | (behind S02) |
+| S04 primitive ms 1 | 399 | never | (behind S02) |
+| S05 primitive ms 2 | 579 | never | (behind S02) |
+| end state, 3000 ticks | 579 / `524822d719ceea18` | 3000 / `03c4ee9de249916b` | |
+
+⛔ **WHICH DERIVED DEFAULT LOSES IT, by one override per cell** (3000 ticks each): `reset:unlock=always` ALONE restores
+every mark (6 · 455 · 456 · 507 · 901); `reset:fundamental=interval>=5`, `reset:primitive=interval>=90`,
+`buyables:fundamental=buyMax` and the reset-first `kindOrder` each alone reach S01 only; all five together reproduce
+the old leg byte for byte (579 / `524822d719ceea18`, full hash `916b30e1b0c9830e`). `unlock` is a NORMAL row-0 layer
+with exponent 0.1 whose points only buy the unlock upgrades (unlock:upg:12 costs 1e5), and `gain>=2x` on it fires **7
+times and never again**: each reset needs the gain to reach twice the held amount, which at `points^0.1` asks for
+points ~2^10 = 1024× higher every time, while `fundamental`'s resets keep wiping points. That is a finding about the
+derivation — `gain>=2x` is the wrong default for a layer whose gain is a steep ROOT of its base and whose currency
+is kept and SPENT on one-off unlocks — and it is exactly what this control now exists to show. Not changed here: the
+derivation reaches 170 games and a move is a slice of its own.
+
+**What the pins did** (`tools/harness/lib.mjs`): a pin that compares HEAD with a BASELINE COMMIT whose table said the
+old entries (`gates-s1` part 1's four Something rows, and its part 2 sweeps / 2k) now NAMES that configuration as
+`SOMETHING_OLD_TABLE` and does not move; a leg that exists to watch the derivation (`gates-v5 --part 5`'s Something
+row; the R2 / R3a / R3b / V4 L3 cells, which were never pinned to a value) now runs on the derived defaults and was
+re-recorded as DATA with this ruling as the cause. `gates-c1 --part 7` (the rider that swept the two interval
+entries) is RETIRED and refuses by name. The CI `a1` job and M1's `both` leg keep Something Tree by its ROLE
+(`TABLELESS_CONTROL`), not by the file. The fixtures `snapshots/something/all/S01–S05` are UNCHANGED: the derived
+defaults reach S01 alone, so a re-recorded set would be one fixture of five, and each committed one is reproduced byte
+for byte by the named old configuration (docs/harness.md).
 
 ### The narrative the `.js` tables carried (moved here by C1, verbatim)
 
@@ -1839,7 +1878,7 @@ one line each of them would give a reader who is looking at the tab, not at the 
 ⚠ Author-written text rendered through `display-text`, which is `v-html`: the loader escapes it (`escapeText`).
 ```
 
-#### `games-auto/something.js` — every comment it carried, verbatim, by the entry it annotated
+#### `games-auto/something.js` — every comment it carried, verbatim, by the entry it annotated (the table is DELETED since R3c; kept as history)
 
 **`(file header)`**
 

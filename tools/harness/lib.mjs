@@ -283,3 +283,23 @@ export function gateCoverage(rows, roster, { label = 'gate' } = {}) {
 export function coverageLine(c, label = 'gate') {
   return `${label} VERDICT: games ${c.games}/${c.expected}; rows ${c.rows - c.red}/${c.rows}; ${c.red} RED`;
 }
+
+// ---- R3c Part 0: Something Tree has NO automation table --------------------------------------------------------------
+// ⚖ User, 2026-09-21: "We can discard the Something Tree data" — asked, and the reading chosen was "delete its automation
+// table". Something Tree now runs on the DERIVED defaults like the other 169 games and stays the arc's generality
+// control: the control for the DERIVATION rather than for a tuned table. Two consumers used to find it as "a game with
+// an automation table" and now find it by this ROLE instead — the a1 CI job's game set (`ls games-auto/*.json` ∪ this)
+// and M1's `both` leg (`page.mjs`). ⚠ The control must have NO table: `loader/census.test.mjs` asserts it.
+export const TABLELESS_CONTROL = 'something';
+// The deleted table, NAMED as a configuration (plan §14d.2 item 14: a pin is a measurement of a CONFIGURATION). Every
+// Something Tree number pinned before R3c was measured under it, and `--auto-opt` with this string reproduces the old
+// leg byte for byte — full hash included (measured at R3c: diff 1, 3000 ticks → S05 at 579, `hashGame`
+// `524822d719ceea18`, full hash `916b30e1b0c9830e`, the same three the table gave). A pin that compares against a
+// BASELINE COMMIT — whose table said exactly this — names it; a leg that is a control for the derivation does not.
+export const SOMETHING_OLD_TABLE = [
+  'kindOrder=toggles,reset,upgrades,buyables,challenges,clickables',
+  'policy:reset:unlock=always',
+  'policy:reset:fundamental=interval>=5',
+  'policy:reset:primitive=interval>=90',
+  'policy:buyables:fundamental=buyMax',
+].join(';');

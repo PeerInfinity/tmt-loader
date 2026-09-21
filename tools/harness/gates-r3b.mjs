@@ -52,7 +52,7 @@ const READING = [
   '21,000 ticks, diff 1, --profile all, the stall watch OFF — so every row of part 1 ends at 37048 game-seconds and',
   'the quirk counts ARE comparable (the planner\'s own table read its control 5,000 game-s later than its other rows',
   'and said so). L1 = from all/M22.json → M26, the rung\'s own leg. L2 = a FRESH game → M12, the opening\'s',
-  'regression column. L3 = Something Tree S01–S05 with games-auto/something.js unchanged — the generality control,',
+  'regression column. L3 = Something Tree S01–S05 on the DERIVED defaults (no table since R3c Part 0) — the generality control,',
   'where "no change" is the result. A cell\'s label is the whole --auto-opt string it ran, so a row names the',
   'configuration it measured (§14d.2 item 14). "—" for a mark means NOT REACHED inside the leg, which is a result.',
 ].join(' ');
@@ -335,7 +335,7 @@ async function part4() {
 async function part5() {
   await sweep({ gate: 'R3b-5 INERTNESS —', leg: 'L2', cells: [cell('', 'the OPENING to M12 with the table as it ships: no cycle, and `runtimeState()` / `player.au` key sets as R3a left them')] });
   await sweep({ gate: 'R3b-5 INERTNESS —', leg: 'L15m24', cells: [cell('', 'M15 → M24 with the table as it ships: every mark of the rung, and the state AT M24')] });
-  await sweep({ gate: 'R3b-5 INERTNESS —', leg: 'L3', cells: [cell('', 'Something Tree S01–S05, games-auto/something.js unchanged: "no change" is the result')] });
+  await sweep({ gate: 'R3b-5 INERTNESS —', leg: 'L3', cells: [cell('', 'Something Tree S01–S05 on the DERIVED defaults (no table since R3c Part 0): "no change" is the result')] });
   const c = rows.filter((r) => r.ok).length;
   row({ gate: 'R3b-5 VERDICT: the pins this slice must not move', id: 'both', ok: c === rows.length, ticks: null, gameSeconds: null, diff: 1, hash: null,
     notes: `${c}/${rows.length}. The opening must read 6718 / \`82eee26f947b2b2e\`; the runtime key set gains \`cycle\` ONLY where a cycle exists, so the L2 row's key list is the claim` });

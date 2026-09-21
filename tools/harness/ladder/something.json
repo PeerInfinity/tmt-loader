@@ -1,7 +1,7 @@
 {
   "game": "something",
   "format": "docs/harness.md#the-ladder-file",
-  "plan": "NewDocs/plans/tmt/tmt-automation-plan.md §7 (the generality control) and §10a.2 item 3; predicates = gates-s1.mjs MARKS.a1st / a2st verbatim",
+  "plan": "NewDocs/plans/tmt/tmt-automation-plan.md §7 (the generality control) and §10a.2 item 3; predicates = gates-s1.mjs MARKS.a1st / a2st verbatim. ⚠ R3c Part 0 (§45): the automation table these marks were reached under is DELETED; on the DERIVED defaults S01 holds at 6 and S02–S05 are NOT reached (reset:unlock = gain>=2x fires 7 times, then never) — every `reached` below is the old table, reproducible as lib.mjs SOMETHING_OLD_TABLE",
   "digest": null,
   "diffRule": "a mark's diff = the coarsest calibration diff whose game-seconds at the mark are within 2 % of diff 1's (H1-3); null = not calibrated",
   "helpers": {},

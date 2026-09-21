@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://peerinfinity.github.io/tmt-loader/schemas/games-auto.schema.json",
   "title": "tmt-loader per-game automation table (games-auto/<id>.json)",
-  "description": "DATA only: what a game does not declare to the engine. Every key is documented in docs/automation.md, \"The two tables\".",
+  "description": "DATA only: what a game does not declare to the engine. Every key is documented in docs/automation.md, \"The table (measured defaults)\".",
   "type": "object",
   "required": [
     "formatVersion",

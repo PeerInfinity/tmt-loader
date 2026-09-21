@@ -4862,7 +4862,7 @@
 
   // ---- derivation: features from the engine's own data + the per-game DATA table ------------------------------------------
   // tmtLoader.autoTable — the parsed `games-auto/<id>.json` the HOST hands in before this file runs (the page fetches it,
-  // the harness reads it; absent = `{}`) — every key in docs/automation.md, "The two tables".
+  // the harness reads it; absent = `{}`) — every key in docs/automation.md, "The table (measured defaults)".
   // <table-schema> ⛔ ONE SOURCE (C1, §40-R ruling B). This block is PURE — it touches no game global — because it is
   // run twice: here, at load, on the table the host hands in; and by `tools/auto-tables.mjs`, which extracts it
   // between the two marker comments, writes `schemas/games-auto.schema.json` from TABLE_SCHEMA (`--check` fails if
@@ -4891,7 +4891,7 @@
     $schema: 'https://json-schema.org/draft/2020-12/schema',
     $id: 'https://peerinfinity.github.io/tmt-loader/schemas/games-auto.schema.json',
     title: 'tmt-loader per-game automation table (games-auto/<id>.json)',
-    description: 'DATA only: what a game does not declare to the engine. Every key is documented in docs/automation.md, "The two tables".',
+    description: 'DATA only: what a game does not declare to the engine. Every key is documented in docs/automation.md, "The table (measured defaults)".',
     type: 'object', required: ['formatVersion', 'id'], additionalProperties: false,
     'x-experimental': ['the `|turn@…` and `|give-up@…` modifiers inside a `policies` / `alternatives` string (R3b, R3a)', 'every `challenges:*` entry of `policies`, `alternatives`, `order` and `gates`', 'whether a table may state `until` / `priority` — today only `while` has a table form, `gates` (unanswered, left open)'],
     properties: {

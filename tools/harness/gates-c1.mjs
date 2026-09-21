@@ -20,7 +20,7 @@
 //         `buyables:t` over the whole stretch `all/M10.json` → M16 (report, not decide: no table entry changes).
 // Part 6  THE SCHEMA LEGS: `loader/auto-tables.test.mjs` + `loader/currency.test.mjs`, one row per test — an unknown key,
 //         an unknown version, a missing provenance record, a non-ancestor commit, each failing BY NAME.
-// Part 7  THE RIDER (⚖ 13d.2): Something Tree's two INTERVAL literals against the target-driven rules, S01–S05, twice.
+// Part 7  RETIRED by R3c Part 0 (the table it swept is deleted) — was THE RIDER (⚖ 13d.2): Something Tree's two INTERVAL literals against the target-driven rules, S01–S05, twice.
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
@@ -42,7 +42,7 @@ const row = (r) => { rows.push(r); console.log(`${r.ok ? 'GREEN' : 'RED  '} ${r.
 // ⛔ THE FLOOR EACH PART MUST REACH (`--assert`), counted from what each part EMITS.
 // 1: 18 sample games (6 named + a dozen) + purity + upgrades + accuracy verdict · 2: coverage, control, recovery, verdict · 3: four + verdict
 // 4: four legs + verdict · 5: planner rows, four stretch cells, verdict · 6: fifteen tests + verdict · 7: eleven cells + verdict
-const ROWS = { 1: 21, 2: 4, 3: 5, 4: 5, 5: 6, 6: 16, 7: 12 };
+const ROWS = { 1: 21, 2: 4, 3: 5, 4: 5, 5: 6, 6: 16 };   // 7: RETIRED by R3c Part 0 (see RETIRED below)
 
 const DATA = path.join(REPO, 'games-data');
 const readData = (id) => JSON.parse(fs.readFileSync(path.join(DATA, id + '.json'), 'utf8'));
@@ -242,21 +242,17 @@ async function part6() {
   row({ gate: 'C1-6 VERDICT', id: '—', ok: r.code === 0 && tests.length === ROWS[6] - 1 && tests.every((t) => t.ok), notes: `exit ${r.code}; ${tests.filter((t) => t.ok).length}/${tests.length} tests` });
 }
 
-// ---- Part 7 ---------------------------------------------------------------------------------------------------------
-const SOMETHING = { diff: 1, ticks: 3000, 'wall-ms': 900000, ladder: path.join(REPO, 'tools/harness/ladder/something.json'), to: 'S05', stall: 1000000 };
-const SMARKS = ['S01', 'S02', 'S03', 'S04', 'S05'];
-const RULES = ['gain>=2x', 'gain>=2x-unit', 'unlocks-purchase', 'rate-peak@0/0', 'rate-peak@0.1/30'];
-async function part7() {
-  const cells = [{ label: '', opt: '' }, ...['fundamental', 'primitive'].flatMap((f) => RULES.map((p) => ({ label: `policy:reset:${f}=${p}`, opt: `policy:reset:${f}=${p}` })))];
-  const lines = await runCells({ id: 'something', cells, flags: Object.entries(SOMETHING), pool: POOL, repeat: REPEAT, stop: 'S05' });
-  const ctl = lines[0];
-  lines.forEach((l, i) => row({ gate: `C1-7 Something Tree S01–S05 — ${cells[i].label || 'the table as it ships: fundamental interval>=5, primitive interval>=90 (control)'}`, id: 'something', leg: 'fresh, diff 1, profile all, 3000 ticks, stop at S05',
-    ok: !!l.ok && (REPEAT < 2 || l.twiceEqual === true), ticks: l.ticks, gameSeconds: l.gameSeconds, diff: 1, hash: l.hashGame,
-    notes: `${SMARKS.map((m) => `${m} ${l.marks[m] ?? '—'}`).join(' · ')}; twice equal ${l.twiceEqual}${i ? `; against the control: ${SMARKS.map((m) => (l.marks[m] == null ? '—' : ctl.marks[m] == null ? '+' : (l.marks[m] - ctl.marks[m] >= 0 ? '+' : '') + (l.marks[m] - ctl.marks[m]))).join(' / ')}` : ''}` }));
-  row({ gate: 'C1-7 VERDICT (report: the table changes only if a target-driven rule matches or beats an interval everywhere)', id: 'something', ok: rows.every((r) => r.ok), notes: `${rows.filter((r) => r.ok).length}/${rows.length}` });
-}
+// ---- Part 7 — RETIRED by R3c Part 0 -------------------------------------------------------------------------------
+// The rider swept Something Tree's two INTERVAL table entries (`reset:fundamental interval>=5`, `reset:primitive
+// interval>=90`) against five target-driven rules. ⚖ User, 2026-09-21: "We can discard the Something Tree data" →
+// DELETE ITS AUTOMATION TABLE — so neither entry exists and a sweep "against the table as it ships" would compare the
+// derived defaults with themselves and go GREEN for nothing. Retired, not emptied: `--part 7` REFUSES by name. Its
+// twelve rows stay in results/SUMMARY.md as the record of what the entries measured (the `rate-peak@0/0` finding
+// included), and the CI step that ran it is gone from the `c1-consumers` job.
+const RETIRED = { 7: 'the Something Tree interval rider — RETIRED by R3c Part 0: games-auto/something.json is deleted (⚖ user 2026-09-21), so the entries it swept no longer exist; its rows in results/SUMMARY.md are the record' };
 
-const PARTS = { 1: part1, 2: part2, 3: part3, 4: part4, 5: part5, 6: part6, 7: part7 };
+const PARTS = { 1: part1, 2: part2, 3: part3, 4: part4, 5: part5, 6: part6 };
+if (RETIRED[PART]) { console.error(`REFUSED: part ${PART} is ${RETIRED[PART]}`); process.exit(2); }
 if (!PARTS[PART]) { console.error(`no part ${PART}`); process.exit(2); }
 await PARTS[PART]();
 const red = rows.filter((r) => !r.ok).length;

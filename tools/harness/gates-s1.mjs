@@ -18,7 +18,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { spawn, execFileSync } from 'node:child_process';
 import { chromium } from 'playwright';
-import { REPO, parseArgs, startServer, readManifest, headCommit, treeDirty, writeJSON, entryOnly } from './lib.mjs';
+import { REPO, parseArgs, startServer, readManifest, headCommit, treeDirty, writeJSON, entryOnly, SOMETHING_OLD_TABLE } from './lib.mjs';
 import { runPage } from './page.mjs';
 import { checkManifest } from './check-manifest.mjs';
 import { nodeIds, compareIds } from './check-goldens.mjs';
@@ -56,18 +56,23 @@ const A2_CONFIG = [
   'exclude=buyables:t',
 ].join(';');
 const KINDS_PINNED_PTR = KINDS_PINNED + ';' + A2_CONFIG;
+// R3c Part 0: the same rule for Something Tree. Its table was DELETED (⚖ user 2026-09-21), and these four pins compare
+// HEAD against BASELINE COMMITS whose table said exactly `SOMETHING_OLD_TABLE` — so the pins name that configuration and
+// stay a regression test of the CODE. The baseline side runs WITHOUT the opt, as before (at those commits the table's
+// own answer). Measured at R3c: the named configuration reproduces the table's leg byte for byte, full hash included.
+const KINDS_PINNED_ST = KINDS_PINNED + ';' + SOMETHING_OLD_TABLE;
 // Every pinned SUMMARY row: [ticks, full hash] per mark (A1-3 @ 3bc12bf rows 154–169; A2-3 @ b695e47 rows 243–245;
 // A2-3 next stall row 260; A2-1 @ 71da72e rows 187–192), and the commit that reproduces it as it was recorded.
 const PINS = [
   { key: 'a1-3-ptr', tag: 'A1-3 ptr', id: 'ptr', pinOpt: KINDS_PINNED_PTR, baseline: '3bc12bf', marks: 'a1ptr', o: { diff: 1, ticks: 14000 }, want: [[1361, 'd76c70bf74ede9ba'], [2360, 'f8a1534d326a4840'], [2936, 'dc00ee1692610100']] },
   { key: 'a2-3-ptr', tag: 'A2-3 ptr', id: 'ptr', pinOpt: KINDS_PINNED_PTR, baseline: '17260e03', marks: 'a2ptr', o: { diff: 1, ticks: 30000, 'wall-ms': 540000 }, want: [[3550, '0513ad9b24806ecc'], [6037, 'f226c34064109dcb'], [8035, '67743dd40de0b570']] },
   { key: 'stall-ptr', tag: '§12d stall ptr', id: 'ptr', pinOpt: KINDS_PINNED_PTR, baseline: '17260e03', marks: 'a2ptr', o: { diff: 1, ticks: 30000, 'marks-continue': true, stall: 3600, 'stall-seen': true, 'wall-ms': 540000 }, stall: { ticks: 14131, hash: '46df73d4545bb4e2', lastProgress: 10531 } },
-  { key: 'a1-3-st', tag: 'A1-3 something', id: 'something', baseline: '3bc12bf', marks: 'a1st', o: { diff: 0.05, ticks: 14000 }, want: [[102, 'bf6f8809a163efd8'], [3733, '0253605cd2e69318']] },
+  { key: 'a1-3-st', tag: 'A1-3 something', id: 'something', pinOpt: KINDS_PINNED_ST, baseline: '3bc12bf', marks: 'a1st', o: { diff: 0.05, ticks: 14000 }, want: [[102, 'bf6f8809a163efd8'], [3733, '0253605cd2e69318']] },
   // diff 1 on Something Tree too: a game that unlocks a layer INSIDE gameLoop shows a one-tick timing difference only at
   // a coarse diff (S1's first derived reset unlocked() read tmp.layerShown: 310 / 400 / 580 here — see tmt-auto.js)
-  { key: 'a1-3-st-d1', tag: 'A1-3 something diff 1', id: 'something', baseline: '3bc12bf', marks: 'a1st', o: { diff: 1, ticks: 3000 }, want: [[6, 'c3444d05fd80bba0'], [308, '86da1eaa518021ad']] },
-  { key: 'a2-1-st-d1', tag: 'A2-1 something diff 1', id: 'something', baseline: '71da72e', marks: 'a2st', o: { diff: 1, ticks: 20000, 'wall-ms': 540000 }, want: [[309, '6da92645ec93a9ab'], [399, '53240faafd36f329'], [579, '30d121d791768aa4']] },
-  { key: 'a2-1-st', tag: 'A2-1 something', id: 'something', baseline: '17260e03', marks: 'a2st', o: { diff: 0.05, ticks: 40000, 'wall-ms': 540000 }, want: [[4163, '0c88dcd6b5a9e1cb'], [5963, '5682500e1f849fb8'], [9563, '449775de97d4af2d']] },
+  { key: 'a1-3-st-d1', tag: 'A1-3 something diff 1', id: 'something', pinOpt: KINDS_PINNED_ST, baseline: '3bc12bf', marks: 'a1st', o: { diff: 1, ticks: 3000 }, want: [[6, 'c3444d05fd80bba0'], [308, '86da1eaa518021ad']] },
+  { key: 'a2-1-st-d1', tag: 'A2-1 something diff 1', id: 'something', pinOpt: KINDS_PINNED_ST, baseline: '71da72e', marks: 'a2st', o: { diff: 1, ticks: 20000, 'wall-ms': 540000 }, want: [[309, '6da92645ec93a9ab'], [399, '53240faafd36f329'], [579, '30d121d791768aa4']] },
+  { key: 'a2-1-st', tag: 'A2-1 something', id: 'something', pinOpt: KINDS_PINNED_ST, baseline: '17260e03', marks: 'a2st', o: { diff: 0.05, ticks: 40000, 'wall-ms': 540000 }, want: [[4163, '0c88dcd6b5a9e1cb'], [5963, '5682500e1f849fb8'], [9563, '449775de97d4af2d']] },
 ];
 
 const a = parseArgs(process.argv.slice(2), ['no-summary']);
@@ -351,16 +356,18 @@ async function part2() {
 // detector (3600 game-s) or the wall.
 const SWEEPS = {
   '2s-p': { id: 'ptr', feature: 'reset:p', marks: 'a1ptr', ticks: 14000, values: ['interval>=10', 'gain>=2x', 'gain>=4x', 'unlocks-purchase', 'always'], def: 'interval>=10', note: 'A1-3 at diff 1: 1361 / 2360 / 2936' },
-  '2s-f': { id: 'something', feature: 'reset:fundamental', marks: 'a1st', ticks: 14000, values: ['interval>=5', 'gain>=2x', 'gain>=4x', 'unlocks-purchase', 'always'], def: 'interval>=5', note: 'A1-3 at diff 1: (i) 6, (ii) 308' },
-  '2s-q': { id: 'something', feature: 'reset:primitive', marks: 'a2st', ticks: 20000, values: ['interval>=90', 'gain>=2x', 'gain>=4x', 'unlocks-purchase'], def: 'interval>=90', note: 'A2-1 at diff 1: 309 / 399 / 579' },
+  '2s-f': { id: 'something', feature: 'reset:fundamental', marks: 'a1st', ticks: 14000, values: ['interval>=5', 'gain>=2x', 'gain>=4x', 'unlocks-purchase', 'always'], def: 'interval>=5', base: SOMETHING_OLD_TABLE, note: 'A1-3 at diff 1: (i) 6, (ii) 308' },
+  '2s-q': { id: 'something', feature: 'reset:primitive', marks: 'a2st', ticks: 20000, values: ['interval>=90', 'gain>=2x', 'gain>=4x', 'unlocks-purchase'], def: 'interval>=90', base: SOMETHING_OLD_TABLE, note: 'A2-1 at diff 1: 309 / 399 / 579' },
 };
 const TABLELESS = 'gain>=2x';
+// R3c Part 0: a Something Tree sweep varies ONE feature against the rest of the table it was measured beside; that
+// table is deleted, so the sweep names it (`base`, the later `policy:` key wins) — otherwise every value would move.
 async function part2s(key) {
   const S = SWEEPS[key];
   const M = MARKS[S.marks], mf = marksFile(M);
   const o = { profile: 'all', diff: 1, ticks: S.ticks, marks: mf, stall: 3600, 'stall-seen': true, 'wall-ms': 540000 };
   const vals = [...S.values, TABLELESS];
-  const rs = vals.map((v) => [v, job(S.id, { ...o, 'auto-opt': `policy:${S.feature}=${v}` })]);
+  const rs = vals.map((v) => [v, job(S.id, { ...o, 'auto-opt': `${S.base ? S.base + ';' : ''}policy:${S.feature}=${v}` })]);
   const done = [];
   for (const [v, p] of rs) done.push([v, await p]);
   const gs = (m) => (m ? m.gameSeconds : null);
@@ -381,7 +388,10 @@ async function part2k() {
   const sets = [['ptr', 'a1ptr', 14000, '1361 / 2360 / 2936'], ['something', 'a1st', 3000, '6 / 308'], ['something', 'a2st', 20000, '309 / 399 / 579']];
   const rs = sets.map(([id, mk, ticks]) => {
     const o = { profile: 'all', diff: 1, ticks, marks: marksFile(MARKS[mk]), stall: 3600, 'stall-seen': true, 'wall-ms': 540000 };
-    return [job(id, o), job(id, { ...o, 'auto-opt': `kindOrder=${GENERIC_KIND_ORDER}` })];
+    // R3c Part 0: "the table's reset-first order" on Something Tree is the deleted table, named; its kindOrder is
+    // overridden by the later key on the generic leg
+    const base = id === 'something' ? SOMETHING_OLD_TABLE : null;
+    return [job(id, base ? { ...o, 'auto-opt': base } : o), job(id, { ...o, 'auto-opt': `${base ? base + ';' : ''}kindOrder=${GENERIC_KIND_ORDER}` })];
   });
   for (let i = 0; i < sets.length; i++) {
     const [id, mk, , summary] = sets[i];

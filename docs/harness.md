@@ -111,6 +111,14 @@ appears ONLY when it has something to say — so a run with the tracker off writ
 V3 and every committed snapshot stays valid (`gates-v3 --part 2` asserts the record's KEY SET, not just its values). `dirty` ignores `tools/harness/snapshots` and
 `tools/harness/results`.
 
+⚠ **Something Tree's fixtures (`snapshots/something/all/S01–S05`) were written under an automation table that R3c
+DELETED** (⚖ user 2026-09-21). They are kept byte-unchanged, and their configuration is now NAMED rather than
+implied: `--auto-opt "$SOMETHING_OLD_TABLE"` (`tools/harness/lib.mjs`) reproduces every one of them — `hashGame` and full
+hash — from a fresh game. The derived defaults reach S01 only (6 game-s, `hashGame` `4d99d54bf4f3181d` against the
+fixture's `2fc43f3274a79fb0`), so there is no derived S02–S05 to record; a leg resumed from one of these fixtures
+without that opt continues the STATE under the derived defaults, which is what their consumers (`gates-p1a`,
+`gates-p1b`) want of a starting point.
+
 `--from-snapshot` boots through the existing `--load-from` path — one child calls the game's own
 `importSave(btoa(player), true)` (`tmtLoader.loadFrom`), a fresh child boots on the storage that wrote — then restores
 `runtime` and sets `tmtLoader.ticks` / `gameSeconds` to the snapshot's counts, so **ticks and game-seconds continue**. The

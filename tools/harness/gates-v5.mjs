@@ -372,7 +372,14 @@ const OPEN_PIN = { gs: 6718, hashGame: '82eee26f947b2b2e' };
 const R3A_PIN = { gs: 42618, hashGame: 'fceef65ba0f59011', ch: '13/2/11' };
 // measured at `f37b2029f` (pre-V5), 2026-09-20, in a control worktree — M24's hash is also the `all/M24` fixture's own
 const M24_PIN = { gs: 30736, hashGame: 'b73aef45c9ce7d08', marks: { M16: 17058, M17: 23492, M18: 25598, M19: 25937, M20: 26612, M21: 28058, M22: 30618, M23: 30683, M24: 30736 } };
-const S05_PIN = { gs: 579, hashGame: '524822d719ceea18', marks: { S01: 6, S02: 308, S03: 309, S04: 399, S05: 579 } };
+// ⛔ RE-RECORDED BY R3c PART 0, AS DATA, AND THE CAUSE IS A RULING, NOT A REGRESSION: Something Tree's automation
+// table was DELETED (⚖ user 2026-09-21, "We can discard the Something Tree data" → "delete its automation table"), so
+// this leg is now the generality control for the DERIVED defaults. Old: 579 / `524822d719ceea18`, S01–S05 at
+// 6 · 308 · 309 · 399 · 579 under the table. New, measured twice equal at R3c: the leg runs its whole 3000 ticks and
+// reaches S01 ONLY (6) — the derived `reset:unlock` = `gain>=2x` (a NORMAL layer, exponent 0.1) fires 7 times and then
+// never again, so unlock:upg:12 (1e5 Unlock Points) never comes; `reset:unlock=always` alone restores every mark
+// (455 · 456 · 507 · 901). A finding about the DERIVATION, which is what this control now exists to watch.
+const S05_PIN = { gs: 3000, hashGame: '03c4ee9de249916b', marks: { S01: 6, S02: null, S03: null, S04: null, S05: null } };
 // the record's SHAPE as R3b-1 left it, measured at `f37b2029f` (gates-r3b part 5's L2 row) — V5 adds NOTHING here
 const RT_KEYS = ['lastReset', 'loopNo', 'ranAt', 'stats'];
 const AU_KEYS = ['achievements', 'armLocked', 'buyables', 'challenges', 'clickables', 'disclosed', 'edits', 'features', 'milestones', 'points', 'primeMiles', 'spentOnBuyables', 'unlocked', 'upgrades'];
@@ -400,7 +407,7 @@ async function part5() {
   row({ gate: 'V5-5 R3a’s leg from all/M22 — the give-up rule as it ships (R = 2×, the derived default)', id: 'ptr', leg: 'from all/M22, 12000 ticks', ticks: r3a.ticks, gameSeconds: r3a.gameSeconds, hash: r3a.hashGame,
     ok: r3a.gameSeconds === R3A_PIN.gs && r3a.hashGame === R3A_PIN.hashGame && c && `${c.enter}/${c.exit}/${c.gaveUp}` === R3A_PIN.ch,
     notes: `${r3a.gameSeconds} / ${r3a.hashGame} (pin ${R3A_PIN.gs} / ${R3A_PIN.hashGame}); enter/exit/gaveUp ${c ? `${c.enter}/${c.exit}/${c.gaveUp}` : '—'} (pin ${R3A_PIN.ch}); runtimeState keys [${r3e.rt}] — R3a's two blocks and nothing of V5's` });
-  row({ gate: 'V5-5 Something Tree S01–S05, games-auto/something.js unchanged', id: 'something', leg: '3000 ticks to S05', ticks: st.ticks, gameSeconds: st.gameSeconds, hash: st.hashGame,
+  row({ gate: 'V5-5 Something Tree S01–S05 on the DERIVED defaults (no table since R3c)', id: 'something', leg: '3000 ticks to S05', ticks: st.ticks, gameSeconds: st.gameSeconds, hash: st.hashGame,
     ok: !!st.ok && st.gameSeconds === S05_PIN.gs && st.hashGame === S05_PIN.hashGame && Object.entries(S05_PIN.marks).every(([m, v]) => gsOf(st, m) === v),
     notes: `${st.gameSeconds} / ${st.hashGame} (pin ${S05_PIN.gs} / ${S05_PIN.hashGame}); marks ${['S01', 'S02', 'S03', 'S04', 'S05'].map((m) => `${m} ${gsOf(st, m) ?? '—'}`).join(' · ')}` });
   const n = rows.filter((r) => r.ok).length;

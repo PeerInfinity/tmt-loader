@@ -21,7 +21,8 @@ const clone = (o) => JSON.parse(JSON.stringify(o));
 test('the shipped tables validate, the published schema is the loader\'s, and the key list is read off the schema', () => {
   const c = checkTables();
   assert.deepEqual(c.problems, []);
-  assert.ok(c.rows.length >= 2 && c.rows.every((r) => r.ok), JSON.stringify(c.rows.filter((r) => !r.ok)));
+  // R3c Part 0: ONE shipped table (Something Tree's was deleted — ⚖ user 2026-09-21); an empty directory is a failure
+  assert.ok(c.rows.length >= 1 && c.rows.every((r) => r.ok), JSON.stringify(c.rows.filter((r) => !r.ok)));
   assert.equal(fs.readFileSync(path.join(REPO, 'schemas/games-auto.schema.json'), 'utf8'), schemaText(blk.TABLE_SCHEMA));
   const src = fs.readFileSync(path.join(REPO, 'loader/tmt-auto.js'), 'utf8');
   assert.match(src, /var TABLE_KEYS = Object\.keys\(TABLE_SCHEMA\.properties\);/, 'the loader keeps a SECOND key list');
@@ -78,7 +79,12 @@ test('a provenance commit that is NOT AN ANCESTOR fails by name, and so does a g
 });
 
 test('an UNVERIFIED record is listed, never failed — and never carries an invented gate id', () => {
-  const st = JSON.parse(fs.readFileSync(path.join(REPO, 'games-auto/something.json'), 'utf8'));
+  // R3c Part 0: the two shipped `unverified` records were Something Tree's, and its table is deleted — the leg now
+  // CONSTRUCTS them on a copy of ptr's table (the record form is still frozen in the schema and still legal)
+  const st = clone(ptr);
+  st.policies['reset:unlock'] = 'always'; st.policies['buyables:fundamental'] = 'buyMax';
+  st.provenance['reset:unlock'] = { unverified: true, note: 'constructed: no row measures this entry' };
+  st.provenance['buyables:fundamental'] = { unverified: true, note: 'constructed: no row measures this entry' };
   const r = checkProvenance(st, { labels, ancestor: always });
   assert.deepEqual(r.bad, []);
   assert.equal(r.unverified.length, 2);

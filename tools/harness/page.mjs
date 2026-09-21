@@ -12,7 +12,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { chromium } from 'playwright';
-import { REPO, GAMES, parseArgs, startServer, writeJSON, headCommit, readManifest, deepestSnapshot, assignShards, parseShard } from './lib.mjs';
+import { REPO, GAMES, parseArgs, startServer, writeJSON, headCommit, readManifest, deepestSnapshot, assignShards, parseShard, TABLELESS_CONTROL } from './lib.mjs';
 import { DRIVE_SRC } from './policy.mjs';
 
 const LOCAL = new Set(['127.0.0.1', 'localhost']);
@@ -2038,8 +2038,10 @@ async function gateMobile(browser, base, ids) {
 
       // --- leg 4: the two opt-ins TOGETHER. They compose today, and nothing was asserting it: the mobile layout
       // has to survive the `au` side layer and its tab, and the nav bar has to survive a second side node. Only
-      // for a game with an automation table — elsewhere the registry derives features but has nothing to drive.
-      if (readManifest(id).auto) {
+      // for a game with an automation table — elsewhere the registry derives features but has nothing to drive — and
+      // (R3c Part 0) for the TABLE-LESS control, Something Tree, which lost its table and is this leg's only 2.7 game:
+      // it keys on the ROLE now, not on the file (`lib.mjs` TABLELESS_CONTROL).
+      if (readManifest(id).auto || id === TABLELESS_CONTROL) {
         const both = await context.newPage();
         await both.goto(new URL(`index.html?mod=${encodeURIComponent(id)}&managed=1&mobile=1&automation=1`, base).href, { waitUntil: 'load' });
         const rb = await waitReady(both);

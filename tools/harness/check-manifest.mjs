@@ -122,7 +122,7 @@ export function checkManifest(id, { boot = true } = {}) {
   if (dirty) problems.push({ field: 'games pristine (working tree)', dirty });
   if ((m.patches || []).length) problems.push({ field: 'patches', note: 'L1 expects none', live: m.patches });
   // auto (A1; C1): optional per-game automation table, a JSON DOCUMENT outside the subtree prefix (games-auto/<id>.json),
-  // fetched by the page and validated by the loader against its own schema (docs/automation.md, "The two tables")
+  // fetched by the page and validated by the loader against its own schema (docs/automation.md, "The table (measured defaults)")
   if (m.auto !== undefined) {
     if (typeof m.auto !== 'string' || m.auto !== `games-auto/${id}.json`) problems.push({ field: 'auto', error: `must be "games-auto/${id}.json"`, live: m.auto });
     else if (!fs.existsSync(path.join(REPO, m.auto))) problems.push({ field: 'auto', error: 'file missing', live: m.auto });

@@ -39,7 +39,7 @@ const READING = [
   'snapshots/ptr/all/M15.json (16048 game-s) → M22, 14,000 ticks, diff 1, --profile all, the stall watch OFF; M16 is a',
   'COLUMN of that same run, never a starting point (a fixture bakes in the policy that produced it — plan §23).',
   'L2 = a FRESH game → M12, the opening\'s regression column (§14d.6). L3 = Something Tree S01–S05 with',
-  'games-auto/something.js unchanged — the generality control, where "no change" is the result. A cell\'s label is the',
+  'on the DERIVED defaults (no table since R3c) — the generality control, where "no change" is the result. A cell\'s label is the',
   'whole --auto-opt string it ran, so a row names the configuration it measured (§14d.2 item 14). "—" for a mark means',
   'NOT REACHED inside the leg, which is a result and not a failure: the curve beside it is the deliverable.',
   'ticks_ms and the 1-minute load are on every row; the pool changes ms/tick and never changes game-seconds.',
@@ -89,7 +89,7 @@ async function sweep({ gate, leg, cells, repeat = REPEAT, extra = {}, readout = 
     const c = cells[i];
     const ok = !!l.ok && (repeat < 2 || l.twiceEqual === true);
     row({ gate: `${gate} ${c.label || 'the table as it stands (control)'}`, id: L.id,
-      leg: `${leg}: ${leg === 'L1' ? 'from all/M15.json' : leg === 'L2' ? 'a FRESH game' : 'something, table unchanged'}, diff 1, profile all, ${L.flags.ticks} ticks, ${repeat} run(s)`,
+      leg: `${leg}: ${leg === 'L1' ? 'from all/M15.json' : leg === 'L2' ? 'a FRESH game' : 'something, derived defaults (no table since R3c)'}, diff 1, profile all, ${L.flags.ticks} ticks, ${repeat} run(s)`,
       ok, ticks: l.ticks, gameSeconds: l.gameSeconds, diff: 1, hash: l.hashGame,
       notes: `${marksOf(leg, l)}; ${repeat > 1 ? `twice equal: ${l.twiceEqual} (run 2 ${l.runs[1]?.gameSeconds}s/${l.runs[1]?.hashGame})` : 'ONE run'}; ${c.note ? c.note + '; ' : ''}resets ${acts(l)}; end ${readoutText(leg, l)}; ${box(l)}${l.error ? '; ERROR ' + l.error : ''}` });
   });
@@ -141,7 +141,7 @@ const PRUNED_CELLS = (f) => [
 const partQ = () => sweep({ gate: 'R2-S1 reset:q on L1 —', leg: 'L1', cells: RESET_CELLS('q') });
 const partP = () => sweep({ gate: 'R2-S3 reset:p on L2 —', leg: 'L2', cells: PRUNED_CELLS('p') });
 const partL3 = () => sweep({ gate: 'R2-S5 the DERIVED default on Something Tree —', leg: 'L3', cells: [
-  cell('', 'games-auto/something.js unchanged — every one of its three resets is a TABLE entry, so a moved DERIVED default must not move this leg at all'),
+  cell('', 'Something Tree on the DERIVED defaults (its table was deleted by R3c Part 0) — every reset here is now a derived default, so this leg MOVES when the derivation does'),
   cell('policy:reset:fundamental=gain>=2x-unit', 'the candidate forced onto a normal layer of another game'),
   cell('policy:reset:fundamental=gain>=2x', 'the shipped ratio rule on the same layer — the pair that isolates the empty purse'),
 ] });

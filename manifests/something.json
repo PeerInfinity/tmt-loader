@@ -137,7 +137,6 @@
     "trace_fields": 8
   },
   "patches": [],
-  "auto": "games-auto/something.json",
   "generated": {
     "by": "tmt-fork-census scripts/manifest.mjs",
     "commit": "27c6654",

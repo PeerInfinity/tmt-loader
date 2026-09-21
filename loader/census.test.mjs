@@ -243,7 +243,7 @@ test('a missing doc is a failure, not a pass', () => {
 // link for as long as they have been hosted. A reader bounded to one file name drops whoever put it elsewhere.
 // ---------------------------------------------------------------------------------------------------------------
 import { selfDeclared, checkSelfDeclared } from '../tools/games-table.mjs';
-import { GAMES, readManifest } from '../tools/harness/lib.mjs';
+import { GAMES, readManifest, TABLELESS_CONTROL } from '../tools/harness/lib.mjs';
 
 test('every manifest name, author and version IS the game’s own declaration', () => {
   const r = checkSelfDeclared();
@@ -336,5 +336,10 @@ test('games-auto/ and the manifests\' `auto` fields name the same games — what
     assert.equal(rel, `games-auto/${id}.json`, `manifests/${id}.json points its table at ${rel}`);
     assert.ok(fs.existsSync(path.join(REPO, rel)), `${rel} does not exist`);
   }
-  assert.ok(dir.length >= 2, `only ${dir.length} game(s) have a table — the a1 job would be gating almost nothing`);
+  // R3c Part 0: ONE table since Something Tree's was deleted (⚖ user 2026-09-21); the a1 job adds the TABLE-LESS
+  // control by role (lib.mjs TABLELESS_CONTROL), and that control must never grow a table — it would then be in the
+  // set twice and no longer a control for the derivation.
+  assert.ok(dir.length >= 1, 'no game has a table — the a1 job would be gating only the control');
+  assert.ok(!dir.includes(TABLELESS_CONTROL) && !JSON.parse(read(`manifests/${TABLELESS_CONTROL}.json`)).auto,
+    `the table-less control ${TABLELESS_CONTROL} has a table`);
 });

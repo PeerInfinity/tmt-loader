@@ -50,7 +50,7 @@ const READING = [
   'marks, the end game-second or the end hashGame is RED. L1 = from snapshots/ptr/all/M22.json (30618 game-s) → M26,',
   '12,000 ticks, diff 1, --profile all, the stall watch OFF. L15 = from all/M15.json → M22, 16,000 ticks — V4\'s own',
   'stretch, carried here only as an INERTNESS control. L2 = a FRESH game → M12, the opening\'s regression column.',
-  'L3 = Something Tree S01–S05 with games-auto/something.js unchanged — the generality control, where "no change" is',
+  'L3 = Something Tree S01–S05 on the DERIVED defaults (no table since R3c Part 0) — the generality control, where "no change" is',
   'the result. A cell\'s label is the whole --auto-opt string it ran, so a row names the configuration it measured',
   '(§14d.2 item 14). "—" for a mark means NOT REACHED inside the leg, which is a result and not a failure.',
 ].join(' ');
@@ -257,7 +257,7 @@ async function part5() {
 // every game on the roster. The sample is BOUNDED and names what it bounded.
 async function part6() {
   await sweep({ gate: 'R3a-6 Something Tree, the generality control —', leg: 'L3', repeat: 1, cells: [
-    cell('', 'games-auto/something.js unchanged — a moved DERIVED default must not move this leg at all'),
+    cell('', 'Something Tree on the DERIVED defaults (its table was deleted by R3c Part 0) — a moved derived default now MOVES this leg'),
   ] });
   // which games have challenges a derived feature would register at all: the engine's own declaration, counted.
   const ids = GAMES();
