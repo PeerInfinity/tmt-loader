@@ -125,8 +125,11 @@ string's length does): **two different problems.**
   (`docs/contract.md`); the browser's own grid sizing takes the max.
 - **Boxes.** Every number is its own `span.tmtl-num`: the digits alone (a `×`, `%`, `s` or unit stays in the sentence,
   outside the box), `font-variant-numeric: tabular-nums`, and an INLINE `min-width` in `ch` that only ever grows — never
-  a cap, never the renderable worst case. ⚠ On the four games measured the tab's font is Inconsolata (monospace), where
-  `.`, `e`, `,` and `-` are exactly one `ch`; `gates-v5 --part 7` records the font on every game it judges.
+  a cap, never the renderable worst case. ⚠ `ch` is one CHARACTER here, not only one digit, and that is measured: `gates-v5 --part 7` reads the tab's
+  font on every game it judges — **169 of the 170 judged are a monospace family** (Inconsolata on 166 of them), where
+  `.`, `e`, `,` and `-` are exactly one `ch`. The one exception is `a-game-about-rocks` (Trebuchet MS): there the digits
+  are still tabular, but a `.` is narrower than a `ch` and a floor can over-reserve by a fraction of one — the box never
+  SHRINKS, it can only be slightly wider than the string needs.
 - **Where the floors live.** On the `tmtl-editors` instance, keyed by feature id + line (+ value), exactly as
   `tmtl-number` keeps its draft and V3 keeps the fold map — the tab re-renders every tick, so a floor kept in the
   rendered string would be gone on the next one. Never in `player`, never in `runtimeState()`. ⚖ **They reset when the
