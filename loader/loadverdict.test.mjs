@@ -12,7 +12,7 @@
 // declassify the paired one, because that is a real 404 wearing a second hat.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { judgeLoad } from '../tools/harness/page.mjs';
+import { judgeLoad } from '../tools/harness/loadverdict.mjs';
 
 const BASE = 'http://127.0.0.1:9999/';
 const manifest = { id: 'g', load: { known: { missingScripts: [], externalHosts: [], errorsBeforeReady: 0 } } };
