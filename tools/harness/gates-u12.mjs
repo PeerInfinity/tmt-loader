@@ -131,7 +131,8 @@ async function part1() {
 }
 
 // ---- Part 2: the cost, automation ON ------------------------------------------------------------------------------
-// The engine's own loop, UNPAUSED (no `managed=1`), with the automation and the list open, for WALL_MS of real time.
+// The engine's own loop, UNPAUSED (no `managed=1`), with the automation ON (`profile=all` — a page defaults to the
+// SAVED profile, which on a fresh save is nothing, and a first run here measured 0 resets on five games) and the list open, for WALL_MS of real time.
 // Counted from the list's own stats: resets the hook saw, glow STARTS, resets absorbed into a running glow (owed) and
 // re-lit at its end. And the wrapper's own per-call overhead: the same early-returning `doReset` (a layer that
 // cannot reset) called N times through the wrapper and through the original it holds.
@@ -145,14 +146,14 @@ async function part2() {
       try {
         const page = await context.newPage();
         const auto = !!readManifest(id).auto;
-        await page.goto(new URL(`index.html?mod=${encodeURIComponent(id)}&navbar=1&automation=1`, srv.url).href, { waitUntil: 'load' });
+        await page.goto(new URL(`index.html?mod=${encodeURIComponent(id)}&navbar=1&automation=1&profile=all`, srv.url).href, { waitUntil: 'load' });
         await waitReady(page);
         const snap = deepestSnapshot(id);
         if (snap) await pageLoadFrom(page, snap.player);
         const m = await page.evaluate(async (ms) => {
           const ui = tmtLoader.layerListUI;
           ui.open();
-          const s0 = ui.stats(), t0 = performance.now();
+          const s0 = ui.stats(), t0 = performance.now(), owedAtStart = ui.glowOwed().length;
           const by = {};
           await new Promise((r) => setTimeout(r, ms));
           const s1 = ui.stats(), dt = (performance.now() - t0) / 1000;
@@ -169,11 +170,12 @@ async function part2() {
             perCall = { layer: l, wrappedNs: Math.round(Math.min(...w)), origNs: Math.round(Math.min(...o)) };
           }
           const d = (k) => s1[k] - s0[k];
-          return { dt, resets: d('resets'), glows: d('glows'), owed: d('glowsOwed'), relit: d('glowsRelit'), carries: d('glowCarries'), refreshes: d('refreshes'), recentByLayer: by, perCall };
+          return { dt, owedAtStart, resets: d('resets'), glows: d('glows'), owed: d('glowsOwed'), relit: d('glowsRelit'), carries: d('glowCarries'), refreshes: d('refreshes'), recentByLayer: by, perCall };
         }, WALL_MS);
         const rate = (n) => Math.round(n / m.dt * 10) / 10;
         row({ gate: 'U12-2 the reset glow with AUTOMATION ON, real time, the list open', id, leg: `${snap ? snap.file.replace(/^tools\/harness\/snapshots\//, '') : 'fresh'}, ${auto ? 'automation table' : 'derived automation'}, ${Math.round(m.dt)} s`,
-          ok: m.glows + m.relit <= m.resets + 1e-9 || m.resets === 0, ticks: null, gameSeconds: null, diff: null, hash: null,
+          // a restart is always PAID FOR by a reset: one seen in the window, or one owed when it opened
+          ok: m.glows + m.relit <= m.resets + m.owedAtStart, ticks: null, gameSeconds: null, diff: null, hash: null,
           notes: `${m.resets} resets through the hook (${rate(m.resets)}/s; recent by layer ${JSON.stringify(m.recentByLayer)}); glow starts ${m.glows} + re-lit at an end ${m.relit} = ${rate(m.glows + m.relit)}/s of DOM restarts; ${m.owed} absorbed into a running glow; ${m.carries} carried over a rebuild; ${m.refreshes} list refreshes; the wrapper on an early-returning doReset(${m.perCall && m.perCall.layer}): ${m.perCall ? `${m.perCall.wrappedNs} ns vs ${m.perCall.origNs} ns unwrapped` : 'not measured (no layer that cannot reset)'}` });
       } catch (e) {
         row({ gate: 'U12-2 the reset glow with AUTOMATION ON', id, ok: false, notes: `EXCEPTION ${String(e && e.message || e).slice(0, 300)}` });
