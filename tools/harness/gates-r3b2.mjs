@@ -109,10 +109,21 @@ async function sweep({ gate, leg, cells, repeat = REPEAT, extra = {}, judge = nu
   const total = cells.length * repeat;
   const lines = await runCells({ id: L.id, cells, flags: flagsOf(leg, extra), pool: POOL, repeat, stop: L.flags.to,
     onRun: (c, l) => console.log(`[PROGRESS ${++done}/${total}] ${leg} ${c.label || '(the table)'} run ${l.run} → ${l.ok ? `${l.gameSeconds}s ${l.hashGame}` : 'FAILED ' + l.error} (${Math.round((l.box?.wallMs || 0) / 1000)}s wall)`) });
+  const horizon = lines.length && lines[0].ok ? lines[0].gameSeconds : null;
   lines.forEach((l, i) => {
     const c = cells[i];
     let ok = !!l.ok && (repeat < 2 || l.twiceEqual === true);
     let why = '';
+    // ⛔ A CELL THAT STOPPED SHORT OF THE HORIZON IS RED, AND THIS IS V5's LESSON MADE MECHANICAL: it had to
+    // DISCARD a whole table because one cell stopped 349 game-seconds short under the wall, and a row that ran a
+    // shorter leg is not a comparison. The horizon is whatever the FIRST cell of the sweep reached, so a sweep
+    // does not need its horizon written down anywhere — and a run that walled or stalled is caught by the same
+    // test, because both of them end early. ⚠ A cell that reached its `--to` mark legitimately ends early too,
+    // so the test only bites where the leg is meant to run to the tick budget (`marks-continue`).
+    if (ok && L.flags['marks-continue'] && horizon !== null && l.gameSeconds !== horizon) {
+      ok = false;
+      why = `STOPPED SHORT: ${l.gameSeconds} game-seconds against this sweep's horizon of ${horizon}${l.stall?.walled ? ' (WALLED)' : l.stall?.stalled ? ' (STALLED)' : ''} — a row that ran a shorter leg is not a comparison; `;
+    }
     if (ok && judge) { const v = judge(l, c); ok = v.ok; why = v.why ? v.why + '; ' : ''; }
     row({ gate: `${gate} ${c.label || 'the table as it stands (control)'}`, id: L.id,
       leg: `${leg}, diff 1, profile all, ${L.flags.ticks} ticks, ${repeat} run(s)`,
