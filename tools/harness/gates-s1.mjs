@@ -18,7 +18,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { spawn, execFileSync } from 'node:child_process';
 import { chromium } from 'playwright';
-import { REPO, parseArgs, startServer, readManifest, headCommit, treeDirty, writeJSON, entryOnly, SOMETHING_OLD_TABLE } from './lib.mjs';
+import { REPO, parseArgs, startServer, readManifest, headCommit, treeDirty, writeJSON, entryOnly, SOMETHING_OLD_TABLE, withPreF1, PRE_F1 } from './lib.mjs';
 import { runPage } from './page.mjs';
 import { checkManifest } from './check-manifest.mjs';
 import { nodeIds, compareIds } from './check-goldens.mjs';
@@ -35,7 +35,7 @@ export const MARKS = {
   a1st: [['(i) first fundamental reset (fundamental.total ≥ 1)', 'player.fundamental.total.gte(1)'], ['(ii) unlock:upg:12', "hasUpgrade('unlock', 12)"]],
   a2st: [['(i) primitive reset ≥ 1 (primitive.total ≥ 1)', 'player.primitive.total.gte(1)'], ['(ii) primitive ms 1 ("10 Numbers")', "hasMilestone('primitive', 1)"], ['(iii) primitive ms 2 ("100,000 Numbers")', "hasMilestone('primitive', 2)"]],
 };
-const KINDS_PINNED = 'kinds=reset,upgrades,buyables';
+const KINDS_PINNED = 'kinds=reset,upgrades,buyables;' + PRE_F1;   // F1: named, see lib.mjs
 // R1′: every pinned ptr number was measured with `reset:p interval>=10`, which was the TABLE's default until this slice
 // moved it to `gain>=2x` (games-auto/ptr.js; ⚖ 13d.2 + S1-2's sweep). A pin is a measurement of a POLICY's behaviour,
 // not of which policy the table happens to name, so the ptr pins now name theirs explicitly and stay comparable to the
@@ -91,7 +91,9 @@ let running = 0;
 const queue = [];
 function pump() {
   while (running < POOL && queue.length) {
-    const { id, o, root, resolve } = queue.shift();
+    const { id, o: o0, root, resolve } = queue.shift();
+    // F1: a leg at HEAD names the pre-F1 configuration (no passive yield); a BASELINE tree predates the option
+    const o = root === REPO ? withPreF1(o0) : o0;
     running++;
     const out = path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'tmt-loader-s1-')), 'r.json');
     const args = [path.join(root, 'tools/harness/run.mjs'), id, '--json', out];

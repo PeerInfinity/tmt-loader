@@ -24,7 +24,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { spawn, execFileSync } from 'node:child_process';
-import { REPO, parseArgs, headCommit, treeDirty, writeJSON, entryOnly } from './lib.mjs';
+import { REPO, parseArgs, headCommit, treeDirty, writeJSON, entryOnly, withPreF1, PRE_F1 } from './lib.mjs';
 import { appendSection } from './summary.mjs';
 entryOnly(import.meta.url);  // a battery, not a library — see lib.mjs
 
@@ -81,7 +81,8 @@ const queue = [];
 const uptime = () => { try { return execFileSync('uptime', { encoding: 'utf8' }).trim().replace(/.*load average:\s*/, ''); } catch { return null; } };
 function pump() {
   while (running < POOL && queue.length) {
-    const { id, o, resolve } = queue.shift();
+    const { id, o: o0, resolve } = queue.shift();
+    const o = withPreF1(o0);   // F1: every leg of this historical gate names the pre-F1 configuration (lib.mjs PRE_F1)
     running++;
     const out = path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'tmt-loader-p1a-')), 'r.json');
     const args = [path.join(REPO, 'tools/harness/run.mjs'), id, '--json', out];
@@ -124,8 +125,8 @@ const STATES = () => [
 // inherits every one of them. `PIN_RESET_P` alone put the frontier run at 15161 instead of 14131; the full A2
 // CONFIGURATION below puts it back on all four pinned fields. Same string, same reason, as `gates-s1` after
 // §14d.2 item 14 — which is where it should have been copied from at the time.
-const PIN_RESET_P = 'policy:reset:p=interval>=10';
-const PIN_A2 = 'policy:reset:p=interval>=10;policy:reset:t=interval>=5;policy:reset:e=interval>=5;policy:reset:s=interval>=5;policy:buyables:e=buy;exclude=buyables:t';
+const PIN_RESET_P = 'policy:reset:p=interval>=10;' + PRE_F1;   // F1: named, see lib.mjs
+const PIN_A2 = 'policy:reset:p=interval>=10;policy:reset:t=interval>=5;policy:reset:e=interval>=5;policy:reset:s=interval>=5;policy:buyables:e=buy;exclude=buyables:t;' + PRE_F1;
 const stateOpts = (s, extra = {}) => ({ profile: 'all', ...(s.from ? { 'from-snapshot': s.from, ticks: 0, diff: 1 } : { ticks: s.ticks, diff: s.diff }), ...extra });
 
 // ---- Part 0: the frontier fixture -------------------------------------------------------------------------------------

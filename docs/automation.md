@@ -487,6 +487,7 @@ declares one is a new demand signal with no change to the cycle at all.
 | `blocked:after` | an `unlockOrder` sibling is not unlocked yet |
 | `blocked:enter` / `blocked:exit` | the engine refuses to enter / to leave that challenge |
 | `yielding:native` | `tmp[l].autoPrestige` — the game's own auto-reset is doing it |
+| `yielding:passive` | (F1) the game pays this layer `tmp[l].passiveGeneration` (shown as a % of the reset's gain per second) every tick WITHOUT resetting, and the rate exceeds the `passiveYield` threshold (default 0 — any at all). Only on an UNLOCKED layer, because the engines pay nothing to a locked one and a layer unlocks on its first reset. `passiveYield=off` switches it off (see "A reset yields to passive generation") |
 | `cannot-reset` | `tmp[l].canReset` is false, with the two numbers the engine compared |
 | `in-challenge` | a challenge is active and not completable yet — and with no `give-up` modifier this is the WHOLE of what a feature inside a challenge can say, which is why a run could sit inside PTR's H12 for 11,878 game-seconds without the readout changing |
 | `waiting:progress` | (R3a) the `give-up@B/H/Rx` modifier: how far this attempt has come as a percentage of the challenge's own goal, what fraction of the remaining distance a window must close, and how much of `H` has gone by |
@@ -1330,6 +1331,42 @@ looks right is `player.<layer>.resetTime`, and it exists **only on the 2.7-style
 such field, so six of the planner's own probe cells compared against `undefined`, measured "paused for ever", and
 looked like a result. Every gate leg for the cycle therefore runs on BOTH engine families.
 
+### A reset yields to PASSIVE GENERATION (F1)
+
+⚖ User, 2026-09-21: *"I would expect that manually resetting is a bad idea when there is a passive generation of even
+5 percent."* Both engines pay `tmp[l].passiveGeneration × resetGain × diff` into every UNLOCKED layer each tick without
+resetting anything (ptr `js/game.js:346/354`), and until F1 the loader never read it: PTR went on resetting `p` after
+g milestone 1 had made Prestige Points 100 %/s passive — 3,249 resets between `all/M04` and M08 at the page's tick, each
+one putting Points back to 0.
+
+**The rule.** A `reset` feature does not act while the game pays its layer passively at a rate ABOVE `passiveYield`
+(default `0` — any passive generation at all, ⚖ the user's threshold); it says `yielding:passive` with the rate as a
+percentage of the reset's gain per second. It sits with the engine's own refusals — below `until` / `while`, beside
+`yielding:native`, ABOVE the row cycle and the feature's own policy — because it is a fact about the game, not a
+choice of strategy.
+
+**What it does NOT do, each constructed in `loader/passive.test.mjs` against its mutant:**
+
+| case | what the rule does | why |
+|---|---|---|
+| a layer that has NEVER reset (`player[l].unlocked` false) | resets anyway | the engines pay nothing to a locked layer (`if (!unl(layer)) continue`), and a layer UNLOCKS on its first reset (V4) — yielding there would wall the run at the unlock |
+| a rate at or below the threshold | resets by its own rule | "exceeds", so `passiveYield=0.05` does not yield to ptr's `o` at exactly 5 % |
+| a ROW-CYCLE member the game starts paying | leaves the cycle | it will not reset while it is paid, so holding turns would starve its row-mates; alone, the row goes DORMANT and the other member decides by its own policy |
+| the stall fallback / the stall watch | never picks it | the fallback's arbiter skips it (like `yielding:native`); the watch only escalates `waiting:` codes |
+| `passiveGeneration` a number, a Decimal, `true`, absent, `null`, `0`, `NaN` | yields on a positive rate only | all of these occur on the roster (census below); `true` is the engines' own `diff * true` |
+
+⚠ **What yielding cannot see, named rather than solved.** A reset is sometimes FOR something other than its currency: a
+milestone counted in RESETS rather than in points, an effect on a lower layer that only a reset applies, or a static
+layer's reset whose only point is to spend the rows below. Whether ptr's reached rung has such a dependency is measured by
+the regenerated fixtures (plan §48), and a game that needs one names
+`passiveYield=off` or a per-feature `policy`/`while` in its table. **A STATIC layer is not special-cased**: the engines
+pay `resetGain × rate` into it exactly as into a normal layer (19 static layers on the roster declare a rate).
+
+**The roster census** (boot of all 171 games, `tmp[l].passiveGeneration` per tree layer; plan §48): 105 games declare
+it on 412 layers — at boot 258 read as a JS number, 67 as a Decimal, 23 as a boolean, 63 `undefined` (a function with
+no `else`), 1 `null`; by layer type 345 normal, 19 static, 20 custom, 3 `none`, 25 untyped. 19 layers pay FROM BOOT,
+two of them PARTIALLY (`weakling-tree` `w` 10 %/s; `the-cookie-tree` `rng` 0.0034 %/s).
+
 ### The derived default for the `challenges` kind (R3a)
 
 **Without an `order` it is `off`, and it stays `off`.** A KIND default reaches every game on the roster, and the
@@ -2051,6 +2088,10 @@ states it was read in (fresh, and the deepest `all/M*` snapshot where there is o
     (a row measured before a table lifted an exclusion cannot be reproduced without it — the A2 pins in `gates-s1` name
     `exclude=buyables:t` for exactly that reason) and what a sweep needs to switch one feature off without inventing an
     `off` policy for every kind. An unknown id, or one the table already excludes, throws;
+  - `passiveYield=off|<x>` — (F1) the passive-generation yield (below): `off` switches it off, `<x>` (a number ≥ 0) is
+    the rate the game's `passiveGeneration` must EXCEED for a reset to yield; default `0`. A table may carry it in its
+    `options`. Anything else THROWS. ⛔ Every HISTORICAL pin names `off` (`tools/harness/lib.mjs` `PRE_F1`,
+    `withPreF1`) — they measured a configuration that had no yield;
   - `while:<featureId>=<predicate>` / `until:<featureId>=<predicate>` / `priority:<featureId>=<n>` — (V4) the three
     per-feature CONTROLS, in the TABLE's slot (so a player's saved edit still outranks them, exactly as it outranks
     `policy:<id>=`). An EMPTY value clears the table's own entry, which is how a control leg measures the game

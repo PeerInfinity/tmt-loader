@@ -296,10 +296,23 @@ export const TABLELESS_CONTROL = 'something';
 // leg byte for byte — full hash included (measured at R3c: diff 1, 3000 ticks → S05 at 579, `hashGame`
 // `524822d719ceea18`, full hash `916b30e1b0c9830e`, the same three the table gave). A pin that compares against a
 // BASELINE COMMIT — whose table said exactly this — names it; a leg that is a control for the derivation does not.
+// ⚖ F1 (plan §48): a reset YIELDS to the game's own passive generation by default since F1, and that changes behaviour under
+// EVERY configuration — including every pin recorded before it. A pin is a measurement of a CONFIGURATION (§14d.2 item
+// 14), so the historical gates (`gates-s1`, `gates-h1`, `gates-p1a`, `gates-p1b`) NAME the one they measured: this
+// option, appended to every leg they run at HEAD by `withPreF1`. Their old bytes are reproduced by it, not re-recorded.
+export const PRE_F1 = 'passiveYield=off';
+/** `o` (run.mjs flags) with PRE_F1 appended to its `--auto-opt`, unless the leg runs no automation at all. */
+export function withPreF1(o) {
+  if (o['no-automation'] || o.automation === false || o.automation === '0') return o;
+  const cur = o['auto-opt'] ? String(o['auto-opt']) : '';
+  if (cur.split(';').includes(PRE_F1)) return o;
+  return { ...o, 'auto-opt': cur ? `${cur};${PRE_F1}` : PRE_F1 };
+}
 export const SOMETHING_OLD_TABLE = [
   'kindOrder=toggles,reset,upgrades,buyables,challenges,clickables',
   'policy:reset:unlock=always',
   'policy:reset:fundamental=interval>=5',
   'policy:reset:primitive=interval>=90',
   'policy:buyables:fundamental=buyMax',
+  PRE_F1,   // F1: the table was deleted before the yield existed, so the configuration it names has none
 ].join(';');

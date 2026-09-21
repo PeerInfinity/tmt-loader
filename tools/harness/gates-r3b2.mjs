@@ -314,4 +314,5 @@ if (!a['no-write']) {
   if (!a['no-summary']) appendSection(`Gate R3b2 part ${PART} — the dead-member rule, ptr's table, and M25`, READING, rows, { commit, dirty });
 }
 // ⛔ A BATTERY THAT DIES PART-WAY PRINTS FEWER ROWS, AND FEWER ROWS IS FEWER REDS.
-if (a.assert && (red > 0 || rows.length < expected)) { console.error(`REFUSED: ${short2}`); process.exit(1); }
+// ⛔ F1: EXACT, not a floor — a battery that prints MORE rows than it declared is as much a finding as one that prints fewer.
+if (a.assert && (red > 0 || rows.length !== expected)) { console.error(`REFUSED: ${short2}`); process.exit(1); }

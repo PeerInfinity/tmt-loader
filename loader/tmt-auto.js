@@ -759,6 +759,9 @@
     'blocked:enter':      { text: 'Blocked — the game will not enter challenge {id}',             values: ['id'] },
     'blocked:exit':       { text: 'Blocked — the game will not exit challenge {id} yet',          values: ['id'] },
     'yielding:native':    { text: "Yielding — the game's own auto-reset is resetting {layer}",     values: ['layer'] },
+    // F1: `pct` is the engine's own `passiveGeneration` as a percentage of the reset's gain per game-second —
+    // dimensionless, so it is not a `quantities` value.
+    'yielding:passive':   { text: 'Yielding — the game pays {layer} {pct}% of a reset’s gain every second without resetting', values: ['layer', 'pct'] },
     'cannot-reset':       { text: 'Cannot reset — {have} of {need}',                              values: ['have', 'need'], quantities: ['have', 'need'] },
     'in-challenge':       { text: 'In challenge {id} — not completable yet',                      values: ['id'] },
     // ⛔ R3a: THE FOUR CODES THE `challenges` KIND HAD NO WAY TO SAY. `in-challenge` above is the WHOLE of what a
@@ -921,6 +924,35 @@
   // a LIVE member's own reset starts a new climb, so `h` does not depend on incidental wipes to keep its turn. A
   // lever (`--auto-opt turnMark=…`), resolved once by `derive()`; a mistyped value is a hard fail there (V4's rule).
   var TURN_MARKS = ['last', 'high', 'high-act'], TURN_MARK_DEFAULT = 'high-act', turnMarkNow = TURN_MARK_DEFAULT;
+  // ⚖ F1 PART 1 — A RESET YIELDS TO PASSIVE GENERATION (user, 2026-09-21: *"I would expect that manually resetting is a
+  // bad idea when there is a passive generation of even 5 percent"*). Both engines pay `tmp[l].passiveGeneration` ×
+  // `resetGain` × diff into the layer EVERY tick without resetting anything (ptr `js/game.js:346/354`,
+  // `generatePoints`), and the loader never read it: PTR went on resetting `p` ~3,000 times after g ms 1 had made
+  // Prestige Points 100 %/s passive, zeroing Points every time. A manual reset pays `resetGain` ONCE; passive
+  // generation pays `resetGain × tick` per tick while the points it is computed from go on compounding.
+  // ⛔ THE THRESHOLD IS THE USER'S: 0 — ANY passive generation at all (a fraction of the reset's gain per second).
+  // `passiveYield=off` switches the yield off, and that is what every HISTORICAL pin names (§14d.2 item 14): a pin is
+  // a measurement of a CONFIGURATION, and the configuration those pins measured had no yield.
+  // ⛔ ONLY WHERE THE ENGINE ACTUALLY PAYS: both engines skip a layer that is not `unlocked` (`if (!unl(layer))
+  // continue` before `generatePoints`), and a layer UNLOCKS ON ITS FIRST RESET (V4) — so a declared rate on a layer
+  // that has never reset pays nothing, and yielding there would wall the run at the unlock.
+  var passiveYieldNow = 0;
+  /** The fraction of a reset's gain the engine pays this layer per game-second; 0 when it declares none. */
+  function passiveRateOf(l) {
+    var v = tmp[l] ? tmp[l].passiveGeneration : undefined;
+    if (v === undefined || v === null || v === false) return 0;
+    if (v === true) return 1;   // `diff * true` is `diff`: the engines' own arithmetic
+    var n;
+    try { n = typeof v === 'object' ? Number(String(D(v))) : Number(v); } catch (e) { return 0; }   // String: every Decimal type the roster ships has it
+    return n > 0 ? n : 0;       // NaN, a negative or a zero rate pays nothing
+  }
+  /** The rate this layer's reset is yielding to, or null when it does not yield. */
+  function passiveYieldOf(l) {
+    if (passiveYieldNow === null) return null;
+    if (!player[l] || !player[l].unlocked) return null;
+    var r = passiveRateOf(l);
+    return r > passiveYieldNow ? r : null;
+  }
   var features = [];
   var byId = {};
   T.features = features;
@@ -1127,6 +1159,9 @@
     }
     // yield to native: while the game's own auto-reset predicate holds, gameLoop resets this layer itself
     if (tmp[l].autoPrestige) return { act: false, code: 'yielding:native', values: { layer: l } };
+    // F1: …and while the game pays this layer passively, which it does without resetting anything (see `passiveYieldOf`)
+    var pr = passiveYieldOf(l);
+    if (pr !== null) return { act: false, code: 'yielding:passive', values: { layer: l, pct: Math.round(pr * 1e4) / 100 } };
     for (var i = 0; i < f.after.length; i++) if (!player[f.after[i]] || !player[f.after[i]].unlocked) return { act: false, code: 'blocked:after', values: { sibling: f.after[i] } };
     // ---- R3b: THE ROW CYCLE, AND WHERE IT SITS IN THE CHAIN -------------------------------------------------------
     // ⛔ THE PRECEDENCE, IN ONE PLACE. `until` and `while` are ABOVE this (they are decided in `runLayer`, before
@@ -1331,7 +1366,7 @@
     if (!stallMod(P)) return null;
     if (g.gate && !holds(g.gate)) return null;
     var l = g.layer;
-    if (!tmp[l] || tmp[l].canReset !== true || tmp[l].autoPrestige) return null;
+    if (!tmp[l] || tmp[l].canReset !== true || tmp[l].autoPrestige || passiveYieldOf(l) !== null) return null;
     for (var i = 0; i < g.after.length; i++) if (!player[g.after[i]] || !player[g.after[i]].unlocked) return null;
     var d = primaryReset(g, P);
     if (d.act) return null;
@@ -1435,7 +1470,9 @@
     var by = {}, order = [];
     for (var i = 0; i < features.length; i++) {
       var g = features[i];
-      if (g.kind !== 'reset' || !active(g)) continue;
+      // F1: a member the game pays passively will not reset while it does, so it is OUT of the cycle rather than
+      // holding a turn it cannot use — the row's other members take turns without it (or, alone, go dormant).
+      if (g.kind !== 'reset' || !active(g) || passiveYieldOf(g.layer) !== null) continue;
       var r = rowOf(g);
       if (r === null || r === undefined) continue;
       var key = String(r);
@@ -5057,6 +5094,12 @@
     kindOrderNow = kindOrder.slice();   // V4: a feature's DEFAULT `priority` is its kind's place in THIS order
     turnMarkNow = T.autoOptions.turnMark === undefined ? TURN_MARK_DEFAULT : String(T.autoOptions.turnMark);
     if (TURN_MARKS.indexOf(turnMarkNow) < 0) throw new Error(src + ': option turnMark must be one of ' + TURN_MARKS.join(', ') + ' (got "' + turnMarkNow + '")');
+    // F1: `passiveYield` — `off`, or the threshold (a fraction per second, ≥ 0) the rate must EXCEED; default 0
+    var py = T.autoOptions.passiveYield;
+    if (py === undefined || py === '') passiveYieldNow = 0;
+    else if (String(py) === 'off') passiveYieldNow = null;
+    else if (/^\d+(\.\d+)?$/.test(String(py).trim())) passiveYieldNow = Number(py);
+    else throw new Error(src + ': option passiveYield must be "off" or a number ≥ 0 (got "' + py + '")');
     var cands = candidates(kindOrder);
     var candById = {};
     cands.forEach(function (c) { candById[c.id] = c; });

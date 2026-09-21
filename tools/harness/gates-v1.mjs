@@ -42,7 +42,8 @@ const row = (r) => { rows.push(r); console.log(`${r.ok ? 'GREEN' : 'RED  '} ${r.
 // stopped:until`, four slices out of four).
 // R3a added TWO witness legs for its four new codes: 11 → 13.
 // V5 added FOUR, one per new retry code (`waiting:retry-resets`, `-clock`, `-when`, `blocked:retry-when`): 14 → 18.
-const ROWS = { 1: 18, 2: 3, 3: 2, '3p': 2, 4: 4, 6: 1 };
+// F1 added ONE, for `yielding:passive` — on the fixture where the game starts paying Prestige Points passively: 18 → 19.
+const ROWS = { 1: 19, 2: 3, 3: 2, '3p': 2, 4: 4, 6: 1 };
 
 const SNAP = (id, m) => `tools/harness/snapshots/${id}/all/${m}.json`;
 // M15 → M16: R1′'s own leg, and the one long ptr leg V1's inertness is measured on (plan §14d).
@@ -164,6 +165,10 @@ const LEGS = [
   // intervals. The table is deleted (⚖ user 2026-09-21) and no derived default is an interval, so the leg NAMES one —
   // the configuration that witnessed it, one entry of the old table — rather than losing the code (CI run
   // 35565198991 at `c5df909dc`: `unwitnessed: waiting:interval`, the fifth slice running where CI found it).
+  // ⛔ F1's `yielding:passive`, on the FIXTURE where it begins: `all/M04.json` is "passive PP" — g milestone 1 makes
+  // Prestige Points 100 %/s passive — so from its first tick `reset:p` yields to the game's own generation. Before F1
+  // the same leg reset `p` 62 times in 600 ticks (plan §46a). A fixture witness beats a construction (§18.4's rule).
+  { key: 'ptr all/M04 + 200×1 (F1: the reset yields to passive generation)', id: 'ptr', o: { profile: 'all', diff: 1, ticks: 200, 'from-snapshot': SNAP('ptr', 'M04'), explain: true } },
   { key: 'something fresh 600×1 (profile all), --auto-opt policy:reset:fundamental=interval>=5 (the interval witness, named)', id: 'something', o: { profile: 'all', diff: 1, ticks: 600, 'auto-opt': 'policy:reset:fundamental=interval>=5', explain: true } },
 ];
 

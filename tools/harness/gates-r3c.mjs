@@ -198,6 +198,11 @@ async function part1m() {
 // game-seconds compare with M16–M25's and no leg is credited offline time (a trace from `all/M25.json` is resumed;
 // the planner's oracle was one). The local box cannot run it inside a 10-minute wall (two legs walled at ~35,500
 // game-s); a CI runner does 21,000 of these ticks in ~2 minutes, so it runs there, one cell per job.
+// ⛔ F1: the fixtures Part 2f's leg is DECLARED to write — its verdict requires exactly these, so a leg that reaches one
+// more (or one fewer) mark is a finding rather than a longer row list. From `all/M15.json`: M16–M25 and M27 (M26 lands
+// past the leg's ticks); from `--fixture all/M27.json`: none of the later marks but M26.
+const FIX_2F = ['M16', 'M17', 'M18', 'M19', 'M20', 'M21', 'M22', 'M23', 'M24', 'M25', 'M27'];
+const FIX_2F_FROM_FIXTURE = ['M26'];
 const L25 = { diff: 1, profile: 'all', ticks: Number(a.ticks || 50000), 'wall-ms': 600000, ladder: PTR_LADDER, to: 'M31',
   'from-snapshot': path.join(REPO, 'tools/harness/snapshots/ptr/all/M15.json'), 'marks-continue': true, stall: 1000000,
   // the price PAID for q22 — `tmp` at the check is the one the tick's purchase compared against
@@ -295,7 +300,7 @@ async function part2f() {
     row({ gate: `R3c-2f fixture ${A.mark} reproduces`, id: 'ptr', leg: 'the shipped leg, twice', ok: same, ticks: A.ticks, gameSeconds: A.gameSeconds, diff: A.diff, hash: A.hashGame,
       notes: `full hash ${A.hash}; run 2 ${B ? `${B.gameSeconds}s/${B.hash}/${B.hashGame}` : 'MISSING'}; the COMMITTED all/${f}: ${C ? `${C.gameSeconds}s / ${C.hashGame} — ${C.hashGame === A.hashGame && C.gameSeconds === A.gameSeconds ? 'SAME state' : 'DIFFERS'}` : 'none (NEW)'}` });
   }
-  row({ gate: 'R3c-2f VERDICT: every fixture the shipped leg wrote, written twice the same', id: 'ptr', ok: rows.every((r) => r.ok) && files.length > 0 && (fx || files.some((f) => f === 'M25.json')), notes: `${files.length} fixture(s): ${files.map((f) => f.slice(0, -5)).join(', ')}` });
+  row({ gate: 'R3c-2f VERDICT: every fixture the shipped leg wrote, written twice the same', id: 'ptr', ok: rows.every((r) => r.ok) && files.map((f) => f.slice(0, -5)).join(',') === (fx ? FIX_2F_FROM_FIXTURE : FIX_2F).join(','), notes: `${files.length} fixture(s): ${files.map((f) => f.slice(0, -5)).join(', ')}; declared ${(fx ? FIX_2F_FROM_FIXTURE : FIX_2F).join(', ')}` });
 }
 
 // ---- Part 2p: H22 "Descension" — is PREPARATION what it lacks? (tier 2 under §40-R ruling A) ----------------------
@@ -350,8 +355,9 @@ if (!PARTS[PART]) { console.error(`no part ${PART}`); process.exit(2); }
 await PARTS[PART]();
 
 const red = rows.filter((r) => !r.ok).length;
-// Part 2f: its row count is the number of fixtures the leg wrote, so its floor is the leg + M16–M25 + a verdict.
-const expected = (PART === '1' || PART === '2') && CELL !== null ? 1 : PART === '2f' ? (a.fixture ? 3 : 12) : ROWS[PART];
+// Part 2f: the leg + one row per fixture it is DECLARED to write (`FIX_2F`) + a verdict. ⛔ F1: this was a FLOOR
+// (`rows.length < expected`), and "13/12 expected" passed — a declared count is part of the gate (R2), so it is exact.
+const expected = (PART === '1' || PART === '2') && CELL !== null ? 1 : PART === '2f' ? 2 + (a.fixture ? FIX_2F_FROM_FIXTURE : FIX_2F).length : ROWS[PART];
 const short = `R3c part ${PART}${CELL !== null ? ` cell ${CELL}` : ''}: rows ${rows.length}/${expected} expected, ${red} RED`;
 console.log(`\nVERDICT: ${short}`);
 const READING = 'A cell\'s label is the whole --auto-opt string it ran (§14d.2 item 14); "—" for a mark means NOT REACHED inside the leg, which is a result. Part 0: Something Tree has NO automation table since R3c (⚖ user 2026-09-21), so the empty cell IS the derived defaults.';
@@ -360,4 +366,4 @@ if (!a['no-write']) {
   if (!a['no-summary']) appendSection({ title: `Gate R3c part ${PART}`, commit, dirty, rows, reading: READING });
 }
 // ⛔ A BATTERY THAT DIES PART-WAY PRINTS FEWER ROWS, AND FEWER ROWS IS FEWER REDS.
-if (a.assert && (red > 0 || rows.length < expected)) { console.error(`REFUSED: ${short}`); process.exit(1); }
+if (a.assert && (red > 0 || rows.length !== expected)) { console.error(`REFUSED: ${short}`); process.exit(1); }

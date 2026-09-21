@@ -22,7 +22,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { spawn, execFileSync } from 'node:child_process';
-import { REPO, parseArgs, headCommit, treeDirty, writeJSON, entryOnly } from './lib.mjs';
+import { REPO, parseArgs, headCommit, treeDirty, writeJSON, entryOnly, withPreF1, PRE_F1 } from './lib.mjs';
 import { appendSection } from './summary.mjs';
 entryOnly(import.meta.url);  // a battery, not a library — see lib.mjs
 
@@ -52,7 +52,8 @@ const queue = [];
 const uptime = () => { try { return execFileSync('uptime', { encoding: 'utf8' }).trim().replace(/.*load average:\s*/, ''); } catch { return null; } };
 function pump() {
   while (running < POOL && queue.length) {
-    const { id, o, resolve } = queue.shift();
+    const { id, o: o0, resolve } = queue.shift();
+    const o = withPreF1(o0);   // F1: every leg of this historical gate names the pre-F1 configuration (lib.mjs PRE_F1)
     running++;
     const out = path.join(fs.mkdtempSync(path.join(TMP, 'job-')), 'r.json');
     const args = [path.join(REPO, 'tools/harness/run.mjs'), id, '--json', out];
@@ -141,7 +142,7 @@ async function chained(id, { from = null, marks, stopMark, ticks = 200000, legTi
 // R1′ (2026-09-17): the ptr table's `reset:p` moved from `interval>=10` to `gain>=2x`. Every number and fixture in this
 // file was measured under the interval, so the runs name it explicitly; a pin is a measurement of a POLICY, not of which
 // one the table names. (An `auto-opt` in a row's own `opt` still wins — P1b's ctl-gain2x is exactly that control.)
-const PIN_RESET_P = 'policy:reset:p=interval>=10';
+const PIN_RESET_P = 'policy:reset:p=interval>=10;' + PRE_F1;   // F1: named, see lib.mjs
 async function part1() {
   const ptrMarks = marksFile(PTR_LADDER), stMarks = marksFile(ST_LADDER);
   // (b) and (c) and the control run in parallel with (a).

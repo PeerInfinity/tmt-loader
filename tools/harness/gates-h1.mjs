@@ -30,7 +30,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { spawn, execFileSync } from 'node:child_process';
-import { REPO, parseArgs, headCommit, treeDirty, writeJSON, readLadder, writeLadder, firstDivergence, maskedPlayer, entryOnly } from './lib.mjs';
+import { REPO, parseArgs, headCommit, treeDirty, writeJSON, readLadder, writeLadder, firstDivergence, maskedPlayer, entryOnly, withPreF1, PRE_F1 } from './lib.mjs';
 import { appendSection } from './summary.mjs';
 import { ladderSlice } from './run.mjs';
 entryOnly(import.meta.url);  // a battery, not a library — see lib.mjs
@@ -47,7 +47,7 @@ const SNAP = { pinned: 'tools/harness/snapshots/ptr/pinned', all: 'tools/harness
 // measured; this slice moved the table to `gain>=2x` (games-auto/ptr.js). H1's rows and its snapshot fixtures therefore
 // name the policy explicitly — a pin is a measurement of a POLICY, not of which one the table happens to name. The
 // opt is inert on a game with no `p` layer (an unknown feature's `policy:` override is ignored at registration).
-const PIN_RESET_P = 'policy:reset:p=interval>=10';
+const PIN_RESET_P = 'policy:reset:p=interval>=10;' + PRE_F1;   // F1: named, see lib.mjs
 const KINDS_PINNED = 'kinds=reset,upgrades,buyables;' + PIN_RESET_P;
 const DETECT = { stall: 3600, 'stall-seen': true, 'wall-ms': 540000 };
 // The brief's pins (SUMMARY rows; S1-1 @777eceeb re-pinned every one with its hashGame): [ticks, hashGame | null].
@@ -66,7 +66,8 @@ const queue = [];
 const uptime = () => { try { return execFileSync('uptime', { encoding: 'utf8' }).trim().replace(/.*load average:\s*/, ''); } catch { return null; } };
 function pump() {
   while (running < POOL && queue.length) {
-    const { id, o, resolve } = queue.shift();
+    const { id, o: o0, resolve } = queue.shift();
+    const o = withPreF1(o0);   // F1: every leg of this historical gate names the pre-F1 configuration (lib.mjs PRE_F1)
     running++;
     const out = path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'tmt-loader-h1-')), 'r.json');
     const args = [path.join(REPO, 'tools/harness/run.mjs'), id, '--json', out];
