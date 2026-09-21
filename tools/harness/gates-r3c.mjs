@@ -15,6 +15,9 @@
 //                                               merges the shards
 //   node tools/harness/gates-r3c.mjs --part 2f  the rung's FIXTURES: the shipped cell twice, each run writing every
 //                                               mark's snapshot to its own directory, compared file by file
+//   node tools/harness/gates-r3c.mjs --part 2p  H22 "Descension": is PREPARATION what it lacks? From `all/M27.json`,
+//                                               three arms of one attempt — the control, the guide's order (respec →
+//                                               Primary → enter) and a constructed UPPER BOUND (every level in Primary)
 //
 // ⛔ WHAT PART 0 IS FOR. ⚖ User, 2026-09-21: "We can discard the Something Tree data" — asked, and the reading chosen was
 // DELETE ITS AUTOMATION TABLE. Something Tree then runs on the derived defaults like the other 169 games and stays the
@@ -31,7 +34,7 @@ entryOnly(import.meta.url);
 // ⛔ EVERY FLAG THIS FILE READS IS DECLARED, and `--assert` is a BOOLEAN (an undeclared flag takes the NEXT token as
 // its value — plan §32.3). Non-boolean knobs: --part, --pool.
 const a = parseArgs(process.argv.slice(2), ['no-summary', 'no-write', 'assert']);
-const KNOWN = new Set(['_', 'part', 'pool', 'no-summary', 'no-write', 'assert', 'ticks', 'repeat', 'cell', 'horizon', 'from']);
+const KNOWN = new Set(['_', 'part', 'pool', 'no-summary', 'no-write', 'assert', 'ticks', 'repeat', 'cell', 'horizon', 'from', 'fixture']);
 for (const k of Object.keys(a)) if (!KNOWN.has(k)) { console.error(`REFUSED: unknown flag --${k}`); process.exit(2); }
 const PART = String(a.part ?? '0');
 const POOL = Number(a.pool || 4);
@@ -42,7 +45,7 @@ const row = (r) => { rows.push(r); console.log(`${r.ok ? 'GREEN' : 'RED  '} ${r.
 // ⛔ THE FLOOR EACH PART MUST REACH (`--assert`), counted from what the part EMITS.
 // Part 0: eight cells + a verdict. Part 1: three cells + a verdict (one cell and no verdict under `--cell`).
 // Part 1m: the three cells re-read + the pinned control + the verdict. Part 2: four cells + a verdict; 2m: four + verdict.
-const ROWS = { 0: 9, 1: 4, '1m': 5, 2: 5, '2m': 5 };
+const ROWS = { 0: 9, 1: 4, '1m': 5, 2: 5, '2m': 5, '2p': 4 };
 const CELL = a.cell === undefined ? null : Number(a.cell);
 const HORIZON = a.horizon === undefined ? null : Number(a.horizon);
 if (CELL !== null && HORIZON === null) { console.error('REFUSED: --cell needs --horizon <game-seconds> — a shard that took its horizon from itself would agree with itself (R3b-2)'); process.exit(2); }
@@ -259,7 +262,8 @@ async function part2f() {
   const both = await Promise.all(dirs.map((d) => runCells({ id: 'ptr', cells: [P2_CELLS[0]], flags: Object.entries({ ...L25, snapshots: d }), pool: 1, repeat: 1, stop: null })));
   const [r1, r2] = both.map((x) => x[0]);
   row({ gate: 'R3c-2f the shipped leg from all/M15, twice, writing fixtures', id: 'ptr', leg: `all/M15 → ${L25.ticks} ticks`, ok: !!r1.ok && !!r2.ok && r1.gameSeconds === r2.gameSeconds && r1.hashGame === r2.hashGame,
-    ticks: r1.ticks, gameSeconds: r1.gameSeconds, diff: 1, hash: r1.hashGame, notes: `${rungText(r1)}; run 2 ${r2.gameSeconds} / ${r2.hashGame}` });
+    ticks: r1.ticks, gameSeconds: r1.gameSeconds, diff: 1, hash: r1.hashGame, notes: `${rungText(r1)}; run 2 ${r2.gameSeconds} / ${r2.hashGame}${r1.error || r2.error ? `; ERROR run 1: ${String(r1.error || '').slice(-300)} | run 2: ${String(r2.error || '').slice(-300)}` : ''}` });
+  if (!r1.ok || !r2.ok) console.error(`the fixture legs FAILED:\n--- run 1 ---\n${r1.error}\n--- run 2 ---\n${r2.error}`);
   const files = fsm.readdirSync(dirs[0]).filter((f) => f.endsWith('.json')).sort((x, y) => Number(x.slice(1, -5)) - Number(y.slice(1, -5)));
   for (const f of files) {
     const A = JSON.parse(fsm.readFileSync(path.join(dirs[0], f), 'utf8'));
@@ -273,7 +277,52 @@ async function part2f() {
   row({ gate: 'R3c-2f VERDICT: every fixture the shipped leg wrote, written twice the same', id: 'ptr', ok: rows.every((r) => r.ok) && files.some((f) => f === 'M25.json'), notes: `${files.length} fixture(s): ${files.map((f) => f.slice(0, -5)).join(', ')}` });
 }
 
-const PARTS = { 0: part0, 1: part1, '1m': part1m, 2: part2, '2m': part2m, '2f': part2f };
+// ---- Part 2p: H22 "Descension" — is PREPARATION what it lacks? (tier 2 under §40-R ruling A) ----------------------
+// ⛔ A NEGATIVE RESULT, VERIFIED THE WAY A POSITIVE ONE IS: one horizon for every arm, and the same instrument that
+// watched H21 climb to completion (the peak fraction of the goal EXPONENT inside the attempt). The guide's
+// preparation is "everything into the Primary Space Building" (digest L3.18) because inside H22 point gain is
+// `gain × buyableEffect('s', 11)` only (`mod.js:50`). The arms, from one fixture past H21, one attempt each, the
+// loader's challenge policy excluded so nothing exits early:
+//   control  enter H22 with the buildings as the run left them;
+//   guide    the game's own `respec()` (a forced Space reset), buyMax on building 11 with the Space tab open (⚠ the
+//            PTR family's `updateTempData` skips a layer whose tab is closed, so a closed-tab buyMax reads a STALE
+//            cost and buys nothing — measured), then enter — ⚠ entering is an `h` reset, and after a respec it
+//            ZEROES the buildings while `spent` stays: the guide's order loses the preparation on entry;
+//   bound    enter, then GIVE building 11 every level the run owned, free — no legal move can beat it.
+// If the BOUND does not move the peak, no preparation can, and tier 2 does not apply.
+const H22_EVAL = `(globalThis.__h)`;
+const H22_UNTIL = `(function(){var G=globalThis.__h||(globalThis.__h={p:0,p50:null});var t=tmtLoader.gameSeconds;if(G.t0===undefined)G.t0=t;var v=player.h.activeChallenge==22?new Decimal(player.points).plus(1).log10().toNumber()/3570:0;if(v>G.p){G.p=Math.round(v*10000)/10000;G.at=t-G.t0;}if(t-G.t0===50)G.p50=G.p;G.s11=Math.round(new Decimal(buyableEffect('s',11)).plus(1).log10().toNumber()*100)/100;G.b11=String(player.s.buyables[11]);G.act=player.h.activeChallenge;return false;})()`;
+const H22_ARMS = {
+  control: `var b = JSON.parse(JSON.stringify(player.s.buyables)); startChallenge('h', 22); return { before: b, after: JSON.parse(JSON.stringify(player.s.buyables)), active: player.h.activeChallenge };`,
+  guide: `var b = JSON.parse(JSON.stringify(player.s.buyables)), tab = player.tab; layers.s.buyables.respec(); player.tab = 's'; updateTemp(); layers.s.buyables[11].buyMax(); updateTemp(); var mid = JSON.parse(JSON.stringify(player.s.buyables)); player.tab = tab; startChallenge('h', 22); return { before: b, prepared: mid, after: JSON.parse(JSON.stringify(player.s.buyables)), spent: String(player.s.spent), active: player.h.activeChallenge };`,
+  bound: `var b = JSON.parse(JSON.stringify(player.s.buyables)), total = new Decimal(0); for (var k in player.s.buyables) total = total.plus(player.s.buyables[k]); startChallenge('h', 22); for (var k2 in player.s.buyables) player.s.buyables[k2] = new Decimal(0); player.s.buyables[11] = total; return { before: b, after: JSON.parse(JSON.stringify(player.s.buyables)), active: player.h.activeChallenge };`,
+};
+async function part2p() {
+  const fsm = await import('node:fs'), os = await import('node:os'), { spawn } = await import('node:child_process');
+  const fixture = path.resolve(String(a.fixture || path.join(REPO, 'tools/harness/snapshots/ptr/all/M27.json')));
+  if (!fsm.existsSync(fixture)) { console.error(`REFUSED: no fixture ${fixture}`); process.exit(2); }
+  const ticks = Number(a.ticks || 120);
+  const res = await Promise.all(Object.entries(H22_ARMS).map(async ([arm, src]) => {
+    const dir = fsm.mkdtempSync(path.join(os.tmpdir(), 'r3c-2p-'));
+    const script = path.join(dir, 'arm.js'), out = path.join(dir, 'r.json');
+    fsm.writeFileSync(script, src);
+    await new Promise((ok) => { const c = spawn(process.execPath, [path.join(REPO, 'tools/harness/run.mjs'), 'ptr', '--profile', 'all', '--from-snapshot', fixture, '--ticks', String(ticks), '--planner-script', script, '--auto-opt', arm === 'control' ? 'exclude=challenges:h' : 'exclude=challenges:h,buyables:s', '--until', H22_UNTIL, '--eval', H22_EVAL, '--json', out], { cwd: REPO, stdio: 'ignore' }); c.on('exit', ok); });
+    try { return [arm, JSON.parse(fsm.readFileSync(out, 'utf8'))]; } catch (e) { return [arm, { ok: false, error: String(e) }]; }
+  }));
+  const R = Object.fromEntries(res);
+  for (const [arm, r] of res) {
+    const e = r.eval || {}, ps = r.plannerScript || {};
+    row({ gate: `R3c-2p H22 "Descension" — ${arm}`, id: 'ptr', leg: `${path.basename(fixture)} + ${ticks} ticks, one attempt, challenges:h excluded`, ok: !!r.ok && e.act === 22 && e.p > 0,
+      ticks: r.ticks, gameSeconds: r.gameSeconds, diff: 1, hash: r.hashGame,
+      notes: `peak ${e.p} of the goal exponent (${e.p50} at 50 s, the give-up rule's usual exit); Primary ${e.b11} levels, its effect 10^${e.s11}; buildings before ${JSON.stringify(ps.before)}${ps.prepared ? `, prepared ${JSON.stringify(ps.prepared)}` : ''}, after entry ${JSON.stringify(ps.after)}${ps.spent ? `, spent ${ps.spent}` : ''}` });
+  }
+  const c = R.control.eval || {}, b = R.bound.eval || {};
+  const gain = (b.p ?? 0) - (c.p ?? 0);
+  row({ gate: 'R3c-2p VERDICT: preparation is NOT what H22 lacks — the free upper bound moves the peak by a sliver of what is missing', id: 'ptr',
+    ok: rows.every((r) => r.ok) && (b.p ?? 1) < 0.5 && gain < 0.01, notes: `bound − control = ${gain.toFixed(4)} of the exponent (${(gain * 3570).toFixed(1)} decades) against ${((1 - (c.p ?? 0)) * 3570).toFixed(0)} decades missing; the guide's own order ${JSON.stringify((R.guide.plannerScript || {}).after)} after entry — the respec's preparation does not survive the entry reset` });
+}
+
+const PARTS = { 0: part0, 1: part1, '1m': part1m, 2: part2, '2m': part2m, '2f': part2f, '2p': part2p };
 if (!PARTS[PART]) { console.error(`no part ${PART}`); process.exit(2); }
 await PARTS[PART]();
 
