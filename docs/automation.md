@@ -1460,21 +1460,26 @@ guide mentions it".
   Primary ×6 — and `buyables:s` rebuilds the rest as Generator Power allows). **M27 lands at 40905 game-s,
   uninterrupted from `all/M15.json`, twice equal** (gate R3c-2, CI).
 - **H22 is not a preparation wall.** Inside it, point gain is `gain × buyableEffect("s", 11)` (`mod.js:50`), so the
-  guide moves every level into Primary. Gate R3c-2p runs one attempt three ways from a state past H21: the control
-  peaks at **0.148** of the goal exponent by 50 game-s; a CONSTRUCTED UPPER BOUND — every level the run owned given
-  to Primary, free, inside the challenge — peaks at **0.149**: +2.5 decades against ~3,000 missing. And the guide's
+  guide moves every level into Primary. Gate R3c-2p runs one attempt three ways from `all/M26.json` (long past
+  H21, the buildings rebuilt): the control peaks at **0.1778** of the goal exponent (0.1727 by 50 game-s, where the
+  give-up rule exits); a CONSTRUCTED UPPER BOUND — the whole Space capacity (69) given to Primary, free, inside the
+  challenge — peaks at **0.1784**: +2.1 decades against ~2,935 missing. Across the run's own attempts the peak climbs
+  from 0.139 (at 41363) to 0.171 (at 87621): the economy, not the arrangement, is what H22 is waiting on. And the guide's
   own ORDER does not survive this engine: after the game's `respec()`, entering H22 (an `h` reset) ZEROES the
   buildings while `spent` stays. ⚠ A second engine trap on the way: the PTR family's `updateTempData` skips a layer
   whose tab is closed, so a `buyMax()` issued with the Space tab closed reads a STALE cost and buys nothing — any
   future `prepare` step that buys must open the tab or refresh that layer's `tmp` first.
-- **M26 (q22) is a MULTIPLIER wall, not a price that runs away.** q22 costs `2e11·(q.time+1)^4.2` quirk energy and
+- **M26 (q22) is a MULTIPLIER wall, not a price that runs away — and it falls by itself.** q22 costs `2e11·(q.time+1)^4.2` quirk energy and
   energy accrues as `(t·M)^(QL−1)`: at 4 Quirk Layers, energy ÷ price ∝ `M³·t^−0.2`, so waiting in a q-run never
   pays and the reset cadence is not the lever (the best moment in a run is t ≈ 20, derived and measured). The gap is
   `M` = q11 (total quirks) × q21 (1.25^Super Boosters). The one tier-1 lever on quirk production — the row cycle's
   WEIGHT — was swept (gate R3c-2: 10 / 20 / 40 / 80) and the shipped 10 is best on every column: MORE `q` turns means
-  FEWER quirks, because `h` feeds `q` (q14's quirk multiplier reads Hindrance Spirit). The 5th Quirk Layer (32,768
-  quirks) flips the exponent — energy ÷ price ∝ `t^+0.8` — after which WAITING in a q-run is what buys q22, and
-  `reset:q`'s `gain>=2` resets every ~28 game-seconds. That is the next derivation this rung is owed (plan §45).
+  FEWER quirks, because `h` feeds `q` (q14's quirk multiplier reads Hindrance Spirit). **M26 lands at 83707
+  game-s** (chained from `all/M27.json`, twice equal in CI), q22 bought for **4.08e18 quirk energy** at q.time 55 with
+  32,297 total quirks, 4 Quirk Layers and 4 Super Boosters — still at 4 layers, so the multiplier grew enough on its
+  own. ⚠ The 5th Quirk Layer (32,768 quirks) flips the exponent — energy ÷ price ∝ `t^+0.8` — and from then on it is
+  WAITING in a q-run that buys a time-priced q upgrade, while `reset:q`'s `gain>=2` resets every ~28 game-seconds.
+  That is the derivation the next q upgrades (q23 "The Waiting Game", 5e19·(t+1)^5.4) are owed (plan §45).
 
 ### ⚠ What a PAUSE means on the `challenges` kind (R3a)
 
