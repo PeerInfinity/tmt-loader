@@ -189,7 +189,12 @@ const PTR_LADDER = path.join(REPO, 'tools/harness/ladder/ptr.json');
 const SNAP = (m) => path.join(REPO, 'tools/harness/snapshots/ptr/all', m + '.json');
 const OPEN = { diff: 1, ticks: 8000, 'wall-ms': 900000, ladder: PTR_LADDER, to: 'M12', stall: 1000000 };
 const L15 = { diff: 1, ticks: 21000, 'wall-ms': 900000, ladder: PTR_LADDER, to: 'M26', 'from-snapshot': SNAP('M15'), 'marks-continue': true, stall: 1000000 };
-const PIN15 = { M16: 17058, M17: 23492, M18: 25598, M19: 25937, M20: 26612, M21: 28058, M22: 30618, M23: 30683, M24: 30736, M25: 35778 };
+// ⛔ RE-RECORDED BY R3c PART 1, AS DATA: the dead-member rule's default reading moved to `high-act` (gate R3c-1, CI run
+// 35566730632 — the same leg, the same horizon, twice equal): M25 35778 → 35613 and the end 6e0e67d4b2836e8e →
+// 3602cc81c88ebd17; M16–M24 UNMOVED. This part's claim — the generated data is INERT against `--no-currency` — is a
+// comparison inside the run and does not move.
+const PIN15 = { M16: 17058, M17: 23492, M18: 25598, M19: 25937, M20: 26612, M21: 28058, M22: 30618, M23: 30683, M24: 30736, M25: 35613 };
+const END15 = { gs: 37048, hashGame: '3602cc81c88ebd17' };
 async function part4() {
   const run = (flags, repeat, stop) => runCells({ id: 'ptr', cells: [{ label: '', opt: '' }], flags: Object.entries(flags), pool: POOL, repeat, stop });
   const [od, on, ld, ln] = await Promise.all([run(OPEN, REPEAT, 'M12'), run({ ...OPEN, 'no-currency': true }, 1, 'M12'), run(L15, REPEAT, null), run({ ...L15, 'no-currency': true }, 1, null)]);
@@ -199,8 +204,8 @@ async function part4() {
   row({ gate: 'C1-4 INERTNESS the opening — --no-currency (before C1)', id: 'ptr', leg: 'the control', ok: !!o0.ok && o0.hashGame === o.hashGame && o0.gameSeconds === o.gameSeconds,
     ticks: o0.ticks, gameSeconds: o0.gameSeconds, diff: 1, hash: o0.hashGame, notes: `equal to the run with data: ${o0.hashGame === o.hashGame}` });
   const pinned = Object.entries(PIN15).every(([m, s]) => l.marks[m] === s);
-  row({ gate: 'C1-4 INERTNESS M15 → 37048 — WITH the generated data', id: 'ptr', leg: 'all/M15.json + 21,000 ticks, the shipped table', ok: !!l.ok && pinned && l.gameSeconds === 37048 && l.hashGame === '6e0e67d4b2836e8e' && (REPEAT < 2 || l.twiceEqual === true),
-    ticks: l.ticks, gameSeconds: l.gameSeconds, diff: 1, hash: l.hashGame, notes: `${Object.keys(PIN15).map((m) => `${m} ${l.marks[m] ?? '—'}`).join(' · ')} (§41's pins: ${pinned ? 'all equal' : 'MOVED'}); end ${l.gameSeconds} / ${l.hashGame} (pinned 37048 / 6e0e67d4b2836e8e); twice equal ${l.twiceEqual}` });
+  row({ gate: 'C1-4 INERTNESS M15 → 37048 — WITH the generated data', id: 'ptr', leg: 'all/M15.json + 21,000 ticks, the shipped table', ok: !!l.ok && pinned && l.gameSeconds === END15.gs && l.hashGame === END15.hashGame && (REPEAT < 2 || l.twiceEqual === true),
+    ticks: l.ticks, gameSeconds: l.gameSeconds, diff: 1, hash: l.hashGame, notes: `${Object.keys(PIN15).map((m) => `${m} ${l.marks[m] ?? '—'}`).join(' · ')} (§41's pins: ${pinned ? 'all equal' : 'MOVED'}); end ${l.gameSeconds} / ${l.hashGame} (pinned ${END15.gs} / ${END15.hashGame}, R3c); twice equal ${l.twiceEqual}` });
   row({ gate: 'C1-4 INERTNESS M15 → 37048 — --no-currency (before C1)', id: 'ptr', leg: 'the control', ok: !!l0.ok && l0.hashGame === l.hashGame && l0.gameSeconds === l.gameSeconds,
     ticks: l0.ticks, gameSeconds: l0.gameSeconds, diff: 1, hash: l0.hashGame, notes: `equal to the run with data: ${l0.hashGame === l.hashGame}` });
   row({ gate: 'C1-4 VERDICT: an unknown currency is today\'s behaviour, and ptr\'s table sets no foreign reserve', id: 'ptr', ok: rows.every((r) => r.ok), notes: `${rows.filter((r) => r.ok).length}/${rows.length}` });

@@ -96,17 +96,21 @@ const L15 = { diff: 1, profile: 'all', ticks: Number(a.ticks || 21000), 'wall-ms
   'from-snapshot': path.join(REPO, 'tools/harness/snapshots/ptr/all/M15.json'), 'marks-continue': true, stall: 1000000,
   eval: `({hs: String(player.h.points), qTotal: String(player.q.total), ql: String(player.q.buyables[11]), sb: String(player.sb.points), qUpg: player.q.upgrades.slice(), hChall: Object.assign({}, player.h.challenges), ch: tmtLoader.hookStats().challenges, cyc: tmtLoader.cycleState()})` };
 const PMARKS = ['M16', 'M17', 'M18', 'M19', 'M20', 'M21', 'M22', 'M23', 'M24', 'M25', 'M26', 'M27'];
-// ⛔ THE CONTROL HAS A KNOWN ANSWER at this horizon: R3b-2's shipped W = 10 cell (plan §40.4, CI run 35553187707) and
-// the planner's own leg (§41) — 37048 / `6e0e67d4b2836e8e`. `turnMark` absent must reproduce it to the hash, which is
-// the inertness of this slice's code for the shipped reading.
+// ⛔ BOTH ENDS HAVE A KNOWN ANSWER at this horizon. `turnMark=last` is R3b-2's shipped W = 10 cell (plan §40.4, CI run
+// 35553187707; the planner's own leg §41) — 37048 / `6e0e67d4b2836e8e` — so this slice's code is inert for that
+// reading to the hash. The DEFAULT is `high-act` since this part decided it (CI run 35566730632, cell 2, twice equal):
+// 37048 / `3602cc81c88ebd17`, M25 35613.
 const CONTROL_PIN = { gs: 37048, hashGame: '6e0e67d4b2836e8e', M25: 35778 };
+const ADOPTED_PIN = { gs: 37048, hashGame: '3602cc81c88ebd17', M25: 35613 };
 // the shipped rung (plan §40.5, independently reproduced by the planner §41) — the marks no cell may move
 const PIN15 = { M16: 17058, M17: 23492, M18: 25598, M19: 25937, M20: 26612, M21: 28058, M22: 30618, M23: 30683, M24: 30736 };
 const num = (s) => { const x = Number(s); return Number.isFinite(x) ? (Math.abs(x) >= 1e6 ? x.toExponential(2) : String(Math.round(x))) : String(s).slice(0, 10); };
+// ⚠ THE CELLS NAME THEIR READING: cell 0 was the shipped default (`''`) when this part measured it, and the default
+// moved because of it — so the control now says `turnMark=last` out loud and the DEFAULT cell is the adopted one.
 const P1_CELLS = [
-  { label: '', opt: '', note: 'the shipped rule: `mark` is the LAST ANCHOR (control)' },
+  { label: 'turnMark=last', opt: 'turnMark=last', note: 'R3b-2\'s reading: `mark` is the LAST ANCHOR (control)' },
   { label: 'turnMark=high', opt: 'turnMark=high', note: 'a true HIGH-WATER; a drop restarts only the clock' },
-  { label: 'turnMark=high-act', opt: 'turnMark=high-act', note: 'the high-water, cleared when the member itself resets' },
+  { label: '', opt: '', note: 'the DEFAULT since R3c: `high-act`, the high-water cleared when the member itself resets' },
 ];
 let p1Lines = null;   // the lines this process measured, for the shard file
 async function part1() {
@@ -115,7 +119,7 @@ async function part1() {
   const cells = CELL === null ? all : [all[CELL]];
   const repeat = Number(a.repeat || 2);
   const lines = await runCells({ id: 'ptr', cells, flags: Object.entries(L15), pool: POOL, repeat, stop: null,
-    onRun: (c, l) => console.log(`[PROGRESS] ${c.label || '(shipped)'} run ${l.run} → ${l.ok ? `${l.gameSeconds}s ${l.hashGame}` : 'FAILED ' + l.error} (${Math.round((l.box?.wallMs || 0) / 1000)}s wall)`) });
+    onRun: (c, l) => console.log(`[PROGRESS] ${c.label || '(default)'} run ${l.run} → ${l.ok ? `${l.gameSeconds}s ${l.hashGame}` : 'FAILED ' + l.error} (${Math.round((l.box?.wallMs || 0) / 1000)}s wall)`) });
   // ⛔ ONE HORIZON FOR EVERY CELL (V5's discarded table): the horizon is what the FIRST cell reached — or, for a
   // shard, the one it was GIVEN — and a cell that stopped short (the wall, a crash) is RED rather than a shorter row.
   const horizon = HORIZON ?? lines[0].gameSeconds;
@@ -128,8 +132,8 @@ async function part1() {
     const c = cells[i];
     const unmoved = Object.entries(PIN15).every(([m, v]) => l.marks?.[m] === v);
     const ok = !!l.ok && (repeat < 2 || l.twiceEqual === true) && l.gameSeconds === horizon && unmoved;
-    verdict.push({ label: c.label || 'shipped', ok, unmoved, m25: l.marks?.M25 ?? null, m27: l.marks?.M27 ?? null });
-    row({ gate: `R3c-1 the dead-member rule's mark — ${c.label || 'the shipped LAST ANCHOR (control)'}`, id: 'ptr', leg: `all/M15 → ${L15.ticks} ticks, diff 1, profile all, ${repeat} run(s)`,
+    verdict.push({ label: c.label || 'default', ok, unmoved, m25: l.marks?.M25 ?? null, m27: l.marks?.M27 ?? null });
+    row({ gate: `R3c-1 the dead-member rule's mark — ${c.label || 'the DEFAULT (high-act since R3c)'}`, id: 'ptr', leg: `all/M15 → ${L15.ticks} ticks, diff 1, profile all, ${repeat} run(s)`,
       ok, ticks: l.ticks, gameSeconds: l.gameSeconds, diff: 1, hash: l.hashGame,
       notes: `${text(l)}; twice equal ${l.twiceEqual}${l.runs?.[1] ? ` (run 2 ${l.runs[1].gameSeconds}s/${l.runs[1].hashGame})` : ''}; horizon ${horizon}${l.gameSeconds === horizon ? '' : ' — STOPPED SHORT'}; M16–M24 ${unmoved ? 'unmoved' : 'MOVED'}; ${c.note}` });
   });
@@ -149,7 +153,7 @@ async function part1m() {
   const got = new Map();
   for (const f of fsm.readdirSync(dir).filter((x) => /^gates-r3c-part1-cell\d+\.json$/.test(x))) {
     const d = JSON.parse(fsm.readFileSync(path.join(dir, f), 'utf8'));
-    for (const l of d.lines || []) got.set(l.cell, { ...l, horizon: d.horizon, rowOk: (d.rows || []).every((r) => r.ok) });
+    for (const l of d.lines || []) got.set(l.cell, { ...l, horizon: d.horizon, commit: d.commit, rowOk: (d.rows || []).every((r) => r.ok) });
   }
   const missing = P1_CELLS.map((_, i) => i).filter((i) => !got.has(i));
   if (missing.length) { console.error(`REFUSED: cell(s) ${missing.join(', ')} produced no file — LESS LOOKS GREENER`); process.exit(1); }
@@ -157,18 +161,20 @@ async function part1m() {
   const summary = (l) => `M25 ${l.marks?.M25 ?? '—'} · M26 ${l.marks?.M26 ?? '—'} · M27 ${l.marks?.M27 ?? '—'}; HS ${num(e(l).hs)}, quirks ${num(e(l).qTotal)}, QL ${num(e(l).ql)}, SB ${num(e(l).sb)}, q upg [${e(l).qUpg}]; resets q ${l.actions?.['reset:q'] ?? 0} / h ${l.actions?.['reset:h'] ?? 0}; turns ${e(l).cyc && e(l).cyc['3'] ? e(l).cyc['3'].round : '—'}; ${l.gameSeconds} / ${l.hashGame}; twice equal ${l.twiceEqual}`;
   for (let i = 0; i < P1_CELLS.length; i++) {
     const l = got.get(i);
-    row({ gate: `R3c-1m cell ${i} — ${P1_CELLS[i].label || 'the shipped LAST ANCHOR (control)'}`, id: 'ptr', leg: `all/M15 → horizon ${l.horizon}`, ok: !!l.ok && l.rowOk && l.twiceEqual === true && l.gameSeconds === l.horizon,
-      ticks: l.ticks, gameSeconds: l.gameSeconds, diff: 1, hash: l.hashGame, notes: summary(l) });
+    row({ gate: `R3c-1m cell ${i} — ${P1_CELLS[i].label || 'the DEFAULT (high-act since R3c)'}`, id: 'ptr', leg: `all/M15 → horizon ${l.horizon}`, ok: !!l.ok && l.rowOk && l.twiceEqual === true && l.gameSeconds === l.horizon,
+      ticks: l.ticks, gameSeconds: l.gameSeconds, diff: 1, hash: l.hashGame, notes: `${summary(l)}; measured at \`${l.commit}\` (the cell file's own commit)` });
   }
   const c = got.get(0);
-  row({ gate: 'R3c-1m the CONTROL reproduces R3b-2\'s shipped cell to the hash — the new code is inert for the shipped reading', id: 'ptr', leg: `all/M15 → ${c.gameSeconds}`,
-    ok: c.gameSeconds === CONTROL_PIN.gs && c.hashGame === CONTROL_PIN.hashGame && c.marks?.M25 === CONTROL_PIN.M25, ticks: c.ticks, gameSeconds: c.gameSeconds, diff: 1, hash: c.hashGame,
-    notes: `${c.gameSeconds} / ${c.hashGame}, M25 ${c.marks?.M25} against the pin ${CONTROL_PIN.gs} / ${CONTROL_PIN.hashGame}, M25 ${CONTROL_PIN.M25}` });
+  const d = got.get(2);
+  row({ gate: 'R3c-1m both ends PINNED: `turnMark=last` is R3b-2\'s shipped cell to the hash, and the default is the adopted `high-act`', id: 'ptr', leg: `all/M15 → ${c.gameSeconds}`,
+    ok: c.gameSeconds === CONTROL_PIN.gs && c.hashGame === CONTROL_PIN.hashGame && c.marks?.M25 === CONTROL_PIN.M25 && d.gameSeconds === ADOPTED_PIN.gs && d.hashGame === ADOPTED_PIN.hashGame && d.marks?.M25 === ADOPTED_PIN.M25,
+    ticks: c.ticks, gameSeconds: c.gameSeconds, diff: 1, hash: c.hashGame,
+    notes: `last: ${c.gameSeconds} / ${c.hashGame}, M25 ${c.marks?.M25} (pin ${CONTROL_PIN.gs} / ${CONTROL_PIN.hashGame}, M25 ${CONTROL_PIN.M25}); default: ${d.gameSeconds} / ${d.hashGame}, M25 ${d.marks?.M25} (pin ${ADOPTED_PIN.gs} / ${ADOPTED_PIN.hashGame}, M25 ${ADOPTED_PIN.M25})` });
   const cells = [0, 1, 2].map((i) => got.get(i));
   const hs = (l) => Number(e(l).hs), qt = (l) => Number(e(l).qTotal);
-  const better = cells.slice(1).filter((l) => (l.marks?.M25 ?? Infinity) <= (c.marks?.M25 ?? Infinity) && hs(l) >= hs(c) && qt(l) >= qt(c));
+  const better = cells.slice(1).filter((l) => (l.marks?.M25 ?? Infinity) <= (c.marks?.M25 ?? Infinity) && hs(l) >= hs(c) && qt(l) >= qt(c)).map((l) => ({ ...l, label: l.label || 'the default (high-act)' }));
   row({ gate: 'R3c-1m VERDICT (report): does a HIGH-WATER mark win without moving M16–M24?', id: 'ptr', ok: rows.every((r) => r.ok), ticks: null, gameSeconds: c.gameSeconds, diff: 1, hash: null,
-    notes: `${cells.map((l, i) => `${P1_CELLS[i].label || 'shipped'}: M25 ${l.marks?.M25 ?? '—'}, HS ${num(e(l).hs)}, quirks ${num(e(l).qTotal)}`).join(' · ')} — a cell WINS only if M25 is no later AND Hindrance Spirit AND quirks are no lower than the control's: ${better.length ? better.map((l) => l.label).join(', ') : 'NONE'}` });
+    notes: `${cells.map((l, i) => `${P1_CELLS[i].label || 'default (high-act)'}: M25 ${l.marks?.M25 ?? '—'}, HS ${num(e(l).hs)}, quirks ${num(e(l).qTotal)}`).join(' · ')} — a cell WINS only if M25 is no later AND Hindrance Spirit AND quirks are no lower than the control's: ${better.length ? better.map((l) => l.label).join(', ') : 'NONE'}` });
 }
 
 const PARTS = { 0: part0, 1: part1, '1m': part1m };

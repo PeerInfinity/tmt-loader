@@ -912,11 +912,15 @@
   // It is what a feature's DEFAULT `priority` is read from, so a table that reorders the kinds reorders the
   // defaults with it and a player editing one number is editing the same scale the loader is already using.
   var kindOrderNow = KINDS_ALL.slice();
-  // R3c Part 1 — WHICH READING of the dead-member rule's `mark` (see `noteCloser`). `last` is R3b-2's shipped rule (a
-  // drop lowers the mark: the LAST ANCHOR); `high` keeps a true HIGH-WATER and lets a drop restart only the CLOCK;
-  // `high-act` is `high` with the mark cleared when the member itself resets. A measurement lever (`--auto-opt
-  // turnMark=…`), resolved once by `derive()`; a mistyped value is a hard fail there (V4's rule).
-  var TURN_MARKS = ['last', 'high', 'high-act'], TURN_MARK_DEFAULT = 'last', turnMarkNow = TURN_MARK_DEFAULT;
+  // R3c Part 1 — WHICH READING of the dead-member rule's `mark` (see `noteCloser`). `last` is R3b-2's rule (a drop
+  // lowers the mark: the LAST ANCHOR); `high` keeps a true HIGH-WATER and lets a drop restart only the CLOCK;
+  // `high-act` is `high` with the mark cleared when the member itself resets. ⛔ THE DEFAULT IS `high-act` SINCE R3c,
+  // BY MEASUREMENT: the whole stretch `all/M15.json` → 37048, twice per cell, CI run 35566730632 (gate R3c-1) —
+  // M16–M24 unmoved in every cell; M25 35778 → 35613 under both high readings; Hindrance Spirit 1000 → 1412 (`high`)
+  // / 1480 (`high-act`); quirks 636 → 641 / 636. `high-act` over `high` BY CONSTRUCTION, the brief's own subtlety:
+  // a LIVE member's own reset starts a new climb, so `h` does not depend on incidental wipes to keep its turn. A
+  // lever (`--auto-opt turnMark=…`), resolved once by `derive()`; a mistyped value is a hard fail there (V4's rule).
+  var TURN_MARKS = ['last', 'high', 'high-act'], TURN_MARK_DEFAULT = 'high-act', turnMarkNow = TURN_MARK_DEFAULT;
   var features = [];
   var byId = {};
   T.features = features;
@@ -1492,9 +1496,9 @@
   // ⛔ ⚠ AND THE CONSEQUENCE, NAMED RATHER THAN SMOOTHED, BECAUSE THE MUTANT ROUND IS WHAT FOUND IT: because a
   // drop lowers the mark, `mark` is NOT a high-water across a member's turns — it is the last anchor. So a dead
   // member pays its WHOLE climb again on every turn it is given (~300 game-seconds on PTR's `o`), not just `H`.
-  // The alternative — keep the high-water and let a drop restart only the CLOCK — would cost `o` and `ss` `H`
-  // apiece instead, and is the first thing the next slice should measure; it is not taken here because it was not
-  // measured here, and §34's whole lesson is that an unmeasured alternative is what bites.
+  // The alternative — keep the high-water and let a drop restart only the CLOCK — costs `o` and `ss` `H` apiece
+  // instead. ⛔ R3c MEASURED IT AND IT IS NOW THE DEFAULT (`turnMark`, above): the paragraph above describes the
+  // `last` reading, which stays selectable and is what every pin measured before R3c ran under.
   function noteCloser(C, f, now) {
     var p = turnDistance(f);
     if (p === null) { C.closer = now; return null; }   // no threshold this file can read ⇒ the rule abstains

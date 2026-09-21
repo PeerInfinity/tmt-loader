@@ -475,7 +475,10 @@ test('R3b-2 — a SIBLING’s wipe is not the holder’s failure: the mark follo
   // inside H — and the turn is taken from the member the cycle exists to feed.
   const state = fresh();
   state.can.a = false; state.req.a = 1e9; state.base.a = 1e6;
-  const ctx = boot({ 'reset:a': `always|turn@1/100000x/5/0/20`, 'reset:b': `always|turn@1/100000x/5/0/20` }, state);
+  // ⚠ R3c: THIS LEG IS ABOUT THE `last` READING, AND NAMES IT. The default is `high-act` since R3c Part 1 (gate R3c-1:
+  // M25 165 game-s sooner and 48 % more Hindrance Spirit over the whole stretch), under which a re-climb that never
+  // beats the old high IS released one window after the wipe — the R3c legs below construct that side.
+  const ctx = boot({ 'reset:a': `always|turn@1/100000x/5/0/20`, 'reset:b': `always|turn@1/100000x/5/0/20` }, state, { options: { turnMark: 'last' } });
   tick(ctx, 5);
   assert.equal(cyc(ctx).holder, 'reset:a', 'the leg needs the turn to have reached `a` before it measures anything');
   // ⛔ READ THE RELEASE, NOT THE HOLDER — and the mutant round is what taught this leg the lesson a sibling leg had
@@ -560,7 +563,7 @@ test('R3c — a dead member re-climbing BELOW its old high: the HIGH-WATER relea
     const rel = releasesOver(ctx, 120, () => { state.base.a *= 1.05; });  // a slow re-climb: 1.05^120 ≈ 350, never 1e6
     return { rel, b: (acts(ctx)['reset:b'] || 0) - bAt };
   });
-  const last = run(null), high = run('high');
+  const last = run('last'), high = run('high');
   assert.equal(last.rel, 0, `under the LAST ANCHOR a re-climb is progress, so nothing may release it: ${JSON.stringify(last)}`);
   assert.ok(high.rel >= 2, `under the HIGH-WATER a re-climb below the old high is NOT progress — one window per turn: ${JSON.stringify(high)}`);
   assert.ok(high.b > last.b, `the released turns must reach the OTHER member: ${JSON.stringify({ last, high })}`);
@@ -576,7 +579,7 @@ test('R3c — a LIVE member whose base keeps being WIPED keeps its turn under th
     const rel = releasesOver(ctx, 120, (i) => { state.base.a = i % 10 === 0 ? 1 : state.base.a * 1.5; });   // wiped every 10 s
     return { rel, b: (acts(ctx)['reset:b'] || 0) - bAt };
   });
-  for (const mode of [null, 'high', 'high-act']) {
+  for (const mode of [null, 'last', 'high', 'high-act']) {   // null = the DEFAULT (`high-act` since R3c)
     const r = run(mode);
     assert.equal(r.rel, 0, `${mode || 'last'}: a member wiped every 10 s inside a 20 s window was released: ${JSON.stringify(r)}`);
     assert.equal(r.b, 0, `${mode || 'last'}: the turn left the wiped member: ${JSON.stringify(r)}`);
@@ -603,6 +606,14 @@ test('R3c — `high-act`: a member that RESETS starts a new high, so its next cl
   // MUTANT `m-r3c-act-keeps-the-mark` (the clear on a reset removed): `high-act` behaves as `high` and reds.
 });
 
-test('R3c — `turnMark` is a hard fail when mistyped, and ABSENT means the shipped reading', () => {
+test('R3c — `turnMark` is a hard fail when mistyped, and ABSENT means the shipped reading (`high-act`)', () => {
   assert.throws(() => boot({ 'reset:a': H20, 'reset:b': H20 }, fresh(), { options: { turnMark: 'highwater' } }), /option turnMark must be one of last, high, high-act/);
+  // absent ≡ `high-act`, by behaviour: the dead-member re-climb of the first R3c leg is released under both
+  const leg = (mode) => markLeg(mode, (ctx, state) => {
+    for (let i = 0; i < 34; i++) { state.base.a *= 1.5; tick(ctx, 1); }
+    tick(ctx, 40); state.base.a = 1;
+    return releasesOver(ctx, 120, () => { state.base.a *= 1.05; });
+  });
+  assert.equal(leg(null), leg('high-act'), 'the default is not `high-act`');
+  assert.notEqual(leg(null), leg('last'), 'the default still reads as the LAST ANCHOR');
 });

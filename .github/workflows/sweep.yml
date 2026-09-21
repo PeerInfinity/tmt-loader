@@ -1381,8 +1381,9 @@ jobs:
   # high-water cleared on the member's own reset), the WHOLE stretch `all/M15.json` → 21,000 ticks, twice per cell.
   # ⛔ SHARDED BY CELL, because three cells of that leg do not fit a 10-minute local wall side by side (measured at
   # R3c: seven processes walled every cell at ~33,600 game-s). ONE horizon, GIVEN (`--horizon`), so a shard can never
-  # agree with a horizon it measured itself; the merge refuses a missing cell by name and holds the control to its
-  # known answer (37048 / `6e0e67d4b2836e8e`, R3b-2's shipped cell).
+  # agree with a horizon it measured itself; the merge refuses a missing cell by name and holds BOTH ends to known
+  # answers: `turnMark=last` = R3b-2's shipped cell (37048 / `6e0e67d4b2836e8e`), the default = the adopted
+  # `high-act` (37048 / `3602cc81c88ebd17`, CI run 35566730632).
   # ---------------------------------------------------------------------------------------------------------------
   r3c-mark:
     name: R3c the dead-member rule's mark — cell ${{ matrix.cell }}
@@ -1434,7 +1435,7 @@ jobs:
           retention-days: 14
 
   r3c-mark-merge:
-    name: R3c the dead-member rule's mark — merge + the pinned control
+    name: R3c the dead-member rule's mark — merge + both pinned ends
     needs: r3c-mark
     if: always()
     runs-on: ubuntu-latest

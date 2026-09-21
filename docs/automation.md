@@ -1211,8 +1211,11 @@ is). Every term is the engine's own:
   one function (`turnDistance`) is the only place that knows which is which. A `custom` layer declares no threshold
   this file can read (its `canReset` is the game's own function), so it has **no distance** and the rule abstains
   rather than guessing.
-- the **anchor is the member's BEST distance so far**, kept across its turns — not the best within this turn.
-  ⛔ This is the part the plan got wrong and measurement corrected. Plan §32.4a expected the discriminator to be
+- the **anchor (`mark`) is the LAST distance the clock restarted at** — ⛔ NOT the member's best so far, which is
+  what this line said until R3c. R3b-2's own mutant round showed it (`m-r3b2-mark-forgotten-each-turn` survives):
+  because a DROP lowers the mark (below), a dead member's mark is re-established from its wiped value on the first
+  tick of each turn, so it pays its whole climb again every turn. R3c measured the high-water alternative as the
+  `turnMark` lever (below). What the plan got wrong, and measurement corrected, is the discriminator itself. Plan §32.4a expected the discriminator to be
   that `h`'s base rises while `ss`'s "does not move at all". **`ss`'s does move**: while it holds the turn nothing
   on its row can wipe row 2, so it climbs 0 → 17 (and `o`'s 0 → 5) over ~300 game-seconds and only THEN plateaus.
   Both dead members spend their first five minutes getting genuinely closer, so *"is it moving?"* does not separate
@@ -1223,6 +1226,25 @@ is). Every term is the engine's own:
   evidence about the ROW, not about the holder, so the mark follows the distance down and the clock restarts.
   Against a high-water that only ever rises, those losses accumulate until the re-climb cannot beat it inside `H`
   and the turn is taken from the one member the cycle exists to feed.
+- ⛔ **R3c: THE DEFAULT READING OF `mark` IS NOW A HIGH-WATER (`turnMark`, gate R3c-1).** `--auto-opt
+  turnMark=last|high|high-act`: `last` is the reading the two bullets above describe (a drop lowers the mark);
+  `high` keeps the member's HIGHEST distance and lets a drop restart only the CLOCK — a re-climb below the old high
+  is not progress, so a dead member costs one window `H` per turn instead of its whole climb; **`high-act`** (the
+  default) is `high` with the mark cleared when the member itself RESETS, so a live member's own reset starts a new
+  climb. ⚠ "A drop" is a fall since the LAST READING, not a reading below the mark — the first cut read every tick of
+  a re-climb as a drop and never released anything (a stub leg caught it). Measured over the whole stretch
+  `all/M15.json` → 37048, twice per cell, in CI shards (run 35566730632):
+
+  | reading | M16–M24 | M25 | Hindrance Spirit | quirks | end `hashGame` |
+  |---|---|---|---|---|---|
+  | `last` (R3b-2) | 17058 … 30736 | 35778 | 1000 | 636 | `6e0e67d4b2836e8e` |
+  | `high` | unmoved | **35613** | 1412 | 641 | `c967932d7c509685` |
+  | **`high-act` ⇐ default** | unmoved | **35613** | **1480** | 636 | `3602cc81c88ebd17` |
+
+  Both high readings win on every column the rung is scored on; `high-act` is chosen over `high` BY CONSTRUCTION
+  — `h`'s protection under `high` is incidental (Time Energy wiped by `t`'s own resets restarts its clock), under
+  `high-act` it is the member's own reset. The live-member concern the `last` reading was built for is a
+  constructed leg (`cycle.test.mjs`: a member wiped every 10 s inside a 20 s window keeps its turn under all three).
 - **`B` defaults to 0**, which is R3a's own control — *"release only when the distance stops dead"*. It is what the
   plateau needs, and it makes the READING of the fraction (linear or logarithmic) irrelevant, because a strict
   increase is a strict increase under either. R3a's rule had to take logs; this one does not.
