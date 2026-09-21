@@ -213,14 +213,18 @@ function tables(lines, part) {
   }
 }
 
-// ---- Part fix: the ladder's FIXTURES regenerated under the shipped configuration (the yield ON) ---------------------
-// ⛔ `all/M04.json` is "passive PP" — the first mark at which the yield can act — so every later fixture moves and
-// M01–M04 do not. The shipped leg from it runs TWICE, each run writing every mark's snapshot to its own directory, and
-// a fixture is committed only from a run whose twin wrote the same file (gameSeconds, full hash, hashGame) — R3c-2f's
-// pattern. The DECLARED set is what the first CI run measured; a leg that writes one more or one fewer is a finding.
-const FIX = { diff: 1, profile: 'all', ticks: 85000, 'wall-ms': WALL, ladder: path.join(REPO, 'tools/harness/ladder/ptr.json'), to: 'M31',
-  'from-snapshot': SNAP('M04'), 'marks-continue': true, stall: 1e9 };
-const FIX_DECLARED = ['M05', 'M06', 'M07', 'M08', 'M09', 'M10', 'M11', 'M12', 'M13', 'M14', 'M15', 'M16', 'M17', 'M18', 'M19', 'M20', 'M21', 'M22', 'M23', 'M24', 'M25', 'M26', 'M27'];
+// ---- Part fix: the ladder's FIXTURES regenerated under the shipped configuration, as ONE chain from a FRESH game ----
+// ⛔ THE WHOLE LADDER, FROM M01 (planner, 2026-09-21, from the milestone-experiment arc): `all/M15.json` sat at 16048
+// game-s because M01–M15 were written weeks ago under the A2 / R1′ policies, while a fresh game under the shipped table
+// reaches q ms 5 (M22) at 22661 where the committed ladder said 30618 — every rung since R2 resumed from a fixture that
+// baked in an OLD policy ("a fixture bakes in the policy that produced it", at the root of the chain). So the fixtures
+// are regenerated as ONE uninterrupted run from a fresh game, under the table and defaults as they ship after F1, and
+// every fixture is a state the shipped automation actually reaches. The leg runs TWICE, each run writing every mark's
+// snapshot to its own directory; a fixture is committed only from a run whose twin wrote the same file (gameSeconds,
+// full hash, hashGame) — R3c-2f's pattern. The DECLARED set is what the first CI run measured.
+const FIX = { diff: 1, profile: 'all', ticks: 100000, 'wall-ms': WALL, ladder: path.join(REPO, 'tools/harness/ladder/ptr.json'), to: 'M31',
+  'marks-continue': true, stall: 1e9 };
+const FIX_DECLARED = ['M01', 'M02', 'M03', 'M04', 'M05', 'M06', 'M07', 'M08', 'M09', 'M10', 'M11', 'M12', 'M13', 'M14', 'M15', 'M16', 'M17', 'M18', 'M19', 'M20', 'M21', 'M22', 'M23', 'M24', 'M25', 'M26', 'M27'];
 async function partFix() {
   const { spawn } = await import('node:child_process');
   const base = path.join(REPO, 'tools/harness/results/f1-fixtures');
@@ -234,10 +238,10 @@ async function partFix() {
     c.on('exit', (code, sig) => { let r; try { r = JSON.parse(fs.readFileSync(out, 'utf8')); } catch (e) { r = { ok: false, error: `no result (${code}/${sig}): ${e.message}` }; } ok(r); });
   });
   const [r1, r2] = await Promise.all(dirs.map((d, i) => leg(d, i + 1)));
-  row({ gate: 'F1-fix the shipped leg from all/M04.json, twice, writing fixtures', id: 'ptr', leg: `all/M04 → ${FIX.ticks} ticks, diff 1`,
+  row({ gate: 'F1-fix the shipped leg from a FRESH game, twice, writing fixtures', id: 'ptr', leg: `fresh → ${FIX.ticks} ticks, diff 1`,
     ok: !!r1.ok && !!r2.ok && r1.gameSeconds === r2.gameSeconds && r1.hashGame === r2.hashGame && !r1.stall?.walled,
     ticks: r1.ticks, gameSeconds: r1.gameSeconds, diff: 1, hash: r1.hashGame, notes: `run 2 ${r2.gameSeconds} / ${r2.hashGame}${r1.error || r2.error ? `; ERROR ${String(r1.error || r2.error).slice(-300)}` : ''}` });
-  const files = fs.readdirSync(dirs[0]).filter((f) => f.endsWith('.json')).sort();
+  const files = fs.readdirSync(dirs[0]).filter((f) => f.endsWith('.json')).sort((x, y) => Number(x.slice(1, -5)) - Number(y.slice(1, -5)));
   for (const f of files) {
     const A = JSON.parse(fs.readFileSync(path.join(dirs[0], f), 'utf8'));
     const B = fs.existsSync(path.join(dirs[1], f)) ? JSON.parse(fs.readFileSync(path.join(dirs[1], f), 'utf8')) : null;

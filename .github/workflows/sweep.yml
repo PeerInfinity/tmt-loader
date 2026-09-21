@@ -2277,11 +2277,11 @@ jobs:
             echo '```'
           } >> "$GITHUB_STEP_SUMMARY"
 
-  # F1-fix: the ladder's fixtures regenerated under the shipped configuration (the yield ON), the shipped leg TWICE
-  # from all/M04.json, every mark's snapshot written by each run into its own directory and compared file by file;
+  # F1-fix: the ladder's fixtures regenerated under the shipped configuration (after F1), the shipped leg TWICE from
+  # a FRESH game — ONE chain, M01 onward — every mark's snapshot written by each run into its own directory and compared file by file;
   # both sets are uploaded and a fixture is committed only from a run whose twin agreed.
   f1-fixtures:
-    name: F1 fixtures — the shipped leg from all/M04 twice
+    name: F1 fixtures — the shipped leg from a fresh game, twice
     needs: fast
     runs-on: ubuntu-latest
     timeout-minutes: 100
