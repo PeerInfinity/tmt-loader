@@ -6,7 +6,7 @@ The loader has three opt-ins, and until U3 the only way to reach any of them was
 |---|---|---|
 | `?mobile=1` | the single-column mobile LAYOUT (`loader/mobile.css`); implies the bar | [mobile.md](mobile.md) |
 | `?navbar=1` | the bottom NAV BAR and the layer list it opens | [mobile.md](mobile.md) |
-| `?automation=1` | the automation registry, the `au` layer, `games-auto/<id>.js` | [automation.md](automation.md) |
+| `?automation=1` | the automation registry, the `au` layer, `games-auto/<id>.json`, `games-data/<id>.json` | [automation.md](automation.md) |
 
 Since U3 each is also a button in the game's own **options tab**, and a choice made there is remembered. Nothing
 about the flags themselves changed: the parameters mean what they always meant, and a page that carries neither a

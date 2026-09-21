@@ -7,13 +7,13 @@ feature only calls the engine's own functions (`doReset`, `buyUpgrade`, `buyBuya
 calls each layer's `automate()`.
 
 Since S1 the features are **derived from what each layer declares** — every Modding Tree game gets them with no per-game
-code — and a per-game **data table** (`games-auto/<id>.js`) holds only what the game's authors did not declare: orders,
+code — and a per-game **data table** (`games-auto/<id>.json`) holds only what the game's authors did not declare: orders,
 measured policy constants, exclusions with a reason, gates.
 
 ## Enabling
 
 Automation is **opt-in**: add `automation=1` to the URL. Without it the loader is the game plus the hook contract
-(`docs/contract.md`) — no `au` layer, no toggles, nothing written to the save, `games-auto/<id>.js` never fetched — and
+(`docs/contract.md`) — no `au` layer, no toggles, nothing written to the save, neither `games-auto/<id>.json` nor `games-data/` ever fetched — and
 `?profile=` / `?autoOpt=` are ignored with a console warning.
 
 ```
@@ -835,7 +835,7 @@ with nothing on screen explaining it would be a feature that had silently died.
 - **PTR's M21 wall** (plan §24.7 / §26): a `q` reset wipes row 2 and Time Energy with it, so the policy that farms
   quirks fastest is the one that never lets TE reach the 1e30 `h` needs. `while: "!hasMilestone('q',4) || player.h.unlocked"` on
   `reset:q` — *pause once q milestone 4 holds, until h is unlocked* — makes M21 and M22 a sequence again. It is the
-  entry `games-auto/ptr.js` now ships.
+  entry `games-auto/ptr.js` shipped (now `games-auto/ptr.json`, C1).
 - **`always` on a deep NORMAL layer is a trap a player can pick from the V2 picker today** (measured by the planner,
   2026-09-20): forced onto PTR's `reset:h`, it reaches 38 hindrance spirit and then freezes quirks at 10 total —
   `reset:q` reads *"Cannot reset — 1.42e336 of 1.00e512"* — because every `h` reset wipes row 2 as well, `h`'s
@@ -1463,45 +1463,86 @@ TMT 2.2.1's `gameLoop` skips `automate` for a layer the player has not unlocked;
 `automate` — called after every tree layer — runs the features of each hooked layer whose slot did not run. Every hooked
 layer's features run exactly once per tick (`tmtLoader.hookStats()` counts it; gate A1-1).
 
-## The data table (`games-auto/<id>.js`)
+## The data table (`games-auto/<id>.json`)
 
-A classic script named by the manifest's `auto` field, inserted **before** `tmt-auto.js` (page and harness), which reads
-it when it derives the features. It only assigns data:
+⛔ **C1 (§40-R ruling B): a table is a JSON DOCUMENT with a published schema**, not a script that assigns an object. A
+script cannot be validated without running it, and its comments were doing work that data should do. The manifest's
+`auto` field names the file (`games-auto/<id>.json`, and `tools/harness/check-manifest.mjs` refuses any other path); the
+page FETCHES and parses it in automation mode, the harness reads it, and either hands the parsed object to
+`tmt-auto.js` as `tmtLoader.autoTable` **before** that file runs — the same order the script had, so everything that
+depended on it (`--no-auto`, `?autoOpt=`, the load failing loudly on a bad table, node ≡ page parity) is unchanged.
 
-```js
-tmtLoader.autoTable = {
-  id: 'ptr',                                               // must equal the game id
-  unlockOrder: [['g', 'b'], ['s', 't', 'e']],              // sibling lists: the i-th member's reset waits for those before it
-  kindOrder: ['toggles', 'reset', 'upgrades', 'buyables', 'challenges', 'clickables'],
-  policies: { 'reset:p': 'interval>=10' },                 // a feature's default policy
-  alternatives: { 'reset:p': ['always', 'gain>=1'] },      // listed next to the default (featureState / the au tab)
-  order: { 'upgrades:e': [11], 'challenges:h': [11, 12] }, // upgrades order / order-then-cheapest, buyables order, challenge sequence
-  gates: { 'reset:q': "hasMilestone('h', 2)" },            // `while`: the feature PAUSES while the predicate is false
-  off: { 'buyables:t': 'Extra Time Capsules cost Boosters' }, // NOT registered; the reason is required (tmtLoader.autoExcluded)
-  keep: { 'reset:b': { layer: 'b', id: 0 } },              // keepsUpgrades' milestone
-  clickables: { c: [{ id: 11, when: 'player.c.points.gte(10)' }] },
-  provenance: { 'reset:p': 'R1′ (SUMMARY gate R1′-2.3): gain>=2x reached … against interval>=10’s …' },
-  options: { },                                            // free-form; merged under ?autoOpt= into tmtLoader.autoOptions
-};
+```json
+{
+  "formatVersion": 1,
+  "id": "ptr",
+  "unlockOrder": [["g", "b"], ["s", "t", "e"]],
+  "kindOrder": ["toggles", "reset", "upgrades", "buyables", "challenges", "clickables"],
+  "policies": { "reset:p": "gain>=2x" },
+  "alternatives": { "reset:p": ["interval>=10", "always", "gain>=1"] },
+  "order": { "challenges:h": [11, 12] },
+  "gates": { "reset:q": "!hasMilestone('q',4) || player.h.unlocked" },
+  "off": { "buyables:t": "a reason is required" },
+  "keep": { "reset:b": { "layer": "b", "id": 0 } },
+  "clickables": { "c": [{ "id": 11, "when": "player.c.points.gte(10)" }] },
+  "options": {},
+  "provenance": {
+    "reset:p": { "gate": "R1′-2.3", "commit": "d9b2ca177835d5c50d2ec02489f3a5dc761c0dd1", "note": "one line a player can read" },
+    "reset:q": [ { "gate": "R2-S1", "commit": "…", "note": "…" }, { "gate": "R3b2-2", "run": "35553187707", "commit": "…", "note": "…" } ],
+    "unlockOrder:0": { "gate": "A1-3", "commit": "…", "note": "…" },
+    "reset:unlock": { "unverified": true, "note": "predates provenance; no measured row" }
+  }
+}
 ```
 
-Every key is optional; **a game without a table (or `{ id }`) gets the derived defaults**. Rules, all checked at load
-(a failure throws, which fails the page load):
+**The schema** is `schemas/games-auto.schema.json` (JSON Schema 2020-12), and it has ONE source: the `<table-schema>`
+block of `loader/tmt-auto.js`, which is pure (it touches no game global) so it can run in two places. The loader
+validates the table against it at load; `tools/auto-tables.mjs` extracts the same block, writes the published file from
+it (`--write`; `--check` fails if the committed file differs), and validates every `games-auto/<id>.json` with the
+**same** `schemaErrors` function. `TABLE_KEYS` — the key list the derivation checks — is read off the schema's
+`properties`, so there is no second list to drift. ⚠ The schema lives in `schemas/`, NOT beside the tables: the `a1` CI
+job derives its game set from `ls games-auto/*.json`, and a `schema.json` there would be read as a game called
+`schema` (`loader/census.test.mjs` asserts the directory holds tables only).
 
-- an unknown top-level key throws;
-- every feature id in `policies`, `alternatives`, `order`, `gates`, `off`, `keep`, `unlockOrder` (as `reset:<l>`) and
-  `clickables` (as `clickables:<l>`) must be one the derivation produces for this game — checked against the whole
-  derived set, so a table stays valid under any `kinds` restriction;
+Rules, all checked at load (a failure throws, which fails the page load, by name):
+
+- **`formatVersion`** is required in any non-empty table, and the loader refuses a version it does not read
+  (`formatVersion 2 is not one this loader reads (1)`) — never reads it as if it were the version it knows. An ABSENT
+  table (no `auto` field, or `--no-auto`) is the derived defaults, not a table;
+- `id` is required and must equal the game (and, for `tools/auto-tables.mjs`, the file's name);
+- an unknown top-level key throws (`unknown key "polices" (known: …)`);
+- every feature id in `policies`, `alternatives`, `order`, `gates`, `off`, `keep`, `unlockOrder` (as `reset:<l>`),
+  `clickables` (as `clickables:<l>`) and `provenance` must be one the derivation produces for this game — checked
+  against the whole derived set, so a table stays valid under any `kinds` restriction. `provenance` may also key the
+  two table-wide entries: `unlockOrder:<i>` (one per list) and `kindOrder`;
 - `off` needs a reason string; `clickables` entries need an `id` the layer declares and a `when` string;
-- `provenance` (V1) needs a non-empty one-line string per entry: WHERE that entry came from — the SUMMARY gate row or
-  the plan § that measured it. ⚖ minimize hardcoding has always required that as a source COMMENT; this makes it data
-  too, so the `Advanced` subtab can tell a player why a default is what it is instead of leaving the answer in a file
-  nobody playing the game will open (survey §4.11). An id the table EXCLUDES is still a derived candidate, so an
-  exclusion may carry its provenance. It is author-written text rendered through `v-html`, and the loader escapes it.
-  ⚠ It is OPTIONAL, and `games-auto/something.js` deliberately does not have it: a table without the key still works
-  and its rows read `provenance: null`, which is what keeps V1's per-fork cost "unchanged";
-- `kindOrder` is a permutation of the six kinds;
-- ⚖ minimize hardcoding: a NUMBER or an ORDER in a table carries its provenance in a comment (a SUMMARY row or a plan §).
+- `kindOrder` is a permutation of the six kinds.
+
+**Structured provenance, and the gate that makes it one.** A record is `{gate, commit, digest?, run?, note}` — the
+SUMMARY gate id that measured the entry, the commit it was measured at, the digest step where there is one, and ONE
+line a player can read — or `{unverified: true, note}` for an entry that predates provenance and has no measured row
+behind it. A feature may carry a LIST of records (ptr's `reset:q` has three: R2's floor, V4's pause, R3b-2's cycle).
+`tools/auto-tables.mjs --provenance` (CI, with full history) fails a table when:
+
+- a `policies`, `gates` or `keep` entry, or an `unlockOrder` list, has no record;
+- a record's `commit` is not an ancestor of HEAD;
+- a record's `gate` appears in no row of `tools/harness/results/SUMMARY.md` (a row whose first cell begins with the id)
+  **and** the record names no CI `run` — for a gate that wrote its rows only to CI job output (R3b-2's did);
+- `unverified` records are LISTED, never failed, and never given an invented gate id (Something Tree's `reset:unlock`
+  and `buyables:fundamental`, both "A1 table").
+
+⚠ It found two stale citations on its first run: ptr's `buyables:e` and `buyables:t` cited "gate R1′-2.2" and "R1′-2.4",
+which appear in no SUMMARY row — the measurements are R1′-1's rows "C the Enhance reserve only" and "B Extra Time
+Capsules only", and the records now say so.
+
+The au tab still shows ONE line per feature: the loader renders it from the records (`note (gate X at <commit>)`, the
+records joined with ` — `) into `tmtLoader.autoProvenance`; `tmtLoader.autoProvenanceRecords` keeps the records. It is
+author-written text rendered through `v-html`, and the loader escapes it.
+
+**What the schema deliberately leaves EXPERIMENTAL** (`x-experimental`: accepted, not frozen — the next rungs may still
+move them): the `|turn@…` and `|give-up@…` modifiers inside a `policies` / `alternatives` string, every `challenges:*`
+entry of `policies`, `alternatives`, `order` and `gates`, and — unanswered, and left so — whether a table may state
+`until` / `priority` (today only `while` has a table form, `gates`).
 
 **Predicates** (`gates`, clickable `when`) are JavaScript expressions over the engine's globals, compiled once with
 `new Function('return (' + src + ')')` — the global scope, the same one the harness's `--until` / `--marks` strings run
@@ -1509,7 +1550,14 @@ in (gate S1-1 checks both agree at every tick, in Node and in the page): `hasUpg
 `player.points.gte('1e300')`, `tmtLoader.autoOptions.x === '1'`. A predicate that throws reads as false.
 `tmtLoader.predicate(src)` returns the compiled function.
 
+**What adding a game's table costs now:** one JSON file, one `auto` field in its manifest, and one provenance record per
+entry whose gate is in SUMMARY and whose commit is on `main` — `tools/auto-tables.mjs` says which is missing. The a1 CI
+job picks the game up by the file existing.
+
 ## The two tables (measured defaults)
+
+Each row's WHY is the entry's provenance record; the full narrative the `.js` files carried as comments is below the
+table, verbatim.
 
 | Game | Feature | Table policy | Why (`tools/harness/results/SUMMARY.md`) |
 |---|---|---|---|
@@ -1517,18 +1565,374 @@ in (gate S1-1 checks both agree at every tick, in Node and in the page): `hasUpg
 | ptr | `reset:b`, `reset:g` | `gain>=1` (alt. `keepsUpgrades`, milestone 0 of each) | A1 table; `unlockOrder` `[g, b]`: g first ahead at every predicate and every p interval tried |
 | ptr | `reset:e` | **`gain>=2x`** | R1′ (gate R1′-2.3, one 12 000-tick leg from the frontier): `e` is row 2's only NORMAL layer (exponent 0.02), so its gain is a function of how high points CLIMBED, and an interval reset spends that climb every 5 s for ~1.5 EP. `interval>=5` and `always` reach M11 only (147 resets, 16 EP held, best 400); `unlocks-purchase` M11 with 263 EP; `gain>=2x` reaches **every remaining mark of the rung** (M11 14745 · M12 14909 · M13 14132 · M14 14879 · M15 16048 · M16 24179) in 299 resets, ending on 2.35e92 EP |
 | ptr | `reset:t`, `reset:s` | **`always`** | A2-3 measured `interval>=5` tying with `always` / `gain>=1` during the unlock phase; R1′-2.3 measured the tie again at the frontier (M16 24212 / 24203 against the interval's 24236) and took the constant-free rule — a static layer's gain is 1 per reset and its REQUIREMENT paces it, so a clock has nothing to be a proxy for. `unlockOrder` `[s, t, e]` (s,t,e 3550 / 6037 / 8035; t,e,s and e,t,s never reach (ii)) |
-| ptr | `buyables:t` | `buy` (was off) | R1′ lifted the exclusion. The Time Energy cap is `100·(2^(TC + extra TC) − 1)·enCapMult`, so each Extra Time Capsule DOUBLES it; without them it sits at 6300 against t12's 2e5 and the whole t12 → t13 → t23 refund chain waits. Measured: with the exclusion, t upgrades [11] and `t.unlockOrder` 1; with it lifted, 11 Capsules, cap 2.49e9, t upgrades [11,12,13,14,15,23] and **unlockOrder 0**. The booster cost is real and smaller than what it buys, and the game grants the same autobuyer itself at q milestone 1 (`player.t.autoExt`) |
-| ptr | `buyables:e` | `reserve>=next-upgrade` | R1′: Enhancers cost `2^(x^1.5)` EP and compete for the EP that e11 (25) → e12 (400) → e22 (1000, at unlockOrder 2) need — the e half of M12. `buy` ends 11 EP held with 4 Enhancers, `reserve>=next-upgrade` 47 EP with 3, and a literal `reserve>=25` is byte-identical to `buy` (once e11 is owned the next upgrade costs 400) |
-| something | `reset:unlock` | `always` | A1 table |
-| something | `reset:fundamental` | `interval>=5` | A1-3: `gain>=1` resets about every tick and starves unlock gain; 5 s → 308 game-s to unlock:upg:12 of 2/5/10/20/30/60 |
-| something | `reset:primitive` | `interval>=90` | A2-1 sweep: 90 s → 399 / 579 game-s to primitive ms 1 / ms 2 (60 → 429 / 17109; 120 → 429 / 669; 5 = 10 = `always` = `gain>=1` → 501 / —) |
-| something | `buyables:fundamental` | `buyMax` | A1 table (none of 11–22 defines `buyMax`: bought one at a time) |
+| ptr | `buyables:t` | `buy` (was off) | R1′ lifted the exclusion (R1′-1, row "B Extra Time Capsules only"). The Time Energy cap is `100·(2^(TC + extra TC) − 1)·enCapMult`, so each Extra Time Capsule DOUBLES it; without them it sits at 6300 against t12's 2e5 and the whole t12 → t13 → t23 refund chain waits. Measured: with the exclusion, t upgrades [11] and `t.unlockOrder` 1; with it lifted, 11 Capsules, cap 2.49e9, t upgrades [11,12,13,14,15,23] and **unlockOrder 0**. The booster cost is real and smaller than what it buys. ⚠ C1: Extra Time Capsules pay **`player.b.points`** — the currency reader's answer, scored by a rollback — so a reserve on them can now protect Boosters (gate C1-5) |
+| ptr | `buyables:e` | `reserve>=next-upgrade` | R1′ (R1′-1, row "C the Enhance reserve only"): Enhancers cost `2^(x^1.5)` EP and compete for the EP that e11 (25) → e12 (400) → e22 (1000, at unlockOrder 2) need — the e half of M12. `buy` ends 11 EP held with 4 Enhancers, `reserve>=next-upgrade` 47 EP with 3, and a literal `reserve>=25` is byte-identical to `buy` (once e11 is owned the next upgrade costs 400) |
+| ptr | `reset:q` | `gain>=2\|turn@10/30x/5/0/100` + gate `!hasMilestone('q',4) \|\| player.h.unlocked` | R2 (R2-S1: `gain>=2`, q milestone 0's own requirement), V4 (V4-m21: the PAUSE that lands M21 at 28058), R3b-2 (R3b2-2, CI run 35553187707: the ROW CYCLE, weight 10, M25 at 35778) — three records |
+| ptr | `reset:h` | `always\|turn@1/30x/5/0/100` | R3b-2 (R3b2-2, CI run 35553187707): `always` inside its turn; on its own it is the starvation the user hit by hand |
+| ptr | `challenges:h` | `sequential\|give-up@0.1/30/2x` + gate `hasMilestone('q',5)` | R3a (R3a-1): the EXIT rule, and the digest's own advice (L3.9) minus the half measurement showed to be wrong |
+| something | `reset:unlock` | `always` | A1 table — **unverified** (no SUMMARY row measures it against an alternative) |
+| something | `reset:fundamental` | `interval>=5` | A1-3: `gain>=1` resets about every tick and starves unlock gain; 5 s → 308 game-s to unlock:upg:12 of 2/5/10/20/30/60 — ⚠ an INTERVAL, re-swept by C1's rider (gate C1-7) |
+| something | `reset:primitive` | `interval>=90` | A2-1 sweep: 90 s → 399 / 579 game-s to primitive ms 1 / ms 2 (60 → 429 / 17109; 120 → 429 / 669; 5 = 10 = `always` = `gain>=1` → 501 / —) — ⚠ an INTERVAL, re-swept by C1's rider (gate C1-7) |
+| something | `buyables:fundamental` | `buyMax` | A1 table (none of 11–22 defines `buyMax`: bought one at a time) — **unverified** |
 
 Everything else in both games is derived.
+
+### The narrative the `.js` tables carried (moved here by C1, verbatim)
+
+JSON has no comments, and these were the long form of every entry's provenance: the measurement tables, the controls
+that were run beside each winner, and the reasons a derived form lost. Nothing below was edited; each block is the
+comment exactly as it stood above the entry named in bold (the two trailing `// A1 table…` comments of
+`something.js` are its two `unverified` records' notes, word for word).
+
+#### `games-auto/ptr.js` — every comment it carried, verbatim, by the entry it annotated
+
+**`(file header)`**
+
+```text
+Prestige Tree Rewritten — the automation table: DATA only (docs/automation.md). The core (loader/tmt-auto.js) derives
+reset / upgrades / buyables / toggles / challenges / clickables features for every tree layer; this table holds what the
+game does not declare. Every number and order below comes from a measured row in tools/harness/results/SUMMARY.md.
+```
+
+**`unlockOrder`**
+
+```text
+Siblings: the i-th member's reset waits until those before it are unlocked (each unlock raises the others' requirement).
+[g, b]: A1-3 (diff 1) g first reached both unlocked / b0+g0 / both best ≥ 15 at 1361 / 2360 / 2936 game-s vs b first
+1532 / 2491 / 3067, ahead at every p interval tried. [s, t, e]: A2-3 order rows — s,t,e 3550 / 6037 / 8035; s,e,t
+3550 / 6037 / —; t,e,s and e,t,s never reach (ii). Options unlockOrder=… / rowTwoOrder=… override them.
+```
+
+**`kindOrder`**
+
+```text
+Every A1/A2 number was measured with a layer's reset BEFORE its purchases (the A1/A2 registration order).
+```
+
+**`policies.reset:p`**
+
+```text
+R1′ (this slice's default): `gain>=2x` — the target-driven rule ⚖ 13d.2 asks for, and the faster one. S1-2's sweep
+(docs/automation.md; SUMMARY 2026-09-15 S1-2s) 918 / 1627 / 2112 game-s to A1-3's three marks against
+`interval>=10`'s 1361 / 2360 / 2936 (28 % ahead), and P1b's frontier control (iii) (§12b.4) reached M11 at 15582
+against the interval's 15782. NOT re-derived here: R1′ took it as given (plan §14b option 1). `always` still
+walls row 1 (p resets at 10 points, so points never reach the 200 the b/g pair needs, A1-3); `interval>=10` was
+the fastest of 5/10/30/60/120 s and is kept as an alternative, since every pinned A1/A2 number was measured in it.
+```
+
+**`policies.reset:b`**
+
+```text
+A1 table: b/g reset whenever they can (static: gain is 1 per reset)
+```
+
+**`policies.reset:t`**
+
+```text
+A2-3 sweeps: the requirement paces a row-2 reset — 5 ties with always / gain>=1 (s to 30, t to 60, e everywhere)
+— measured while row 2 was being UNLOCKED, where t and s are static (gain 1 per reset, layers.js:916/1593) and the
+requirement really does pace them. R1′'s frontier sweep (gate R1′-2.3) leaves both where they are.
+⚖ 13d.2 again: an interval survives only where NO target-driven rule matches it. One does. `always` is the
+derived default for a static layer precisely because its gain is 1 per reset and its REQUIREMENT paces it, so
+there is nothing for a clock to be a proxy for. Measured from frontier/STALL under this table, one 12000-tick
+leg each (gate R1′-2.3): `interval>=5` reaches M16 at 24236 / 24236 (t / s) and `always` at 24212 / 24203 — a
+tie to within 0.1 %, constant-free, which is the tie A2-3 already saw during the unlock phase (the all-`always`
+control reached (iii) at the default's 8035). `gain>=Nx` cannot fire on a static layer at all and stalls both.
+```
+
+**`policies.reset:e`**
+
+```text
+⚖ 13d.2 in one row. `e` is the one NORMAL layer of row 2 (layers.js:1320, exponent 0.02), so its gain is a
+function of how high points climbed — and an interval reset SPENDS that climb every 5 seconds for ~1.5 EP.
+`gain>=2x` waits until the reset at least doubles the EP held and takes the whole climb at once. Measured from
+frontier/STALL, one 12000-tick leg (gate R1′-2.3): `interval>=5` / `always` reach NO new mark and end with 16 EP
+held (best 400) after 147 resets; `unlocks-purchase` reaches M11 at 14745 with 263 EP; **`gain>=2x` reaches every
+remaining mark of the rung — M11 14745 · M12 14909 · M13 14132 · M14 14879 · M15 16067 · M16 24236 — in 299
+resets, ending with 2.35e92 EP.** The interval was a PROXY for "let points climb first"; this is that, said
+directly.
+```
+
+**`policies.buyables:e`**
+
+```text
+R1′: Enhancers (e buyable 11) cost `2^(x^1.5)` EP (layers.js:1502) and compete for the EP that the e half of M12's
+tax refund needs — e11 (25) → e12 (400) → e22 (1000 EP, all at e.unlockOrder 2; layers.js:1361/1373/1416). The
+reserve is READ from the game, never written here: `reserve>=next-upgrade` is the cost of e's cheapest unowned
+unlocked EP-costed upgrade, so it follows the chain as it is bought. Measured from frontier/STALL, 9000 ticks
+(gate R1′-2.2): `buy` 11 EP held (best 36) with 4 Enhancers · `reserve>=next-upgrade` 47 EP (best 47) with 3 ·
+and the literal `reserve>=25` is byte-identical to `buy`, because once e11 is owned the next upgrade costs 400.
+```
+
+**`policies.reset:q`**
+
+```text
+⛔ R2, AND THE ONE DEFAULT THIS SLICE MOVED. `q` is row 3 and NORMAL, so it inherited the derived `gain>=2x` —
+which on an EMPTY purse is `gain >= 0`, i.e. `always` (docs/automation.md, "the EMPTY PURSE"). `q` holds nothing
+almost all the time, because `buyables:q` spends every quirk on Quirk Layers (cost `2^(2^x − 1)`: 1, 2, 8, 128 …),
+so the ratio was against a RESIDUE and the rule fired the instant one quirk existed — unlocking `q` at 16917 and
+letting a row-3 reset wipe row 2 before row 2 was done. Measured over a WHOLE STRETCH (gate R2-S1, from
+`snapshots/ptr/all/M15.json` → M22, 14 000 ticks, diff 1, every cell twice equal — scoring from `all/M16.json`
+was itself the trap, since that fixture was written under the rule being judged):
+  `gain>=2x` (shipped)  M16 24179 · M17 16917 · M18 24274 · M19 24607 · then nothing for ~5 400 game-s
+  `gain>=2x-unit`       M16 17058 · M17 23492 · M18 25598 · M19 25931 · then nothing
+  **`gain>=2`**         M16 17058 · M17 23492 · M18 25598 · M19 25931 · M20 26594 · **M22 29194**
+  `always`              M16 NEVER · M17 16917 · M18 24056 · M19 25290 · M20 26473
+  `unlocks-purchase`    M16 22346 · M18 22477 · then nothing (q buyable 11 costs 1 quirk, so it affords something
+                        on the first reset: on this layer the target-driven rule IS the degenerate one)
+  `rate-peak@0/0`       M16 22346 · M18 24609 · M19 26218 · M20 27299 · **M21 27652** · no M22
+  `rate-peak@0.1/30`    M16 22346 · M18 26214 · M19 28062 · M20 29323 · M21 29676 · no M22
+Two facts add up to this entry. (1) **The floor is worth 7 121 game-seconds at M16** — the whole completion of
+row 2 — and `gain>=2x-unit` and `gain>=2` are IDENTICAL until the first reset leaves `q` holding one, which is
+the measurement that isolates the empty purse from the constant. (2) **Past that point the ratio stalls and the
+fixed bar does not**: the Quirk Layer cost outruns the gain, `2× held` runs away, and only `gain>=2` reaches
+M20 and M22. ⚖ 13d.2 counts `gain>=N` as target-driven, and this N is the layer's own first milestone —
+q ms 0 is `player.q.total.gte(2)`, the digest's L3.2 and G1's "if you can, try to reset for 2 quirks in one go".
+⚠ The stall MODIFIER cannot substitute: `gain>=2x-unit|stall>=3x/5` and `|stall>=2x/5` are BYTE-IDENTICAL to the
+bare `gain>=2x-unit` over this leg (same 30048 / `b483e2d3d5ba1137`) — with 3 q resets in 14 000 ticks the
+fallback never accumulates the history it needs. ⚠ And M21 is NOT gated by `reset:h`: `policy:reset:h=gain>=2x-unit`
+beside this entry is byte-identical too. What gates M21 is Time Energy having to re-climb to 1e30 between q
+resets, so the policy that farms quirks fastest is the one that never gets there (R2 part 2).
+⛔ R3b-2 — THE ROW CYCLE TURNED ON, AND IT IS THE LEVER M25 WAITED FOR. From M21 PTR's row 3 has FOUR
+active reset members (`h, q, o, ss`), and `h` and `q` each reset by wiping the row below, so whichever is
+eager takes the other's input away again (plan §24.7, §30.2, §31 — the same shape measured three times). No
+arrangement of per-feature POLICIES fixes it; what decides is whose TURN it is. The modifier binds every
+active reset of the row, so `o` and `ss` are members too WITHOUT being named here — they run at the row's
+declared defaults, which is also what releases them when they stop getting closer (docs/automation.md).
+MEASURED over a WHOLE STRETCH from `all/M15.json` → 37048, nine cells, ONE horizon, every cell TWICE equal
+(gate R3b2-2, CI run 35553187707, the five-shard table matrix; two cells reproduced on a second machine to
+the hash):
+  control (no cycle)   M22 30618 · M23 30683 · M24 30736 · M25 —     · 1 HS · 559 quirks · q upg [11,12,13,14]
+  W = 5                M22 30976 · M23 31028 · M24 31081 · M25 36156 · 1490 HS · 444 quirks · [11,12,13,14]
+  **W = 10 (this)**    M22 30618 · M23 30683 · M24 30736 · **M25 35778** · 1000 HS · 636 quirks · [11,12,13,14,21]
+  W = 20               … same marks · M25 35939 · 499 HS · 670 quirks · [11,12,13,14,21]
+  W = 40               … same marks · M25 35806 · 194 HS · 608 quirks · [11,12,13,14,21]
+  `turn-demand@20`     NO M22 · 44 HS · 10 quirks — the derived variant, and it LOSES (see below)
+  B = 0.1              NO M22 · 143 HS · 10 quirks — the release bar, and it starves `h` (see below)
+  H = 300              BYTE-IDENTICAL to H = 100 — the window is not sensitive above the knee
+⇒ W = 10 reaches **M25 (H12 "Speed Demon") at 35778**, which NO cell without a cycle reaches at all, with
+M22–M24 unmoved to the second, twice W = 20's Hindrance Spirit and 636 quirks against the control's 559.
+⚠ W = 5 MOVES M22–M24 by +358 game-seconds and the reason is the mechanism itself: it gives `h` 25 turns
+instead of 17 and every `reset:h` wipes row 2, so `q`'s milestones arrive later. That is why the entry is
+not W = 5, which buys the most Hindrance Spirit of any cell.
+⚖ THE WEIGHT IS A LITERAL AND THE DERIVATION LOST ITS MEASUREMENT, which is the accepted tier-1 outcome
+(⚖ user 2026-09-21). `turn-demand` needs no weight at all — it hands the turn to whoever a decision NAMES as
+waited-on — and at this frontier the only such signal is R3a's retry bar naming `h`, which stands CONSTANTLY
+once H12 starts failing. So demand is not "nearly inert" here, it is ONE-SIDED, and it lands exactly on the
+`reset:h = always` starvation the user reported by hand. The row above is the weight's provenance.
+```
+
+**`policies.reset:h`**
+
+```text
+⛔ R3a — THE CHALLENGE KIND, AND THE EXIT RULE IT NEEDED. `sequential` alone has an ENTRY rule ("the first
+unlocked, incomplete challenge") and NO EXIT rule: it leaves a challenge only by WINNING it. From
+`snapshots/ptr/all/M22.json` that completes H11 "Upgrade Desert" in 65 game-seconds and then walks straight
+into H12 "Speed Demon", which H11 has just unlocked and which the run is far too weak for — and stays.
+MEASURED, twice equal, at `934dc41dc` (plan §30, gate R3a-1): 11,878 game-seconds inside H12, points flat at
+1.2e2334 against a goal of 1e3550, quirks FROZEN at 26 total, `reset:q` 13 (none after entry) against the
+shipped `off`'s 247. It is the shape of every later challenge in this game, not a PTR accident.
+⚖ The modifier's three parameters: B and H are the two buffers the user asked for by name for `rate-peak`
+(plan §18), and R is `gain>=Nx`'s shape on the challenge's own layer with R2's empty-purse floor. The rule
+itself reads nothing but what the ENGINE declares about the challenge — docs/automation.md has the whole of it.
+MEASURED against its own controls over the same whole stretch (gate R3a-1, every cell twice equal):
+  `off` (what shipped)        no mark; 247 `reset:q`; 494 total quirks; not in a challenge
+  `sequential` (no exit)      M23 30683 · M24 30736; then 11,878 game-s inside H12; 13 `reset:q`
+  **this entry**              M23 30683 · M24 30736; H12 entered, given up, deferred; **532 `reset:q`,
+                              1065 total quirks, q upgrades [11,12,13,14]** — the tree farming again
+⛔ R3b-2: `reset:h` JOINS THE CYCLE, and `always` INSIDE ITS TURN IS THE MEASUREMENT, not an oversight.
+Before this slice `reset:h` had no entry at all and inherited the derived `gain>=2x`, which on an EMPTY purse
+is `gain >= 0` — so it fires once and then never again. Measured in the same table at W = 20: `gain>=2x`
+inside the turn ends with 91 quirks, 4 Hindrance Spirit, only SEVEN turns and NO M25, against `always`'s 670
+quirks and M25. ⚠ `always` is only safe BECAUSE of the cycle: on its own it is the starvation the user hit
+by hand (44 Hindrance Spirit, every quirk frozen at 10 — plan §30.2 item 1), and the row's own help says so.
+The turn is what makes an eager rule affordable; the weight of 1 against `reset:q`'s 10 is what bounds it.
+```
+
+**`gates`**
+
+```text
+⛔ R2's WALL AT M21, BROKEN BY A PAUSE — and the whole finding is that it is a PAUSE and not a latching STOP.
+`h` needs 1e30 Time Energy to reset and `hasMilestone('q',4)` to be SHOWN (M20). Time Energy is row 2's, and a
+`q` reset WIPES row 2 — so the policy that farms quirks fastest is the one that never lets Time Energy climb
+back, and R2 measured M21 and M22 as two BRANCHES that pull opposite ways (plan §24.7): `gain>=2` reaches M20
+and M22 and never M21, while the two `rate-peak` cells reach M21 and never M22.
+⚖ 13d.2 — no arbitrary waiting: this is not a clock. It stops resetting `q` at the exact moment `q` has nothing
+left to unlock on this rung (its milestone 4 is the last one row 2 can buy) and starts again the moment the
+thing it was waiting FOR has happened. Both terms are the engine's own.
+
+MEASURED over a WHOLE STRETCH (gate V4-m21, from `snapshots/ptr/all/M15.json` → M22, 16,000 ticks, diff 1,
+every cell TWICE and every cell equal; the planner reproduced the winning row independently at 3346da419):
+  NO pause (the control)   M16 17058 · M17 23492 · M18 25598 · M19 25937 · M20 26612 · M21 —     · M22 29204
+  **this entry**           M16 17058 · M17 23492 · M18 25598 · M19 25937 · M20 26612 · M21 28058 · M22 30618
+  …with `|| TE within 1e20 of h's requirement` added — BYTE-IDENTICAL to this entry (the extra term is inert:
+     by the time q ms 4 holds, Time Energy is already inside the window)
+  `h.unlocked || tmp.h.baseAmount.lt(tmp.h.requires.div('1e10'))`   M16 17058 and then NOTHING — and
+  `…div('1e20')` is byte-identical to it (32048 / `a40493595e4663d1`). ⛔ Reading the REQUIREMENT from the
+     engine instead of naming the milestone pauses `q` before it has ever reset, and a layer UNLOCKS ON ITS
+     FIRST RESET — so `q` never unlocks at all. The milestone is not a literal standing in for the requirement;
+     it is the only term that can be true before the layer exists.
+  the DERIVED candidate (pause while a SHOWN-but-LOCKED layer of my own row exists) M16–M21 to the second, and
+     then NO M22 — see `provenance` and plan §27: it deadlocks on PTR itself.
+⚠ THE PRICE IS THE CLIMB, NOT THE RULE. M22 moves 29204 → 30618, i.e. **+1414 game-seconds**, and the pause
+itself lasts 26612 → 28058 = **1446**. The delay IS the time Time Energy needs to reach 1e30 with row 2 intact;
+no pause predicate can make that cheaper, because it is the game's cost and not a scheduling choice.
+```
+
+**`gates.challenges:h`**
+
+```text
+⛔ R3a: WITHOUT THIS GATE THE ENTRY IS 2,560 GAME-SECONDS TOO EARLY, AND IT WOULD MOVE M22. `challenges:h`
+unlocks with its LAYER (`player[l].unlocked`), which is M21 at 28058 — so a table that merely named
+`sequential` would enter H11 at 28058, and entering a challenge is a FORCED LAYER RESET that wipes row 2.
+Every fixture from M21 on would move, for an entry the game itself advises against.
+⚖ The literal is the digest's own (L3.9 / G1: "make sure that you have the 25 quirk milestone and 10
+hindrance spirit" before attempting H1) — and it is the digest CORRECTED BY MEASUREMENT. The 25-quirk half is
+load-bearing; the 10-hindrance-spirit half is not, and carrying it would block the rung outright: H11 is
+completed in 65 game-seconds with ONE hindrance spirit, and `h` does not reset again at this frontier (the
+engine itself refuses — "Cannot reset — 5.46e23 of 1.00e30" — for the whole leg, which is why all five
+`reset:h` policies measure BYTE-IDENTICAL; plan §30.2 item 1).
+⚠ NO DERIVED FORM WAS FOUND, and the reason is worth carrying: nothing either engine declares says how strong
+a run must be before a challenge is worth entering. That is the ADVANCED planner's question — it needs a
+rollback — and not a predicate's. What a predicate CAN say is a schedule, and §5d′'s per-completion form
+(`challengeCompletions(l, id) < 1 || …`) was measured doing exactly that.
+```
+
+**`keep`**
+
+```text
+milestone 0 of b / g ("8 Boosters" / "8 Generators": "Keep Prestige Upgrades on reset") gates keepsUpgrades (A1 §11e.8)
+```
+
+**`off`**
+
+```text
+NO `order` entries: R1′ swept the three refund chains the digest names — t 12,13,23 (L2.9–L2.10), e 11,12,22
+(L2.2–L2.5), s 13,15,23 (L2.14–L2.16) — through `order-then-cheapest` against the derived `cheapest-first`, one
+arm each and all three together, 3×12000 ticks from frontier/STALL (gate R1′-2.1). All five arms are IDENTICAL:
+same marks, t upgrades [11,12,13,14,15,23], e [11,12], s [11,12,13,14,15,23], unlockOrder [0,2,0], 319 EP held
+(best 400), 7 TC, 7 SE, 62 boosters. `cheapest-first` already buys a refund chain in a viable order, because each
+link is the cheapest unowned thing in its currency by the time the currency can afford it — so an `order` here
+would be a literal with no measured effect behind it.
+
+R1′ LIFTED the one exclusion this table had. It read: 'buyables:t': "Extra Time Capsules are paid in Boosters, which
+would lower the booster effect (A2 §12e.1)". The reason is a claim about the game, and it is false at the row-2
+frontier: the Time Energy cap is `100·(2^(TC + extra TC) − 1)·enCapMult` (layers.js:975), so every Extra Time Capsule
+DOUBLES it, and without them the cap sits at 6300 against t12's 2e5 — the whole t12 → t13 → t23 refund chain
+(digest L2.9–L2.10) waits on it. Measured from frontier/STALL, 9000 ticks (gate R1′-2.4): with the exclusion, t
+upgrades [11], Time Energy 6300 at its cap, t.unlockOrder still 1; with it lifted, 11 Extra Time Capsules, cap
+2.49e9, t upgrades [11,12,13,14,15,23] and **t.unlockOrder 1 → 0** — the t half of M12 — with M11 at 14960 instead
+of 15582 and Generator Power 8.36e119 instead of 1.14e117. The booster cost is real and smaller: 57 boosters
+instead of 61, i.e. effectBase^4 = 13.6978^4 ≈ 3.5e4× of point gain, against Time Energy's own effect
+(`(TE+1)^1.2`) rising 36,248 → ~1.9e11. The game itself grants this autobuyer later (`ab` 14 / `player.t.autoExt`
+at q milestone 1, layers.js:1007) — the exclusion was early, not wrong in kind.
+```
+
+**`provenance`**
+
+```text
+⚖ MINIMIZE HARDCODING has always required that a number or an order in a table carry its provenance in a
+COMMENT. V1 makes it DATA as well: one line per entry, naming the gate row that measured it, so the au tab's
+Advanced view can tell a player why a default is what it is instead of leaving the answer in a file nobody
+playing the game will open (survey §4.11). The long comments above stay exactly where they are — this is the
+one line each of them would give a reader who is looking at the tab, not at the source.
+⚠ Author-written text rendered through `display-text`, which is `v-html`: the loader escapes it (`escapeText`).
+```
+
+#### `games-auto/something.js` — every comment it carried, verbatim, by the entry it annotated
+
+**`(file header)`**
+
+```text
+Justcubing97's Something Tree — the automation table: DATA only (docs/automation.md); the core derives the features.
+```
+
+**`kindOrder`**
+
+```text
+Every A1/A2 number was measured with a layer's reset BEFORE its purchases (the A1/A2 registration order).
+```
+
+**`policies.reset:fundamental`**
+
+```text
+A1-3 (diff 1, game-s to unlock:upg:12): 5 → 308, 10 → 343, 20 → 435, 30 → 549, 60 → 784, 2 → not in 3000;
+gain>=1 resets ~every tick and starves unlock gain (points^0.1)
+```
+
+**`policies.reset:primitive`**
+
+```text
+A2-1 sweep (diff 1, game-s to primitive ms 1 / ms 2): 90 → 399 / 579; 60 → 429 / 17109; 120 → 429 / 669;
+5 = 10 = always = gain>=1 → 501 / not in 20000
+```
+
+## The currency reader (C1) — which field a buyable really pays in
+
+⛔ **A buyable declares no currency to the engine.** `currencyInternalName` is an UPGRADE field (0 of 841 buyable
+definitions over 102 games carry it), and the convention "it costs the layer's own points" is wrong for 38 % of the
+resolvable buyables outside one outlier game (probe `buyable-currency-from-buy-source`). PTR's Extra Time Capsules pay
+Boosters; its Space Buildings pay Generator Power. Until C1 every consumer assumed the convention: the ADVANCED
+planner's `buy` rows named "the layer's own points" for all eight rows at M24 (six wrong), and `reserve>=N` could
+protect nothing but the layer's own points.
+
+**Three instruments, and only the third is ground truth** (`loader/tmt-planner.js`, `readBuyable` — harness-only):
+
+1. **CANDIDATES** — `traceReads(canAfford)`: every `player` field the affordability check READS. Reads are not the
+   spend, and ⚠ a trace sees only the branch that RAN: `a.gte(cost) && space().gt(0)` short-circuits, so the search
+   below re-traces after every raise and the candidates are the union of every trace it made.
+2. **THE PICK** — the decrement target in the comment-stripped `buy()` source: the probe's `X = X.sub|minus|subtract(`
+   plus a second pattern (a local alias of a `player` object, `-=` on a number, `addPoints(…, negative)`).
+3. **THE SCORE** — on a rolled-back copy (`excursion`), make the buyable affordable — it is; or ONE candidate raised to
+   ten times the published cost makes it so; or two, or three (breadth first, re-tracing each time); or, for a locked
+   layer, the same after setting its `unlocked` and the buyable's evaluated `unlocked` — run its own `buy()`, and find
+   **the field that fell BY THE COST** (by one of its parts, for a multi-currency price). Never "a field that fell": a
+   `buy()` that spends something incidental would be read as the currency. A cost above 9e15 is compared in log10
+   (break_eternity keeps a logarithm there). A raised field is lowered again to ten times the SMALLEST part that keeps
+   it affordable, so a `{hs: 1, ba: 1e360}` price does not hide its 1 inside 1e361.
+
+**Three-valued, and the answer is the SCORE's:** `{pays, cost, by, scored}` — `pays` a path, a list (a multi-currency
+price) or null; `cost` is `price` when a field fell by the published cost, `requirement` when nothing fell by it but
+exactly one field is what makes it affordable and the `buy()` source subtracts no cost (PTR's `ge` 11: compared, never
+spent), else `unknown`; `by` names the instruments that agree with the truth (`rollback`, `regex`, `trace`). **An
+unscored read ABSTAINS** — `pays: null, scored: false`, with the regex's `pick` kept beside it as evidence and never
+promoted. A game that draws randomness while it boots is read under three seeds and every entry they disagree on
+abstains (The Gaming Tree picks an item's cost at random).
+
+**GENERATED DATA, fresh by construction.** The answer is a property of a game's CODE and its only truth is a rollback,
+so it is precomputed harness-side by `tools/currency-data.mjs` and shipped as `games-data/<id>.json` — one per game
+with buyables (103 of 171), `"generated": true`, the generator's version, the game's pinned upstream commit, the
+states it was read in (fresh, and the deepest `all/M*` snapshot where there is one), per-entry `by` / `scored` / `why`.
+`games-data/index.json` names them. `--check` regenerates the whole roster and compares (CI job `c1`); the fast job runs
+`--check-index`. See docs/harness.md, "The currency generator".
+
+**The consumers** (`loader/tmt-auto.js`; `T.currencyData` is the parsed file, handed in by the host):
+
+- `tmtLoader.paysIn(l, id)` — the scored single field, or null. `tmtLoader.currencyOf(l, id)` — a COPY of the whole
+  entry, or null: what the UI arc's card row reads (`? / ?` where it abstains).
+- **`reserve>=N` / `reserve>=next-upgrade` protect the currency the buyable really pays in.** Only when the data names a
+  scored field OTHER than the layer's points for some buyable of the layer does the new branch run; it checks each
+  buyable's own currency before every purchase, and `next-upgrade` becomes the cheapest unowned upgrade of ANY tree
+  layer whose declared currency is that field. Its refusal is `holding:reserve-in` ("Holding — 18 of player.b.points
+  under the reserve 20"). Every other case — no data, an abstention, a list, the layer's own points — is the code that
+  ran before C1, line for line: gate C1-4 measures the opening and M15 → 37048 to the hash with and without the data.
+- **The reason line names the currency.** A buyable with nothing affordable says `nothing-affordable:paid-in` ("…paid
+  in player.b.points (2 held)"), or — its own sentence — `nothing-affordable:currency-unknown` ("…which currency pays
+  for it is unknown"). Upgrades keep `nothing-affordable`: an upgrade DECLARES its currency, and the engine honours the
+  declaration (gate C1-1 measures that on the sample).
+- **`progressOf` for a purchase kind** is what the currency holds over the cheapest unbought level's price — and null
+  (ranks last) where the currency is unknown. ⚠ Nothing ranks a purchase today: the stall watch admits only features
+  whose last code is `waiting:*`, which a purchase never returns, and the arbiter only `reset` features — so the
+  fraction is ready for the first consumer that asks, and dormant until then.
+- **The planner's `buy` rows** (`tmt-planner.js`, `buyableCurrencyOf`) read the scored answer; an abstention keeps the
+  old convention and SAYS it is one in `dimensionHow`.
 
 ## Harness levers
 
 - `--profile off|all|saved`, `--exclude au` (hash without the `au` layer), `--no-auto` (no table: derived defaults only).
+- `--no-currency` (C1): no generated currency data — every buyable's currency unknown, i.e. the behaviour before C1 (the
+  control gate C1-4 measures inertness against). `--random-seed N`: a seeded `Math.random` counting its calls
+  (`R.randomCalls`) — what the currency generator reads every game under.
 - `--auto-opt "k=v;k2=v2"` (page: `?autoOpt=`):
   - `policy:<featureId>=<policy>` — override a feature's policy (any valid policy of its kind), e.g. `policy:reset:p=always`;
   - `kinds=reset,upgrades,buyables` — register only those kinds (the pinned-behaviour gate and A/B rows);

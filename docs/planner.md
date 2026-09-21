@@ -5,7 +5,7 @@ There are **two automation systems** in this loader (⚖ user ruling, tmt-automa
 | | the SIMPLE system (`loader/tmt-auto.js`, A1–S1) | the ADVANCED system (`loader/tmt-planner.js`, P1a→) |
 |---|---|---|
 | what it is | per-layer reflexes run from each layer's `automate()` | a planner that measures the game on a rolled-back copy |
-| what it knows | a policy per feature, plus per-game DATA (`games-auto/<id>.js`) | nothing in advance: it discovers goals, thresholds, producers and chains at runtime |
+| what it knows | a policy per feature, plus per-game DATA (`games-auto/<id>.json`) | nothing in advance: it discovers goals, thresholds, producers and chains at runtime |
 | when it runs | inside `gameLoop`, every tick | **between** ticks, never inside one |
 | where | page and harness, every feature OFF by default | P1a: the HARNESS only (`--planner`); P2: a Web Worker in the page |
 | what P1a decides | — | **nothing**. P1a reads, measures and remembers; P1b decides |
@@ -18,7 +18,7 @@ rolled back**. Headless the harness process IS the copy: `snapshot()` → act �
 `loader/tmt-planner.js`**. Engine API names (`updateTemp`, `doReset`, `getStartPlayer`, `fixSave`, `hasMilestone`, …) are
 the TMT contract, not game knowledge; every one is reached through a `typeof` guard, so a fork that renames one fails by
 name instead of guessing. Authored per-game DATA lives in files with provenance (`ladder/<game>.json`,
-`games-auto/<id>.js`).
+`games-auto/<id>.json`).
 
 ## Loading it
 

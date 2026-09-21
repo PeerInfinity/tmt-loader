@@ -58,6 +58,8 @@ behaviour are unchanged (the core only gained `tmtLoader.runtimeState()` / `rest
 | `--planner-ladder <file>` | the ladder JSON becomes `tmtLoader.plannerLadder`, the sticky goal source |
 | `--planner-k <n>` / `--knowledge-out` / `--goals-out` | P1a: the producer window, and the dumps written at the stop |
 | `--ladder-labels <file>` | (V3, set for you by `--ladder`) the ladder JSON becomes `tmtLoader.ladder`, the PROGRESS TRACKER's label source — an event carries the names of any marks it satisfied. Read by nothing unless the tracker is armed, so a run without `track=1` / `watch=1` is byte-identical |
+| `--no-currency` | (C1) boot WITHOUT the generated currency data (`games-data/<id>.json`): every buyable's currency unknown, which is the behaviour before C1 — the control gate C1-4 measures inertness against |
+| `--random-seed <n>` | (C1) replace `Math.random` with a SEEDED generator before any game file runs, counting its calls into `R.randomCalls`. The currency generator reads every game under seed 1, and a game that drew any randomness under seeds 1–3 |
 | `--rounds-out <file>` | the planner's report at the stop: mode, options, reached / abandoned marks, clocks, divergences and the full round log (`docs/planner.md`, "reading a round log") |
 
 A driven run's one-line result gains `planner: {mode, rounds, commits, divergences, reached, options, wallMs,
@@ -235,6 +237,32 @@ never changes game-seconds. It exports `runCells()` for a gate battery to drive 
 ENTRY-guarded, so importing it does not start a sweep. **One cell per process**: an L1 leg is ~14,000 ticks at 13–19
 ms/tick on a quiet box and 40–45 ms/tick with six children on eight cores.
 
+## The currency generator (`tools/currency-data.mjs`, C1)
+
+`games-data/<id>.json` is GENERATED — which field each buyable really pays in, scored by a rollback buy
+(docs/automation.md, "The currency reader") — and never edited by hand.
+
+```
+node tools/currency-data.mjs [--write | --check] [--ids a,b] [--shard i/N] [--jobs N] [--json out.json]
+node tools/currency-data.mjs --check-index
+```
+
+- `--write` (the default) boots every game in `manifests/index.json` with `--planner --planner-script
+  tools/harness/currency-read.js --ticks 0 --random-seed 1` and writes one file per game with buyables, plus the index.
+  A game with an `all/M*` snapshot is also read at its deepest one; a buyable scored in both states must agree, or it
+  abstains. A game that drew randomness is re-read under seeds 2 and 3, and an entry the seeds disagree on abstains.
+- `--check` regenerates in memory and compares, naming each STALE game; exit 1 on any. ⛔ This is what keeps the data
+  fresh by construction: a change to the reader, the loader or a game that moves any answer fails CI until the data
+  is regenerated and committed with it. `--check-index` (no boot) checks only that the index names the files.
+- Every flag is DECLARED: an unknown one exits 2 (`unknown flag --assert`).
+- Cost, measured on this box: **~60–80 s for the whole roster at `--jobs 6–8`** (171 boots; 11 games drew randomness
+  and were read three times). No process is near the 10-minute wall; `--shard i/N` exists for CI if it ever is.
+
+`tools/auto-tables.mjs` is its authored-data counterpart: `--check` (the schema file equals the loader's, every
+`games-auto/<id>.json` validates with the loader's own validator), `--write` (regenerate the schema file), and
+`--provenance` (the provenance GATE — every entry has a record, every commit is an ancestor of HEAD, every gate is a
+SUMMARY row or a named CI run). docs/automation.md, "The data table".
+
 ## What runs where
 
 ⚖ Until U2g (2026-09-18) CI held exactly one gate — the M1 mobile sweep — and every other check ran on one box, in
@@ -244,8 +272,11 @@ drove a chip**. ⛔ A check nobody runs is not a check.
 
 | check | where it runs now | cost |
 |---|---|---|
-| unit tests (`npm run harness:test`) | CI, the **fast** job — and everything else `needs:` it | **242 tests**, no browser — RE-MEASURED on R3b-2's final tree, which added five (`loader/cycle.test.mjs`, the dead-member rule) and changed none elsewhere; V5 measured 237, which added eleven (`loader/retry.test.mjs`, the RETRY conditions) and changed none of the count elsewhere (one existing row of `loader/strategies.test.mjs` now draws its refusal per TYPE, because a `predicate` accepts `banana`); R3b-1 re-measured 226 and added twenty-four (`loader/cycle.test.mjs`, the ROW CYCLE) on top of R3a's seventeen (`loader/challenges.test.mjs`, the challenge give-up rule) on top of V4's twenty (`loader/controls.test.mjs`); ⚠ the number V4 wrote here was **180** and the tree it was written on measured **185**, which is the drift this row exists to catch; R2 read 160 and added two (⚠ it read `46 tests`, then `75`, then `82`, then `138`, then `158`, every one of them stale — a count in prose that no gate reads. It had drifted by fifty-two before U7 re-read it, and by twenty again between U7 and the U8 merge. ⛔ RE-MEASURE IT AT EVERY MERGE: this row is the standing example of a count conflict that must not be resolved by picking a branch's number — U3 merged 75-vs-60 and the merged tree measured 79) |
+| unit tests (`npm run harness:test`) | CI, the **fast** job — and everything else `needs:` it | **258 tests**, no browser — RE-MEASURED on C1's final tree, which added sixteen (`loader/auto-tables.test.mjs` nine: the schema and the provenance gate, each failure by name; `loader/currency.test.mjs` six: the currency consumers; `loader/workflows.test.mjs` one: the C1 jobs) and changed none elsewhere; R3b-2 measured 242 on its final tree, which added five (`loader/cycle.test.mjs`, the dead-member rule) and changed none elsewhere; V5 measured 237, which added eleven (`loader/retry.test.mjs`, the RETRY conditions) and changed none of the count elsewhere (one existing row of `loader/strategies.test.mjs` now draws its refusal per TYPE, because a `predicate` accepts `banana`); R3b-1 re-measured 226 and added twenty-four (`loader/cycle.test.mjs`, the ROW CYCLE) on top of R3a's seventeen (`loader/challenges.test.mjs`, the challenge give-up rule) on top of V4's twenty (`loader/controls.test.mjs`); ⚠ the number V4 wrote here was **180** and the tree it was written on measured **185**, which is the drift this row exists to catch; R2 read 160 and added two (⚠ it read `46 tests`, then `75`, then `82`, then `138`, then `158`, every one of them stale — a count in prose that no gate reads. It had drifted by fifty-two before U7 re-read it, and by twenty again between U7 and the U8 merge. ⛔ RE-MEASURE IT AT EVERY MERGE: this row is the standing example of a count conflict that must not be resolved by picking a branch's number — U3 merged 75-vs-60 and the merged tree measured 79) |
 | G6 roster doc + G7 declined list (`games-table.mjs --check`) | CI, the fast job | 0.13 s |
+| C1 the tables' schema + the currency index (`auto-tables.mjs --check`, `currency-data.mjs --check-index`) | CI, the fast job | < 1 s |
+| C1 the currency data regenerated + the provenance gate + the reader's accuracy (`gates-c1 --part 3, 1, 2, 6`) | CI, `c1-data` (full history) | ~70 s for the regeneration locally, ~2 min per boot pass |
+| C1 inertness (`gates-c1 --part 4`) and the consumers + rider (`--part 5, 7`) | CI, `c1-inert` / `c1-consumers` | the M15 → 37048 legs dominate |
 | roster FIGURES census (`census-figures.mjs`) | CI, the fast job | 1.2 s |
 | M1 mobile sweep (`--gate mobile`) | CI, ten shards + a merge | ~3 min end to end; 32–46 min locally |
 | G1 load (`--gate load`), plain **and** `?automation=1` | CI, two unsharded jobs | 5 min each, serial, locally |
