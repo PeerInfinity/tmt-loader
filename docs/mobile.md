@@ -1635,7 +1635,9 @@ each category is? If not, then we can just pick the one whose chip is currently 
 | clickables | — | no cost concept |
 
 ⛔ **So a category with no number gets NO ROW.** "Progress" without a denominator is not a weaker row, it is a
-different thing. The rule is **cheapest where a cost exists and the currencies agree, first-listed otherwise** —
+different thing. ⚖ **(U13) Overturned for ONE case only** — a buyable whose cost we looked for and could not get
+keeps its row as `? / ?`; milestones, achievements and clickables still get none (see "A `?` where we do not
+know", below). The rule is **cheapest where a cost exists and the currencies agree, first-listed otherwise** —
 which is the user's own stated fallback, so no ruling was needed to ship it. "The currencies agree" is asked on the
 engine's own identity for a currency, because two costs in different currencies do not compare at all and the
 numerically smaller of them would be an accident of scale. A `currencyLocation` is an object, so it is identified by
@@ -1661,7 +1663,8 @@ with one fallback would be wrong on every challenge whose layer has points of it
 `prestige-tree-ng`, `prestige-tree-rewritten-unsoftcapped4` and `the-extended-tree`. A `x / y` row has no meaning
 for one, so it is skipped and counted, never rendered as `undefined / undefined`.
 
-⛔ **A limitation the brief did not anticipate, and half of it is undetectable.** `ptr`'s `s` buildings hand-roll
+⛔ *(U7's reading — U13 below replaces the buyable half of it with the generated data, and the drop with a
+cross-check.)* **A limitation the brief did not anticipate, and half of it is undetectable.** `ptr`'s `s` buildings hand-roll
 `canAfford()` and `buy()` against `player.g.power` and declare neither `currencyInternalName` nor
 `currencyDisplayName`, so the engines' own generic reader — which is what this row uses — gives a numerator in
 space energy against a cost in generator power. In every engine-GENERIC path affordability implies amount ≥ cost,
@@ -1675,7 +1678,7 @@ to keep those rows, or to drop every category whose components declare no curren
 display; these are the per-category ones. Only categories the card DRAWS get one — `visibleSeq`, the same three
 visibility rules the chips and counters are under — so a row cannot leak what those rules hide.
 
-**Over the roster, at `dc805a7c3`** (`ptr` at `all/M25`): **249 progress rows on 243 cards** — 225 upgrades, 22 buyables, **and not one challenge**
+*(U7's tally, before U13 — the current one is in the U13 section below.)* **Over the roster, at `dc805a7c3`** (`ptr` at `all/M25`): **249 progress rows on 243 cards** — 225 upgrades, 22 buyables, **and not one challenge**
 at any state the sweep drives. ⚠ Same caveat as the resource figure above: this was `247 on 242` at U7's tree and
 moved by one when `ptr`'s deepest snapshot became `all/M22`. Re-measured at `7aa5ef5e4`. The rule that chose them: `only` 123 (one candidate, where the two rules cannot
 differ), `cheapest` 119 and **`first` 5** — the currencies-disagree fallback really fires, on `the-cultree`,
@@ -1690,6 +1693,99 @@ first-listed pick **different** components number **8, on 6 games**; the wrong-c
 2.13 → 4.64 ms (`ptr` snapshot, 11 cards), 3.43 → 6.01 ms (`the-yes-tree`, 25 cards) and 1.41 → 5.41 ms
 (`the-infinity-tree`, 18 cards and 32 candidate keys): **+0.10 to +0.23 ms per card per sync, four times a second**.
 The worst of them is item 2's, which calls the game's own display functions once per card per sync.
+
+#### A `?` where we do not know (U13)
+
+⚖ user, 2026-09-19: *"If we know when we don't know the numerator, we could display it as a question mark instead
+of a wrong number."* · *"For some of these cases, both the numerator and the denominator should be question
+marks."* · *"Let's go with two question marks, rather than hiding the row."* ⚖ 2026-09-20: the data is fetched in
+layer-list mode too, **lazily, on the Layers view's first open**.
+
+**Why a buyable needed it.** Nothing in the engine declares what a buyable costs: `buyBuyable()` calls the game's
+own `buy()`, and 0 of 841 buyable definitions declare `currencyInternalName`. U7's "the layer's own points" was a
+convention of ours, and on `ptr` it shipped `17 / 6.28e350 space energy` where the game spends generator power.
+The answer already existed: C1's generated `games-data/<id>.json` (103 files, `tools/currency-data.mjs`) says per
+buyable which field it `pays` and whether its published `cost` is the price.
+
+**The rule — buyables only:**
+
+| half | known when | otherwise |
+|---|---|---|
+| numerator | `pays` names ONE field and the entry is `scored` → that field's amount | `?` (several fields, none, or no entry) |
+| denominator | `cost` is `price` or `requirement` → the engine's own `cost` | `?` (`unknown`, or no entry) |
+
+⛔ **`? / ?` KEEPS ITS ROW** — the one exception to U7's "a category with no number gets no row" above. ⛔ **Scope:**
+milestones, achievements and clickables have no number CONCEPT and still get no row; the ruling is about a buyable
+whose cost was looked for and not found. A known field's name is the card's own vocabulary: a layer's `points` is
+that layer's `resource`, the global `player.points` is the game's `pointsName`, and anything else is its path
+below `player` — U7's "the label is the key", so `ptr`'s buildings say `g.power`, the key the `g` card's own
+resource row shows. An unknown numerator carries no currency name at all. Two costs compare for "cheapest" only
+when the same measured field pays both; a category holding an unknown half falls back to first-listed.
+
+**The two readings are kept apart**, because you could know the currency and not the price. In the data at
+`0a1e203a4` (1,739 buyables), `pays: null` and `cost: unknown` name **exactly the same 407 entries** — but the
+numerator-`?` set is **456**, because the **49** entries that pay in SEVERAL fields have `cost: price`. So `? / n`
+is a real state (49 entries), and `n / ?` has no entry today.
+
+**A `?` is drawn as an answer, not an apology** (407 of 1,739 buyables, 23.4 %, are `? / ?`): full weight and
+colour like any number, with a dotted underline and a `title` saying which half is not known and why. The halves
+are elements of their own (`.tmt-layerlist-prog-have` / `-need`, `.tmt-layerlist-prog-q` on a `?`), and the row
+carries `data-have` / `data-need` = `known` | `unknown`.
+
+⛔ **The affordability tell is now a CROSS-CHECK, not the mechanism.** U7 dropped a row where the engine said
+"can be bought" while the amount read was short. Such a row is no longer dropped: it means OUR READER is wrong, so
+`progress(l).suspect` names it and gate M1 fails on it.
+
+**The fetch.** `loader/page.js` gives both pages one door, `tmtLoader.fetchCurrencyData()`: resolved at once on an
+automation page (C1's eager fetch), and on a `?navbar=1` page without automation, the index and then the game's
+own file only where the index names one. The list's `show()` is the only caller, so it runs on the first OPEN. The
+list renders at once with every buyable abstaining (`? / ?`, correct for a question not yet answered), and the
+answer's arrival costs ONE `refresh()` (`stats().currencyArrivals`). ⛔ No second reader: where
+`tmtLoader.currencyOf` exists (automation) the list uses it; a plain page never runs that half of
+`loader/tmt-auto.js`, so there, and only there, the list makes the same three-line lookup over
+`tmtLoader.currencyData`.
+
+⚠ **A defect this slice's own sweep found:** the row's rule mark (`data-how`) was written at DRAW time only.
+Before the data lands every buyable abstains and the pick is `first`; after it, `cheapest` can pick the SAME
+component (`the-energy-factory`'s `energy/11`), so the key does not change, nothing redraws, and the mark said
+`first`. It is synced now. Only the desktop page caught it, because that page probes straight after its first open
+with no rebuild in between.
+
+**Gate M1, what moved.** `progExpect` re-derives both halves from the DISK copy of `games-data/` (the harness
+reads it, `currencyFixture(id)`), never from the page's `currencyData` / `currencyOf` — a probe that asked the page
+what the reader should have read could not judge the reader. It moved in the SAME commit as the renderer. The
+probe also checks each half's mark and a buyable row's exact text, currency name included. New **leg F**:
+`games-data/` requests on the page that carries the list and never opens it must be 0, none before the first open,
+`? / ?` on every buyable row in the same synchronous turn as the open, exactly one arrival with no rebuild, then
+exactly index + file (index alone where it names no file). The U7 `multiRes` construction leg now takes a buyable
+only where its cost is KNOWN: on a `? / ?` row a constructed `multiRes` changes nothing, and it went red for that on
+`function-of-time`, `the-cookie-tree-thepasswordispasswor` and `sheep-incremental` until re-pointed.
+
+**Over the roster — CI `sweep.yml` run 35622556203 at `e83daef48`, M1 `rows: 171/171 game(s); 0 RED`**
+(each game's deepest recorded snapshot, `ptr` at `all/M26`):
+
+| | |
+|---|---|
+| progress rows | **250** — 226 upgrades, **23 buyables**, **1 challenge** (U7's "not one challenge" is no longer true at these states) |
+| buyable rows: a number on both sides | **20** |
+| buyable rows: `? / ?` | **3** — `function-of-time` `f/11`, `the-cookie-tree-thepasswordispasswor` `g/11`, `sheep-incremental` `s/11` |
+| buyable rows: `? / n` or `n / ?` | **0** at these states |
+| buyable rows reading a field that is NOT the layer's own points | **6** — `ptr` `s/14` (`g.power`) and `t/11` (`b.points`), `universal-expansion` `tm/11` (`p.points`), and `player.points` on `weakling-tree` `w/11`, `the-infinity-tree` `n/11`, `the-energy-factory` `energy/11` |
+| cross-check (`suspect`) | **0** on all 171 |
+| lazy fetch | **171/171**: `games-data/` requests on the never-opened page **0** (of 8,385 requests those pages made), before the first open **0**, on it **274** = 103 × 2 + 68 × 1, as wanted; 23 buyable rows drawn before the answer landed, all `? / ?` |
+
+**The named witness:** `ptr`'s `s/14` (Quaternary Space Building) at `all/M26`. The game's own display reads
+`Cost: 1.00e-4 Generator Power`; the row now reads `5.06e730 / 1.00e-4 g.power`, where U7's reader read
+`17 / 1.00e-4` (17 is `player.s.points`, space energy). Its `canAfford` is false only because a building needs free
+space (`layers.s.space().gt(0)`), the "engine says no" case that was never a signal.
+
+**Mutants** (each in a throwaway worktree at the committed base, restored from the commit, `git status` clean after):
+
+| mutant | game | what reddened |
+|---|---|---|
+| m1 the reader ignored — a buyable's numerator back to the layer's own points | `ptr` | `prog`: `"17 / 1.00e-4 g.power" does not open with "5.06e730 / 1.00e-4"`, `"17 / 131 boosters"` against `127`; and leg F, because the pre-arrival rows showed `17 / ?` instead of abstaining |
+| m2 `? / ?` rows hidden (an unknown cost is no candidate) | `the-cookie-tree-thepasswordispasswor` | the row count: `0 rows, expected 1` on `g`. (On `function-of-time` the category keeps a row, so the item check reds instead: `buyables/f/21 != buyables/f/11`) |
+| m3 the lazy fetch made eager | `ptr` | leg F: 2 `games-data/` requests on the never-opened page (35 → 37 requests), 4 before the first open |
 
 ### Reading a card can make the ENGINE write `player`
 

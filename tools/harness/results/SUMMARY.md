@@ -5799,3 +5799,20 @@ Reading this section: Part 1: each game runs ONE scripted sequence — doReset(l
 | U12-1 the doReset hook is TRANSPARENT: full state + every call identical with and without the list | the-exp-tree | fresh | — | — | 1 | — | GREEN | identical; 14 calls (0 threw, identically), 0 real reset(s) seen by the hook, 0 glow(s), 0 owed; page errors 0; 4 s |
 | U12-1 the doReset hook is TRANSPARENT: full state + every call identical with and without the list | plague-tree-vorona-cirus-treesease | fresh | — | — | 1 | — | GREEN | abstains (the game does not repeat itself: two no-list pages differ); 46 calls (0 threw, identically), 24 real reset(s) seen by the hook, 8 glow(s), 0 owed; state differs at char 103: …{},"versionType":"c0v1d","version":"0.6.25","timePlayed":40.714000000000006,"keepGoing":false,"hasNaN":false,"hideChalle… vs …{},"versionType":"c0v1d","version":"0.6.25","timePlayed":40.91699999999999,"keepGoing":false,"hasNaN":false,"hideChallen…; page errors 50; 131 s |
 | U12-1 VERDICT: the with/without-hook state comparison over the roster | 171 games | — | — | — | 1 | — | GREEN | 165 of 171 identical, 0 DIVERGED, 6 abstained (the-periodic-table-tree, the-cookie-tree, falling-mountain-s-alterprestige, the-gaming-tree, the-orchard-tree, plague-tree-vorona-cirus-treesease), 0 other RED; 166 of 171 drove at least one REAL reset through the wrapper (1442 in all) |
+
+## 2026-09-21T16:20:00Z — Gate M1 (U13: a `?` where we do not know) — commit `e83daef48` — CI sweep.yml run 35622556203, M1 171/171 green
+
+Reading this section: written BY HAND from the merged M1 artifact of CI `sweep.yml` run 35622556203 (branch
+`u13-question-marks`, 10 shards, `rows: 171/171 game(s); 0 RED; 6 abstained on the state leg`) and from local
+mutant runs. Each game at its deepest recorded snapshot (`ptr` at `all/M26`). "split" counts the progress rows AS
+RENDERED on the phone page by kind and by half: `n` a number, `?` not known. Leg F = the lazy currency-data fetch.
+
+| gate | game | leg | ticks | gameSeconds | diff | hash | result | notes |
+|---|---|---|---|---|---|---|---|---|
+| U13 progress split over the roster | 171 games | M1 layers, phone | — | — | — | — | GREEN | 250 rows: upgrades n/n 226, buyables n/n 20, buyables ?/? 3 (function-of-time f/11, the-cookie-tree-thepasswordispasswor g/11, sheep-incremental s/11), challenges n/n 1; ?/n 0, n/? 0 |
+| U13 cross-check (engine affordable, read field short) | 171 games | M1 layers, phone + desktop | — | — | — | — | GREEN | 0 suspect rows |
+| U13 leg F the lazy fetch | 171 games | M1, the never-opened page + the main page's first open | — | — | — | — | GREEN | games-data/ requests: never-opened page 0 (of 8385), before first open 0, on it 274 = 103×2 + 68×1 (want 274); 23 buyable rows before the answer, all `? / ?`; 1 arrival, 0 rebuilds, per game |
+| U13 named witness | ptr | all/M26, s/14 | — | — | — | — | GREEN | `5.06e730 / 1.00e-4 g.power` (game display: "Cost: 1.00e-4 Generator Power"); U7's reader: `17 / 1.00e-4` (player.s.points) |
+| U13 m1 reader ignored (layer's own points) | ptr | mutant, local, base 243015b01 | — | — | — | — | RED (expected) | prog: t/11 "17 / 131 boosters" vs 127; s/14 "17 / 1.00e-4 g.power" vs 5.06e730; leg F: pre-arrival rows `17 / ?`; restored clean |
+| U13 m2 `? / ?` hidden | the-cookie-tree-thepasswordispasswor | mutant, local, base e83daef48 | — | — | — | — | RED (expected) | prog: g "0 rows, expected 1"; on function-of-time: "buyables/f/21 != buyables/f/11"; restored clean |
+| U13 m3 lazy fetch made eager | ptr | mutant, local, base 243015b01 | — | — | — | — | RED (expected) | leg F: never-opened page 2 games-data/ requests (35 → 37 total), 4 before first open; restored clean |
