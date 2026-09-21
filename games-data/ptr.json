@@ -10,7 +10,7 @@
  },
  "states": [
   "fresh",
-  "all/M25"
+  "all/M27"
  ],
  "seeds": [
   1
@@ -41,7 +41,7 @@
     "how": "lift-1",
     "from": [
      "fresh",
-     "all/M25"
+     "all/M27"
     ]
    }
   },
@@ -59,7 +59,7 @@
     "how": "lift-1",
     "from": [
      "fresh",
-     "all/M25"
+     "all/M27"
     ]
    }
   },
@@ -76,7 +76,7 @@
     "pick": "player.g.power",
     "how": "lift-2",
     "from": [
-     "all/M25"
+     "all/M27"
     ]
    },
    "12": {
@@ -91,8 +91,7 @@
     "pick": "player.g.power",
     "how": "lift-2",
     "from": [
-     "fresh",
-     "all/M25"
+     "fresh"
     ]
    },
    "13": {
@@ -108,7 +107,7 @@
     "how": "lift-2",
     "from": [
      "fresh",
-     "all/M25"
+     "all/M27"
     ]
    },
    "14": {
@@ -123,8 +122,7 @@
     "pick": "player.g.power",
     "how": "lift-2",
     "from": [
-     "fresh",
-     "all/M25"
+     "fresh"
     ]
    },
    "15": {
@@ -140,7 +138,7 @@
     "how": "lift-2",
     "from": [
      "fresh",
-     "all/M25"
+     "all/M27"
     ]
    },
    "16": {
@@ -156,7 +154,7 @@
     "how": "lift-2",
     "from": [
      "fresh",
-     "all/M25"
+     "all/M27"
     ]
    },
    "17": {
@@ -172,7 +170,7 @@
     "how": "lift-2",
     "from": [
      "fresh",
-     "all/M25"
+     "all/M27"
     ]
    },
    "18": {
@@ -188,7 +186,7 @@
     "how": "lift-2",
     "from": [
      "fresh",
-     "all/M25"
+     "all/M27"
     ]
    },
    "19": {
@@ -204,7 +202,7 @@
     "how": "lift-2",
     "from": [
      "fresh",
-     "all/M25"
+     "all/M27"
     ]
    },
    "20": {
@@ -220,7 +218,7 @@
     "how": "lift-2",
     "from": [
      "fresh",
-     "all/M25"
+     "all/M27"
     ]
    }
   },
@@ -238,7 +236,7 @@
     "how": "lift-1",
     "from": [
      "fresh",
-     "all/M25"
+     "all/M27"
     ]
    }
   },
@@ -348,7 +346,7 @@
     "how": "lift-1",
     "from": [
      "fresh",
-     "all/M25"
+     "all/M27"
     ]
    },
    "12": {
@@ -364,7 +362,7 @@
     "how": "lift-1",
     "from": [
      "fresh",
-     "all/M25"
+     "all/M27"
     ]
    },
    "13": {
@@ -380,7 +378,7 @@
     "how": "lift-1",
     "from": [
      "fresh",
-     "all/M25"
+     "all/M27"
     ]
    },
    "14": {
@@ -396,7 +394,7 @@
     "how": "lift-1",
     "from": [
      "fresh",
-     "all/M25"
+     "all/M27"
     ]
    },
    "15": {
@@ -412,7 +410,7 @@
     "how": "lift-1",
     "from": [
      "fresh",
-     "all/M25"
+     "all/M27"
     ]
    },
    "16": {
@@ -428,7 +426,7 @@
     "how": "lift-1",
     "from": [
      "fresh",
-     "all/M25"
+     "all/M27"
     ]
    }
   },
@@ -452,7 +450,7 @@
     "how": "lift-2",
     "from": [
      "fresh",
-     "all/M25"
+     "all/M27"
     ]
    },
    "21": {
@@ -468,7 +466,7 @@
     "how": "lift-1",
     "from": [
      "fresh",
-     "all/M25"
+     "all/M27"
     ]
    }
   },
@@ -486,7 +484,7 @@
     "how": "unlock+lift-1",
     "from": [
      "fresh",
-     "all/M25"
+     "all/M27"
     ]
    }
   },
@@ -512,7 +510,7 @@
     "how": "unlock+lift-3",
     "from": [
      "fresh",
-     "all/M25"
+     "all/M27"
     ]
    }
   },
@@ -536,7 +534,7 @@
     "how": "unlock+lift-2",
     "from": [
      "fresh",
-     "all/M25"
+     "all/M27"
     ]
    },
    "21": {
@@ -670,7 +668,7 @@
     "how": "unlock+lift-2",
     "from": [
      "fresh",
-     "all/M25"
+     "all/M27"
     ]
    },
    "12": {
@@ -692,7 +690,7 @@
     "how": "unlock+lift-2",
     "from": [
      "fresh",
-     "all/M25"
+     "all/M27"
     ]
    },
    "13": {
@@ -738,7 +736,7 @@
     "how": "unlock+lift-1",
     "from": [
      "fresh",
-     "all/M25"
+     "all/M27"
     ]
    }
   },
@@ -768,7 +766,7 @@
     "how": "unlock+lift-1",
     "from": [
      "fresh",
-     "all/M25"
+     "all/M27"
     ]
    }
   },

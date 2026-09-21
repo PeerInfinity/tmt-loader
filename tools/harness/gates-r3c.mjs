@@ -1,5 +1,5 @@
 // Gate R3c (plan §44–§45): Something Tree onto the DERIVED defaults, the release rule's high-water alternative, and the
-// rung from `all/M25.json`.
+// rung past M25 (uninterrupted from `all/M15.json`, chained on from `all/M27.json`).
 //   node tools/harness/gates-r3c.mjs --part 0   Something Tree with NO automation table: the derived defaults, S01–S05,
 //                                               twice; the deleted table NAMED as a configuration; one override per
 //                                               cell to say WHICH derived default loses a mark
@@ -13,8 +13,10 @@
 //                                               the q/h turn WEIGHT (the tier-1 literal R3b-2 tuned for H12) against
 //                                               M26's wall, 50,000 ticks, twice per cell; `--part 2m --from <dir>`
 //                                               merges the shards
-//   node tools/harness/gates-r3c.mjs --part 2f  the rung's FIXTURES: the shipped cell twice, each run writing every
-//                                               mark's snapshot to its own directory, compared file by file
+//   node tools/harness/gates-r3c.mjs --part 2f [--fixture all/M27.json --ticks N]  the rung's FIXTURES: the shipped
+//                                               cell twice, each run writing every mark's snapshot to its own
+//                                               directory, compared file by file (from `all/M15.json` by default; a
+//                                               later fixture chains the rung on, as the ladder's fixtures always have)
 //   node tools/harness/gates-r3c.mjs --part 2p  H22 "Descension": is PREPARATION what it lacks? From `all/M27.json`,
 //                                               three arms of one attempt — the control, the guide's order (respec →
 //                                               Primary → enter) and a constructed UPPER BOUND (every level in Primary)
@@ -186,7 +188,7 @@ async function part1m() {
     notes: `${cells.map((l, i) => `${P1_CELLS[i].label || 'default (high-act)'}: M25 ${l.marks?.M25 ?? '—'}, HS ${num(e(l).hs)}, quirks ${num(e(l).qTotal)}`).join(' · ')} — a cell WINS only if M25 is no later AND Hindrance Spirit AND quirks are no lower than the control's: ${better.length ? better.map((l) => l.label).join(', ') : 'NONE'}` });
 }
 
-// ---- Part 2: THE RUNG from `all/M25.json` — M26's wall, and the one tier-1 lever that moves it ----------------------
+// ---- Part 2: THE RUNG past M25 — M26's wall, and the one tier-1 lever on it ---------------------------------------
 // ⛔ WHAT THE TRACE SAID FIRST (plan §45): q22's price is `2e11·(q.time+1)^4.2` quirk energy and energy accrues as
 // `(t·M)^(QL−1)`, so at 4 Quirk Layers energy ÷ price ∝ M³·t^−0.2 — WAITING NEVER PAYS and the reset CADENCE is not
 // the wall (the best ratio of a q-run sits at t ≈ 20, measured and derived). The wall is M = q11 × q21: total QUIRKS
@@ -256,7 +258,11 @@ async function part2m() {
 // whose twin wrote the same file — gameSeconds, full hash and hashGame.
 async function part2f() {
   const fsm = await import('node:fs');
-  const base = path.join(REPO, 'tools/harness/results/r3c-fixtures');
+  // the leg: L25 from all/M15.json, or from `--fixture` (then `--from` is that fixture's own mark, so every LATER
+  // ladder mark is recorded — including one the ladder orders earlier, as M26 is to M27)
+  const fx = a.fixture ? path.resolve(String(a.fixture)) : null;
+  const L2F = fx ? { ...L25, 'from-snapshot': fx, from: 'M25' } : L25;
+  const base = path.join(REPO, 'tools/harness/results/r3c-fixtures', fx ? path.basename(fx, '.json') : 'M15');
   const dirs = [path.join(base, 'run1'), path.join(base, 'run2')];
   dirs.forEach((d) => { fsm.rmSync(d, { recursive: true, force: true }); fsm.mkdirSync(d, { recursive: true }); });
   // ⚠ ITS OWN SPAWN, stdout and stderr INHERITED: through `runCells` both legs died silently in CI at the end of a
@@ -266,7 +272,7 @@ async function part2f() {
   const leg = (d, k) => new Promise((ok) => {
     const out = path.join(base, `leg${k}.json`);
     const args = [path.join(REPO, 'tools/harness/run.mjs'), 'ptr', '--json', out, '--snapshots', d];
-    for (const [f, v] of Object.entries(L25)) { if (v === true) args.push(`--${f}`); else args.push(`--${f}`, String(v)); }
+    for (const [f, v] of Object.entries(L2F)) { if (v === true) args.push(`--${f}`); else args.push(`--${f}`, String(v)); }
     const c = spawn(process.execPath, args, { cwd: REPO, stdio: ['ignore', 'inherit', 'inherit'] });
     c.on('exit', (code, sig) => {
       console.log(`[2f] leg ${k} exited code ${code} signal ${sig}`);
@@ -275,7 +281,8 @@ async function part2f() {
     });
   });
   const [r1, r2] = await Promise.all(dirs.map((d, i) => leg(d, i + 1)));
-  row({ gate: 'R3c-2f the shipped leg from all/M15, twice, writing fixtures', id: 'ptr', leg: `all/M15 → ${L25.ticks} ticks`, ok: !!r1.ok && !!r2.ok && r1.gameSeconds === r2.gameSeconds && r1.hashGame === r2.hashGame,
+  const from = path.basename(String(L2F['from-snapshot']));
+  row({ gate: `R3c-2f the shipped leg from ${from}, twice, writing fixtures`, id: 'ptr', leg: `${from} → ${L2F.ticks} ticks`, ok: !!r1.ok && !!r2.ok && r1.gameSeconds === r2.gameSeconds && r1.hashGame === r2.hashGame,
     ticks: r1.ticks, gameSeconds: r1.gameSeconds, diff: 1, hash: r1.hashGame, notes: `${rungText(r1)}; run 2 ${r2.gameSeconds} / ${r2.hashGame}${r1.error || r2.error ? `; ERROR run 1: ${String(r1.error || '').slice(-300)} | run 2: ${String(r2.error || '').slice(-300)}` : ''}` });
   if (!r1.ok || !r2.ok) console.error(`the fixture legs FAILED:\n--- run 1 ---\n${r1.error}\n--- run 2 ---\n${r2.error}`);
   const files = fsm.readdirSync(dirs[0]).filter((f) => f.endsWith('.json')).sort((x, y) => Number(x.slice(1, -5)) - Number(y.slice(1, -5)));
@@ -288,7 +295,7 @@ async function part2f() {
     row({ gate: `R3c-2f fixture ${A.mark} reproduces`, id: 'ptr', leg: 'the shipped leg, twice', ok: same, ticks: A.ticks, gameSeconds: A.gameSeconds, diff: A.diff, hash: A.hashGame,
       notes: `full hash ${A.hash}; run 2 ${B ? `${B.gameSeconds}s/${B.hash}/${B.hashGame}` : 'MISSING'}; the COMMITTED all/${f}: ${C ? `${C.gameSeconds}s / ${C.hashGame} — ${C.hashGame === A.hashGame && C.gameSeconds === A.gameSeconds ? 'SAME state' : 'DIFFERS'}` : 'none (NEW)'}` });
   }
-  row({ gate: 'R3c-2f VERDICT: every fixture the shipped leg wrote, written twice the same', id: 'ptr', ok: rows.every((r) => r.ok) && files.some((f) => f === 'M25.json'), notes: `${files.length} fixture(s): ${files.map((f) => f.slice(0, -5)).join(', ')}` });
+  row({ gate: 'R3c-2f VERDICT: every fixture the shipped leg wrote, written twice the same', id: 'ptr', ok: rows.every((r) => r.ok) && files.length > 0 && (fx || files.some((f) => f === 'M25.json')), notes: `${files.length} fixture(s): ${files.map((f) => f.slice(0, -5)).join(', ')}` });
 }
 
 // ---- Part 2p: H22 "Descension" — is PREPARATION what it lacks? (tier 2 under §40-R ruling A) ----------------------
@@ -302,14 +309,16 @@ async function part2f() {
 //            PTR family's `updateTempData` skips a layer whose tab is closed, so a closed-tab buyMax reads a STALE
 //            cost and buys nothing — measured), then enter — ⚠ entering is an `h` reset, and after a respec it
 //            ZEROES the buildings while `spent` stays: the guide's order loses the preparation on entry;
-//   bound    enter, then GIVE building 11 every level the run owned, free — no legal move can beat it.
+//   bound    enter, then GIVE building 11 the whole Space CAPACITY (`spent + space()`), free — no legal move can beat it.
 // If the BOUND does not move the peak, no preparation can, and tier 2 does not apply.
 const H22_EVAL = `(globalThis.__h)`;
 const H22_UNTIL = `(function(){var G=globalThis.__h||(globalThis.__h={p:0,p50:null});var t=tmtLoader.gameSeconds;if(G.t0===undefined)G.t0=t;var v=player.h.activeChallenge==22?new Decimal(player.points).plus(1).log10().toNumber()/3570:0;if(v>G.p){G.p=Math.round(v*10000)/10000;G.at=t-G.t0;}if(t-G.t0===50)G.p50=G.p;G.s11=Math.round(new Decimal(buyableEffect('s',11)).plus(1).log10().toNumber()*100)/100;G.b11=String(player.s.buyables[11]);G.act=player.h.activeChallenge;return false;})()`;
 const H22_ARMS = {
   control: `var b = JSON.parse(JSON.stringify(player.s.buyables)); startChallenge('h', 22); return { before: b, after: JSON.parse(JSON.stringify(player.s.buyables)), active: player.h.activeChallenge };`,
   guide: `var b = JSON.parse(JSON.stringify(player.s.buyables)), tab = player.tab; layers.s.buyables.respec(); player.tab = 's'; updateTemp(); layers.s.buyables[11].buyMax(); updateTemp(); var mid = JSON.parse(JSON.stringify(player.s.buyables)); player.tab = tab; startChallenge('h', 22); return { before: b, prepared: mid, after: JSON.parse(JSON.stringify(player.s.buyables)), spent: String(player.s.spent), active: player.h.activeChallenge };`,
-  bound: `var b = JSON.parse(JSON.stringify(player.s.buyables)), total = new Decimal(0); for (var k in player.s.buyables) total = total.plus(player.s.buyables[k]); startChallenge('h', 22); for (var k2 in player.s.buyables) player.s.buyables[k2] = new Decimal(0); player.s.buyables[11] = total; return { before: b, after: JSON.parse(JSON.stringify(player.s.buyables)), active: player.h.activeChallenge };`,
+  // the bound is the Space CAPACITY (`spent + space()` — every building the game would let this state hold), not the
+  // levels it happens to own: at the moment H21 completes the buildings were just respecced (Primary ×6)
+  bound: `var b = JSON.parse(JSON.stringify(player.s.buyables)), total = new Decimal(player.s.spent).plus(layers.s.space()); startChallenge('h', 22); for (var k2 in player.s.buyables) player.s.buyables[k2] = new Decimal(0); player.s.buyables[11] = total; return { before: b, capacity: String(total), after: JSON.parse(JSON.stringify(player.s.buyables)), active: player.h.activeChallenge };`,
 };
 async function part2p() {
   const fsm = await import('node:fs'), os = await import('node:os'), { spawn } = await import('node:child_process');
@@ -328,7 +337,7 @@ async function part2p() {
     const e = r.eval || {}, ps = r.plannerScript || {};
     row({ gate: `R3c-2p H22 "Descension" — ${arm}`, id: 'ptr', leg: `${path.basename(fixture)} + ${ticks} ticks, one attempt, challenges:h excluded`, ok: !!r.ok && e.act === 22 && e.p > 0,
       ticks: r.ticks, gameSeconds: r.gameSeconds, diff: 1, hash: r.hashGame,
-      notes: `peak ${e.p} of the goal exponent (${e.p50} at 50 s, the give-up rule's usual exit); Primary ${e.b11} levels, its effect 10^${e.s11}; buildings before ${JSON.stringify(ps.before)}${ps.prepared ? `, prepared ${JSON.stringify(ps.prepared)}` : ''}, after entry ${JSON.stringify(ps.after)}${ps.spent ? `, spent ${ps.spent}` : ''}` });
+      notes: `peak ${e.p} of the goal exponent (${e.p50} at 50 s, the give-up rule's usual exit);${ps.capacity ? ` capacity ${ps.capacity};` : ''} Primary ${e.b11} levels, its effect 10^${e.s11}; buildings before ${JSON.stringify(ps.before)}${ps.prepared ? `, prepared ${JSON.stringify(ps.prepared)}` : ''}, after entry ${JSON.stringify(ps.after)}${ps.spent ? `, spent ${ps.spent}` : ''}` });
   }
   const c = R.control.eval || {}, b = R.bound.eval || {};
   const gain = (b.p ?? 0) - (c.p ?? 0);
@@ -342,7 +351,7 @@ await PARTS[PART]();
 
 const red = rows.filter((r) => !r.ok).length;
 // Part 2f: its row count is the number of fixtures the leg wrote, so its floor is the leg + M16–M25 + a verdict.
-const expected = (PART === '1' || PART === '2') && CELL !== null ? 1 : PART === '2f' ? 12 : ROWS[PART];
+const expected = (PART === '1' || PART === '2') && CELL !== null ? 1 : PART === '2f' ? (a.fixture ? 3 : 12) : ROWS[PART];
 const short = `R3c part ${PART}${CELL !== null ? ` cell ${CELL}` : ''}: rows ${rows.length}/${expected} expected, ${red} RED`;
 console.log(`\nVERDICT: ${short}`);
 const READING = 'A cell\'s label is the whole --auto-opt string it ran (§14d.2 item 14); "—" for a mark means NOT REACHED inside the leg, which is a result. Part 0: Something Tree has NO automation table since R3c (⚖ user 2026-09-21), so the empty cell IS the derived defaults.';
