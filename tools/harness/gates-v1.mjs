@@ -160,7 +160,11 @@ const LEGS = [
     o: { profile: 'all', diff: 1, ticks: 400, 'from-snapshot': SNAP('ptr', 'M22'), 'auto-opt': 'policy:challenges:h=sequential|give-up@0.1/30/when;arg:challenges:h.w=player.h.points.gte("1e1000")', explain: true } },
   { key: 'ptr all/M22 + 400×1, --auto-opt policy:challenges:h=sequential|give-up@0.1/30/when ; arg:challenges:h.w=<throws> (V5: a retry condition that throws)', id: 'ptr',
     o: { profile: 'all', diff: 1, ticks: 400, 'from-snapshot': SNAP('ptr', 'M22'), 'auto-opt': 'policy:challenges:h=sequential|give-up@0.1/30/when;arg:challenges:h.w=player.nosuchlayer.points.gte(1)', explain: true } },
-  { key: 'something fresh 600×1 (profile all)', id: 'something', o: { profile: 'all', diff: 1, ticks: 600, explain: true } },
+  // ⛔ R3c Part 0: this leg was the ONLY witness of `waiting:interval`, and only because Something Tree's TABLE named two
+  // intervals. The table is deleted (⚖ user 2026-09-21) and no derived default is an interval, so the leg NAMES one —
+  // the configuration that witnessed it, one entry of the old table — rather than losing the code (CI run
+  // 35565198991 at `c5df909dc`: `unwitnessed: waiting:interval`, the fifth slice running where CI found it).
+  { key: 'something fresh 600×1 (profile all), --auto-opt policy:reset:fundamental=interval>=5 (the interval witness, named)', id: 'something', o: { profile: 'all', diff: 1, ticks: 600, 'auto-opt': 'policy:reset:fundamental=interval>=5', explain: true } },
 ];
 
 async function part1() {

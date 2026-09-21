@@ -190,7 +190,9 @@ async function part1(browser, base) {
     const o = { profile: 'all', ...p.o, marks: mf };
     return { p, s1: job(p.id, { ...o, 'auto-opt': p.pinOpt || KINDS_PINNED }), base: job(p.id, o, trees[p.baseline]) };
   });
-  const fresh = ['ptr', 'something'].map((id) => ({ id, s1: job(id, { ticks: 0, diff: 1 }), old: job(id, { ticks: 0, diff: 1 }, trees['17260e03']) }));
+  // R3c Part 0: the fresh-boot row compares each feature's policy with the 17260e03 TABLE's — a baseline comparison, so
+  // Something Tree's side names the deleted table (CI run 35565198991 at `c5df909dc` found this row, not the brief)
+  const fresh = ['ptr', 'something'].map((id) => ({ id, s1: job(id, { ticks: 0, diff: 1, ...(id === 'something' ? { 'auto-opt': SOMETHING_OLD_TABLE } : {}) }), old: job(id, { ticks: 0, diff: 1 }, trees['17260e03']) }));
   const omega = job('the-omega-tree', { profile: 'all', diff: 1, ticks: 3000, stall: 3600, 'stall-seen': true, 'wall-ms': 540000 });
   await offAnchors('S1-1', 'ptr');
   await offAnchors('S1-1', 'something');

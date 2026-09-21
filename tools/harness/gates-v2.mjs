@@ -473,7 +473,10 @@ async function part4b(browser, base) {
         // failure of the editors rather than of its own choice of edit.
         if (edit && fid) await page.evaluate((f) => {
           const now = tmtLoader.explain().find((x) => x.id === f).policy.inForce;
-          tmtLoader.setSavedPolicy(f, now === 'interval>=60' ? 'always' : 'interval>=60');
+          // R3c Part 0: `something`'s table is deleted, so its `reset:unlock` is the derived `gain>=2x` — against which
+          // `interval>=60` acts 5 times to the control's 3 in 300 ticks (CI run 35565198991: too close to see). The
+          // edit goes to `always` unless the rule in force already is it, which is the unmistakable contrast.
+          tmtLoader.setSavedPolicy(f, now === 'always' ? 'interval>=60' : 'always');
         }, fid);
         await page.evaluate(() => tmtLoader.tick(1, 300));
         return await page.evaluate((f) => ({ fid: f, acted: tmtLoader.hookStats().actions[f] || 0, inForce: tmtLoader.explain().find((x) => x.id === f).policy.inForce }), fid);
