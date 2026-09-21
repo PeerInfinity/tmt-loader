@@ -1244,7 +1244,7 @@ table either way: ⚖ MINIMIZE HARDCODING.
 ⚠ **Two resources can still print the same number** where the layer states it twice; both are kept (the card is
 reporting quantities and both are right) and the attribution between them is by key order alone. The gate counts it.
 
-**Over the roster, RE-MEASURED at `573648f55`** (CI run 35527118251, 171/171, 0 RED, `ptr` at `all/M24` = **30,736** ticks): **276 candidate Decimals, 17 DETECTED rows on 11 cards across 9 games**, 8 of them sharing a value
+**Over the roster, RE-MEASURED at `dc805a7c3`** (CI run 35554965892, 171/171, 0 RED, `ptr` at `all/M25` = **35,778** ticks): **276 candidate Decimals, 15 DETECTED rows on 9 cards across 9 games**, 8 of them sharing a value
 with a sibling. ⚠ **THIS FIGURE MOVES WITH THE FIXTURES AND NOTHING PINS IT.** It was `16 shown on 10 cards` when
 U7 measured it, at a tree where `ptr`'s deepest recorded snapshot was `all/M16` (16,048 ticks). R2 re-cut the
 defaults and added M17–M20 and M22, and `deepestSnapshot()` selects by TICKS, so the sweep now reads `ptr` at
@@ -1259,10 +1259,12 @@ anything to report.
 
 | | rows | cards | games |
 |---|---|---|---|
-| DETECTED (U7/U8, the occurrence budget) | **17** | 11 | 9 |
+| DETECTED (U7/U8, the occurrence budget) | **15** | 9 | 9 |
 | DECLARED (U9, the global currency) | **152** | 152 | 143 |
 
 ⚠ **AND THE FOURTH MOVE DID CHANGE IT — which is the point of re-measuring rather than assuming either way.** R3a added `all/M23` (30,683) and `all/M24` (30,736), so `deepestSnapshot()` now reads `ptr` at **M24**. DETECTED went **15 → 17 rows, 9 → 11 cards**, same 9 games; progress went **248 → 250 rows, 243 → 244 cards**. `resCandidates` 276, `resCollide` 8 and every DECLARED figure were unmoved. ⚠ Four moves of this selector now: twice the numbers changed, once they did not, once they changed again. From outside those outcomes are indistinguishable, and the only way to tell is to re-derive the figure at the new head.
+
+⚠ **THE FIFTH MOVE SENT IT BACK DOWN, AND THAT IS THE MOST USEFUL ONE YET.** R3b-2 added `all/M25` (35,778 ticks, H12 complete), so the sweep reads `ptr` there. DETECTED went **17 → 15 rows, 11 → 9 cards** — back to the M22 value — and progress **250 → 249 rows, 244 → 243 cards**. ⛔ **So this figure is NOT MONOTONIC in the fixture's depth**: 15 at M22, 17 at M24, 15 again at M25. A later save is not a superset; a resource that attributed at one mark can stop attributing at a deeper one. ⇒ "the number is the same as last time" is NOT evidence that nothing moved, and a re-measurement that lands on the previous value has still done its job.
 
 ⚠ A declared row is **one per card by construction** (one per layer), so 0 cards carry two. The `all vs one` question the user has open is about a GAME showing several such CARDS: **6 games do at these states**, against 28 that could by the static census.
 
@@ -1527,7 +1529,7 @@ to keep those rows, or to drop every category whose components declare no curren
 display; these are the per-category ones. Only categories the card DRAWS get one — `visibleSeq`, the same three
 visibility rules the chips and counters are under — so a row cannot leak what those rules hide.
 
-**Over the roster, at `573648f55`** (`ptr` at `all/M24`): **250 progress rows on 244 cards** — 225 upgrades, 22 buyables, **and not one challenge**
+**Over the roster, at `dc805a7c3`** (`ptr` at `all/M25`): **249 progress rows on 243 cards** — 225 upgrades, 22 buyables, **and not one challenge**
 at any state the sweep drives. ⚠ Same caveat as the resource figure above: this was `247 on 242` at U7's tree and
 moved by one when `ptr`'s deepest snapshot became `all/M22`. Re-measured at `7aa5ef5e4`. The rule that chose them: `only` 123 (one candidate, where the two rules cannot
 differ), `cheapest` 119 and **`first` 5** — the currencies-disagree fallback really fires, on `the-cultree`,
