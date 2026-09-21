@@ -3785,7 +3785,7 @@ async function gateMobile(browser, base, ids) {
           l = c; touched = below.filter((x) => js(x) !== pre[x]);
           break;
         }
-        if (!l) return { verdict: `abstains (no layer resets after ${ticked} tick(s) of play: ${cand.length ? tried.join(', ') : 'no layer with a card has tmp.canReset === true'})`, quiet, tried, ticked, reached: false };
+        if (!l) return { verdict: `abstains (no layer resets after ${ticked} tick(s) of play: ${cand.length ? tried.join(', ') : 'no layer with a card has tmp.canReset === true'})`, quiet, tried, ticked, reached: false, triggerOk: !quiet };
         ui.refresh(false);               // what the observer does on the engine's own re-render
         scan(true);
         const atEvent = starts[l] || 0;
@@ -3822,11 +3822,13 @@ async function gateMobile(browser, base, ids) {
               ui.refresh(false); scan(true);
               await wait(TH + 20); ui.refresh(false); scan(true);
               const n2 = (starts[l] || 0) - s0;
-              repeat = { more, starts: n2, verdict: n2 === 1 ? `${l} lit again ${more} tick(s) later` : `A LATER RESET DID NOT GLOW (${l}: ${n2} start(s) for a reset more than a second after the last)` };
+              repeat = { more, starts: n2, ok: n2 === 1, verdict: n2 === 1 ? `${l} lit again ${more} tick(s) later` : `A LATER RESET DID NOT GLOW (${l}: ${n2} start(s) for a reset more than a second after the last)` };
             }
           }
         }
-        const repeatVerdict = repeat && /^A /.test(repeat.verdict) ? repeat.verdict : null;
+        // ⚠ an explicit flag, never a regex over the verdict: the prose starts with the LAYER ID, and a layer called
+        // `A` (the-greek-tree) read as a failure through `/^A /` in the first CI sweep
+        const repeatVerdict = repeat && repeat.ok === false ? repeat.verdict : null;
         const wipedLit = others.filter((x) => touched.includes(x)), strayLit = others.filter((x) => !touched.includes(x));
         // the TWO HALVES, judged apart so a mutant is scored against the right one
         // ⚖ under reduced motion the glow is OFF, not merely unpainted (user, 2026-09-20): no class flip, no
@@ -3903,7 +3905,8 @@ async function gateMobile(browser, base, ids) {
       await page.emulateMedia({ reducedMotion: null });
       // ⚠ an ABSTENTION reads green here and is COUNTED apart in the summary line; the two halves are what the
       // mutants score (mutants-u12.sh): `glowTrigger` the pressed layer, `glowWiped` everything else
-      const gv = (v) => !/^THE |^STILL|^IT |^A LAYER/.test(String(v && v.verdict));
+      // ⚠ judged on the probe's own FLAGS, not on the verdict's prose (which can start with a layer id)
+      const gv = (v) => !!v && v.triggerOk !== false && v.repeatOk !== false && v.wipedOk !== false;
       row.glowTriggerOk = [row.glow, row.glowReduced].every((v) => v.triggerOk !== false && v.repeatOk !== false);
       row.glowWipedOk = [row.glow, row.glowReduced].every((v) => v.wipedOk !== false);
       row.glowOk = gv(row.glow) && gv(row.glowReduced);
