@@ -2180,3 +2180,105 @@ jobs:
           path: tools/harness/results/tmp/gates-s1-part1-last.json
           if-no-files-found: warn
           retention-days: 14
+
+  # ---------------------------------------------------------------------------------------------------------------
+  # F1 — HOW OFTEN SHOULD A RESET FIRE, scored at the page's REAL tick (`diff 0.05`; plan §46–§48).
+  # One cell per job, each cell TWICE (`gates-f1 --cell <key>`); the merge re-reads every cell file of a part and
+  # REFUSES a missing one by name (LESS LOOKS GREENER). A real-tick leg costs ~20× the wall of a `diff 1` leg per
+  # game-second, so the long cells (the opening, M15 → M25) exist only here; `--wall-ms` is the graceful bound (a
+  # run killed by the job's own timeout writes nothing), set under `timeout-minutes`.
+  # ---------------------------------------------------------------------------------------------------------------
+  f1-cells:
+    name: F1 cell ${{ matrix.cell }}
+    needs: fast
+    runs-on: ubuntu-latest
+    timeout-minutes: 100
+    strategy:
+      fail-fast: false
+      matrix:
+        cell: ['E@1/off', 'E@0.05/off', 'R2@1/off', 'R2@0.05/off', 'R3@1/off', 'R3@0.05/off',
+               'E@1/yield', 'E@0.05/yield', 'R2@1/yield', 'R2@0.05/yield', 'R3@1/yield', 'R3@0.05/yield',
+               'O@1/off', 'O@1/yield', 'O@0.05/off', 'O@0.05/yield',
+               'L3@1/off', 'L3@1/yield', 'L3@0.05/off', 'L3@0.05/yield']
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - run: npm ci
+
+      - name: "F1 cell ${{ matrix.cell }}, twice"
+        shell: bash
+        run: |
+          set -o pipefail
+          node tools/harness/gates-f1.mjs --cell '${{ matrix.cell }}' --wall-ms 5400000 --pool 2 \
+            --no-summary --assert | tee f1-cell.txt
+
+      - name: Summary
+        if: always()
+        shell: bash
+        run: |
+          {
+            echo '## F1 cell ${{ matrix.cell }}'
+            echo ''
+            echo '```'
+            cat f1-cell.txt 2>/dev/null | grep -E 'VERDICT|REFUSED|^RED|^GREEN|PROGRESS' || echo 'no output'
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload the cell
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: f1-cell-${{ strategy.job-index }}
+          path: tools/harness/results/gates-f1-cell-*.json
+          if-no-files-found: warn
+          retention-days: 14
+
+  f1-merge:
+    name: F1 merge — every cell present, the tables and the verdicts
+    needs: f1-cells
+    if: ${{ !cancelled() }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - run: npm ci
+
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: f1-cell-*
+          path: cells
+          merge-multiple: true
+
+      - name: Merge part 0 (the tick calibration) and part 1 (the yield)
+        shell: bash
+        run: |
+          set -o pipefail
+          node tools/harness/gates-f1.mjs --part m --cell 0 --from cells --no-summary --assert | tee f1-m0.txt
+          node tools/harness/gates-f1.mjs --part m --cell 1 --from cells --no-summary --assert | tee f1-m1.txt
+
+      - name: Summary
+        if: always()
+        shell: bash
+        run: |
+          {
+            echo '## F1 merge'
+            echo ''
+            echo '```'
+            cat f1-m0.txt f1-m1.txt 2>/dev/null || echo 'no output'
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
