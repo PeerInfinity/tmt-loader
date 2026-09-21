@@ -21,6 +21,17 @@
 #   · `the-yes-tree`     — the glow witness on the `resetTime` signal (ptr and the-burning-tree both take the
 #                          points fallback), and a counter-glow witness.
 # ⚠ A leg that ABSTAINS reads as GREEN here, and the row prints each verdict so an abstention is visible.
+set -uo pipefail
+cd "$(dirname "$0")/../.."
+OUT="${1:?usage: mutants-u11.sh <out-dir> [name-filter]}"
+ONLY="${2:-}"
+mkdir -p "$OUT"
+if [ -n "$(git status --porcelain -uno)" ]; then echo "REFUSING: tracked files are modified. Commit first — a mutant round restores over whatever is here."; exit 1; fi
+FILES="loader/layerlist.js loader/layerlist.css"
+for f in $FILES; do cp "$f" "$OUT/$(basename "$f").orig"; done
+restore() { for f in $FILES; do cp "$OUT/$(basename "$f").orig" "$f"; done; }
+trap restore EXIT
+
 LEGS="never glow rmotion counter"
 
 read_row() {
