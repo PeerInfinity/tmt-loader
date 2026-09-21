@@ -28,7 +28,7 @@ export async function openContext(browser, { allowExternal = false, allowHosts =
   // a third-party request when a GAME reaches for cdn.glitch.com. So the deploy host is named, not blanket-allowed.
   const allowed = new Set([...LOCAL, ...allowHosts]);
   const context = await browser.newContext(contextOptions || undefined);
-  const fresh = () => ({ blocked: [], failed: [], pageErrors: [] });
+  const fresh = () => ({ blocked: [], failed: [], pageErrors: [], urls: [] });   // (U13) `urls`: what THIS page asked for
   const stats = { blocked: [], failed: [], pageErrors: [], consoleErrors: [], consoleWarnings: [], requests: 0, urls: [] };
   const perPage = new Map();
   stats.of = (page) => { if (!perPage.has(page)) perPage.set(page, fresh()); return perPage.get(page); };
@@ -39,7 +39,7 @@ export async function openContext(browser, { allowExternal = false, allowHosts =
     if (!allowExternal && (u.protocol === 'http:' || u.protocol === 'https:') && !allowed.has(u.hostname)) { push(route.request(), 'blocked', u.href); return route.abort('blockedbyclient'); }
     return route.continue();
   });
-  context.on('request', (r) => { stats.requests++; stats.urls.push(r.url()); });
+  context.on('request', (r) => { stats.requests++; push(r, 'urls', r.url()); });
   context.on('requestfailed', (r) => { if (!stats.blocked.includes(r.url())) push(r, 'failed', `${r.url()} ${r.failure() && r.failure().errorText}`); });
   context.on('response', (r) => { if (r.status() >= 400) push(r.request(), 'failed', `${r.url()} HTTP ${r.status()}`); });
   const watch = (page) => {
@@ -367,7 +367,7 @@ const MOBILE_PROBE = `(${function () {
  *
  * ⚠ Nothing here reads the TREE: TMT 2.7 removes it from the DOM outright when a tab opens (11 nodes → 0) where
  * 2.2.1 keeps it, and the list is measured after a snapshot has opened tabs. */
-const LAYERLIST_PROBE = `(${function () {
+const LAYERLIST_PROBE_FN = function (CDATA) {
   const panel = document.getElementById('tmt-layerlist');
   const navBtns = [...document.querySelectorAll('#tmt-navbar button')].filter((b) => !b.hidden);
   const keys = navBtns.map((b) => b.dataset.key);
@@ -871,6 +871,20 @@ const LAYERLIST_PROBE = `(${function () {
     if (kind === 'buyables') return belowLim(l, id);
     return false;
   };
+  // ---- (U13) A BUYABLE'S TWO HALVES, from the DISK copy of `games-data/<id>.json` (`CDATA`, handed in by the
+  // harness — see `layerListProbe`), never from the page's `currencyData` / `currencyOf`: a probe that asked the
+  // page what the reader should have read could not judge the reader. The rule, re-stated from the brief rather
+  // than from layerlist.js: the numerator is the ONE scored field in `pays`, else `?`; the denominator is the
+  // engine's `cost` where `cost` is `price` or `requirement`, else `?`. `CDATA === undefined` (the page has not
+  // asked yet) means every buyable abstains, which is the row BEFORE the data arrives.
+  const cEntry = (l, id) => { const b = CDATA && CDATA.buyables && CDATA.buyables[l]; return (b && b[String(id)]) || null; };
+  const walk = (p) => { const ps = String(p).split('.'); if (ps[0] !== 'player') return null; let o = S(() => player, null); for (let i = 1; i < ps.length && o != null; i++) o = S(() => o[ps[i]], null); return o === undefined ? null : o; };
+  const payLabel = (p) => {
+    if (p === 'player.points') return S(() => String(modInfo.pointsName || ''), '') || 'points';
+    const m = /^player\.([^.]+)\.points$/.exec(p);
+    const r = m ? S(() => String(tmp[m[1]].resource || '').replace(/<[^>]*>/g, '').trim(), '') : '';
+    return r || p.replace(/^player\./, '');
+  };
   const progExpect = (l) => {
     const order = [], by = Object.create(null);
     for (const k of seqDrawn(l)) {
@@ -881,6 +895,15 @@ const LAYERLIST_PROBE = `(${function () {
       const g = by[kind];
       if (!unearnedP(kind, ll, id)) continue;
       const decl = S(() => layers[ll][kind][id], null), t = S(() => tmp[ll][kind][id], null);
+      if (kind === 'buyables') {
+        const E = cEntry(ll, id);
+        const pays = E && E.scored === true && typeof E.pays === 'string' ? E.pays : null;
+        const priced = !!E && (E.cost === 'price' || E.cost === 'requirement');
+        const bv = priced ? nf(part.num, decl, t) : null;
+        if (priced && !isAmt(bv)) { if (nf(part.multi, decl, t)) g.skipped++; continue; }
+        g.cand.push({ layer: ll, kind, id, decl, t, target: priced ? bv : null, pays, cur: pays && priced ? `pays:${pays}` : `?${ll}/${id}` });
+        continue;
+      }
       const v = nf(part.num, decl, t);
       if (!isAmt(v)) { if (part.multi && nf(part.multi, decl, t)) g.skipped++; continue; }
       g.cand.push({ layer: ll, kind, id, decl, t, target: v, cur: curKey(ll, kind, decl, t, g.locs) });
@@ -893,11 +916,15 @@ const LAYERLIST_PROBE = `(${function () {
       let one = g.cand[0];
       if (same) for (const c of g.cand) if (ltD(c.target, one.target)) one = c;
       const part = PTARGET[k];
-      const amt = curAmt(one.layer, one.kind, one.decl, one.t);
-      if (engAfford(one.kind, one.layer, one.id) === true && isAmt(amt) && !gteD(amt, one.target)) continue;  // the wrong-currency guard
+      const buy = k === 'buyables';
+      // ⛔ (U13) NO ROW IS DROPPED ANY MORE: the affordability tell is a CROSS-CHECK the leg asserts on the page's own
+      // `suspect` list, never a reason to hide a row. A buyable's numerator is the fixture's field or nothing.
+      const amt = buy ? (one.pays ? walk(one.pays) : null) : curAmt(one.layer, one.kind, one.decl, one.t);
+      const haveKnown = isAmt(amt), needKnown = one.target !== null && isAmt(one.target);
       rows.push({ kind: k, layer: one.layer, id: one.id, candidates: g.cand.length,
         how: g.cand.length === 1 ? 'only' : same ? 'cheapest' : 'first',
-        have: isAmt(amt) ? F(amt, part.whole) : '', need: F(one.target, part.whole),
+        have: haveKnown ? F(amt, part.whole) : '?', need: needKnown ? F(one.target, part.whole) : '?',
+        haveKnown, needKnown, pays: buy ? one.pays : null, cur: buy && one.pays ? payLabel(one.pays) : null,
         first: `${g.cand[0].layer}/${g.cand[0].kind}/${g.cand[0].id}` });
     }
     return rows;
@@ -1116,6 +1143,7 @@ const LAYERLIST_PROBE = `(${function () {
       how: e.dataset.how, name: e.querySelector('.tmt-layerlist-prog-name').textContent,
       text: e.querySelector('.tmt-layerlist-prog-value').textContent,
       onScreen: e.getClientRects().length > 0,
+      have: e.dataset.have || '', need: e.dataset.need || '',
       h: +e.getBoundingClientRect().height.toFixed(2) }));
     if (!wasX) c.classList.remove('tmt-layerlist-expanded');
     const wantProg = progExpect(l);
@@ -1127,11 +1155,18 @@ const LAYERLIST_PROBE = `(${function () {
       if (g.kind !== w.kind || g.layer !== w.layer || String(g.id) !== String(w.id)) progBad.push(`${i}: ${g.kind}/${g.layer}/${g.id} != ${w.kind}/${w.layer}/${w.id}`);
       else if (g.how !== w.how) progBad.push(`${i}: how ${g.how} != ${w.how}`);
       else if (g.text.indexOf(`${w.have} / ${w.need}`) !== 0) progBad.push(`${i}: "${g.text}" does not open with "${w.have} / ${w.need}"`);
+      // (U13) the two halves' own marks, and a known buyable currency's NAME — the half a numerator-only check
+      // would let a wrong label through on
+      else if (g.have !== (w.haveKnown ? 'known' : 'unknown') || g.need !== (w.needKnown ? 'known' : 'unknown')) progBad.push(`${i}: marked ${g.have}/${g.need}, expected ${w.haveKnown ? 'known' : 'unknown'}/${w.needKnown ? 'known' : 'unknown'}`);
+      else if (w.kind === 'buyables' && g.text !== (w.cur ? `${w.have} / ${w.need} ${w.cur}` : `${w.have} / ${w.need}`)) progBad.push(`${i}: "${g.text}" is not "${w.have} / ${w.need}${w.cur ? ' ' + w.cur : ''}"`);
     });
     // ⛔ the DISCRIMINATOR for "cheapest replaced by first-listed": a category where the two rules pick DIFFERENT
     // components. Counted, so a run whose sample has none says so rather than counting a vacuous pass.
     const cheapestWitness = wantProg.filter((w) => w.how === 'cheapest' && w.first !== `${w.layer}/${w.kind}/${w.id}`).length;
     const progDropped = S(() => window.tmtLoader.layerListUI.progress(l).dropped.map((d) => `${l}/${d.kind}:${d.why}${d.n ? '\u00d7' + d.n : ''}`), []);
+    // ⛔ (U13) the CROSS-CHECK: rows where the engine says "can be bought" and the field the list read is short.
+    // Every one is a READER defect — asserted empty, never rendered around.
+    const progSuspect = S(() => window.tmtLoader.layerListUI.progress(l).suspect.map((d) => `${d.layer}/${d.kind}/${d.id}`), ['(no suspect list)']);
 
     const visIdx = actEls.map((e, i) => (onScreen(e) ? i : -1)).filter((i) => i >= 0);
     // what fits must be a PREFIX of the offer (the tab layout's order is kept: the cut is at the end, never a gap)
@@ -1181,7 +1216,7 @@ const LAYERLIST_PROBE = `(${function () {
       reset, resetOk,
       resources: gotRes, wantRes, resBad, resCands: cands.length, resLift: lift, resCollide, resGlobal: gWant,
       resSticky: gotRes.filter((r) => r.sticky).length, resMem: memOf(l), resRestated,
-      prog: gotProg, wantProg, progBad, progOk: progBad.length === 0, cheapestWitness, progDropped,
+      prog: gotProg, wantProg, progBad, progOk: progBad.length === 0, cheapestWitness, progDropped, progSuspect,
       progHow: wantProg.map((w) => w.how),
       cardWidth: Math.round(cardR.width) };
   });
@@ -1332,6 +1367,11 @@ const LAYERLIST_PROBE = `(${function () {
     // short — the tell for a game that buys with something it never declared). Reported, never asserted: they are
     // properties of the ROSTER, and a run with none of them must say so rather than pass in silence.
     progDropped: perCard.flatMap((x) => x.progDropped),
+    // (U13) the cross-check's findings (must be none), and THE SPLIT the ruling is about, over the rows as RENDERED:
+    // `n/n` a number on both sides, `?/n` the numerator unknown, `n/?` the price unknown, `?/?` neither.
+    progSuspect: perCard.flatMap((x) => x.progSuspect),
+    progSplit: perCard.reduce((o, x) => { x.prog.forEach((g) => { const k = `${g.kind}:${g.have === 'unknown' ? '?' : 'n'}/${g.need === 'unknown' ? '?' : 'n'}`; o[k] = (o[k] || 0) + 1; }); return o; }, {}),
+    progBuyables: perCard.flatMap((x) => x.prog.filter((g) => g.kind === 'buyables').map((g) => `${g.layer}/${g.id}: ${g.text}`)).slice(0, 12),
     ctrSkinOk: perCard.every((x) => x.ctrSkinOk),
     ctrSkinBad: perCard.filter((x) => !x.ctrSkinOk).slice(0, 3).map((x) => ({ layer: x.layer, bad: x.ctrSkinBad.slice(0, 3) })),
     // the counter states this page actually SHOWS, per category: the natural witnesses for the user's table. A page
@@ -1351,7 +1391,38 @@ const LAYERLIST_PROBE = `(${function () {
       ctrSkins: x.ctrSkins.map((y) => `${y.kind}:${y.gotKey || '-'}`).join(' ') })),
     throttle: S(() => window.tmtLoader.layerListUI.stats(), null),
   };
-}})()`;
+};
+
+/** (U13) THE GENERATED CURRENCY DATA AS THE HARNESS READS IT — off DISK (`games-data/`, by the same index the page
+ *  asks), never out of the page. ⛔ THAT IS THE POINT: `progExpect` judges the row's numerator and denominator, and
+ *  a probe that took its expectation from the page's `currencyData` / `currencyOf` could not see a reader that got
+ *  it wrong (U11's lesson, in this very file). `null` = the index names no file for this game. */
+const CURRENCY_FIXTURES = new Map();
+export function currencyFixture(id) {
+  if (!CURRENCY_FIXTURES.has(id)) {
+    const idx = JSON.parse(fs.readFileSync(path.join(REPO, 'games-data/index.json'), 'utf8'));
+    CURRENCY_FIXTURES.set(id, idx.games.includes(id) ? JSON.parse(fs.readFileSync(path.join(REPO, `games-data/${id}.json`), 'utf8')) : null);
+  }
+  return CURRENCY_FIXTURES.get(id);
+}
+/** The layer-list probe, fed the fixture. ⚠ WHETHER THE PAGE HAS ASKED is the one thing read off the page, and it
+ *  is a TIMING fact, not the answer: a page that has asked is waited on until its answer has landed (and the list's
+ *  one refresh after it has run), then held to the disk data; a page that has not is held to "every buyable
+ *  abstains". A build that never fetches therefore passes THIS probe — and reds the lazy leg, which is the check
+ *  that owns that claim. `undefined` = not asked, `null` = no file for this game. */
+async function layerListProbe(page, id) {
+  const asked = await page.evaluate(async () => {
+    const a = window.tmtLoader && window.tmtLoader.currencyAsked;
+    if (!a) return false;
+    try { await a; } catch (e) { /* the host turns a failure into null */ }
+    // ⚠ NO refresh of ours here: the list's OWN one-refresh-on-arrival is under test, and one forced here would
+    // hide a build that dropped it. One macrotask is what lets its `.then` run.
+    await new Promise((r) => setTimeout(r, 0));
+    return true;
+  });
+  const data = asked ? currencyFixture(id) : undefined;
+  return page.evaluate(`(${LAYERLIST_PROBE_FN})(${data === undefined ? 'undefined' : JSON.stringify(data)})`);
+}
 
 /**
  * ⚠ U2e — THE TOOLTIP, and the reason this probe exists at all is that the OBVIOUS assertion is VACUOUS. U2d put a
@@ -1957,6 +2028,10 @@ async function gateMobile(browser, base, ids) {
       // (U11) leg Q at the FRESH save, on this page because no tab has been opened on it and it is thrown away
       // next: the only fresh page in the gate nothing else depends on. It runs AFTER `mobileState` is taken.
       if (rf.ready) { row.neverOpenedFresh = await fresh.evaluate(NEVER_OPENED_PROBE); row.neverOpenedFreshOk = !/^READING|^THE CHIPS/.test(row.neverOpenedFresh.verdict); }
+      // (U13) ⛔ LAZY IS THE ASSERTION: this page carries the layer list and NEVER OPENS IT, so it must make exactly
+      // the requests a page made before U13 — which is to say not one to `games-data/`. The total is reported so a
+      // before/after pair can be read off two runs.
+      { const u = stats.of(fresh).urls; row.neverOpenedRequests = { total: u.length, gamesData: u.filter((x) => /\/games-data\//.test(x)) }; }
       await fresh.close();
       let deterministic = !!(plainState2 && plainState2.hash === plainState.hash);
       const agrees = mobileState && mobileState.hash === plainState.hash && mobileState.ticks === plainState.ticks;
@@ -2137,7 +2212,7 @@ async function gateMobile(browser, base, ids) {
           if (withLayers) {
             await p.evaluate(() => { const b = document.querySelector('#tmt-navbar button[data-key="layers"]'); if (b) b.click(); });
             await p.waitForTimeout(250);
-            layerList = { ...(await p.evaluate(LAYERLIST_PROBE)), geometry: await p.evaluate(MOBILE_PROBE) };
+            layerList = { ...(await layerListProbe(p, id)), geometry: await p.evaluate(MOBILE_PROBE) };
             // (U2e) the tooltip at a DESKTOP width, and the POINTER path with a real mouse — this context has no
             // touch, so `(hover: none)` is false here and the click path is deliberately off: a hover that opened
             // nothing would mean a pointer user could not read a chip at all.
@@ -2210,6 +2285,46 @@ async function gateMobile(browser, base, ids) {
       //    to back — and where the page will not repeat its own hash it ABSTAINS rather than blaming the list.
       // Both hashes are taken inside ONE evaluate with nothing between them but the open, so the window in which
       // anything else could move is as small as the page can make it.
+      // --- (U13) leg F: THE CURRENCY DATA IS FETCHED ON THE LIST'S FIRST OPEN, AND NOT BEFORE -------------------
+      // ⚖ user, 2026-09-20: lazily, on the Layers view's first open. This page has loaded a snapshot, opened every
+      // tab and pressed the tree button, and never opened the list: it must not have asked. Then ONE open, and in
+      // the same synchronous turn the rows as RENDERED — before any answer can land, every buyable row abstains on
+      // BOTH halves (`? / ?`); then the answer, which must cost exactly one arrival and no rebuild; then the
+      // requests this page made for it: the index, plus the game's own file only where the index (read here off
+      // disk) names one.
+      {
+        const gd = (x) => /\/games-data\//.test(x);
+        const before = stats.of(page).urls.filter(gd);
+        const F = await page.evaluate(async () => {
+          const T = window.tmtLoader, ui = T.layerListUI;
+          const askedBefore = !!T.currencyAsked, dataBefore = T.currencyData === undefined ? 'undefined' : T.currencyData === null ? 'null' : typeof T.currencyData;
+          const s0 = ui.stats();
+          ui.open();
+          const s1 = ui.stats();
+          const asked = !!T.currencyAsked;
+          const pre = [...ui.panel.querySelectorAll('.tmt-layerlist-prog[data-kind="buyables"]')].map((e) => ({
+            key: `${e.dataset.layer}/${e.dataset.cid}`, text: e.querySelector('.tmt-layerlist-prog-value').textContent,
+            have: e.dataset.have, need: e.dataset.need }));
+          let got = 'pending';
+          try { const d = await T.currencyAsked; got = d === null ? 'null' : typeof d; } catch (e) { got = 'threw'; }
+          await new Promise((r) => setTimeout(r, 0));
+          const s2 = ui.stats();
+          const post = [...ui.panel.querySelectorAll('.tmt-layerlist-prog[data-kind="buyables"]')].map((e) => `${e.dataset.layer}/${e.dataset.cid}: ${e.querySelector('.tmt-layerlist-prog-value').textContent}`);
+          ui.close();
+          return { askedBefore, dataBefore, asked, got, pre, post, arrivals: s2.currencyArrivals - s0.currencyArrivals,
+            refreshesAfterOpen: s2.refreshes - s1.refreshes, rebuildsAfterOpen: s2.rebuilds - s1.rebuilds };
+        });
+        const after = stats.of(page).urls.filter(gd);
+        const want = currencyFixture(id) ? 2 : 1;
+        const preBad = F.pre.filter((r) => r.text !== '? / ?' || r.have !== 'unknown' || r.need !== 'unknown');
+        const never = row.neverOpenedRequests;
+        row.currencyLazy = { neverOpened: never ? never.gamesData.length : null, neverOpenedTotal: never ? never.total : null,
+          beforeOpen: before.length, afterOpen: after.length - before.length, want, requests: after.slice(before.length).map((u) => new URL(u).pathname.replace(/^.*\/games-data\//, 'games-data/')),
+          ...F, pre: F.pre.length, preBad: preBad.slice(0, 3) };
+        row.currencyLazyOk = !!(never && never.gamesData.length === 0 && before.length === 0 && !F.askedBefore && F.dataBefore === 'undefined'
+          && F.asked && preBad.length === 0 && F.arrivals === 1 && F.rebuildsAfterOpen === 0
+          && after.length - before.length === want && F.got === (want === 2 ? 'object' : 'null'));
+      }
       row.layersInert = await page.evaluate(async () => {
         const h = () => tmtLoader.hash();
         const c0 = await h(), c1 = await h();
@@ -2224,7 +2339,7 @@ async function gateMobile(browser, base, ids) {
       // and now through the BUTTON, which is what the rest of the leg is about
       await page.evaluate(() => { const b = document.querySelector('#tmt-navbar button[data-key="layers"]'); if (b) b.click(); });
       await page.waitForTimeout(250);
-      const llPhone = { ...(await page.evaluate(LAYERLIST_PROBE)), geometry: await page.evaluate(MOBILE_PROBE) };
+      const llPhone = { ...(await layerListProbe(page, id)), geometry: await page.evaluate(MOBILE_PROBE) };
       const llShot = path.join(REPO, `tools/harness/results/${id}-layers.png`);
       await page.screenshot({ path: llShot, fullPage: false });
 
@@ -2238,7 +2353,7 @@ async function gateMobile(browser, base, ids) {
       const fitAt = async (vp) => {
         await page.setViewportSize(vp);
         await page.waitForTimeout(250);
-        const L = await page.evaluate(LAYERLIST_PROBE);
+        const L = await layerListProbe(page, id);
         const g = await page.evaluate(MOBILE_PROBE);
         return { vw: vp.width, fitOk: L.fitOk, fitBad: L.fitBad, twoRowsOk: L.twoRowsOk, twoRowsBad: L.twoRowsBad,
           rows: L.cardRows.map((r) => ({ layer: r.layer, w: r.w, offered: r.acts.length, fit: r.fit })),
@@ -2273,12 +2388,12 @@ async function gateMobile(browser, base, ids) {
       // ⚖ (U5) AND THE CHIPS' OWN COLOUR IS APPEARANCE TOO (user, 2026-09-19, the same ruling): the window is
       // opened on EITHER vector moving — the action row's lit/grey or the chips' three-way `data-skin` — and the
       // chip ORDER is asserted byte-identical across it beside the button set.
-      const before = await page.evaluate(LAYERLIST_PROBE);
+      const before = await layerListProbe(page, id);
       let litMoved = false, ticked = 0, after = before;
       for (let i = 0; i < 4 && !litMoved; i++) {
         await page.evaluate(() => { window.tmtLoader.tick(0.05, 250); window.tmtLoader.layerListUI.refresh(); });
         ticked += 250;
-        after = await page.evaluate(LAYERLIST_PROBE);
+        after = await layerListProbe(page, id);
         const a0 = byLayer({ rows: after.cardRows });
         // ⚠ A COLOUR CHANGE ONLY COUNTS WHERE THE CHIP ROW'S OWN EXPECTATION HELD. MEASURED on `ptr`: over 250
         // ticks two cards gained a chip (`b` and `g`, 10 → 11), which moves the vector and the order without any
@@ -2563,7 +2678,7 @@ async function gateMobile(browser, base, ids) {
       // removes `pseudoUnl` made it ABSTAIN instead of fail — a green that hid the defect.)
       // ⚠ TMT 2.2.1 keeps `msDisplay` on `player`, TMT 2.7 on `options` (`js/utils/options.js:61`), and `options`
       // is not part of `player` there at all — so both are set, and both restored.
-      const probe = () => page.evaluate(LAYERLIST_PROBE);
+      const probe = () => layerListProbe(page, id);
       await page.evaluate(() => { const ui = window.tmtLoader.layerListUI; if (ui) ui.open(); });
       const rBase = await probe();
       await page.evaluate(() => {
@@ -3144,10 +3259,13 @@ async function gateMobile(browser, base, ids) {
       // ⚠ It writes `tmp`, never `player`, and puts it back; `restored` is the row coming back unchanged.
       row.multiRes = await page.evaluate(() => {
         const ui = window.tmtLoader.layerListUI;
-        const one = (l) => ui.progress(l).rows.find((g) => g.kind === 'upgrades' || g.kind === 'buyables');
+        // ⚠ (U13) a buyable only where its cost is KNOWN: one the generated data calls `unknown` keeps its row as
+        // `? / ?` whatever the engine's `cost` holds (⚖ user), so a `multiRes` constructed on it can change nothing —
+        // MEASURED on `function-of-time`'s `f/11` and `the-cookie-tree-…`'s `g/11`, where this leg went red for it.
+        const one = (l) => ui.progress(l).rows.find((g) => g.kind === 'upgrades' || (g.kind === 'buyables' && g.needKnown));
         let l = null, g = null;
         for (const c of ui.cards()) { const r = one(c); if (r) { l = c; g = r; break; } }
-        if (!l) return { verdict: 'abstains (no card on this game shows an upgrade or buyable progress row)' };
+        if (!l) return { verdict: 'abstains (no card on this game shows an upgrade progress row, or a buyable one with a known cost)' };
         const t = tmp[g.layer][g.kind][g.id];
         // ⚠ BOTH SIDES, and this is the half the first version of this leg missed: the list reads `cost` through
         // `numFieldOf`, which falls back to the DECLARATION when `tmp` holds nothing — and a declared `cost()` is a
@@ -3937,6 +4055,8 @@ async function gateMobile(browser, base, ids) {
         // directions, and the progress rows against the probe's own fourth rebuild
         // U8: … and the remembered set is keyed inside THIS game's own storage namespace
         && L.resetOk && L.resOk && L.progOk && L.resMemKeyOk
+        // U13: … and the affordability cross-check found no row whose read currency the engine contradicts
+        && Array.isArray(L.progSuspect) && L.progSuspect.length === 0
         // U10: … and every buyable chip prints `getBuyableAmount`, in BOTH views, with the title agreeing
         && L.countOk);
       // GEOMETRY, at each width on that width's own terms: the phone demands nothing escapes and nothing is under
@@ -3979,7 +4099,9 @@ async function gateMobile(browser, base, ids) {
         && row.neverOpenedOk !== false && row.neverOpenedFreshOk !== false
         // U11/U12: and the engine's own reset lights the PRESSED layer's circle once, gone a second later, nothing
         // else lights, and nothing animates under reduced motion
-        && row.glowOk && row.counterGlowOk);
+        && row.glowOk && row.counterGlowOk
+        // U13: the currency data arrives on the list's first open and not before, and the row is right on both sides of it
+        && row.currencyLazyOk);
       row.layersScreenshot = path.relative(REPO, llShot);
 
       const shot = path.join(REPO, `tools/harness/results/${id}-mobile.png`);
@@ -4304,6 +4426,16 @@ async function main() {
       const tbOdd = tb.filter((r) => r.treeButton.treeTab !== 'none').map((r) => `${r.id}=${r.treeButton.treeTab}`);
       console.log(`M1 tree button (U10 — the REAL navbar press, then the visible \`.treeNode\` count; ⛔ a reading AT LOAD is vacuous, all five of the games this fixes are green there): ${tb.length - tbRed.length}/${tb.length} green; the engine's own tree-tab name ${JSON.stringify(tbNames)}${tbOdd.length ? ` — NOT \`none\` on ${tbOdd.length}: ${tbOdd.join(', ')}` : ''}; ${tbNodes.filter((r) => r.treeButton.nodes).length}/${tbNodes.length} showed a tree node after the press${tbNoNode.length ? `, ${tbNoNode.length} ABSTAINED (this game draws none at a fresh save: ${tbNoNode.join(', ')})` : ''}; master-detail judged on ${tbDetail.filter((r) => r.treeButton.detail).length}/${tbDetail.length}${tbRed.length ? ` (RED: ${tbRed.map((r) => `${r.id} ${r.treeButton.verdict}`).join('; ')})` : ''}`);
       console.log(`M1 layers leg: ${rows.filter((r) => r.layersOk).length}/${rows.length} green over ${cards} card(s) and ${chips} chip(s), at ${PHONE.width}px with touch and at ${DESKTOP.width}px without`);
+      // (U13) THE THREE-WAY SPLIT over the rows as rendered on the phone page, the cross-check, and the lazy fetch.
+      {
+        const ph = rows.filter((r) => r.layers && r.layers.phone).map((r) => r.layers.phone);
+        const split = ph.reduce((o, L) => { for (const [k, n] of Object.entries(L.progSplit || {})) o[k] = (o[k] || 0) + n; return o; }, {});
+        const sus = rows.flatMap((r) => ((r.layers && r.layers.phone && r.layers.phone.progSuspect) || []).map((x) => `${r.id}:${x}`));
+        const lz = rows.filter((r) => r.currencyLazy);
+        const lzRed = lz.filter((r) => !r.currencyLazyOk);
+        const sum = (f) => lz.reduce((n, r) => n + (r.currencyLazy[f] || 0), 0);
+        console.log(`M1 layers progress (U13 — a buyable's halves from games-data/, \`?\` where unknown; n = a number): ${JSON.stringify(split)}; cross-check (engine says affordable, the read field is short) ${sus.length ? `⛔ ${sus.length}: ${sus.slice(0, 6).join(', ')}` : '0'}; lazy fetch ${lz.length - lzRed.length}/${lz.length} green — games-data/ requests on the never-opened page ${sum('neverOpened')}, before the first open ${sum('beforeOpen')}, on it ${sum('afterOpen')} (want ${sum('want')}); ${sum('pre')} buyable row(s) rendered before the answer landed${lzRed.length ? ` (RED: ${lzRed.slice(0, 6).map((r) => `${r.id} ${JSON.stringify({ ...r.currencyLazy, post: undefined })}`).join('; ')})` : ''}`);
+      }
       // (U10) THE BUYABLE COUNTS. ⚠ `countChips` is what says whether a game could judge this at all, and the
       // CONSTRUCTED reader witness is what makes the `player[l].buyables[id]` mutant mean anything: the two
       // readers agree at every state the sweep drives.

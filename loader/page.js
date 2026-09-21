@@ -183,8 +183,8 @@ async function boot(id) {
   }
   if (AUTOMATION) {
     // ---- the GENERATED currency data (C1, games-data/<id>.json) -------------------------------------------------------
-    // Which field each buyable really pays in, scored harness-side by a rollback (tools/currency-data.mjs). Automation
-    // mode only — ⛔ the PLAIN page fetches nothing new. EAGER, unlike the ladder, because tmt-auto.js reads it in its
+    // Which field each buyable really pays in, scored harness-side by a rollback (tools/currency-data.mjs). EAGER here
+    // — ⛔ a plain page fetches it only when its layer list is first OPENED (U13, the branch below), never at boot. EAGER, unlike the ladder, because tmt-auto.js reads it in its
     // decisions from the first tick, and node ≡ page parity needs the page to decide with exactly what the harness
     // reads. The INDEX says which games have a file (103 of 171), so a game without one makes no request that fails.
     step('currency data games-data/index.json');
@@ -194,6 +194,31 @@ async function boot(id) {
       step(`currency data games-data/${id}.json`);
       T.currencyData = JSON.parse(await fetchText(abs(`games-data/${id}.json`), `games-data/${id}.json`));
     }
+    // (U13) the layer list asks through the same door on both pages; here the answer is already in hand
+    T.currencyAsked = Promise.resolve(T.currencyData);
+    T.fetchCurrencyData = () => T.currencyAsked;
+  } else if (NAVBAR) {
+    // ---- (U13) THE SAME DATA FOR THE LAYER LIST, on a page without automation -----------------------------------
+    // ⚖ user, 2026-09-20: fetched in layer-list mode too, LAZILY, on the Layers view's FIRST OPEN (layerlist.js
+    // `show()` is the only caller). ⛔ LAZY IS THE ASSERTION, not a description: a page that never opens the list
+    // makes exactly the requests it made before U13 — gate M1 counts `games-data/` requests on its never-opened
+    // page, and G1's plain-page row still asserts none. The INDEX first, as automation does, so a game without a
+    // file makes no request that can fail. `T.currencyData` stays UNDEFINED until the answer arrives (the list
+    // abstains, `? / ?`), then holds the file or null; a failed fetch leaves null and costs the page nothing.
+    // `T.currencyAsked` is the promise once asked, and null before — read by the gate, which must not trigger it.
+    T.currencyAsked = null;
+    T.fetchCurrencyData = () => {
+      if (T.currencyAsked) return T.currencyAsked;
+      T.currencyAsked = (async () => {
+        const r = await fetch(abs('games-data/index.json'), { cache: 'no-cache' });
+        if (!r.ok) return (T.currencyData = null);
+        const index = JSON.parse(await r.text());
+        if (!index || !Array.isArray(index.games) || index.games.indexOf(id) < 0) return (T.currencyData = null);
+        const g = await fetch(abs(`games-data/${id}.json`), { cache: 'no-cache' });
+        return (T.currencyData = g.ok ? JSON.parse(await g.text()) : null);
+      })().catch(() => (T.currencyData = null));
+      return T.currencyAsked;
+    };
   }
   if (AUTOMATION) {
     // ---- the LADDER, where this game has one (V3) ------------------------------------------------------------------
