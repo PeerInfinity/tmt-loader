@@ -118,23 +118,27 @@ test('RESETS: a member that does not reset does not count, and the count says so
   assert.deepEqual(J(row(ctx).values.layers), ['x', 'y']);
 });
 
-test('⚖ RESETS: the row is FROZEN at the give-up — a row that opens mid-wait does not move the bar; `-now` follows it', () => {
-  for (const [pol, frozen] of [['sequential|give-up@0.1/20/6resets', true], ['sequential|give-up@0.1/20/6resets-now', false]]) {
+test('⚖ RESETS: the row is FROZEN at the give-up — a row that opens mid-wait does not move the bar; `-now` follows it — mutants `nothing frozen`, `count every reset feature`', () => {
+  for (const [pol, frozen] of [['sequential|give-up@0.1/20/60resets', true], ['sequential|give-up@0.1/20/60resets-now', false]]) {
     const state = { can: { x: true, y: true } };
     const ctx = boot(pol, state);
     toGiveUp(ctx);
-    // row 3 opens, and row 2 stops resetting
-    ctx.player.z.unlocked = true; state.can.x = false; state.can.y = false; state.can.z = true;
+    // row 3 opens; on row 2 only `x` goes on resetting, and `z` resets on row 3 — ONE reset a tick on each row, so a
+    // count that took in both rows would move by two a tick and could not be mistaken for either reading
+    ctx.player.z.unlocked = true; state.can.y = false; state.can.z = true;
+    tick(ctx, 1);
+    const d0 = row(ctx).values.done;
     tick(ctx, 4);
     const w = row(ctx);
+    assert.equal(w.code, 'waiting:retry-resets', JSON.stringify(w));
     if (frozen) {
       assert.equal(w.values.row, 2, `${pol}: the row moved: ${JSON.stringify(w)}`);
-      assert.equal(w.code, 'waiting:retry-resets', 'row 2 is not resetting, so the frozen count waits');
+      assert.deepEqual(J(w.values.layers), ['x', 'y']);
     } else {
       assert.equal(w.values.row, 3, `${pol}: the row did not follow: ${JSON.stringify(w)}`);
       assert.deepEqual(J(w.values.layers), ['z']);
-      assert.ok(w.values.done >= 3, `${pol}: z's resets count from the moment row 3 is the highest: ${JSON.stringify(w)}`);
     }
+    assert.equal(w.values.done - d0, 4, `${pol}: one reset a tick of the row it counts, not both rows' — ${d0} → ${w.values.done}`);
   }
 });
 

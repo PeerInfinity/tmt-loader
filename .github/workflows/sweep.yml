@@ -1281,6 +1281,169 @@ jobs:
   # (3bc12bf, 17260e03, 71da72e — all on main) and requires it to reproduce its tick and full hash. A depth-1
   # checkout does not have those objects, and the job would fail for a reason that has nothing to do with the code.
   # ---------------------------------------------------------------------------------------------------------------
+  # ---- V5: the Advanced tab — the WRAP, NO JUMP, the RETRY conditions -----------------------------------------------
+  v5-page:
+    name: V5 Advanced tab — in the page (parts 1, 2)
+    needs: fast
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - run: npm ci
+
+      - name: Cache the Playwright browser
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+
+      - run: npx playwright install --with-deps chromium
+
+      # ⚠ Part 1 judges every interactive element against the viewport AND its pane, at 390 px with and without
+      # `?mobile=1` and at 1280, on ptr and something — and that the tab's root IS its pane's width, because a column
+      # that shrink-wrapped to nothing would pass "nothing past the edge" vacuously (contain:inline-size did, measured).
+      - name: "Part 1 — the WRAP, on ptr AND something"
+        shell: bash
+        run: |
+          set -o pipefail
+          node tools/harness/gates-v5.mjs --part 1 --no-summary --assert | tee v5-1.txt
+
+      # ⚠ Part 2's floors-ON rows are evidence only beside its floors-OFF CONTROL rows, which must see the same
+      # constructed transitions move things.
+      - name: "Part 2 — NO JUMP: constructed transitions, their controls, and real play"
+        shell: bash
+        run: |
+          set -o pipefail
+          node tools/harness/gates-v5.mjs --part 2 --no-summary --assert | tee v5-2.txt
+
+      - name: Summary
+        if: always()
+        shell: bash
+        run: |
+          {
+            echo '## V5 Advanced tab — in the page'
+            echo ''
+            echo '```'
+            cat v5-1.txt 2>/dev/null | grep -E 'VERDICT|REFUSED|^RED|green$' || echo 'no output'
+            cat v5-2.txt 2>/dev/null | grep -E 'VERDICT|REFUSED|^RED|green$' || echo 'no output'
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload the rows
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: v5-page
+          path: tools/harness/results/tmp/gates-v5-part*-last.json
+          if-no-files-found: warn
+          retention-days: 14
+
+  v5-node:
+    name: V5 retry conditions + inertness — headless (parts 3, 5)
+    needs: fast
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - run: npm ci
+
+      - name: "Part 3 — the retry conditions, on the stub and on the real fixture"
+        shell: bash
+        run: |
+          set -o pipefail
+          node tools/harness/gates-v5.mjs --part 3 --no-summary --assert | tee v5-3.txt
+
+      # ⛔ Nothing chosen ⇒ nothing moved: the opening, M15 → M24, R3a's M22 leg and Something Tree, to the HASH.
+      - name: "Part 5 — inertness, to the hash"
+        shell: bash
+        run: |
+          set -o pipefail
+          node tools/harness/gates-v5.mjs --part 5 --no-summary --assert | tee v5-5.txt
+
+      - name: Summary
+        if: always()
+        shell: bash
+        run: |
+          {
+            echo '## V5 retry conditions + inertness — headless'
+            echo ''
+            echo '```'
+            cat v5-3.txt 2>/dev/null | grep -E 'VERDICT|REFUSED|^RED|green$' || echo 'no output'
+            cat v5-5.txt 2>/dev/null | grep -E 'VERDICT|REFUSED|^RED|green$' || echo 'no output'
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload the rows
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: v5-node
+          path: tools/harness/results/tmp/gates-v5-part*-last.json
+          if-no-files-found: warn
+          retention-days: 14
+
+  # ⛔ OWED FROM R3b-1 (plan §35 item 2): the whole-stretch WEIGHT leg had been measured by hand and never run as a
+  # battery. Three 21,000-tick cells — its own job, because a battery killed by a timeout prints fewer rows.
+  r3b-ratio:
+    name: R3b row cycle — the whole-stretch ratio (part 7)
+    needs: fast
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - run: npm ci
+
+      - name: "Part 7 — a weight of W buys W resets a round (W = 5, 20, and 60 at the shipped K)"
+        shell: bash
+        run: |
+          set -o pipefail
+          node tools/harness/gates-r3b.mjs --part 7 --no-summary --assert --repeat7 1 --pool 3 | tee r3b-7.txt
+
+      - name: Summary
+        if: always()
+        shell: bash
+        run: |
+          {
+            echo '## R3b row cycle — the whole-stretch ratio'
+            echo ''
+            echo '```'
+            cat r3b-7.txt 2>/dev/null | grep -E 'VERDICT|REFUSED|^RED|green$' || echo 'no output'
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload the rows
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: r3b-ratio
+          path: tools/harness/results/tmp/gates-r3b-part7-last.json
+          if-no-files-found: warn
+          retention-days: 14
+
   anchors:
     name: S1 part 1 — automation anchors
     needs: fast

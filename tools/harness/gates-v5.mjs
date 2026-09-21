@@ -323,7 +323,7 @@ async function part3() {
   });
   const pass = (/^# pass (\d+)/m.exec(unit.out) || [])[1], fail = (/^# fail (\d+)/m.exec(unit.out) || [])[1];
   row({ gate: 'V5-3 the retry conditions, constructed: loader/retry.test.mjs + loader/challenges.test.mjs (stub engine), RUN HERE', id: '—', leg: 'node --test',
-    ok: unit.code === 0 && fail === '0' && Number(pass) >= 30, notes: `${pass} passed, ${fail} failed` });
+    ok: unit.code === 0 && fail === '0' && Number(pass) === 28, notes: `${pass} passed, ${fail} failed (the two files declare 28 — 11 + 17; a count that DROPS is a file that stopped running)` });
   // ⛔ ON THE REAL FIXTURE, each condition must do BOTH halves: WAIT with its own code, and then RETRY — H12 entered
   // again (enter ≥ 3: H11, H12, H12 again). The predicate names a game-second past the first give-up, so it goes true
   // inside the leg by construction (M22 is at 30618, and the first give-up measured at ~+120).
@@ -349,8 +349,9 @@ async function part3() {
 // and Something Tree's S01–S05 were MEASURED at the pre-V5 head `f37b2029f` in a control worktree (the record says so).
 const OPEN_PIN = { gs: 6718, hashGame: '82eee26f947b2b2e' };
 const R3A_PIN = { gs: 42618, hashGame: 'dc862c221837bc17', ch: '2/1/1' };
-const M24_PIN = JSON.parse(process.env.V5_M24_PIN || 'null') || { gs: 30736, hashGame: 'b73aef45c9ce7d08', marks: { M16: null, M22: 30618, M23: 30683, M24: 30736 } };
-const S05_PIN = JSON.parse(process.env.V5_S05_PIN || 'null') || null;
+// measured at `f37b2029f` (pre-V5), 2026-09-20, in a control worktree — M24's hash is also the `all/M24` fixture's own
+const M24_PIN = { gs: 30736, hashGame: 'b73aef45c9ce7d08', marks: { M16: 17058, M17: 23492, M18: 25598, M19: 25937, M20: 26612, M21: 28058, M22: 30618, M23: 30683, M24: 30736 } };
+const S05_PIN = { gs: 579, hashGame: '524822d719ceea18', marks: { S01: 6, S02: 308, S03: 309, S04: 399, S05: 579 } };
 // the record's SHAPE as R3b-1 left it, measured at `f37b2029f` (gates-r3b part 5's L2 row) — V5 adds NOTHING here
 const RT_KEYS = ['lastReset', 'loopNo', 'ranAt', 'stats'];
 const AU_KEYS = ['achievements', 'armLocked', 'buyables', 'challenges', 'clickables', 'disclosed', 'edits', 'features', 'milestones', 'points', 'primeMiles', 'spentOnBuyables', 'unlocked', 'upgrades'];
@@ -379,8 +380,8 @@ async function part5() {
     ok: r3a.gameSeconds === R3A_PIN.gs && r3a.hashGame === R3A_PIN.hashGame && c && `${c.enter}/${c.exit}/${c.gaveUp}` === R3A_PIN.ch,
     notes: `${r3a.gameSeconds} / ${r3a.hashGame} (pin ${R3A_PIN.gs} / ${R3A_PIN.hashGame}); enter/exit/gaveUp ${c ? `${c.enter}/${c.exit}/${c.gaveUp}` : '—'} (pin ${R3A_PIN.ch}); runtimeState keys [${r3e.rt}] — R3a's two blocks and nothing of V5's` });
   row({ gate: 'V5-5 Something Tree S01–S05, games-auto/something.js unchanged', id: 'something', leg: '3000 ticks to S05', ticks: st.ticks, gameSeconds: st.gameSeconds, hash: st.hashGame,
-    ok: !!st.ok && (S05_PIN === null ? true : st.gameSeconds === S05_PIN.gs && st.hashGame === S05_PIN.hashGame),
-    notes: `${st.gameSeconds} / ${st.hashGame}${S05_PIN ? ` (pin ${S05_PIN.gs} / ${S05_PIN.hashGame})` : ' — ⚠ NO PIN DECLARED'}; marks ${['S01', 'S02', 'S03', 'S04', 'S05'].map((m) => `${m} ${gsOf(st, m) ?? '—'}`).join(' · ')}` });
+    ok: !!st.ok && st.gameSeconds === S05_PIN.gs && st.hashGame === S05_PIN.hashGame && Object.entries(S05_PIN.marks).every(([m, v]) => gsOf(st, m) === v),
+    notes: `${st.gameSeconds} / ${st.hashGame} (pin ${S05_PIN.gs} / ${S05_PIN.hashGame}); marks ${['S01', 'S02', 'S03', 'S04', 'S05'].map((m) => `${m} ${gsOf(st, m) ?? '—'}`).join(' · ')}` });
   const n = rows.filter((r) => r.ok).length;
   row({ gate: 'V5-5 VERDICT: nothing chosen ⇒ nothing moved', id: 'both', ok: n === rows.length, notes: `${n}/${rows.length}. V5 adds to the SAVE only \`player.au.edits[<id>].args\` (a side parameter a player typed) and to \`runtimeState()\` only object records inside \`challengeFailed\` (a new retry condition in force) — neither exists unless chosen` });
 }

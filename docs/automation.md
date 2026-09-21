@@ -81,6 +81,66 @@ subtab bar itself, with `tab-buttons`. Censused quote-agnostically over `games/`
 the component and still fail to draw the tab — so it is only the premise; `gates-v1 --part 6` opens the Advanced
 subtab on every game and is the witness.
 
+### On a phone, and while the numbers move (V5)
+
+⚖ The user (2026-09-20): *"In the advanced automation tab, some of the controls extend past the right side of the
+screen on mobile. Can we make it wrap around instead?"* and *"the layout keeps shifting as the data keeps changing.
+Somewhere else we set up code to prevent UI elements from shrinking after the first time they grow. Can we implement
+something like this here?"*
+
+**The wrap.** Reproduced at `f37b2029f`, 390×844, ptr `?automation=1&mobile=1`, `all/M22`: **nine** elements past the
+viewport in the give-up block — label spans 501 and 632 px wide, fields at x = 459 and 590, the `−` / `+` steppers at
+617 and 642 — with `scrollWidth` 390, so the page did not scroll and those controls were UNREACHABLE. `tmtl-number` was
+one `white-space:nowrap` span around label, field and steppers. It is now a WRAPPING flex row: the label is its own
+item and wraps its own words; the field with its steppers is one item that never breaks apart, so a narrow screen puts
+the control on the next line and a wide one keeps it beside its label. No control changed size (`gates-v5 --part 1`
+compares every tap target against the pre-V5 measurement: field 107.2 px, button 21.8 × 44 px under `?mobile=1` and
+× 19 without, select 21 px tall).
+
+⚠ **And a second cause nobody had named, measured at a DESKTOP width.** Both engines render a subtab's content through
+their `column` component, whose `.upgTable` is a *wrapping column* flexbox — and a flex item there takes the
+MAX-CONTENT width of what is inside it. So the whole Advanced column was **1766 px wide inside ptr's 634 px pane** (865
+on something) and the pane clipped it: 413 elements past the pane at 1280 px, 712 at 390 px without `?mobile=1`. V4
+had seen the 1737 px and read it as "ptr's layout" (`shots-v4.mjs`); it was the loader's own root. The tab's three
+roots (`.tmtl-root`: the Advanced header, the editors, the Progress view) are now a **fixed-layout table at 100 %**, the
+one box whose width is its container's rather than its content's — measured equal to the pane on both engines at 390
+and 1280, with and without `?mobile=1`. ⛔ `contain:inline-size` was measured first and is a trap: the column
+shrink-wraps to **0 px**, and "nothing past the edge" over a column with no width is a vacuous green — which is why the
+gate also asserts that each root is as wide as its pane.
+
+**The layout does not jump.** What moves, MEASURED before anything was built, on a paused page with each transition
+CONSTRUCTED (the UI arc's three tries at catching one in the wild saw nothing, because a box changes size only when its
+string's length does): **two different problems.**
+
+| what changes | what it moved (ptr, 390 px, `all/M22`) | the fix |
+|---|---|---|
+| a reason line swaps to a shorter sentence | **all 63 blocks below by 38 px** | the line is a SLOT (below) |
+| a line appears or disappears (*never fired*, an error, the watch's rung) | **all 63 by 32 px** | the line is a SLOT |
+| a number changes length (9.99e9 → 1.00e10, even → 1.00e1000 in three places) | **nothing vertically** — but every word after it shifts sideways | the number is a BOX |
+
+- **Slots.** Every line of a block (and a folded block's one line, the header's count line, the modifier's readout and
+  the watch's status sentence) keeps the longest thing it has shown as an invisible copy stacked in the same grid cell
+  (`.tmtl-ghost`, `visibility:hidden`, `aria-hidden`). Its height is the taller of the two, so it only ever grows, and a
+  line that disappears leaves its height behind. ⛔ Nothing is measured — `tmt-auto.js` touches no DOM
+  (`docs/contract.md`); the browser's own grid sizing takes the max.
+- **Boxes.** Every number is its own `span.tmtl-num`: the digits alone (a `×`, `%`, `s` or unit stays in the sentence,
+  outside the box), `font-variant-numeric: tabular-nums`, and an INLINE `min-width` in `ch` that only ever grows — never
+  a cap, never the renderable worst case. ⚠ On the four games measured the tab's font is Inconsolata (monospace), where
+  `.`, `e`, `,` and `-` are exactly one `ch`; `gates-v5 --part 7` records the font on every game it judges.
+- **Where the floors live.** On the `tmtl-editors` instance, keyed by feature id + line (+ value), exactly as
+  `tmtl-number` keeps its draft and V3 keeps the fold map — the tab re-renders every tick, so a floor kept in the
+  rendered string would be gone on the next one. Never in `player`, never in `runtimeState()`. ⚖ **They reset when the
+  Advanced subtab is left or the page reloads**: that is the moment the whole view is re-laid anyway, and a floor
+  carried over would keep the widths of a state the player has moved away from (a big reset shrinks every number at
+  once). The layer list's floors are per session for the same reason. The header, a `display-text` and not a
+  component, keeps its own and drops it whenever the tab is off screen.
+- **What it costs.** Real play, ptr from `all/M22` with a redraw after every tick for 60 ticks at 390 px: without the
+  floors blocks moved **up** the page 495 times (the shifting the user saw); with them, **0** — and the tab held
+  **+83 px** on 21,303. `tmtLoader.setViewFloors(false)` switches them off (a page-side flag, never saved): it exists for
+  the gate's CONTROL rows, which must see the same transitions move things or the leg could not see the defect at all.
+- ⚠ `last at <game-s>` printed the raw float (`115100.98603999999 s`), whose length changed with the float noise and
+  re-wrapped the line for no reason a player could see. It is rounded to a tenth.
+
 ### The controls: the loader registers its OWN components
 
 ⚖ **Corrected during V2** (the user asked why the engines' own inputs could not be used on every game — they can be
@@ -429,6 +489,10 @@ declares one is a new demand signal with no change to the cycle at all.
 | `waiting:progress` | (R3a) the `give-up@B/H/Rx` modifier: how far this attempt has come as a percentage of the challenge's own goal, what fraction of the remaining distance a window must close, and how much of `H` has gone by |
 | `acted:challenge-give-up` | (R3a) it LEFT a challenge without completing it, with the percentage it reached |
 | `waiting:retry` | (R3a) that challenge was given up, and the layer it belongs to is not yet `R×` as strong as it was when the attempt began |
+| `waiting:retry-resets` | (V5) a `…/Nresets` wait: how many of the `N` resets of the counted row this automation has made since the give-up, the row, and the layers it counts |
+| `waiting:retry-clock` | (V5) a `…/Ts` wait: the game-seconds since the give-up, of `T` |
+| `waiting:retry-when` | (V5) a `…/when` wait: the predicate it is waiting on |
+| `blocked:retry-when` | (V5) the `…/when` predicate could not be EVALUATED — V4's rule: a throw is not a false |
 | `paused:in-challenge` | (R3a) a `while` or an `until` is stopping this feature while the game is INSIDE a challenge it entered. It names the challenge and which of the two controls did it, because a pause does not leave a challenge and the run is stranded until the player clears the condition |
 | `waiting:gain` / `waiting:gain-x` | the `gain>=N` / `gain>=Nx` threshold, with the gain and what it needs |
 | `waiting:gain-unit` | `gain>=Nx-unit` while the layer holds **less than one** of its own resource: the bar is N of the resource, not N× nothing. A SEPARATE code, because the two bars are different questions and a reader has to be able to tell which one is refusing |
@@ -672,7 +736,9 @@ their tuning, and the harness's `--profile all` legs are unaffected because thei
 **Writing a choice** (what the components call, and what a gate can call headlessly):
 `tmtLoader.setSavedPolicy(id, policy | null)`, `tmtLoader.setSavedStrategy(id, strategyId)` (keeps the modifier),
 `tmtLoader.setSavedParam(id, name, value[, 'modifier'])`, `tmtLoader.setSavedModifier(id, modifierId | null)`,
-`tmtLoader.savedPolicy(id)`. Each returns `{ok, policy, error}`. ⛔ **A refusal changes nothing and says why** — a
+`tmtLoader.savedPolicy(id)`. Each returns `{ok, policy, error}`. ⚠ (V5) A **side** parameter — a predicate a modifier
+declares, which cannot be a token of the policy string — is written by the same `setSavedParam` to
+`player.au.edits[<id>].args[<name>]`, a further field of the same entry (`tmtLoader.savedArg(id, name)` reads it back). ⛔ **A refusal changes nothing and says why** — a
 value the strategy cannot parse leaves the previous one in force and the field shows the reason; it is never silently
 dropped.
 
@@ -908,6 +974,7 @@ for the same refusal.
 | `toggles` | `on` | for each held milestone (`hasMilestone(l, id)`) that declares `toggles`, sets every `player[layer][field]` that is `false` to `true` — what the game's toggle button does. The milestone only UNLOCKS the button; the field stays false until clicked |
 | `challenges` | `sequential` | the first challenge in `order[]` (else id order) that is unlocked with completions below `completionLimit` (default 1): enter it with `startChallenge` when none of the layer's challenges is active; while it is active, exit-and-complete with `startChallenge` once `canCompleteChallenge` holds (and `canExitChallenge` where the engine has it). A challenge the player entered by hand is left alone. Enters / exits / give-ups are counted in `hookStats().challenges` |
 | | **`… \| give-up@B/H/Rx`** (a MODIFIER) | on top of `sequential`: leave a challenge that has stopped closing the distance to its goal, and do not try it again until the layer is `R×` stronger than it was at the failed attempt. See below |
+| | `… \| give-up@B/H/Nresets` · `…/Nresets-now` · `…/Ts` · `…/when` (V5, MODIFIERS) | the same exit rule with a different RETRY condition — N resets of the highest row, a clock, a predicate. See *RETRY conditions* below |
 | | `off` | nothing |
 | `clickables` | `when` | for each `{id, when}` the table lists for the layer: `clickClickable(l, id)` when the clickable is unlocked, `canClick`, and `when` holds |
 | | `off` | nothing |
@@ -1222,6 +1289,53 @@ mid-attempt, a player who entered by hand and then switched the modifier on, a `
 alternative is an attempt that looks as if it began at time zero, which would be given up on the first tick.
 `stallSince` does the same thing for the same reason.
 
+### RETRY conditions — what a given-up challenge waits for before it is tried again (V5)
+
+⚖ The user (2026-09-20): *"we will want more options for the condition to wait for before retrying challenges.
+Another option might be total resets on the current highest row."*
+
+⛔ **A condition is a ROW** of `RETRY_CONDITIONS` in `loader/tmt-auto.js`, and each row becomes one ordinary MODIFIER
+of the `challenges` kind, `give-up@B/H/<condition>` — `B` and `H` are R3a's, shared; the retry half is the row's own
+template suffix, its own parameters and its own `wait` function. So the modifier buttons, the parameter editors, the
+validator, the round-trip and every test that walks the table see nothing new, and **a later condition is one more row
+and no UI code**.
+
+| modifier | retries once… | default | reason while waiting |
+|---|---|---|---|
+| `give-up@B/H/Rx` | the challenge's layer holds `R×` what it held when the failed attempt began — **R3a's rule, byte for byte** (template, id, defaults, its STRING record, its code) | **the derived default**, unchanged | `waiting:retry` |
+| `give-up@B/H/Nresets` | this automation has made `N` resets of **the highest row** — the highest row with an unlocked layer it can reset, **at the moment of the give-up**, frozen for the wait | `N = 10` | `waiting:retry-resets` — *"3 of 10 so far (q, h)"* |
+| `give-up@B/H/Nresets-now` | the same, but the row counted is the highest one NOW: when a new row opens mid-wait, its resets are the ones that count from then on | `N = 10` | `waiting:retry-resets` |
+| `give-up@B/H/Ts` | `T` game-seconds have passed since the give-up. ⚖ 13d.2: **a clock is a PROXY** for "the run is stronger now" — it waits the same whether the run grew or not — and its help says so. Never a default | `T = 600` | `waiting:retry-clock` |
+| `give-up@B/H/when` | a PREDICATE holds (V4's type — the general form, e.g. `getBuyableAmount('q',11).gte(5)`). Empty is "no condition": tried again at once, which is R3a's `R = 1` control. One that THROWS is `blocked:retry-when`, never a silent false | `''` | `waiting:retry-when` |
+
+⚖ **"The highest row" is an ASSUMPTION** (the planner's, plan §36 — the user was asked and did not answer): frozen at the
+give-up, so the bar cannot jump when a new row opens mid-wait. The other reading is one suffix away (`-now`), so it is a
+choice and not a rewrite. **What ships as the default is neither**: R3a's `Rx` stays the derived default.
+
+⛔ **What is counted is THIS AUTOMATION's own resets** — the per-feature action counter, read as INCREMENTS. A reset the
+player clicks, or one the game's own auto-reset makes, is **not** counted, and that is not an oversight: no engine field
+declares a reset on every family. `player.<l>.resetTime` exists only on the 2.7-style engine and ptr has none (plan
+§31a's six void cells), and `total` / `best` are the game's own `startData` on 2.2.1 — only 2.7's `getStartLayerData`
+adds them. A count built on either would be a different rule on different games. The reason line names the layers it
+counts, so a count that does not move (a member the game's own autobuyer resets) is visible for what it is.
+
+⛔ **The count survives a resume.** `stats.actions` is in `runtimeState()` and continues across a resume, while a run
+that resumes WITHOUT the runtime record starts it at zero; so the wait keeps the last value it SAW per feature and adds
+only what it has seen GROW, and a counter that went backwards is re-read, never subtracted. The record lives in
+`runtimeState().challengeFailed` only while a wait is live, keyed by feature and challenge — R3a's `Rx` record stays a
+STRING, the new conditions write an object (`{held, row, fids, layers, done, seen}` / `{held, at}` / `{held}`). A
+condition switched on AFTER a give-up finds R3a's string and seeds its count or its clock at that tick (`attemptOf`'s
+precedent).
+
+**The predicate is a SIDE parameter.** It has no grammar and cannot sit inside a policy string (`|` is the modifier
+separator), so its parameter is declared `side: true`: it is stored BESIDE the policy, in the same per-feature edit
+entry (`player.au.edits[<id>].args.w`), edited by the same field, and reaches the harness as
+`--auto-opt arg:<featureId>.w=<predicate>` and the runtime as `tmtLoader.setArg(id, 'w', src)`.
+
+⚠ **What is NOT offered, and why**: "retry once the challenge would now succeed". The progress an attempt WOULD make
+cannot be read from the outside state without entering the challenge and rolling back (a rollback is harness-only,
+`docs/planner.md`), so a row claiming it would be a guess. The row's help says so.
+
 ### ⚠ What a PAUSE means on the `challenges` kind (R3a)
 
 `while` and `until` are per-FEATURE and are evaluated BEFORE the kind decides, so a false one means the feature does
@@ -1351,6 +1465,8 @@ Everything else in both games is derived.
     `policy:<id>=`). An EMPTY value clears the table's own entry, which is how a control leg measures the game
     without a gate the table ships. ⛔ An id the derivation does not produce THROWS — R1′'s rule, because a mistyped
     sweep cell that quietly measured the game without the thing under test is how a number gets printed for nothing;
+  - `arg:<featureId>.<name>=<predicate>` — (V5) a modifier's SIDE parameter (the `when` retry condition's `w`), below
+    the player's saved value exactly as `while:` is;
   - `hookAll=1` — hook every tree layer (test probe); any other key lands in `tmtLoader.autoOptions`.
 - A THROW in the table or the derivation (an unknown key, an unknown feature id, a bad `include=`) is a **hard fail** of
   the run (`ok: false`, `failed_at: 'automation'`), not a run with `features: []` — the page fails its load on the same
@@ -1382,6 +1498,10 @@ policies named by their template (`gain>=Nx`, `interval>=T`, `reserve>=N`) — t
   across a RELOAD and the re-arm (3), `priority` (4), inertness (5), the page (6), the roster (7); `m21` is the
   pause sweep that chose PTR's `gates` entry, `derived` is the rule that was tried and NOT taken, `fix` regenerates
   the fixtures the pause moves.
+- `node tools/harness/gates-v5.mjs --part 1|2|3|3s|5|7` — the V5 gates: the WRAP on both engines at 390 (with and
+  without `?mobile=1`) and 1280 (1), NO JUMP with its constructed transitions, their floors-OFF controls and a real-play
+  row (2), the retry conditions on the stub and on the real fixture (3), the retry-condition REPORT (3s, long — not in
+  CI), inertness (5), the roster at 390 px (7). `tools/harness/mutants-v5.sh` is its mutant round.
 - `node tools/harness/gates-s1.mjs --part 1|1s|2|2s-p|2s-f|2s-q|3` the S1 gates; `gates-a1.mjs`, `gates-a2.mjs` the A1/A2 ones.
 - `node tools/harness/gates-v1.mjs --part 1|2|3|4|6` — the V1 gates: every reason code witnessed by name (part 1),
   reason ≡ decision over whole legs (2), inertness and the format counter (3), subtab switching does not move
