@@ -1442,6 +1442,40 @@ entry (`player.au.edits[<id>].args.w`), edited by the same field, and reaches th
 cannot be read from the outside state without entering the challenge and rolling back (a rollback is harness-only,
 `docs/planner.md`), so a row claiming it would be a guess. The row's help says so.
 
+### Preparation steps: what the rung past H12 actually needed (R3c) — NONE, and why
+
+⚖ §40-R ruling A makes a guide-only PREPARATION step a tier-2 literal: taken straight from the walkthrough digest as
+table data, with the digest step as provenance, and never derived. R3c's brief expected to write the first two —
+H21 "Out of Room"'s respec (digest L3.16) and H22 "Descension"'s "everything into the Primary Space Building, then
+respec back" (L3.18–L3.19). **Measurement says neither is what its challenge lacks, so no `prepare` vocabulary was
+built** — tier 2 means "take the guide's literal when preparation IS what is missing", not "add one because the
+guide mentions it".
+
+- **H21 needs no preparation because the challenge DOES IT.** `h` 21's `onStart(testInput)` calls
+  `resetBuyables("s")` and sets `player.s.spent = 0` on entry (`layers.js` "Out of Room") — the guide's respec is the
+  challenge's own first effect. What the automation owes it is what it already has: R3a's give-up + retry. Measured
+  (a trace from `all/M25.json`, the peak fraction of the goal EXPONENT per attempt): **0.915 → 0.939 → 0.961 →
+  completed (0.968)**, three failed attempts of 96–152 game-seconds each before the fourth wins. A failed attempt
+  costs its time inside PLUS the respec it leaves behind (the buildings after exit are only what was bought inside —
+  Primary ×6 — and `buyables:s` rebuilds the rest as Generator Power allows). **M27 lands at 40905 game-s,
+  uninterrupted from `all/M15.json`, twice equal** (gate R3c-2, CI).
+- **H22 is not a preparation wall.** Inside it, point gain is `gain × buyableEffect("s", 11)` (`mod.js:50`), so the
+  guide moves every level into Primary. Gate R3c-2p runs one attempt three ways from a state past H21: the control
+  peaks at **0.148** of the goal exponent by 50 game-s; a CONSTRUCTED UPPER BOUND — every level the run owned given
+  to Primary, free, inside the challenge — peaks at **0.149**: +2.5 decades against ~3,000 missing. And the guide's
+  own ORDER does not survive this engine: after the game's `respec()`, entering H22 (an `h` reset) ZEROES the
+  buildings while `spent` stays. ⚠ A second engine trap on the way: the PTR family's `updateTempData` skips a layer
+  whose tab is closed, so a `buyMax()` issued with the Space tab closed reads a STALE cost and buys nothing — any
+  future `prepare` step that buys must open the tab or refresh that layer's `tmp` first.
+- **M26 (q22) is a MULTIPLIER wall, not a price that runs away.** q22 costs `2e11·(q.time+1)^4.2` quirk energy and
+  energy accrues as `(t·M)^(QL−1)`: at 4 Quirk Layers, energy ÷ price ∝ `M³·t^−0.2`, so waiting in a q-run never
+  pays and the reset cadence is not the lever (the best moment in a run is t ≈ 20, derived and measured). The gap is
+  `M` = q11 (total quirks) × q21 (1.25^Super Boosters). The one tier-1 lever on quirk production — the row cycle's
+  WEIGHT — was swept (gate R3c-2: 10 / 20 / 40 / 80) and the shipped 10 is best on every column: MORE `q` turns means
+  FEWER quirks, because `h` feeds `q` (q14's quirk multiplier reads Hindrance Spirit). The 5th Quirk Layer (32,768
+  quirks) flips the exponent — energy ÷ price ∝ `t^+0.8` — after which WAITING in a q-run is what buys q22, and
+  `reset:q`'s `gain>=2` resets every ~28 game-seconds. That is the next derivation this rung is owed (plan §45).
+
 ### ⚠ What a PAUSE means on the `challenges` kind (R3a)
 
 `while` and `until` are per-FEATURE and are evaluated BEFORE the kind decides, so a false one means the feature does

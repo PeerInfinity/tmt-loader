@@ -33,6 +33,7 @@
 // Untrusted-code hygiene: `process`, `require`, `fetch`, `Buffer`, `WebAssembly` … are removed from the global before
 // any game file runs (private references kept first); the parent (run.mjs) also scrubs the child's env.
 import fs from 'node:fs';
+import { Buffer as NodeBuffer } from 'node:buffer';   // the game context may shadow the global
 import vm from 'node:vm';
 import path from 'node:path';
 import crypto from 'node:crypto';
@@ -42,7 +43,18 @@ import { DRIVE_SRC, MONITOR_SRC } from './policy.mjs';
 
 const proc = process;
 const REPO = path.resolve(new URL('../..', import.meta.url).pathname);
-const out = (o) => proc.stdout.write('BOOTRESULT ' + JSON.stringify(o) + '\n');
+// ⛔ THE RESULT LINE IS WRITTEN SYNCHRONOUSLY, ALL OF IT, BEFORE ANY `proc.exit`. Every `out(R)` here is followed by
+// `proc.exit(0)`, and `proc.stdout.write` to the parent's pipe (spawnSync) had NOT flushed a large line by then: the
+// parent read a TRUNCATED `BOOTRESULT` and `run.mjs` threw on `JSON.parse` — silently, as far as a sweep could see
+// (R3c: a 50,000-tick leg writing twelve mark snapshots died in CI, run 35569305134 / 35570087362). Measured with a
+// toy on this Node (18.20.6): a 300 KB line + an immediate exit was truncated 20 times in 20, a 70 KB one never; with
+// this loop 0 in 100 up to 5 MB. `EAGAIN` is the pipe being full: retry until the reader drains it.
+function writeAllSync(fd, s) {
+  const b = NodeBuffer.from(s);
+  let off = 0;
+  while (off < b.length) { try { off += fs.writeSync(fd, b, off); } catch (e) { if (e.code !== 'EAGAIN') throw e; } }
+}
+const out = (o) => writeAllSync(1, 'BOOTRESULT ' + JSON.stringify(o) + '\n');
 const argv = proc.argv.slice(2);
 const A = { _: [] };
 for (let i = 0; i < argv.length; i++) {
