@@ -321,6 +321,49 @@
   function declOf(kind, l, id) { return safe(function () { return layers[l][kind][id]; }, null); }
   function tmpOf(kind, l, id) { return safe(function () { return tmp[l][kind][id]; }, null); }
 
+  // ---------------------------------------------------------------- (U11) A `tmp.unlocked` THE ENGINE NEVER COMPUTED
+  // ⚖ "after the page first loads, the Layers view shows the chips for 9 different buyables in the space energy
+  // layer … if the space energy panel is then opened and closed, then the Layers view will correctly only show the
+  // chips for the 5 … that are actually available" (user, 2026-09-20).
+  //
+  // ⛔ THE CAUSE IS ONE ENGINE FAMILY'S OWN OPTIMISATION, not the list and not `updateBuyableTemp`. The PTR family's
+  // `updateTempData` (`ptr`, `prestige-tree-ng`, `the-extended-tree` — 3 of 171, and the only 3 whose body has
+  // this clause; the other 168 re-evaluate every `unlocked` on every tick) opens with
+  //     if ((…display… || …description… || (item == "unlocked" && pre2 != "upgrades")) && player.tab != layer) continue;
+  // i.e. every `unlocked` EXCEPT an upgrade's is evaluated only while that layer's tab is the open one. Until it
+  // has been, `tmp` holds `setupTemp`'s seed for a function — `new Decimal(1)`, which is TRUTHY — so every buyable,
+  // clickable, challenge, milestone and achievement that declares an `unlocked()` reads as unlocked. After the tab
+  // HAS been open once it holds the value from then, and goes stale again as the game moves on.
+  // ⚠ `updateBuyableTemp(l)` does NOT help and was measured not to (docs/mobile.md, U11): it calls
+  // `updateTempData` without the `layer` argument, so `player.tab != undefined` is true and `unlocked` is skipped
+  // THERE TOO. Evaluating the whole temp pass ourselves is therefore not the narrow fix; it is not a fix at all.
+  //
+  // So on THOSE engines, for a layer that is NOT the open tab, the list asks the declaration itself — the same
+  // function, called the way the engine calls it (`layerData[item]()`, so `this` is the component). Everywhere else
+  // it keeps reading `tmp`, which is what the engine itself draws from. Calling it is calling GAME code: it is
+  // `safe()`d, falls back to the `tmp` reading on a throw, and rides inside the `withoutRaisingNaN` of every pass.
+  // The skip is DERIVED from the engine's own source, the way U10 derives the tree tab's name — never a game list.
+  var skipsUnlocked = null;
+  function engineSkipsUnlocked() {
+    if (skipsUnlocked === null) {
+      skipsUnlocked = safe(function () {
+        var s = typeof updateTempData === 'function' ? String(updateTempData) : '';
+        return /item\s*==+\s*['"]unlocked['"]/.test(s) && /player\.tab\s*!=+\s*layer/.test(s);
+      }, false);
+    }
+    return skipsUnlocked;
+  }
+  function unlockedOf(kind, l, id, t) {
+    var fromTmp = function () { return safe(function () { var u = t.unlocked; return u === undefined ? true : !!u; }, true); };
+    if (kind === 'upgrades' || !engineSkipsUnlocked()) return fromTmp();
+    if (safe(function () { return player.tab === l; }, false)) return fromTmp(); // the engine computes it this tick
+    var d = declOf(kind, l, id);
+    var f = safe(function () { return d.unlocked; }, undefined);
+    if (typeof f !== 'function') return fromTmp();
+    var v = safe(function () { return { v: !!f.call(d) }; }, null);
+    return v ? v.v : fromTmp();
+  }
+
   /** The component ids of one category, in the order the engine draws them.
    *  · the grid categories (`upgrades` / `buyables` / `challenges`) render `v-for row` then `v-for col` at
    *    `row*10+col`, so the numeric id IS the row/column position and ascending numeric id is reading order;
@@ -431,7 +474,7 @@
   function chipState(kind, l, id) {
     var t = tmpOf(kind, l, id);
     if (!t) return null;
-    var unlocked = safe(function () { var u = t.unlocked; return u === undefined ? true : !!u; }, true);
+    var unlocked = unlockedOf(kind, l, id, t); // (U11) not `tmp` alone: see `engineSkipsUnlocked`
     if (kind === 'upgrades') {
       if (!unlocked) {
         // ⚠ `unlocked === false` does NOT mean hidden. PTR renders a SECOND button for a pseudo-unlocked upgrade
@@ -1720,7 +1763,7 @@
   // ---------------------------------------------------------------- the DOM
   var panel = null, body = null, open = false, sig = null, cards = Object.create(null);
   // the throttle's clock, and what the gate reads to tell a throttled build from an unthrottled one
-  var lastSync = 0, stats = { refreshes: 0, syncs: 0, throttled: 0, rebuilds: 0, fits: 0, tips: 0, tipsRich: 0, tipSyncs: 0 };
+  var lastSync = 0, stats = { refreshes: 0, syncs: 0, throttled: 0, rebuilds: 0, fits: 0, tips: 0, tipsRich: 0, tipSyncs: 0, glows: 0, counterGlows: 0 };
 
   function build() {
     if (panel) return;
@@ -1890,6 +1933,8 @@
     actionBox.className = 'tmt-layerlist-actions';
     el.appendChild(actionBox);
     var rec = { el: el, layer: l, head: head, name: name, amount: amount, reset: reset, chips: chips, more: more,
+      glowEl: openBtn, resetMark: null,   // (U11) what carries the glow (its `::before`), and the last reading
+      counterMark: null,                  // (U11) each counter's last number, for the summary-chip glow
       resetL1: resetL1, resetL2: resetL2,
       chipEls: chipBox ? [].slice.call(chipBox.querySelectorAll('.tmt-layerlist-chip')) : [],
       counterBox: counterBox, counterKeys: '', counterEls: [], reserved: Object.create(null),
@@ -2222,6 +2267,7 @@
       var rec = cards[l];
       var cs = countersOf(l), ck = cs.map(function (g) { return g.kind; }).join(' ');
       if (ck !== rec.counterKeys) { drawCounters(rec, cs); refit.push(l); } else syncCounters(rec, cs);
+      glowOnRise(rec, cs);   // (U11) numbers `countersOf` already computed, compared with the last sync's
       // (U7) the other resources and the per-category progress, on this same budget: both are one pass per card
       // over what the card already walks, and both are readouts rather than controls, so a 4 Hz read is what they
       // want. ⚠ `resourcesOf` is the one that calls GAME CODE (the layer's own display functions) — it is here,
@@ -2236,10 +2282,83 @@
       // (U10) …and the width the buyable counts reserve, AFTER both rows have written theirs: one pass per card,
       // and it writes nothing at all unless the widest count on the card actually grew.
       if (fitChipCounts(rec)) refit.push(l);
+      glowOnReset(rec);  // (U11) one number read and compared per card per sync; a class flip only on the event
     });
     if (refit.length) fitCards(refit);
     // an open tooltip is re-read and re-anchored HERE, so it rides the counters' own throttle rather than the frame
     syncTip();
+  }
+
+  // ---------------------------------------------------------------- (U11) THE RESET GLOW
+  // ⚖ "the circle for that layer … briefly get a glow effect after that layer resets … fade over a second. This
+  // isn't a core feature, so if this idea would impose CPU costs, we can drop the idea" (user, 2026-09-20).
+  //
+  // ⚠ DETECTED BY SAMPLING, on the counters' own 250 ms budget, and the signal is the ENGINE's clock where it has
+  // one: 158 of 171 engines zero `player[l].resetTime` in `doReset` for the layer that resets AND, through
+  // `layOver(…, getStartLayerData(l))`, for every layer that reset wipes — so the resetting layer and the layers
+  // below it all glow, which is what a reset does. The other 13 (the PTR family among them, and stock 2.2) keep no
+  // `resetTime`; there the signal is the layer's own points FALLING TO ZERO, which a wipe does and a prestige of the
+  // layer itself does not (its points rise). So on those engines the layers a reset wiped glow and the one that
+  // was pressed does not. A spend that lands on exactly 0 would glow too — a decoration misfiring, never a write.
+  // ⚠ WHAT A SAMPLER GIVES UP, accepted rather than bought back with a faster timer: it fires up to one sample
+  // LATE, and two resets between samples are one glow. It cannot MISS a reset on the `resetTime` engines — the
+  // clock only runs forward between resets, so any reset since the last sample leaves it lower — except when the
+  // layer was already under the last sample's reading (a layer resetting more often than the sampler, e.g. an
+  // automated prestige every tick, glows on most samples instead: which is what it is doing).
+  // ⚠ ONE START PER EVENT. The comparison is an EDGE (lower than last time), never a level, so a paused page with
+  // `resetTime` at 0 starts nothing on the next sample; and a restart flips between two identical animations
+  // (`-a` ↔ `-b`, layerlist.css) rather than the remove-reflow-add trick, so it forces no layout.
+  // ⚠ The baseline is per CARD RECORD, which every `rebuild()` (and so every open) makes afresh: a reset that
+  // happened while the list was closed is not replayed as a glow when it opens.
+  function resetMark(l) {
+    return safe(function () {
+      var t = player[l].resetTime;
+      if (typeof t === 'number') return { t: t };
+      var p = player[l].points;
+      return p && typeof p.eq === 'function' ? { z: !!p.eq(0) } : null;
+    }, null);
+  }
+  function glowOnReset(rec) {
+    var now = resetMark(rec.layer), was = rec.resetMark;
+    rec.resetMark = now;
+    if (!now || !was) return false;
+    var fired = now.t !== undefined ? (was.t !== undefined && now.t < was.t) : (was.z === false && now.z === true);
+    if (fired) glow(rec);
+    return fired;
+  }
+  function glow(rec) { if (rec.glowEl) { glowEl(rec.glowEl, rec.layer); stats.glows++; } }
+  function glowEl(b, l) {
+    var col = safe(function () { return str(tmp[l].color); }, '');
+    if (col) b.style.setProperty('--tmt-glow', col);
+    var next = b.classList.contains('tmt-layerlist-glow-a') ? 'b' : 'a';
+    b.classList.remove('tmt-layerlist-glow-a', 'tmt-layerlist-glow-b');
+    b.classList.add('tmt-layerlist-glow-' + next);
+  }
+
+  // …AND THE SUMMARY CHIPS. ⚖ "if it's cheap, then we could also apply the glow effect for one second to the x / y
+  // summary chips after a purchase in that category is made" (user, 2026-09-20) — built only after the layer half
+  // was measured at noise level (docs/mobile.md). The event is THE COUNTER'S NUMBER ROSE since the last sync: `x`
+  // for an earned-over-drawn counter, the total for an owned one — numbers `countersOf` has just computed, so this
+  // is a comparison and nothing else. A purchase is exactly that for upgrades and buyables; for milestones,
+  // achievements and challenges the same rule lights an EARNING, the analogue in a category you do not buy (an
+  // inference, recorded as one). A number that FALLS (a reset) lights nothing here — that is the circle's event.
+  // Keyed by CATEGORY, so a redraw of the row (its membership moved) keeps the baseline; a card REBUILD does not.
+  function glowOnRise(rec, cs) {
+    var was = rec.counterMark, now = Object.create(null), n = 0;
+    cs.forEach(function (g, i) {
+      var v = g.mode === 'ratio' ? g.x : g.total;
+      now[g.kind] = v;
+      if (!was || was[g.kind] === undefined || was[g.kind] === null || v === null) return;
+      if (!rose(was[g.kind], v)) return;
+      var e = rec.counterEls[i];
+      if (e && e.kind === g.kind) { glowEl(e.box, rec.layer); n++; }
+    });
+    rec.counterMark = now;
+    stats.counterGlows += n;
+    return n;
+  }
+  function rose(a, b) {
+    return safe(function () { return typeof b === 'number' ? b > Number(a) : (b && typeof b.gt === 'function' ? !!b.gt(a) : false); }, false);
   }
 
   // ---------------------------------------------------------------- acting
@@ -2453,7 +2572,7 @@
         rich: function () { return !!(tipEl && !tipEl.hidden && tipRich); },
         hoverable: hoverable
       },
-      stats: function () { return { refreshes: stats.refreshes, syncs: stats.syncs, throttled: stats.throttled, rebuilds: stats.rebuilds, fits: stats.fits, throttleMs: COUNTER_MS, tips: stats.tips, tipsRich: stats.tipsRich, tipSyncs: stats.tipSyncs }; },
+      stats: function () { return { refreshes: stats.refreshes, syncs: stats.syncs, throttled: stats.throttled, rebuilds: stats.rebuilds, fits: stats.fits, throttleMs: COUNTER_MS, tips: stats.tips, tipsRich: stats.tipsRich, tipSyncs: stats.tipSyncs, glows: stats.glows, counterGlows: stats.counterGlows }; },
       cards: function () { return Object.keys(cards); }
     };
     if (T.navbarUI && T.navbarUI.refresh) T.navbarUI.refresh(); // the Layers button appears once this object exists

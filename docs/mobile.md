@@ -1471,6 +1471,125 @@ CONSTRUCTS the disagreement on the three games whose accessor is not the direct 
 the chip follows the accessor, and the construction restores.
 
 
+#### A layer never opened shows the chips its tab would draw (U11)
+
+⚖ user, 2026-09-20: *"after the page first loads, the Layers view shows the chips for 9 different buyables in the
+space energy layer, if it's expanded, but if the space energy panel is then opened and closed, then the Layers
+view will correctly only show the chips for the 5 space building buyables that are actually available."*
+
+**REPRODUCED EXACTLY** — ptr, `?mobile=1`, `tools/harness/snapshots/ptr/all/M25.json` (35,778 ticks), at
+`24425a697`: `s` drew buyable chips **11–19 (nine) before, 11–15 (five) after**, and `tmp.s.buyables[*].unlocked`
+read 10 × `true` before, 5 × `true` + 5 × `false` after (our own rules drop the tenth chip).
+
+**⛔ THE CAUSE IS ONE ENGINE FAMILY'S OPTIMISATION, and the brief's mechanism was half right.** The brief read it
+as "`updateBuyableTemp(l)` only runs when the layer's tab renders", and counted exposure as **687 of 841 buyable
+definitions, in 79 games out of the 102 that declare buyables** (every buyable declaring an `unlocked` function). But 168 of the 171 engines
+re-evaluate EVERY `unlocked` on EVERY tick in `updateTemp()`, open tab or not, so for them `tmp` is never stale.
+Measured over each game's own `updateTempData` (grouped by normalised body — 13 distinct bodies on the roster), only
+**the PTR family — `ptr`, `prestige-tree-ng`, `the-extended-tree`** — opens it with
+
+    if ((…display… || …description… || (item == "unlocked" && pre2 != "upgrades")) && player.tab != layer) continue;
+
+i.e. every `unlocked` **except an upgrade's** (buyables, clickables, challenges, milestones, achievements) is
+evaluated only while that layer's tab is the open one. Until it has been, `tmp` holds `setupTemp()`'s seed for a
+function — `new Decimal(1)`, which is **truthy** — so every such component reads as unlocked. After the tab has
+been open it holds the value from then, and a LOCKED layer's tab can never be opened at all, so its seed is
+permanent: on ptr at M25 that is `o`'s nine buyables (every `unlocked()` is `player.o.unlocked`, false) and
+`h`'s challenge 32, which the list was also showing. The gate's roster sweep counts the witnesses (below).
+
+**⛔ THE ENGINE'S OWN RECOMPUTE IS NOT A FIX — measured, not argued.** `updateBuyableTemp(l)` calls
+`updateTempData(layers[l].buyables, tmp[l].buyables)` with NO `layer` argument, so `player.tab != undefined` is
+true and the same `continue` fires. Called on every layer of ptr at M25: `tmp.s.buyables` still read 10 × `true`
+(and the state hash did not move). So the brief's first design is not merely risky here — it is inert.
+
+**THE FIX — the brief's second design, narrowed.** `unlockedOf()` in `layerlist.js`: on an engine whose
+`updateTempData` carries that clause (DERIVED from `String(updateTempData)`, the way U10 derives the tree tab's
+name — never a game list), for a layer that is not `player.tab`, and for a component whose declaration HAS an
+`unlocked` function, the list calls that function itself, the way the engine does (`this` is the component).
+Everywhere else it reads `tmp`, which is what the engine itself draws from. A throw falls back to the `tmp`
+reading; the call is `safe()`d and every pass that reaches it is inside `withoutRaisingNaN`.
+- **Once the tab HAS been opened, nothing changes**: the value `unlocked()` returns is the value the engine would
+  put in `tmp` on that tab's next tick — which is the corrected reading the user describes. The gate asserts it.
+- **Write-nothing**: the gate's leg M (`renderInert`, five full renders with the panel open) and the new leg Q
+  (the hash across the list's own read at a never-opened state) — numbers in "What U11 added to the leg".
+- **Cost**: net NEGATIVE on ptr, because the calls cost less than the phantom components they remove —
+  `tools/harness/cost-layerlist.mjs ptr --reps 300 --no-delay`, M25, 3 alternating rounds each at `c6dab6c60`
+  vs `24425a697`: drawn components **216 → 163**, chips 113 → 92, action buttons 29 → 11; the observer pass
+  **1.72 / 1.72 / 1.86 → 1.54 / 1.47 / 1.59 ms**, the full pass **6.39 / 6.43 / 7.38 → 6.07 / 6.12 / 6.12 ms**.
+  (A first set of rounds on a loaded machine could not resolve anything: the control game, running identical
+  code in both builds, spread 2.4–5.0 ms on the observer pass. Alternate builds; never compare across sessions.)
+
+⚠ **A SIBLING DEFECT, NOT FIXED HERE**: the same clause skips `display` and `description` for a closed tab, and
+the TOOLTIP's `textOf()` prefers a `tmp` string. Before a tab is first opened `tmp` holds the `Decimal(1)` seed,
+which is not a string, so the tooltip calls the declaration and is RIGHT; after the tab has been opened once it
+holds the prose from then and the tooltip is STALE until the tab opens again. Same three games; queued, not
+built (it is not what the user reported).
+
+#### The reset glow, and the summary chip's (U11)
+
+⚖ user, 2026-09-20: *"indicate when a layer has been reset … the circle for that layer to briefly get a glow
+effect after that layer resets … gradually fade over a second. This isn't a core feature, so if this idea would
+impose CPU costs, we can drop the idea. Or if it's cheap, then we could also apply the glow effect for one second
+to the x / y summary chips after a purchase in that category is made."* **Both halves are built** — the second
+only after the first was measured at noise level.
+
+**THE SIGNAL IS THE ENGINE'S CLOCK, where it keeps one.** Censused over the 171 engines' own sources: **158**
+zero `player[l].resetTime` in `doReset` for the resetting layer AND, through `layOver(player[l],
+getStartLayerData(l))` in `layerDataReset`, for every layer the reset wipes — so a reset lights the pressed layer
+and the layers below it, which is what a reset does. The other **13** keep no `resetTime` at all (the PTR family,
+and ten older-engine forks — `the-modding-tree`, `the-burning-tree`, `distance-incremental` among them); there the
+signal is **the layer's points falling to 0**, which a wipe does and a prestige of that layer does not (its points
+rise). So on those 13 the wiped layers glow and the pressed one does not; and a layer whose start data is not
+zero never reaches 0 on a wipe, so its reset is invisible to the fallback (`distance-incremental`'s `r`, the one
+abstention in the sweep). A spend landing on exactly 0 would glow too: a decoration misfiring, never a write.
+
+**WHAT A 250 ms SAMPLER GIVES UP — accepted, not bought back with a faster timer.** Detection rides `syncCards`,
+the counters' own throttle. It fires **up to one sample late**, and two resets inside one sample are one glow.
+It cannot **miss** one on the `resetTime` engines — the clock only runs forward between resets, so any reset since
+the last sample leaves it lower — except a layer that resets more often than 4 × a second, which is lower than last
+time on most samples and so glows most of the time: which is what it is doing. On the points fallback, a reset
+and a re-accumulation past zero inside one sample is missed.
+
+**ONE START PER EVENT.** The comparison is an EDGE (lower than the last sample), never a LEVEL, so a paused page
+whose `resetTime` sits at 0 starts nothing on the next sample. ⛔ The level version is the trap the brief named
+and the gate proves it: it shows as a glow that NEVER ENDS, not a missing one (mutant m3). A restart flips the
+element between two identical animations (`tmt-layerlist-glow-a` ↔ `-b`) — an animation whose NAME changes starts
+over — so no restart forces a layout (the remove-reflow-add trick would). The baseline lives on the CARD RECORD,
+which every `rebuild()` (and therefore every open) makes afresh, so a reset that happened while the list was closed
+is not replayed when it opens.
+
+**THE FADE IS THE COMPOSITOR'S.** Only `opacity` animates: the glow is a STATIC `box-shadow` on a `::before` circle
+laid over the badge, and that circle fades 1 → 0 over 1 s. ⚠ The first build animated the badge's own
+`box-shadow`, which repaints it on every frame of the second; it was replaced before anything was measured. It is
+the BUTTON's `::before`, not the badge's, because the badge is `overflow: hidden` (for a long symbol) and would clip
+its own descendant's shadow; the circle lands on the badge to the pixel on ptr (badge `border-box` 44 px at
+(23, 99); circle 44 px at (23, 99)). The colour is the layer's own `tmp[l].color`, written as `--tmt-glow` only at
+the event. **`prefers-reduced-motion: reduce` animates nothing** — the event is still counted, nothing is drawn.
+
+**THE SUMMARY CHIP (the counter) lights when its NUMBER RISES** since the last sync — `x` on an earned-over-drawn
+counter, the total on an owned one — numbers `countersOf()` has already computed, so it is one comparison per
+counter. A purchase is exactly that for upgrades and buyables. ⚠ For milestones, achievements and challenges the
+same rule lights an EARNING — the analogue in a category you do not buy; that is an inference from "after a
+purchase in that category", recorded as one. A number that FALLS lights nothing here: that is the circle's event.
+The counter's `::before` covers its border box and inherits its corners (square on the milestone counter).
+
+**WHAT IT COSTS — at noise level, a twentieth of U7's per-card cost or less.** `tools/harness/cost-layerlist.mjs
+--reps 300 --no-delay`, the BUILDS ALTERNATED (item 1 at `c6dab6c60` against the whole of item 2 at `4df70e120`,
+both halves), 3 rounds each, on a quiet machine. Means, ms:
+
+| game (state, cards) | observer pass | full pass |
+|---|---|---|
+| `ptr` (`all/M25.json`, 14) | 1.57 → 1.53 | 6.09 → 6.00 |
+| `the-yes-tree` (fresh, 25) | 2.30 → 2.32 | 6.54 → 6.64 |
+| `the-infinity-tree` (fresh, 18) | 1.00 → 1.00 | 4.94 → 4.98 |
+
+Detection lives only on the throttled path, so the observer pass cannot move except by noise, and the full pass
+moves **−0.09 to +0.10 ms: at most ≈ 0.004 ms per card per sync**, against U7's **+0.10 to +0.23**. (An earlier
+set of rounds with only the circle half in read −0.17 to +0.21 ms — the same noise band.) After an event the
+per-FRAME cost is the compositor's: no JS runs until the next sample. ⚖ By the brief's own bar — drop it if it
+costs more than U7's feature did — it stays, and the chip half was built only once this was known.
+
+
 #### Per-category progress in the expanded card (U7)
 
 ⚖ user, 2026-09-19: *"In Layers view, when a layer is in expanded view, can we add a row to display the progress
@@ -2416,6 +2535,81 @@ counted separately from a pass.
 two halves of U2d's rule (a shorter value gives no width back; the same length in different glyphs does not move
 it), in both states and at both widths. The first magnitude PAST the reservation is measured and REPORTED rather
 than asserted — a buyable has no bound, and a growth there is the documented behaviour, not a defect.
+
+
+#### What U11 added to the leg
+
+All figures below are CI run `35561415713` at `4df70e120` (the item-2 commit), dispatched on `u11-chips-glow`:
+the **merge + roster assertion** job printed `rows: 171/171 game(s); 0 RED; 6 abstained on the state leg`, and
+the per-leg counts are read out of the ten `m1-shard-*` JSON artifacts (171 rows, one commit).
+
+**1. Leg Q — a layer never opened shows the chips it will show once it has been** (`neverOpened`,
+`neverOpenedFresh`). Every card's chip set is read on a page where NO layer tab has been opened; then each
+layer's tab is opened and closed with `updateTemp()` standing in for the tick the paused page does not run, and
+the chip sets are read again. Equal per layer, or RED naming the layer and the chips on each side. The list's own
+first read must also move no state hash (the write-nothing claim at exactly the state item 1 changes).
+⛔ **WHERE IT RUNS IS THE WHOLE LEG.** Every earlier leg ran after the tab loop in leg 3 had opened every tab the
+save can — which is exactly what corrects the engine's `tmp`, and why three roster sweeps never saw this. So it
+runs (a) on leg 2's fresh-save page, the one page in the gate no tab is ever opened on and nothing else reads
+afterwards, and (b) on the snapshot page straight after `loadFrom`, BEFORE the tab loop. Only 2 of 171 games
+carry a snapshot, which is why (a) exists: without it the leg would judge two games.
+`stale` counts the non-upgrade components whose `tmp.unlocked` disagrees with their own `unlocked()` at the
+first reading: it is what says whether a game could discriminate at all.
+- **fresh save: 171/171 green; a stale `tmp.unlocked` exists on 3** — `prestige-tree-ng` 24, `ptr` 16,
+  `the-extended-tree` 16 — i.e. the runtime agrees with the static census of `updateTempData`: no other engine
+  goes stale. The list's own read moved no hash on **171/171** (0 abstained).
+- **deepest snapshot: 2/2 green; stale on 1** — `ptr` at `all/M25.json`, **54**.
+⛔ **"STALE" IS NOT "DISCRIMINATING".** With the fix reverted (mutant m1) ptr's FRESH-save reading is still
+EQUAL — its 16 stale values sit on components no drawn chip depends on — and so are the other two games' (they
+carry no snapshot). **The one reading on the roster that can tell the fixed build from the unfixed one is `ptr`
+at `all/M25.json`**: unfixed, `s 24→20, h 9→4, q 15→13` chips. The fresh-save half is kept because it is where
+a future engine that goes stale EARLY would show, and because it is where the write-nothing read is judged on
+all 171; it is not evidence for this fix, and the sweep line says `judged` for the stale count only.
+**2. The probe's REFERENCE reads `unlocked` by the same engine rule.** `LAYERLIST_PROBE` rebuilt its expected
+chips, counters, action set and progress rows from `tmp` — the same stale `tmp` — so with the fix in, ptr went RED
+on four legs that were asserting the defect (`o`'s nine buyables and `h`'s challenge 32 at M25). Its `drawn` and
+`skinExpect` now ask the declaration on the skipping engines for a layer that is not the open tab, as the tab
+itself would draw.
+**3. Leg M, unchanged, is the write-nothing number**: `renderInert` **171/171 unchanged, 0 abstained**, and
+`layersInert` 171/171 — with the new `unlocked()` calls on the full-render path.
+**4. Leg R — the glow** (`glow`, `glowReduced`, `counterGlow`), LAST, because it wipes a layer
+(`layerDataReset`, U8's lesson). Samples are driven as the observer's own `refresh(false)`, one throttle apart.
+- QUIET FIRST: two samples with nothing happening must start nothing — that is where a LEVEL detector shows
+  itself, before any event.
+- then the reset; ONE sample later the button's `::before` must be animating (`getAnimations({subtree: true})`,
+  because a pseudo-element's animation is invisible to a plain `getAnimations()`), with exactly one start; the
+  samples KEEP COMING for 1.15 s, and then nothing may be animating and there must still have been one start.
+- the same again under `emulateMedia({reducedMotion: 'reduce'})`: the event is counted, nothing animates.
+- a card with no signal that can fall is given one by the GATE's own write (`constructed`), never the list's.
+Roster: **170/171 lit and faded, 1 abstained** — `resetTime` on **158**, the points fallback on **12** (6 of them
+constructed), and `distance-incremental` abstains: its `r` layer's start data is not zero, so `layerDataReset`
+leaves its points where they were and the fallback cannot see that reset. Reduced motion: **170/170** seen and not
+animated. The summary chip: a CONSTRUCTED +1 (one drawn, unbought upgrade marked owned, else one buyable bumped)
+lit once within one sample and was gone 1.15 s later on **105** games (95 upgrades, 10 buyables); **66** abstain
+(no card draws an unbought upgrade or a buyable at that state).
+
+**The mutant round** (`tools/harness/mutants-u11.sh`, restored from a COPY; witnesses `ptr`, `the-burning-tree`,
+`the-yes-tree`): **control + 7/7**, every one `restored: diff is empty` (commit `e6357147d` for m1–m6, the m7 re-run after
+`test(harness)` commits on top of it; the loader files are identical across them):
+
+| mutant | reddens | stays green |
+|---|---|---|
+| `m1-unlocked-from-tmp-only` (the fix reverted) | `ptr` `never` — *THE CHIPS DIFFER once the tab has been opened (s 24→20, h 9→4, q 15→13)* | `the-burning-tree` (all 14 buyables default) |
+| `m2-skip-never-derived` (the engine is never recognised) | `ptr` `never`, the same verdict | `the-burning-tree` |
+| `m3-glow-on-a-level-not-an-edge` | `ptr`, `the-yes-tree` `glow` + `rmotion` — *IT GLOWED WITH NO RESET (4 / 50 starts over two quiet samples)* | the counter leg |
+| `m4-reduced-motion-ignored` | `ptr`, `the-yes-tree` `rmotion` — *IT ANIMATED UNDER prefers-reduced-motion* | `glow` |
+| `m5-glow-never-starts` | `ptr`, `the-yes-tree` `glow` + `rmotion` — *THE GLOW DID NOT START within one sample* | the counter leg |
+| `m6-counter-glow-on-a-level` | `ptr`, `the-yes-tree` `counter` — *A COUNTER GLOWED WITH NOTHING BOUGHT (40 / 50)* | `glow`, `rmotion` |
+| `m7-retrigger-every-sample-after-an-event` (the retrigger guard removed) | `ptr`, `the-yes-tree` `glow` — ***STILL GLOWING after 1 s — 6 starts for one reset*** — and `rmotion` | the counter leg |
+
+⚠ **m3 does not prove the "still glowing" check**, although it is the mutant the brief named: a LEVEL detector
+dies at the QUIET window first (a mutant with two effects dies at the first check). m7 is the literal "guard
+removed" — quiet until the event, then a restart on every sample — and the only check that can see it is
+"still glowing after 1 s", which reddens. It reddens `rmotion` too, correctly: that leg runs second on the same
+page and its own quiet window sees the first leg's stuck card.
+⚠ **A FIRST ROUND WAS VOID**: a later edit to the script's header had swallowed its copy/restore block, so the
+six mutations STACKED in the working tree (every row read `!! NOT RESTORED`, reds accumulating from m1 onward).
+Fixed in `e6357147d`; the table is the re-run.
 
 
 ### The state leg needs a control

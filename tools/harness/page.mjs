@@ -409,6 +409,21 @@ const LAYERLIST_PROBE = `(${function () {
   const DEF = ['infoboxes', 'main-display', 'prestige-button', 'resource-display', 'milestones', '@mid',
     'clickables', 'buyables', 'upgrades', 'challenges', 'achievements'];
   const S = (f, d) => { try { const v = f(); return v === undefined ? d : v; } catch (e) { return d; } };
+  // (U11) WHETHER A NON-UPGRADE IS UNLOCKED, in the engine's own terms. The PTR family's `updateTempData` evaluates
+  // `unlocked` (every category but upgrades) only for the layer whose tab is OPEN, so for any other layer `tmp`
+  // holds `setupTemp`'s truthy `Decimal(1)` seed or the value from the last time that tab was open — and a LOCKED
+  // layer's tab can never be opened, so its seed is permanent (ptr's `o`: nine buyables, every `unlocked()` false).
+  // The tab itself would draw by the declaration, so that is the reference there; `tmp` everywhere else.
+  const skipsUnl = S(() => { const s = String(updateTempData); return /item\s*==+\s*['"]unlocked['"]/.test(s) && /player\.tab\s*!=+\s*layer/.test(s); }, false);
+  const unlocked = (kind, l, id) => {
+    const viaTmp = () => S(() => { const u = tmp[l][kind][id].unlocked; return u === undefined ? true : !!u; }, true);
+    if (kind === 'upgrades' || !skipsUnl || S(() => player.tab === l, false)) return viaTmp();
+    const d = S(() => layers[l][kind][id], null);
+    const f = S(() => d.unlocked, undefined);
+    if (typeof f !== 'function') return viaTmp();
+    const v = S(() => ({ v: !!f.call(d) }), null);
+    return v ? v.v : viaTmp();
+  };
   const ids = (kind, l) => {
     const src = S(() => layers[l][kind], null) || S(() => tmp[l][kind], null);
     if (!src || typeof src !== 'object') return [];
@@ -429,7 +444,7 @@ const LAYERLIST_PROBE = `(${function () {
   const drawn = (kind, l, id) => {            // the three visibility rules, in the engine's own terms
     const t = S(() => tmp[l][kind][id], null);
     if (!t) return false;
-    const unl = S(() => t.unlocked === undefined ? true : !!t.unlocked, true);
+    const unl = unlocked(kind, l, id);                                    // (U11) not `tmp` alone
     if (kind === 'upgrades' && !unl) return S(() => typeof pseudoUnl === 'function' && !!pseudoUnl(l, Number(id)), false);
     if (!unl) return false;
     if (kind === 'milestones') return S(() => typeof milestoneShown === 'function' ? !!milestoneShown(l, id) : true, true);
@@ -616,7 +631,7 @@ const LAYERLIST_PROBE = `(${function () {
     return true;                                     // starting a challenge costs nothing in either engine
   };
   const skinExpect = (kind, l, id) => {
-    const unl = S(() => { const u = tmp[l][kind][id].unlocked; return u === undefined ? true : !!u; }, true);
+    const unl = unlocked(kind, l, id);               // (U11) not `tmp` alone
     if (kind === 'upgrades' && !unl) {               // the engines' SECOND upgrade button, `{pseudo, plocked|can}`
       const pc = S(() => !!tmp[l].upgrades[id].pseudoCan, false);
       return { key: 'pseudo', bg: bgOf(`${l} upg pseudo ${pc ? 'can' : 'plocked'}`) };
@@ -1846,6 +1861,48 @@ async function treeButtonLeg(page) {
   return rec;
 }
 
+/** (U11) leg Q's probe — see its call sites in `gateMobile`. Reads every card's chip set on a page where no layer
+ *  tab has been opened, then opens and closes each layer's tab with `updateTemp()` standing in for the tick the
+ *  paused page does not run, and reads them again. `stale` counts the non-upgrade components whose `tmp.unlocked`
+ *  disagrees with their own `unlocked()` at the first reading: 0 means this state cannot discriminate. */
+const NEVER_OPENED_PROBE = async () => {
+  const ui = tmtLoader.layerListUI;
+  const Ls = ui.groups().flatMap((g) => g.layers);
+  const chips = () => Object.fromEntries(Ls.map((l) => [l, ui.chipsOf(l).map((c) => c.key).join(' ')]));
+  const h = () => tmtLoader.hash();
+  const c0 = await h(), c1 = await h();
+  const before = chips();
+  const after0 = await h();
+  const tab = player.tab, hadNaN = player.hasNaN;
+  let stale = 0;
+  for (const l of Ls) {
+    if (l === tab) continue;
+    for (const k of ['buyables', 'clickables', 'challenges', 'milestones', 'achievements']) {
+      let d; try { d = layers[l][k]; } catch (e) { continue; }
+      if (!d || typeof d !== 'object') continue;
+      for (const id of Object.keys(d)) {
+        try {
+          const f = d[id] && d[id].unlocked;
+          if (typeof f === 'function' && !!f.call(d[id]) !== !!tmp[l][k][id].unlocked) stale++;
+        } catch (e) { /* game code; a throw is not a witness */ }
+      }
+    }
+  }
+  for (const l of Ls) { try { showTab(l); updateTemp(); showTab(tab); updateTemp(); } catch (e) { /* engines differ */ } }
+  try { player.tab = tab; if (hadNaN === false) player.hasNaN = false; } catch (e) { /* not this engine's */ }
+  const after = chips();
+  const diff = Ls.filter((l) => before[l] !== after[l]).map((l) => {
+    const b = before[l].split(' '), a = after[l].split(' ');
+    return { layer: l, before: b.length, after: a.length, onlyBefore: b.filter((x) => !a.includes(x)).slice(0, 6), onlyAfter: a.filter((x) => !b.includes(x)).slice(0, 6) };
+  });
+  const stable = c0 === c1, inert = !stable || c1 === after0;
+  return { layers: Ls.length, stale, diff, stable, inert,
+    verdict: !inert ? 'READING THE LIST MOVED THE STATE HASH'
+      : diff.length ? `THE CHIPS DIFFER once the tab has been opened (${diff.map((d) => `${d.layer} ${d.before}→${d.after}`).join(', ')})`
+      : stale ? `equal on ${Ls.length} layer(s), ${stale} stale \`tmp.unlocked\` at the never-opened reading`
+      : `equal on ${Ls.length} layer(s) — no stale \`tmp.unlocked\` at this state (vacuous here)` };
+};
+
 async function gateMobile(browser, base, ids) {
   const rows = [];
   for (const id of ids) {
@@ -1897,6 +1954,9 @@ async function gateMobile(browser, base, ids) {
       await fresh.goto(new URL(`index.html?mod=${encodeURIComponent(id)}&managed=1&mobile=1`, base).href, { waitUntil: 'load' });
       const rf = await waitReady(fresh);
       const mobileState = rf.ready ? await pageTick(fresh, MOBILE_DIFF, MOBILE_TICKS).then(() => pageState(fresh)) : null;
+      // (U11) leg Q at the FRESH save, on this page because no tab has been opened on it and it is thrown away
+      // next: the only fresh page in the gate nothing else depends on. It runs AFTER `mobileState` is taken.
+      if (rf.ready) { row.neverOpenedFresh = await fresh.evaluate(NEVER_OPENED_PROBE); row.neverOpenedFreshOk = !/^READING|^THE CHIPS/.test(row.neverOpenedFresh.verdict); }
       await fresh.close();
       let deterministic = !!(plainState2 && plainState2.hash === plainState.hash);
       const agrees = mobileState && mobileState.hash === plainState.hash && mobileState.ticks === plainState.ticks;
@@ -1940,6 +2000,18 @@ async function gateMobile(browser, base, ids) {
       if (snapshot) {
         const r2 = await pageLoadFrom(page, snapshot.player);
         if (!r2.ready) throw new Error(`not ready after loadFrom: ${JSON.stringify(r2.error)}`);
+        // --- U11 leg Q: A LAYER NEVER OPENED SHOWS THE CHIPS IT WILL SHOW ONCE IT HAS BEEN --------------------
+        // ⚖ "after the page first loads, the Layers view shows the chips for 9 different buyables in the space
+        // energy layer … if the space energy panel is then opened and closed, [it] will correctly only show … 5"
+        // (user, 2026-09-20). ⛔ IT HAS TO RUN HERE, on the page the snapshot just reloaded, BEFORE the loop below
+        // opens every tab: that loop is exactly what corrects the engine's `tmp`, and it is why every leg after it
+        // (leg 6 included) could never see this. `updateTemp()` stands in for the tick the page is paused out of —
+        // the tick is what evaluates an open tab's `unlocked`, and `gameLoop` is not needed for it and would move
+        // the game. `stale` counts the components whose `tmp.unlocked` disagrees with their own `unlocked()` at the
+        // never-opened reading: it is what says whether this game could discriminate at all (0 = the leg is
+        // vacuous here, as it is on every engine that evaluates every `unlocked` on every tick).
+        row.neverOpened = await page.evaluate(NEVER_OPENED_PROBE);
+        row.neverOpenedOk = !/^READING|^THE CHIPS/.test(row.neverOpened.verdict);
         // every tab the save can open: the tree, each unlocked layer, and the system tabs the engine offers
         const tabs = await page.evaluate(() => {
           const out = ['none'];
@@ -3613,6 +3685,110 @@ async function gateMobile(browser, base, ids) {
       row.resStickyBeforeOk = row.resSticky.beforeOk !== false;
       row.resStickyAfterOk = row.resSticky.afterOk !== false || /abstains/.test(String(row.resSticky.verdict));
 
+      // --- U11 leg R: A RESET LIGHTS THE LAYER'S CIRCLE, ONCE, AND IT IS GONE A SECOND LATER ---------------------
+      // ⚖ "briefly get a glow effect after that layer resets … gradually fade over a second" (user, 2026-09-20).
+      // LAST, because it WIPES a layer (`layerDataReset`, U8's lesson: `doReset(l)` does not clear `l`'s own data).
+      // Samples are driven as the observer's own call (`refresh(false)`) one throttle apart, which is what the page
+      // does in play; the samples KEEP COMING through the second after the event, because a detector that re-fires
+      // on a level rather than an edge only shows itself as a glow that never ends. A card with no signal that can
+      // fall is given one by the GATE's own write (`constructed`), never the list's.
+      const GLOW_PROBE = async (phase) => {
+        const ui = window.tmtLoader.layerListUI;
+        const wait = (ms) => new Promise((r) => setTimeout(r, ms));
+        const TH = ui.stats().throttleMs;
+        if (!ui.isOpen()) ui.open();
+        const sig = (l) => { try { const t = player[l].resetTime; if (typeof t === 'number') return { kind: 'resetTime', v: t }; const p = player[l].points; return p && typeof p.eq === 'function' ? { kind: 'points', v: p.eq(0) ? 0 : 1 } : null; } catch (e) { return null; } };
+        const Ls = ui.cards();
+        let l = Ls.find((x) => { const s = sig(x); return s && s.v > 0; }), constructed = false;
+        if (!l) l = Ls.find((x) => sig(x));
+        if (!l) return { verdict: 'abstains (no card carries either signal)' };
+        const s0 = sig(l);
+        if (!(s0.v > 0)) { constructed = true; if (s0.kind === 'resetTime') player[l].resetTime = 5; else player[l].points = new Decimal(1); }
+        // the glow is the open button's `::before`, which only a SUBTREE query of the button sees
+        const badge = [...document.querySelectorAll('#tmt-layerlist .tmt-layerlist-open')].find((b) => b.closest('[data-layer]') && b.closest('[data-layer]').dataset.layer === l);
+        if (!badge) return { layer: l, verdict: `abstains (${l} has no card button on screen)` };
+        const anims = () => badge.getAnimations({ subtree: true }).length;
+        ui.refresh();                                   // the baseline sample
+        // QUIET FIRST: two samples with NO reset between them must start nothing. A detector that fires on a LEVEL
+        // (the signal is low) rather than an EDGE (it fell) lights here, with nothing having happened.
+        const gq = ui.stats().glows;
+        for (let i = 0; i < 2; i++) { await wait(TH + 5); ui.refresh(false); }
+        const quiet = ui.stats().glows - gq;
+        const g0 = ui.stats().glows, pre = anims();
+        const had = player.hasNaN;
+        try { if (typeof layerDataReset === 'function') layerDataReset(l); else doReset(l, true); } catch (e) { return { layer: l, verdict: `abstains (the reset threw: ${String(e).slice(0, 80)})` }; }
+        try { if (had === false) player.hasNaN = false; } catch (e) { /* not this engine's */ }
+        const s1 = sig(l);
+        await wait(TH + 20);
+        ui.refresh(false);                              // ONE sample after the event
+        const g1 = ui.stats().glows, lit = anims();
+        const t0 = performance.now();
+        while (performance.now() - t0 < 1150) { await wait(TH + 5); ui.refresh(false); }
+        const g2 = ui.stats().glows, after = anims();
+        const reduce = phase === 'reduce';
+        return { layer: l, signal: s0.kind, from: s0.v, to: s1 && s1.v, constructed, quiet, pre, lit, after, glows: [g1 - g0, g2 - g0],
+          cls: badge.className,
+          verdict: quiet ? `IT GLOWED WITH NO RESET (${quiet} start(s) over two quiet samples)`
+            : pre ? 'abstains (the badge was already animating)'
+            : !(s1 && s1.v < (constructed ? (s0.kind === 'resetTime' ? 5 : 1) : s0.v)) ? `abstains (the driven reset did not lower ${l}'s ${s0.kind})`
+            : g1 - g0 !== 1 ? `THE GLOW DID NOT START within one sample (${g1 - g0} event(s))`
+            : reduce ? (lit ? 'IT ANIMATED UNDER prefers-reduced-motion' : 'the event was seen and nothing animated (reduced motion)')
+            : !lit ? 'THE EVENT WAS SEEN BUT NOTHING ANIMATED'
+            : g2 - g0 !== 1 ? `STILL GLOWING after 1 s — ${g2 - g0} starts for one reset`
+            : after ? 'STILL GLOWING after 1 s'
+            : `lit within one sample, gone 1.15 s later (${s0.kind}${constructed ? ', constructed' : ''})` };
+      };
+      row.glow = await page.evaluate(GLOW_PROBE, 'motion');
+      // …and the SUMMARY CHIP: a counter whose number RISES lights, once. The rise is CONSTRUCTED (the gate's own
+      // write): one drawn, unbought upgrade marked owned, else one drawn buyable's amount bumped — the two
+      // categories a purchase moves. Samples keep coming through the second, as above.
+      row.counterGlow = await page.evaluate(async () => {
+        const ui = window.tmtLoader.layerListUI;
+        const wait = (ms) => new Promise((r) => setTimeout(r, ms));
+        const TH = ui.stats().throttleMs;
+        if (!ui.isOpen()) ui.open();
+        let pick = null;
+        for (const l of ui.cards()) {
+          const kinds = ui.countersOf(l).map((g) => g.kind);
+          const cs = ui.chipsOf(l);
+          const up = kinds.includes('upgrades') && cs.find((c) => c.kind === 'upgrades' && c.state === 'open');
+          if (up) { pick = { l, kind: 'upgrades', id: up.id }; break; }
+          const bu = kinds.includes('buyables') && cs.find((c) => c.kind === 'buyables');
+          if (bu && !pick) pick = { l, kind: 'buyables', id: bu.id };
+        }
+        if (!pick) return { verdict: 'abstains (no card draws an unbought upgrade or a buyable)' };
+        const { l, kind, id } = pick;
+        const box = () => [...document.querySelectorAll(`#tmt-layerlist .tmt-layerlist-counter[data-kind="${kind}"]`)].find((b) => b.closest('[data-layer]') && b.closest('[data-layer]').dataset.layer === l);
+        ui.refresh();                                     // baseline
+        const gq = ui.stats().counterGlows;
+        for (let i = 0; i < 2; i++) { await wait(TH + 5); ui.refresh(false); }
+        const quiet = ui.stats().counterGlows - gq;
+        const g0 = ui.stats().counterGlows;
+        try {
+          if (kind === 'upgrades') player[l].upgrades.push(Number(id));
+          else player[l].buyables[id] = new Decimal(player[l].buyables[id] || 0).add(1);
+        } catch (e) { return { layer: l, kind, verdict: `abstains (the construction threw: ${String(e).slice(0, 80)})` }; }
+        await wait(TH + 20);
+        ui.refresh(false);
+        const b = box();
+        const g1 = ui.stats().counterGlows, lit = b ? b.getAnimations({ subtree: true }).length : 0;
+        const t0 = performance.now();
+        while (performance.now() - t0 < 1150) { await wait(TH + 5); ui.refresh(false); }
+        const g2 = ui.stats().counterGlows, after = b ? b.getAnimations({ subtree: true }).length : 0;
+        return { layer: l, kind, id, quiet, lit, after, glows: [g1 - g0, g2 - g0],
+          verdict: quiet ? `A COUNTER GLOWED WITH NOTHING BOUGHT (${quiet})`
+            : !b ? `abstains (${l}'s ${kind} counter is not on screen)`
+            : g1 - g0 !== 1 ? `THE COUNTER DID NOT LIGHT within one sample (${g1 - g0})`
+            : !lit ? 'THE COUNTER EVENT WAS SEEN BUT NOTHING ANIMATED'
+            : g2 - g0 !== 1 || after ? `THE COUNTER IS STILL GLOWING after 1 s (${g2 - g0} starts)`
+            : `${l}/${kind} lit within one sample of +1, gone 1.15 s later` };
+      });
+      await page.emulateMedia({ reducedMotion: 'reduce' });
+      row.glowReduced = await page.evaluate(GLOW_PROBE, 'reduce');
+      await page.emulateMedia({ reducedMotion: null });
+      row.glowOk = !/^THE |^STILL|^IT /.test(String(row.glow.verdict)) && !/^THE |^STILL|^IT /.test(String(row.glowReduced.verdict));
+      row.counterGlowOk = !/^THE |^A COUNTER/.test(String(row.counterGlow.verdict));
+
       await page.evaluate(() => { const ui = window.tmtLoader.layerListUI; if (ui) ui.close(); });
       const llDesk = nb.layerList;
       // one card per shown layer, in the row the engine names, with distinct chips on each card and the button in
@@ -3675,7 +3851,11 @@ async function gateMobile(browser, base, ids) {
         && row.resetHeightOk && row.renderInertOk && row.multiResOk
         // U8: and a resource row that was shown is still there after a DRIVEN reset, printing its current value;
         // and what the memory took in is the unambiguous attributions only, written to storage and not to `player`
-        && row.resStickyOk && row.resMemOk);
+        && row.resStickyOk && row.resMemOk
+        // U11: a layer never opened shows the chips it will show once it has been (absent without a snapshot)
+        && row.neverOpenedOk !== false && row.neverOpenedFreshOk !== false
+        // U11: and a driven reset lights the layer's circle once, gone a second later, and not at all under reduced motion
+        && row.glowOk && row.counterGlowOk);
       row.layersScreenshot = path.relative(REPO, llShot);
 
       const shot = path.join(REPO, `tools/harness/results/${id}-mobile.png`);
@@ -4093,6 +4273,25 @@ async function main() {
       const vr = (f) => rows.reduce((o, r) => { const v = r.rules && r.rules[f] && r.rules[f].verdict; if (v) o[v] = (o[v] || 0) + 1; return o; }, {});
       console.log(`M1 layers visibility rules (constructed, judged against the probe's own expectation): msDisplay='never' → ${JSON.stringify(vr('ms'))}; pseudoUnl forced true → ${JSON.stringify(vr('pseudo'))}; a clickable given a real amount → ${JSON.stringify(vr('clickable'))}; a buyable given 1e400 → ${JSON.stringify(vr('bigAmount'))}; ${rows.filter((r) => r.rules && r.rules.restored === false).length} game(s) did not restore`);
       const llAbst = rows.filter((r) => r.layersInert && !r.layersInert.stable).map((r) => r.id);
+      // (U11) leg Q. ⚠ The JUDGED count is the one that matters: a game with no stale `tmp.unlocked` at its
+      // snapshot scores the fixed and the unfixed build the same.
+      const nqLine = (label, key) => {
+        const nq = rows.filter((r) => r[key]);
+        const nqJ = nq.filter((r) => r[key].stale > 0);
+        const nqRed = nq.filter((r) => /^READING|^THE CHIPS/.test(r[key].verdict));
+        return `${label} ${nq.length - nqRed.length}/${nq.length} green, judged on ${nqJ.length} (${nqJ.map((r) => `${r.id}: ${r[key].stale}`).join(', ') || 'none — VACUOUS'}), ${nq.filter((r) => !r[key].stable).length} abstained on the hash${nqRed.length ? ` (RED: ${nqRed.map((r) => `${r.id} ${r[key].verdict}`).join('; ')})` : ''}`;
+      };
+      console.log(`M1 layers never opened (U11 — the chip set before any tab is opened equals the set after each layer's tab has been opened and closed; the list's own read moves no hash; judged = a stale \`tmp.unlocked\` exists at that state): ${nqLine('at the fresh save', 'neverOpenedFresh')}; ${nqLine('at the deepest snapshot', 'neverOpened')}`);
+      // (U11) leg R, the reset glow — by SIGNAL, because the 13 engines without `resetTime` take the points fallback
+      const gl = rows.filter((r) => r.glow);
+      const glRed = gl.filter((r) => !r.glowOk);
+      const glBy = gl.reduce((o, r) => { const k = /^lit/.test(r.glow.verdict) ? `${r.glow.signal}${r.glow.constructed ? ' (constructed)' : ''}` : r.glow.verdict.replace(/\(.*$/, '(…)'); o[k] = (o[k] || 0) + 1; return o; }, {});
+      const glRm = gl.reduce((o, r) => { const k = String(r.glowReduced && r.glowReduced.verdict).replace(/\(.*$/, '(…)'); o[k] = (o[k] || 0) + 1; return o; }, {});
+      console.log(`M1 layers reset glow (U11 — lit within one 250 ms sample of a driven reset, gone 1.15 s later with the samples still coming, and nothing animated under prefers-reduced-motion): ${gl.length - glRed.length}/${gl.length} green; ${JSON.stringify(glBy)}; reduced motion ${JSON.stringify(glRm)}${glRed.length ? ` (RED: ${glRed.map((r) => `${r.id} ${r.glow.verdict} / ${r.glowReduced.verdict}`).join('; ')})` : ''}`);
+      const cg = rows.filter((r) => r.counterGlow);
+      const cgRed = cg.filter((r) => !r.counterGlowOk);
+      const cgBy = cg.reduce((o, r) => { const k = /lit within/.test(r.counterGlow.verdict) ? `lit (${r.counterGlow.kind})` : r.counterGlow.verdict.replace(/\(.*$/, '(…)'); o[k] = (o[k] || 0) + 1; return o; }, {});
+      console.log(`M1 layers counter glow (U11 — a summary chip whose number RISES lights once within one sample, gone 1.15 s later; the rise is constructed): ${cg.length - cgRed.length}/${cg.length} green; ${JSON.stringify(cgBy)}${cgRed.length ? ` (RED: ${cgRed.map((r) => `${r.id} ${r.counterGlow.verdict}`).join('; ')})` : ''}`);
       console.log(`M1 layers inertness: ${rows.filter((r) => r.layersInert && r.layersInert.verdict === 'unchanged').length} unchanged state hash across opening the list, ${rows.filter((r) => r.layersInert && r.layersInert.verdict === 'MOVED').length} moved, ${llAbst.length} abstained${llAbst.length ? ` (the page does not repeat its own hash: ${llAbst.join(', ')})` : ''}`);
       const noCand = rows.filter((r) => r.resetVerdict && r.resetVerdict.startsWith('no candidate')).map((r) => r.id);
       console.log(`M1 layers reset press: ${rows.filter((r) => r.resetVerdict === 'moved').length} moved player[l].points, ${rows.filter((r) => r.resetVerdict === 'NOT MOVED').length} did not, ${noCand.length} abstained${noCand.length ? ` (nothing could reset: ${noCand.join(', ')})` : ''}`);
