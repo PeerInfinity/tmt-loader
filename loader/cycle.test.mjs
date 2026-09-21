@@ -233,7 +233,7 @@ test('R4 — the memory is in `runtimeState()`, and `restoreRuntime(runtimeState
   tick(ctx, 25);
   const rt = JSON.parse(JSON.stringify(T(ctx).runtimeState()));
   assert.ok(rt.cycle && rt.cycle['1'], 'the cycle wrote no memory');
-  assert.equal(Object.keys(rt.cycle['1']).sort().join(','), 'acted,arm,at,best,closer,holder,left,mem,round,since,skip');
+  assert.equal(Object.keys(rt.cycle['1']).sort().join(','), 'acted,arm,at,closer,holder,left,mark,mem,round,since,skip');
   T(ctx).restoreRuntime(rt);
   assert.deepEqual(JSON.parse(JSON.stringify(T(ctx).runtimeState().cycle)), rt.cycle);
   // MUTANT: "the memory is a closure" — a resumed run takes a different path from an uninterrupted one and this

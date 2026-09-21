@@ -1411,28 +1411,35 @@
     if (how === 'released') C.skip[id] = C.round + Math.max(1, C.ids.length);
     C.holder = null; C.left = 0; C.since = null; C.acted = null; C.closer = null;
   }
-  // ⛔ R3b-2's ANCHOR IS THE MEMBER'S BEST DISTANCE SO FAR, AND IT SURVIVES ITS TURNS. A per-turn anchor measures
-  // "did it climb since this turn began", which is TRUE OF THE DEAD MEMBERS — `o` climbs 0 → 5 of 14 every turn it
-  // is given, because holding the turn is what stops a sibling wiping the row below. What it never does is beat a
-  // high it has reached once. So `best` is the run's high-water for that member, and a member that cannot better it
-  // for `H` game-seconds while the ENGINE is refusing it has nothing this turn can buy.
-  // ⚠ AND A DROP RE-ANCHORS DOWNWARD, which is the brief's own question — *"a holder whose progress was destroyed by
-  // a SIBLING is not 'not getting closer' in the sense that should cost it the turn — or is it?"* — answered by
-  // measurement: it is NOT. PTR's `h` loses base MID-TURN to row-2 spending it does not control (3.23e20 → 2.03e19
-  // between two samples 25 game-seconds apart, measured while `h` held the turn), and against a high-water that only
-  // ever rises those losses accumulate until the re-climb cannot beat it inside `H` and the turn is taken from the
-  // one member the cycle exists to feed. A drop is evidence about the ROW, not about the holder, so the mark follows
-  // it down and the clock restarts. `m-r3b2-wipe-costs-the-turn` is the mutant that removes this and it reddens.
+  // ⛔ WHAT THE CLOCK ACTUALLY MEASURES, SAID THE WAY THE CODE BEHAVES: **the engine's own distance STANDING
+  // STILL**. `mark` is the distance at the last moment the clock restarted, and any CHANGE restarts it — a rise
+  // past the bar `B` sets, or a fall of any size. The clock therefore runs only while the distance is exactly flat,
+  // and that is precisely the dead members' signature: PTR's `o` climbs 0 → 5 of 14 Super Boosters over ~300
+  // game-seconds while it holds the turn (holding it is what stops a sibling wiping the row below) and then sits at
+  // 5 of 14, unchanged, for as long as it is given.
+  // ⚠ A DROP RESTARTS THE CLOCK AND LOWERS THE MARK, which is the brief's own question — *"a holder whose
+  // progress was destroyed by a SIBLING is not 'not getting closer' in the sense that should cost it the turn — or
+  // is it?"* — answered by measurement: it is NOT. PTR's `h` loses base MID-TURN to row-2 spending it does not
+  // control (3.23e20 → 2.03e19 between two samples 25 game-seconds apart, measured while `h` held the turn), and
+  // against a mark that only ever rose those losses would accumulate until the re-climb could not beat it inside
+  // `H` and the turn would be taken from the one member the cycle exists to feed. A drop is evidence about the ROW,
+  // not about the holder. `m-r3b2-wipe-costs-the-turn` removes this and reddens.
+  // ⛔ ⚠ AND THE CONSEQUENCE, NAMED RATHER THAN SMOOTHED, BECAUSE THE MUTANT ROUND IS WHAT FOUND IT: because a
+  // drop lowers the mark, `mark` is NOT a high-water across a member's turns — it is the last anchor. So a dead
+  // member pays its WHOLE climb again on every turn it is given (~300 game-seconds on PTR's `o`), not just `H`.
+  // The alternative — keep the high-water and let a drop restart only the CLOCK — would cost `o` and `ss` `H`
+  // apiece instead, and is the first thing the next slice should measure; it is not taken here because it was not
+  // measured here, and §34's whole lesson is that an unmeasured alternative is what bites.
   function noteCloser(C, f, now) {
     var p = turnDistance(f);
     if (p === null) { C.closer = now; return null; }   // no threshold this file can read ⇒ the rule abstains
-    if (!C.best) C.best = {};
-    var best = C.best[f.id];
-    if (best === undefined) { C.best[f.id] = p; C.closer = now; return p; }
-    var gap = 1 - best, need = gap > 0 ? turnParams(f).b * gap : 0;
+    if (!C.mark) C.mark = {};
+    var mark = C.mark[f.id];
+    if (mark === undefined) { C.mark[f.id] = p; C.closer = now; return p; }
+    var gap = 1 - mark, need = gap > 0 ? turnParams(f).b * gap : 0;
     // ⚠ STRICTLY GREATER, R3a's own reason: at B = 0 a plateau closes exactly 0 of 0, and `>=` would read that as
     // progress and never release — which is the state the rule exists to leave.
-    if (p - best > need || p < best) { C.best[f.id] = p; C.closer = now; }
+    if (p - mark > need || p < mark) { C.mark[f.id] = p; C.closer = now; }
     return p;
   }
   /** ⛔ WHAT THE GUARD IS LATE AGAINST, AND THE MEASUREMENT THAT DECIDED IT — read the modifier row. */
@@ -1452,8 +1459,8 @@
     C.left = turnParams(f).w;
     C.since = Number(player.timePlayed) || 0;
     C.acted = null;
-    // R3b-2: the dead-member clock starts with the turn. `best` is NOT cleared — it is the member's high-water for
-    // the whole run, and clearing it here would hand every member a fresh climb to re-run on every rotation.
+    // R3b-2: the dead-member clock starts with the turn. `mark` is deliberately NOT cleared, so a member whose
+    // distance is unchanged from its last turn is released after one window rather than after a whole re-climb.
     C.closer = C.since;
     // ⚠ THE FIRST WAIT IS AN INTERVAL TOO — `stallSince`'s precedent, for `stallSince`'s reason (§V2): a member
     // whose first reset had no predecessor has ZERO intervals and would hold its turn for ever. The clock starts
@@ -1517,7 +1524,7 @@
       var active2 = R.members.length >= 2;
       if (!active2 && !cycles[R.key]) continue;
       seen[R.key] = 1;
-      var C = cycles[R.key] || (cycles[R.key] = { holder: null, left: 0, since: null, acted: null, closer: null, round: 0, at: -1, mem: {}, skip: {}, arm: {}, best: {} });
+      var C = cycles[R.key] || (cycles[R.key] = { holder: null, left: 0, since: null, acted: null, closer: null, round: 0, at: -1, mem: {}, skip: {}, arm: {}, mark: {} });
       C.ids = R.members.map(function (g) { return g.id; });
       C.demand = R.demand;
       C.dormant = !active2;
@@ -1603,10 +1610,10 @@
       ownTypical: (function () { var t = ownTypical(C, f); return t === null ? null : r1(t); })(),
       resets: (C.mem[f.id] || []).length,
       // R3b-2: what the dead-member rule can see about THIS member — the engine's own distance to being allowed to
-      // reset, the best it has ever reached, and how long it has gone without bettering it. `sinceCloser` is the
+      // reset, the MARK it was last measured against, and how long the distance has stood still. `sinceCloser` is the
       // HOLDER's clock, so it is null for anybody else: a member that is not holding a turn is not on one.
       distance: (function () { var d = turnDistance(f); return d === null ? null : d; })(),
-      best: C.best && C.best[f.id] !== undefined ? C.best[f.id] : null,
+      mark: C.mark && C.mark[f.id] !== undefined ? C.mark[f.id] : null,
       sinceCloser: C.holder === f.id && C.closer !== null && C.closer !== undefined ? r1((Number(player.timePlayed) || 0) - C.closer) : null,
       hold: turnParams(f).hold, bar: turnParams(f).b,
       turns: (C.mem[f.id] || []).length, skipped: C.skip[f.id] > C.round,
@@ -1619,7 +1626,7 @@
       var C = cycles[k], h = byId[C.holder];
       o[k] = { members: C.ids.slice(), holder: C.holder, holderLayer: h ? h.layer : null, left: C.left,
         since: C.since, closer: C.closer === undefined ? null : C.closer, round: C.round, demand: !!C.demand, dormant: !!C.dormant,
-        typical: {}, own: {}, turns: {}, distance: {}, best: {}, skip: Object.assign({}, C.skip) };
+        typical: {}, own: {}, turns: {}, distance: {}, mark: {}, skip: Object.assign({}, C.skip) };
       // ⚠ `typical` is the EFFECTIVE bound (a member's own turns, else the row's pooled ones); `own` is the
       // member's own median with no fallback, and `turns` how many of its own COMPLETED turns are remembered. A
       // gate that asked only the effective one could not tell "this member has a history" from "the row does".
@@ -1629,7 +1636,7 @@
         o[k].own[C.ids[i]] = ot === null ? null : r1(ot);
         o[k].turns[C.ids[i]] = (C.mem[C.ids[i]] || []).length;
         o[k].distance[C.ids[i]] = turnDistance(g);
-        o[k].best[C.ids[i]] = C.best && C.best[C.ids[i]] !== undefined ? C.best[C.ids[i]] : null;
+        o[k].mark[C.ids[i]] = C.mark && C.mark[C.ids[i]] !== undefined ? C.mark[C.ids[i]] : null;
       }
     }
     return o;
@@ -2944,7 +2951,7 @@
       cy[yi] = { holder: YC.holder, left: YC.left, since: YC.since, acted: YC.acted === undefined ? null : YC.acted,
         closer: YC.closer === undefined ? null : YC.closer,
         round: YC.round, at: YC.at, mem: JSON.parse(JSON.stringify(YC.mem)), skip: Object.assign({}, YC.skip),
-        arm: Object.assign({}, YC.arm || {}), best: Object.assign({}, YC.best || {}) };
+        arm: Object.assign({}, YC.arm || {}), mark: Object.assign({}, YC.mark || {}) };
       ncy++;
     }
     if (ncy) o.cycle = cy;
@@ -3024,7 +3031,7 @@
         acted: rc.acted === null || rc.acted === undefined ? null : Number(rc.acted), round: Number(rc.round) || 0,
         closer: rc.closer === null || rc.closer === undefined ? null : Number(rc.closer),
         at: rc.at === undefined ? -1 : Number(rc.at), mem: JSON.parse(JSON.stringify(rc.mem || {})),
-        skip: Object.assign({}, rc.skip || {}), arm: Object.assign({}, rc.arm || {}), best: Object.assign({}, rc.best || {}), ids: [] };
+        skip: Object.assign({}, rc.skip || {}), arm: Object.assign({}, rc.arm || {}), mark: Object.assign({}, rc.mark || {}), ids: [] };
     }
     for (k in chAttempt) delete chAttempt[k];
     for (k in rt.challengeAttempt || {}) chAttempt[k] = Object.assign({}, rt.challengeAttempt[k]);

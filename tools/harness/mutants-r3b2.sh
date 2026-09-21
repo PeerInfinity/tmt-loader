@@ -9,14 +9,18 @@
 #      did not make still reds.
 #   2. DOES A SECOND GUARD MAKE IT REDUNDANT? Named beside the ones where it does.
 #
-# ⛔ ONE MUTANT THAT IS DELIBERATELY NOT WRITTEN, AND WHY — the §34.5 discipline (a mutant that cannot fail is
-# documented, not shipped green). `m-r3b2-static-reads-requires`: make `turnDistance` compare a STATIC layer's
-# `baseAmount` against `requires` instead of `nextAt` (V1 §16.3 item 8's trap). NO LEG THIS SLICE HAS CAN SEE IT.
-# At B = 0 the rule reads only whether the fraction ROSE, and both readings are monotone in `baseAmount`; the two
-# bars differ only once the layer has reset (a static layer's `nextAt` climbs, its `requires` does not), and PTR's
-# only static row-3 member is `ss`, which never resets at this frontier. What WOULD reach it is a stub leg with a
-# `static` layer whose `nextAt` rises while its `requires` stands still, and that layer does not exist in
-# `cycle.test.mjs`'s fixture yet. Recorded here so the next slice inherits the gap rather than the illusion.
+# ⛔ TWO MUTANTS ARE REDUNDANT AT THE SHIPPED DEFAULT, AND ONE EXPLANATION COVERS BOTH — the §34.5 discipline (a
+# mutant that cannot fail is documented and labelled, not deleted and not reported as a pass). **`B` DEFAULTS TO 0,
+# so the rule reads only whether the engine's fraction CHANGED — never by how much.** Every monotone reading of the
+# same two engine quantities changes on exactly the same ticks, so any mutation that swaps ONE THRESHOLD FOR
+# ANOTHER is invisible:
+#   · `m-r3b2-normal-reads-nextat` (below) — survives, 0 RED, for that reason.
+#   · `m-r3b2-static-reads-requires` — not written for the same reason, and it has a second one on top: the two
+#     bars diverge only once the layer has RESET (a static layer's `nextAt` climbs, its `requires` does not), and
+#     PTR's only static row-3 member is `ss`, which never resets at this frontier.
+# ⇒ WHAT WOULD MAKE BOTH LIVE is a shipped `B > 0` (part 2 measures B = 0.1) or a stub leg with a `static` layer
+# whose `nextAt` rises while its `requires` stands still. Recorded so the next slice inherits the gap rather than
+# the illusion.
 #
 # ⛔ RESTORED FROM A COPY, NEVER FROM GIT — a harness that restores with `git checkout` restores over uncommitted
 # work. The script refuses to start on a dirty tree.
@@ -67,24 +71,29 @@ mutant m-r3b2-a-refused-holder-is-never-released \
 # holder loses its turn one window after it is granted.
 # ⚠ THE REFERENCE IS THE CONSTRUCTED CLIMB, NOT THE MUTANT'S OWN HISTORY — the stub leg drives `state.base` itself.
 mutant m-r3b2-a-climbing-holder-is-released \
-  "p='$AUTO';s=open(p).read();o='    if (p - best > need || p < best) { C.best[f.id] = p; C.closer = now; }';assert o in s, 'anchor';s=s.replace(o,'    if (false) { C.best[f.id] = p; C.closer = now; }');open(p,'w').write(s)" \
+  "p='$AUTO';s=open(p).read();o='    if (p - mark > need || p < mark) { C.mark[f.id] = p; C.closer = now; }';assert o in s, 'anchor';s=s.replace(o,'    if (false) { C.mark[f.id] = p; C.closer = now; }');open(p,'w').write(s)" \
   $UNIT
 
 # ---- the anchor ---------------------------------------------------------------------------------------------------
 # ⛔ A SIBLING'S WIPE COUNTED AS "NOT GETTING CLOSER". The brief asks this question out loud and the answer is NO:
 # PTR's `h` loses base MID-TURN to row-2 spending it does not control (3.23e20 → 2.03e19 between two samples 25
 # game-seconds apart, measured while `h` held the turn), and against a high-water that only ever rises those losses
-# accumulate until the re-climb cannot beat it inside H.
+# accumulate until the re-climb cannot beat it inside H. (A DROP lowering the mark is what this removes.)
 mutant m-r3b2-wipe-costs-the-turn \
-  "p='$AUTO';s=open(p).read();o='    if (p - best > need || p < best) { C.best[f.id] = p; C.closer = now; }';assert o in s, 'anchor';s=s.replace(o,'    if (p - best > need) { C.best[f.id] = p; C.closer = now; }');open(p,'w').write(s)" \
+  "p='$AUTO';s=open(p).read();o='    if (p - mark > need || p < mark) { C.mark[f.id] = p; C.closer = now; }';assert o in s, 'anchor';s=s.replace(o,'    if (p - mark > need) { C.mark[f.id] = p; C.closer = now; }');open(p,'w').write(s)" \
   $UNIT
 
-# ⛔ THE ANCHOR RESET WITH EVERY TURN, i.e. "did it climb since this turn began" rather than "is it better than it
-# has ever been". That is TRUE OF THE DEAD MEMBERS — `o` climbs 0 → 5 of 14 on every turn it is given, because
-# holding the turn is what stops a sibling wiping the row below — so the rule stops discriminating and the row
-# spends a full climb on each dead member every rotation.
-mutant m-r3b2-best-forgotten-each-turn \
-  "p='$AUTO';s=open(p).read();o='    C.closer = C.since;';assert o in s, 'anchor';s=s.replace(o,'    C.closer = C.since; if (C.best) delete C.best[f.id];');open(p,'w').write(s)" \
+# ⛔ THE ANCHOR CLEARED WITH EVERY TURN — and this one SURVIVES, which is the round's most useful finding about the
+# rule rather than about the gates. The intent was "the mark is a high-water that outlives a member's turns". IT IS
+# NOT: a DROP lowers the mark (which is the wipe rule above, and it is load-bearing), and a dead member's base is
+# wiped between its turns — so the mark is re-established from the wiped value on the first tick of the next turn
+# whether it was carried over or not, and clearing it changes nothing. ⇒ the mark is the LAST ANCHOR, not a
+# high-water, and the code now says so. The cost, named: a dead member pays its whole ~300 game-second climb again
+# on every turn it is given rather than one window. The alternative (keep the high-water; let a drop restart only
+# the CLOCK) would make this mutant live AND cost `o`/`ss` one `H` apiece — it is the first thing R3c should
+# measure, and it is not taken here because it was not measured here.
+mutant m-r3b2-mark-forgotten-each-turn \
+  "p='$AUTO';s=open(p).read();o='    C.closer = C.since;';assert o in s, 'anchor';s=s.replace(o,'    C.closer = C.since; if (C.mark) delete C.mark[f.id];');open(p,'w').write(s)" \
   $FREEZE
 
 # ---- which refusal the rule is about --------------------------------------------------------------------------
@@ -98,6 +107,9 @@ mutant m-r3b2-rule-ignores-the-engine \
 # ⛔ AND THE THRESHOLD READ OFF THE WRONG SIDE: `nextAt` for a NORMAL layer. `canReset` compares a normal layer's
 # base against `requires`, and on PTR's `q` the two are different numbers — so the fraction would be measured
 # against a bar the engine does not use, and a member could read "arrived" while the engine still refused it.
+# ⚠ SURVIVES AT THE SHIPPED `B = 0`, for the reason in the header: the rule reads only whether the fraction
+# CHANGED, and both readings change on the same ticks. Kept and labelled rather than deleted — the distinction it
+# protects is real (it is V1 §16.3 item 8's trap) and it becomes live the moment `B > 0` ships.
 mutant m-r3b2-normal-reads-nextat \
   "p='$AUTO';s=open(p).read();o=\"    var goal = t.type === 'static' ? t.nextAt : t.type === 'normal' ? t.requires : null;\";assert o in s, 'anchor';s=s.replace(o,\"    var goal = t.nextAt;\");open(p,'w').write(s)" \
   $FREEZE

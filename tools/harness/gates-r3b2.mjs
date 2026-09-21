@@ -61,7 +61,7 @@ const SNAP_ALL = path.join(REPO, 'tools/harness/snapshots/ptr/all');
 const POOL = Number(a.pool || 4);
 const REPEAT = Number(a.repeat || 2);
 
-// ⚠ `dist` / `best` / `closer` ARE THE RULE'S OWN THREE QUANTITIES, and they are in every readout because a row
+// ⚠ `distance` / `mark` / `closer` ARE THE RULE'S OWN THREE QUANTITIES, and they are in every readout because a row
 // that reported only the marks could not tell "the rule never fired" from "the rule fired and bought nothing".
 const READOUT = `({points: String(player.points), q: String(player.q.points), qTotal: String(player.q.total), qLayers: String(player.q.buyables[11]), qMs: player.q.milestones.slice(), qUpg: player.q.upgrades.slice(), qTime: String(player.q.time), qEnergy: String(player.q.energy), h: String(player.h.points), hBest: String(player.h.best), hChall: Object.assign({}, player.h.challenges), active: player.h.activeChallenge, te: String(player.t.energy), gp: String(player.g.power), sb: String(player.sb.points), ch: tmtLoader.hookStats().challenges, cyc: tmtLoader.cycleState()})`;
 const READOUT_OPEN = `({points: String(player.points), p: String(player.p.points), gp: String(player.g.power), uo: [player.t.unlockOrder, player.e.unlockOrder, player.s.unlockOrder], cyc: tmtLoader.cycleState(), rtKeys: Object.keys(tmtLoader.runtimeState()).sort(), auKeys: Object.keys(player.au).sort()})`;
@@ -92,7 +92,7 @@ const evalOf = (l) => l.runs?.[0]?.eval || l.eval || null;
 function cycText(e) {
   const c = e && e.cyc;
   if (!c || !Object.keys(c).length) return 'no cycle';
-  return Object.entries(c).map(([k, v]) => `row ${k}: ${v.round} turns, holder ${v.holderLayer}, typical ${JSON.stringify(v.typical)}, distance ${JSON.stringify(v.distance)}, best ${JSON.stringify(v.best)}${v.demand ? ', on demand' : ''}`).join(' | ');
+  return Object.entries(c).map(([k, v]) => `row ${k}: ${v.round} turns, holder ${v.holderLayer}, typical ${JSON.stringify(v.typical)}, distance ${JSON.stringify(v.distance)}, mark ${JSON.stringify(v.mark)}${v.demand ? ', on demand' : ''}`).join(' | ');
 }
 function readoutText(leg, l) {
   const e = evalOf(l);
@@ -252,7 +252,7 @@ async function part4() {
   ] });
   const c = rows.filter((r) => r.ok).length;
   row({ gate: 'R3b2-4 VERDICT: nothing moved that this slice did not move on purpose', id: 'ptr', ok: c === rows.length, ticks: null, gameSeconds: null, diff: 1, hash: null,
-    notes: `${c}/${rows.length} rows green; the declared key set of \`runtimeState().cycle\` is now {acted, arm, at, best, closer, holder, left, mem, round, since, skip} — \`best\` and \`closer\` are this slice's, and \`loader/cycle.test.mjs\` asserts the whole set` });
+    notes: `${c}/${rows.length} rows green; the declared key set of \`runtimeState().cycle\` is now {acted, arm, at, closer, holder, left, mark, mem, round, since, skip} — \`mark\` and \`closer\` are this slice's, and \`loader/cycle.test.mjs\` asserts the whole set` });
 }
 
 const PARTS = { 1: part1, 2: part2, 3: part3, 4: part4 };
