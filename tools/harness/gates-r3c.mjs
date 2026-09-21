@@ -9,6 +9,9 @@
 //                                               `--cell i --horizon 37048` runs ONE cell (a CI shard: the three cells
 //                                               do not fit a 10-minute local wall side by side — measured, §45)
 //   node tools/harness/gates-r3c.mjs --part 1m --from <dir>   the MERGE: every cell present, and the verdict
+//   node tools/harness/gates-r3c.mjs --part 2 [--cell i --horizon G]   THE RUNG from `all/M25.json`: the q/h turn WEIGHT
+//                                               (the tier-1 literal R3b-2 tuned for H12) against M26's wall, 30,000
+//                                               ticks, twice per cell; `--part 2m --from <dir>` merges the shards
 //
 // ⛔ WHAT PART 0 IS FOR. ⚖ User, 2026-09-21: "We can discard the Something Tree data" — asked, and the reading chosen was
 // DELETE ITS AUTOMATION TABLE. Something Tree then runs on the derived defaults like the other 169 games and stays the
@@ -35,8 +38,8 @@ const row = (r) => { rows.push(r); console.log(`${r.ok ? 'GREEN' : 'RED  '} ${r.
 
 // ⛔ THE FLOOR EACH PART MUST REACH (`--assert`), counted from what the part EMITS.
 // Part 0: eight cells + a verdict. Part 1: three cells + a verdict (one cell and no verdict under `--cell`).
-// Part 1m: the three cells re-read + the pinned control + the verdict.
-const ROWS = { 0: 9, 1: 4, '1m': 5 };
+// Part 1m: the three cells re-read + the pinned control + the verdict. Part 2: four cells + a verdict; 2m: four + verdict.
+const ROWS = { 0: 9, 1: 4, '1m': 5, 2: 5, '2m': 5 };
 const CELL = a.cell === undefined ? null : Number(a.cell);
 const HORIZON = a.horizon === undefined ? null : Number(a.horizon);
 if (CELL !== null && HORIZON === null) { console.error('REFUSED: --cell needs --horizon <game-seconds> — a shard that took its horizon from itself would agree with itself (R3b-2)'); process.exit(2); }
@@ -177,17 +180,79 @@ async function part1m() {
     notes: `${cells.map((l, i) => `${P1_CELLS[i].label || 'default (high-act)'}: M25 ${l.marks?.M25 ?? '—'}, HS ${num(e(l).hs)}, quirks ${num(e(l).qTotal)}`).join(' · ')} — a cell WINS only if M25 is no later AND Hindrance Spirit AND quirks are no lower than the control's: ${better.length ? better.map((l) => l.label).join(', ') : 'NONE'}` });
 }
 
-const PARTS = { 0: part0, 1: part1, '1m': part1m };
+// ---- Part 2: THE RUNG from `all/M25.json` — M26's wall, and the one tier-1 lever that moves it ----------------------
+// ⛔ WHAT THE TRACE SAID FIRST (plan §45): q22's price is `2e11·(q.time+1)^4.2` quirk energy and energy accrues as
+// `(t·M)^(QL−1)`, so at 4 Quirk Layers energy ÷ price ∝ M³·t^−0.2 — WAITING NEVER PAYS and the reset CADENCE is not
+// the wall (the best ratio of a q-run sits at t ≈ 20, measured and derived). The wall is M = q11 × q21: total QUIRKS
+// and Super Boosters. What schedules quirk production is the row cycle's WEIGHT — the share of row 3's turns `q` gets —
+// a tier-1 literal R3b-2 tuned for H12, which is done. So the sweep is that axis, from the fixture the rung starts at.
+// ⚠ A RESUMED leg (offline time credited): its game-seconds compare with other legs from `all/M25.json` only.
+const L25 = { diff: 1, profile: 'all', ticks: Number(a.ticks || 30000), 'wall-ms': 900000, ladder: PTR_LADDER, to: 'M31',
+  'from-snapshot': path.join(REPO, 'tools/harness/snapshots/ptr/all/M25.json'), 'marks-continue': true, stall: 1000000,
+  // the price PAID for q22 — `tmp` at the check is the one the tick's purchase compared against
+  until: `(!globalThis.__q22 && player.q.upgrades.indexOf(22) >= 0 && (globalThis.__q22 = {g: tmtLoader.gameSeconds, price: String(tmp.q.upgrades[22].cost), qtime: String(player.q.time), qTotal: String(player.q.total), sb: String(player.sb.points), ql: String(player.q.buyables[11])}), false)`,
+  eval: `({hs: String(player.h.points), qTotal: String(player.q.total), ql: String(player.q.buyables[11]), sb: String(player.sb.points), qUpg: player.q.upgrades.slice(), hChall: Object.assign({}, player.h.challenges), ch: tmtLoader.hookStats().challenges, q22: globalThis.__q22 || null, oBase: String(tmp.o.baseAmount), ssBase: String(tmp.ss.baseAmount), cyc: tmtLoader.cycleState()})` };
+const RMARKS = ['M26', 'M27', 'M28', 'M29', 'M30', 'M31'];
+const W = (w) => `policy:reset:q=gain>=2|turn@${w}/30x/5/0/100`;
+const P2_CELLS = [
+  { label: '', opt: '', note: 'the table as it ships: `reset:q` weight 10' },
+  { label: W(20), opt: W(20), note: 'q weight 20' },
+  { label: W(40), opt: W(40), note: 'q weight 40' },
+  { label: W(80), opt: W(80), note: 'q weight 80' },
+];
+let p2Lines = null;
+async function part2() {
+  if (CELL !== null && !P2_CELLS[CELL]) { console.error(`REFUSED: no cell ${CELL} (0–${P2_CELLS.length - 1})`); process.exit(2); }
+  const cells = CELL === null ? P2_CELLS : [P2_CELLS[CELL]];
+  const repeat = Number(a.repeat || 2);
+  const lines = await runCells({ id: 'ptr', cells, flags: Object.entries(L25), pool: POOL, repeat, stop: null,
+    onRun: (c, l) => console.log(`[PROGRESS] ${c.label || '(shipped)'} run ${l.run} → ${l.ok ? `${l.gameSeconds}s ${l.hashGame}` : 'FAILED ' + l.error} (${Math.round((l.box?.wallMs || 0) / 1000)}s wall)`) });
+  const horizon = HORIZON ?? lines[0].gameSeconds;
+  p2Lines = lines.map((l, i) => ({ cell: CELL === null ? i : CELL, label: cells[i].label, ok: l.ok, twiceEqual: l.twiceEqual, gameSeconds: l.gameSeconds, hashGame: l.hashGame, ticks: l.ticks, marks: l.marks, actions: l.actions, eval: l.eval || l.runs?.[0]?.eval || null }));
+  p2Lines.forEach((l, i) => {
+    const ok = !!l.ok && (repeat < 2 || l.twiceEqual === true) && l.gameSeconds === horizon;
+    row({ gate: `R3c-2 the rung from all/M25 — ${cells[i].label || 'the table as it ships (W = 10)'}`, id: 'ptr', leg: `all/M25 → ${L25.ticks} ticks, diff 1, profile all, ${repeat} run(s)`,
+      ok, ticks: l.ticks, gameSeconds: l.gameSeconds, diff: 1, hash: l.hashGame, notes: `${rungText(l)}; horizon ${horizon}${l.gameSeconds === horizon ? '' : ' — STOPPED SHORT'}; ${cells[i].note}` });
+  });
+  if (CELL !== null) return;
+  row({ gate: 'R3c-2 VERDICT (report)', id: 'ptr', ok: rows.every((r) => r.ok), notes: rungVerdict(p2Lines) });
+}
+function rungText(l) {
+  const e = l.eval || {}, ch = e.ch && e.ch['challenges:h'], q = e.q22;
+  return `${RMARKS.map((m) => `${m} ${l.marks?.[m] ?? '—'}`).join(' · ')}; q22 ${q ? `bought at ${q.g} for ${num(q.price)} quirk energy (q.time ${num(q.qtime)}, ${num(q.qTotal)} total quirks, SB ${q.sb}, QL ${q.ql})` : 'NOT bought'}; HS ${num(e.hs)}, quirks ${num(e.qTotal)}, QL ${num(e.ql)}, SB ${num(e.sb)}, q upg [${e.qUpg}], h ${JSON.stringify(e.hChall)}, enter/exit/gaveUp ${ch ? `${ch.enter}/${ch.exit}/${ch.gaveUp}` : '—'}; o base ${num(e.oBase)} of 14, ss base ${num(e.ssBase)}; resets q ${l.actions?.['reset:q'] ?? 0} / h ${l.actions?.['reset:h'] ?? 0} / o ${l.actions?.['reset:o'] ?? 0} / ss ${l.actions?.['reset:ss'] ?? 0}; ${l.gameSeconds} / ${l.hashGame}; twice equal ${l.twiceEqual}`;
+}
+function rungVerdict(ls) {
+  const first = (m) => ls.filter((l) => l.marks?.[m] != null).sort((x, y) => x.marks[m] - y.marks[m])[0];
+  return RMARKS.map((m) => { const f = first(m); return `${m}: ${f ? `${f.label || 'shipped'} at ${f.marks[m]}` : 'NO cell'}`; }).join(' · ') + ' — a cell that moves the table must reach every mark the shipped cell reaches, no later';
+}
+async function part2m() {
+  const dir = a.from ? path.resolve(String(a.from)) : null;
+  const fsm = await import('node:fs');
+  if (!dir || !fsm.existsSync(dir)) { console.error('REFUSED: --from <dir> holding the shard files'); process.exit(2); }
+  const got = new Map();
+  for (const f of fsm.readdirSync(dir).filter((x) => /^gates-r3c-part2-cell\d+\.json$/.test(x))) {
+    const d = JSON.parse(fsm.readFileSync(path.join(dir, f), 'utf8'));
+    for (const l of d.lines || []) got.set(l.cell, { ...l, horizon: d.horizon, commit: d.commit, rowOk: (d.rows || []).every((r) => r.ok) });
+  }
+  const missing = P2_CELLS.map((_, i) => i).filter((i) => !got.has(i));
+  if (missing.length) { console.error(`REFUSED: cell(s) ${missing.join(', ')} produced no file — LESS LOOKS GREENER`); process.exit(1); }
+  const ls = P2_CELLS.map((_, i) => got.get(i));
+  ls.forEach((l, i) => row({ gate: `R3c-2m cell ${i} — ${P2_CELLS[i].label || 'the table as it ships (W = 10)'}`, id: 'ptr', leg: `all/M25 → horizon ${l.horizon}`, ok: !!l.ok && l.rowOk && l.twiceEqual === true && l.gameSeconds === l.horizon,
+    ticks: l.ticks, gameSeconds: l.gameSeconds, diff: 1, hash: l.hashGame, notes: `${rungText(l)}; measured at \`${l.commit}\`` }));
+  row({ gate: 'R3c-2m VERDICT (report): which weight reaches the rung\'s marks first', id: 'ptr', ok: rows.every((r) => r.ok), notes: rungVerdict(ls) });
+}
+
+const PARTS = { 0: part0, 1: part1, '1m': part1m, 2: part2, '2m': part2m };
 if (!PARTS[PART]) { console.error(`no part ${PART}`); process.exit(2); }
 await PARTS[PART]();
 
 const red = rows.filter((r) => !r.ok).length;
-const expected = PART === '1' && CELL !== null ? 1 : ROWS[PART];
+const expected = (PART === '1' || PART === '2') && CELL !== null ? 1 : ROWS[PART];
 const short = `R3c part ${PART}${CELL !== null ? ` cell ${CELL}` : ''}: rows ${rows.length}/${expected} expected, ${red} RED`;
 console.log(`\nVERDICT: ${short}`);
 const READING = 'A cell\'s label is the whole --auto-opt string it ran (§14d.2 item 14); "—" for a mark means NOT REACHED inside the leg, which is a result. Part 0: Something Tree has NO automation table since R3c (⚖ user 2026-09-21), so the empty cell IS the derived defaults.';
 if (!a['no-write']) {
-  writeJSON(path.join(REPO, `tools/harness/results/gates-r3c-part${PART}${CELL !== null ? `-cell${CELL}` : ''}.json`), { gate: `R3c part ${PART}`, commit, dirty, reading: READING, horizon: HORIZON, lines: p1Lines, rows });
+  writeJSON(path.join(REPO, `tools/harness/results/gates-r3c-part${PART}${CELL !== null ? `-cell${CELL}` : ''}.json`), { gate: `R3c part ${PART}`, commit, dirty, reading: READING, horizon: HORIZON, lines: PART === '2' ? p2Lines : p1Lines, rows });
   if (!a['no-summary']) appendSection({ title: `Gate R3c part ${PART}`, commit, dirty, rows, reading: READING });
 }
 // ⛔ A BATTERY THAT DIES PART-WAY PRINTS FEWER ROWS, AND FEWER ROWS IS FEWER REDS.
