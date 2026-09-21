@@ -344,6 +344,20 @@ could not say which one broke — and the first full run of the automation one f
 (`loader/tmt-auto.js` assumed every fork calls its big-number type `Decimal`; `the-hyperoperator-tree` ships
 ExpantaNum and `the-pro-tree` ships OmegaNum, so `onload load()` died on both while the plain page was green).
 
+⛔ **AN UNPAIRED `net::ERR_ABORTED` IS NOT A LOAD FAILURE** (2026-09-21). Playwright reports a request the
+browser CANCELLED through the same `requestfailed` event as one that failed, so both land in `pw.failed` and
+`judgeLoad` judged them alike. The roster says they are not alike: over the G1 artifact of a green run, **all 16
+aborts are the browser's SECOND record of a real HTTP failure on the SAME URL** (the-pro-tree 10,
+the-question-tree 2, the-game-tree 2, the-periodic-tree 2) and **zero stand alone**. An abort that stands alone
+does not appear in a green run — it appears when a request is still in flight as a leg tears the page down.
+`the-rainbow-void-tree` reddened a run that way on `audio/elevatorMusic1.mp3`, which at **3.3 MB** is the largest
+request those pages make and so the likeliest to be caught mid-flight.
+
+So `judgeLoad` now declassifies an abort ONLY when no other failure record names the same URL, and reports it as
+`abortedAlone` rather than dropping it. ⚠ A PAIRED abort is judged exactly as before — it is a 404 wearing a
+second hat, and rescuing it would hide a real missing file. **Replayed over the 342 G1 rows of the green run at
+`57a0d8c3e`, the new rule changes ZERO verdicts**; `loader/loadverdict.test.mjs` holds the two cases apart.
+
 ## The full sweep runs in CI, sharded (`--shard i/N`)
 
 Every UI slice owes a full `--gate mobile` sweep over all 171 games. Locally that is one machine held for around
