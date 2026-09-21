@@ -161,6 +161,39 @@ the reference, not ground truth (Something Tree's A2-1 (i) is 208 s at diff 0.05
 stays at diff 0.05 and is untouched by any of this. `gates-h1.mjs --part 3` runs it (and records wall-clock per run and
 the box load); `--part 3v` re-runs the ladder at each mark's recorded diff.
 
+## THE TICK POLICY (F1) — what `diff 1` may decide, and what it may not
+
+⛔ **The page runs at `diff 0.05`; every ladder number and every ranking before F1 was scored at `diff 1`**, and H1
+(above) compared `diff 1` only against COARSER ticks. F1 compared it against the page's own tick on the SAME
+configuration (the ladder's: `passiveYield=off`), every cell twice equal — gate `gates-f1 --part 0` / `--part 1`, CI
+run 35637460884 at `3069ee2`. **It is NOT a constant factor, and it is not even on one side of 1:**
+
+| stretch (resumed from the committed fixture, or fresh) | ticks at 0.05 | stretch length at 0.05 ÷ at 1, per mark | CI wall, 2 runs in parallel (`diff 1` / `0.05`) |
+|---|---|---|---|
+| early — `all/M04` → M08 | 13,615 | M05 0.453 · M06 0.429 · M07 0.428 · M08 **0.247** | 39 s / 113 s |
+| row 2 — `all/M15` → M16 | 3,083 | M16 **0.153** | 7 s / 46 s |
+| row 3 — `all/M22` → M24 | 4,732 | M23 **2.84** · M24 **2.005** — SLOWER at the page's tick | 2 s / 51 s |
+| the opening — fresh → M12 | 46,199 | M12 0.344 (2309.95 against 6718) | 96 s / 394 s |
+| the long row-3 stretch — `all/M15` → M25, the yield ON at both ticks | 181,176 | M25 0.445 (9058.8 against 20335) | 131 s / 767 s |
+
+⇒ **THE RULE THE ARC ADOPTS (F1):**
+1. **`diff 1` stays the ruler for REACHABILITY and for REGRESSIONS** — a pin, a fixture, a "does the leg still reach
+   M25" row. It is fast, deterministic and the whole ladder was built on it.
+2. **NO DEFAULT MOVES WITHOUT A REAL-TICK ROW.** Anything that trades an ACTION against a TICK of income — a reset
+   against passive generation, a throttle, a ratio — is scored at `diff 0.05`. The yield itself is the example: SLOWER
+   at `diff 1` on every stretch (M08 5381 → 5491, M12 6718 → 6862, M16 17058 → 17197, M25 35613 → 36383) and FASTER
+   at the page's tick on every one (M08 3309.75 → 3205.95, M12 2309.95 → 2021.75, M16 16202.15 → 16108.95, M24
+   30854.6 → 30787.35) — and on the long row-3 stretch it is the difference between reaching H12 and not: with the
+   yield OFF at `diff 0.05`, `all/M15` does NOT reach M25 inside 21,000 game-seconds (107,091 `p` resets and 11,013
+   `e` resets), while the yield reaches it at 25106.8. A ranking made at `diff 1` is not evidence about the page.
+3. **Fitting it in the wall.** A local process gets ≤ 10 minutes: the early, row-2 and row-3 stretches above fit
+   (locally, four processes side by side, 218–514 s); the opening and the long row-3 stretch do NOT, and run in CI,
+   one cell per job (`gates-f1 --cell <key>` / `--group <g>`, `--wall-ms 5400000` under a 100-minute job; the merge
+   `--part m` refuses a missing cell by name). A longer stretch CHAINS with `--stop-snapshot` + `--from-snapshot`,
+   and ⚠ a resumed leg is credited the offline time of its boot: compare resumed with resumed, from the same fixture.
+4. ⚠ **The ladder's `diff` fields are H1's COARSE-tick calibration (1 / 5 / 20 / 60 against 1) and say nothing about
+   0.05.** They remain what they were: the coarsest diff a mark's timing survives within 2 % of `diff 1`.
+
 ## How a rung uses it
 
 ```
