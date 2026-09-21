@@ -189,7 +189,9 @@ run 35637460884 at `3069ee2`. **It is NOT a constant factor, and it is not even 
 3. **Fitting it in the wall.** A local process gets ≤ 10 minutes: the early, row-2 and row-3 stretches above fit
    (locally, four processes side by side, 218–514 s); the opening and the long row-3 stretch do NOT, and run in CI,
    one cell per job (`gates-f1 --cell <key>` / `--group <g>`, `--wall-ms 5400000` under a 100-minute job; the merge
-   `--part m` refuses a missing cell by name). A longer stretch CHAINS with `--stop-snapshot` + `--from-snapshot`,
+   `--part m` refuses a missing cell by name). ⚖ **Those jobs are MANUAL** (`workflow_dispatch` only, user 2026-09-21): a
+   measurement table costs ~5.5 runner-hours and re-measures a known answer on every push; run it from the Actions tab
+   when a default is being re-decided. `f1-rows` (the `maxRow` gate) is the F1 job that runs on every push. A longer stretch CHAINS with `--stop-snapshot` + `--from-snapshot`,
    and ⚠ a resumed leg is credited the offline time of its boot: compare resumed with resumed, from the same fixture.
 4. ⚠ **The ladder's `diff` fields are H1's COARSE-tick calibration (1 / 5 / 20 / 60 against 1) and say nothing about
    0.05.** They remain what they were: the coarsest diff a mark's timing survives within 2 % of `diff 1`.

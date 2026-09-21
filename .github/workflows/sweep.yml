@@ -2189,8 +2189,12 @@ jobs:
   # run killed by the job's own timeout writes nothing), set under `timeout-minutes`.
   # ---------------------------------------------------------------------------------------------------------------
   f1-cells:
+    # ⚖ MANUAL ONLY (user, 2026-09-21): a MEASUREMENT table, not a gate — ~5.5 runner-hours per run, its slowest
+    # cells the configurations that WALL (they burn their whole real-tick budget). Run it from the Actions tab
+    # (workflow_dispatch) when a reset default is being re-decided; `f1-rows` is the F1 gate that runs on every push.
     name: F1 cell ${{ matrix.cell }}
     needs: fast
+    if: ${{ github.event_name == 'workflow_dispatch' }}
     runs-on: ubuntu-latest
     timeout-minutes: 100
     strategy:
@@ -2281,8 +2285,12 @@ jobs:
   # a FRESH game — ONE chain, M01 onward — every mark's snapshot written by each run into its own directory and compared file by file;
   # both sets are uploaded and a fixture is committed only from a run whose twin agreed.
   f1-fixtures:
+    # ⚖ MANUAL ONLY (user, 2026-09-21): a MEASUREMENT table, not a gate — ~5.5 runner-hours per run, its slowest
+    # cells the configurations that WALL (they burn their whole real-tick budget). Run it from the Actions tab
+    # (workflow_dispatch) when a reset default is being re-decided; `f1-rows` is the F1 gate that runs on every push.
     name: F1 fixtures — the shipped leg from a fresh game, twice
     needs: fast
+    if: ${{ github.event_name == 'workflow_dispatch' }}
     runs-on: ubuntu-latest
     timeout-minutes: 100
     steps:
@@ -2327,8 +2335,12 @@ jobs:
   # Parts 2 and 3 run as GROUPS (`--group`): a group is the cells that share a stretch, so one runner walks them
   # side by side and the long row-3 cells get a job each.
   f1-groups:
+    # ⚖ MANUAL ONLY (user, 2026-09-21): a MEASUREMENT table, not a gate — ~5.5 runner-hours per run, its slowest
+    # cells the configurations that WALL (they burn their whole real-tick budget). Run it from the Actions tab
+    # (workflow_dispatch) when a reset default is being re-decided; `f1-rows` is the F1 gate that runs on every push.
     name: F1 group ${{ matrix.group }}
     needs: fast
+    if: ${{ github.event_name == 'workflow_dispatch' }}
     runs-on: ubuntu-latest
     timeout-minutes: 100
     strategy:
@@ -2382,7 +2394,8 @@ jobs:
   f1-merge:
     name: F1 merge — every cell present, the tables and the verdicts
     needs: [f1-cells, f1-groups]
-    if: ${{ !cancelled() }}
+    # manual only, like the cells it merges; `!cancelled()` still runs it when a cell FAILED
+    if: ${{ github.event_name == 'workflow_dispatch' && !cancelled() }}
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
