@@ -1377,6 +1377,105 @@ jobs:
           } >> "$GITHUB_STEP_SUMMARY"
 
   # ---------------------------------------------------------------------------------------------------------------
+  # R3c Part 1 — the dead-member rule's `mark`: the shipped LAST ANCHOR against a true HIGH-WATER (and the
+  # high-water cleared on the member's own reset), the WHOLE stretch `all/M15.json` → 21,000 ticks, twice per cell.
+  # ⛔ SHARDED BY CELL, because three cells of that leg do not fit a 10-minute local wall side by side (measured at
+  # R3c: seven processes walled every cell at ~33,600 game-s). ONE horizon, GIVEN (`--horizon`), so a shard can never
+  # agree with a horizon it measured itself; the merge refuses a missing cell by name and holds the control to its
+  # known answer (37048 / `6e0e67d4b2836e8e`, R3b-2's shipped cell).
+  # ---------------------------------------------------------------------------------------------------------------
+  r3c-mark:
+    name: R3c the dead-member rule's mark — cell ${{ matrix.cell }}
+    needs: fast
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        cell: [0, 1, 2]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - run: npm ci
+
+      - name: "Part 1 — cell ${{ matrix.cell }}, twice"
+        shell: bash
+        run: |
+          set -o pipefail
+          node tools/harness/gates-r3c.mjs --part 1 --cell ${{ matrix.cell }} --horizon 37048 \
+            --no-summary --assert --pool 2 | tee r3c-1-${{ matrix.cell }}.txt
+
+      - name: Summary
+        if: always()
+        shell: bash
+        run: |
+          {
+            echo '## R3c part 1 cell ${{ matrix.cell }}'
+            echo ''
+            echo '```'
+            cat r3c-1-${{ matrix.cell }}.txt 2>/dev/null | grep -E 'VERDICT|REFUSED|^RED|^GREEN' || echo 'no output'
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload the cell
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: r3c-mark-${{ matrix.cell }}
+          path: tools/harness/results/gates-r3c-part1-cell*.json
+          if-no-files-found: warn
+          retention-days: 14
+
+  r3c-mark-merge:
+    name: R3c the dead-member rule's mark — merge + the pinned control
+    needs: r3c-mark
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - run: npm ci
+
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: r3c-mark-*
+          path: cells
+          merge-multiple: true
+
+      - name: Merge the three cells
+        shell: bash
+        run: |
+          set -o pipefail
+          node tools/harness/gates-r3c.mjs --part 1m --from cells --no-summary --assert | tee r3c-1m.txt
+
+      - name: Summary
+        if: always()
+        shell: bash
+        run: |
+          {
+            echo '## R3c part 1 — merge'
+            echo ''
+            echo '```'
+            cat r3c-1m.txt 2>/dev/null || echo 'no output'
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  # ---------------------------------------------------------------------------------------------------------------
   # V4 — the per-feature CONTROLS (`while`, `until`, `priority`) and the M21 pause (plan §27).
   #
   # ⚖ WHAT IS IN CI AND WHAT IS NOT, by V2's and V3's rule:

@@ -912,6 +912,11 @@
   // It is what a feature's DEFAULT `priority` is read from, so a table that reorders the kinds reorders the
   // defaults with it and a player editing one number is editing the same scale the loader is already using.
   var kindOrderNow = KINDS_ALL.slice();
+  // R3c Part 1 — WHICH READING of the dead-member rule's `mark` (see `noteCloser`). `last` is R3b-2's shipped rule (a
+  // drop lowers the mark: the LAST ANCHOR); `high` keeps a true HIGH-WATER and lets a drop restart only the CLOCK;
+  // `high-act` is `high` with the mark cleared when the member itself resets. A measurement lever (`--auto-opt
+  // turnMark=…`), resolved once by `derive()`; a mistyped value is a hard fail there (V4's rule).
+  var TURN_MARKS = ['last', 'high', 'high-act'], TURN_MARK_DEFAULT = 'last', turnMarkNow = TURN_MARK_DEFAULT;
   var features = [];
   var byId = {};
   T.features = features;
@@ -1499,6 +1504,22 @@
     var gap = 1 - mark, need = gap > 0 ? turnParams(f).b * gap : 0;
     // ⚠ STRICTLY GREATER, R3a's own reason: at B = 0 a plateau closes exactly 0 of 0, and `>=` would read that as
     // progress and never release — which is the state the rule exists to leave.
+    if (turnMarkNow !== 'last') {
+      // R3c Part 1: the HIGH-WATER reading. Only a new high is progress; a DROP restarts the CLOCK and keeps the mark,
+      // so a re-climb below the old high is NOT progress — a dead member that re-climbs to the plateau it reached on
+      // its last turn is released one window `H` after the turn begins instead of after the whole climb. ⚠ A LIVE
+      // member keeps its turn only through the DROPS: PTR's `h` (Time Energy, wiped by `t`'s own resets) restarts its
+      // clock on every wipe — measured, not assumed (plan §45).
+      // ⛔ "A DROP" IS A FALL SINCE THE LAST READING, NOT A READING BELOW THE MARK. Below the mark is the whole of a
+      // re-climb, and the first cut read it as a drop on every tick — the clock never ran and the freeze came back
+      // (the stub leg "a dead member re-climbing BELOW its old high" is what caught it). So the high modes keep the
+      // last reading beside the mark, in `prev`, which exists only under them (the shipped record is unchanged).
+      if (!C.prev) C.prev = {};
+      var before = C.prev[f.id];
+      C.prev[f.id] = p;
+      if (p - mark > need) { C.mark[f.id] = p; C.closer = now; } else if (before !== undefined && p < before) C.closer = now;
+      return p;
+    }
     if (p - mark > need || p < mark) { C.mark[f.id] = p; C.closer = now; }
     return p;
   }
@@ -1637,6 +1658,8 @@
     var C = cycleOf(f);
     if (!C) return;
     pushCycleInterval(f, prev);
+    // R3c Part 1: under `high-act` a member that RESET has crossed its threshold, so its next climb starts a new high
+    if (turnMarkNow === 'high-act' && C.mark) { delete C.mark[f.id]; if (C.prev) delete C.prev[f.id]; }
     if (C.holder !== f.id) return;
     C.acted = Number(player.timePlayed) || 0;
     C.left--;
@@ -3038,6 +3061,7 @@
         closer: YC.closer === undefined ? null : YC.closer,
         round: YC.round, at: YC.at, mem: JSON.parse(JSON.stringify(YC.mem)), skip: Object.assign({}, YC.skip),
         arm: Object.assign({}, YC.arm || {}), mark: Object.assign({}, YC.mark || {}) };
+      if (YC.prev) cy[yi].prev = Object.assign({}, YC.prev);   // R3c: only under a high-water `turnMark`
       ncy++;
     }
     if (ncy) o.cycle = cy;
@@ -3118,6 +3142,7 @@
         closer: rc.closer === null || rc.closer === undefined ? null : Number(rc.closer),
         at: rc.at === undefined ? -1 : Number(rc.at), mem: JSON.parse(JSON.stringify(rc.mem || {})),
         skip: Object.assign({}, rc.skip || {}), arm: Object.assign({}, rc.arm || {}), mark: Object.assign({}, rc.mark || {}), ids: [] };
+      if (rc.prev) cycles[k].prev = Object.assign({}, rc.prev);
     }
     for (k in chAttempt) delete chAttempt[k];
     for (k in rt.challengeAttempt || {}) chAttempt[k] = Object.assign({}, rt.challengeAttempt[k]);
@@ -5026,6 +5051,8 @@
     var kindOrder = listOpt('kindOrder', table.kindOrder || KINDS_ALL);
     if (kindOrder.length !== KINDS_ALL.length || KINDS_ALL.some(function (k) { return kindOrder.indexOf(k) < 0; })) throw new Error(src + ': kindOrder must be a permutation of ' + KINDS_ALL.join(','));
     kindOrderNow = kindOrder.slice();   // V4: a feature's DEFAULT `priority` is its kind's place in THIS order
+    turnMarkNow = T.autoOptions.turnMark === undefined ? TURN_MARK_DEFAULT : String(T.autoOptions.turnMark);
+    if (TURN_MARKS.indexOf(turnMarkNow) < 0) throw new Error(src + ': option turnMark must be one of ' + TURN_MARKS.join(', ') + ' (got "' + turnMarkNow + '")');
     var cands = candidates(kindOrder);
     var candById = {};
     cands.forEach(function (c) { candById[c.id] = c; });
