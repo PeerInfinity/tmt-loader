@@ -3766,7 +3766,12 @@ async function gateMobile(browser, base, ids) {
         const can = canNow(), cand = [...can].sort((a, b) => rowOf(b) - rowOf(a));
         const tried = [];
         let l = null, touched = [], threw = null, st0 = null;
+        // ⚠ A `resetsNothing` layer's press is a GAIN, not a reset: the engine returns before `rowReset` (and before
+        // zeroing `resetTime`, so U11 never lit it either). MEASURED on the-upgrade-tree's `pp` in CI (run
+        // 35570276103): its press moved the state and the leg took that for a reset. The engine's own flag decides.
+        const nothing = (l) => { try { const v = layers[l].resetsNothing; return !!(typeof v === 'function' ? v.call(layers[l]) : v) || !!tmp[l].resetsNothing; } catch (e) { return false; } };
         for (const c of cand.slice(0, 8)) {
+          if (nothing(c)) { tried.push(`${c} resets nothing`); continue; }
           const r = rowOf(c);
           const below = Object.keys(layers).filter((x) => x !== c && rowOf(x) !== null && rowOf(x) < r);
           const pre = Object.fromEntries(below.map((x) => [x, js(x)]));
