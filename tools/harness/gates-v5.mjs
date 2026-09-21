@@ -369,7 +369,11 @@ const OPEN_PIN = { gs: 6718, hashGame: '82eee26f947b2b2e' };
 // 35176** — ending with 8797 Hindrance Spirit and 1807 total quirks against R3a's 1065. ⚠ The OPENING
 // (6718 / `82eee26f947b2b2e`) and M15 → M24 (30736 / `b73aef45c9ce7d08`, every mark to the second) are UNMOVED in
 // the same CI run — the cycle is dormant until `h` unlocks — so this is the one pin the entry touches.
-const R3A_PIN = { gs: 42618, hashGame: 'fceef65ba0f59011', ch: '13/2/11' };
+// ⛔ RE-RECORDED AGAIN BY R3c PART 1, AS DATA: the dead-member rule's default reading moved to `high-act` (gate R3c-1,
+// CI run 35566730632). CI run 35567293573 at `f9480d21e` measured 42618 / `fb935758c4cc4f64` against the old
+// `fceef65ba0f59011` — enter/exit/gaveUp 13/2/11 UNCHANGED — and it is the ONLY pin the adoption moved: the opening,
+// M15 → M24 (`b73aef45c9ce7d08`), R3a's M22 pin, the R3b/R3b-2 inertness rows and the M1 roster all held in that run.
+const R3A_PIN = { gs: 42618, hashGame: 'fb935758c4cc4f64', ch: '13/2/11' };
 // measured at `f37b2029f` (pre-V5), 2026-09-20, in a control worktree — M24's hash is also the `all/M24` fixture's own
 const M24_PIN = { gs: 30736, hashGame: 'b73aef45c9ce7d08', marks: { M16: 17058, M17: 23492, M18: 25598, M19: 25937, M20: 26612, M21: 28058, M22: 30618, M23: 30683, M24: 30736 } };
 // ⛔ RE-RECORDED BY R3c PART 0, AS DATA, AND THE CAUSE IS A RULING, NOT A REGRESSION: Something Tree's automation
