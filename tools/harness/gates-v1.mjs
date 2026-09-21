@@ -113,7 +113,7 @@ const LEGS = [
   // `waiting:turn` is what they say. ⚠ A leg that named the modifier on EVERY member would witness the code just
   // as well and would prove nothing about R1 — this one is red if a non-carrier is not bound.
   { key: 'ptr all/M15 + 600×1, the ROW CYCLE on row 2 (named on reset:t only)', id: 'ptr',
-    o: { profile: 'all', diff: 1, ticks: 600, 'from-snapshot': SNAP('ptr', 'M15'), 'auto-opt': 'policy:reset:t=always|turn@3/3x/5', explain: true } },
+    o: { profile: 'all', diff: 1, ticks: 600, 'from-snapshot': SNAP('ptr', 'M15'), 'auto-opt': 'policy:reset:t=always|turn@3/3x/5/0/0', explain: true } },
   // ⛔ R2's `waiting:gain-unit`, witnessed on a REAL GAME rather than constructed — and the configuration that
   // witnesses it is the one R2 measured as a DEADLOCK (gate R2-S3): `gain>=2x-unit` on `reset:p` waits for a gain
   // of 2 prestige points, PTR generates no points until a prestige upgrade is bought, and no prestige upgrade can

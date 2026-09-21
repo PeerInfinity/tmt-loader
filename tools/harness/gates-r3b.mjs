@@ -134,7 +134,9 @@ async function sweep({ gate, leg, cells, repeat = REPEAT, extra = {} }) {
 // ⚖ 13d.2 — no arbitrary waiting. The WEIGHT is the one literal here and it is a sweep AXIS, which is where a literal
 // comes from; K and N are the guard's two buffers, carried from `stall>=Kx/N` at its own defaults; and the DEMAND
 // variant needs no weight at all, which is the point of measuring it against them.
-const GUARD = `${String(a.k || '3')}x/${String(a.n || '5')}`;
+// R3b-2: every pre-existing row keeps the dead-member rule SILENT (`/0/0` — B and H at zero, a window of zero is
+// no window), so each of them reproduces the value it was pinned at. The rows that MEASURE that rule say so.
+const GUARD = `${String(a.k || '3')}x/${String(a.n || '5')}/0/0`;
 // ⚠ `reset:h=always` INSIDE THE CELL, AND IT IS THE POINT OF THE CELL. A member decides by its OWN policy inside
 // its turn (the first cut made it eager and the sweep measured what that costs `q`: one quirk a reset instead of
 // two). `h`'s derived `gain>=2x` can fire exactly once — an empty purse makes the bar zero — and never again, so a
@@ -400,7 +402,7 @@ async function part6() {
         && seen.buttons.some((b) => b.mod === `${kind}@W/Kx/N` && b.on === '1' && /remove/.test(b.text))
         && seen.buttons.some((b) => b.mod === 'stall>=Kx/N' && b.on === '0' && /add/.test(b.text));
       const ok = !errs.length && !seen.error && seen.components === 7 && fieldsOk && btnOk
-        && seen.mods.includes('turn@W/Kx/N') && seen.mods.includes('turn-demand@W/Kx/N');
+        && seen.mods.includes('turn@W/Kx/N/B/H') && seen.mods.includes('turn-demand@W/Kx/N/B/H');
       row({ gate: `R3b-6 the page on ${id}: the CYCLE through V2’s GENERIC editors`, id, leg: 'index.html?mod=<id>&automation=1, Advanced, the feature armed', ok,
         ticks: null, gameSeconds: null, diff: null, hash: null,
         notes: `policy \`always|${kind}@7/4x/6\`; target ${seen.target} (state ${seen.state}); reset modifiers ${JSON.stringify(seen.mods)}; ONE BUTTON PER ROW: ${JSON.stringify(seen.buttons)}; the cycle's three parameter editors rendered: ${JSON.stringify(seen.modFields)}; the readout line "${seen.turnLine}"; V4 control rows still ${seen.ctlFields}; componentNames ${seen.components} (⛔ UNCHANGED: no new tmtl-* family); console errors ${errs.length}${seen.error ? '; EVAL ERROR ' + seen.error : ''}${errs.length ? ': ' + errs.slice(0, 2).join(' | ') : ''}` });
@@ -422,15 +424,15 @@ async function part6() {
 // instead of the ratio (§33 row (f)). The freeze is a REAL and separate defect — plan §32.4a names its candidate.
 async function part7() {
   const cells = [
-    cell(`exclude=reset:o,reset:ss;policy:reset:q=gain>=2|turn@5/${String(a.k7 || '100000')}x/5;policy:reset:h=always|turn@1/${String(a.k7 || '100000')}x/5`, 'W = 5'),
-    cell(`exclude=reset:o,reset:ss;policy:reset:q=gain>=2|turn@20/${String(a.k7 || '100000')}x/5;policy:reset:h=always|turn@1/${String(a.k7 || '100000')}x/5`, 'W = 20 — the ORACLE’s own configuration (plan §33 row (b)); a build that reproduces it lands on `d2da5ef3a490f92a`'),
+    cell(`exclude=reset:o,reset:ss;policy:reset:q=gain>=2|turn@5/${String(a.k7 || '100000')}x/5/0/0;policy:reset:h=always|turn@1/${String(a.k7 || '100000')}x/5/0/0`, 'W = 5'),
+    cell(`exclude=reset:o,reset:ss;policy:reset:q=gain>=2|turn@20/${String(a.k7 || '100000')}x/5/0/0;policy:reset:h=always|turn@1/${String(a.k7 || '100000')}x/5/0/0`, 'W = 20 — the ORACLE’s own configuration (plan §33 row (b)); a build that reproduces it lands on `d2da5ef3a490f92a`'),
     // ⛔ V5 (owed from R3b-1, plan §35 item 2): THE CELL THAT LETS MUTANT m17 BE SEEN. At the SHIPPED guard (K = 30)
     // a twenty-reset turn spans ~380 game-seconds against a bound of ~570, so a guard clock started at the TURN'S
     // START and one started at the holder's LAST ACT both stay under it and m17 is invisible. Sixty resets span
     // ~1,140 — past the bound — so only the act clock keeps the turn; the turn-start clock releases it mid-turn.
     // ⚠ `K = 30` here, NOT the cells' `k7` (100000 = guard off): with the guard switched off no clock is consulted
     // and the row could not see a clock defect by construction.
-    cell(`exclude=reset:o,reset:ss;policy:reset:q=gain>=2|turn@60/30x/5;policy:reset:h=always|turn@1/30x/5`, 'W = 60 at the SHIPPED guard K = 30 — the turn outlasts K × typical, so the guard\'s CLOCK ORIGIN decides (mutant m17)'),
+    cell(`exclude=reset:o,reset:ss;policy:reset:q=gain>=2|turn@60/30x/5/0/0;policy:reset:h=always|turn@1/30x/5/0/0`, 'W = 60 at the SHIPPED guard K = 30 — the turn outlasts K × typical, so the guard\'s CLOCK ORIGIN decides (mutant m17)'),
   ];
   const lines = await sweep({ gate: 'R3b-7 the RATIO over the whole stretch —', leg: 'L15', cells, repeat: Number(a.repeat7 || 1) });
   const ratios = lines.map((l) => {

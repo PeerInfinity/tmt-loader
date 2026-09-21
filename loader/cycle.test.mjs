@@ -26,7 +26,11 @@ function game(state) {
     tmtStubTemp(tmp, player) {
       const t = tmp[id] || (tmp[id] = {});
       t.type = 'normal';
-      t.baseAmount = new Decimal(player.points); t.requires = new Decimal(1); t.nextAt = new Decimal(1);
+      // R3b-2: `state.base` / `state.req` let a leg CONSTRUCT the engine's own distance to a reset, which is the
+      // only quantity the dead-member rule reads. Absent, they are what every earlier leg had.
+      t.baseAmount = new Decimal(state.base[id] === undefined ? player.points : state.base[id]);
+      t.requires = new Decimal(state.req[id] === undefined ? 1 : state.req[id]);
+      t.nextAt = new Decimal(state.req[id] === undefined ? 1 : state.req[id]);
       t.canReset = state.can[id] !== false;
       t.autoPrestige = false;
       t.resetGain = new Decimal(state.gain[id] === undefined ? 1 : state.gain[id]);
@@ -35,7 +39,7 @@ function game(state) {
   });
   return { a: layer('a', 1), b: layer('b', 1), c: layer('c', 2) };
 }
-const fresh = () => ({ can: {}, gain: {}, unlocked: {} });
+const fresh = () => ({ can: {}, gain: {}, unlocked: {}, base: {}, req: {} });
 function boot(policies, state = fresh(), table = {}) {
   const ctx = bootStub(game(state), { id: 'stub', autoTable: Object.assign({ policies }, table) });
   ctx.tmtLoader.profile('all');
@@ -58,11 +62,11 @@ test('⛔ with no policy carrying a cycle modifier there is NO cycle and NO memo
 });
 
 test('the two cycle modifiers are ENUMERABLE table rows, and each readout belongs to its own ROW', () => {
-  const ctx = boot({ 'reset:a': `always|turn@2/3x/5`, 'reset:b': 'always|stall>=3x/5' });
+  const ctx = boot({ 'reset:a': `always|turn@2/3x/5/0/0`, 'reset:b': 'always|stall>=3x/5' });
   // ⚠ `.join` RATHER THAN `deepEqual`: everything the loader builds comes out of the stub's vm realm, so a
   // foreign Array is "same structure, not reference-equal" to a native one and `deepEqual` reds on a right value.
   const ids = T(ctx).modifiers('reset').map((m) => m.id).sort().join(',');
-  assert.equal(ids, 'stall>=Kx/N,turn-demand@W/Kx/N,turn@W/Kx/N');
+  assert.equal(ids, 'stall>=Kx/N,turn-demand@W/Kx/N/B/H,turn@W/Kx/N/B/H');
   tick(ctx, 5);
   // ⚖ R3a's rule, one modifier on: `stallState` must not answer for a feature carrying the cycle, and `turnState`
   // must not answer for one carrying the stall fallback. Neither THROWS when it is wrong — it says a false
@@ -75,7 +79,7 @@ test('the two cycle modifiers are ENUMERABLE table rows, and each readout belong
 });
 
 test('a cycle member accumulates NO stall intervals, so the two modifiers cannot share memory', () => {
-  const ctx = boot({ 'reset:a': `always|turn@1/3x/5`, 'reset:b': `always|turn@1/3x/5` });
+  const ctx = boot({ 'reset:a': `always|turn@1/3x/5/0/0`, 'reset:b': `always|turn@1/3x/5/0/0` });
   tick(ctx, 40);
   const rt = T(ctx).runtimeState();
   assert.equal('stallIntervals' in rt, false, 'a turn modifier fed the stall fallback’s interval memory');
@@ -88,7 +92,7 @@ test('a cycle member accumulates NO stall intervals, so the two modifiers cannot
 test('R1 — a member that declares NOTHING is bound anyway, and says `waiting:turn` out of its turn', () => {
   // `b` carries no modifier at all. An eager `b` that is not in the cycle is exactly the planner's void cell: it
   // fired 44 times and starved the member whose turn it was.
-  const ctx = boot({ 'reset:a': `always|turn@3/3x/5`, 'reset:b': 'always' });
+  const ctx = boot({ 'reset:a': `always|turn@3/3x/5/0/0`, 'reset:b': 'always' });
   tick(ctx, 2);
   const C = cyc(ctx);
   assert.equal(C.members.slice().sort().join(','), 'reset:a,reset:b');
@@ -105,7 +109,7 @@ test('R1 — a member that declares NOTHING is bound anyway, and says `waiting:t
 });
 
 test('R1 — the row comes from the ENGINE, so a layer of another row is NOT a member', () => {
-  const ctx = boot({ 'reset:a': `always|turn@1/3x/5`, 'reset:b': `always|turn@1/3x/5`, 'reset:c': 'always' });
+  const ctx = boot({ 'reset:a': `always|turn@1/3x/5/0/0`, 'reset:b': `always|turn@1/3x/5/0/0`, 'reset:c': 'always' });
   tick(ctx, 30);
   assert.equal(cyc(ctx).members.slice().sort().join(','), 'reset:a,reset:b');
   assert.equal(cyc(ctx, '2'), null, 'row 2 has no carrier and must have no cycle');
@@ -122,7 +126,7 @@ test('R1 — the row comes from the ENGINE, so a layer of another row is NOT a m
 test('R2 — the member’s OWN rule decides inside its turn; the cycle only says WHO may act and HOW OFTEN', () => {
   // `gain>=100x` on a layer gaining 1 a reset can fire exactly once (an empty purse makes the bar 0) and never
   // again. If the turn made its holder eager, `a` would reset every tick it held the turn.
-  const ctx = boot({ 'reset:a': `gain>=100x|turn@5/3x/5`, 'reset:b': `always|turn@5/3x/5` });
+  const ctx = boot({ 'reset:a': `gain>=100x|turn@5/3x/5/0/0`, 'reset:b': `always|turn@5/3x/5/0/0` });
   tick(ctx, 200);
   assert.equal(acts(ctx)['reset:a'], 1, `the patient member must keep its own rule: ${JSON.stringify(acts(ctx))}`);
   assert.equal(rowOf(ctx, 'reset:a').last.code, 'waiting:gain-x', 'the member’s own refusal must be what it reports');
@@ -141,7 +145,7 @@ test('R2 — the member’s OWN rule decides inside its turn; the cycle only say
 });
 
 test('R2 — `acted:reset` names the member’s OWN rule, so an act stays as enumerable as a refusal', () => {
-  const ctx = boot({ 'reset:a': `always|turn@2/3x/5`, 'reset:b': `always|turn@2/3x/5` });
+  const ctx = boot({ 'reset:a': `always|turn@2/3x/5/0/0`, 'reset:b': `always|turn@2/3x/5/0/0` });
   tick(ctx, 10);
   const fired = [rowOf(ctx, 'reset:a'), rowOf(ctx, 'reset:b')].find((x) => x.last.code === 'acted:reset');
   assert.ok(fired, 'neither member ever acted');
@@ -150,7 +154,7 @@ test('R2 — `acted:reset` names the member’s OWN rule, so an act stays as enu
 });
 
 test('R2 — `until` and `while` are ABOVE the cycle: a paused member never holds the turn', () => {
-  const ctx = boot({ 'reset:a': `always|turn@5/3x/5`, 'reset:b': `always|turn@5/3x/5` },
+  const ctx = boot({ 'reset:a': `always|turn@5/3x/5/0/0`, 'reset:b': `always|turn@5/3x/5/0/0` },
     fresh(), { gates: { 'reset:a': 'false' } });
   tick(ctx, 30);
   assert.equal(rowOf(ctx, 'reset:a').last.code, 'blocked:gate', 'a paused member must report its pause, not a turn');
@@ -171,7 +175,7 @@ test('R2 — `until` and `while` are ABOVE the cycle: a paused member never hold
 test('R3 — with no reset of its own yet, a member HOLDS its turn until it can use it', () => {
   const state = fresh();
   state.can.a = false;                 // the ENGINE refuses `a`; nothing in the loader is touched
-  const ctx = boot({ 'reset:a': `always|turn@9/3x/5`, 'reset:b': `always|turn@9/3x/5` }, state);
+  const ctx = boot({ 'reset:a': `always|turn@9/3x/5/0/0`, 'reset:b': `always|turn@9/3x/5/0/0` }, state);
   tick(ctx, 30);
   const C = cyc(ctx);
   assert.equal(C.holderLayer, 'a', 'the turn was taken from a member that had no bound to be late against');
@@ -188,7 +192,7 @@ test('R3 — with no reset of its own yet, a member HOLDS its turn until it can 
 
 test('R3 — once it HAS reset twice, the bound is K × the median wait between its own resets', () => {
   const state = fresh();
-  const ctx = boot({ 'reset:a': `always|turn@1/2x/5`, 'reset:b': `always|turn@1/2x/5` }, state);
+  const ctx = boot({ 'reset:a': `always|turn@1/2x/5/0/0`, 'reset:b': `always|turn@1/2x/5/0/0` }, state);
   tick(ctx, 30);                       // both members reset repeatedly, so both have intervals
   const C0 = cyc(ctx);
   assert.ok(C0.typical['reset:a'] !== null && C0.typical['reset:b'] !== null, JSON.stringify(C0.typical));
@@ -202,7 +206,7 @@ test('R3 — once it HAS reset twice, the bound is K × the median wait between 
 
 test('R3 — the memory is the interval between a member’s own RESETS, not the length of its turns', () => {
   const state = fresh();
-  const ctx = boot({ 'reset:a': `always|turn@4/2x/5`, 'reset:b': `always|turn@4/2x/5` }, state);
+  const ctx = boot({ 'reset:a': `always|turn@4/2x/5/0/0`, 'reset:b': `always|turn@4/2x/5/0/0` }, state);
   tick(ctx, 40);
   const C = cyc(ctx);
   // a turn of four resets spans four ticks; the INTERVALS inside it are one tick each. A build that remembered
@@ -215,7 +219,7 @@ test('R3 — the memory is the interval between a member’s own RESETS, not the
 test('R3 — a member that can never act does not COLLECT a history it did not earn', () => {
   const state = fresh();
   state.can.a = false;
-  const ctx = boot({ 'reset:a': `always|turn@1/2x/5`, 'reset:b': `always|turn@1/2x/5` }, state);
+  const ctx = boot({ 'reset:a': `always|turn@1/2x/5/0/0`, 'reset:b': `always|turn@1/2x/5/0/0` }, state);
   tick(ctx, 40);
   assert.equal(cyc(ctx).typical['reset:a'], null, 'a member that never reset was given a bound anyway');
   assert.equal(cyc(ctx).turns['reset:a'], 0);
@@ -225,11 +229,11 @@ test('R3 — a member that can never act does not COLLECT a history it did not e
 // ---- R4: THE TURN MEMORY IS THE LOADER'S OWN ------------------------------------------------------------------------
 
 test('R4 — the memory is in `runtimeState()`, and `restoreRuntime(runtimeState())` is the identity for it', () => {
-  const ctx = boot({ 'reset:a': `always|turn@2/3x/5`, 'reset:b': `always|turn@2/3x/5` });
+  const ctx = boot({ 'reset:a': `always|turn@2/3x/5/0/0`, 'reset:b': `always|turn@2/3x/5/0/0` });
   tick(ctx, 25);
   const rt = JSON.parse(JSON.stringify(T(ctx).runtimeState()));
   assert.ok(rt.cycle && rt.cycle['1'], 'the cycle wrote no memory');
-  assert.equal(Object.keys(rt.cycle['1']).sort().join(','), 'acted,arm,at,holder,left,mem,round,since,skip');
+  assert.equal(Object.keys(rt.cycle['1']).sort().join(','), 'acted,arm,at,best,closer,holder,left,mem,round,since,skip');
   T(ctx).restoreRuntime(rt);
   assert.deepEqual(JSON.parse(JSON.stringify(T(ctx).runtimeState().cycle)), rt.cycle);
   // MUTANT: "the memory is a closure" — a resumed run takes a different path from an uninterrupted one and this
@@ -237,7 +241,7 @@ test('R4 — the memory is in `runtimeState()`, and `restoreRuntime(runtimeState
 });
 
 test('R4 — ⛔ NO ENGINE FIELD IS READ: the stub has no `resetTime` anywhere, and the cycle still has a typical', () => {
-  const ctx = boot({ 'reset:a': `always|turn@1/3x/5`, 'reset:b': `always|turn@1/3x/5` });
+  const ctx = boot({ 'reset:a': `always|turn@1/3x/5/0/0`, 'reset:b': `always|turn@1/3x/5/0/0` });
   tick(ctx, 20);
   assert.equal(ctx.player.a.resetTime, undefined, 'the fixture must NOT have the field, or this row proves nothing');
   assert.equal(ctx.player.b.resetTime, undefined);
@@ -249,7 +253,7 @@ test('R4 — ⛔ NO ENGINE FIELD IS READ: the stub has no `resetTime` anywhere, 
 // ---- DEMAND: derived from the reason vocabulary, never from a layer name ---------------------------------------------
 
 test('a reason code DECLARES which of its own values is the layer it waits on, and `reasonCodes()` publishes it', () => {
-  const ctx = boot({ 'reset:a': `always|turn@1/3x/5` });
+  const ctx = boot({ 'reset:a': `always|turn@1/3x/5/0/0` });
   const cs = T(ctx).reasonCodes();
   assert.equal(cs['blocked:after'].demand, 'sibling');
   assert.equal(cs['waiting:retry'].demand, 'layer');
@@ -268,7 +272,7 @@ test('DEMAND — the turn goes to the member a decision NAMES as what it is wait
   //  `reset:c` is on row 2 (not a member) and waits for milestone 0 of layer `a`, so every tick a decision names
   //  `a` as the layer something is waiting on. `b` carries nine times `a`'s weight.
   const build = (kind) => {
-    const ctx = boot({ 'reset:a': `always|${kind}@1/3x/5`, 'reset:b': `always|${kind}@9/3x/5`, 'reset:c': 'keepsUpgrades' },
+    const ctx = boot({ 'reset:a': `always|${kind}@1/3x/5/0/0`, 'reset:b': `always|${kind}@9/3x/5/0/0`, 'reset:c': 'keepsUpgrades' },
       fresh(), { keep: { 'reset:c': { layer: 'a', id: 0 } } });
     tick(ctx, 60);
     return ctx;
@@ -294,7 +298,7 @@ test('DEMAND — the turn goes to the member a decision NAMES as what it is wait
 test('DEMAND is OFF for a row whose members all declare the plain variant', () => {
   const state = fresh();
   state.unlocked.a = false;
-  const ctx = boot({ 'reset:a': `always|turn@1/3x/5`, 'reset:b': `always|turn@9/3x/5` }, state,
+  const ctx = boot({ 'reset:a': `always|turn@1/3x/5/0/0`, 'reset:b': `always|turn@9/3x/5/0/0` }, state,
     { unlockOrder: [['a', 'b']] });
   tick(ctx, 2);
   assert.equal(cyc(ctx).demand, false);
@@ -306,7 +310,7 @@ test('DEMAND is OFF for a row whose members all declare the plain variant', () =
 test('`waiting:turn` is reported ONLY where the engine would allow the reset', () => {
   const state = fresh();
   state.can.b = false;                 // the engine refuses `b`, and that is a better answer than "it is a’s turn"
-  const ctx = boot({ 'reset:a': `always|turn@9/3x/5`, 'reset:b': `always|turn@9/3x/5` }, state);
+  const ctx = boot({ 'reset:a': `always|turn@9/3x/5/0/0`, 'reset:b': `always|turn@9/3x/5/0/0` }, state);
   tick(ctx, 3);
   assert.equal(rowOf(ctx, 'reset:b').last.code, 'cannot-reset');
   assert.ok(codes(ctx)['waiting:turn'] === undefined || codes(ctx)['waiting:turn'] === 0);
@@ -315,7 +319,7 @@ test('`waiting:turn` is reported ONLY where the engine would allow the reset', (
 });
 
 test('every value `waiting:turn` names is filled, so the sentence can never read “undefined”', () => {
-  const ctx = boot({ 'reset:a': `always|turn@3/3x/5`, 'reset:b': `always|turn@7/3x/5` });
+  const ctx = boot({ 'reset:a': `always|turn@3/3x/5/0/0`, 'reset:b': `always|turn@7/3x/5/0/0` });
   tick(ctx, 2);
   const r = rowOf(ctx, 'reset:b');
   assert.equal(r.last.code, 'waiting:turn');
@@ -327,10 +331,10 @@ test('every value `waiting:turn` names is filled, so the sentence can never read
 });
 
 test('the READOUT says whose turn it is and what this member’s own turn is worth', () => {
-  const ctx = boot({ 'reset:a': `always|turn@3/3x/5`, 'reset:b': `always|turn@7/3x/5` });
+  const ctx = boot({ 'reset:a': `always|turn@3/3x/5/0/0`, 'reset:b': `always|turn@7/3x/5/0/0` });
   tick(ctx, 20);
   const s = T(ctx).turnState('reset:b');
-  assert.equal(s.modifier, 'turn@W/Kx/N');
+  assert.equal(s.modifier, 'turn@W/Kx/N/B/H');
   assert.equal(s.row, 1);
   assert.equal(s.mine, 7);
   assert.equal(s.members.slice().sort().join(','), 'reset:a,reset:b');
@@ -346,7 +350,7 @@ test('the READOUT says whose turn it is and what this member’s own turn is wor
 test('⛔ a row with ONE active member is DORMANT — the member keeps its own rule, and does not become `always`', () => {
   const state = fresh();
   const ctx = bootStub({ a: game(state).a, c: game(state).c }, { id: 'stub',
-    autoTable: { policies: { 'reset:a': 'gain>=100x|turn@1/3x/5' } } });
+    autoTable: { policies: { 'reset:a': 'gain>=100x|turn@1/3x/5/0/0' } } });
   ctx.tmtLoader.profile('all');
   tick(ctx, 40);
   const C = ctx.tmtLoader.cycleState()['1'];
@@ -363,7 +367,7 @@ test('⛔ a row with ONE active member is DORMANT — the member keeps its own r
 test('… and it WAKES UP the moment a second member of the row becomes active', () => {
   const state = fresh();
   const ctx = bootStub(game(state), { id: 'stub',
-    autoTable: { policies: { 'reset:a': 'always|turn@1/3x/5', 'reset:b': 'always|turn@1/3x/5' } } });
+    autoTable: { policies: { 'reset:a': 'always|turn@1/3x/5/0/0', 'reset:b': 'always|turn@1/3x/5/0/0' } } });
   ctx.tmtLoader.profile('all');
   ctx.tmtLoader.setFeatureEnabled('reset:b', false);
   tick(ctx, 20);
@@ -386,7 +390,7 @@ test('… and it WAKES UP the moment a second member of the row becomes active',
 test('a ZERO interval is not a bound — two resets inside one game-second must not release every turn', () => {
   // `diff = 0` makes `player.timePlayed` stand still, so two resets in consecutive ticks are ZERO game-seconds
   // apart. That is a real measurement, and `K × 0` would release every turn on the tick it was granted.
-  const ctx = boot({ 'reset:a': `always|turn@3/2x/5`, 'reset:b': `always|turn@3/2x/5` });
+  const ctx = boot({ 'reset:a': `always|turn@3/2x/5/0/0`, 'reset:b': `always|turn@3/2x/5/0/0` });
   tick(ctx, 12, 0);
   assert.ok((acts(ctx)['reset:a'] || 0) > 1, `the member must have reset repeatedly, or this row proves nothing: ${JSON.stringify(acts(ctx))}`);
   const C = cyc(ctx);
@@ -405,7 +409,7 @@ test('a member DEMAND moved the turn away from is not punished for it', () => {
   // ⚠ `b` CARRIES A HEAVY WEIGHT ON PURPOSE: with both members at one reset a turn, each spends its turn inside
   // the tick it is granted and the holder is never mid-turn when demand looks — so the preemption branch is never
   // reached and the row would prove nothing. A nine-reset turn keeps `b` holding across ticks.
-  const ctx = boot({ 'reset:a': `always|turn-demand@1/3x/5`, 'reset:b': `always|turn-demand@9/3x/5`, 'reset:c': 'keepsUpgrades' },
+  const ctx = boot({ 'reset:a': `always|turn-demand@1/3x/5/0/0`, 'reset:b': `always|turn-demand@9/3x/5/0/0`, 'reset:c': 'keepsUpgrades' },
     fresh(), { keep: { 'reset:c': { layer: 'a', id: 0 } } });
   tick(ctx, 40);
   const C = cyc(ctx);
@@ -415,4 +419,97 @@ test('a member DEMAND moved the turn away from is not punished for it', () => {
   assert.deepEqual(Object.keys(C.skip).sort().join(','), '', `a preempted member collected a skip: ${JSON.stringify(C.skip)}`);
   assert.ok(acts(ctx)['reset:b'] > 0, 'the preempted member must still get turns');
   // MUTANT m9 `preemption-skips-the-preempted`: `skip` fills up and the rotation stalls.
+});
+
+// ---- R3b-2: THE DEAD-MEMBER RULE — a turn releases when its holder stops getting CLOSER -----------------------------
+//
+// ⛔ WHY THESE LEGS ARE CONSTRUCTED AND NOT READ OFF A GAME. The rule's whole subject is a member the ENGINE is
+// refusing, and what separates the two cases is a SHAPE over time — a distance that keeps setting new highs against
+// one that reaches a ceiling and stops. A stub can build both exactly; a game gives you one of them and a hash.
+// The real-game half is `gates-r3b2 --part 1`, and PTR's own numbers are in plan §39.
+
+test('R3b-2 — a refused holder that is GETTING CLOSER keeps its turn, however long that takes', () => {
+  // `a` cannot reset and its base climbs toward a requirement it will not reach inside this leg — PTR's `h`, whose
+  // Time Energy climbs for hundreds of quiet game-seconds before it can act at all. The turn must be its.
+  const state = fresh();
+  state.can.a = false; state.req.a = 1e9; state.base.a = 1;
+  const ctx = boot({ 'reset:a': `always|turn@1/100000x/5/0/20`, 'reset:b': `always|turn@1/100000x/5/0/20` }, state);
+  // ⚠ `b` TAKES THE FIRST TURN AND SPENDS IT, and that is the cycle's own first-turn rule (a cycle does not open on
+  // a member the engine is refusing). The subject of this leg is what happens AFTER the turn reaches `a`.
+  tick(ctx, 4);
+  assert.equal(cyc(ctx).holder, 'reset:a', 'the leg needs the turn to have reached `a` before it measures anything');
+  const bAt = acts(ctx)['reset:b'] || 0, skipAt = JSON.stringify(cyc(ctx).skip);
+  for (let i = 0; i < 120; i++) { state.base.a *= 1.5; tick(ctx, 1); }   // 120 game-seconds, six times the window
+  assert.equal(cyc(ctx).holder, 'reset:a', `a climbing holder was released: ${JSON.stringify(cyc(ctx))}`);
+  assert.equal(acts(ctx)['reset:b'] || 0, bAt, 'the turn stayed with `a`, so `b` must not have acted again');
+  assert.equal(JSON.stringify(cyc(ctx).skip), skipAt, 'a climbing holder must collect no NEW skip — nothing released it');
+  // MUTANT `m-r3b2-a-climbing-holder-is-released` (the guard reads the LAST distance instead of the member's best,
+  // or ignores the distance entirely): the turn moves to `b` and this row reds.
+});
+
+test('R3b-2 — a refused holder whose distance PLATEAUS loses the turn, and the row moves again', () => {
+  // PTR's `o`: it climbs for ~300 game-seconds (holding the turn is what stops a sibling wiping the row below) and
+  // then sits at 5 of 14 Super Boosters for ever. The climb must NOT cost it the turn; the plateau must.
+  const state = fresh();
+  state.can.a = false; state.req.a = 1e9; state.base.a = 1;
+  const ctx = boot({ 'reset:a': `always|turn@1/100000x/5/0/20`, 'reset:b': `always|turn@1/100000x/5/0/20` }, state);
+  tick(ctx, 4);
+  assert.equal(cyc(ctx).holder, 'reset:a', 'the leg needs the turn to have reached `a` before it measures anything');
+  const bClimb = acts(ctx)['reset:b'] || 0;
+  for (let i = 0; i < 30; i++) { state.base.a *= 1.5; tick(ctx, 1); }    // climbing: the turn is still `a`'s
+  assert.equal(cyc(ctx).holder, 'reset:a', 'the CLIMB must not cost the turn — that is the other half of this rule');
+  assert.equal(acts(ctx)['reset:b'] || 0, bClimb, 'nothing may be released while the holder is still closing distance');
+  tick(ctx, 40);                                                          // the plateau: base no longer moves
+  // ⚠ READ THE RELEASE, NOT THE HOLDER. `a` is released, skipped for a rotation, and — once `b` has spent a turn —
+  // handed the turn again, so "who holds it now" is whatever the rotation last reached. What the rule PROMISES is
+  // that the row moved at all, and a leg that asserted on the holder would go green over a build that froze on the
+  // very next round (measured: it read `reset:a` in both).
+  assert.ok(cyc(ctx).skip['reset:a'] > 0, `a plateaued holder was never released: ${JSON.stringify(cyc(ctx))}`);
+  assert.ok((acts(ctx)['reset:b'] || 0) > bClimb, `the whole point is that the OTHER member gets to act: ${JSON.stringify(acts(ctx))}`);
+  // MUTANT `m-r3b2-a-refused-holder-is-never-released` (the plateau branch removed): the row FREEZES on `a` and reds.
+});
+
+test('R3b-2 — a SIBLING’s wipe is not the holder’s failure: the mark follows the distance DOWN', () => {
+  // PTR's `h` loses base MID-TURN to row-2 spending it does not control (measured: 3.23e20 → 2.03e19 while it held
+  // the turn). Against a high-water that only ever rises, those losses accumulate until the re-climb cannot beat it
+  // inside H — and the turn is taken from the member the cycle exists to feed.
+  const state = fresh();
+  state.can.a = false; state.req.a = 1e9; state.base.a = 1e6;
+  const ctx = boot({ 'reset:a': `always|turn@1/100000x/5/0/20`, 'reset:b': `always|turn@1/100000x/5/0/20` }, state);
+  tick(ctx, 5);
+  state.base.a = 1;                       // the wipe
+  tick(ctx, 5);
+  for (let i = 0; i < 60; i++) { state.base.a *= 1.2; tick(ctx, 1); }   // a re-climb that never beats 1e6 again
+  assert.ok(state.base.a < 1e6, 'the leg must not accidentally re-reach the old high — that would prove nothing');
+  assert.equal(cyc(ctx).holder, 'reset:a', `a wipe cost the holder its turn: ${JSON.stringify(cyc(ctx))}`);
+  // MUTANT `m-r3b2-wipe-costs-the-turn` (`|| p < best` removed from the re-anchor): the turn moves and this row reds.
+});
+
+test('R3b-2 — the rule looks ONLY while the ENGINE refuses: a holder its own POLICY is refusing is `K`’s business', () => {
+  // ⛔ §34.2 item 1: "my rule says not yet" is productive waiting and the weight exists to protect it. `a` CAN reset
+  // as far as the engine is concerned and is refused by `gain>=100x`, which it can never meet; its distance is
+  // pinned at its requirement and never rises, so a rule that looked here would release it on every window.
+  const state = fresh();
+  state.can.a = true; state.gain.a = 1; state.req.a = 1; state.base.a = 1;
+  const ctx = boot({ 'reset:a': `gain>=100x|turn@1/100000x/5/0/20`, 'reset:b': `always|turn@1/100000x/5/0/20` }, state);
+  ctx.player.a.points = new Decimal(1000);       // so `100x what is held` is out of reach for ever
+  tick(ctx, 80);
+  assert.equal(cyc(ctx).holder, 'reset:a', `the dead-member rule released a holder the ENGINE would have allowed: ${JSON.stringify(cyc(ctx))}`);
+  // ⇒ this is why `K` is NOT retired by R3b-2: it is the only bound over this refusal, and the two rules never
+  // meet. The same construction with a finite `K` and an interval of its own IS released — that is R3's own leg.
+  // MUTANT `m-r3b2-rule-ignores-the-engine` (the `engineAllows` test dropped): the turn moves and this row reds.
+});
+
+test('R3b-2 — a member that has NEVER reset can still take its FIRST turn the moment the engine allows it', () => {
+  // ⚠ V4's wall, one level up: a layer UNLOCKS ON ITS FIRST RESET, so a rule that pauses for a member with no
+  // history walls the run. "Getting closer" at a fraction of ~0 must mean "anything at all is a new best".
+  const state = fresh();
+  state.can.a = false; state.req.a = 100; state.base.a = 1;
+  const ctx = boot({ 'reset:a': `always|turn@1/100000x/5/0/20`, 'reset:b': `always|turn@1/100000x/5/0/20` }, state);
+  tick(ctx, 40);                                   // `a` is refused and flat: the turn has gone to `b` by now
+  assert.ok(acts(ctx)['reset:b'] > 0);
+  state.can.a = true; state.base.a = 100;          // the engine relents
+  tick(ctx, 40);
+  assert.ok(acts(ctx)['reset:a'] > 0, `a member with no history never got its first turn: ${JSON.stringify(acts(ctx))}`);
+  // MUTANT: "a member with no remembered reset is passed over" — `a` never acts and this row reds.
 });

@@ -936,7 +936,7 @@ something, `gates-v2 --part 1`): the strategies are generic, so no game can have
 ### MODIFIERS: a strategy that rides on another one
 
 A policy may carry **one modifier**, appended with `|`: `gain>=2x|stall>=3x/5`, `sequential|give-up@0.1/30/2x`,
-`gain>=2|turn@20/30x/5`. There are **four** today — `stall>=Kx/N`, `turn@W/Kx/N` and `turn-demand@W/Kx/N` on `reset`,
+`gain>=2|turn@20/30x/5/0/0`. There are **four** today — `stall>=Kx/N`, `turn@W/Kx/N` and `turn-demand@W/Kx/N` on `reset`,
 and `give-up@B/H/Rx` on `challenges`, all below — and the grammar, the validator and the editors took every one of
 them from one more table row and no code at all (⚖ minimize hardcoding: `T.modifiers(kind)` is what the Advanced
 view renders, so a modifier on a new kind needs no new `tmtl-*` component and `componentNames` does not move).

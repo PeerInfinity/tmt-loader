@@ -279,6 +279,43 @@
   // ⛔ SO IT IS A MODIFIER, NOT A POLICY OF ITS OWN. The primary rule still decides; the fallback only fires when the
   // primary has been saying no for K times as long as this feature's own resets have been taking. A policy that
   // REPLACED the primary would lose exactly the rule the player chose.
+  // ---- R3b-2: THE DEAD-MEMBER RULE — a turn releases when its holder stops getting CLOSER ---------------------------
+  // ⛔ THE DEFECT THIS EXISTS FOR, MEASURED (plan §32.4, §33 row (f), and reproduced by this slice from
+  // `all/M21.json` with the guard off): PTR's row 3 has FOUR active reset members once `h` unlocks — `h, q, o, ss` —
+  // and the rotation reaching `o` FREEZES THE ROW. The trace is unambiguous: from 28950 on, `o` holds the turn with
+  // `tmp.o.baseAmount` FLAT at 5 of 14 Super Boosters and `tmp.ss.baseAmount` flat at 17 of 28, for 1,100+ game-
+  // seconds and still counting, while `h` (4.4e33 of 1e30) and `q` both read `canReset === true` and cannot act.
+  // The guard `K× the usual wait between this layer's resets` is blind to it by construction: `o` has never reset,
+  // so it has no interval of its own and therefore NO BOUND AT ALL (the pooled fallback was measured starving `h`,
+  // plan §32.1 item 2). The working arrangement carried `exclude=reset:o,reset:ss` — an override naming two layers,
+  // which is the thing the loader is not allowed to know.
+  //
+  // ⛔ AND THE PREMISE THE PLAN HANDED THIS RULE IS WRONG IN ITS DETAIL — MEASURED BEFORE IT WAS BUILT. §32.4a and
+  // the brief both say the discriminator is that *"`tmp.h.baseAmount` RISES toward its threshold for the whole of
+  // `h`'s wait and `ss`'s does not move"*. `ss`'s DOES move: while it holds the turn nothing on its row can wipe
+  // row 2, so its base climbs 0 → 17 (and `o`'s 0 → 5) over ~300 game-seconds — and THEN plateaus for ever. Both
+  // dead members spend their first five minutes getting genuinely closer. So "is it moving?" does not separate them
+  // from `h`; what separates them is that `h` keeps setting NEW HIGHS until it crosses, and `o`/`ss` never beat a
+  // high they reached once. ⇒ the anchor is the member's BEST engine-distance so far, not its last one.
+  //
+  // ⚖ THE SHAPE IS R3a's GIVE-UP RULE, APPLIED TO A TURN (plan §30.2 item 2, §32.4a): *in the last H game-seconds,
+  // did this holder close more than a fraction B of what was LEFT to close?* Every term is the ENGINE'S OWN — the
+  // fraction is `tmp[l].baseAmount` toward the very threshold `canReset` compares it against — and `turnDistance`
+  // is the one place that knows which threshold that is. No layer name, no game id, no clock in any game's units
+  // beyond the buffer H the player sets, exactly as R3a's `B`/`H` are.
+  // ⛔ B DEFAULTS TO 0 AND THAT IS THE MEASURED ANSWER, NOT A TIMID ONE. `@0/H` is R3a's own control — "release only
+  // when the distance stops dead" — and it is what the plateau above needs: `o` beats its best by SOMETHING every
+  // ~50 game-seconds while it climbs and by exactly nothing afterwards. It also makes the reading of the fraction
+  // (linear or logarithmic) IRRELEVANT, because a strict increase is a strict increase under either — which is why
+  // this rule can reuse `ratio()` where R3a's had to take logs.
+  // ⛔ AND IT ONLY EVER LOOKS WHILE THE ENGINE IS REFUSING. A holder the engine WOULD allow is not waiting on the
+  // game, it is waiting on its own policy — "my rule says not yet" is productive waiting (§34.2 item 1), the weight
+  // exists to protect it, and the backstop for it is `K`. ⇒ `K` IS NOT RETIRED: the two rules answer two different
+  // refusals and neither can see the other's. That is structural, and the sweep measures it.
+  var TURN_BH = [
+    { name: 'b', type: 'fraction', placeholder: 'B', default: '0', label: 'must close this fraction of what is left' },
+    { name: 'h', type: 'seconds', placeholder: 'H', default: '100', label: 'give the turn up after this long without getting closer' },
+  ];
   var MODIFIERS = [
     // ⚠ `readout: 'stall'` — R3a. `T.stallState(id)` is called for EVERY feature by `explain()`, and until this
     // slice it could assume that "has a modifier" meant "has THIS modifier". With a second modifier on another kind,
@@ -363,7 +400,7 @@
     // with Hindrance Spirit at ONE, which is the state before this slice. ⚠ The cost is named rather than
     // smoothed: a member that can NEVER act holds its row's turn for ever, and what protects against that is the
     // player's own `while` and the demand link — not a number this file could derive.
-    { kind: 'reset', template: 'turn@{w}/{k}x/{n}', readout: 'turn', cycle: true, label: 'Take turns with the same row',
+    { kind: 'reset', template: 'turn@{w}/{k}x/{n}/{b}/{h}', readout: 'turn', cycle: true, label: 'Take turns with the same row',
       help: 'Reset only when it is this layer’s turn among the resets of its ROW, and take W resets per turn — so two same-row resets that wipe each other’s input stop racing. Inside its turn the layer still follows its own rule.',
       params: [
         { name: 'w', type: 'count', placeholder: 'W', default: '1', min: 1, label: 'resets in one turn' },
@@ -386,7 +423,7 @@
         // threshold (plan §32.4a), and until that exists K is a backstop and is set to behave like one.
         { name: 'k', type: 'factor', placeholder: 'K', default: '30', min: 1, label: 'give the turn up after K× the usual wait between this layer’s resets' },
         { name: 'n', type: 'count', placeholder: 'N', default: '5', min: 1, label: 'resets remembered' },
-      ] },
+      ].concat(TURN_BH) },
     // ⚖ 13d.2, AND IT IS THE SAME MECHANISM WITH ONE MORE LINK. A weight is a literal; the ⚖-shaped question is
     // "who is actually WAITING?" — and the loader already answers it, because V1 made every refusal a DECISION CODE
     // carrying the values it compared. A code may now declare WHICH of its values names the layer it is waiting ON
@@ -397,13 +434,13 @@
     // ⚠ ONE MEMBER ASKING FOR IT IS ENOUGH for the whole row, because demand only ever hands a turn to a member
     // something is waiting on — the most a member that did not ask for it can lose is its place in the rotation,
     // which the guard above already allows.
-    { kind: 'reset', template: 'turn-demand@{w}/{k}x/{n}', readout: 'turn', cycle: 'demand', label: 'Take turns, and give the turn to whoever is waited on',
+    { kind: 'reset', template: 'turn-demand@{w}/{k}x/{n}/{b}/{h}', readout: 'turn', cycle: 'demand', label: 'Take turns, and give the turn to whoever is waited on',
       help: 'As “take turns with the same row”, except that whenever something in the game is waiting for a quantity of one member’s layer, that member gets the next turn.',
       params: [
         { name: 'w', type: 'count', placeholder: 'W', default: '1', min: 1, label: 'resets in one turn' },
         { name: 'k', type: 'factor', placeholder: 'K', default: '30', min: 1, label: 'give the turn up after K× the usual wait between this layer’s resets' },
         { name: 'n', type: 'count', placeholder: 'N', default: '5', min: 1, label: 'resets remembered' },
-      ] },
+      ].concat(TURN_BH) },
   ];
   // ---- V5: RETRY CONDITIONS — what a challenge that was given up waits for before it is tried again ------------------
   // ⚖ THE USER'S REQUEST, VERBATIM (2026-09-20): "In the advanced automation tab, we will want more options for the
@@ -1239,10 +1276,33 @@
   // a hardcoded kind would have looked up a `reset` row for an `upgrades` feature. A kind whose strategies declare no
   // `progress` has no fraction and ranks last, which is the same answer `unlocks-purchase` already gets.
   function progressOf(g, P, d) {
+    // ⚠ ONE PLACE KNOWS WHICH THRESHOLD THE ENGINE COMPARES AGAINST, and it is `turnDistance` (R3b-2). A static
+    // layer's strategies have no useful fraction of their own — `gain>=1` on one is `1 of 1` for ever — so this
+    // branch has always been the engine's own distance, and it is now the engine's own distance BY NAME.
+    // ⚠ The NORMAL branch is deliberately NOT moved onto it: this fraction is the stall arbiter's, and the arbiter
+    // asks *"how far into its own TARGET is this refusal"* — a policy question, whose answer is the policy's. Every
+    // caller of this function has already established `canReset === true`, so the engine's distance would read 1.0
+    // for all of them and the arbiter would have nothing to rank by. R3b-2's rule asks the opposite question about
+    // the opposite case (a holder the ENGINE refuses), which is why it calls `turnDistance` directly.
     var t = tmp[g.layer] || {};
-    if (g.kind === 'reset' && t.type === 'static') return ratio(t.baseAmount, t.nextAt);
+    if (g.kind === 'reset' && t.type === 'static') return turnDistance(g);
     var S = P ? byStrategyId(g.kind, P.id) : null;
     return S && S.progress ? S.progress(g, d && d.values) : null;
+  }
+  /**
+   * ⛔ THE ENGINE'S OWN DISTANCE TO BEING ALLOWED TO RESET, and it mirrors `canReset` BRANCH FOR BRANCH
+   * (each game's own `js/game.js`): a NORMAL layer resets when `baseAmount >= requires`, a STATIC one when
+   * `baseAmount >= nextAt`. Reading `requires` for a static layer is the V1 §16.3 item 8 trap — on PTR's `ss` the
+   * two differ (28 against its `requires`), so the fraction would be measured against a bar the engine does not use.
+   * A `custom` or `none` layer declares no threshold this file can read (its `canReset` is the game's own function),
+   * so it has NO distance and every rule built on one must say so rather than guess: `null`.
+   */
+  function turnDistance(f) {
+    var t = tmp[f.layer];
+    if (!t) return null;
+    var goal = t.type === 'static' ? t.nextAt : t.type === 'normal' ? t.requires : null;
+    if (goal === undefined || goal === null) return null;
+    return ratio(t.baseAmount, goal);
   }
   function r1(x) { return Math.round(Number(x) * 10) / 10; }
 
@@ -1268,15 +1328,19 @@
   // The DEFAULTS a bound member that declares nothing runs under — read off the `turn@W/Kx/N` row's own parameters,
   // never written twice (⚖ minimize hardcoding: moving a default is moving one table row).
   function turnDefaults() {
-    var M = byStrategyId('reset', 'turn@W/Kx/N'), o = { w: 1, k: 3, n: 5 };
+    // ⚠ The fallback object is what a build with no such row would run under, and it is INERT by construction: `h`
+    // of 0 makes R3b-2's dead-member rule silent (it needs a positive window), exactly as `w` of 1 makes the weight
+    // silent. The live values come from the row below it.
+    var M = byStrategyId('reset', 'turn@W/Kx/N/B/H'), o = { w: 1, k: 3, n: 5, b: 0, h: 0 };
     if (!M) return o;
     for (var i = 0; i < M.params.length; i++) o[M.params[i].name] = Number(M.params[i].default);
     return o;
   }
   function turnParams(f) {
     var m = turnMod(f), d = turnDefaults();
-    if (!m) return { w: Math.max(1, Math.round(d.w)), k: d.k, n: Math.max(1, Math.round(d.n)), carrier: false };
-    return { w: Math.max(1, Math.round(Number(m.params.w))), k: Number(m.params.k), n: Math.max(1, Math.round(Number(m.params.n))), carrier: true };
+    if (!m) return { w: Math.max(1, Math.round(d.w)), k: d.k, n: Math.max(1, Math.round(d.n)), b: Number(d.b), hold: Number(d.h), carrier: false };
+    return { w: Math.max(1, Math.round(Number(m.params.w))), k: Number(m.params.k), n: Math.max(1, Math.round(Number(m.params.n))),
+      b: Number(m.params.b), hold: Number(m.params.h), carrier: true };
   }
   function rowOf(f) { try { var r = layers[f.layer] && layers[f.layer].row; return r === undefined ? null : r; } catch (e) { return null; } }
   // ⚠ READ-ONLY, and that is why it is not `untilStep` / `whileStep`. Those two LATCH and they write — calling them
@@ -1345,7 +1409,31 @@
   //   'ineligible' the member was paused, stopped, or left the row → nothing remembered, nothing skipped
   function endTurn(C, id, how) {
     if (how === 'released') C.skip[id] = C.round + Math.max(1, C.ids.length);
-    C.holder = null; C.left = 0; C.since = null; C.acted = null;
+    C.holder = null; C.left = 0; C.since = null; C.acted = null; C.closer = null;
+  }
+  // ⛔ R3b-2's ANCHOR IS THE MEMBER'S BEST DISTANCE SO FAR, AND IT SURVIVES ITS TURNS. A per-turn anchor measures
+  // "did it climb since this turn began", which is TRUE OF THE DEAD MEMBERS — `o` climbs 0 → 5 of 14 every turn it
+  // is given, because holding the turn is what stops a sibling wiping the row below. What it never does is beat a
+  // high it has reached once. So `best` is the run's high-water for that member, and a member that cannot better it
+  // for `H` game-seconds while the ENGINE is refusing it has nothing this turn can buy.
+  // ⚠ AND A DROP RE-ANCHORS DOWNWARD, which is the brief's own question — *"a holder whose progress was destroyed by
+  // a SIBLING is not 'not getting closer' in the sense that should cost it the turn — or is it?"* — answered by
+  // measurement: it is NOT. PTR's `h` loses base MID-TURN to row-2 spending it does not control (3.23e20 → 2.03e19
+  // between two samples 25 game-seconds apart, measured while `h` held the turn), and against a high-water that only
+  // ever rises those losses accumulate until the re-climb cannot beat it inside `H` and the turn is taken from the
+  // one member the cycle exists to feed. A drop is evidence about the ROW, not about the holder, so the mark follows
+  // it down and the clock restarts. `m-r3b2-wipe-costs-the-turn` is the mutant that removes this and it reddens.
+  function noteCloser(C, f, now) {
+    var p = turnDistance(f);
+    if (p === null) { C.closer = now; return null; }   // no threshold this file can read ⇒ the rule abstains
+    if (!C.best) C.best = {};
+    var best = C.best[f.id];
+    if (best === undefined) { C.best[f.id] = p; C.closer = now; return p; }
+    var gap = 1 - best, need = gap > 0 ? turnParams(f).b * gap : 0;
+    // ⚠ STRICTLY GREATER, R3a's own reason: at B = 0 a plateau closes exactly 0 of 0, and `>=` would read that as
+    // progress and never release — which is the state the rule exists to leave.
+    if (p - best > need || p < best) { C.best[f.id] = p; C.closer = now; }
+    return p;
   }
   /** ⛔ WHAT THE GUARD IS LATE AGAINST, AND THE MEASUREMENT THAT DECIDED IT — read the modifier row. */
   function pushCycleInterval(f, prev) {
@@ -1364,6 +1452,9 @@
     C.left = turnParams(f).w;
     C.since = Number(player.timePlayed) || 0;
     C.acted = null;
+    // R3b-2: the dead-member clock starts with the turn. `best` is NOT cleared — it is the member's high-water for
+    // the whole run, and clearing it here would hand every member a fresh climb to re-run on every rotation.
+    C.closer = C.since;
     // ⚠ THE FIRST WAIT IS AN INTERVAL TOO — `stallSince`'s precedent, for `stallSince`'s reason (§V2): a member
     // whose first reset had no predecessor has ZERO intervals and would hold its turn for ever. The clock starts
     // the moment it is handed a turn.
@@ -1426,7 +1517,7 @@
       var active2 = R.members.length >= 2;
       if (!active2 && !cycles[R.key]) continue;
       seen[R.key] = 1;
-      var C = cycles[R.key] || (cycles[R.key] = { holder: null, left: 0, since: null, acted: null, round: 0, at: -1, mem: {}, skip: {}, arm: {} });
+      var C = cycles[R.key] || (cycles[R.key] = { holder: null, left: 0, since: null, acted: null, closer: null, round: 0, at: -1, mem: {}, skip: {}, arm: {}, best: {} });
       C.ids = R.members.map(function (g) { return g.id; });
       C.demand = R.demand;
       C.dormant = !active2;
@@ -1435,6 +1526,18 @@
       if (C.holder && (!byId[C.holder] || C.ids.indexOf(C.holder) < 0 || cyclePaused(byId[C.holder]))) endTurn(C, C.holder, 'ineligible');
       if (C.holder) {
         var h = byId[C.holder], typ = typicalTurn(C, h);
+        // ⛔ R3b-2 — THE DEAD-MEMBER RULE, AND IT LOOKS ONLY WHILE THE ENGINE IS REFUSING. A holder the engine WOULD
+        // allow is waiting on its own policy, which is productive waiting the weight exists to protect (§34.2
+        // item 1); its backstop is `K` below, and the two rules never see each other's case. The modifier row above
+        // carries the whole argument and the trace that measured it.
+        if (!engineAllows(h)) {
+          if (C.closer === null || C.closer === undefined) C.closer = now;
+          noteCloser(C, h, now);
+          var hold = turnParams(h).hold;
+          if (hold > 0 && (now - C.closer) >= hold) endTurn(C, C.holder, 'released');
+        } else { C.closer = now; }
+      }
+      if (C.holder) {
         // ⛔ SINCE ITS LAST ACT, NOT SINCE THE TURN BEGAN. A turn of weight W spans W resets; measuring from the
         // turn's start compares one member's WHOLE turn against the wait for ONE of its resets, so any weight
         // above 1 is released mid-turn and the weight stops meaning anything (measured: weight 5 and weight 20
@@ -1499,6 +1602,13 @@
       typical: (function () { var t = typicalTurn(C, f); return t === null ? null : r1(t); })(),
       ownTypical: (function () { var t = ownTypical(C, f); return t === null ? null : r1(t); })(),
       resets: (C.mem[f.id] || []).length,
+      // R3b-2: what the dead-member rule can see about THIS member — the engine's own distance to being allowed to
+      // reset, the best it has ever reached, and how long it has gone without bettering it. `sinceCloser` is the
+      // HOLDER's clock, so it is null for anybody else: a member that is not holding a turn is not on one.
+      distance: (function () { var d = turnDistance(f); return d === null ? null : d; })(),
+      best: C.best && C.best[f.id] !== undefined ? C.best[f.id] : null,
+      sinceCloser: C.holder === f.id && C.closer !== null && C.closer !== undefined ? r1((Number(player.timePlayed) || 0) - C.closer) : null,
+      hold: turnParams(f).hold, bar: turnParams(f).b,
       turns: (C.mem[f.id] || []).length, skipped: C.skip[f.id] > C.round,
       why: C.holder === f.id ? null : (h ? 'it is ' + h.layer + '’s turn' : 'no member of this row can take a turn') };
   };
@@ -1508,7 +1618,8 @@
     for (var k in cycles) {
       var C = cycles[k], h = byId[C.holder];
       o[k] = { members: C.ids.slice(), holder: C.holder, holderLayer: h ? h.layer : null, left: C.left,
-        since: C.since, round: C.round, demand: !!C.demand, dormant: !!C.dormant, typical: {}, own: {}, turns: {}, skip: Object.assign({}, C.skip) };
+        since: C.since, closer: C.closer === undefined ? null : C.closer, round: C.round, demand: !!C.demand, dormant: !!C.dormant,
+        typical: {}, own: {}, turns: {}, distance: {}, best: {}, skip: Object.assign({}, C.skip) };
       // ⚠ `typical` is the EFFECTIVE bound (a member's own turns, else the row's pooled ones); `own` is the
       // member's own median with no fallback, and `turns` how many of its own COMPLETED turns are remembered. A
       // gate that asked only the effective one could not tell "this member has a history" from "the row does".
@@ -1517,6 +1628,8 @@
         o[k].typical[C.ids[i]] = t === null ? null : r1(t);
         o[k].own[C.ids[i]] = ot === null ? null : r1(ot);
         o[k].turns[C.ids[i]] = (C.mem[C.ids[i]] || []).length;
+        o[k].distance[C.ids[i]] = turnDistance(g);
+        o[k].best[C.ids[i]] = C.best && C.best[C.ids[i]] !== undefined ? C.best[C.ids[i]] : null;
       }
     }
     return o;
@@ -2829,8 +2942,9 @@
     for (var yi in cycles) {
       var YC = cycles[yi];
       cy[yi] = { holder: YC.holder, left: YC.left, since: YC.since, acted: YC.acted === undefined ? null : YC.acted,
+        closer: YC.closer === undefined ? null : YC.closer,
         round: YC.round, at: YC.at, mem: JSON.parse(JSON.stringify(YC.mem)), skip: Object.assign({}, YC.skip),
-        arm: Object.assign({}, YC.arm || {}) };
+        arm: Object.assign({}, YC.arm || {}), best: Object.assign({}, YC.best || {}) };
       ncy++;
     }
     if (ncy) o.cycle = cy;
@@ -2908,8 +3022,9 @@
       cycles[k] = { holder: rc.holder === undefined ? null : rc.holder, left: Number(rc.left) || 0,
         since: rc.since === null || rc.since === undefined ? null : Number(rc.since),
         acted: rc.acted === null || rc.acted === undefined ? null : Number(rc.acted), round: Number(rc.round) || 0,
+        closer: rc.closer === null || rc.closer === undefined ? null : Number(rc.closer),
         at: rc.at === undefined ? -1 : Number(rc.at), mem: JSON.parse(JSON.stringify(rc.mem || {})),
-        skip: Object.assign({}, rc.skip || {}), arm: Object.assign({}, rc.arm || {}), ids: [] };
+        skip: Object.assign({}, rc.skip || {}), arm: Object.assign({}, rc.arm || {}), best: Object.assign({}, rc.best || {}), ids: [] };
     }
     for (k in chAttempt) delete chAttempt[k];
     for (k in rt.challengeAttempt || {}) chAttempt[k] = Object.assign({}, rt.challengeAttempt[k]);
