@@ -33,7 +33,8 @@ const rows = [];
 const row = (r) => { rows.push(r); console.log(`${r.ok ? 'GREEN' : 'RED  '} ${r.gate} ${r.id} ticks=${r.ticks ?? '-'} gs=${r.gameSeconds ?? '-'} hash=${r.hash ?? '-'} ${String(r.notes || '').slice(0, 400)}`); };
 
 const PTR_LADDER = 'tools/harness/ladder/ptr.json', ST_LADDER = 'tools/harness/ladder/something.json';
-const SNAP = { M02: 'tools/harness/snapshots/ptr/all/M02.json', M09: 'tools/harness/snapshots/ptr/all/M09.json' };
+// F1: the pre-F1 `all/` fixtures, preserved byte-for-byte under `pre-f1/` — this historical gate's pins were measured from them
+const SNAP = { M02: 'tools/harness/snapshots/ptr/pre-f1/M02.json', M09: 'tools/harness/snapshots/ptr/pre-f1/M09.json' };
 const FRONTIER = 'tools/harness/snapshots/ptr/frontier/STALL.json';
 const ST_DIR = 'tools/harness/snapshots/something/all';
 // The SIMPLE system's opening, measured (A1-3 / A2-2 / A2-3, re-pinned S1-1 @777eceeb; the ladder's `source.reached`).

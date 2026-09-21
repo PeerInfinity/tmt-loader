@@ -42,7 +42,9 @@ const rows = [];
 const row = (r) => { rows.push(r); console.log(`${r.ok ? 'GREEN' : 'RED  '} ${r.gate} ${r.id} ticks=${r.ticks ?? '-'} gs=${r.gameSeconds ?? '-'} diff=${r.diff ?? '-'} hash=${r.hash ?? '-'} ${String(r.notes || '').slice(0, 300)}`); };
 
 const PTR_LADDER = 'tools/harness/ladder/ptr.json', ST_LADDER = 'tools/harness/ladder/something.json';
-const SNAP = { pinned: 'tools/harness/snapshots/ptr/pinned', all: 'tools/harness/snapshots/ptr/all' };
+// F1: `all/` was regenerated as ONE fresh chain under the post-F1 defaults; this historical gate reads the fixtures it was
+// written against, preserved byte-for-byte under `pre-f1/` (a fixture is a measurement of a CONFIGURATION, and is named by it).
+const SNAP = { pinned: 'tools/harness/snapshots/ptr/pinned', all: 'tools/harness/snapshots/ptr/pre-f1' };
 // R1′: `reset:p interval>=10` was the ptr TABLE's default when every H1 number and every committed ptr snapshot was
 // measured; this slice moved the table to `gain>=2x` (games-auto/ptr.js). H1's rows and its snapshot fixtures therefore
 // name the policy explicitly — a pin is a measurement of a POLICY, not of which one the table happens to name. The
