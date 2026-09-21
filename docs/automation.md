@@ -1390,6 +1390,20 @@ it on 412 layers — at boot 258 read as a JS number, 67 as a Decimal, 23 as a b
 no `else`), 1 `null`; by layer type 345 normal, 19 static, 20 custom, 3 `none`, 25 untyped. 19 layers pay FROM BOOT,
 two of them PARTIALLY (`weakling-tree` `w` 10 %/s; `the-cookie-tree` `rng` 0.0034 %/s).
 
+### How often a reset should fire, at the page's tick — what F1 measured (Part 3)
+
+⚖ The user (2026-09-21): *"At some point we should experiment with deliberately slowing down the resets, and seeing what
+that changes."* Scored at `diff 0.05` (the page's tick; `docs/harness.md` THE TICK POLICY), whole stretches, every cell
+twice equal (gate `gates-f1 --part 3`; plan §48 carries the full curves):
+
+| layer (stretch) | the throttles | reading |
+|---|---|---|
+| `p` before passive PP (fresh → M04) | M04: `gain>=2x` **1324** · 4× 1576 · 8× 1790.55 · 16× 2422.25; gap 5 s 1648.05 · 20 s 2636.7 · 60 s not by 4000; `rate-peak` 0/0, 0.3/60, 0.5/120 not by 4000, 0.1/30 3547 | **rarer is never better**: `p`'s gain is what buys the next upgrade, and waiting only delays it |
+| `e` (`all/M15` → M16, pre-F1 fixture) | M16 − 16048: `gain>=2x` 60.95 · 4× 49.15 · 8× 45.45 · 16× **42.25**; gap 20 s **26.1** · 60 s 46; `rate-peak` 0/0 28, 0.1/30 71.05, 0.3/60 125.55 | **rarer IS better on the short stretch** — the ratio monotone to 64× (35.45), the gap proxy flat 5–40 s (22.25–26.1) and worse at 60 s: an INTERIOR optimum. ⛔ **But not over the WHOLE stretches**: `e gain>=16x` is 7.3 s faster to M12 over the opening and **2,518.6 s SLOWER** to M25 over the long row-3 stretch (27625.4 against 25106.8; M17 22989.35 → 24545.05). `e`'s table entry stays `gain>=2x` — R2's rule, again: a short stretch is not a default's score |
+| `q` (the long row-3 stretch) | `gain>=2` M25 25106.8; `gain>=4` / `gain>=8`: `q` never makes its FIRST reset, so it never unlocks — the run stays at M16 | **rarer walls**: a layer unlocks on its first reset (V4) |
+| masking row 1 (static `b`/`g` wipe `p`) | gap 5 s: M08 4162.8; gap 30 s: M08 not by 6629 (control 3205.95) | worse: `b`/`g` are STATIC, a throttle only delays purchases |
+| masking row 3 (`q`/`h` wipe row 2) | `q,h` gap 60 s: M25 26541.5 (control 25106.8) | worse |
+
 ### The derived default for the `challenges` kind (R3a)
 
 **Without an `order` it is `off`, and it stays `off`.** A KIND default reaches every game on the roster, and the
@@ -1588,6 +1602,18 @@ never from `updateTemp` (`autoPrestige` is not a hook: it is a predicate both en
 TMT 2.2.1's `gameLoop` skips `automate` for a layer the player has not unlocked; for those, the `au` layer's own
 `automate` — called after every tree layer — runs the features of each hooked layer whose slot did not run. Every hooked
 layer's features run exactly once per tick (`tmtLoader.hookStats()` counts it; gate A1-1).
+
+⛔ **F1 FOUND THAT ADDING THE `au` LAYER COULD SWITCH OFF A GAME'S OWN PER-LAYER LOOP, AND REPAIRS IT.** The 2.6
+engines keep `maxRow` as the largest `displayRow` `setupLayer` has seen (`if (maxRow < displayRow) maxRow = displayRow`),
+and a game that declares its rows as STRINGS (`row: "4"`) leaves it the string "4" — so when `updateLayers` reaches
+`au`, whose row is `"side"`, `"4" < "side"` is TRUE: `maxRow` became `"side"`, `TREE_LAYERS` was rebuilt EMPTY, and the
+game loop's `for (x = 0; x <= maxRow; x++)` — passive generation, every layer's `update()` — never ran on the automation
+page. 4 of 171 games (the-pro-tree, the-danus-tree, create-incremental, gooby-cat-tree); the plain page is untouched.
+`au`'s own `automate` (the only hook the loader has) repairs it: when `maxRow` is `"side"` it REPLAYS the engine's own
+`setupLayer` / `updateLayers` arithmetic over every layer but `au` and sets `maxRow` and `TREE_LAYERS` to exactly what
+the plain page computes (`tmtLoader.maxRowRepairs` counts it). ⚠ "The largest numeric row" was the first cut and
+CRASHED the-pro-tree, whose plain STRING `maxRow` "9" bounds loops that a numeric 11 walked past. Gate `gates-f1
+--part rows` (CI job `f1-rows`): plain boot ≡ automation boot in `maxRow` and `TREE_LAYERS`, all 171, one tick each.
 
 ## The data table (`games-auto/<id>.json`)
 
@@ -2111,6 +2137,13 @@ states it was read in (fresh, and the deepest `all/M*` snapshot where there is o
     (a row measured before a table lifted an exclusion cannot be reproduced without it — the A2 pins in `gates-s1` name
     `exclude=buyables:t` for exactly that reason) and what a sweep needs to switch one feature off without inventing an
     `off` policy for every kind. An unknown id, or one the table already excludes, throws;
+  - `resetDefault=<policy>` — (F1) the DERIVED reset default for a normal / custom layer (`gain>=2x|stall>=5x/5`
+    since F1), so the default itself can be swept with controls; a table entry and a player's edit still outrank it;
+    a policy the reset kind refuses THROWS;
+  - ⚖ the labelled PROXY throttle (F1 Part 3; ⚖ 13d.2: never a default): `while:<id>=tmtLoader.sinceReset('<id>') >= T`
+    holds a feature's own rule back until T game-seconds have passed since that feature last reset.
+    `tmtLoader.sinceReset(id)` is the core's own clock (Infinity before the first reset), and `tmtLoader.fallbackFires`
+    counts, per feature, the resets the stall fallback fired (the "fallback fires on a patient rule" hunt);
   - `passiveYield=off|<x>` — (F1) the passive-generation yield (below): `off` switches it off, `<x>` (a number ≥ 0) is
     the rate the game's `passiveGeneration` must EXCEED for a reset to yield; default `0`. A table may carry it in its
     `options`. Anything else THROWS. ⛔ Every HISTORICAL pin names `off` (`tools/harness/lib.mjs` `PRE_F1`,

@@ -248,6 +248,32 @@ rewritten by the same leg and are the SAME state as the committed files. The rea
 ⚠ Two selectors, two orders: `deepestSnapshot` sorts by ticks and `snapshotOf` by mark number. They agree today; a
 mark reached OUT of ladder order (M26 is reached after M27) makes them disagree the day its fixture lands.
 
+⛔ **F1 REGENERATED `all/` AS ONE CHAIN FROM A FRESH GAME, AND MOVED THE SELECTORS AGAIN.** Until F1 the ladder's
+absolute numbers were chained from MIXED-AGE fixtures — M01–M10 written under the A2 policies, M11–M16 under R1′'s
+table, M16–M27 resumed from `all/M15.json` (~8,000 game-s of legacy at M15, found by the milestone-suppression arc).
+F1's `gates-f1 --part fix` runs the shipped table + the passive yield + the derived `gain>=2x|stall>=5x/5` from a
+FRESH game at `diff 1`, 100,000 ticks, TWICE in CI, and commits the 27 fixtures its twins wrote byte-equal: M12
+14909 → **6862**, M15 16048 → **8168**, M22 30618 → **23262**, M25 35613 → **28260**, M27 40905 → **33546**, M26
+83707 → **76931** (every mark, old → new, in the fixture commit and plan §48). The OLD files are kept byte-for-byte
+under **`snapshots/ptr/pre-f1/`** — a fixture is a measurement of a configuration — and every gate written before F1
+resumes from THEM and names the pre-F1 configuration on its pinned parts (`run.mjs` appends `TMT_NAMED_CONFIG` = `lib.mjs`
+`PRE_F1` to the leg's `--auto-opt`; a key the leg names itself wins), so each of their pins reproduces to the hash.
+
+| reader | what it selects | after F1 |
+|---|---|---|
+| `tools/harness/page.mjs` | `deepestSnapshot('ptr')` (most TICKS over `frontier/`, `all/`, `pinned/`) | `all/M26.json` (76,931 ticks) — the UI arc's DETECTED / progress figures in `docs/mobile.md` are owed a re-measurement (not edited here) |
+| `tools/harness/cost-layerlist.mjs` | the same call, unless `--fresh-only` | the layer-list cost figures move with it |
+| `tools/harness/lib.mjs` `shardCost` | the same save | nothing: `ptr` has a measured cost in `shard-costs.json` |
+| `tools/currency-data.mjs` `snapshotOf` | the highest `all/M<n>` by MARK NUMBER | `all/M27` — `games-data/ptr.json` regenerated: **0 changed** |
+| `tools/harness/shots-v5.mjs` | `all/M22.json` by name | the new M22 (a screenshot tool, run by hand) |
+| gates v1–v5, c1, r3, r3b, r3b2, r3c 0/1, h1, p1a, p1b, and `gates-f1`'s resumed stretches | `pre-f1/` by name | nothing — they read the fixtures they were measured from |
+| `gates-r3c --part 2 / 2f`, `gates-f1 --part fix`, `gates-r2 --part 2`, `gates-v4 --part fix`, `gates-r3 --part 4` | `all/` by name | the fixture WRITERS and the shipped rung: they continue from the new chain (r3c part 2's horizon 66048 → 58168) |
+
+⚠ In the new chain several predicates hold OUT OF LADDER ORDER (noted since R3c): M10 5939 < M09 6451, M13 4492 before
+M11, M14 = M11 (6815), M26 after M27. The ladder's `diff` fields are H1's coarse-tick calibration and are unchanged.
+⚠ A HARNESS TRAP carried from the milestone arc, not fixed here (not in F1's path): with `--until` AND marks together,
+`boot.mjs:347` does not record a mark that first holds ON THE STOPPING TICK.
+
 ## Scoring a DEFAULT: over WHOLE STRETCHES, never from the fixture the old default wrote (R2)
 
 ⛔ **A fixture bakes in the policy that produced it, and a layer UNLOCKS ON ITS FIRST RESET.** The two together make
