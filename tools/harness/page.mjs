@@ -3687,59 +3687,173 @@ async function gateMobile(browser, base, ids) {
       row.resStickyBeforeOk = row.resSticky.beforeOk !== false;
       row.resStickyAfterOk = row.resSticky.afterOk !== false || /abstains/.test(String(row.resSticky.verdict));
 
-      // --- U11 leg R: A RESET LIGHTS THE LAYER'S CIRCLE, ONCE, AND IT IS GONE A SECOND LATER ---------------------
-      // ⚖ "briefly get a glow effect after that layer resets … gradually fade over a second" (user, 2026-09-20).
-      // LAST, because it WIPES a layer (`layerDataReset`, U8's lesson: `doReset(l)` does not clear `l`'s own data).
-      // Samples are driven as the observer's own call (`refresh(false)`) one throttle apart, which is what the page
-      // does in play; the samples KEEP COMING through the second after the event, because a detector that re-fires
-      // on a level rather than an edge only shows itself as a glow that never ends. A card with no signal that can
-      // fall is given one by the GATE's own write (`constructed`), never the list's.
+      // --- U12 leg R: THE LAYER A PLAYER RESETS LIGHTS ITS CIRCLE, ONCE — AND NOTHING ELSE LIGHTS --------------
+      // ⚖ "briefly get a glow effect after that layer resets … gradually fade over a second" and ⚖ "I want the glow
+      // only on the layer that triggered the reset, not in the Layers whose resources got wiped as a side effect"
+      // (user, 2026-09-20).
+      // ⛔ WHAT THIS LEG DRIVES, AND WHY IT CHANGED (docs/mobile.md, "The reset glow"). U11's leg drove
+      // `layerDataReset(l)` — a WIPE, which takes a layer's points to zero outright — and, where even that yielded no
+      // falling signal, WROTE the signal itself (`constructed`). It passed 170/171 on a glow the user then found dead
+      // in play on ptr in minutes: ordinary play never produces a wipe of the pressed layer, and on the 13 engines
+      // without `resetTime` nothing the sampler watched ever moved. It certified a state it had created. So:
+      //  · the reset is the ENGINE's OWN `doReset(l)`, called bare — the global the engines' own buttons, their
+      //    auto-prestige and the automation all resolve — on a layer whose `tmp[l].canReset` the engine itself says
+      //    is true, at the DEEPEST SNAPSHOT (reloaded for each phase, so an earlier leg's press cannot have spent it);
+      //  · a candidate whose press moved NO STATE did not reset, and the next is tried; if none resets, the leg
+      //    ABSTAINS BY NAME. Nothing is wiped, written or constructed in its place — there is no such path any more;
+      //  · a GLOW START is read off the badge's CLASS (the `-a` ↔ `-b` flip, layerlist.css), which flips under
+      //    reduced motion too, and judged per layer: the pressed layer must start once, and every OTHER card must
+      //    start nothing — the layers the reset demonstrably touched (a lower row whose `player[lr]` moved) named
+      //    apart, because that is where a wiped-layer glow would show. A card rebuilt INSIDE its glow carries it
+      //    over with a negative `--tmt-glow-delay`; that is the same glow continuing and is not counted again.
+      // Samples are the observer's own call (`refresh(false)`) one throttle apart and keep coming through the
+      // second after the event, because a detector that re-fires on a level only shows itself as a glow that never
+      // ends. ONE sample of latency is allowed, which is what makes the sampler mutant green on a `resetTime`
+      // engine and red on the 13 (mutants-u12.sh).
       const GLOW_PROBE = async (phase) => {
         const ui = window.tmtLoader.layerListUI;
         const wait = (ms) => new Promise((r) => setTimeout(r, ms));
         const TH = ui.stats().throttleMs;
         if (!ui.isOpen()) ui.open();
-        const sig = (l) => { try { const t = player[l].resetTime; if (typeof t === 'number') return { kind: 'resetTime', v: t }; const p = player[l].points; return p && typeof p.eq === 'function' ? { kind: 'points', v: p.eq(0) ? 0 : 1 } : null; } catch (e) { return null; } };
-        const Ls = ui.cards();
-        let l = Ls.find((x) => { const s = sig(x); return s && s.v > 0; }), constructed = false;
-        if (!l) l = Ls.find((x) => sig(x));
-        if (!l) return { verdict: 'abstains (no card carries either signal)' };
-        const s0 = sig(l);
-        if (!(s0.v > 0)) { constructed = true; if (s0.kind === 'resetTime') player[l].resetTime = 5; else player[l].points = new Decimal(1); }
-        // the glow is the open button's `::before`, which only a SUBTREE query of the button sees
-        const badge = [...document.querySelectorAll('#tmt-layerlist .tmt-layerlist-open')].find((b) => b.closest('[data-layer]') && b.closest('[data-layer]').dataset.layer === l);
-        if (!badge) return { layer: l, verdict: `abstains (${l} has no card button on screen)` };
-        const anims = () => badge.getAnimations({ subtree: true }).length;
-        ui.refresh();                                   // the baseline sample
-        // QUIET FIRST: two samples with NO reset between them must start nothing. A detector that fires on a LEVEL
-        // (the signal is low) rather than an EDGE (it fell) lights here, with nothing having happened.
-        const gq = ui.stats().glows;
-        for (let i = 0; i < 2; i++) { await wait(TH + 5); ui.refresh(false); }
-        const quiet = ui.stats().glows - gq;
-        const g0 = ui.stats().glows, pre = anims();
-        const had = player.hasNaN;
-        try { if (typeof layerDataReset === 'function') layerDataReset(l); else doReset(l, true); } catch (e) { return { layer: l, verdict: `abstains (the reset threw: ${String(e).slice(0, 80)})` }; }
-        try { if (had === false) player.hasNaN = false; } catch (e) { /* not this engine's */ }
-        const s1 = sig(l);
+        const rowOf = (l) => { try { const r = Number(layers[l].row); return isNaN(r) ? null : r; } catch (e) { return null; } };
+        // ⚠ ONLY A LAYER WITH A CARD counts: a reset of a layer the list does not show has no circle to light
+        // (MEASURED on `something`: `division` can reset at the snapshot but has no card there, and a probe that
+        // stopped ticking on it abstained). `refresh()` first, so a layer the ticks just unlocked has its card.
+        const canNow = () => { ui.refresh(); const cs = ui.cards(); return cs.filter((l) => { try { return tmp[l].canReset === true && rowOf(l) !== null; } catch (e) { return false; } }); };
+        // REACH a resettable state by PLAYING: the engine's own tick (`updateTemp` + `gameLoop`), one game-second at
+        // a time, until the engine itself says some layer can reset — bounded, and the count is reported. MEASURED
+        // (U12): ptr's deepest snapshot (M25) has NO affordable reset (it is a ladder rung, taken just after one),
+        // and two ticks give it p, b and g; nothing is ever written in place of those ticks.
+        let ticked = 0;
+        const tw = performance.now();
+        const r0 = ui.stats().resets;
+        while (!canNow().length && ticked < 600 && performance.now() - tw < 15000) { tmtLoader.tick(1, 1); ticked++; }
+        // …and if only row-0 layers can, up to 60 more for one ABOVE row 0: a reset with rows below it is the only
+        // kind the wiped half (below) can judge, and a row-0 press leaves that half abstaining
+        const high = () => canNow().some((x) => rowOf(x) > 0);
+        for (let k = 0; canNow().length && !high() && k < 60 && performance.now() - tw < 15000; k++) { tmtLoader.tick(1, 1); ticked++; }
+        ui.refresh();
+        // an AUTO-PRESTIGE inside those ticks is a real reset that glowed (and may be owed a re-light at its end):
+        // let every such glow run out before the baseline, so the quiet samples below are quiet
+        const tickResets = ui.stats().resets - r0;
+        if (tickResets) await wait(2300);
+        const js = (l) => { try { return JSON.stringify(player[l]); } catch (e) { return null; } };
+        const whole = () => tmtLoader.stateJSON(tmtLoader.gameState);
+        const badges = () => [...document.querySelectorAll('#tmt-layerlist .tmt-layerlist-open')]
+          .map((b) => ({ b, l: b.closest('[data-layer]') && b.closest('[data-layer]').dataset.layer })).filter((x) => x.l);
+        const tok = (b) => /tmt-layerlist-glow-a/.test(b.className) ? 'a' : /tmt-layerlist-glow-b/.test(b.className) ? 'b' : '';
+        const seen = new Map();          // element → the glow token it had at the last scan
+        const starts = {};               // layer → glow starts since the baseline
+        const lastStart = {};            // layer → when this probe last counted one (a carry continues THAT glow)
+        const scan = (count) => {
+          for (const { b, l } of badges()) {
+            const t = tok(b), was = seen.get(b);
+            seen.set(b, t);
+            if (!count || !t) continue;
+            // a card built since the last scan that CARRIED a glow continues one — unless the flip it continues
+            // happened on the old element and that element was replaced before any scan saw it (a reset rebuilds)
+            const carried = was === undefined && /^-/.test(b.style.getPropertyValue('--tmt-glow-delay').trim());
+            if (carried && lastStart[l] !== undefined && performance.now() - lastStart[l] < 1100) continue;
+            if (was === undefined || was !== t) { starts[l] = (starts[l] || 0) + 1; lastStart[l] = performance.now(); }
+          }
+        };
+        scan(false);                     // the baseline
+        for (let i = 0; i < 2; i++) { await wait(TH + 5); ui.refresh(false); scan(true); }
+        const quiet = Object.values(starts).reduce((a, b) => a + b, 0);
+        for (const k of Object.keys(starts)) delete starts[k];
+        // the candidates: every card the engine itself says can reset, the highest row first (its reset has the
+        // most below it, which is where the wiped half can discriminate)
+        const can = canNow(), cand = [...can].sort((a, b) => rowOf(b) - rowOf(a));
+        const tried = [];
+        let l = null, touched = [], threw = null, st0 = null;
+        st0 = ui.stats();
+        // ⚠ A `resetsNothing` layer's press is a GAIN, not a reset: the engine returns before `rowReset` (and before
+        // zeroing `resetTime`, so U11 never lit it either). MEASURED on the-upgrade-tree's `pp` in CI (run
+        // 35570276103): its press moved the state and the leg took that for a reset. The engine's own flag decides —
+        // and the press is still MADE, because a player press that is not a reset is exactly what must not glow
+        // (the "no other card lights" half judges it; ptr's `b` and `g` are such layers).
+        const nothing = (l) => { try { const v = layers[l].resetsNothing; return !!(typeof v === 'function' ? v.call(layers[l]) : v) || !!tmp[l].resetsNothing; } catch (e) { return false; } };
+        for (const c of cand.slice(0, 8)) {
+          if (nothing(c)) { const w0 = whole(); try { doReset(c); } catch (e) { /* judged by what glows, not by this */ } tried.push(`${c} resets nothing (pressed; ${whole() === w0 ? 'moved nothing' : 'a gain'})`); continue; }
+          const r = rowOf(c);
+          const below = Object.keys(layers).filter((x) => x !== c && rowOf(x) !== null && rowOf(x) < r);
+          const pre = Object.fromEntries(below.map((x) => [x, js(x)]));
+          const w0 = whole();
+          st0 = ui.stats();
+          try { doReset(c); } catch (e) { threw = String(e).slice(0, 80); tried.push(`${c} threw`); continue; }
+          if (whole() === w0) { tried.push(`${c} moved nothing`); continue; }
+          l = c; touched = below.filter((x) => js(x) !== pre[x]);
+          break;
+        }
+        if (!l) return { verdict: `abstains (no layer resets after ${ticked} tick(s) of play: ${cand.length ? tried.join(', ') : 'no layer with a card has tmp.canReset === true'})`, quiet, tried, ticked, reached: false, triggerOk: !quiet };
+        ui.refresh(false);               // what the observer does on the engine's own re-render
+        scan(true);
+        const atEvent = starts[l] || 0;
         await wait(TH + 20);
-        ui.refresh(false);                              // ONE sample after the event
-        const g1 = ui.stats().glows, lit = anims();
+        ui.refresh(false);               // ONE sample after the event
+        scan(true);
+        const st1 = ui.stats(), owed = ui.glowOwed();   // at ONE sample: what the list itself did about it
+        const own = () => badges().find((x) => x.l === l);
+        const b1 = own();
+        const lit = b1 ? b1.b.getAnimations({ subtree: true }).length : 0;
+        const oneSample = starts[l] || 0;
         const t0 = performance.now();
-        while (performance.now() - t0 < 1150) { await wait(TH + 5); ui.refresh(false); }
-        const g2 = ui.stats().glows, after = anims();
+        while (performance.now() - t0 < 1150) { await wait(TH + 5); ui.refresh(false); scan(true); }
+        const after = badges().filter((x) => x.b.getAnimations({ subtree: true }).length).map((x) => x.l);
+        const others = Object.keys(starts).filter((x) => x !== l && starts[x]);
         const reduce = phase === 'reduce';
-        return { layer: l, signal: s0.kind, from: s0.v, to: s1 && s1.v, constructed, quiet, pre, lit, after, glows: [g1 - g0, g2 - g0],
-          cls: badge.className,
-          verdict: quiet ? `IT GLOWED WITH NO RESET (${quiet} start(s) over two quiet samples)`
-            : pre ? 'abstains (the badge was already animating)'
-            : !(s1 && s1.v < (constructed ? (s0.kind === 'resetTime' ? 5 : 1) : s0.v)) ? `abstains (the driven reset did not lower ${l}'s ${s0.kind})`
-            : g1 - g0 !== 1 ? `THE GLOW DID NOT START within one sample (${g1 - g0} event(s))`
-            : reduce ? (lit ? 'IT ANIMATED UNDER prefers-reduced-motion' : 'the event was seen and nothing animated (reduced motion)')
-            : !lit ? 'THE EVENT WAS SEEN BUT NOTHING ANIMATED'
-            : g2 - g0 !== 1 ? `STILL GLOWING after 1 s — ${g2 - g0} starts for one reset`
-            : after ? 'STILL GLOWING after 1 s'
-            : `lit within one sample, gone 1.15 s later (${s0.kind}${constructed ? ', constructed' : ''})` };
+        const total = starts[l] || 0;
+        // …AND AGAIN, more than a second later: the restart limit (one per second, ⚖ user) must never SUPPRESS a
+        // reset that comes after the glow has run out. The same layer, reset once more by the engine after more play
+        // (bounded; an abstention if it cannot afford it again), must start a second glow within one sample.
+        let repeat = null;
+        if (!reduce) {
+          let more = 0;
+          const r1 = ui.stats().resets;
+          while (!(canNow().includes(l)) && more < 600 && performance.now() - tw < 30000) { tmtLoader.tick(1, 1); more++; }
+          // (as above: an auto-prestige inside these ticks glowed; it runs out before the press is judged)
+          if (ui.stats().resets !== r1) { await wait(2300); ui.refresh(false); scan(true); }
+          if (!canNow().includes(l)) repeat = { verdict: `abstains (${l} could not reset again after ${more} more tick(s))` };
+          else {
+            const s0 = starts[l] || 0, w0 = whole();
+            try { doReset(l); } catch (e) { repeat = { verdict: `abstains (the second reset threw: ${String(e).slice(0, 80)})` }; }
+            if (!repeat && whole() === w0) repeat = { verdict: `abstains (the second doReset(${l}) moved nothing)` };
+            if (!repeat) {
+              ui.refresh(false); scan(true);
+              await wait(TH + 20); ui.refresh(false); scan(true);
+              const n2 = (starts[l] || 0) - s0;
+              repeat = { more, starts: n2, ok: n2 === 1, verdict: n2 === 1 ? `${l} lit again ${more} tick(s) later` : `A LATER RESET DID NOT GLOW (${l}: ${n2} start(s) for a reset more than a second after the last)` };
+            }
+          }
+        }
+        // ⚠ an explicit flag, never a regex over the verdict: the prose starts with the LAYER ID, and a layer called
+        // `A` (the-greek-tree) read as a failure through `/^A /` in the first CI sweep
+        const repeatVerdict = repeat && repeat.ok === false ? repeat.verdict : null;
+        const wipedLit = others.filter((x) => touched.includes(x)), strayLit = others.filter((x) => !touched.includes(x));
+        // the TWO HALVES, judged apart so a mutant is scored against the right one
+        // ⚖ under reduced motion the glow is OFF, not merely unpainted (user, 2026-09-20): no class flip, no
+        // `glows` count, no owed flag — judged on the list's own counters, which a purely visual check cannot see
+        const triggerVerdict = quiet ? `IT GLOWED WITH NO RESET (${quiet} start(s) over two quiet samples)`
+          : reduce ? (st1.glows !== st0.glows || oneSample || owed.length ? `IT GLOWED UNDER prefers-reduced-motion (glows ${st0.glows} → ${st1.glows}, ${oneSample} class flip(s), owed [${owed.join(', ')}])`
+            : lit ? 'IT ANIMATED UNDER prefers-reduced-motion'
+            : st1.resets === st0.resets ? `THE HOOK DID NOT SEE THE RESET (resets ${st0.resets} → ${st1.resets}), so "nothing glowed" is vacuous` : null)
+          : oneSample === 0 ? `THE LAYER THAT RESET DID NOT GLOW (${l}, within one sample of its own doReset)`
+          : !lit ? 'THE EVENT WAS SEEN BUT NOTHING ANIMATED'
+          : total !== 1 ? `STILL GLOWING after 1 s — ${total} starts for one reset`
+          : after.includes(l) ? 'STILL GLOWING after 1 s' : null;
+        const wipedVerdict = wipedLit.length ? `A LAYER THE RESET WIPED GLOWED (${wipedLit.join(', ')} — ${l} was pressed)`
+          : strayLit.length ? `A LAYER THAT DID NOT RESET GLOWED (${strayLit.join(', ')} — ${l} was pressed)` : null;
+        return { layer: l, row: rowOf(l), ticked, tickResets, tried, touched, quiet, atEvent, repeat, glows: [st0.glows, st1.glows], resets: [st0.resets, st1.resets], owed, oneSample, lit, total, after, others, reached: true,
+          wipedJudged: touched.length > 0,
+          triggerOk: !triggerVerdict, repeatOk: !repeatVerdict, wipedOk: !wipedVerdict, triggerVerdict, repeatVerdict, wipedVerdict,
+          verdict: triggerVerdict || repeatVerdict || wipedVerdict
+            || (reduce ? `${l}'s doReset was seen (resets ${st0.resets} → ${st1.resets}) and nothing glowed: glows ${st0.glows} → ${st1.glows}, no class flip, no owed flag; `
+              : `${l} lit ${atEvent ? 'at the event' : 'within one sample'} of its own doReset, gone 1.15 s later; `)
+              + (touched.length ? `${touched.length} layer(s) it touched stayed dark (${touched.join(', ')})` : 'abstains on the wiped half (no lower layer moved)')
+              + (repeat ? `; ${repeat.verdict}` : '') };
       };
+      // each phase from the SAME deep state: an earlier leg (the reset press) may have spent every affordable reset
+      if (snapshot) { const rg = await pageLoadFrom(page, snapshot.player); if (!rg.ready) throw new Error(`not ready after the glow leg's loadFrom: ${JSON.stringify(rg.error)}`); }
       row.glow = await page.evaluate(GLOW_PROBE, 'motion');
       // …and the SUMMARY CHIP: a counter whose number RISES lights, once. The rise is CONSTRUCTED (the gate's own
       // write): one drawn, unbought upgrade marked owned, else one drawn buyable's amount bumped — the two
@@ -3786,9 +3900,16 @@ async function gateMobile(browser, base, ids) {
             : `${l}/${kind} lit within one sample of +1, gone 1.15 s later` };
       });
       await page.emulateMedia({ reducedMotion: 'reduce' });
+      if (snapshot) { const rg = await pageLoadFrom(page, snapshot.player); if (!rg.ready) throw new Error(`not ready after the glow leg's loadFrom: ${JSON.stringify(rg.error)}`); }
       row.glowReduced = await page.evaluate(GLOW_PROBE, 'reduce');
       await page.emulateMedia({ reducedMotion: null });
-      row.glowOk = !/^THE |^STILL|^IT /.test(String(row.glow.verdict)) && !/^THE |^STILL|^IT /.test(String(row.glowReduced.verdict));
+      // ⚠ an ABSTENTION reads green here and is COUNTED apart in the summary line; the two halves are what the
+      // mutants score (mutants-u12.sh): `glowTrigger` the pressed layer, `glowWiped` everything else
+      // ⚠ judged on the probe's own FLAGS, not on the verdict's prose (which can start with a layer id)
+      const gv = (v) => !!v && v.triggerOk !== false && v.repeatOk !== false && v.wipedOk !== false;
+      row.glowTriggerOk = [row.glow, row.glowReduced].every((v) => v.triggerOk !== false && v.repeatOk !== false);
+      row.glowWipedOk = [row.glow, row.glowReduced].every((v) => v.wipedOk !== false);
+      row.glowOk = gv(row.glow) && gv(row.glowReduced);
       row.counterGlowOk = !/^THE |^A COUNTER/.test(String(row.counterGlow.verdict));
 
       await page.evaluate(() => { const ui = window.tmtLoader.layerListUI; if (ui) ui.close(); });
@@ -3856,7 +3977,8 @@ async function gateMobile(browser, base, ids) {
         && row.resStickyOk && row.resMemOk
         // U11: a layer never opened shows the chips it will show once it has been (absent without a snapshot)
         && row.neverOpenedOk !== false && row.neverOpenedFreshOk !== false
-        // U11: and a driven reset lights the layer's circle once, gone a second later, and not at all under reduced motion
+        // U11/U12: and the engine's own reset lights the PRESSED layer's circle once, gone a second later, nothing
+        // else lights, and nothing animates under reduced motion
         && row.glowOk && row.counterGlowOk);
       row.layersScreenshot = path.relative(REPO, llShot);
 
@@ -4284,12 +4406,13 @@ async function main() {
         return `${label} ${nq.length - nqRed.length}/${nq.length} green, judged on ${nqJ.length} (${nqJ.map((r) => `${r.id}: ${r[key].stale}`).join(', ') || 'none — VACUOUS'}), ${nq.filter((r) => !r[key].stable).length} abstained on the hash${nqRed.length ? ` (RED: ${nqRed.map((r) => `${r.id} ${r[key].verdict}`).join('; ')})` : ''}`;
       };
       console.log(`M1 layers never opened (U11 — the chip set before any tab is opened equals the set after each layer's tab has been opened and closed; the list's own read moves no hash; judged = a stale \`tmp.unlocked\` exists at that state): ${nqLine('at the fresh save', 'neverOpenedFresh')}; ${nqLine('at the deepest snapshot', 'neverOpened')}`);
-      // (U11) leg R, the reset glow — by SIGNAL, because the 13 engines without `resetTime` take the points fallback
+      // (U12) leg R, the reset glow — the engine's own doReset on a layer that can afford it; abstentions COUNTED
       const gl = rows.filter((r) => r.glow);
       const glRed = gl.filter((r) => !r.glowOk);
-      const glBy = gl.reduce((o, r) => { const k = /^lit/.test(r.glow.verdict) ? `${r.glow.signal}${r.glow.constructed ? ' (constructed)' : ''}` : r.glow.verdict.replace(/\(.*$/, '(…)'); o[k] = (o[k] || 0) + 1; return o; }, {});
-      const glRm = gl.reduce((o, r) => { const k = String(r.glowReduced && r.glowReduced.verdict).replace(/\(.*$/, '(…)'); o[k] = (o[k] || 0) + 1; return o; }, {});
-      console.log(`M1 layers reset glow (U11 — lit within one 250 ms sample of a driven reset, gone 1.15 s later with the samples still coming, and nothing animated under prefers-reduced-motion): ${gl.length - glRed.length}/${gl.length} green; ${JSON.stringify(glBy)}; reduced motion ${JSON.stringify(glRm)}${glRed.length ? ` (RED: ${glRed.map((r) => `${r.id} ${r.glow.verdict} / ${r.glowReduced.verdict}`).join('; ')})` : ''}`);
+      const glReached = gl.filter((r) => r.glow.reached), glWiped = glReached.filter((r) => r.glow.wipedJudged);
+      const glAbst = gl.filter((r) => !r.glow.reached).map((r) => r.id);
+      const glRm = gl.reduce((o, r) => { const k = String(r.glowReduced && r.glowReduced.verdict).replace(/^\S+'s doReset was seen.*$/, 'seen, nothing glowed').replace(/\(.*$/, '(…)').replace(/;.*$/, ''); o[k] = (o[k] || 0) + 1; return o; }, {});
+      console.log(`M1 layers reset glow (U12 — the engine's own doReset(l) on a layer whose tmp.canReset is true, at the deepest snapshot: the pressed layer lights within one sample, once, gone 1.15 s later; no other card lights; nothing animates under prefers-reduced-motion): ${gl.length - glRed.length}/${gl.length} green; ${glReached.length} reached a real reset (${glReached.filter((r) => r.glowTriggerOk).length} trigger half green, ${glWiped.length} judged on the wiped half, ${glWiped.filter((r) => r.glowWipedOk).length} green); ${glAbst.length} ABSTAINED — no layer resets there${glAbst.length ? `: ${glAbst.join(', ')}` : ''}; reduced motion ${JSON.stringify(glRm)}${glRed.length ? ` (RED: ${glRed.map((r) => `${r.id} ${r.glow.verdict} / ${r.glowReduced.verdict}`).join('; ')})` : ''}`);
       const cg = rows.filter((r) => r.counterGlow);
       const cgRed = cg.filter((r) => !r.counterGlowOk);
       const cgBy = cg.reduce((o, r) => { const k = /lit within/.test(r.counterGlow.verdict) ? `lit (${r.counterGlow.kind})` : r.counterGlow.verdict.replace(/\(.*$/, '(…)'); o[k] = (o[k] || 0) + 1; return o; }, {});

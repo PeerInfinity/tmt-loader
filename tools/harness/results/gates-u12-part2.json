@@ -1,0 +1,63 @@
+{
+  "gate": "U12 part 2",
+  "commit": "b0b26d964",
+  "dirty": true,
+  "reading": "Part 2: the engine's own loop in real time (unpaused), automation on, the list open; counts are the list's own stats over the window.",
+  "rows": [
+    {
+      "gate": "U12-2 the reset glow with AUTOMATION ON, real time, the list open",
+      "id": "ptr",
+      "leg": "ptr/all/M25.json, automation table, 10 s",
+      "ok": true,
+      "ticks": null,
+      "gameSeconds": null,
+      "diff": null,
+      "hash": null,
+      "notes": "50 resets through the hook (4.9/s; recent by layer {\"p\":18,\"q\":3,\"e\":11}); 21 glow starts = 2.1/s of DOM restarts (11 of them an owed reset re-lit at its glow's end); 40 absorbed into a running glow; 77 carried over a rebuild; 133 list refreshes; the wrapper on an early-returning doReset(p): 365 ns vs 325 ns unwrapped"
+    },
+    {
+      "gate": "U12-2 the reset glow with AUTOMATION ON, real time, the list open",
+      "id": "something",
+      "leg": "something/all/S05.json, derived automation, 10 s",
+      "ok": true,
+      "ticks": null,
+      "gameSeconds": null,
+      "diff": null,
+      "hash": null,
+      "notes": "2 resets through the hook (0.2/s; recent by layer {\"primitive\":2}); 2 glow starts = 0.2/s of DOM restarts (1 of them an owed reset re-lit at its glow's end); 1 absorbed into a running glow; 0 carried over a rebuild; 200 list refreshes; the wrapper on an early-returning doReset(numbercore): 280 ns vs 230 ns unwrapped"
+    },
+    {
+      "gate": "U12-2 the reset glow with AUTOMATION ON, real time, the list open",
+      "id": "the-yes-tree",
+      "leg": "fresh, derived automation, 10 s",
+      "ok": true,
+      "ticks": null,
+      "gameSeconds": null,
+      "diff": null,
+      "hash": null,
+      "notes": "1 resets through the hook (0.1/s; recent by layer {\"p\":2}); 1 glow starts = 0.1/s of DOM restarts (0 of them an owed reset re-lit at its glow's end); 0 absorbed into a running glow; 0 carried over a rebuild; 201 list refreshes; the wrapper on an early-returning doReset(p): 225 ns vs 180 ns unwrapped"
+    },
+    {
+      "gate": "U12-2 the reset glow with AUTOMATION ON, real time, the list open",
+      "id": "the-cookie-tree",
+      "leg": "fresh, derived automation, 10 s",
+      "ok": true,
+      "ticks": null,
+      "gameSeconds": null,
+      "diff": null,
+      "hash": null,
+      "notes": "2 resets through the hook (0.2/s; recent by layer {\"p\":2}); 2 glow starts = 0.2/s of DOM restarts (0 of them an owed reset re-lit at its glow's end); 0 absorbed into a running glow; 1 carried over a rebuild; 202 list refreshes; the wrapper on an early-returning doReset(qwertyuiopasdfghjklzxcvbnm): 325 ns vs 285 ns unwrapped"
+    },
+    {
+      "gate": "U12-2 the reset glow with AUTOMATION ON, real time, the list open",
+      "id": "the-loop-tree",
+      "leg": "fresh, derived automation, 10 s",
+      "ok": true,
+      "ticks": null,
+      "gameSeconds": null,
+      "diff": null,
+      "hash": null,
+      "notes": "1 resets through the hook (0.1/s; recent by layer {\"l\":1}); 1 glow starts = 0.1/s of DOM restarts (0 of them an owed reset re-lit at its glow's end); 0 absorbed into a running glow; 1 carried over a rebuild; 201 list refreshes; the wrapper on an early-returning doReset(p): 325 ns vs 240 ns unwrapped"
+    }
+  ]
+}

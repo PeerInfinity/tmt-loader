@@ -1525,7 +1525,7 @@ which is not a string, so the tooltip calls the declaration and is RIGHT; after 
 holds the prose from then and the tooltip is STALE until the tab opens again. Same three games; queued, not
 built (it is not what the user reported).
 
-#### The reset glow, and the summary chip's (U11)
+#### The reset glow, and the summary chip's (U11, rebuilt in U12)
 
 ⚖ user, 2026-09-20: *"indicate when a layer has been reset … the circle for that layer to briefly get a glow
 effect after that layer resets … gradually fade over a second. This isn't a core feature, so if this idea would
@@ -1533,30 +1533,57 @@ impose CPU costs, we can drop the idea. Or if it's cheap, then we could also app
 to the x / y summary chips after a purchase in that category is made."* **Both halves are built** — the second
 only after the first was measured at noise level.
 
-**THE SIGNAL IS THE ENGINE'S CLOCK, where it keeps one.** Censused over the 171 engines' own sources: **158**
-zero `player[l].resetTime` in `doReset` for the resetting layer AND, through `layOver(player[l],
-getStartLayerData(l))` in `layerDataReset`, for every layer the reset wipes — so a reset lights the pressed layer
-and the layers below it, which is what a reset does. The other **13** keep no `resetTime` at all (the PTR family,
-and ten older-engine forks — `the-modding-tree`, `the-burning-tree`, `distance-incremental` among them); there the
-signal is **the layer's points falling to 0**, which a wipe does and a prestige of that layer does not (its points
-rise). So on those 13 the wiped layers glow and the pressed one does not; and a layer whose start data is not
-zero never reaches 0 on a wipe, so its reset is invisible to the fallback (`distance-incremental`'s `r`, the one
-abstention in the sweep). A spend landing on exactly 0 would glow too: a decoration misfiring, never a write.
+**⛔ U11'S SIGNAL WAS WRONG, AND THE USER FOUND IT IN PLAY** (⚖ user, 2026-09-20: *"I tested the latest pages
+deploy, and I don't see the glow."*). U11 sampled the engine's clock: `player[l].resetTime`, which **158 of the 171
+games** zero in `doReset`, and on the other **13** — `ptr`, `the-extended-tree`,
+`prestige-tree-rewritten-unsoftcapped4`, `the-necromantree`, `prestige-tree-ng`, `the-incrementreeverse`,
+`the-basic-tree`, `the-factoree`, `the-stardust-tree`, `distance-incremental`, `the-romeo-julliet-tree`,
+`the-modding-tree`, `the-burning-tree` — "this layer's points fell to exactly zero". On a progressed save those 13
+KEEP points across a reset through milestones, so neither the pressed layer (its points rise) nor the layers it
+wiped (theirs do not reach zero) ever glowed: measured on the deployed build at ptr's deepest snapshot,
+`doReset('p')` and `doReset('b')` both left `stats().glows` at 0. And on the 158 the clock is zeroed for every
+layer a reset WIPES too — which the user then ruled out: ⚖ *"I want the glow only on the layer that triggered the
+reset, not in the Layers whose resources got wiped as a side effect."* The sampler is **deleted**, not kept
+beside the fix.
 
-**WHAT A 250 ms SAMPLER GIVES UP — accepted, not bought back with a faster timer.** Detection rides `syncCards`,
-the counters' own throttle. It fires **up to one sample late**, and two resets inside one sample are one glow.
-It cannot **miss** one on the `resetTime` engines — the clock only runs forward between resets, so any reset since
-the last sample leaves it lower — except a layer that resets more often than 4 × a second, which is lower than last
-time on most samples and so glows most of the time: which is what it is doing. On the points fallback, a reset
-and a re-accumulation past zero inside one sample is missed.
-
-**ONE START PER EVENT.** The comparison is an EDGE (lower than the last sample), never a LEVEL, so a paused page
-whose `resetTime` sits at 0 starts nothing on the next sample. ⛔ The level version is the trap the brief named
-and the gate proves it: it shows as a glow that NEVER ENDS, not a missing one (mutant m3). A restart flips the
-element between two identical animations (`tmt-layerlist-glow-a` ↔ `-b`) — an animation whose NAME changes starts
-over — so no restart forces a layout (the remove-reflow-add trick would). The baseline lives on the CARD RECORD,
-which every `rebuild()` (and therefore every open) makes afresh, so a reset that happened while the list was closed
-is not replayed when it opens.
+**SINCE U12 THE SIGNAL IS A HOOK ON `doReset`** (⚖ user: *"I would prefer hooking doReset. I expect that to be more
+reliable."*). All **171 of the 171 games** declare `doReset` and `rowReset` as top-level function declarations in a
+classic script, so each is a writable property of `window`, and every caller resolves the name at CALL time — the
+engines' own `v-on:click="doReset(layer)"`, `gameLoop`'s auto-prestige, `startChallenge`'s `doReset(layer, true)`,
+the list's own reset button and the automation's `doReset(f.layer)`. `loader/layerlist.js` replaces both once the
+engine is ready (on every page that loads the list, open or not) and checks the identity on every refresh, so a
+replaced global is re-hooked; a function carrying the list's mark is never wrapped twice.
+- **A RESET IS A CALL THAT GOT PAST THE EARLY RETURNS.** `doReset` returns early when the layer cannot afford it,
+  and on `resetsNothing` after the gain — so a `resetsNothing` layer's prestige does not glow (it did not under U11
+  either: the engines zero `resetTime` after that return). ⚖ If that should glow, it is a user question. The one thing every engine does only once it really resets is call
+  `rowReset(x, layer)` with the pressed layer — **171 of the 171 games**, after every early return — so the
+  `rowReset` wrapper does exactly one thing: mark the call in flight as PROCEEDED. A press that bought nothing
+  glows nothing (ptr's `b` and `g` are the live case: `tmp.canReset` true, the engine's own `canReset()` false).
+- **ONLY THE OUTERMOST CALL IS AN EVENT.** A `doReset` reached from inside another one is a side effect of the
+  press, which is exactly what the ruling says must not glow; a foreign wrapper around the list's is the same
+  shape, so it cannot double-count either.
+- **⛔ TRANSPARENT.** The original runs with the caller's own `this` and ALL its arguments (the `force` argument is
+  load-bearing), its return value is returned, a throw of ITS propagates untouched, and every line of the list's
+  own side is inside a try/catch, so a failure in a decoration cannot break a player's reset. Nothing is written
+  to `player`. The gate for it is not `renderInert` but a with/without comparison of the full state (below).
+- **AN EVENT, NOT A SAMPLE.** It fires on the reset itself, on all 171, for the layer that was pressed and for no
+  other.
+- ⚖ **AN AUTOMATED RESET GLOWS TOO** (user: *"If a layer is constantly glowing, then it is correctly informing the
+  player that that layer is constantly being reset."*). There is no "was it the player?" test.
+- ⚖ **AT MOST ONE RESTART PER GLOW, WITH NO FLICKER** (user: *"We don't need to distinguish whether resets are
+  happening more than once per second"* and *"I want to avoid flicker if possible"*). A reset that arrives while
+  its layer is still glowing does not restart it; it is OWED, and the glow is lit again on that animation's own
+  `animationend` — an event, not a timer. So a layer resetting every tick glows continuously for one DOM restart a
+  second, and a layer resetting once every ten seconds glows every time. The owed flag lives in the list's closure,
+  keyed by LAYER — not on the card record (which every `rebuild()` replaces) and not on the element. A card rebuilt
+  INSIDE its own glow (a reset moves membership, so it usually is) picks the glow up where it was through a
+  negative `--tmt-glow-delay`, and it is that element's `animationend` that pays the owed restart.
+- ⚖ **REDUCED MOTION TURNS IT OFF, STRUCTURALLY** (user: *"I also want the reduced motion setting to disable this
+  glow."*). `matchMedia('(prefers-reduced-motion: reduce)')` is read at every event — never cached, because a
+  viewer can change it with the page open — and while it matches nothing happens: no class flip, no `--tmt-glow`,
+  no owed flag (so the `animationend` that never fires under `animation: none` cannot leave one unpaid), no
+  `glows` count. The hook still counts the reset (`stats().resets`). The CSS rule stays too, for a build where the
+  guard is ever missed.
 
 **THE FADE IS THE COMPOSITOR'S.** Only `opacity` animates: the glow is a STATIC `box-shadow` on a `::before` circle
 laid over the badge, and that circle fades 1 → 0 over 1 s. ⚠ The first build animated the badge's own
@@ -1564,7 +1591,7 @@ laid over the badge, and that circle fades 1 → 0 over 1 s. ⚠ The first build
 the BUTTON's `::before`, not the badge's, because the badge is `overflow: hidden` (for a long symbol) and would clip
 its own descendant's shadow; the circle lands on the badge to the pixel on ptr (badge `border-box` 44 px at
 (23, 99); circle 44 px at (23, 99)). The colour is the layer's own `tmp[l].color`, written as `--tmt-glow` only at
-the event. **`prefers-reduced-motion: reduce` animates nothing** — the event is still counted, nothing is drawn.
+the event.
 
 **THE SUMMARY CHIP (the counter) lights when its NUMBER RISES** since the last sync — `x` on an earned-over-drawn
 counter, the total on an owned one — numbers `countersOf()` has already computed, so it is one comparison per
@@ -2572,7 +2599,7 @@ on four legs that were asserting the defect (`o`'s nine buyables and `h`'s chall
 itself would draw.
 **3. Leg M, unchanged, is the write-nothing number**: `renderInert` **171/171 unchanged, 0 abstained**, and
 `layersInert` 171/171 — with the new `unlocked()` calls on the full-render path.
-**4. Leg R — the glow** (`glow`, `glowReduced`, `counterGlow`), LAST, because it wipes a layer
+**4. Leg R — the glow** ⛔ *(SUPERSEDED in U12 — this is the leg that certified a glow the user found dead in play; see "What U12 added to the leg")* (`glow`, `glowReduced`, `counterGlow`), LAST, because it wipes a layer
 (`layerDataReset`, U8's lesson). Samples are driven as the observer's own `refresh(false)`, one throttle apart.
 - QUIET FIRST: two samples with nothing happening must start nothing — that is where a LEVEL detector shows
   itself, before any event.
@@ -2611,6 +2638,113 @@ page and its own quiet window sees the first leg's stuck card.
 six mutations STACKED in the working tree (every row read `!! NOT RESTORED`, reds accumulating from m1 onward).
 Fixed in `e6357147d`; the table is the re-run.
 
+
+#### What U12 added to the leg
+
+⛔ **WHY THIS LEG WAS REWRITTEN — READ THIS BEFORE WRITING THE NEXT ONE.** U11's leg R passed **170 of the 171
+games** on a glow that did not work on the flagship game, and the user found it by hand in minutes. It is the third
+time in this arc (the Tree button, the never-opened chips, now this) that a roster sweep certified a feature the
+user then found broken, and each time the gate measured **a state it had created itself**. U11's leg drove
+`layerDataReset(l)` — a WIPE, which takes the layer's points to zero outright, a state ordinary play never
+produces on the 13 engines without `resetTime` — and where even that gave no falling signal it WROTE the signal
+(`constructed`). So it certified the animation and could never see whether the signal fires in play. **The rule
+this leg now keeps: drive the thing a PLAYER drives, on a state the ENGINE reached, and abstain by name where it
+cannot — never substitute a construction and call it a pass.**
+
+**Leg R now** (`GLOW_PROBE` in `tools/harness/page.mjs`), once per phase (motion, then reduced motion), each phase
+from the SAME deep state (the snapshot is reloaded, so the earlier reset-press leg cannot have spent it):
+1. **REACH a resettable state by playing** — the engine's own tick (`updateTemp` + `gameLoop`), one game-second
+   at a time, until the engine says some layer has `tmp.canReset === true` (bounded at 600 ticks / 15 s), then up
+   to 60 more for one above row 0. MEASURED: ptr's deepest snapshot (`all/M25.json`) has no affordable reset at
+   all — it is a ladder rung, taken just after one — and two ticks give it `p`, `b` and `g`.
+2. **QUIET**: two samples with nothing happening must start nothing.
+3. **PRESS** — `doReset(c)` called BARE, the global the engines' own buttons, auto-prestige and the automation
+   resolve, on each candidate, highest row first. A candidate whose press moved no state did not reset and the
+   next is tried. A candidate the engine declares `resetsNothing` is PRESSED too but never taken for the reset: its
+   press is a gain, which is exactly a press that must not glow (ptr's `b` and `g` are such layers — and there
+   `tmp.canReset` is true while the engine's own `canReset()` is false; ⚠ CI run `35570276103` caught the first
+   build taking the-upgrade-tree's `pp`, a `resetsNothing` layer whose press moves the state, for a reset). None
+   resets → **ABSTAINS BY NAME** with what was tried.
+   There is no wipe and no constructed signal anywhere in the leg any more.
+4. **JUDGE, per layer, off the badge's CLASS** (the `-a` ↔ `-b` flip, which also happens under reduced motion):
+   - *trigger*: the pressed layer starts a glow within ONE sample (the hook lights it at the event; one sample of
+     slack is what lets the sampler mutant show green on a `resetTime` engine), exactly once, animating, gone
+     1.15 s later with the samples still coming;
+   - *wiped*: **no other card starts anything**. The layers the press demonstrably touched (a lower row whose
+     `player[lr]` moved) are named apart — *A LAYER THE RESET WIPED GLOWED* — from any other — *A LAYER THAT DID NOT
+     RESET GLOWED*. A press with nothing below it abstains on this half, and says so;
+   - *repeat*: after more play, the SAME layer reset again more than a second later must glow again — the restart
+     limit must never suppress a reset that comes after the glow ran out;
+   - *reduced motion*: the hook SAW the reset (`stats().resets` rose — otherwise "nothing glowed" is vacuous) and the
+     list did nothing about it: `stats().glows` did not rise, no class flipped, no owed flag. That is sharper than
+     U11's "nothing is animating", which a JS guard removed behind the CSS rule would still pass.
+
+**THE ROSTER** — CI run `35572709543` at `de3b55a56`, the **merge + roster assertion** job: `rows: 171/171
+game(s); 0 RED; 6 abstained on the state leg`; leg R's counts read out of the ten `m1-shard-*` artifacts:
+- **147 of 171** reached a real reset by play and the pressed layer lit, once, and was gone a second later —
+  **12 of the 13** games without `resetTime` among them (`the-incrementreeverse` abstains: nothing it shows can
+  reset within the tick bound). 22 of those presses were above row 0.
+- **repeat**: 143 judged, 143 lit again; the other 4 could not afford a second reset in the bound and abstain.
+- **wiped**: judged on **7** — `the-math-tree`, `something`, `the-quantum-tree`, `a-game-about-rocks`,
+  `the-dingus-tree`, `the-snake-tree`, `the-mining-tree` — where the press demonstrably moved a lower layer; 7
+  stayed dark. ⚠ Seven is THIN: most reachable presses are row 0, where there is nothing below to wipe. It is
+  enough to discriminate (m1 and m2 both red it on `something`), not a census.
+- **ABSTAINED BY NAME: 24** — no layer with a card can reset within 600 one-second ticks at that state:
+  `the-gaming-tree`, `1-clicker`, `the-algebra-tree`, `bobbit-s-tech-tree`, `create-incremental`, `layer-tree`,
+  `the-periodic-tree`, `the-incrementreeverse`, `equilibrium`, `sheep-incremental`,
+  `yet-another-challenge-tree-adventure`, `the-tearonq-i-have-no-creative-names`, `weakling-tree`,
+  `the-infinity-tree`, `gooby-cat-tree`, `the-exp-tree`, `collection-of-everything`, `the-energy-factory`,
+  `the-hyperoperator-tree`, `the-christmas-tree`, `the-periodic-table-tree`, `the-galactic-tree`,
+  `universal-reconstruction`, `the-rpg-tree`. U11 reported 170 lit on the same roster because it wiped whatever it
+  could not reach; **these 24 are the honest size of what a player-driven reset can reach in a sweep.**
+- **reduced motion**: 148 saw the reset through the hook and did nothing at all; 23 abstain (no reset reached).
+
+⚠ **TWO THINGS THE FIRST TWO SWEEPS OF THIS LEG CAUGHT IN THE LEG ITSELF**, both of the kind this section is about:
+(1) run `35570276103` — the-upgrade-tree's `pp` is `resetsNothing`, its press moved the state, and the leg took
+"the state moved" for "it reset", so it blamed the hook for (correctly) not glowing. The engine's own flag now
+decides. (2) run `35571731730` — a failed REPEAT was detected by `/^A /` over the verdict, and the-greek-tree's
+layer is called `A`: "A lit again" read as a failure, while the row's own `glowOk` regex could not have seen a
+real repeat failure at all. Every half is now judged on the probe's explicit flags, never on prose that begins
+with a layer id.
+
+**THE TRANSPARENCY GATE** (`node tools/harness/gates-u12.mjs --part 1`): each game runs ONE scripted sequence —
+`doReset(l)` then `doReset(l, true)` for every layer in `layers` key order, two 1 s engine ticks after each call
+(the automation on where the game has a table, so its own `doReset` crosses the wrapper too), then 40 ticks of
+0.05 s — at its deepest snapshot, on a `?navbar=1` page with the list OPEN and on a plain page, and compares the
+full `stateJSON(tmtLoader.gameState)` AND every call's return value or throw. At `2c07714f4` (`gates-u12-part1.json`,
+recorded in SUMMARY): **165 of 171 identical, 0 diverged, 6 abstained** — `the-periodic-table-tree`, `the-cookie-tree`,
+`falling-mountain-s-alterprestige`, `the-gaming-tree`, `the-orchard-tree`, `plague-tree-vorona-cirus-treesease`,
+where two plain pages already differ, so the game does not repeat itself; **166 of 171** drove at least one real
+reset through the wrapper, **1442** in all.
+
+**The mutant round** (`bash tools/harness/mutants-u12.sh <out>`; the mutations are in `mutants-u12.py`, restored
+from a COPY, witnesses `ptr` and `the-necromantree` from the 13, `something` and `the-yes-tree` with `resetTime`):
+**control + 6/6** at `5b668d9df` (m1 and m3 re-run there after their expectations were corrected; the loader files
+are the fix commit's throughout), every one `restored: diff is empty`.
+
+| mutant | reddens | stays green |
+|---|---|---|
+| `m1-hook-removed-u11-sampler-back` (the build the user found dead) | `ptr`, `the-necromantree` **trigger** — *THE LAYER THAT RESET DID NOT GLOW* — plus repeat and rmotion; `something` **wiped** — the U11 sampler lit the layer the reset zeroed — and rmotion | **trigger on both `resetTime` engines** (`something`, `the-yes-tree`): U11's clock does see a press there |
+| `m2-wiped-layers-glow` (the hook, plus the sampler for every other card) | `something` **wiped** + rmotion; `the-yes-tree` rmotion (the sampler has no reduced-motion guard) | trigger, repeat everywhere |
+| `m3-rate-limit-10s` | `ptr` **repeat** — *A LATER RESET DID NOT GLOW* | trigger, wiped, rmotion |
+| `m4-reduced-motion-js-guard-removed` (the CSS rule kept) | `ptr`, `the-yes-tree` **rmotion** — *IT GLOWED UNDER prefers-reduced-motion (glows 0 → 1 …)*, with nothing animating | trigger, repeat, wiped |
+| `m5-glow-on-every-call` (the `rowReset` "proceeded" mark ignored) | `ptr` **wiped** — its `b` and `g` (`resetsNothing`) are pressed, reset nothing, and glow (re-run at `02d04ffbe`, after the `resetsNothing` rule: still red) | `the-yes-tree` (no non-resetting candidate is ever pressed there) |
+| `m6-wrapper-drops-force` (`orig.call(this, layer)`) | `ptr` **inert** (part 1: DIVERGED) | every M1 leg on `ptr` — they press `doReset(l)` with one argument, so only the with/without comparison can see it |
+
+⚠ Two expectations were corrected by measurement, both the mutant being right: m1's `repeat` stays GREEN on a
+`resetTime` engine because the probe's tick loop refreshes the list, so U11's sampler gets a sample between the
+two resets; and m3 is witnessed on `ptr` alone, because on `the-yes-tree` an auto-prestige inside the probe's own
+ticks lands a glow just before the press in some runs, and then a 10 s limit swallows the first press too
+(trigger + repeat red once, repeat alone once) — true either way, but not an exact-match row.
+
+**THE COST WITH AUTOMATION ON** (`gates-u12.mjs --part 2`, at `2c07714f4`, `gates-u12-part2.json`): the engine's
+own loop in real time for 10 s, `profile=all`, the list open. `ptr` (`all/M25.json`): **4.9 resets/s** through the
+hook (`p` 18, `e` 11, `q` 3 in the log) → **21 glow starts = 2.1 DOM restarts/s** across the three layers, 40 resets
+absorbed into a running glow and 11 of them paid at its end — i.e. at most one restart per layer per second, and
+the layer stays lit. The other four (`something`, `the-yes-tree`, `the-cookie-tree`, `the-loop-tree`, fresh saves)
+reset 0.1–0.2 times a second. The wrapper itself, on an early-returning `doReset`, costs **45–85 ns per call**
+over the original (e.g. `ptr` 365 vs 280 ns) — against a tick of milliseconds. U11's per-card sampler is gone from
+the throttled path, so nothing is added there.
 
 ### The state leg needs a control
 
