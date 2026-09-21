@@ -3766,12 +3766,15 @@ async function gateMobile(browser, base, ids) {
         const can = canNow(), cand = [...can].sort((a, b) => rowOf(b) - rowOf(a));
         const tried = [];
         let l = null, touched = [], threw = null, st0 = null;
+        st0 = ui.stats();
         // ⚠ A `resetsNothing` layer's press is a GAIN, not a reset: the engine returns before `rowReset` (and before
         // zeroing `resetTime`, so U11 never lit it either). MEASURED on the-upgrade-tree's `pp` in CI (run
-        // 35570276103): its press moved the state and the leg took that for a reset. The engine's own flag decides.
+        // 35570276103): its press moved the state and the leg took that for a reset. The engine's own flag decides —
+        // and the press is still MADE, because a player press that is not a reset is exactly what must not glow
+        // (the "no other card lights" half judges it; ptr's `b` and `g` are such layers).
         const nothing = (l) => { try { const v = layers[l].resetsNothing; return !!(typeof v === 'function' ? v.call(layers[l]) : v) || !!tmp[l].resetsNothing; } catch (e) { return false; } };
         for (const c of cand.slice(0, 8)) {
-          if (nothing(c)) { tried.push(`${c} resets nothing`); continue; }
+          if (nothing(c)) { const w0 = whole(); try { doReset(c); } catch (e) { /* judged by what glows, not by this */ } tried.push(`${c} resets nothing (pressed; ${whole() === w0 ? 'moved nothing' : 'a gain'})`); continue; }
           const r = rowOf(c);
           const below = Object.keys(layers).filter((x) => x !== c && rowOf(x) !== null && rowOf(x) < r);
           const pre = Object.fromEntries(below.map((x) => [x, js(x)]));
