@@ -25,7 +25,7 @@
 // stopped 349 game-seconds short under the wall, and a row that ran a shorter leg is not a comparison.
 import fs from 'node:fs';
 import path from 'node:path';
-import { REPO, parseArgs, writeJSON, headCommit, treeDirty, entryOnly } from './lib.mjs';
+import { REPO, parseArgs, writeJSON, headCommit, treeDirty, entryOnly, parseShard } from './lib.mjs';
 import { appendSection } from './summary.mjs';
 import { runCells } from './sweep.mjs';
 entryOnly(import.meta.url);
@@ -37,6 +37,7 @@ const a = parseArgs(process.argv.slice(2), ['no-summary', 'no-write', 'assert'])
 const PART = String(a.part || '1');
 const commit = headCommit(), dirty = treeDirty();
 const rows = [];
+const shardedCells = [];   // every cell this process actually took responsibility for, for the merge check
 const row = (r) => { rows.push(r); console.log(`${r.ok ? 'GREEN' : 'RED  '} ${r.gate} ${r.id} gs=${r.gameSeconds ?? '-'} ${String(r.notes || '').slice(0, 340)}`); };
 
 // ⛔ THE FLOOR EACH PART MUST REACH (`--assert`, CI), measured against what each part actually EMITS rather than
@@ -55,6 +56,27 @@ const READING = [
   'holder must close, H the window it has to close it in, and `/0/0` is the rule SWITCHED OFF (a window of zero is',
   'no window) — which is what every row pinned before this slice carries, so that each of them reproduces.',
 ].join(' ');
+
+// ---- SHARDING: one CELL per job, because a sweep's cells are independent runs -------------------------------------
+// ⛔ THE HAZARD THIS BRINGS WITH IT, AND THE REPO HAS ALREADY PAID FOR IT ONCE (the M1 matrix, `merge-shards.mjs`):
+// LESS LOOKS FASTER AND GREENER. A shard that dies before running anything prints no rows, and no rows is no reds.
+// So every shard REPORTS the cells it was assigned out of the part's total, and the merge job refuses a run whose
+// shards do not put the whole cell list back together.
+// ⛔ AND THE SECOND HAZARD IS THIS BATTERY'S OWN HORIZON CHECK. Unsharded, a sweep takes its horizon from the FIRST
+// cell it ran. Sharded, each job has its own first cell — so a shard in which EVERY cell stopped short would agree
+// with itself and pass. `--horizon <game-seconds>` pins it, and a sharded run without it is refused below.
+const SHARD = a.shard ? parseShard(a.shard) : null;
+const HORIZON = a.horizon === undefined ? null : Number(a.horizon);
+if (SHARD && HORIZON === null) {
+  console.error('REFUSED: --shard needs --horizon <game-seconds>. Each shard has its own first cell, so a sharded run that derived its horizon from itself would agree with itself and pass — which is the whole failure mode sharding introduces.');
+  process.exit(2);
+}
+/** The cells this process is responsible for, and the sentence that says so. */
+function shardOf(cells) {
+  if (!SHARD) return { cells, note: null };
+  const mine = cells.filter((c, i) => (i % SHARD.n) === (SHARD.i - 1));
+  return { cells: mine, note: `shard ${SHARD.i}/${SHARD.n}: ${mine.length} of ${cells.length} cells` };
+}
 
 const PTR_LADDER = path.join(REPO, 'tools/harness/ladder/ptr.json');
 const SNAP_ALL = path.join(REPO, 'tools/harness/snapshots/ptr/all');
@@ -103,13 +125,18 @@ function readoutText(leg, l) {
 }
 
 /** Run a set of cells on one leg and write one SUMMARY row per cell. */
-async function sweep({ gate, leg, cells, repeat = REPEAT, extra = {}, judge = null }) {
+async function sweep({ gate, leg, cells: allCells, repeat = REPEAT, extra = {}, judge = null }) {
   const L = LEG[leg];
+  const { cells, note: shardNote } = shardOf(allCells);
+  if (shardNote) console.log(`[SHARD] ${gate} ${shardNote} — ${cells.map((c) => c.label || '(the table)').join(' | ')}`);
+  shardedCells.push(...cells.map((c) => c.label || '(the table)'));
+  if (!cells.length) return [];
   let done = 0;
   const total = cells.length * repeat;
   const lines = await runCells({ id: L.id, cells, flags: flagsOf(leg, extra), pool: POOL, repeat, stop: L.flags.to,
     onRun: (c, l) => console.log(`[PROGRESS ${++done}/${total}] ${leg} ${c.label || '(the table)'} run ${l.run} → ${l.ok ? `${l.gameSeconds}s ${l.hashGame}` : 'FAILED ' + l.error} (${Math.round((l.box?.wallMs || 0) / 1000)}s wall)`) });
-  const horizon = lines.length && lines[0].ok ? lines[0].gameSeconds : null;
+  // ⚠ THE PINNED horizon WINS where one is given: a sharded run must not judge itself against itself.
+  const horizon = HORIZON !== null ? HORIZON : lines.length && lines[0].ok ? lines[0].gameSeconds : null;
   lines.forEach((l, i) => {
     const c = cells[i];
     let ok = !!l.ok && (repeat < 2 || l.twiceEqual === true);
@@ -271,11 +298,16 @@ if (!PARTS[PART]) { console.error(`no part ${PART}`); process.exit(2); }
 await PARTS[PART]();
 
 const red = rows.filter((r) => !r.ok).length;
-const short2 = `R3b2 part ${PART}: rows ${rows.length}/${ROWS[PART]} expected, ${red} RED`;
+// ⛔ A SHARD DECLARES ITS OWN FLOOR, not the part's — otherwise `--assert` refuses every shard for the rows the
+// OTHER shards ran. What keeps that honest is the merge job, which reassembles the cell list.
+const expected = SHARD ? shardedCells.length : ROWS[PART];
+const short2 = `R3b2 part ${PART}${SHARD ? ` shard ${SHARD.i}/${SHARD.n}` : ''}: rows ${rows.length}/${expected} expected, ${red} RED`;
 console.log(`\nVERDICT: ${short2}`);
+if (SHARD) console.log(`CELLS ${SHARD.i}/${SHARD.n}: ${JSON.stringify(shardedCells)}`);
 if (!a['no-write']) {
-  writeJSON(path.join(REPO, `tools/harness/results/gates-r3b2-part${PART}.json`), { gate: `R3b2 part ${PART}`, commit, dirty, reading: READING, rows });
+  writeJSON(path.join(REPO, `tools/harness/results/gates-r3b2-part${PART}${SHARD ? `-shard${SHARD.i}of${SHARD.n}` : ''}.json`),
+    { gate: `R3b2 part ${PART}`, commit, dirty, reading: READING, shard: SHARD, horizon: HORIZON, cells: shardedCells, rows });
   if (!a['no-summary']) appendSection(`Gate R3b2 part ${PART} — the dead-member rule, ptr's table, and M25`, READING, rows, { commit, dirty });
 }
 // ⛔ A BATTERY THAT DIES PART-WAY PRINTS FEWER ROWS, AND FEWER ROWS IS FEWER REDS.
-if (a.assert && (red > 0 || rows.length < ROWS[PART])) { console.error(`REFUSED: ${short2}`); process.exit(1); }
+if (a.assert && (red > 0 || rows.length < expected)) { console.error(`REFUSED: ${short2}`); process.exit(1); }

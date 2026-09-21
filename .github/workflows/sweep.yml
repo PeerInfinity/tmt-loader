@@ -1090,6 +1090,122 @@ jobs:
           if-no-files-found: warn
           retention-days: 14
 
+  # R3b-2 part 2 — ptr's TABLE, one CELL per job. Nine whole-stretch cells × two runs is over an hour on one box
+  # and a few minutes of wall here, because the cells are independent runs of the same leg.
+  # ⛔ `--horizon` IS NOT OPTIONAL FOR A SHARD: unsharded the sweep takes its horizon from its own first cell, and
+  # sharded each job has its own first cell — so a shard in which every cell stopped short would agree with itself.
+  # The battery refuses `--shard` without it. 37048 = `all/M15.json` (16048) + 21,000 ticks at diff 1.
+  r3b2-table:
+    name: R3b-2 ptr's table — shard ${{ matrix.shard }}/5
+    needs: fast
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3, 4, 5]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - run: npm ci
+
+      - name: "Part 2 — the table, shard ${{ matrix.shard }}/5"
+        shell: bash
+        run: |
+          set -o pipefail
+          node tools/harness/gates-r3b2.mjs --part 2 --shard ${{ matrix.shard }}/5 --horizon 37048 \
+            --no-summary --assert --pool 2 | tee r3b2-2-${{ matrix.shard }}.txt
+
+      - name: Summary
+        if: always()
+        shell: bash
+        run: |
+          {
+            echo '## R3b-2 table shard ${{ matrix.shard }}/5'
+            echo ''
+            echo '```'
+            cat r3b2-2-${{ matrix.shard }}.txt 2>/dev/null | grep -E 'VERDICT|REFUSED|CELLS|^RED|^GREEN' || echo 'no output'
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      # `always()`: a RED shard still produced rows, and the merge wants them.
+      - name: Upload the rows
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: r3b2-table-${{ matrix.shard }}
+          path: tools/harness/results/gates-r3b2-part2-shard*.json
+          if-no-files-found: warn
+          retention-days: 14
+
+  # ⛔ THE MERGE, AND IT IS THE POINT OF SHARDING RATHER THAN A FORMALITY. LESS LOOKS FASTER AND GREENER: a shard
+  # that dies before running anything prints no rows, and no rows is no reds. This job reassembles the cell list
+  # from the artifacts and REFUSES a run that does not put the whole table back together — the same assertion
+  # `merge-shards.mjs` makes about the roster.
+  r3b2-table-merge:
+    name: R3b-2 ptr's table — merge + cell assertion
+    needs: r3b2-table
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: r3b2-table-*
+          path: shards
+          merge-multiple: true
+
+      - name: Reassemble the table
+        shell: bash
+        run: |
+          set -o pipefail
+          node -e '
+            const fs = require("fs"), path = require("path");
+            const dir = "shards";
+            const files = fs.existsSync(dir) ? fs.readdirSync(dir).filter((f) => f.endsWith(".json")) : [];
+            const seen = new Map(), rows = [];
+            let red = 0;
+            for (const f of files) {
+              const d = JSON.parse(fs.readFileSync(path.join(dir, f), "utf8"));
+              const i = d.shard ? d.shard.i : null, n = d.shard ? d.shard.n : null;
+              if (i === null) { console.error(`REFUSED: ${f} carries no shard index`); process.exit(1); }
+              seen.set(i, { n, cells: d.cells || [] });
+              for (const r of d.rows || []) { rows.push(r); if (!r.ok) red++; }
+            }
+            const n = seen.size ? [...seen.values()][0].n : 0;
+            const missing = [];
+            for (let i = 1; i <= n; i++) if (!seen.has(i)) missing.push(i);
+            const cells = [...seen.values()].flatMap((v) => v.cells);
+            console.log(`shards present ${seen.size}/${n}; cells reassembled ${cells.length}; rows ${rows.length}; ${red} RED`);
+            console.log(JSON.stringify(cells, null, 1));
+            if (!seen.size) { console.error("REFUSED: no shard artifacts at all — a matrix that never started is not a green table"); process.exit(1); }
+            if (missing.length) { console.error(`REFUSED: shard(s) ${missing.join(",")} produced no artifact — LESS LOOKS GREENER`); process.exit(1); }
+            if (red) { console.error(`REFUSED: ${red} RED row(s) across the table`); process.exit(1); }
+          ' | tee merge.txt
+
+      - name: Summary
+        if: always()
+        shell: bash
+        run: |
+          {
+            echo '## R3b-2 table — merge'
+            echo ''
+            echo '```'
+            cat merge.txt 2>/dev/null || echo 'no output'
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
   # ---------------------------------------------------------------------------------------------------------------
   # V4 — the per-feature CONTROLS (`while`, `until`, `priority`) and the M21 pause (plan §27).
   #
