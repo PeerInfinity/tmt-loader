@@ -3259,10 +3259,13 @@ async function gateMobile(browser, base, ids) {
       // ⚠ It writes `tmp`, never `player`, and puts it back; `restored` is the row coming back unchanged.
       row.multiRes = await page.evaluate(() => {
         const ui = window.tmtLoader.layerListUI;
-        const one = (l) => ui.progress(l).rows.find((g) => g.kind === 'upgrades' || g.kind === 'buyables');
+        // ⚠ (U13) a buyable only where its cost is KNOWN: one the generated data calls `unknown` keeps its row as
+        // `? / ?` whatever the engine's `cost` holds (⚖ user), so a `multiRes` constructed on it can change nothing —
+        // MEASURED on `function-of-time`'s `f/11` and `the-cookie-tree-…`'s `g/11`, where this leg went red for it.
+        const one = (l) => ui.progress(l).rows.find((g) => g.kind === 'upgrades' || (g.kind === 'buyables' && g.needKnown));
         let l = null, g = null;
         for (const c of ui.cards()) { const r = one(c); if (r) { l = c; g = r; break; } }
-        if (!l) return { verdict: 'abstains (no card on this game shows an upgrade or buyable progress row)' };
+        if (!l) return { verdict: 'abstains (no card on this game shows an upgrade progress row, or a buyable one with a known cost)' };
         const t = tmp[g.layer][g.kind][g.id];
         // ⚠ BOTH SIDES, and this is the half the first version of this leg missed: the list reads `cost` through
         // `numFieldOf`, which falls back to the DECLARATION when `tmp` holds nothing — and a declared `cost()` is a
