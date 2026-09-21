@@ -134,7 +134,7 @@ async function constructEverything(page, id) {
     const T = window.tmtLoader, out = { did: [] };
     T.setWatchOption('watch', true); out.did.push('watch ON (escalation lists render their editors)');
     const r = T.explain().filter((x) => x.state === 'on' && x.kind === 'reset');
-    if (r[0]) { T.setSavedModifier(r[0].id, 'turn@W/Kx/N'); out.did.push(`${r[0].id} carries the row cycle (three more fields)`); }
+    if (r[0]) { T.setSavedModifier(r[0].id, 'turn@W/Kx/N/B/H'); out.did.push(`${r[0].id} carries the row cycle (five more fields)`); }
     const ch = T.explain().find((x) => x.kind === 'challenges' && x.state !== 'locked' && x.state !== 'excluded');
     if (ch) {
       T.setSavedStrategy(ch.id, 'sequential');

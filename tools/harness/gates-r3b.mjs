@@ -375,7 +375,7 @@ async function part6() {
           T.armLocked(true);
           if (!player[T.auLayer].features) player[T.auLayer].features = {};
           player[T.auLayer].features[f.id] = true;
-          T.setSavedPolicy(f.id, `always|${k}@7/4x/6`);
+          T.setSavedPolicy(f.id, `always|${k}@7/4x/6/0.25/45`);
           showTab('au');
           updateTemp();
           player.subtabs[T.auLayer].mainTabs = 'Advanced';
@@ -392,11 +392,13 @@ async function part6() {
         } catch (e) { out.error = String((e && e.message) || e).slice(0, 200); }
         return out;
       }, kind);
-      // ⛔ THE TABLE IS NOT THE EVIDENCE: what this row claims is that V2's GENERIC editors render the cycle's three
+      // ⛔ THE TABLE IS NOT THE EVIDENCE: what this row claims is that V2's GENERIC editors render the cycle's five
       // parameters, that each modifier ROW gets its own button (⚠ before this slice ONE button could only ever
       // reach `mods[0]`, so the row cycle would have been unreachable from the tab on the one kind that has it),
       // and that no new component family appeared.
-      const wantFields = ['modifier:k', 'modifier:n', 'modifier:w'];
+      // R3b-2: the cycle's parameters are now FIVE — `B` and `H` are the dead-member rule's, and they go through the
+      // same generic editors, which is the whole argument for having put a scheduler in a modifier row.
+      const wantFields = ['modifier:b', 'modifier:h', 'modifier:k', 'modifier:n', 'modifier:w'];
       const fieldsOk = JSON.stringify(seen.modFields.slice().sort()) === JSON.stringify(wantFields);
       const btnOk = seen.buttons.length === seen.mods.length
         && seen.buttons.some((b) => b.mod === `${kind}@W/Kx/N` && b.on === '1' && /remove/.test(b.text))

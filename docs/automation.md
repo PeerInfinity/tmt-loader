@@ -936,7 +936,7 @@ something, `gates-v2 --part 1`): the strategies are generic, so no game can have
 ### MODIFIERS: a strategy that rides on another one
 
 A policy may carry **one modifier**, appended with `|`: `gain>=2x|stall>=3x/5`, `sequential|give-up@0.1/30/2x`,
-`gain>=2|turn@20/30x/5/0/0`. There are **four** today — `stall>=Kx/N`, `turn@W/Kx/N` and `turn-demand@W/Kx/N` on `reset`,
+`gain>=2|turn@20/30x/5/0/0`. There are **four** today — `stall>=Kx/N`, `turn@W/Kx/N/B/H` and `turn-demand@W/Kx/N/B/H` on `reset`,
 and `give-up@B/H/Rx` on `challenges`, all below — and the grammar, the validator and the editors took every one of
 them from one more table row and no code at all (⚖ minimize hardcoding: `T.modifiers(kind)` is what the Advanced
 view renders, so a modifier on a new kind needs no new `tmtl-*` component and `componentNames` does not move).
@@ -962,8 +962,8 @@ for the same refusal.
 | | `unlocks-purchase` | … only when `player[l].points + tmp[l].resetGain` affords the cheapest unowned, unlocked upgrade of `l`, or the next level of one of its unlocked buyables — both only where costed in the layer's own points (no `currencyInternalName` / `currencyLocation` / `currencyLayer`); else wait |
 | | **`rate-peak@B/H`** | the currency-per-second optimum, with no threshold in the layer's own units. `rate = tmp[l].resetGain / (game-seconds since this feature's own last reset)`, `best` = the highest rate since that reset; reset once `(gain + 1) / elapsed < best × (1 − B)` has held **continuously** for `H` game-seconds. See below |
 | | **`… \| stall>=Kx/N`** (a MODIFIER) | on top of any of the above: if the primary rule has been waiting `K ×` as long as this feature's own resets usually take, reset anyway — but only the stalled feature closest to its target goes first. See below |
-| | **`… \| turn@W/Kx/N`** (a MODIFIER) | the ROW CYCLE: reset only while it is this layer's turn among the resets of its ROW, and take `W` resets per turn. Out of turn the reason is `waiting:turn`; IN turn the member follows its OWN rule and keeps the turn while that rule waits. `K` is the backstop that releases a member which is not using its turn — defaulted to **30**, not `stall>=Kx/N`'s 3, and measured. See below |
-| | **`… \| turn-demand@W/Kx/N`** (a MODIFIER) | the same, plus: whenever a decision NAMES a member's layer as what it is waiting on, that member gets the next turn. See below |
+| | **`… \| turn@W/Kx/N/B/H`** (a MODIFIER) | the ROW CYCLE: reset only while it is this layer's turn among the resets of its ROW, and take `W` resets per turn. Out of turn the reason is `waiting:turn`; IN turn the member follows its OWN rule and keeps the turn while that rule waits. `K` is the backstop that releases a member which is not using its turn — defaulted to **30**, not `stall>=Kx/N`'s 3, and measured. `B`/`H` are the DEAD-MEMBER rule: while the ENGINE refuses the holder, it keeps the turn only while it is still closing the distance to the threshold the engine compares it against. See below |
+| | **`… \| turn-demand@W/Kx/N/B/H`** (a MODIFIER) | the same, plus: whenever a decision NAMES a member's layer as what it is waiting on, that member gets the next turn. See below |
 | `upgrades` | `cheapest-first` | buys unlocked, unowned, affordable upgrades, cheapest `tmp` cost first (ties by id) |
 | | `order` | only the table's `order[]`, in that order |
 | | `order-then-cheapest` | the table's `order[]` first (each affordable one, in order), then `cheapest-first` over the upgrades not in it |
@@ -1080,7 +1080,7 @@ primary has been saying no for too long. A policy that REPLACED the primary woul
 policy carries the modifier — so a run that uses neither new strategy writes byte-for-byte the record it wrote before
 V2, and every snapshot committed in this repo stays valid.
 
-### `turn@W/Kx/N` and `turn-demand@W/Kx/N` — the ROW CYCLE (R3b), two MODIFIERS
+### `turn@W/Kx/N/B/H` and `turn-demand@W/Kx/N/B/H` — the ROW CYCLE (R3b), two MODIFIERS
 
 ⚖ **The user's idea, verbatim** (2026-09-20): *"Another idea is to cycle through which same-row resource to do the
 next reset. … There are a few different ways we could do this."*
@@ -1127,9 +1127,12 @@ not the same thing:
 
 ⚠ So a member that is not using its turn is the GUARD's business and nobody else's — there is no second mechanism.
 The one case neither answers is a member that can reset exactly ONCE: its bound comes from its SECOND reset, so it
-has none, and it holds the row. That is the same gap as a member that can never reset at all, and the candidate for
-both is a release rule based on PROGRESS toward the threshold rather than on elapsed time — which is also what would
-retire the `K` default below.
+has none, and it holds the row. That is the same gap as a member that can never reset at all, and **R3b-2's
+dead-member rule below is what answers both** — a release based on PROGRESS toward the engine's own threshold rather
+than on elapsed time. ⛔ It does NOT retire `K`, and that turned out to be structural rather than a matter of degree:
+the dead-member rule only ever looks while the **ENGINE** is refusing, so the row of this table about a holder
+refused by its **own policy** has no other bound than `K`. The two answer two different refusals and neither can see
+the other's case.
 
 **Precedence — where the cycle sits in the chain.**
 
@@ -1188,7 +1191,55 @@ demand which can never be met cannot hand it straight back.
   and the one holder that could not act had nobody left to give the turn to — a scheduler that stopped scheduling,
   and green in every hash.
 
-**DEMAND — `turn-demand@W/Kx/N`, and where it comes from.** ⚖ 13d.2 asks what a number stands for, and a weight is a
+**The DEAD-MEMBER rule — `B` and `H` (R3b-2): a turn releases when its holder stops getting CLOSER.**
+
+⛔ **The defect it is for, measured.** PTR's row 3 has **four** active members once `h` unlocks — `h, q, o, ss` —
+and a turn that reaches `o` or `ss` FREEZES the row. Traced from `snapshots/ptr/all/M21.json` every 25
+game-seconds with the guard off: from 28950 on, `o` holds the turn with `tmp.o.baseAmount` FLAT at 5 of 14 Super
+Boosters and `tmp.ss.baseAmount` flat at 17 of 28, for 1,100+ game-seconds and still counting, while `h` (4.4e33 of
+1e30) and `q` both read `canReset === true` and cannot act. `K` is blind to it **by construction**: `o` has never
+reset, so it has no interval of its own and therefore no bound at all.
+
+**The rule is R3a's give-up rule applied to a TURN.** While the ENGINE is refusing the holder: *did it close more
+than a fraction `B` of what was LEFT to close, within `H` game-seconds?* If it did, the mark moves and the clock
+restarts; if it did not, the turn is RELEASED (and the member is skipped for a rotation, exactly as `K`'s release
+is). Every term is the engine's own:
+
+- the **distance** is `tmp[l].baseAmount` toward the very threshold `canReset` compares it against — `requires` for
+  a NORMAL layer, `nextAt` for a STATIC one. ⚠ Reading `requires` for a static layer is V1 §16.3 item 8's trap, and
+  one function (`turnDistance`) is the only place that knows which is which. A `custom` layer declares no threshold
+  this file can read (its `canReset` is the game's own function), so it has **no distance** and the rule abstains
+  rather than guessing.
+- the **anchor is the member's BEST distance so far**, kept across its turns — not the best within this turn.
+  ⛔ This is the part the plan got wrong and measurement corrected. Plan §32.4a expected the discriminator to be
+  that `h`'s base rises while `ss`'s "does not move at all". **`ss`'s does move**: while it holds the turn nothing
+  on its row can wipe row 2, so it climbs 0 → 17 (and `o`'s 0 → 5) over ~300 game-seconds and only THEN plateaus.
+  Both dead members spend their first five minutes getting genuinely closer, so *"is it moving?"* does not separate
+  them from `h`. What does is that `h` keeps setting NEW HIGHS until it crosses; they never beat a high they
+  reached once. A per-turn anchor would hand each dead member a fresh climb on every rotation.
+- ⚠ **a DROP re-anchors downward.** PTR's `h` loses base mid-turn to row-2 spending it does not control (measured:
+  3.23e20 → 2.03e19 between two samples 25 game-seconds apart, while `h` held the turn). A sibling's wipe is
+  evidence about the ROW, not about the holder, so the mark follows the distance down and the clock restarts.
+  Against a high-water that only ever rises, those losses accumulate until the re-climb cannot beat it inside `H`
+  and the turn is taken from the one member the cycle exists to feed.
+- **`B` defaults to 0**, which is R3a's own control — *"release only when the distance stops dead"*. It is what the
+  plateau needs, and it makes the READING of the fraction (linear or logarithmic) irrelevant, because a strict
+  increase is a strict increase under either. R3a's rule had to take logs; this one does not.
+- **`H` defaults to 100 game-seconds**, and it is a buffer the player sets — R3a's `H` exactly. It has to exceed
+  the gap between a climbing member's discrete steps (PTR's `o` gains a Super Booster about every 50 game-seconds)
+  and fall well under the plateau it is meant to catch.
+- ⚠ **`/0/0` switches the rule OFF** — a window of zero is no window — and that is what every policy string pinned
+  before R3b-2 carries, so each of them reproduces to the hash.
+
+**The rule reaches the members that never declared anything, and that is the point.** `o` and `ss` carry no policy
+in any table; they are bound at the ROW's declared defaults, so the default `H` is what releases them. A table that
+had to name them would be naming two layers, which is the `exclude=reset:o,reset:ss` override this rule removes.
+
+**Measured on the freeze itself** (same fixture, same cell, guard off, 4,000 ticks): with the rule off the rotation
+stops on `o`; with it on, `reset:q` goes 6 → 11 and `reset:h` 2 → 8, and `o` holds exactly its window before handing
+the turn on.
+
+**DEMAND — `turn-demand@W/Kx/N/B/H`, and where it comes from.** ⚖ 13d.2 asks what a number stands for, and a weight is a
 literal. The ⚖-shaped question is *"who is actually WAITING?"* — and V1 already answers it, because every refusal
 is a DECISION CODE carrying the values it compared. A code may now declare **which of its own values names the layer
 it is waiting ON**:

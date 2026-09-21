@@ -1325,7 +1325,7 @@
     var M = byStrategyId('reset', P.modifier.id);
     return M && M.cycle ? { id: M.id, params: P.modifier.params, demand: M.cycle === 'demand' } : null;
   }
-  // The DEFAULTS a bound member that declares nothing runs under — read off the `turn@W/Kx/N` row's own parameters,
+  // The DEFAULTS a bound member that declares nothing runs under — read off the `turn@W/Kx/N/B/H` row's own parameters,
   // never written twice (⚖ minimize hardcoding: moving a default is moving one table row).
   function turnDefaults() {
     // ⚠ The fallback object is what a build with no such row would run under, and it is INERT by construction: `h`
