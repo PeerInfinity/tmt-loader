@@ -9,9 +9,12 @@
 //                                               `--cell i --horizon 37048` runs ONE cell (a CI shard: the three cells
 //                                               do not fit a 10-minute local wall side by side — measured, §45)
 //   node tools/harness/gates-r3c.mjs --part 1m --from <dir>   the MERGE: every cell present, and the verdict
-//   node tools/harness/gates-r3c.mjs --part 2 [--cell i --horizon G]   THE RUNG from `all/M25.json`: the q/h turn WEIGHT
-//                                               (the tier-1 literal R3b-2 tuned for H12) against M26's wall, 30,000
-//                                               ticks, twice per cell; `--part 2m --from <dir>` merges the shards
+//   node tools/harness/gates-r3c.mjs --part 2 [--cell i --horizon G]   THE RUNG, UNINTERRUPTED from `all/M15.json`:
+//                                               the q/h turn WEIGHT (the tier-1 literal R3b-2 tuned for H12) against
+//                                               M26's wall, 50,000 ticks, twice per cell; `--part 2m --from <dir>`
+//                                               merges the shards
+//   node tools/harness/gates-r3c.mjs --part 2f  the rung's FIXTURES: the shipped cell twice, each run writing every
+//                                               mark's snapshot to its own directory, compared file by file
 //
 // ⛔ WHAT PART 0 IS FOR. ⚖ User, 2026-09-21: "We can discard the Something Tree data" — asked, and the reading chosen was
 // DELETE ITS AUTOMATION TABLE. Something Tree then runs on the derived defaults like the other 169 games and stays the
@@ -186,13 +189,16 @@ async function part1m() {
 // the wall (the best ratio of a q-run sits at t ≈ 20, measured and derived). The wall is M = q11 × q21: total QUIRKS
 // and Super Boosters. What schedules quirk production is the row cycle's WEIGHT — the share of row 3's turns `q` gets —
 // a tier-1 literal R3b-2 tuned for H12, which is done. So the sweep is that axis, from the fixture the rung starts at.
-// ⚠ A RESUMED leg (offline time credited): its game-seconds compare with other legs from `all/M25.json` only.
-const L25 = { diff: 1, profile: 'all', ticks: Number(a.ticks || 30000), 'wall-ms': 900000, ladder: PTR_LADDER, to: 'M31',
-  'from-snapshot': path.join(REPO, 'tools/harness/snapshots/ptr/all/M25.json'), 'marks-continue': true, stall: 1000000,
+// ⛔ UNINTERRUPTED FROM `all/M15.json` — the fixture every rung mark from M16 to M25 was measured from — so the rung's
+// game-seconds compare with M16–M25's and no leg is credited offline time (a trace from `all/M25.json` is resumed;
+// the planner's oracle was one). The local box cannot run it inside a 10-minute wall (two legs walled at ~35,500
+// game-s); a CI runner does 21,000 of these ticks in ~2 minutes, so it runs there, one cell per job.
+const L25 = { diff: 1, profile: 'all', ticks: Number(a.ticks || 50000), 'wall-ms': 600000, ladder: PTR_LADDER, to: 'M31',
+  'from-snapshot': path.join(REPO, 'tools/harness/snapshots/ptr/all/M15.json'), 'marks-continue': true, stall: 1000000,
   // the price PAID for q22 — `tmp` at the check is the one the tick's purchase compared against
   until: `(!globalThis.__q22 && player.q.upgrades.indexOf(22) >= 0 && (globalThis.__q22 = {g: tmtLoader.gameSeconds, price: String(tmp.q.upgrades[22].cost), qtime: String(player.q.time), qTotal: String(player.q.total), sb: String(player.sb.points), ql: String(player.q.buyables[11])}), false)`,
   eval: `({hs: String(player.h.points), qTotal: String(player.q.total), ql: String(player.q.buyables[11]), sb: String(player.sb.points), qUpg: player.q.upgrades.slice(), hChall: Object.assign({}, player.h.challenges), ch: tmtLoader.hookStats().challenges, q22: globalThis.__q22 || null, oBase: String(tmp.o.baseAmount), ssBase: String(tmp.ss.baseAmount), cyc: tmtLoader.cycleState()})` };
-const RMARKS = ['M26', 'M27', 'M28', 'M29', 'M30', 'M31'];
+const RMARKS = ['M22', 'M23', 'M24', 'M25', 'M26', 'M27', 'M28', 'M29', 'M30', 'M31'];
 const W = (w) => `policy:reset:q=gain>=2|turn@${w}/30x/5/0/100`;
 const P2_CELLS = [
   { label: '', opt: '', note: 'the table as it ships: `reset:q` weight 10' },
@@ -211,7 +217,7 @@ async function part2() {
   p2Lines = lines.map((l, i) => ({ cell: CELL === null ? i : CELL, label: cells[i].label, ok: l.ok, twiceEqual: l.twiceEqual, gameSeconds: l.gameSeconds, hashGame: l.hashGame, ticks: l.ticks, marks: l.marks, actions: l.actions, eval: l.eval || l.runs?.[0]?.eval || null }));
   p2Lines.forEach((l, i) => {
     const ok = !!l.ok && (repeat < 2 || l.twiceEqual === true) && l.gameSeconds === horizon;
-    row({ gate: `R3c-2 the rung from all/M25 — ${cells[i].label || 'the table as it ships (W = 10)'}`, id: 'ptr', leg: `all/M25 → ${L25.ticks} ticks, diff 1, profile all, ${repeat} run(s)`,
+    row({ gate: `R3c-2 the rung from all/M15 — ${cells[i].label || 'the table as it ships (W = 10)'}`, id: 'ptr', leg: `all/M15 → ${L25.ticks} ticks, diff 1, profile all, ${repeat} run(s)`,
       ok, ticks: l.ticks, gameSeconds: l.gameSeconds, diff: 1, hash: l.hashGame, notes: `${rungText(l)}; horizon ${horizon}${l.gameSeconds === horizon ? '' : ' — STOPPED SHORT'}; ${cells[i].note}` });
   });
   if (CELL !== null) return;
@@ -237,17 +243,43 @@ async function part2m() {
   const missing = P2_CELLS.map((_, i) => i).filter((i) => !got.has(i));
   if (missing.length) { console.error(`REFUSED: cell(s) ${missing.join(', ')} produced no file — LESS LOOKS GREENER`); process.exit(1); }
   const ls = P2_CELLS.map((_, i) => got.get(i));
-  ls.forEach((l, i) => row({ gate: `R3c-2m cell ${i} — ${P2_CELLS[i].label || 'the table as it ships (W = 10)'}`, id: 'ptr', leg: `all/M25 → horizon ${l.horizon}`, ok: !!l.ok && l.rowOk && l.twiceEqual === true && l.gameSeconds === l.horizon,
+  ls.forEach((l, i) => row({ gate: `R3c-2m cell ${i} — ${P2_CELLS[i].label || 'the table as it ships (W = 10)'}`, id: 'ptr', leg: `all/M15 → horizon ${l.horizon}`, ok: !!l.ok && l.rowOk && l.twiceEqual === true && l.gameSeconds === l.horizon,
     ticks: l.ticks, gameSeconds: l.gameSeconds, diff: 1, hash: l.hashGame, notes: `${rungText(l)}; measured at \`${l.commit}\`` }));
   row({ gate: 'R3c-2m VERDICT (report): which weight reaches the rung\'s marks first', id: 'ptr', ok: rows.every((r) => r.ok), notes: rungVerdict(ls) });
 }
 
-const PARTS = { 0: part0, 1: part1, '1m': part1m, 2: part2, '2m': part2m };
+// ---- Part 2f: the rung's FIXTURES, written by the shipped leg TWICE and compared file by file (R3b-4's pattern) ------
+// Written to `tools/harness/results/r3c-fixtures/run{1,2}/` (CI uploads them); a fixture is committed only from a run
+// whose twin wrote the same file — gameSeconds, full hash and hashGame.
+async function part2f() {
+  const fsm = await import('node:fs');
+  const base = path.join(REPO, 'tools/harness/results/r3c-fixtures');
+  const dirs = [path.join(base, 'run1'), path.join(base, 'run2')];
+  dirs.forEach((d) => { fsm.rmSync(d, { recursive: true, force: true }); fsm.mkdirSync(d, { recursive: true }); });
+  const both = await Promise.all(dirs.map((d) => runCells({ id: 'ptr', cells: [P2_CELLS[0]], flags: Object.entries({ ...L25, snapshots: d }), pool: 1, repeat: 1, stop: null })));
+  const [r1, r2] = both.map((x) => x[0]);
+  row({ gate: 'R3c-2f the shipped leg from all/M15, twice, writing fixtures', id: 'ptr', leg: `all/M15 → ${L25.ticks} ticks`, ok: !!r1.ok && !!r2.ok && r1.gameSeconds === r2.gameSeconds && r1.hashGame === r2.hashGame,
+    ticks: r1.ticks, gameSeconds: r1.gameSeconds, diff: 1, hash: r1.hashGame, notes: `${rungText(r1)}; run 2 ${r2.gameSeconds} / ${r2.hashGame}` });
+  const files = fsm.readdirSync(dirs[0]).filter((f) => f.endsWith('.json')).sort((x, y) => Number(x.slice(1, -5)) - Number(y.slice(1, -5)));
+  for (const f of files) {
+    const A = JSON.parse(fsm.readFileSync(path.join(dirs[0], f), 'utf8'));
+    const B = fsm.existsSync(path.join(dirs[1], f)) ? JSON.parse(fsm.readFileSync(path.join(dirs[1], f), 'utf8')) : null;
+    const committed = path.join(REPO, 'tools/harness/snapshots/ptr/all', f);
+    const C = fsm.existsSync(committed) ? JSON.parse(fsm.readFileSync(committed, 'utf8')) : null;
+    const same = !!B && A.gameSeconds === B.gameSeconds && A.hash === B.hash && A.hashGame === B.hashGame;
+    row({ gate: `R3c-2f fixture ${A.mark} reproduces`, id: 'ptr', leg: 'the shipped leg, twice', ok: same, ticks: A.ticks, gameSeconds: A.gameSeconds, diff: A.diff, hash: A.hashGame,
+      notes: `full hash ${A.hash}; run 2 ${B ? `${B.gameSeconds}s/${B.hash}/${B.hashGame}` : 'MISSING'}; the COMMITTED all/${f}: ${C ? `${C.gameSeconds}s / ${C.hashGame} — ${C.hashGame === A.hashGame && C.gameSeconds === A.gameSeconds ? 'SAME state' : 'DIFFERS'}` : 'none (NEW)'}` });
+  }
+  row({ gate: 'R3c-2f VERDICT: every fixture the shipped leg wrote, written twice the same', id: 'ptr', ok: rows.every((r) => r.ok) && files.some((f) => f === 'M25.json'), notes: `${files.length} fixture(s): ${files.map((f) => f.slice(0, -5)).join(', ')}` });
+}
+
+const PARTS = { 0: part0, 1: part1, '1m': part1m, 2: part2, '2m': part2m, '2f': part2f };
 if (!PARTS[PART]) { console.error(`no part ${PART}`); process.exit(2); }
 await PARTS[PART]();
 
 const red = rows.filter((r) => !r.ok).length;
-const expected = (PART === '1' || PART === '2') && CELL !== null ? 1 : ROWS[PART];
+// Part 2f: its row count is the number of fixtures the leg wrote, so its floor is the leg + M16–M25 + a verdict.
+const expected = (PART === '1' || PART === '2') && CELL !== null ? 1 : PART === '2f' ? 12 : ROWS[PART];
 const short = `R3c part ${PART}${CELL !== null ? ` cell ${CELL}` : ''}: rows ${rows.length}/${expected} expected, ${red} RED`;
 console.log(`\nVERDICT: ${short}`);
 const READING = 'A cell\'s label is the whole --auto-opt string it ran (§14d.2 item 14); "—" for a mark means NOT REACHED inside the leg, which is a result. Part 0: Something Tree has NO automation table since R3c (⚖ user 2026-09-21), so the empty cell IS the derived defaults.';

@@ -1496,12 +1496,13 @@ jobs:
   # ⛔ `--assert` on every part: exiting 1 on a red row does NOT catch a battery that stopped part-way.
   # ---------------------------------------------------------------------------------------------------------------
   # ---------------------------------------------------------------------------------------------------------------
-  # R3c Part 2 — THE RUNG from `all/M25.json`: the q/h turn weight against M26's wall (q22's price is beaten only by a
-  # larger energy multiplier, i.e. more QUIRKS), 30,000 ticks, twice per cell, one cell per job, a GIVEN horizon.
-  # ⚠ A RESUMED leg: its game-seconds compare only with other legs from the same fixture.
+  # R3c Part 2 — THE RUNG, UNINTERRUPTED from `all/M15.json` (the fixture M16–M25 were measured from): the q/h turn
+  # weight against M26's wall (q22's price is beaten only by a larger energy multiplier, i.e. more QUIRKS), 50,000
+  # ticks, twice per cell, one cell per job, a GIVEN horizon. `r3c-fixtures` runs the shipped cell twice more, writing
+  # every mark's snapshot, and uploads both sets — the fixtures are committed from a run whose twin agrees.
   # ---------------------------------------------------------------------------------------------------------------
   r3c-rung:
-    name: R3c the rung from all/M25 — cell ${{ matrix.cell }}
+    name: R3c the rung from all/M15 — cell ${{ matrix.cell }}
     needs: fast
     runs-on: ubuntu-latest
     timeout-minutes: 60
@@ -1525,7 +1526,7 @@ jobs:
         shell: bash
         run: |
           set -o pipefail
-          node tools/harness/gates-r3c.mjs --part 2 --cell ${{ matrix.cell }} --horizon 65778 \
+          node tools/harness/gates-r3c.mjs --part 2 --cell ${{ matrix.cell }} --horizon 66048 \
             --no-summary --assert --pool 2 | tee r3c-2-${{ matrix.cell }}.txt
 
       - name: Summary
@@ -1550,7 +1551,7 @@ jobs:
           retention-days: 14
 
   r3c-rung-merge:
-    name: R3c the rung from all/M25 — merge
+    name: R3c the rung from all/M15 — merge
     needs: r3c-rung
     if: always()
     runs-on: ubuntu-latest
@@ -1610,6 +1611,50 @@ jobs:
   #
   # ⛔ `--assert` on every part: exiting 1 on a red row does NOT catch a battery that stopped part-way.
   # ---------------------------------------------------------------------------------------------------------------
+  r3c-fixtures:
+    name: R3c the rung's fixtures — the shipped leg twice
+    needs: fast
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - run: npm ci
+
+      - name: Part 2f — the shipped leg twice, every mark's snapshot, compared
+        shell: bash
+        run: |
+          set -o pipefail
+          node tools/harness/gates-r3c.mjs --part 2f --no-summary --assert | tee r3c-2f.txt
+
+      - name: Summary
+        if: always()
+        shell: bash
+        run: |
+          {
+            echo '## R3c part 2f — fixtures'
+            echo ''
+            echo '```'
+            cat r3c-2f.txt 2>/dev/null | grep -E 'VERDICT|REFUSED|^RED|^GREEN' || echo 'no output'
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload the fixtures
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: r3c-fixtures
+          path: tools/harness/results/r3c-fixtures/
+          if-no-files-found: warn
+          retention-days: 14
+
   v4-node:
     name: V4 controls — headless (parts 1, 3, 4, 5)
     needs: fast
