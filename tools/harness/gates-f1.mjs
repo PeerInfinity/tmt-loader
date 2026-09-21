@@ -208,7 +208,76 @@ function tables(lines, part) {
   }
 }
 
+// ---- Part fix: the ladder's FIXTURES regenerated under the shipped configuration (the yield ON) ---------------------
+// ⛔ `all/M04.json` is "passive PP" — the first mark at which the yield can act — so every later fixture moves and
+// M01–M04 do not. The shipped leg from it runs TWICE, each run writing every mark's snapshot to its own directory, and
+// a fixture is committed only from a run whose twin wrote the same file (gameSeconds, full hash, hashGame) — R3c-2f's
+// pattern. The DECLARED set is what the first CI run measured; a leg that writes one more or one fewer is a finding.
+const FIX = { diff: 1, profile: 'all', ticks: 85000, 'wall-ms': WALL, ladder: path.join(REPO, 'tools/harness/ladder/ptr.json'), to: 'M31',
+  'from-snapshot': SNAP('M04'), 'marks-continue': true, stall: 1e9 };
+const FIX_DECLARED = ['M05', 'M06', 'M07', 'M08', 'M09', 'M10', 'M11', 'M12', 'M13', 'M14', 'M15', 'M16', 'M17', 'M18', 'M19', 'M20', 'M21', 'M22', 'M23', 'M24', 'M25', 'M26', 'M27'];
+async function partFix() {
+  const { spawn } = await import('node:child_process');
+  const base = path.join(REPO, 'tools/harness/results/f1-fixtures');
+  const dirs = [path.join(base, 'run1'), path.join(base, 'run2')];
+  dirs.forEach((d) => { fs.rmSync(d, { recursive: true, force: true }); fs.mkdirSync(d, { recursive: true }); });
+  const leg = (d, k) => new Promise((ok) => {
+    const out = path.join(base, `leg${k}.json`);
+    const args = [path.join(REPO, 'tools/harness/run.mjs'), 'ptr', '--json', out, '--snapshots', d];
+    for (const [f, v] of Object.entries(FIX)) { if (v === true) args.push(`--${f}`); else args.push(`--${f}`, String(v)); }
+    const c = spawn(process.execPath, args, { cwd: REPO, stdio: ['ignore', 'inherit', 'inherit'] });
+    c.on('exit', (code, sig) => { let r; try { r = JSON.parse(fs.readFileSync(out, 'utf8')); } catch (e) { r = { ok: false, error: `no result (${code}/${sig}): ${e.message}` }; } ok(r); });
+  });
+  const [r1, r2] = await Promise.all(dirs.map((d, i) => leg(d, i + 1)));
+  row({ gate: 'F1-fix the shipped leg from all/M04.json, twice, writing fixtures', id: 'ptr', leg: `all/M04 → ${FIX.ticks} ticks, diff 1`,
+    ok: !!r1.ok && !!r2.ok && r1.gameSeconds === r2.gameSeconds && r1.hashGame === r2.hashGame && !r1.stall?.walled,
+    ticks: r1.ticks, gameSeconds: r1.gameSeconds, diff: 1, hash: r1.hashGame, notes: `run 2 ${r2.gameSeconds} / ${r2.hashGame}${r1.error || r2.error ? `; ERROR ${String(r1.error || r2.error).slice(-300)}` : ''}` });
+  const files = fs.readdirSync(dirs[0]).filter((f) => f.endsWith('.json')).sort();
+  for (const f of files) {
+    const A = JSON.parse(fs.readFileSync(path.join(dirs[0], f), 'utf8'));
+    const B = fs.existsSync(path.join(dirs[1], f)) ? JSON.parse(fs.readFileSync(path.join(dirs[1], f), 'utf8')) : null;
+    const C = fs.existsSync(SNAP(f.slice(0, -5))) ? JSON.parse(fs.readFileSync(SNAP(f.slice(0, -5)), 'utf8')) : null;
+    const same = !!B && A.gameSeconds === B.gameSeconds && A.hash === B.hash && A.hashGame === B.hashGame;
+    row({ gate: `F1-fix fixture ${A.mark} reproduces`, id: 'ptr', leg: 'the shipped leg, twice', ok: same, ticks: A.ticks, gameSeconds: A.gameSeconds, diff: 1, hash: A.hashGame,
+      notes: `full hash ${A.hash}; run 2 ${B ? `${B.gameSeconds}s/${B.hash}/${B.hashGame}` : 'MISSING'}; OLD all/${f}: ${C ? `${C.ticks} ticks / ${C.gameSeconds}s / ${C.hashGame}` : 'none (NEW)'}` });
+  }
+  const got = files.map((f) => f.slice(0, -5));
+  row({ gate: 'F1-fix VERDICT: every fixture the shipped leg wrote, written twice the same — and exactly the DECLARED set', id: 'ptr',
+    ok: rows.every((r) => r.ok) && got.join(',') === FIX_DECLARED.join(','), notes: `wrote ${got.join(', ')}; declared ${FIX_DECLARED.join(', ')}` });
+}
+
+// ---- Part rows: the `maxRow` defect, held to the PLAIN page over the whole roster -----------------------------------
+// ⛔ FOUND BY THIS SLICE: on a game whose rows are STRINGS, adding the `au` layer (row "side") made the engine's `maxRow`
+// "side" and emptied `TREE_LAYERS`, so the game loop's per-layer pass (passive generation, `update()`) never ran on the
+// automation page (loader/tmt-auto.js `repairMaxRow`). Every game is booted plain and with automation, ONE tick each,
+// and the engine's `maxRow` and `TREE_LAYERS` must be byte-equal; the repairs are counted by name.
+const ROWS_EVAL = `({maxRow: typeof maxRow === 'undefined' ? 'undef' : JSON.stringify(maxRow), tree: typeof TREE_LAYERS === 'undefined' ? null : JSON.stringify(TREE_LAYERS), rep: typeof tmtLoader !== 'undefined' && tmtLoader.maxRowRepairs !== undefined ? tmtLoader.maxRowRepairs : null})`;
+const ROWS_REPAIRED = ['create-incremental', 'gooby-cat-tree', 'the-danus-tree', 'the-pro-tree'];
+async function partRows() {
+  const { spawn } = await import('node:child_process');
+  const os = await import('node:os');
+  const ids = JSON.parse(fs.readFileSync(path.join(REPO, 'manifests/index.json'), 'utf8')).map((g) => g.id);
+  const one = (id, plain) => new Promise((ok) => {
+    const f = path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'f1-rows-')), 'r.json');
+    const c = spawn(process.execPath, [path.join(REPO, 'tools/harness/run.mjs'), id, '--ticks', '1', ...(plain ? ['--no-automation'] : []), '--eval', ROWS_EVAL, '--json', f], { cwd: REPO, stdio: 'ignore' });
+    c.on('exit', () => { try { const r = JSON.parse(fs.readFileSync(f, 'utf8')); ok(r.ok ? r.eval : { error: r.error || r.failed_at }); } catch (e) { ok({ error: String(e) }); } });
+  });
+  const jobs = ids.flatMap((id) => [[id, true], [id, false]]);
+  const res = {};
+  let next = 0;
+  await Promise.all(Array.from({ length: POOL }, async () => { while (next < jobs.length) { const [id, plain] = jobs[next++]; (res[id] ||= {})[plain ? 'plain' : 'auto'] = await one(id, plain); } }));
+  const errors = ids.filter((id) => res[id].plain?.error || res[id].auto?.error);
+  const differ = ids.filter((id) => !errors.includes(id) && (res[id].plain.maxRow !== res[id].auto.maxRow || res[id].plain.tree !== res[id].auto.tree));
+  const repaired = ids.filter((id) => res[id].auto?.rep).sort();
+  row({ gate: 'F1-rows the engine\'s maxRow and TREE_LAYERS: automation page ≡ plain page, every game, one tick', id: `${ids.length} games`, ok: ids.length > 0 && !errors.length && !differ.length,
+    notes: `errors ${errors.length ? errors.map((id) => `${id}: ${String(res[id].plain?.error || res[id].auto?.error).slice(0, 160)}`).join('; ') : 'none'}; differ ${differ.length ? differ.join(', ') : 'none'}` });
+  row({ gate: 'F1-rows the repair fires on exactly the four string-row games, once each', id: 'roster', ok: repaired.join(',') === ROWS_REPAIRED.join(',') && repaired.every((id) => res[id].auto.rep === 1),
+    notes: `repaired ${repaired.map((id) => `${id} ×${res[id].auto.rep}`).join(', ') || 'none'}; declared ${ROWS_REPAIRED.join(', ')}` });
+}
+
 async function main() {
+  if (PART === 'rows') { await partRows(); return finish('rows', 2); }
+  if (PART === 'fix') { await partFix(); return finish('fix', 2 + FIX_DECLARED.length); }
   if (PART === 'm') {
     const dir = a.from ? path.resolve(String(a.from)) : null;
     const want = String(a.cell ?? '');   // --part m --cell <part>: the part being merged

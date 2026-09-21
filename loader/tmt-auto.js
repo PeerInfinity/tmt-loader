@@ -3028,7 +3028,45 @@
   // 2.2.1's gameLoop skips automate() for a layer the player has not unlocked (`unl(layer)`), which is exactly when a
   // reset feature must fire to unlock it. The au layer (row "side": no unl check in either engine, and called AFTER every
   // tree layer) runs the features of every hooked layer whose own slot did not run this gameLoop — exactly once.
+  // ⛔ F1 (found by the partial-passive probe on `the-danus-tree`): A STRING `maxRow` IS BEATEN BY `'side'`. The 2.6
+  // engines keep `maxRow` as the largest `displayRow` seen by `setupLayer` (`if (maxRow < displayRow) maxRow =
+  // displayRow`), and a game that declares its rows as STRINGS (`row: "4"`) leaves it the string "4" — so when
+  // `updateLayers` reaches THIS layer, whose row is "side", `"4" < "side"` is TRUE as a string comparison: `maxRow`
+  // becomes "side", `TREE_LAYERS` is rebuilt EMPTY, and the game loop's per-layer pass (`for (x = 0; x <= maxRow;
+  // x++)`: passive generation, every `update()`) never runs again on the automation page. MEASURED 2026-09-21 over all
+  // 171 games, plain boot against automation boot: 4 differ (the-pro-tree, the-danus-tree, create-incremental,
+  // gooby-cat-tree) and nothing else.
+  // ⚠ WHY HERE, AND WHY THIS. `au`'s `displayRow` cannot move — the tree draws `OTHER_LAYERS['side']` by name — and the
+  // engine rebuilds `maxRow` from scratch AFTER this file boots, so a one-time coercion at `addLayer` is undone (tried
+  // and measured). This layer's own `automate` runs every tick from the engine's OTHER_LAYERS loop, so it is where the
+  // loader may act (only `automate` hooks): when `maxRow` is `"side"` — a value no TREE row can be — it REPLAYS the
+  // engine's own `setupLayer` / `updateLayers` arithmetic over every layer EXCEPT this one, with the same operators in
+  // the same key order, and sets `maxRow` and `TREE_LAYERS` to what the plain page computes. ⛔ NOT "the largest numeric
+  // row": that was tried and CRASHED two of the four (`the-pro-tree` declares rows "10" and "11", and the plain
+  // engine's STRING `maxRow` is "9", which bounds its loops at 9; a numeric 11 walked `TREE_LAYERS` past its end).
+  // The roster census (plain boot vs automation boot, one tick) is what holds it to the plain page: 0 differ.
+  T.maxRowRepairs = 0;
+  function repairMaxRow() {
+    /* global maxRow, TREE_LAYERS */
+    if (typeof maxRow !== 'string' || maxRow !== 'side' || typeof TREE_LAYERS === 'undefined') return;
+    var m = 0, tree = {}, l, L, dr;
+    for (l in layers) {
+      if (l === AU) continue;
+      L = layers[l];
+      dr = L.displayRow !== undefined ? L.displayRow : L.row;
+      if (!tree[dr] && !isNaN(dr)) tree[dr] = [];
+      if (!isNaN(dr) || dr < 0) tree[dr].push({ layer: l, position: L.position !== undefined ? L.position : l });
+      if (m < dr) m = dr;
+    }
+    for (var row in tree) { tree[row].sort(function (a, b) { return (a.position > b.position) ? 1 : -1; }); for (var k in tree[row]) tree[row][k] = tree[row][k].layer; }
+    var out = [];
+    for (var x = 0; x < m + 1; x++) if (tree[x]) out.push(tree[x]);
+    maxRow = m;
+    TREE_LAYERS = out;
+    T.maxRowRepairs++;
+  }
   function auAutomate() {
+    repairMaxRow();
     for (var i = 0; i < hookOrder.length; i++) if (ranAt[hookOrder[i]] !== loopNo) runLayer(hookOrder[i], 'fallback');
     stats.loops++;
     loopNo++;

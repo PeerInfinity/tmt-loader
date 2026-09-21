@@ -2240,6 +2240,90 @@ jobs:
           if-no-files-found: warn
           retention-days: 14
 
+  # F1-rows: the `maxRow` defect this slice found, held to the PLAIN page over all 171 games (plain boot vs automation
+  # boot, one tick each; the engine's `maxRow` and `TREE_LAYERS` byte-equal; the repair fires on exactly four games).
+  f1-rows:
+    name: F1 rows — maxRow / TREE_LAYERS equal to the plain page, every game
+    needs: fast
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - run: npm ci
+
+      - name: F1 part rows
+        shell: bash
+        run: |
+          set -o pipefail
+          node tools/harness/gates-f1.mjs --part rows --pool 4 --no-summary --assert | tee f1-rows.txt
+
+      - name: Summary
+        if: always()
+        shell: bash
+        run: |
+          {
+            echo '## F1 rows'
+            echo ''
+            echo '```'
+            cat f1-rows.txt 2>/dev/null || echo 'no output'
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  # F1-fix: the ladder's fixtures regenerated under the shipped configuration (the yield ON), the shipped leg TWICE
+  # from all/M04.json, every mark's snapshot written by each run into its own directory and compared file by file;
+  # both sets are uploaded and a fixture is committed only from a run whose twin agreed.
+  f1-fixtures:
+    name: F1 fixtures — the shipped leg from all/M04 twice
+    needs: fast
+    runs-on: ubuntu-latest
+    timeout-minutes: 100
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - run: npm ci
+
+      - name: F1 part fix
+        shell: bash
+        run: |
+          set -o pipefail
+          node tools/harness/gates-f1.mjs --part fix --wall-ms 5400000 --no-summary --assert | tee f1-fix.txt
+
+      - name: Summary
+        if: always()
+        shell: bash
+        run: |
+          {
+            echo '## F1 fixtures'
+            echo ''
+            echo '```'
+            cat f1-fix.txt 2>/dev/null | grep -E 'VERDICT|REFUSED|^RED|^GREEN' || echo 'no output'
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload both runs' fixtures
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: f1-fixtures
+          path: tools/harness/results/f1-fixtures/
+          if-no-files-found: warn
+          retention-days: 14
+
   # Parts 2 and 3 run as GROUPS (`--group`): a group is the cells that share a stretch, so one runner walks them
   # side by side and the long row-3 cells get a job each.
   f1-groups:

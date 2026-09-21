@@ -151,3 +151,46 @@ test('`tmtLoader.fallbackFires` counts the resets the STALL FALLBACK fired, and 
   assert.equal(F['reset:b'] || 0, 0, 'an own-rule reset is never counted');
   // MUTANT: "every reset is counted" — reset:b is counted and the last assert goes red.
 });
+
+test('⛔ CONSTRUCTED: the stall fallback FIRES ON A PATIENT RULE when the rule’s own waits are BIMODAL', () => {
+  // The failure Part 2 hunts for (plan §24.9: the stall WATCH under a good default reached no mark at all; §34: a cycle
+  // member's waits are bimodal, K 3 → 30). `a`'s own rule resets every second while its gain is 10 — five short
+  // intervals — and then waits 20 s ON PURPOSE (the gain is 1) before its own rule would fire again. `stall>=3x/5`
+  // reads that deliberate wait as a stall at 3 × 1 s and resets for a gain of 1. Nothing here is broken code: it is
+  // what the modifier's rule says, and it is why a stall fallback in a DEFAULT has to be measured on real games.
+  const s = fresh(); s.gain = { a: 10 };
+  const ctx = boot({ 'reset:a': 'gain>=10|stall>=3x/5' }, s);
+  tick(ctx, 6);
+  s.gain.a = 1;
+  tick(ctx, 20);
+  const fired = ctx.tmtLoader.fallbackFires['reset:a'] || 0;
+  assert.ok(fired >= 1, 'the fallback must fire inside the deliberate wait — that is the construction');
+  // …and with K large enough to cover the long mode, it does not (the §34 lesson: K is a claim about the WAITS)
+  const s2 = fresh(); s2.gain = { a: 10 };
+  const ctx2 = boot({ 'reset:a': 'gain>=10|stall>=30x/5' }, s2);
+  tick(ctx2, 6); s2.gain.a = 1; tick(ctx2, 20);
+  assert.equal(ctx2.tmtLoader.fallbackFires['reset:a'] || 0, 0);
+});
+
+test('⛔ a STRING `maxRow` beaten by `"side"` is REPAIRED to what the plain engine computes — a numeric one is never touched', () => {
+  const ctx = boot({ 'reset:a': 'always' });
+  ctx.TREE_LAYERS = []; ctx.maxRow = 'side';            // the broken state: the tree loop walks nothing
+  tick(ctx, 1);
+  assert.equal(ctx.maxRow, 1, 'maxRow must be the engine’s own value over every layer but au');
+  assert.equal(JSON.stringify(ctx.TREE_LAYERS), '[["a","b"]]', 'TREE_LAYERS must be rebuilt by the engine’s own rules');
+  assert.equal(ctx.tmtLoader.maxRowRepairs, 1);
+  tick(ctx, 3);
+  assert.equal(ctx.tmtLoader.maxRowRepairs, 1, 'once repaired, nothing more happens');
+  // the engine's STRING semantics are kept, not "fixed": rows "9", "10", "11" leave the plain maxRow "9"
+  const c3 = bootStub({ p: { ...game(fresh()).a, name: 'p', row: '10' }, q: { ...game(fresh()).b, name: 'q', row: '9' } }, { id: 'stub', autoTable: { formatVersion: 1 } });
+  c3.TREE_LAYERS = []; c3.maxRow = 'side';
+  tick(c3, 1);
+  assert.equal(c3.maxRow, '9', 'the plain engine leaves the STRING "9" ("9" < "10" is false) and so must the repair');
+  const c2 = boot({ 'reset:a': 'always' });
+  c2.TREE_LAYERS = ['sentinel']; c2.maxRow = 3;
+  tick(c2, 3);
+  assert.equal(c2.tmtLoader.maxRowRepairs, 0, 'a numeric maxRow is never touched');
+  assert.equal(c2.TREE_LAYERS[0], 'sentinel');
+  // MUTANT: "the repair is not called from auAutomate" — maxRow stays "side" and the first assert goes red.
+  // MUTANT: "the largest NUMERIC row" (the first cut) — c3 reads 10 and goes red; in the page it crashed the-pro-tree.
+});
