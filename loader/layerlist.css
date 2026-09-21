@@ -533,8 +533,10 @@
 }
 @keyframes tmt-layerlist-glow-a { from { opacity: 1; } to { opacity: 0; } }
 @keyframes tmt-layerlist-glow-b { from { opacity: 1; } to { opacity: 0; } }
-#tmt-layerlist .tmt-layerlist-glow-a::before { animation: tmt-layerlist-glow-a 1s ease-out; }
-#tmt-layerlist .tmt-layerlist-glow-b::before { animation: tmt-layerlist-glow-b 1s ease-out; }
+/* (U12) `--tmt-glow-delay` is set NEGATIVE only on a card rebuilt inside its own glow (a reset moves membership, so
+ * the rebuild it causes usually is), which resumes the fade where it was instead of cutting it off or restarting it */
+#tmt-layerlist .tmt-layerlist-glow-a::before { animation: tmt-layerlist-glow-a 1s ease-out var(--tmt-glow-delay, 0s); }
+#tmt-layerlist .tmt-layerlist-glow-b::before { animation: tmt-layerlist-glow-b 1s ease-out var(--tmt-glow-delay, 0s); }
 /* a decoration is exactly the case this preference exists for: no animation at all, and nothing in its place */
 @media (prefers-reduced-motion: reduce) {
   #tmt-layerlist .tmt-layerlist-glow-a::before,

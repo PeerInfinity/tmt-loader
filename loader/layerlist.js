@@ -1763,7 +1763,7 @@
   // ---------------------------------------------------------------- the DOM
   var panel = null, body = null, open = false, sig = null, cards = Object.create(null);
   // the throttle's clock, and what the gate reads to tell a throttled build from an unthrottled one
-  var lastSync = 0, stats = { refreshes: 0, syncs: 0, throttled: 0, rebuilds: 0, fits: 0, tips: 0, tipsRich: 0, tipSyncs: 0, glows: 0, counterGlows: 0 };
+  var lastSync = 0, stats = { refreshes: 0, syncs: 0, throttled: 0, rebuilds: 0, fits: 0, tips: 0, tipsRich: 0, tipSyncs: 0, glows: 0, counterGlows: 0, resets: 0, hooks: 0, glowCarries: 0, glowsOwed: 0, glowsRelit: 0 };
 
   function build() {
     if (panel) return;
@@ -1803,6 +1803,8 @@
     // of U1's rule that matters is kept exactly: nothing here calls `preventDefault`, so the control's own click
     // still happens, and a tooltip whose control has gone closes on the next sync.
     panel.addEventListener('click', onTipClick, true);
+    // (U12) a reset that arrived while its layer was still glowing re-lights it the moment that glow ENDS
+    panel.addEventListener('animationend', onGlowEnd, false);
   }
 
   function card(l) {
@@ -1933,7 +1935,7 @@
     actionBox.className = 'tmt-layerlist-actions';
     el.appendChild(actionBox);
     var rec = { el: el, layer: l, head: head, name: name, amount: amount, reset: reset, chips: chips, more: more,
-      glowEl: openBtn, resetMark: null,   // (U11) what carries the glow (its `::before`), and the last reading
+      glowEl: openBtn,                    // (U11) what carries the reset glow (its `::before`); U12 drives it from `doReset`
       counterMark: null,                  // (U11) each counter's last number, for the summary-chip glow
       resetL1: resetL1, resetL2: resetL2,
       chipEls: chipBox ? [].slice.call(chipBox.querySelectorAll('.tmt-layerlist-chip')) : [],
@@ -2190,6 +2192,8 @@
     });
     sig = signature(gs);
     stats.rebuilds++;
+    // (U12) a reset MOVES membership, so the rebuild it causes lands inside its own glow: carry that glow over
+    Object.keys(cards).forEach(function (l) { carryGlow(cards[l]); });
     // the cards are in the document now, so this is where the row width exists to be measured
     fitCards(null);
   }
@@ -2217,6 +2221,7 @@
   }
   function refreshInner(force) {
     stats.refreshes++;
+    hookResets();   // (U12) one identity compare per global: re-hooks only if something replaced them
     var gs = groups();
     if (signature(gs) !== sig) { rebuild(); }
     Object.keys(cards).forEach(function (l) {
@@ -2282,51 +2287,144 @@
       // (U10) …and the width the buyable counts reserve, AFTER both rows have written theirs: one pass per card,
       // and it writes nothing at all unless the widest count on the card actually grew.
       if (fitChipCounts(rec)) refit.push(l);
-      glowOnReset(rec);  // (U11) one number read and compared per card per sync; a class flip only on the event
     });
     if (refit.length) fitCards(refit);
     // an open tooltip is re-read and re-anchored HERE, so it rides the counters' own throttle rather than the frame
     syncTip();
   }
 
-  // ---------------------------------------------------------------- (U11) THE RESET GLOW
+  // ---------------------------------------------------------------- (U12) THE RESET GLOW: A HOOK ON `doReset`
   // ⚖ "the circle for that layer … briefly get a glow effect after that layer resets … fade over a second. This
-  // isn't a core feature, so if this idea would impose CPU costs, we can drop the idea" (user, 2026-09-20).
+  // isn't a core feature, so if this idea would impose CPU costs, we can drop the idea" (user, 2026-09-20), and ⚖
+  // "I want the glow only on the layer that triggered the reset, not in the Layers whose resources got wiped as a
+  // side effect" (user, 2026-09-20). ⚖ "I would prefer hooking doReset. I expect that to be more reliable."
   //
-  // ⚠ DETECTED BY SAMPLING, on the counters' own 250 ms budget, and the signal is the ENGINE's clock where it has
-  // one: 158 of 171 engines zero `player[l].resetTime` in `doReset` for the layer that resets AND, through
-  // `layOver(…, getStartLayerData(l))`, for every layer that reset wipes — so the resetting layer and the layers
-  // below it all glow, which is what a reset does. The other 13 (the PTR family among them, and stock 2.2) keep no
-  // `resetTime`; there the signal is the layer's own points FALLING TO ZERO, which a wipe does and a prestige of the
-  // layer itself does not (its points rise). So on those engines the layers a reset wiped glow and the one that
-  // was pressed does not. A spend that lands on exactly 0 would glow too — a decoration misfiring, never a write.
-  // ⚠ WHAT A SAMPLER GIVES UP, accepted rather than bought back with a faster timer: it fires up to one sample
-  // LATE, and two resets between samples are one glow. It cannot MISS a reset on the `resetTime` engines — the
-  // clock only runs forward between resets, so any reset since the last sample leaves it lower — except when the
-  // layer was already under the last sample's reading (a layer resetting more often than the sampler, e.g. an
-  // automated prestige every tick, glows on most samples instead: which is what it is doing).
-  // ⚠ ONE START PER EVENT. The comparison is an EDGE (lower than last time), never a level, so a paused page with
-  // `resetTime` at 0 starts nothing on the next sample; and a restart flips between two identical animations
-  // (`-a` ↔ `-b`, layerlist.css) rather than the remove-reflow-add trick, so it forces no layout.
-  // ⚠ The baseline is per CARD RECORD, which every `rebuild()` (and so every open) makes afresh: a reset that
-  // happened while the list was closed is not replayed as a glow when it opens.
-  function resetMark(l) {
-    return safe(function () {
-      var t = player[l].resetTime;
-      if (typeof t === 'number') return { t: t };
-      var p = player[l].points;
-      return p && typeof p.eq === 'function' ? { z: !!p.eq(0) } : null;
-    }, null);
+  // ⛔ WHY NOT A SAMPLER ANY MORE (U11 shipped one; the user found it dead on ptr): U11 read `player[l].resetTime`,
+  // which 158 of 171 engines zero in `doReset`, and on the other 13 (ptr among them) fell back to "this layer's
+  // points fell to exactly zero" — which a progressed save essentially never does, because those games keep points
+  // across a reset through milestones. So on the 13 NOTHING glowed in play. And on the 158 the clock is zeroed for
+  // every layer the reset WIPES too, which the user has now ruled against. Both halves are gone; this is the whole
+  // signal.
+  //
+  // THE HOOK. All 171 games declare `doReset` and `rowReset` as top-level function declarations in a classic
+  // script (measured over the manifests' own script lists), so each is a writable property of `window`, and every
+  // caller resolves the name at CALL time: the engines' own `v-on:click="doReset(layer)"`, `gameLoop`'s
+  // auto-prestige, `startChallenge`'s `doReset(layer, true)`, this list's own reset button, and the automation's
+  // `doReset(f.layer)`. Replacing the property intercepts every one of them with no per-game code.
+  //  · A RESET IS A CALL THAT GOT PAST THE EARLY RETURNS. `doReset` returns early when the layer cannot afford it,
+  //    and on `resetsNothing` after the gain; the one thing every engine does only once it really resets is call
+  //    `rowReset(x, layer)` with the pressed layer (171 of 171 bodies, after every early return). So `rowReset` is
+  //    hooked too, and all it does is mark the call in flight as PROCEEDED. A press that bought nothing glows nothing.
+  //  · ONLY THE OUTERMOST CALL IS AN EVENT. A `doReset` reached from INSIDE another one (a layer's own `doReset`
+  //    calling the global for another layer) is a side effect of the press, which is exactly what the ruling says
+  //    must not glow — and a second wrapper around ours (see `hookResets`) is the same shape, so it cannot
+  //    double-count either.
+  //  · ⛔ TRANSPARENT: the original runs with the caller's own `this` and ALL its arguments (`doReset(layer, force)`
+  //    — the second is load-bearing), its return value is returned, a throw of ITS propagates untouched, and every
+  //    line of ours is inside a try/catch, so a failure in a decoration can never break a player's reset. Nothing is
+  //    written to `player`. The gate is not `renderInert` but a with/without comparison (gates-u12 --part 1).
+  //  · An EVENT, not a sample: it fires on the reset itself, and two resets are two glows (the second restarts it).
+  //  · ⚖ AN AUTOMATED RESET GLOWS TOO: "If a layer is constantly glowing, then it is correctly informing the player
+  //    that that layer is constantly being reset" (user, 2026-09-20). So there is no "was it the player?" test.
+  //  · ⚖ AT MOST ONE RESTART PER SECOND PER LAYER: "We don't need to distinguish whether resets are happening more
+  //    than once per second" (user, 2026-09-20). A reset that arrives while its layer's glow is still running does
+  //    not restart it — it is remembered, and the glow is lit again on that animation's own `animationend`. So a
+  //    layer resetting every tick glows CONTINUOUSLY (never a dark gap before the next event re-lights it, which is
+  //    what dropping the event would give) for ONE restart a second instead of one per tick; and a layer resetting
+  //    once every ten seconds glows every time. The end is an EVENT, not a timer: this file still registers none.
+  //    ⚖ "I want to avoid flicker if possible" (user) — which is why an owed reset is PAID at the end rather than
+  //    dropped. The owed flag lives in this closure keyed by LAYER (`glowOwed`), not on the record or the element:
+  //    a card rebuilt inside its glow carries the glow over (`carryGlow`) and it is THAT element's `animationend`
+  //    that pays it. Under reduced motion no flag is ever set (`reducedMotion`), so none can be left unpaid.
+  var HOOK_MARK = 'tmtLoaderLayerListHook';
+  var inReset = null;   // the OUTERMOST doReset call in flight: { layer, proceeded }
+  var glowAt = Object.create(null);   // layer → performance.now() of its last glow, so a card REBUILT inside the
+  // second (a reset moves membership, so it often is) picks the same glow up where it was rather than losing it
+  function now() { return (window.performance && performance.now) ? performance.now() : Date.now(); }
+  function wrapDoReset(orig) {
+    var w = function doReset(layer) {
+      var outer = false;
+      try { if (inReset === null) { inReset = { layer: String(layer), proceeded: false }; outer = true; } } catch (e) { /* ours only */ }
+      if (!outer) return orig.apply(this, arguments);
+      var done = false, r;
+      try { r = orig.apply(this, arguments); done = true; } finally {
+        var call = inReset;
+        inReset = null;
+        if (done) { try { if (call && call.proceeded) onReset(call.layer); } catch (e) { /* a decoration never breaks a reset */ } }
+      }
+      return r;
+    };
+    w[HOOK_MARK] = orig;
+    return w;
   }
-  function glowOnReset(rec) {
-    var now = resetMark(rec.layer), was = rec.resetMark;
-    rec.resetMark = now;
-    if (!now || !was) return false;
-    var fired = now.t !== undefined ? (was.t !== undefined && now.t < was.t) : (was.z === false && now.z === true);
-    if (fired) glow(rec);
-    return fired;
+  function wrapRowReset(orig) {
+    var w = function rowReset(row, layer) {
+      try { if (inReset !== null && String(layer) === inReset.layer) inReset.proceeded = true; } catch (e) { /* ours only */ }
+      return orig.apply(this, arguments);
+    };
+    w[HOOK_MARK] = orig;
+    return w;
   }
-  function glow(rec) { if (rec.glowEl) { glowEl(rec.glowEl, rec.layer); stats.glows++; } }
+  /** HOOK ONCE, and again if the global was replaced. A function carrying our mark is ours and is left alone; any
+   *  other function in the slot (an engine that rebuilt its globals, or a foreign wrapper put round ours) is wrapped
+   *  — and the outermost-call rule above is what makes a wrapper round a wrapper count one reset once. */
+  function hookResets() {
+    try {
+      if (typeof window.doReset === 'function' && !window.doReset[HOOK_MARK]) { window.doReset = wrapDoReset(window.doReset); stats.hooks++; }
+      if (typeof window.rowReset === 'function' && !window.rowReset[HOOK_MARK]) { window.rowReset = wrapRowReset(window.rowReset); stats.hooks++; }
+    } catch (e) { /* no hook, no glow: the list itself is unaffected */ }
+  }
+  function hooked() {
+    return { doReset: !!(typeof window.doReset === 'function' && window.doReset[HOOK_MARK]),
+      rowReset: !!(typeof window.rowReset === 'function' && window.rowReset[HOOK_MARK]) };
+  }
+  var resetLog = [];   // the last few events, for the gate: which layer, and whether a card showed it
+  var glowOwed = Object.create(null);   // layer → true: a reset arrived inside its running glow
+  var GLOW_MS = 1000;                   // the animation's own length (layerlist.css) — and so the restart limit
+  // ⚖ "I also want the reduced motion setting to disable this glow" (user, 2026-09-20). OFF STRUCTURALLY, not just
+  // unpainted: under the preference NOTHING happens — no class flip, no `--tmt-glow` write, no owed flag, no
+  // `glows` count. Read at the EVENT, never cached, because a viewer can change it with the page open. The CSS rule
+  // (`animation: none`, layerlist.css) stays as well, for a build where this guard is ever missed.
+  function reducedMotion() {
+    try { return !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches); } catch (e) { return false; }
+  }
+  function onReset(l) {
+    stats.resets++;
+    var rec = open ? cards[l] : null, how = 'closed';
+    if (rec && rec.glowEl && reducedMotion()) { delete glowOwed[l]; how = 'reduced'; }
+    else if (rec && rec.glowEl) {
+      var t = glowAt[l];
+      if (t !== undefined && now() - t < GLOW_MS) { glowOwed[l] = true; stats.glowsOwed++; how = 'owed'; }
+      else { delete glowOwed[l]; glowAt[l] = now(); glow(rec); how = 'lit'; }
+    }
+    resetLog.push({ layer: l, how: how });
+    if (resetLog.length > 32) resetLog.shift();
+  }
+  function onGlowEnd(ev) {
+    try {
+      if (!/^tmt-layerlist-glow-[ab]$/.test(String(ev.animationName))) return;
+      var btn = ev.target && ev.target.closest ? ev.target.closest('.tmt-layerlist-open') : null;
+      var host = btn && btn.closest('[data-layer]');
+      var l = host ? host.dataset.layer : null;
+      if (!l || !glowOwed[l]) return;
+      delete glowOwed[l];
+      if (reducedMotion()) return;   // the preference was switched on while it was glowing
+      var rec = open ? cards[l] : null;
+      if (rec && rec.glowEl === btn) { glowAt[l] = now(); glow(rec); stats.glowsRelit++; }
+    } catch (e) { /* a decoration */ }
+  }
+  /** A card built while its layer's glow is still running takes the glow up at the point it had reached, through a
+   *  negative `animation-delay` (layerlist.css), so a rebuild cannot cut the second short. */
+  function carryGlow(rec) {
+    var t = glowAt[rec.layer];
+    if (t === undefined || !rec.glowEl || reducedMotion()) return;
+    var el = now() - t;
+    if (!(el >= 0 && el < GLOW_MS)) return;
+    rec.glowEl.style.setProperty('--tmt-glow-delay', (-Math.round(el)) + 'ms');
+    glowEl(rec.glowEl, rec.layer);
+    stats.glowCarries++;
+  }
+  function glow(rec) { if (rec.glowEl) { rec.glowEl.style.removeProperty('--tmt-glow-delay'); glowEl(rec.glowEl, rec.layer); stats.glows++; } }
   function glowEl(b, l) {
     var col = safe(function () { return str(tmp[l].color); }, '');
     if (col) b.style.setProperty('--tmt-glow', col);
@@ -2489,6 +2587,9 @@
 
   function start() {
     build();
+    // (U12) the reset glow's hook, installed once the engine's globals exist — on every page that loads the list,
+    // open or not, so the wrapper's transparency is a property of the PAGE and not of the panel being open.
+    hookResets();
     // Driven by the game's own re-renders, like the nav bar: no timer of ours, coalesced to one refresh per
     // animation frame, and only while the panel is open.
     var queued = false;
@@ -2572,7 +2673,11 @@
         rich: function () { return !!(tipEl && !tipEl.hidden && tipRich); },
         hoverable: hoverable
       },
-      stats: function () { return { refreshes: stats.refreshes, syncs: stats.syncs, throttled: stats.throttled, rebuilds: stats.rebuilds, fits: stats.fits, throttleMs: COUNTER_MS, tips: stats.tips, tipsRich: stats.tipsRich, tipSyncs: stats.tipSyncs, glows: stats.glows, counterGlows: stats.counterGlows }; },
+      stats: function () { return { refreshes: stats.refreshes, syncs: stats.syncs, throttled: stats.throttled, rebuilds: stats.rebuilds, fits: stats.fits, throttleMs: COUNTER_MS, tips: stats.tips, tipsRich: stats.tipsRich, tipSyncs: stats.tipSyncs, glows: stats.glows, counterGlows: stats.counterGlows, resets: stats.resets, hooks: stats.hooks, glowCarries: stats.glowCarries, glowsOwed: stats.glowsOwed, glowsRelit: stats.glowsRelit }; },
+      // (U12) whether `doReset` / `rowReset` are the list's wrappers right now, and the last reset events it saw
+      resetHook: hooked,
+      glowOwed: function () { return Object.keys(glowOwed); },
+      resetLog: function () { return resetLog.map(function (e) { return { layer: e.layer, how: e.how }; }); },
       cards: function () { return Object.keys(cards); }
     };
     if (T.navbarUI && T.navbarUI.refresh) T.navbarUI.refresh(); // the Layers button appears once this object exists
