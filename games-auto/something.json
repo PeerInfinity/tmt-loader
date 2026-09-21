@@ -33,16 +33,30 @@
       "unverified": true,
       "note": "A1 table: `always`. No SUMMARY row measures this entry against an alternative — it predates provenance."
     },
-    "reset:fundamental": {
-      "gate": "A1-3",
-      "commit": "3bc12bf77976cf60ba440664de1f421a29222e4f",
-      "note": "A1-3 (diff 1, game-s to unlock:upg:12): interval 5 → 308, 10 → 343, 20 → 435, 30 → 549, 60 → 784, 2 → not in 3000; `gain>=1` resets ~every tick and starves unlock gain (points^0.1). ⚠ An INTERVAL — it predates ⚖ 13d.2 (\"no arbitrary waiting\"); C1's rider re-swept it."
-    },
-    "reset:primitive": {
-      "gate": "A2-1",
-      "commit": "71da72e0ce82610f51aa47cea7c0796f9e66e1cb",
-      "note": "A2-1 sweep (diff 1, game-s to primitive ms 1 / ms 2): 90 → 399 / 579; 60 → 429 / 17109; 120 → 429 / 669; 5 = 10 = always = gain>=1 → 501 / not in 20000. ⚠ An INTERVAL — it predates ⚖ 13d.2; C1's rider re-swept it."
-    },
+    "reset:fundamental": [
+      {
+        "gate": "A1-3",
+        "commit": "3bc12bf77976cf60ba440664de1f421a29222e4f",
+        "note": "A1-3 (diff 1, game-s to unlock:upg:12): interval 5 → 308, 10 → 343, 20 → 435, 30 → 549, 60 → 784, 2 → not in 3000; `gain>=1` resets ~every tick and starves unlock gain (points^0.1)."
+      },
+      {
+        "gate": "C1-7",
+        "commit": "14f69834f5539752a99338661791ab3d20ed409e",
+        "note": "C1's rider (⚖ 13d.2), S01–S05 fresh, twice equal: the constant-free `rate-peak@0/0` BEATS this interval at every mark — S02–S05 each 54 game-s sooner (254 / 255 / 345 / 525 against 308 / 309 / 399 / 579); `gain>=2x`, `gain>=2x-unit`, `rate-peak@0.1/30` lose and `unlocks-purchase` never reaches S02. The interval was a proxy for the rate peak. NOT moved: moving it re-records every pinned Something Tree S01–S05 row (a full-hash re-record, the user's)."
+      }
+    ],
+    "reset:primitive": [
+      {
+        "gate": "A2-1",
+        "commit": "71da72e0ce82610f51aa47cea7c0796f9e66e1cb",
+        "note": "A2-1 sweep (diff 1, game-s to primitive ms 1 / ms 2): 90 → 399 / 579; 60 → 429 / 17109; 120 → 429 / 669; 5 = 10 = always = gain>=1 → 501 / not in 20000."
+      },
+      {
+        "gate": "C1-7",
+        "commit": "14f69834f5539752a99338661791ab3d20ed409e",
+        "note": "C1's rider (⚖ 13d.2), S01–S05 fresh, twice equal: NO target-driven rule matches this interval — `gain>=2x` and `gain>=2x-unit` +47 / +372 game-s at S04 / S05, `unlocks-purchase` +99 / +39, both `rate-peak` cells never reach S05. It stays, as the best rule measured, with no declared target among the five that it is a proxy for."
+      }
+    ],
     "buyables:fundamental": {
       "unverified": true,
       "note": "A1 table: `buyMax` (buyables 11–22 define no buyMax: one at a time to purchaseLimit). No SUMMARY row measures this entry against an alternative — it predates provenance."

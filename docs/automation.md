@@ -1571,8 +1571,8 @@ table, verbatim.
 | ptr | `reset:h` | `always\|turn@1/30x/5/0/100` | R3b-2 (R3b2-2, CI run 35553187707): `always` inside its turn; on its own it is the starvation the user hit by hand |
 | ptr | `challenges:h` | `sequential\|give-up@0.1/30/2x` + gate `hasMilestone('q',5)` | R3a (R3a-1): the EXIT rule, and the digest's own advice (L3.9) minus the half measurement showed to be wrong |
 | something | `reset:unlock` | `always` | A1 table — **unverified** (no SUMMARY row measures it against an alternative) |
-| something | `reset:fundamental` | `interval>=5` | A1-3: `gain>=1` resets about every tick and starves unlock gain; 5 s → 308 game-s to unlock:upg:12 of 2/5/10/20/30/60 — ⚠ an INTERVAL, re-swept by C1's rider (gate C1-7) |
-| something | `reset:primitive` | `interval>=90` | A2-1 sweep: 90 s → 399 / 579 game-s to primitive ms 1 / ms 2 (60 → 429 / 17109; 120 → 429 / 669; 5 = 10 = `always` = `gain>=1` → 501 / —) — ⚠ an INTERVAL, re-swept by C1's rider (gate C1-7) |
+| something | `reset:fundamental` | `interval>=5` | A1-3: `gain>=1` resets about every tick and starves unlock gain; 5 s → 308 game-s to unlock:upg:12 of 2/5/10/20/30/60 — ⚠ an INTERVAL, and C1's rider (gate C1-7, S01–S05 twice) found the constant-free `rate-peak@0/0` **54 game-s sooner at every mark S02–S05**; NOT moved, because every pinned Something Tree S01–S05 row would move with it (⚖ the user's) |
+| something | `reset:primitive` | `interval>=90` | A2-1 sweep: 90 s → 399 / 579 game-s to primitive ms 1 / ms 2 (60 → 429 / 17109; 120 → 429 / 669; 5 = 10 = `always` = `gain>=1` → 501 / —) — ⚠ an INTERVAL, and C1's rider (gate C1-7) found NO target-driven rule that matches it (each of five loses 39–372 game-s by S05, or never reaches it) |
 | something | `buyables:fundamental` | `buyMax` | A1 table (none of 11–22 defines `buyMax`: bought one at a time) — **unverified** |
 
 Everything else in both games is derived.

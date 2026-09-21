@@ -790,6 +790,7 @@
     "cost": "requirement",
     "by": [
      "rollback",
+     "regex",
      "trace"
     ],
     "scored": true,
@@ -804,6 +805,7 @@
     "cost": "requirement",
     "by": [
      "rollback",
+     "regex",
      "trace"
     ],
     "scored": true,
@@ -818,6 +820,7 @@
     "cost": "requirement",
     "by": [
      "rollback",
+     "regex",
      "trace"
     ],
     "scored": true,
@@ -832,6 +835,7 @@
     "cost": "requirement",
     "by": [
      "rollback",
+     "regex",
      "trace"
     ],
     "scored": true,

@@ -5400,3 +5400,20 @@ a hardcoded name is right about it, and a mutant that reddened both would say no
 
 ⚠ **A first round ran with the ORIGINAL width leg and `m6` was GREEN** — that is what found the vacuous floor
 above. The round in this table is the re-run after the fix.
+
+## 2026-09-21T03:54:26Z — Gate C1 part 7 — the Something Tree interval rider (`node tools/harness/gates-c1.mjs --part 7`) — commit `14f69834f` — 12/12 green
+
+| gate | game | leg | ticks | gameSeconds | diff | hash | result | notes |
+|---|---|---|---|---|---|---|---|---|
+| C1-7 Something Tree S01–S05 — the table as it ships: fundamental interval>=5, primitive interval>=90 (control) | something | fresh, diff 1, profile all, 3000 ticks, stop at S05 | 579 | 579 | 1 | `524822d719ceea18` | GREEN | S01 6 · S02 308 · S03 309 · S04 399 · S05 579; twice equal true |
+| C1-7 Something Tree S01–S05 — policy:reset:fundamental=gain>=2x | something | fresh, diff 1, profile all, 3000 ticks, stop at S05 | 677 | 677 | 1 | `329db20c31bb1463` | GREEN | S01 6 · S02 496 · S03 497 · S04 587 · S05 677; twice equal true; against the control: +0 / +188 / +188 / +188 / +98 |
+| C1-7 Something Tree S01–S05 — policy:reset:fundamental=gain>=2x-unit | something | fresh, diff 1, profile all, 3000 ticks, stop at S05 | 1074 | 1074 | 1 | `fe0f1d9575cd96c8` | GREEN | S01 21 · S02 893 · S03 894 · S04 984 · S05 1074; twice equal true; against the control: +15 / +585 / +585 / +585 / +495 |
+| C1-7 Something Tree S01–S05 — policy:reset:fundamental=unlocks-purchase | something | fresh, diff 1, profile all, 3000 ticks, stop at S05 | 3000 | 3000 | 1 | `f154714d62126399` | GREEN | S01 6 · S02 — · S03 — · S04 — · S05 —; twice equal true; against the control: +0 / — / — / — / — |
+| C1-7 Something Tree S01–S05 — policy:reset:fundamental=rate-peak@0/0 | something | fresh, diff 1, profile all, 3000 ticks, stop at S05 | 525 | 525 | 1 | `9b51a5e8c9765558` | GREEN | S01 6 · S02 254 · S03 255 · S04 345 · S05 525; twice equal true; against the control: +0 / -54 / -54 / -54 / -54 |
+| C1-7 Something Tree S01–S05 — policy:reset:fundamental=rate-peak@0.1/30 | something | fresh, diff 1, profile all, 3000 ticks, stop at S05 | 3000 | 3000 | 1 | `325a362927c54236` | GREEN | S01 6 · S02 599 · S03 600 · S04 1536 · S05 —; twice equal true; against the control: +0 / +291 / +291 / +1137 / — |
+| C1-7 Something Tree S01–S05 — policy:reset:primitive=gain>=2x | something | fresh, diff 1, profile all, 3000 ticks, stop at S05 | 951 | 951 | 1 | `047db8ac7f8251f3` | GREEN | S01 6 · S02 308 · S03 309 · S04 446 · S05 951; twice equal true; against the control: +0 / +0 / +0 / +47 / +372 |
+| C1-7 Something Tree S01–S05 — policy:reset:primitive=gain>=2x-unit | something | fresh, diff 1, profile all, 3000 ticks, stop at S05 | 951 | 951 | 1 | `047db8ac7f8251f3` | GREEN | S01 6 · S02 308 · S03 309 · S04 446 · S05 951; twice equal true; against the control: +0 / +0 / +0 / +47 / +372 |
+| C1-7 Something Tree S01–S05 — policy:reset:primitive=unlocks-purchase | something | fresh, diff 1, profile all, 3000 ticks, stop at S05 | 618 | 618 | 1 | `9aeb3c54459245ae` | GREEN | S01 6 · S02 308 · S03 309 · S04 498 · S05 618; twice equal true; against the control: +0 / +0 / +0 / +99 / +39 |
+| C1-7 Something Tree S01–S05 — policy:reset:primitive=rate-peak@0/0 | something | fresh, diff 1, profile all, 3000 ticks, stop at S05 | 3000 | 3000 | 1 | `1328897916664bac` | GREEN | S01 6 · S02 308 · S03 309 · S04 588 · S05 —; twice equal true; against the control: +0 / +0 / +0 / +189 / — |
+| C1-7 Something Tree S01–S05 — policy:reset:primitive=rate-peak@0.1/30 | something | fresh, diff 1, profile all, 3000 ticks, stop at S05 | 3000 | 3000 | 1 | `44d5522c95a710c2` | GREEN | S01 6 · S02 308 · S03 309 · S04 980 · S05 —; twice equal true; against the control: +0 / +0 / +0 / +581 / — |
+| C1-7 VERDICT (report: the table changes only if a target-driven rule matches or beats an interval everywhere) | something | — | — | — | — | — | GREEN | 11/11 |

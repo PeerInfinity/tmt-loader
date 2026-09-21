@@ -731,6 +731,8 @@
       if ((Array.isArray(pays) ? pays : [pays]).every(function (p) { return r.candidates.indexOf(p) >= 0; })) by.push('trace');
     } else if (s.scorable && s.bought && s.needed && s.needed.length === 1 && !subtractsCost) {
       pays = s.needed[0]; kind = 'requirement'; scored = true; by.push('rollback');
+      // the pick agrees when the field buy() decrements (by something other than the cost) IS the compared one
+      if (JSON.stringify(r.pick) === JSON.stringify(pays)) by.push('regex');
       if (r.candidates.indexOf(pays) >= 0) by.push('trace');
     } else {
       r.why = !s.scorable ? s.why : !s.bought ? 'buy() changed nothing' + (s.error ? ' (it threw: ' + s.error + ')' : '')
