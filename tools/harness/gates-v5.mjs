@@ -72,9 +72,13 @@ const REPORT_LEGS = {
 async function part3s() {
   const cells = RETRY_CELLS.map(([opt, note]) => ({ label: opt || '(the table)', opt, note }));
   const out = {};
-  for (const [leg, L] of Object.entries(REPORT_LEGS)) {
+  // `--leg L15` runs one half (the whole-stretch one is ~40 min on its own)
+  for (const [leg, L] of Object.entries(REPORT_LEGS).filter(([k]) => !a.leg || k === String(a.leg))) {
     let done = 0;
-    const flags = Object.entries({ profile: 'all', diff: 1, ticks: L.ticks, 'wall-ms': 600000, ladder: PTR_LADDER, to: 'M26',
+    // ⚠ THE WALL MUST OUTLAST THE LEG, or the cells are not comparable — measured: under a 600 s wall one L15 cell
+    // stopped at 36699 game-seconds of 37048 while its neighbours finished, and a row that ran a shorter leg than the
+    // row beside it is not a comparison. 21,000 ticks is ~280 s alone and ~700 s under a loaded box.
+    const flags = Object.entries({ profile: 'all', diff: 1, ticks: L.ticks, 'wall-ms': Number(a.wallMs || 1200000), ladder: PTR_LADDER, to: 'M26',
       'from-snapshot': SNAP('ptr', L.from), 'marks-continue': true, stall: 1000000, eval: READOUT });
     const lines = await runCells({ id: 'ptr', cells, flags, pool: POOL, repeat: 1, stop: 'M26',
       onRun: (c, l) => console.log(`[PROGRESS ${++done}/${cells.length}] ${leg} ${c.label} → ${l.ok ? `${l.gameSeconds}s ${l.hashGame}` : 'FAILED ' + l.error} (${Math.round((l.box?.wallMs || 0) / 1000)}s wall)`) });
@@ -154,11 +158,18 @@ const MEASURE = () => {
     out.roots.push({ w: Math.round(rr.width), pane: Math.round(pr.width) });
     if (!out.font) out.font = getComputedStyle(r).fontFamily.slice(0, 60);
     const edge = Math.min(vw, pr.right) + 0.5;
+    // ⛔ AND THE ROOT'S OWN OVERFLOW, because a BOX can lie. Measured: with a label `white-space:nowrap` again — the
+    // brief's own mutant — the label's TEXT runs past the screen while its box stays capped at `max-width:100%`, so a
+    // bounding-rect check alone came back green on the very defect this part exists for. `scrollWidth` is what sees
+    // content that does not fit; a label is checked the same way, and an `<input>` is NOT (a field legitimately holds
+    // more text than it shows).
+    if (r.scrollWidth > r.clientWidth + 1) out.past.push(`the tab's own content overflows its column: scrollWidth ${r.scrollWidth} of ${r.clientWidth}`);
     for (const e of r.querySelectorAll('input, select, button, .tmtl-label')) {
       const b = e.getBoundingClientRect();
       if (!b.width) continue;
       if (e.tagName !== 'SPAN') out.n++;
       if (b.right > edge) out.past.push(`${e.tagName.toLowerCase()}${e.className ? '.' + String(e.className).split(' ')[0] : ''} "${(e.textContent || e.value || '').trim().slice(0, 30)}" right ${Math.round(b.right)}`);
+      if (e.classList.contains('tmtl-label') && e.scrollWidth > e.clientWidth + 1) out.past.push(`label "${(e.textContent || '').trim().slice(0, 30)}" does not fit its own box: ${e.scrollWidth} of ${e.clientWidth}`);
       if (e.tagName === 'INPUT' && !/width:\s*100%/.test(e.getAttribute('style') || '')) out.taps.input = Math.min(out.taps.input, b.width);
       if (e.tagName === 'BUTTON') { out.taps.buttonW = Math.min(out.taps.buttonW, b.width); out.taps.buttonH = Math.min(out.taps.buttonH, b.height); }
       if (e.tagName === 'SELECT') out.taps.selectH = Math.min(out.taps.selectH, b.height);

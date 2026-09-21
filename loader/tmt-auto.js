@@ -3816,7 +3816,7 @@
   /** The control switch for gates-v5 part 2's CONTROL rows — a page-side flag, never saved. */
   T.setViewFloors = function (on) { FLOORS_ON = !!on; invalidateView(); return FLOORS_ON; };
   T.newFloors = function () { return { w: Object.create(null), g: Object.create(null) }; };
-  var NUM_STYLE = 'display:inline-block;font-variant-numeric:tabular-nums;white-space:nowrap;text-align:right';
+  var NUM_STYLE = 'display:inline-block;font-variant-numeric:tabular-nums;white-space:nowrap;text-align:right;margin:0';
   /** One number in its own box, reserving the widest it has been under this key. */
   function numHTML(F, key, text) {
     var t = String(text), mw = 0;
@@ -3845,9 +3845,9 @@
     if (html && (!g || len >= g.len)) { F.g[key] = { len: len, html: html }; return html; }
     if (!g) return '';
     var box = inline ? 'span' : 'div', disp = inline ? 'inline-grid' : 'grid';
-    return '<' + box + ' class="tmtl-slot" style="display:' + disp + ';text-align:left;max-width:100%">'
-      + (html ? '<' + box + ' style="grid-area:1/1;min-width:0">' + html + '</' + box + '>' : '')
-      + '<' + box + ' class="tmtl-ghost" aria-hidden="true" style="grid-area:1/1;min-width:0;visibility:hidden">' + g.html + '</' + box + '>'
+    return '<' + box + ' class="tmtl-slot" style="display:' + disp + ';text-align:left;max-width:100%;margin:0">'
+      + (html ? '<' + box + ' style="grid-area:1/1;min-width:0;margin:0;text-align:left">' + html + '</' + box + '>' : '')
+      + '<' + box + ' class="tmtl-ghost" aria-hidden="true" style="grid-area:1/1;min-width:0;margin:0;text-align:left;visibility:hidden">' + g.html + '</' + box + '>'
       + '</' + box + '>';
   }
   var plainLen = function (html) { return String(html).replace(/<[^>]*>/g, '').replace(/&[a-z#0-9]+;/g, 'x').length; };
@@ -4148,9 +4148,13 @@
       // puts the control on the next line instead of past the edge, and a wide one keeps it beside its label as
       // before. ⚠ Every size of the box and the buttons is UNCHANGED (FIELD_STYLE / BTN_STYLE) — a tap target is
       // no smaller than it was (gates-v5 part 1 measures that against the pre-V5 numbers).
-      template: '<span class="tmtl-field" style="display:inline-flex;flex-wrap:wrap;align-items:center;max-width:100%;min-width:0;box-sizing:border-box;text-align:left;margin:2px 8px 2px 0;vertical-align:middle;white-space:normal" :style="wide ? \'width:100%\' : \'\'">'
-        + '<span class="tmtl-label" style="opacity:.75;font-size:.85em;min-width:0;max-width:100%;overflow-wrap:anywhere;margin-right:3px">{{ data.label }}</span>'
-        + '<span class="tmtl-ctlgrp" style="display:inline-flex;align-items:center;white-space:nowrap;max-width:100%" :style="wide ? \'flex:1 1 100%\' : \'flex:0 0 auto\'">'
+      template: '<span class="tmtl-field" style="display:inline-flex;flex-wrap:wrap;align-items:center;max-width:100%;min-width:0;box-sizing:border-box;text-align:left;margin:2px 0;padding-right:8px;vertical-align:middle;white-space:normal" :style="wide ? \'width:100%\' : \'\'">'
+        // ⚠ `margin:0` AND `text-align:left` ON EACH ITEM, and both are load-bearing: ptr's stylesheet opens with
+        // `* { text-align: center; margin: auto }`, and an `auto` margin CENTRES a flex item — measured, the label
+        // came out at x = 183 of 390 and the box below it at x = 110 (V1's "an inline declaration is what wins",
+        // in the two places flexbox made new).
+        + '<span class="tmtl-label" style="opacity:.75;font-size:.85em;min-width:0;max-width:100%;overflow-wrap:anywhere;text-align:left;margin:0 3px 0 0">{{ data.label }}</span>'
+        + '<span class="tmtl-ctlgrp" style="display:inline-flex;align-items:center;white-space:nowrap;max-width:100%;text-align:left;margin:0" :style="wide ? \'flex:1 1 100%\' : \'flex:0 0 auto\'">'
         // ⚠ `data-fid` / `data-param` are how a GATE points at ONE feature's field. The first cut of `gates-v2`
         // located `input.tmtl-input` with `.first()` and typed into whichever feature happened to be drawn first,
         // then reported that the value had not committed — the leg was measuring the wrong block.
