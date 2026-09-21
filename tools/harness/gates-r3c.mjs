@@ -259,8 +259,22 @@ async function part2f() {
   const base = path.join(REPO, 'tools/harness/results/r3c-fixtures');
   const dirs = [path.join(base, 'run1'), path.join(base, 'run2')];
   dirs.forEach((d) => { fsm.rmSync(d, { recursive: true, force: true }); fsm.mkdirSync(d, { recursive: true }); });
-  const both = await Promise.all(dirs.map((d) => runCells({ id: 'ptr', cells: [P2_CELLS[0]], flags: Object.entries({ ...L25, snapshots: d }), pool: 1, repeat: 1, stop: null })));
-  const [r1, r2] = both.map((x) => x[0]);
+  // ⚠ ITS OWN SPAWN, stdout and stderr INHERITED: through `runCells` both legs died silently in CI at the end of a
+  // full-length run (no result file, an empty stderr tail — CI run 35569305134), so this part shows the child's own
+  // output and its exit code and signal rather than a tail that was empty.
+  const { spawn } = await import('node:child_process');
+  const leg = (d, k) => new Promise((ok) => {
+    const out = path.join(base, `leg${k}.json`);
+    const args = [path.join(REPO, 'tools/harness/run.mjs'), 'ptr', '--json', out, '--snapshots', d];
+    for (const [f, v] of Object.entries(L25)) { if (v === true) args.push(`--${f}`); else args.push(`--${f}`, String(v)); }
+    const c = spawn(process.execPath, args, { cwd: REPO, stdio: ['ignore', 'inherit', 'inherit'] });
+    c.on('exit', (code, sig) => {
+      console.log(`[2f] leg ${k} exited code ${code} signal ${sig}`);
+      let r; try { r = JSON.parse(fsm.readFileSync(out, 'utf8')); } catch (e) { r = { ok: false, error: `no result (${code}/${sig}): ${e.message}` }; }
+      ok({ ...r, marks: Object.fromEntries(Object.entries(r.marks || {}).map(([n, m]) => [n, m ? m.gameSeconds : null])), actions: r.hook?.actions });
+    });
+  });
+  const [r1, r2] = await Promise.all(dirs.map((d, i) => leg(d, i + 1)));
   row({ gate: 'R3c-2f the shipped leg from all/M15, twice, writing fixtures', id: 'ptr', leg: `all/M15 → ${L25.ticks} ticks`, ok: !!r1.ok && !!r2.ok && r1.gameSeconds === r2.gameSeconds && r1.hashGame === r2.hashGame,
     ticks: r1.ticks, gameSeconds: r1.gameSeconds, diff: 1, hash: r1.hashGame, notes: `${rungText(r1)}; run 2 ${r2.gameSeconds} / ${r2.hashGame}${r1.error || r2.error ? `; ERROR run 1: ${String(r1.error || '').slice(-300)} | run 2: ${String(r2.error || '').slice(-300)}` : ''}` });
   if (!r1.ok || !r2.ok) console.error(`the fixture legs FAILED:\n--- run 1 ---\n${r1.error}\n--- run 2 ---\n${r2.error}`);
