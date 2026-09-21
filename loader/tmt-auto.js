@@ -5302,7 +5302,8 @@
     };
     return function () { return !!player[l] && !!player[l].unlocked; };
   }
-  // Table-less defaults. reset: a static layer's gain is its requirement-paced 1 per reset, so `always` (A2-3: the
+  // Table-less defaults (⚠ the normal / custom `reset` default is `gain>=2x|stall>=5x/5` since F1 — see RESET_DEFAULT
+  // below; the history that follows is the pre-F1 `gain>=2x`, which it rides on). reset: a static layer's gain is its requirement-paced 1 per reset, so `always` (A2-3: the
   // all-`always` control ended at the default's hash at 8035; A1's b/g ran `gain>=1`, the same thing for a static layer);
   // normal / custom: `gain>=2x` — S1-2 sweeps (diff 1): the one policy that reached every mark on ptr reset:p (918 / 1627 /
   // 2112 vs interval>=10's 1361 / 2360 / 2936), Something Tree reset:fundamental (496 vs interval>=5's 308) and
@@ -5312,9 +5313,20 @@
   // F1 Part 2: `resetDefault=<policy>` (a harness lever and a table option) replaces the NORMAL / custom layer's derived
   // reset default, so the derived default itself can be swept with controls before it moves — a table entry and a
   // player's edit still outrank it, exactly as they outrank the default it replaces.
+  // ⚖ F1 PART 2 — THE DERIVED DEFAULT IS `gain>=2x|stall>=5x/5` SINCE F1, BY MEASUREMENT AT THE PAGE'S TICK (gate F1-2,
+  // plan §48): `gain>=2x` alone deadlocks in the shape the user found by hand on PTR's `q` — a flat gain against a purse
+  // that grows — and reached only S01 on the table-less Something Tree and ONE progress event in 600 s on
+  // the-normal-tree. The USER's stall fallback (V2) rides on it and changes nothing until a feature is demonstrably
+  // stuck. K was swept, not inherited (events in 600 game-s at diff 0.05, seed 1; `gain>=2x` / K=3 / K=5 / K=10 / K=30):
+  // the-extended-tree 43 / 23 / 42 / 43 / 43 — K=3 is the "fallback fires on a PATIENT rule" failure, 220 fallback
+  // resets; the-omega-tree 12 / 20 / 25 / 13 / 12; the-pp-tree 5 / 11 / 10 / 5 / 5; the-normal-tree 1 / 5 / 5 / 4 / 1;
+  // prestige-tree-ng 12 / 13 / 13 / 12 / 12 — K=5 has the best total (95 against 73) and gives up one event of 43 on
+  // the game where K=3 gave up twenty; Something Tree S01 → S04 (427 game-s). Inert on PTR's rung through M25 (every
+  // candidate lands on the same hash — PTR's tabled layers all name their own policy).
+  var RESET_DEFAULT = 'gain>=2x|stall>=5x/5';
   var resetDefaultNow = null;
   function defaultPolicy(kind, l, hasOrder, hasClicks) {
-    if (kind === 'reset') return layers[l].type === 'static' ? 'always' : (resetDefaultNow || 'gain>=2x');
+    if (kind === 'reset') return layers[l].type === 'static' ? 'always' : (resetDefaultNow || RESET_DEFAULT);
     if (kind === 'upgrades') return hasOrder ? 'order-then-cheapest' : 'cheapest-first';
     if (kind === 'buyables') return 'buy';
     if (kind === 'toggles') return 'on';

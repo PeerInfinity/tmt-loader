@@ -862,7 +862,7 @@ order**:
 | `buyables` | `buyables:<l>` | numeric ids in `buyables` | `buy` | `player[l].unlocked` |
 | `challenges` | `challenges:<l>` | numeric ids in `challenges` | `off`; **`sequential\|give-up@0.1/30/2x`** when the table gives `order` (R3a — see below) | `player[l].unlocked` |
 | `clickables` | `clickables:<l>` | numeric ids in `clickables` | `off`; `when` when the table lists the layer's clickables | `player[l].unlocked` |
-| `reset` | `reset:<l>` | a prestige: `type` `normal`, `static` or `custom` | `always` for a static layer; `gain>=2x` for normal / custom | `layerShown !== false` evaluated live (the node is visible) — not `tmp[l].layerShown`, which `updateTemp` computes before `gameLoop` and so lags a layer the game unlocks inside `gameLoop` by one tick |
+| `reset` | `reset:<l>` | a prestige: `type` `normal`, `static` or `custom` | `always` for a static layer; **`gain>=2x\|stall>=5x/5`** for normal / custom (F1; `gain>=2x` before it) | `layerShown !== false` evaluated live (the node is visible) — not `tmp[l].layerShown`, which `updateTemp` computes before `gameLoop` and so lags a layer the game unlocks inside `gameLoop` by one tick |
 
 The generic **kind order** is `toggles → upgrades → buyables → challenges → clickables → reset` (one-off purchases before
 repeatable ones; the reset last, so a tick's purchases spend the pre-reset balance). A table may give its own
@@ -881,6 +881,29 @@ swept layers without a constant: ptr `reset:p` 918 / 1627 / 2112 game-s to A1-3'
 `reset:primitive` 446 / 951 to primitive ms 1 / ms 2 (`interval>=90`: 399 / 579). `gain>=4x` also reached all of them
 (2215 at ptr (iii), 1587 on fundamental, 377 / 835 on primitive); `unlocks-purchase` walled ptr (ii) and fundamental;
 `always` walled both.
+
+⚖ **F1 MOVED IT: the normal / custom default is `gain>=2x|stall>=5x/5` since F1** — the user's stall fallback (V2)
+riding on `gain>=2x`, so it changes nothing until a feature is demonstrably stuck. Deleting Something Tree's table (R3c)
+exposed the failure of `gain>=2x` alone: a flat gain against a purse that grows (the shape the user found by hand on
+PTR's `q`) — S01 only on the table-less Something Tree, one progress event in 600 game-s on the-normal-tree. Measured
+at the page's REAL tick (`diff 0.05`), seed 1, events of the progress tracker in 600 game-s (gate F1-2, plan §48):
+
+| game | `gain>=2x` | `\|stall>=3x/5` | **`\|stall>=5x/5`** | `\|stall>=10x/5` | `\|stall>=30x/5` | `rate-peak@0/0` |
+|---|---|---|---|---|---|---|
+| the-extended-tree | 43 | 23 | **42** | 43 | 43 | 8 |
+| the-omega-tree | 12 | 20 | **25** | 13 | 12 | 16 |
+| the-pp-tree | 5 | 11 | **10** | 5 | 5 | 12 |
+| the-normal-tree | 1 | 5 | **5** | 4 | 1 | 10 |
+| prestige-tree-ng | 12 | 13 | **13** | 12 | 12 | 8 |
+| **total** | 73 | 72 | **95** | 77 | 73 | 54 |
+| Something Tree, no table (marks by 600 s) | S01 | S01–S05 (S05 446.8) | S01–S04 (427) | S01–S04 (552.5) | S01 | S01–S03 |
+
+⛔ **K = 3 IS THE FAILURE THE BRIEF NAMED, FOUND ON A REAL GAME**: on the-extended-tree the fallback fired 220 times on
+a rule that was waiting ON PURPOSE and halved its progress (a stall fallback reads a deliberate long wait as a stall when
+a feature's waits are bimodal — constructed in `loader/passive.test.mjs`). K = 5 costs one event of 43 there and keeps
+most of K = 3's gains; K = 30 never fires at all. the-function-of-time-tree and weakling-tree are identical under every
+candidate (no normal reset of theirs decides anything in 600 s). **Inert on PTR's rung through M25**: every candidate
+lands on the same hash (PTR's tabled resets name their own policy). `resetDefault=<policy>` is the lever that sweeps it.
 
 ⚠ **R2 re-examined that default and kept it, for a reason worth knowing: on an EMPTY purse `gain>=2x` IS `always`**
 (`N × 0 = 0`), which is what makes it safe as a default — it can never refuse a layer its first reset, and on PTR's

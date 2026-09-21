@@ -83,14 +83,16 @@ const CELLS = {
 };
 // ---- Part 2: the DERIVED default for a normal layer's reset (`resetDefault=<policy>`; the shipped one is `gain>=2x`)
 const CANDIDATES = [
-  { tag: 'gain2x', opt: '', note: 'the shipped derived default, `gain>=2x`' },
-  { tag: 'gain2x+stall', opt: 'resetDefault=gain>=2x|stall>=3x/5', note: 'the USER’s stall fallback riding on it' },
+  { tag: 'gain2x', opt: 'resetDefault=gain>=2x', note: 'the derived default BEFORE F1, named', l3: true },
+  { tag: 'stall3', opt: 'resetDefault=gain>=2x|stall>=3x/5', note: 'the USER’s stall fallback at V2’s K = 3' },
+  { tag: 'stall5', opt: '', note: 'the derived default SINCE F1: `gain>=2x|stall>=5x/5`', l3: true },
+  { tag: 'stall10', opt: 'resetDefault=gain>=2x|stall>=10x/5', note: 'K = 10' },
   { tag: 'rate-peak0/0', opt: 'resetDefault=rate-peak@0/0', note: 'the bare rate rule (the control)' },
   { tag: 'rate-peak0.1/30', opt: 'resetDefault=rate-peak@0.1/30', note: 'the user’s two buffers, as V2 shipped them' },
 ];
 for (const c of CANDIDATES) {
   for (const d of [1, 0.05]) CELLS[2].push({ key: `ST@${d}/${c.tag}`, s: 'ST', diff: d, opt: c.opt, group: 'ST' });
-  CELLS[2].push({ key: `L3@0.05/${c.tag}`, s: 'L3', diff: 0.05, opt: c.opt, ci: true, group: `L3-${c.tag}` });
+  if (c.l3) CELLS[2].push({ key: `L3@0.05/${c.tag}`, s: 'L3', diff: 0.05, opt: c.opt, ci: true, group: `L3-${c.tag}` });
   for (const g of SAMPLE) CELLS[2].push({ key: `X:${g}@0.05/${c.tag}`, s: `X:${g}`, diff: 0.05, opt: ['track=1', c.opt].filter(Boolean).join(';'), ci: true, group: `X:${g}` });
 }
 // ---- Part 3: SLOW THE RESETS DOWN — one layer at a time, then the masking cells, then together ---------------------
@@ -103,15 +105,18 @@ const P3 = [
   ...['0/0', '0.1/30', '0.3/60', '0.5/120'].map((b) => ({ s: 'P', layer: 'p', tag: `rate-peak@${b}`, opt: `policy:reset:p=rate-peak@${b}` })),
   ...[5, 20, 60].map((t) => ({ s: 'P', layer: 'p', tag: `gap>=${t}s`, opt: gap('reset:p', t) })),
   // e, before q ms 1 (the row-2 push); the control is the shipped `gain>=2x`
-  ...['2x', '4x', '8x', '16x'].map((n) => ({ s: 'R2', layer: 'e', tag: `gain>=${n}`, opt: `policy:reset:e=gain>=${n}` })),
+  ...['2x', '4x', '8x', '16x', '32x', '64x'].map((n) => ({ s: 'R2', layer: 'e', tag: `gain>=${n}`, opt: `policy:reset:e=gain>=${n}` })),
   ...['0/0', '0.1/30', '0.3/60'].map((b) => ({ s: 'R2', layer: 'e', tag: `rate-peak@${b}`, opt: `policy:reset:e=rate-peak@${b}` })),
-  ...[20, 60].map((t) => ({ s: 'R2', layer: 'e', tag: `gap>=${t}s`, opt: gap('reset:e', t) })),
+  ...[5, 10, 20, 40, 60].map((t) => ({ s: 'R2', layer: 'e', tag: `gap>=${t}s`, opt: gap('reset:e', t) })),
   // MASKING on row 1: the STATIC b / g wipe p — the planner's two cells, re-measured twice (they rested on one run each)
   ...[5, 30].map((t) => ({ s: 'E', layer: 'b+g (masking p)', tag: `b,g gap>=${t}s`, opt: `${gap('reset:b', t)};${gap('reset:g', t)}` })),
   // q / h over the long row-3 stretch: q's own ratio (it keeps its turn modifier), and the MASKING cells that slow the
   // row that wipes row 2
   ...['2', '4', '8'].map((n) => ({ s: 'L3', layer: 'q', tag: `q gain>=${n}`, opt: `policy:reset:q=gain>=${n}|turn@10/30x/5/0/100`, ci: true })),
   ...[60].map((t) => ({ s: 'L3', layer: 'q+h (masking row 2)', tag: `q,h gap>=${t}s`, opt: `${gap('reset:q', t)};${gap('reset:h', t)}`, ci: true })),
+  // e's best ratio from the row-2 curve, over the two WHOLE stretches it acts in (a table entry moves only on those)
+  { s: 'O', layer: 'e (whole opening)', tag: 'e gain>=16x', opt: 'policy:reset:e=gain>=16x', ci: true },
+  { s: 'L3', layer: 'e (whole row-3 stretch)', tag: 'e gain>=16x', opt: 'policy:reset:e=gain>=16x', ci: true },
   // together, over the whole opening: the ratio doubled on BOTH normal layers
   { s: 'O', layer: 'p+e', tag: 'p,e gain>=4x', opt: 'policy:reset:p=gain>=4x;policy:reset:e=gain>=4x', ci: true },
 ];
@@ -275,7 +280,24 @@ async function partRows() {
     notes: `repaired ${repaired.map((id) => `${id} ×${res[id].auto.rep}`).join(', ') || 'none'}; declared ${ROWS_REPAIRED.join(', ')}` });
 }
 
+// ---- Part pin: ONE historical pin, replayed — what the off-switch mutant must redden (gates-s1 part 1 is CI's) -------
+// A2-3 (i): ptr, kinds=reset,upgrades,buyables with the A2 `reset:p`, 3550 ticks at diff 1 → hashGame ff624de18438f176
+// (gates-s1 PINS, gates-p1a (e)). It passes M04 (2629), so a yield that the named `passiveYield=off` fails to switch off
+// changes it.
+async function partPin() {
+  const { spawn } = await import('node:child_process');
+  const os = await import('node:os');
+  const f = path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'f1-pin-')), 'r.json');
+  const { PRE_F1 } = await import('./lib.mjs');
+  const opt = `kinds=reset,upgrades,buyables;policy:reset:p=interval>=10;${PRE_F1}`;
+  await new Promise((ok) => spawn(process.execPath, [path.join(REPO, 'tools/harness/run.mjs'), 'ptr', '--profile', 'all', '--diff', '1', '--ticks', '3550', '--auto-opt', opt, '--json', f], { cwd: REPO, stdio: 'ignore' }).on('exit', ok));
+  const r = JSON.parse(fs.readFileSync(f, 'utf8'));
+  row({ gate: 'F1-pin the historical A2-3 (i) pin, NAMING the pre-F1 configuration, reproduces', id: 'ptr', leg: `3550×1, --auto-opt ${opt}`, ok: !!r.ok && r.ticks === 3550 && r.hashGame === 'ff624de18438f176',
+    ticks: r.ticks, gameSeconds: r.gameSeconds, diff: 1, hash: r.hashGame, notes: `hashGame ${r.hashGame} (pin ff624de18438f176); resets ${JSON.stringify(Object.fromEntries(Object.entries(r.hook?.actions || {}).filter(([k]) => k.startsWith('reset:'))))}` });
+}
+
 async function main() {
+  if (PART === 'pin') { await partPin(); return finish('pin', 1); }
   if (PART === 'rows') { await partRows(); return finish('rows', 2); }
   if (PART === 'fix') { await partFix(); return finish('fix', 2 + FIX_DECLARED.length); }
   if (PART === 'm') {

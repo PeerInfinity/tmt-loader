@@ -326,7 +326,7 @@ test('derived < table < the player’s saved choice < a runtime override', () =>
   const ctx = boot({ a: layer('a', 1, 'normal', () => 1) }, {});
   const T = ctx.tmtLoader;
   const f = T.features.find((x) => x.id === 'reset:a');
-  assert.equal(f.policy, 'gain>=2x', 'the derived default moved');
+  assert.equal(f.policy, 'gain>=2x|stall>=5x/5', 'the derived default moved (F1: `gain>=2x|stall>=5x/5`, gate F1-2)');
   assert.equal(T.setSavedPolicy('reset:a', 'interval>=30').ok, true);
   assert.equal(f.policy, 'interval>=30', 'the saved choice did not take effect');
   assert.equal(ctx.player.au.edits['reset:a'].policy, 'interval>=30', 'the choice is not in the save');
@@ -335,7 +335,7 @@ test('derived < table < the player’s saved choice < a runtime override', () =>
   T.setPolicy('reset:a', null);
   assert.equal(f.policy, 'interval>=30', 'clearing the override did not fall back to the save');
   T.setSavedPolicy('reset:a', null);
-  assert.equal(f.policy, 'gain>=2x', 'clearing the save did not fall back to the default');
+  assert.equal(f.policy, 'gain>=2x|stall>=5x/5', 'clearing the save did not fall back to the default');
   // a saved choice is NOT runtime memory: it is in `player`, and runtimeState must not carry it
   T.setSavedPolicy('reset:a', 'always');
   assert.equal(T.runtimeState().policies, undefined, 'a saved choice leaked into runtimeState()');
@@ -364,5 +364,5 @@ test('a value the strategy refuses leaves the previous one in force and SAYS why
   assert.equal(T.setSavedModifier('reset:a', null).policy, 'gain>=3x');
   // and a save written by hand with a policy this build cannot validate is IGNORED, not run
   ctx.player.au.edits['reset:a'] = { policy: 'mystery' };
-  assert.equal(T.features.find((x) => x.id === 'reset:a').policy, 'gain>=2x', 'an unvalidatable saved policy was put in force');
+  assert.equal(T.features.find((x) => x.id === 'reset:a').policy, 'gain>=2x|stall>=5x/5', 'an unvalidatable saved policy was put in force (it falls back to the DERIVED default, F1)');
 });

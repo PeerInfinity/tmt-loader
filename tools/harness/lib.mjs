@@ -300,13 +300,16 @@ export const TABLELESS_CONTROL = 'something';
 // EVERY configuration — including every pin recorded before it. A pin is a measurement of a CONFIGURATION (§14d.2 item
 // 14), so the historical gates (`gates-s1`, `gates-h1`, `gates-p1a`, `gates-p1b`) NAME the one they measured: this
 // option, appended to every leg they run at HEAD by `withPreF1`. Their old bytes are reproduced by it, not re-recorded.
-export const PRE_F1 = 'passiveYield=off';
-/** `o` (run.mjs flags) with PRE_F1 appended to its `--auto-opt`, unless the leg runs no automation at all. */
+// F1 moved TWO defaults, and a pre-F1 configuration names both: no passive yield, and the old derived reset default.
+export const PRE_F1 = 'passiveYield=off;resetDefault=gain>=2x';
+/** `o` (run.mjs flags) with every PRE_F1 entry appended to its `--auto-opt` (unless already there, or the leg runs no
+ *  automation at all). An entry the leg names itself — `resetDefault=…` swept on purpose — is NOT overridden. */
 export function withPreF1(o) {
   if (o['no-automation'] || o.automation === false || o.automation === '0') return o;
-  const cur = o['auto-opt'] ? String(o['auto-opt']) : '';
-  if (cur.split(';').includes(PRE_F1)) return o;
-  return { ...o, 'auto-opt': cur ? `${cur};${PRE_F1}` : PRE_F1 };
+  const cur = o['auto-opt'] ? String(o['auto-opt']).split(';').filter(Boolean) : [];
+  const keys = new Set(cur.map((e) => e.split('=')[0]));
+  const add = PRE_F1.split(';').filter((e) => !keys.has(e.split('=')[0]));
+  return add.length ? { ...o, 'auto-opt': [...cur, ...add].join(';') } : o;
 }
 export const SOMETHING_OLD_TABLE = [
   'kindOrder=toggles,reset,upgrades,buyables,challenges,clickables',

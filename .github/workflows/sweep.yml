@@ -2334,11 +2334,11 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        group: ['ST', 'L3-gain2x', 'L3-gain2x+stall', 'L3-rate-peak0/0', 'L3-rate-peak0.1/30',
+        group: ['ST', 'L3-gain2x', 'L3-stall5',
                 'X:the-extended-tree', 'X:prestige-tree-ng', 'X:the-normal-tree', 'X:the-omega-tree',
                 'X:the-function-of-time-tree', 'X:the-pp-tree', 'X:the-point-tree', 'X:weakling-tree',
                 'P3-P', 'P3-R2', 'P3-E', 'P3-O',
-                'P3-L3-q gain>=2', 'P3-L3-q gain>=4', 'P3-L3-q gain>=8', 'P3-L3-q,h gap>=60s']
+                'P3-L3-q gain>=2', 'P3-L3-q gain>=4', 'P3-L3-q gain>=8', 'P3-L3-q,h gap>=60s', 'P3-L3-e gain>=16x']
     steps:
       - uses: actions/checkout@v4
         with:

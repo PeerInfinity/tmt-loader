@@ -53,7 +53,9 @@ const arm = (T, over = {}) => {
 // Leg 1 — THE TRACKER IS INERT WHEN IT IS OFF, and that is what keeps every committed snapshot valid
 // ---------------------------------------------------------------------------------------------------------------
 test('with the tracker off, runtimeState() carries no V3 block at all and T.progress() is unarmed', () => {
-  const ctx = boot({ a: layer('a', 1, 'normal') }), T = ctx.tmtLoader;
+  // F1: the derived default carries the stall fallback since F1, whose memory is a legitimate runtime key; this leg is
+  // about the V3 blocks, so it names the pre-F1 default rather than asserting the stall memory's absence
+  const ctx = boot({ a: layer('a', 1, 'normal') }, { resetDefault: 'gain>=2x' }), T = ctx.tmtLoader;
   tick(ctx, 50);
   grant(ctx, 'a', 11);
   tick(ctx, 50);
