@@ -129,8 +129,20 @@ async function sweep({ gate, leg, cells, repeat = REPEAT, extra = {}, judge = nu
 // axis part 2 varies.
 const GUARD = `${String(a.k || '30')}x/${String(a.n || '5')}`;
 const BH = `${String(a.b || '0')}/${String(a.h || '100')}`;
-const turn = (w, { kind = 'turn', hPol = 'always', bh = BH } = {}) =>
-  `policy:reset:q=gain>=2|${kind}@${w}/${GUARD}/${bh};policy:reset:h=${hPol}|${kind}@1/${GUARD}/${bh}`;
+// ⚠ `OFF` is the guard switched off — a `K` no wait can reach — which is how a row isolates the dead-member rule
+// from `K`. It is the same device §34.4 used to isolate `K` from the weight.
+const OFF = `100000x/${String(a.n || '5')}`;
+const turn = (w, { kind = 'turn', hPol = 'always', bh = BH, guard = GUARD } = {}) =>
+  `policy:reset:q=gain>=2|${kind}@${w}/${guard}/${bh};policy:reset:h=${hPol}|${kind}@1/${guard}/${bh}`;
+// ⛔ THE TWO DEAD MEMBERS, NAMED — IN A GATE, WHICH IS WHERE A LAYER NAME BELONGS. `o` and `ss` carry no policy in
+// any table: they are BOUND members running at the modifier row's declared defaults, which is exactly how the rule
+// reaches them without any table naming them. But it also means a carrier's `/0/0` CANNOT switch the rule off for
+// them — measured, and it is what made the first cut of the freeze control read identically to the row it was the
+// control for (q 11 / h 8 in both). So a row that wants the rule OFF EVERYWHERE has to say so on all four members,
+// and these two keep their DERIVED primaries (`gain>=2x` on the normal `o`, `always` on the static `ss`) and their
+// default weight of 1, so the only thing that changes between the control and its subject is `/B/H`.
+const dead = (bh, guard = GUARD) =>
+  `;policy:reset:o=gain>=2x|turn@1/${guard}/${bh};policy:reset:ss=always|turn@1/${guard}/${bh}`;
 // ⛔ THE HACK THIS SLICE EXISTS TO REMOVE. Every row that still carries it says so in its note, and part 1's
 // verdict is exactly "the row with no `exclude=` reproduces the row with it".
 const EXCL = 'exclude=reset:o,reset:ss;';
@@ -147,17 +159,26 @@ const EXCL = 'exclude=reset:o,reset:ss;';
 // ladder marks, Hindrance Spirit, the quirk count and the q/h ratio — and the row reports the cost in game-seconds
 // that the two dead members actually took, which is the number a reader wants and no hash would show.
 async function part1() {
+  // ⛔ THE GUARD IS SWITCHED OFF IN BOTH CELLS, ON PURPOSE, AND THAT IS ITSELF A MEASUREMENT. At the shipped
+  // `K = 30` these two rows are INDISTINGUISHABLE on this leg — both hand out exactly 20 turns in 4,000 ticks and
+  // neither reaches M22 — because `K` releases `q` and `h` often enough to keep the rotation nominally moving
+  // while `o` and `ss` still eat it. A control that cannot tell the two builds apart is not a control (§34.5's
+  // lesson, and the mutant round found this row failing it), so the guard is removed and the dead-member rule is
+  // then the ONLY thing that can release a turn. ⇒ this also answers "does the rule retire K?" from the other
+  // side: it does not, and K does not subsume it either — they release different holders.
+  // ⚠ AND THE ROUND COUNT IS NOT THE QUANTITY. With the guard off a frozen row still shows the turns it handed
+  // out BEFORE it froze, so the measurement is how much ROW-3 WORK actually got done: `reset:q` + `reset:h`.
   await sweep({ gate: 'R3b2-1 the dead-member rule on the FREEZE itself —', leg: 'L21', repeat: Number(a.repeat21 || 2), cells: [
-    cell(turn(1, { bh: '0/0' }), 'CONTROL — the FREEZE, reproduced: the rule OFF (`/0/0`) with all four members and the guard at its shipped K. The row is expected to stop moving: `o` takes the turn and holds it with its base flat at 5 of 14 Super Boosters'),
-    cell(turn(1), 'the RULE ON at the shipped default. The rotation must keep moving — this is the row that says the freeze is fixed on a REAL ENGINE, not only on the stub'),
+    cell(turn(1, { bh: '0/0', guard: OFF }) + dead('0/0', OFF), 'CONTROL — the FREEZE, reproduced: the rule OFF (`/0/0`) and the guard off, with all four members. `o` takes the turn and holds it with its base flat at 5 of 14 Super Boosters, `ss` at 17 of 28, while `h` and `q` both read `canReset === true` and cannot act'),
+    cell(turn(1, { guard: OFF }) + dead(BH, OFF), 'the RULE ON at the shipped default. Row 3 must get back to work — this is the row that says the freeze is fixed on a REAL ENGINE, not only on the stub'),
   ], judge: (l, c) => {
     const e = evalOf(l), C = e && e.cyc && e.cyc['3'];
     if (!C) return { ok: false, why: 'row 3 has no cycle at all, so this row measured nothing' };
     const on = c.opt.includes(`/${BH}`);
-    // ⛔ THE ROUND COUNT IS THE MEASUREMENT. A frozen row stops incrementing it; §32.1 item 2 named "3 to 15 rounds
-    // over nine thousand game-seconds" as the tell of a scheduler that has stopped scheduling.
-    return on ? { ok: C.round >= 8, why: `${C.round} turns handed out (the rule ON must keep the rotation moving)` }
-              : { ok: C.round <= 5, why: `${C.round} turns handed out (the CONTROL must show the freeze — if this is high, the freeze is not reproduced and the row below proves nothing)` };
+    const work = (l.actions?.['reset:q'] || 0) + (l.actions?.['reset:h'] || 0);
+    const why = `${work} row-3 resets (q ${l.actions?.['reset:q'] || 0} / h ${l.actions?.['reset:h'] || 0}) in ${C.round} turns`;
+    return on ? { ok: work >= 15, why: `${why} — the rule ON must get row 3 working again` }
+              : { ok: work <= 10, why: `${why} — the CONTROL must show the freeze; if this is high the freeze is not reproduced and the row below proves nothing` };
   } });
   await sweep({ gate: 'R3b2-1 the ORACLE —', leg: 'L15', cells: [
     cell(EXCL + turn(20, { bh: '0/0' }).replace(/;/g, ';'), '⛔ THE HACK: the planner\'s own oracle configuration, with the two dead members EXCLUDED and the rule off. This is the row the one below has to match, and it is expected to reproduce `d2da5ef3a490f92a` — 73 Hindrance Spirit, 673 total quirks, `reset:q` 286 / `reset:h` 15, M22–M24 identical to the shipped control'),

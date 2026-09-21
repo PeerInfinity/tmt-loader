@@ -477,11 +477,19 @@ test('R3b-2 — a SIBLING’s wipe is not the holder’s failure: the mark follo
   state.can.a = false; state.req.a = 1e9; state.base.a = 1e6;
   const ctx = boot({ 'reset:a': `always|turn@1/100000x/5/0/20`, 'reset:b': `always|turn@1/100000x/5/0/20` }, state);
   tick(ctx, 5);
+  assert.equal(cyc(ctx).holder, 'reset:a', 'the leg needs the turn to have reached `a` before it measures anything');
+  // ⛔ READ THE RELEASE, NOT THE HOLDER — and the mutant round is what taught this leg the lesson a sibling leg had
+  // already learnt. `m-r3b2-wipe-costs-the-turn` SURVIVED the first cut of this row: the mutated build DID take the
+  // turn away, `b` spent its one-reset turn inside a tick, and the rotation handed the turn straight back — so the
+  // holder read `reset:a` at the end under both builds. A release leaves two traces that a handback does not: a
+  // SKIP against the released member, and an act by somebody else.
+  const skipAt = JSON.stringify(cyc(ctx).skip), bAt = acts(ctx)['reset:b'] || 0;
   state.base.a = 1;                       // the wipe
   tick(ctx, 5);
   for (let i = 0; i < 60; i++) { state.base.a *= 1.2; tick(ctx, 1); }   // a re-climb that never beats 1e6 again
   assert.ok(state.base.a < 1e6, 'the leg must not accidentally re-reach the old high — that would prove nothing');
-  assert.equal(cyc(ctx).holder, 'reset:a', `a wipe cost the holder its turn: ${JSON.stringify(cyc(ctx))}`);
+  assert.equal(JSON.stringify(cyc(ctx).skip), skipAt, `a wipe cost the holder its turn: ${JSON.stringify(cyc(ctx))}`);
+  assert.equal(acts(ctx)['reset:b'] || 0, bAt, `the turn was handed on after a wipe: ${JSON.stringify(acts(ctx))}`);
   // MUTANT `m-r3b2-wipe-costs-the-turn` (`|| p < best` removed from the re-anchor): the turn moves and this row reds.
 });
 
@@ -493,8 +501,14 @@ test('R3b-2 — the rule looks ONLY while the ENGINE refuses: a holder its own P
   state.can.a = true; state.gain.a = 1; state.req.a = 1; state.base.a = 1;
   const ctx = boot({ 'reset:a': `gain>=100x|turn@1/100000x/5/0/20`, 'reset:b': `always|turn@1/100000x/5/0/20` }, state);
   ctx.player.a.points = new Decimal(1000);       // so `100x what is held` is out of reach for ever
+  tick(ctx, 4);
+  assert.equal(cyc(ctx).holder, 'reset:a', 'the leg needs the turn to have reached `a` before it measures anything');
+  // ⛔ THE SKIP, NOT THE HOLDER — `m-r3b2-rule-ignores-the-engine` survived the first cut of this row for exactly
+  // the reason the wipe row above records: a released turn comes straight back on the next rotation.
+  const skipAt = JSON.stringify(cyc(ctx).skip);
   tick(ctx, 80);
-  assert.equal(cyc(ctx).holder, 'reset:a', `the dead-member rule released a holder the ENGINE would have allowed: ${JSON.stringify(cyc(ctx))}`);
+  assert.equal(JSON.stringify(cyc(ctx).skip), skipAt,
+    `the dead-member rule released a holder the ENGINE would have allowed: ${JSON.stringify(cyc(ctx))}`);
   // ⇒ this is why `K` is NOT retired by R3b-2: it is the only bound over this refusal, and the two rules never
   // meet. The same construction with a finite `K` and an interval of its own IS released — that is R3's own leg.
   // MUTANT `m-r3b2-rule-ignores-the-engine` (the `engineAllows` test dropped): the turn moves and this row reds.

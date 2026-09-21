@@ -999,6 +999,98 @@ jobs:
           retention-days: 14
 
   # ---------------------------------------------------------------------------------------------------------------
+  # R3b-2 — the DEAD-MEMBER rule: a turn releases when its holder stops getting CLOSER (plan §40).
+  # ⚠ Parts 2 and 3 are MEASUREMENT TABLES (ptr's defaults, H12's entry states) and are run by hand; what CI owns is
+  # the two ASSERTIVE parts — the rule on a real engine, and inertness.
+  r3b2-rule:
+    name: R3b-2 the dead-member rule — headless (part 1)
+    needs: fast
+    runs-on: ubuntu-latest
+    timeout-minutes: 150
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - run: npm ci
+
+      - name: "Part 1 — the freeze reproduced and broken, and the ORACLE row with no `exclude=`"
+        shell: bash
+        run: |
+          set -o pipefail
+          node tools/harness/gates-r3b2.mjs --part 1 --no-summary --assert --pool 3 | tee r3b2-1.txt
+
+      - name: Summary
+        if: always()
+        shell: bash
+        run: |
+          {
+            echo '## R3b-2 — the dead-member rule'
+            echo ''
+            echo '```'
+            cat r3b2-1.txt 2>/dev/null | grep -E 'VERDICT|REFUSED|^RED|^GREEN' || echo 'no output'
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload the rows
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: r3b2-rule
+          path: tools/harness/results/gates-r3b2-part*.json
+          if-no-files-found: warn
+          retention-days: 14
+
+  r3b2-inert:
+    name: R3b-2 inertness — headless (part 4)
+    needs: fast
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - run: npm ci
+
+      - name: "Part 4 — the opening, M15 → M24, and the rule OFF at `/0/0`"
+        shell: bash
+        run: |
+          set -o pipefail
+          node tools/harness/gates-r3b2.mjs --part 4 --no-summary --assert --pool 3 | tee r3b2-4.txt
+
+      - name: Summary
+        if: always()
+        shell: bash
+        run: |
+          {
+            echo '## R3b-2 — inertness'
+            echo ''
+            echo '```'
+            cat r3b2-4.txt 2>/dev/null | grep -E 'VERDICT|REFUSED|^RED|^GREEN' || echo 'no output'
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload the rows
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: r3b2-inert
+          path: tools/harness/results/gates-r3b2-part*.json
+          if-no-files-found: warn
+          retention-days: 14
+
+  # ---------------------------------------------------------------------------------------------------------------
   # V4 — the per-feature CONTROLS (`while`, `until`, `priority`) and the M21 pause (plan §27).
   #
   # ⚖ WHAT IS IN CI AND WHAT IS NOT, by V2's and V3's rule:
