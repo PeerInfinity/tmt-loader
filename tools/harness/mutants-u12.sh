@@ -86,14 +86,20 @@ mutant control ptr= the-necromantree= something= the-yes-tree= ptr@inert=
 #     (ptr, the-necromantree) and leave it GREEN on a `resetTime` engine, where U11's clock does see the press. On
 #     `something` it also lights the wiped layers (U11 did; the user has ruled against it); and reduced motion
 #     reddens everywhere, because the hook never saw the reset.
-mutant m1-hook-removed-u11-sampler-back ptr=trigger,repeat,rmotion the-necromantree=trigger,repeat,rmotion something=wiped,rmotion the-yes-tree=rmotion
+#     ⚠ AND `repeat` REDDENS ON THE `resetTime` ENGINES TOO — a real U11 limitation the new leg exposes, not a loose
+#     mutant: the sampler's baseline was taken just after the FIRST reset (clock ≈ 0); the ticks and the second press
+#     happen inside one evaluate with no sample between, so the next sample reads ≈ 0 against ≈ 0 and sees nothing.
+mutant m1-hook-removed-u11-sampler-back ptr=trigger,repeat,rmotion the-necromantree=trigger,repeat,rmotion something=repeat,wiped,rmotion the-yes-tree=repeat,rmotion
 
 # (2) THE WIPED-LAYER GLOW REINSTATED (the hook for the pressed layer, U11's sampler for every other card): the
 #     WIPED half reddens where a reset demonstrably zeroes lower clocks, and the trigger half stays green.
-mutant m2-wiped-layers-glow something=wiped,rmotion the-yes-tree=
+#     `rmotion` reddens on both: U11's sampler has no reduced-motion guard, so it counts glows the JS guard forbids.
+mutant m2-wiped-layers-glow something=wiped,rmotion the-yes-tree=rmotion
 
 # (3) THE RESTART LIMIT WIDENED TO 10 s: the first reset still glows; the next one, after the glow ran out, does not.
-mutant m3-rate-limit-10s ptr=repeat the-yes-tree=repeat
+#     ⚠ On the-yes-tree the FIRST press is swallowed too: an auto-prestige inside the probe's ticks glowed `p` a few
+#     seconds before it, and a 10 s limit owes the press to an animation that has already ended — the same defect.
+mutant m3-rate-limit-10s ptr=repeat the-yes-tree=trigger,repeat
 
 # (4) REDUCED MOTION'S JS GUARD REMOVED, the CSS rule kept: nothing animates (a visual check stays green) but the
 #     list still counts and flips a glow — the reduced-motion leg's counters are what see it.

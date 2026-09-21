@@ -3716,7 +3716,10 @@ async function gateMobile(browser, base, ids) {
         const TH = ui.stats().throttleMs;
         if (!ui.isOpen()) ui.open();
         const rowOf = (l) => { try { const r = Number(layers[l].row); return isNaN(r) ? null : r; } catch (e) { return null; } };
-        const canNow = () => Object.keys(layers).filter((l) => { try { return tmp[l].canReset === true && rowOf(l) !== null; } catch (e) { return false; } });
+        // ⚠ ONLY A LAYER WITH A CARD counts: a reset of a layer the list does not show has no circle to light
+        // (MEASURED on `something`: `division` can reset at the snapshot but has no card there, and a probe that
+        // stopped ticking on it abstained). `refresh()` first, so a layer the ticks just unlocked has its card.
+        const canNow = () => { ui.refresh(); const cs = ui.cards(); return cs.filter((l) => { try { return tmp[l].canReset === true && rowOf(l) !== null; } catch (e) { return false; } }); };
         // REACH a resettable state by PLAYING: the engine's own tick (`updateTemp` + `gameLoop`), one game-second at
         // a time, until the engine itself says some layer can reset — bounded, and the count is reported. MEASURED
         // (U12): ptr's deepest snapshot (M25) has NO affordable reset (it is a ladder rung, taken just after one),
@@ -3760,7 +3763,7 @@ async function gateMobile(browser, base, ids) {
         for (const k of Object.keys(starts)) delete starts[k];
         // the candidates: every card the engine itself says can reset, the highest row first (its reset has the
         // most below it, which is where the wiped half can discriminate)
-        const can = canNow(), cand = ui.cards().filter((l) => can.includes(l)).sort((a, b) => rowOf(b) - rowOf(a));
+        const can = canNow(), cand = [...can].sort((a, b) => rowOf(b) - rowOf(a));
         const tried = [];
         let l = null, touched = [], threw = null, st0 = null;
         for (const c of cand.slice(0, 8)) {
@@ -3774,7 +3777,7 @@ async function gateMobile(browser, base, ids) {
           l = c; touched = below.filter((x) => js(x) !== pre[x]);
           break;
         }
-        if (!l) return { verdict: `abstains (no layer resets after ${ticked} tick(s) of play: ${cand.length ? tried.join(', ') : can.length ? `${can.join(', ')} can, but has no card` : 'no layer has tmp.canReset === true'})`, quiet, tried, ticked, reached: false };
+        if (!l) return { verdict: `abstains (no layer resets after ${ticked} tick(s) of play: ${cand.length ? tried.join(', ') : 'no layer with a card has tmp.canReset === true'})`, quiet, tried, ticked, reached: false };
         ui.refresh(false);               // what the observer does on the engine's own re-render
         scan(true);
         const atEvent = starts[l] || 0;
