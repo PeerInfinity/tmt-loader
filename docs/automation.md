@@ -1321,7 +1321,11 @@ member's own turn is worth, how many of its own turns are remembered, its typica
 `T.cycleState()` is the whole record, one entry per row, for a gate or a probe.
 
 **Memory** (`tmtLoader.runtimeState().cycle`, never the save, and ⛔ **never an engine field**): per row key,
-`{holder, left, since, round, at, mem, skip}`. It appears **only when a cycle exists**. ⚠ The engine field that
+`{acted, arm, at, closer, holder, left, mark, mem, prev, round, since, skip}` — R3b-1's seven, R3b-2's `acted`,
+`arm`, `closer`, `mark`, and R3c's **`prev`** (the last distance read, which the HIGH-WATER readings need to tell a
+drop from a re-climb; it appears only under `turnMark=high|high-act`, and `high-act` is the default — measured from
+`all/M22.json` + 600 ticks: the default's row carries it, `turnMark=last`'s does not). It appears **only when a cycle
+exists**. ⚠ The engine field that
 looks right is `player.<layer>.resetTime`, and it exists **only on the 2.7-style engine** — the 2.2.1 family has no
 such field, so six of the planner's own probe cells compared against `undefined`, measured "paused for ever", and
 looked like a result. Every gate leg for the cycle therefore runs on BOTH engine families.

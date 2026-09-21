@@ -294,7 +294,7 @@ async function part4() {
   ] });
   const c = rows.filter((r) => r.ok).length;
   row({ gate: 'R3b2-4 VERDICT: nothing moved that this slice did not move on purpose', id: 'ptr', ok: c === rows.length, ticks: null, gameSeconds: null, diff: 1, hash: null,
-    notes: `${c}/${rows.length} rows green; the declared key set of \`runtimeState().cycle\` is now {acted, arm, at, closer, holder, left, mark, mem, round, since, skip} — \`mark\` and \`closer\` are this slice's, and \`loader/cycle.test.mjs\` asserts the whole set` });
+    notes: `${c}/${rows.length} rows green; the declared key set of \`runtimeState().cycle\` is now {acted, arm, at, closer, holder, left, mark, mem, round, since, skip} (+ \`prev\` under R3c's high-water \`turnMark\`, the default since R3c) — \`mark\` and \`closer\` are this slice's, and \`loader/cycle.test.mjs\` asserts the whole set` });
 }
 
 const PARTS = { 1: part1, 2: part2, 3: part3, 4: part4 };
