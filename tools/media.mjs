@@ -22,7 +22,7 @@ import crypto from 'node:crypto';
 import { spawn } from 'node:child_process';
 import os from 'node:os';
 import { REPO, GAMES, parseArgs, writeJSON } from './harness/lib.mjs';
-import { classify, imageSize, isWebP, stubFor, walk, scanGame, readSkips, SKIPS_FILE } from './media-lib.mjs';
+import { classify, imageSize, isWebP, stubFor, walk, scanGame, readSkips, webpAnimation, SKIPS_FILE } from './media-lib.mjs';
 
 const sha256 = (b) => crypto.createHash('sha256').update(b).digest('hex');
 
@@ -30,6 +30,12 @@ const sha256 = (b) => crypto.createHash('sha256').update(b).digest('hex');
 export function assertSameSize(rel, before, after) {
   if (!before || !after) throw new Error(`${rel}: size unreadable (before ${JSON.stringify(before)}, after ${JSON.stringify(after)})`);
   if (before.width !== after.width || before.height !== after.height) throw new Error(`${rel}: DIMENSIONS CHANGED ${before.width}x${before.height} -> ${after.width}x${after.height} — the ruling forbids downscaling (an <img> with no width renders at its intrinsic size)`);
+}
+
+/** Refuses an animation whose total duration or loop count moved (the frame COUNT may fall: merged duplicates). */
+export function assertSameTiming(rel, source, anim) {
+  if (!anim) throw new Error(`${rel}: the source had ${source.frames} frames and the WebP is not animated`);
+  if (anim.totalMs !== source.durationMs || anim.loop !== source.loop) throw new Error(`${rel}: ANIMATION CHANGED — ${source.durationMs} ms, loop ${source.loop} -> ${anim.totalMs} ms, loop ${anim.loop} (${source.frames} -> ${anim.frames} frames)`);
 }
 
 /** The check over `ids`: one row per game, and every problem named. Reads only the working tree. */
@@ -121,6 +127,7 @@ export async function processGame(id, { repo = REPO, python } = {}) {
         if (res.action === 'encoded') {
           if (!isWebP(now)) throw new Error(`${id}/${x.rel}: the encoder reported success and the file is not WebP`);
           assertSameSize(`${id}/${x.rel}`, x.size, imageSize(now));
+          if (res.frames > 1) assertSameTiming(`${id}/${x.rel}`, res, webpAnimation(now));
         } else if (!now.equals(x.orig)) throw new Error(`${id}/${x.rel}: the encoder skipped the file and changed it anyway`);
       } catch (e) { failures.push(e.message); continue; }
       if (res.action === 'encoded') {

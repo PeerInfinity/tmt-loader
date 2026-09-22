@@ -1,7 +1,8 @@
 // Gate G4b: the manifest is a PIN, games/<id>/index.html is the source. Parses the live index with
 // loader/interpret.mjs and fails on drift from manifest.load.scripts / modFiles / modFilesPrefix / external; also
 // checks the vendored files' sha256, that renderOnly ⊆ scripts, and that games/<id>/ is PRISTINE at the upstream
-// commit (its tree equals the subtree squash commit's tree, and that squash names manifest.upstream.commit).
+// commit (its tree equals the subtree squash commit's tree, and that squash names manifest.upstream.commit) — up to
+// the media exception: processed images and audio, modified in place (docs/add-a-game.md; tools/media.mjs).
 // load.known (L2b, hand-kept): the declared allowances must EQUAL what the tree contains — missingScripts = the
 // index-named local scripts (static and modFiles) absent under games/<id>/; externalHosts = the hosts of absolute
 // http(s) asset URLs (image/audio/video/font extension) in index.html and js/** (knownFromTree below).
@@ -12,6 +13,8 @@ import { execFileSync } from 'node:child_process';
 import { interpret, executionOrder, scriptNames, modFilePaths, LOADER_RE } from '../../loader/interpret.mjs';
 import { REPO, GAMES, parseArgs, readManifest, sha256hex, writeJSON } from './lib.mjs';
 import { runNode } from './run.mjs';
+import { classify } from '../media-lib.mjs';
+import { checkMedia } from '../media.mjs';
 
 const git = (...a) => execFileSync('git', ['-C', REPO, ...a], { encoding: 'utf8' }).trim();
 const same = (a, b) => JSON.stringify(a) === JSON.stringify(b);
@@ -117,7 +120,20 @@ export function checkManifest(id, { boot = true } = {}) {
   const squashCommit = git('log', '--format=%H', `--grep=^Squashed 'games/${id}/' content from commit`, '-n', '1');
   const treeSquash = squashCommit ? git('rev-parse', `${squashCommit}^{tree}`) : null;
   if (split !== m.upstream.commit) problems.push({ field: 'upstream.commit', manifest: m.upstream.commit, subtreeSplit: split });
-  if (treeNow !== treeSquash) problems.push({ field: 'games pristine', treeNow, treeSquash });
+  // ⚖ the media exception (user, 2026-09-22; docs/add-a-game.md): the tree may differ from the squash in MEDIA FILES
+  // ONLY — each a modification in place (same path; nothing added, deleted or renamed) of an in-scope image or audio
+  // file that is now processed. Anything else — one byte of code, markup or a licence — is still `games pristine`.
+  let media = null;
+  if (treeNow !== treeSquash && treeSquash) {
+    const d = execFileSync('git', ['-C', REPO, 'diff-tree', '-r', '--no-renames', '--name-status', '-z', treeSquash, treeNow], { encoding: 'utf8', maxBuffer: 64 << 20 }).split('\0').filter(Boolean);
+    const changed = [];
+    for (let i = 0; i + 1 < d.length; i += 2) changed.push({ status: d[i], rel: d[i + 1] });
+    const notMedia = changed.filter((c) => c.status !== 'M' || !classify(c.rel));
+    const mc = checkMedia([id]);
+    if (notMedia.length) problems.push({ field: 'games pristine', treeNow, treeSquash, notMedia: notMedia.slice(0, 20) });
+    else if (!mc.ok) problems.push({ field: 'games pristine (media)', raw: mc.problems.slice(0, 20) });
+    media = changed.length;
+  } else if (treeNow !== treeSquash) problems.push({ field: 'games pristine', treeNow, treeSquash });
   const dirty = execFileSync('git', ['-C', REPO, 'status', '--porcelain', '--', `games/${id}`], { encoding: 'utf8' }).trim();
   if (dirty) problems.push({ field: 'games pristine (working tree)', dirty });
   if ((m.patches || []).length) problems.push({ field: 'patches', note: 'L1 expects none', live: m.patches });
@@ -128,7 +144,7 @@ export function checkManifest(id, { boot = true } = {}) {
     else if (!fs.existsSync(path.join(REPO, m.auto))) problems.push({ field: 'auto', error: 'file missing', live: m.auto });
   }
 
-  return { id, ok: problems.length === 0, known: known ?? null, knownTree: { missingScripts: tree.missingScripts, externalHosts: tree.externalHosts }, scripts: live.length, modFiles: modFiles && modFiles.length, external: liveExternal, vendor, subtreeSplit: split, tree: treeNow, problems };
+  return { id, ok: problems.length === 0, known: known ?? null, knownTree: { missingScripts: tree.missingScripts, externalHosts: tree.externalHosts }, mediaFiles: media, scripts: live.length, modFiles: modFiles && modFiles.length, external: liveExternal, vendor, subtreeSplit: split, tree: treeNow, problems };
 }
 
 async function main() {

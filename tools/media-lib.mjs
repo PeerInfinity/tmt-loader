@@ -1,6 +1,6 @@
 // The media exception's pure half — what is in scope, what counts as processed, the silent stubs, and the check.
 // ⚠ `node:` builtins and relative files ONLY: the CI `fast` job runs this with no `npm ci` (docs/harness.md, "The
-// media gate"). The encoder half, which needs `sharp`, is tools/media.mjs.
+// media gate"). The encoder half, which needs Pillow (tools/media-encode.py), is tools/media.mjs.
 //
 // ⚖ THE RULED EXCEPTION (user, 2026-09-22) to "never edit games/<id>/": MEDIA FILES ONLY — images re-encoded as WebP
 // at the same pixel size under the SAME filename, audio replaced by a silent stub under the SAME filename. Never code,
@@ -42,11 +42,12 @@ export const isWebP = (b) => b.length >= 12 && b.toString('latin1', 0, 4) === 'R
 export function imageSize(b) {
   if (b.length >= 24 && b.readUInt32BE(0) === 0x89504e47 && b.toString('latin1', 12, 16) === 'IHDR') return { format: 'png', width: b.readUInt32BE(16), height: b.readUInt32BE(20) };
   if (b.length >= 10 && /^GIF8[79]a$/.test(b.toString('latin1', 0, 6))) return { format: 'gif', width: b.readUInt16LE(6), height: b.readUInt16LE(8) };
-  if (isWebP(b) && b.length >= 30) {
+  if (isWebP(b) && b.length >= 16) {
+    // each chunk's own minimum: a 100×100 blank PNG encodes to a 28-byte lossless WebP (excavation-tree's none.png)
     const chunk = b.toString('latin1', 12, 16);
-    if (chunk === 'VP8X') return { format: 'webp', width: 1 + b.readUIntLE(24, 3), height: 1 + b.readUIntLE(27, 3) };
-    if (chunk === 'VP8 ') return { format: 'webp', width: b.readUInt16LE(26) & 0x3fff, height: b.readUInt16LE(28) & 0x3fff };
-    if (chunk === 'VP8L') { const v = b.readUInt32LE(21); return { format: 'webp', width: 1 + (v & 0x3fff), height: 1 + ((v >>> 14) & 0x3fff) }; }
+    if (chunk === 'VP8X' && b.length >= 30) return { format: 'webp', width: 1 + b.readUIntLE(24, 3), height: 1 + b.readUIntLE(27, 3) };
+    if (chunk === 'VP8 ' && b.length >= 30) return { format: 'webp', width: b.readUInt16LE(26) & 0x3fff, height: b.readUInt16LE(28) & 0x3fff };
+    if (chunk === 'VP8L' && b.length >= 25) { const v = b.readUInt32LE(21); return { format: 'webp', width: 1 + (v & 0x3fff), height: 1 + ((v >>> 14) & 0x3fff) }; }
     return null;
   }
   if (b.length >= 4 && b[0] === 0xff && b[1] === 0xd8) {
@@ -63,6 +64,23 @@ export function imageSize(b) {
     }
   }
   return null;
+}
+
+/**
+ * An animated WebP's frames, total duration (ms) and loop count, from its own ANIM / ANMF chunks; null for a still.
+ * The encoder may merge identical consecutive frames (summing their durations), so the COUNT can fall — the total
+ * duration and the loop count are what must survive.
+ */
+export function webpAnimation(b) {
+  if (!isWebP(b)) return null;
+  let i = 12, loop = null, frames = 0, totalMs = 0;
+  while (i + 8 <= b.length) {
+    const id = b.toString('latin1', i, i + 4), n = b.readUInt32LE(i + 4), d = i + 8;
+    if (id === 'ANIM') loop = b.readUInt16LE(d + 4);
+    else if (id === 'ANMF') { frames++; totalMs += b.readUIntLE(d + 12, 3); }
+    i = d + n + (n & 1);
+  }
+  return loop === null ? null : { frames, totalMs, loop };
 }
 
 /** Silent PCM WAV: 8 kHz, mono, 8-bit (0x80 is the zero line of unsigned 8-bit PCM). */

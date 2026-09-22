@@ -21,7 +21,10 @@ MIN_PILLOW = (12, 3, 0)
 FORMATS = ['PNG', 'GIF', 'JPEG', 'WEBP']
 # Lossy: quality 0 is the ruling's "maximum compression"; alpha at 0 too. method 6 = the encoder's slowest, smallest.
 LOSSY = dict(quality=0, alpha_quality=0, method=6)
-LOSSLESS = dict(lossless=True, quality=100, method=6)
+# exact=True keeps the colour under fully transparent pixels. Without it, a blank 100×100 PNG (excavation-tree's
+# none.png) encodes to 28 bytes that Chromium and Firefox decode and WebKit REJECTS (measured, media-dims.mjs);
+# with it, 30 bytes that all three decode.
+LOSSLESS = dict(lossless=True, quality=100, method=6, exact=True)
 # ⛔ The mutant hook for the dimension assertion (tools/media.mjs owns the assertion, loader/media.test.mjs drives it):
 # with this set, every frame is HALVED before encoding — exactly the downscale the ruling forbids — and this script's
 # own size check below stands aside, so what is left to catch it is the assertion in media.mjs.
@@ -46,8 +49,12 @@ def encode(frames, durations, loop, opts):
     if len(frames) == 1:
         frames[0].save(out, 'WEBP', **opts)
     else:
+        # minimize_size merges identical consecutive frames and sums their durations (Carbon.gif: 44 frames -> 34,
+        # 2,200 ms both), so the frame COUNT may fall; the total duration and the loop count may not (media.mjs
+        # asserts both from the WebP's own ANIM/ANMF chunks). background: transparent — Pillow's default is opaque
+        # black, a hint most engines ignore and not one this repo wants to depend on.
         frames[0].save(out, 'WEBP', save_all=True, append_images=frames[1:], duration=durations, loop=loop,
-                       minimize_size=True, allow_mixed=True, **opts)
+                       background=(0, 0, 0, 0), minimize_size=True, allow_mixed=True, **opts)
     return out.getvalue()
 
 
@@ -62,8 +69,9 @@ def process(p):
         # APNG: num_plays, 0 = forever — the same meaning as WebP's.
         loop = im.info.get('loop', 1 if n > 1 else 0)
         if 'exif' in im.info and fmt == 'JPEG':
+            # 2–8 rotate or flip; 1 is upright and 0 (ColinFate001.jpg carries it) is invalid, which engines treat as 1
             orient = im.getexif().get(0x0112, 1)
-            if orient not in (1, None):
+            if orient in range(2, 9):
                 return {'path': p, 'action': 'skip', 'before': before, 'why': f'EXIF orientation {orient}: WebP would drop it and the browser would draw it unrotated'}
         frames, durations = frames_of(im)
     lossy = encode(frames, durations, loop, LOSSY)
@@ -74,11 +82,12 @@ def process(p):
     if len(best) >= before:
         return {'path': p, 'action': 'skip', 'before': before, 'why': f'WebP is not smaller ({len(best)} >= {before} bytes)', 'format': fmt, 'frames': n}
     with Image.open(io.BytesIO(best), formats=['WEBP']) as chk:
-        if not DOWNSCALE_MUTANT and chk.size != size or getattr(chk, 'n_frames', 1) != n:
-            raise SystemExit(f'{p}: the encoded WebP is {chk.size} x {getattr(chk, "n_frames", 1)} frames, the original {size} x {n}')
+        if not DOWNSCALE_MUTANT and chk.size != size:
+            raise SystemExit(f'{p}: the encoded WebP is {chk.size}, the original {size}')
     with open(p, 'wb') as f:
         f.write(best)
-    return {'path': p, 'action': 'encoded', 'mode': mode, 'before': before, 'after': len(best), 'format': fmt, 'frames': n, 'width': size[0], 'height': size[1]}
+    anim = {'durationMs': sum(durations), 'loop': loop} if n > 1 else {}
+    return {'path': p, 'action': 'encoded', 'mode': mode, 'before': before, 'after': len(best), 'format': fmt, 'frames': n, 'width': size[0], 'height': size[1], **anim}
 
 
 def main():

@@ -10,7 +10,9 @@
 //      `load.vendor` filled from the vendored files the existing manifests pin (a vendor URL no manifest pins stops the
 //      whole run before any git operation), `patches: []`. --dry-run prints and stops here.
 //   2. subtrees: remote `<id>-upstream` (push URL no-push), `git subtree add --prefix=games/<id> <sha> --squash`, then
-//      `diff -r -x .git games/<id> <clone>` must be empty (else abort and report — never patch).
+//      `diff -r -x .git games/<id> <clone>` must be empty (else abort and report — never patch). Then the media exception
+//      (tools/media.mjs: images → WebP at the same pixel size, audio → the silent stub, same filenames) as its OWN commit
+//      `media(<id>): …` on top of the squash — the one change to games/<id>/ this repo makes (docs/add-a-game.md).
 //   3. manifests/<id>.json + manifests/index.json, then docs/games.md regenerated (gate G6 holds it to the index, so a
 //      game added without it is a red gate), then the gates per game (a red gate keeps the subtree): check-manifest;
 //      Node idle hash (plain page, no automation) = manifest.headless.idleHash; goldens written, counts = manifest.census;
@@ -22,6 +24,8 @@ import os from 'node:os';
 import path from 'node:path';
 import { execFileSync, spawnSync } from 'node:child_process';
 import { REPO, parseArgs, headCommit, treeDirty, sha256hex, writeJSON, readManifest } from './harness/lib.mjs';
+import { processGame, writeSkips, checkMedia } from './media.mjs';
+import { SKIPS_FILE } from './media-lib.mjs';
 
 const a = parseArgs(process.argv.slice(2), ['dry-run', 'au-check', 'summary']);
 const CENSUS = path.resolve(a.census || process.env.TMT_CENSUS || path.join(REPO, '..', 'tmt-fork-census'));
@@ -172,7 +176,7 @@ for (const repoArg of a._) {
 const printLines = () => {
   for (const r of results) {
     const line = { id: r.id, repo: r.repo, rank: r.rank, sha: r.sha, license: r.license && { verdict: r.license.verdict, files: r.license.files }, added: r.added, gates: r.gates };
-    for (const k of ['skipped', 'detail', 'idFrom', 'idCollision', 'present', 'reproduces', 'error']) if (r[k] !== undefined) line[k] = r[k];
+    for (const k of ['skipped', 'detail', 'idFrom', 'idCollision', 'present', 'reproduces', 'media', 'error']) if (r[k] !== undefined) line[k] = r[k];
     if (a['dry-run'] && r.manifest) line.manifest = r.manifest;
     console.log(JSON.stringify(line));
   }
@@ -213,6 +217,22 @@ for (const r of results) {
     if (d.status !== 0) { r.error = `diff -r games/${r.id} vs the census clone is NOT empty — not patched, subtree left for the planner:\n${(d.stdout + d.stderr).slice(0, 1500)}`; log(r.error); continue; }
     r.subtree = { remote, squash: git('log', '--format=%h', `--grep=^Squashed 'games/${r.id}/' content from commit`, '-n', '1'), merge: git('rev-parse', '--short', 'HEAD') };
     r.added = true;
+    // 2b. ⚖ the media exception (user, 2026-09-22): images → WebP at the same pixel size, audio → the silent stub, same
+    // filenames — AFTER the pristine diff above (which compares the originals), and as its OWN commit, so the squash
+    // stays upstream's bytes and the compression is a separate, revertible change. A failure restores every original
+    // and is reported; the game is kept (pristine and licensed) and the media check in CI reds on it until re-run.
+    try {
+      const mr = await processGame(r.id);
+      writeSkips([r.id], [mr]);
+      r.media = { images: `${mr.image.encoded}/${mr.image.files}`, skipped: mr.image.skipped, audio: `${mr.audio.stubbed}/${mr.audio.files}`, bytes: [mr.image.before + mr.audio.before, mr.image.after + mr.audio.after] };
+      if (git('status', '--porcelain', '--', `games/${r.id}`, SKIPS_FILE)) {
+        git('add', '--', `games/${r.id}`);
+        if (fs.existsSync(path.join(REPO, SKIPS_FILE))) git('add', '--', SKIPS_FILE);
+        git('commit', '-q', '-m', `media(${r.id}): images to WebP at the same pixel size, audio to the silent stub — same filenames (tools/media.mjs)\n\nimages ${r.media.images} encoded (${mr.image.skipped} skipped), audio ${r.media.audio} stubbed; ${r.media.bytes[0]} -> ${r.media.bytes[1]} bytes. The media exception to pristine: docs/add-a-game.md.`);
+        r.media.commit = git('rev-parse', '--short', 'HEAD');
+      }
+      log(`${r.id}: media ${JSON.stringify(r.media)}`);
+    } catch (e) { r.media = { error: String(e.message || e).slice(0, 1500) }; log(`${r.id}: media FAILED (originals restored): ${r.media.error}`); }
   } catch (e) {
     r.error = String(e.stderr || e.message || e).slice(0, 1500);
     log(`${r.id}: ${r.error}`);
@@ -266,8 +286,15 @@ if (added.length) {
     try {
       const cm = checkManifest(id);
       r.gates.checkManifest = cm.ok ? 'GREEN' : RED(JSON.stringify(cm.problems));
-      row('check-manifest', cm.ok, { ticks: 0, gameSeconds: 0, notes: cm.ok ? `${cm.scripts} scripts, ${cm.modFiles} modFiles, subtree split ${cm.subtreeSplit?.slice(0, 7)}, games/${id} pristine` : JSON.stringify(cm.problems).slice(0, 400) });
+      row('check-manifest', cm.ok, { ticks: 0, gameSeconds: 0, notes: cm.ok ? `${cm.scripts} scripts, ${cm.modFiles} modFiles, subtree split ${cm.subtreeSplit?.slice(0, 7)}, games/${id} pristine${cm.mediaFiles ? ` up to ${cm.mediaFiles} processed media files` : ''}` : JSON.stringify(cm.problems).slice(0, 400) });
     } catch (e) { r.gates.checkManifest = RED(e.message); row('check-manifest', false, { notes: String(e.message).slice(0, 400) }); }
+    // the media check (the gate CI's fast job runs over the roster): every image WebP, every audio file the stub
+    try {
+      const mc = checkMedia([id]);
+      const t = mc.rows[0] || {};
+      r.gates.media = mc.ok ? 'GREEN' : RED(JSON.stringify(mc.problems.slice(0, 10)));
+      row('media processed', mc.ok, { ticks: 0, gameSeconds: 0, notes: `images ${t.webp} webp + ${t.skipped} declared skips of ${t.images}; audio ${t.stub} stubs of ${t.audio}${mc.ok ? '' : `; ${mc.problems.length} RAW: ${JSON.stringify(mc.problems.slice(0, 5)).slice(0, 300)}`}` });
+    } catch (e) { r.gates.media = RED(e.message); row('media processed', false, { notes: String(e.message).slice(0, 400) }); }
     // idle hash, plain page's Node twin (no automation, no exclude)
     {
       const want = m.headless.idleHash;
