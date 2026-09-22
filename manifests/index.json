@@ -853,5 +853,10 @@
     "id": "the-exp-tree",
     "name": "The exp tree",
     "repo": "TelosNox/The-Modding-Tree"
+  },
+  {
+    "id": "the-wall-tree",
+    "name": "墙树",
+    "repo": "hanlaosan1/The-Wall-Tree"
   }
 ]

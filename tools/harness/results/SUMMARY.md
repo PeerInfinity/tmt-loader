@@ -6014,3 +6014,16 @@ Reading this section: local measurements for the record; the CI sweep (G1 + M1 o
 | G1 load automation page (CI) | 171 games | — | 0 | 0 | — | — | GREEN | rows: 171/171; 0 RED |
 | fast job: units + media check (CI) | — | — | 0 | 0 | — | — | GREEN | success |
 | whole run (CI) | — | — | 0 | 0 | — | — | GREEN | 87 success, 0 failure, 11 CANCELLED by hand once G1/M1 were in: the F1 measurement jobs run on every workflow_dispatch and measure the automation layer, which this slice does not touch (user, 2026-09-22) |
+
+## 2026-09-22T19:25:08Z — add-game (`node tools/add-game.mjs hanlaosan1/The-Wall-Tree`) — commit `18d07982b` (tree DIRTY) — 6/6 green
+
+Reading this section: the subtree commits are in; manifests, index and goldens are uncommitted at the time of the run. idle hash = the plain page's Node twin (`--no-automation`, no exclusion) vs manifest.headless.idleHash; goldens counts vs manifest.census; G1 = `page.mjs <id> --gate load` (no flag).
+
+| gate | game | leg | ticks | gameSeconds | diff | hash | result | notes |
+|---|---|---|---|---|---|---|---|---|
+| add-game check-manifest | the-wall-tree | — | 0 | 0 | — | — | GREEN | 17 scripts, 2 modFiles, subtree split 051f853, games/the-wall-tree pristine up to 5 processed media files |
+| add-game media processed | the-wall-tree | — | 0 | 0 | — | — | GREEN | images 5 webp + 0 declared skips of 5; audio 0 stubs of 0 |
+| add-game idle hash = census | the-wall-tree | idle | 200 | 10 | 0.05 | `010ee92ca67549dd` | GREEN | census 010ee92ca67549dd |
+| add-game goldens counts = census | the-wall-tree | — | 0 | 0 | — | — | GREEN | 81 ids, 10 layers; ms 9 / upg 66 / buy 1 / ch 5 / ach 0 = census |
+| add-game G1 load (plain page) | the-wall-tree | — | 3 | 0.15 | 0.05 | — | GREEN | ready 1219 ms; 4 `#app .treeNode`; 70 requests, 0 non-localhost, 0 failed, 0 page errors; au nodes 0; keys `tmt-loader:the-wall-tree:墙树-hanlaosan`, `tmt-loader:the-wall-tree:墙树-hanlaosan_options` |
+| G6 games doc | null | — | 0 | 0 | — | — | GREEN | docs/games.md regenerated: 172 games in manifests/index.json, 172 listed in that order |
