@@ -1,0 +1,3458 @@
+let smallClickable = {
+    width: 'fit-content', 
+    'min-height': 'fit-content', 
+    'font-size': '14px',
+    'border-radius': '5px',
+}
+addLayer("su", {
+    effect(){
+
+    },
+    effect(){
+        return ExpantaNum.pow(10, player[this.layer].total)
+        /*
+          you should use this.layer instead of <layerID>
+          Decimal.pow(num1, num2) is an easier way to do
+          num1.pow(num2)
+        */
+      },
+      effect(){
+        let e = player[this.layer].total.max("1").tetr("2")
+        if(e.gt("e3000")){
+            if(hasAchievement("a",237))e=e.log10().pow(5.18e3/6).min("ee4")
+        }
+        return e
+      },
+      effectDescription(){
+
+},
+effectDescription(){
+    let s =  "将奖牌获取乘以 " + format(tmp[this.layer].effect) 
+    if(this.effect().gt("9.99e9999")){s=s+" (hardcapped)"}
+    else if(this.effect().gt("e3000")){s=s+" (softcapped)"}
+    return s
+    /*
+      use format(num) whenever displaying a number
+    */
+   
+  },
+tabFormat: [
+    "main-display",
+    "prestige-button",
+    ["microtabs", "stuff"],
+    ["blank", "25px"],
+],
+row: "9",
+microtabs: {
+    stuff: {
+                    "升级": {
+                        unlocked() {return (hasAchievement("a", 11))},
+                content: [
+                    ["blank", "15px"],
+                    ["raw-html", () => `<h4 style="opacity:.5">Welcome to the Supernova! Resets everything except achievements.<br> You will gain 10 neutron stars on your first supernova reset.</h4>`],
+                    ["upgrades", [1,2,3,4,5,43,49,50,51,53]]
+                ]
+            },
+            "采矿": {
+                unlocked() {return (hasUpgrade("su", 55))},
+                        content: [
+                            
+                    ["blank", "15px"],
+                    ["display-text", () => "You have <h2 style='color: #918E85; text-shadow: 0 0 10px #918E85'>" + format(player.su.stones) + "</h2> 石头，将中子星获取乘以 <h2 style='color: #918E85; text-shadow: 0 0 10px #918E85'> <br>" + format(player.su.stones.max(1).pow(0.02)) + "x.</h2><br>" + "<h3>" + "(" + format(tmp.su.effect2)  +  " 石头/秒)</h3><br>-------------------------------------------------------------------------------------"],
+                    ["display-text", () => "You have <h2 style='color: #36454F; text-shadow: 0 0 10px #36454F'>" + format(player.su.coal) + "</h2> 煤炭，将石头获取乘以 <h2 style='color: #36454F; text-shadow: 0 0 10px #36454F'> <br>" + format(player.su.coal.max(1).pow(0.04)) + "x.</h2><br>-------------------------------------------------------------------------------------"],
+                    ["display-text", () => "You have <h2 style='color: #A59C94; text-shadow: 0 0 10px #A59C94'>" + format(player.su.iron) + "</h2> 铁，将石头和煤炭获取乘以 <h2 style='color: #A59C94; text-shadow: 0 0 10px #A59C94'> <br>" + format(player.su.iron.max(1).pow(0.1)) + "x.</h2><br>-------------------------------------------------------------------------------------"],
+                    ["display-text", () => "You have <h2 style='color: #FFD700; text-shadow: 0 0 10px #FFD700'>" + format(player.su.gold) + "</h2> 金，将石头、煤炭和铁获取乘以 <h2 style='color: #FFD700; text-shadow: 0 0 10px #FFD700'> <br>" + format(player.su.gold.max(1).pow(0.16)) + "x.</h2><br>-------------------------------------------------------------------------------------"],
+                    ["display-text", () => "You have <h2 style='color: #B9F2FF; text-shadow: 0 0 10px #B9F2FF'>" + format(player.su.diamond) + "</h2> 钻石，将石头、煤炭、铁和金获取乘以 <h2 style='color: #B9F2FF; text-shadow: 0 0 10px #B9F2FF'> <br>" + format(player.su.diamond.max(1).pow(0.25)) + "x.</h2><br>-------------------------------------------------------------------------------------"],
+                    ["display-text", () => "You have <h2 style='color: #9B111E; text-shadow: 0 0 10px #9B111E'>" + format(player.su.ruby) + "</h2> 红宝石，将石头到钻石的获取乘以 <h2 style='color: #9B111E; text-shadow: 0 0 10px #9B111E'> <br>" + format(player.su.ruby.max(1).pow(0.36)) + "x.</h2><br>-------------------------------------------------------------------------------------"],
+                    ["display-text", () => "You have <h2 style='color: #50c878; text-shadow: 0 0 10px #50c878'>" + format(player.su.emerald) + "</h2> 祖母绿，将石头到红宝石的获取乘以 <h2 style='color: #50c878; text-shadow: 0 0 10px #50c878'> <br>" + format(player.su.emerald.max(1).pow(0.5)) + "x.</h2><br>-------------------------------------------------------------------------------------"],
+                    ["display-text", () => "You have <h2 style='color: #9966cc; text-shadow: 0 0 10px #9966cc'>" + format(player.su.amethyst) + "</h2> 紫水晶，将石头到祖母绿的获取乘以 <h2 style='color: #9966cc; text-shadow: 0 0 10px #9966cc'> <br>" + format(player.su.amethyst.max(1).pow(0.64)) + "x.</h2><br>-------------------------------------------------------------------------------------"],
+                    ["display-text", () => "You have <h2 style='color: #0047AB; text-shadow: 0 0 10px #0047AB'>" + format(player.su.cobalt) + "</h2> 钴，将石头到紫水晶的获取乘以 <h2 style='color: #0047AB; text-shadow: 0 0 10px #0047AB'> <br>" + format(player.su.cobalt.max(1).pow(0.81)) + "x.</h2><br>-------------------------------------------------------------------------------------"],
+                    ["raw-html", () => `<h4 style="opacity:.5">Note: Buying an upgrade increases the cost of all upgrades in the same row!</h4><br>`],
+                    ["clickable", 11],
+                    ["row", [["upgrade", 61]]],
+                    ["row", [["upgrade", 71], ["upgrade", 72]]],
+                    ["row", [["upgrade", 81]]],
+                    ["row", [["upgrade", 91], ["upgrade", 92]]],
+                    ["row", [["upgrade", 101]]],
+                    ["row", [["upgrade", 111], ["upgrade", 112]]],
+                    ["row", [["upgrade", 121], ["upgrade", 122]]],
+                    ["row", [["upgrade", 131], ["upgrade", 132]]],
+                    ["row", [["upgrade", 141]]],
+                    ["row", [["upgrade", 151], ["upgrade", 152]]],
+                    ["row", [["upgrade", 161], ["upgrade", 162]]],
+                    ["row", [["upgrade", 171], ["upgrade", 172]]],
+                    ["row", [["upgrade", 181], ["upgrade", 182]]],
+                    ["row", [["upgrade", 191]]],
+                    ["row", [["upgrade", 201], ["upgrade", 202],["upgrade", 203],["upgrade", 204],["upgrade", 205]]],
+                    ["row", [["upgrade", 211]]],
+                    ["row", [["upgrade", 221]]],
+                    ["row", [["upgrade", 231]]],
+                    ["row", [["upgrade", 241]]],
+                    ["row", [["upgrade", 251], ["upgrade", 252],["upgrade", 253],["upgrade", 254]]],
+                    ["row", [["upgrade", 261]]],
+                    ["row", [["upgrade", 271], ["upgrade", 272],["upgrade", 273]]],
+                    ["row", [["upgrade", 281]]],
+                    ["row", [["upgrade", 291]]],
+                    ["row", [["upgrade", 301], ["upgrade", 302],["upgrade", 303],["upgrade", 304],["upgrade", 305]]],
+                    ["row", [["upgrade", 311]]],
+                    ["row", [["upgrade", 321], ["upgrade", 322],["upgrade", 323],["upgrade", 324]]],
+                    ["row", [["upgrade", 331]]],
+                    ["row", [["upgrade", 341]]],
+                    ["row", [["upgrade", 351]]],
+                    ["row", [["upgrade", 361], ["upgrade", 362],["upgrade", 363],["upgrade", 364],["upgrade", 365]]],
+                    ["row", [["upgrade", 371]]],
+                    ["row", [["upgrade", 381], ["upgrade", 382],["upgrade", 383],["upgrade", 384],["upgrade", 385]]],
+                    ["row", [["upgrade", 391]]],
+                    ["row", [["upgrade", 401], ["upgrade", 402],["upgrade", 403],["upgrade", 404],["upgrade", 405]]],
+                    ["row", [["upgrade", 411]]],
+                    ["row", [["upgrade", 421], ["upgrade", 422]]],
+                    ["row", [["upgrade", 441]]],
+                    ["row", [["upgrade", 451]]],
+                    ["row", [["upgrade", 461]]],
+                    ["row", [["upgrade", 471]]],
+                    ["row", [["upgrade", 481]]],
+                    ["row", [["upgrade", 521]]],
+
+                ]
+                    },
+                    "可购买项": {
+                        unlocked() {return (hasUpgrade("su", 101))},
+
+                        content: [
+                            ["blank", "15px"],
+                            ["row", [["buyable", 11], ["buyable", 12],["buyable", 13],["buyable", 14],["buyable", 15],["buyable", 16],["buyable", 17],["buyable", 18]]],
+                        ],
+                    },
+            "里程碑": {
+                content: [
+                    ["blank", "15px"],
+                    "milestones"
+                ]
+                
+            },
+            "水晶": {
+                unlocked() {return (hasUpgrade("su", 55))},
+                content: [
+                    ["blank", "15px"],
+                    ["display-text", () => "You have <h2 style='color: #a7d8de ; text-shadow: 0 0 10px #a7d8de '>" + format(player.su.crystal) + "</h2> 水晶，将石头到钴的获取提升 <h2 style='color: #a7d8de ; text-shadow: 0 0 10px #a7d8de '> <br>^" + format(player.su.crystal.max(1).pow(1)) + ".</h2><br>-------------------------------------------------------------------------------------"],
+                    ["display-text", () => "You have <h2 style='color: #ffc0cb ; text-shadow: 0 0 10px #a7d8de '>" + formatWhole(player.su.crystaltiers) + "</h2> 水晶等级，将水晶获取乘以 <h2 style='color: #a7d8de ; text-shadow: 0 0 10px #a7d8de '> <br>x" + format(player.su.crystaltiers.max(1).pow(10)) + ".</h2><br>-------------------------------------------------------------------------------------"],
+                    ["display-text", () => "You have <h2 style='color: #00008b ; text-shadow: 0 0 10px #a7d8de '>" + formatWhole(player.su.crystallevels) + "</h2> 水晶级别，将水晶等级和水晶获取进行迭代幂 <h2 style='color: #ffc0cb ; text-shadow: 0 0 10px #ffc0cb '> <br>^^" + format(player.su.crystallevels.max(1).pow(1)) + ".</h2><br>-------------------------------------------------------------------------------------"],
+                    ["display-text", () => "You have <h2 style='color: #FFFFFF ; text-shadow: 0 0 10px #a7d8de '>" + formatWhole(player.su.crystalstages) + "</h2> 水晶阶段，将水晶级别、水晶等级和水晶获取进行五级幂 <h2 style='color: #00008b ; text-shadow: 0 0 10px #a7d8de '> <br>^^^" + format(player.su.crystalstages.max(1).pow(1)) + ".</h2><br>-------------------------------------------------------------------------------------"],
+                    ["buyable", 21],
+                    ["buyable", 22],
+                    ["buyable", 23],
+                    ["buyable", 24],
+                    ["buyable", 25],
+                    ["buyable", 26],
+                    ["buyable", 27],
+                    ["buyable", 28],
+                    ["buyable", 29],
+                ]
+                
+            },
+        },
+    },
+        tooltip() {
+            return ("Supernova")
+        },
+        passiveGeneration() { 
+            if (hasMilestone("sa", 1)) return (hasMilestone("sa", 1)?1:0)
+            },
+        buyables: {
+            11: {
+              title: "<h3>第十八个可购买项<h3>",
+              cost(x) {return new EN(1e7).pow(new EN(10).pow(x)).floor()},
+              canAfford() { return player.su.stones.gte(this.cost()) && getBuyableAmount('su', 11) < 1},
+              buy() {
+                 player.su.stones = player.su.stones.sub(this.cost())
+                 setBuyableAmount(this.layer, this.id, getBuyableAmount(this.layer, this.id).add(1))
+              },
+              display() {return `<h3>开采煤炭！<h3>\n等级： `+ formatWhole(player.su.buyables[11]) + `/1 \nCost: ${format(this.cost())}\n Stone<br>Effect: +${format(this.effect())} coal/s`},
+              effect(x) { 
+                mult2 = new EN(x)
+                mult2 = mult2.mul(hasUpgrade("su",111)?upgradeEffect("su",111):1)
+                mult2 = mult2.mul(hasUpgrade("su",112)?upgradeEffect("su",112):1)
+                mult2 = mult2.mul(hasUpgrade("su",121)?upgradeEffect("su",121):1)
+                mult2 = mult2.mul(hasUpgrade("su",122)?upgradeEffect("su",122):1)
+                mult2 = mult2.pow(hasUpgrade("su",182)?1.25:1)
+                mult2 = mult2.pow(hasUpgrade("su",231)?1.3:1)
+                mult2 = mult2.pow(hasUpgrade("su",281)?1.3:1)
+                mult2 = mult2.pow(hasUpgrade("su",341)?1.3:1)
+                mult2 = mult2.pow(hasUpgrade("su",385)?1.3:1)
+                mult2 = mult2.pow(hasUpgrade("su",441)?upgradeEffect("su",441):1)
+            if (player.su.iron.gte(1)) mult2 = mult2.times(player.su.iron.max(1).pow(0.1))
+            if (player.su.gold.gte(1)) mult2 = mult2.times(player.su.gold.max(1).pow(0.16))
+            if (player.su.diamond.gte(1)) mult2 = mult2.times(player.su.diamond.max(1).pow(0.25))
+            if (player.su.ruby.gte(1)) mult2 = mult2.times(player.su.ruby.max(1).pow(0.36))
+            if (player.su.emerald.gte(1)) mult2 = mult2.times(player.su.emerald.max(1).pow(0.5))
+            if (player.su.amethyst.gte(1)) mult2 = mult2.times(player.su.amethyst.max(1).pow(0.64))
+            if (player.su.cobalt.gte(1)) mult2 = mult2.times(player.su.cobalt.max(1).pow(0.81))
+            if (player.su.crystal.gte(1)) mult2 = mult2.pow(player.su.crystal.max(1).pow(1))
+
+                return new EN(mult2)}
+            },
+            12: {
+                title: "<h3>第十九个可购买项<h3>",
+                cost(x) {return new EN(1e9).pow(new EN(10).pow(x)).floor()},
+                canAfford() { return player.su.coal.gte(this.cost()) && getBuyableAmount('su', 12) < 1},
+                buy() {
+                   player.su.coal = player.su.coal.sub(this.cost())
+                   setBuyableAmount(this.layer, this.id, getBuyableAmount(this.layer, this.id).add(1))
+                },
+                unlocked(){return hasUpgrade("su",141)},
+                display() {return `<h3>开采铁！<h3>\n等级： `+ formatWhole(player.su.buyables[12]) + `/1 \nCost: ${format(this.cost())}\n Coal<br>Effect: +${format(this.effect())} iron/s`},
+                effect(x) { 
+                  mult2 = new EN(x)
+                  mult2 = mult2.mul(hasUpgrade("su",151)?upgradeEffect("su",151):1)
+                mult2 = mult2.mul(hasUpgrade("su",152)?upgradeEffect("su",152):1)
+                mult2 = mult2.mul(hasUpgrade("su",161)?upgradeEffect("su",161):1)
+                mult2 = mult2.mul(hasUpgrade("su",162)?upgradeEffect("su",162):1)
+                mult2 = mult2.mul(hasUpgrade("su",171)?upgradeEffect("su",171):1)
+                mult2 = mult2.pow(hasUpgrade("su",231)?1.25:1)
+                mult2 = mult2.pow(hasUpgrade("su",281)?1.25:1)
+                mult2 = mult2.pow(hasUpgrade("su",341)?1.3:1)
+                mult2 = mult2.pow(hasUpgrade("su",385)?1.25:1)
+                mult2 = mult2.pow(hasUpgrade("su",441)?upgradeEffect("su",441):1)
+
+                if (player.su.gold.gte(1)) mult2 = mult2.times(player.su.gold.max(1).pow(0.16))
+                if (player.su.diamond.gte(1)) mult2 = mult2.times(player.su.diamond.max(1).pow(0.25))
+                if (player.su.ruby.gte(1)) mult2 = mult2.times(player.su.ruby.max(1).pow(0.36))
+                if (player.su.emerald.gte(1)) mult2 = mult2.times(player.su.emerald.max(1).pow(0.5))
+            if (player.su.amethyst.gte(1)) mult2 = mult2.times(player.su.amethyst.max(1).pow(0.64))
+            if (player.su.cobalt.gte(1)) mult2 = mult2.times(player.su.cobalt.max(1).pow(0.81))
+            if (player.su.crystal.gte(1)) mult2 = mult2.pow(player.su.crystal.max(1).pow(1))
+
+                return new EN(mult2)}
+              },
+              13: {
+                title: "<h3>第二十个可购买项<h3>",
+                cost(x) {return new EN(1e13).pow(new EN(10).pow(x)).floor()},
+                canAfford() { return player.su.iron.gte(this.cost()) && getBuyableAmount('su', 13) < 1},
+                buy() {
+                   player.su.iron = player.su.iron.sub(this.cost())
+                   setBuyableAmount(this.layer, this.id, getBuyableAmount(this.layer, this.id).add(1))
+                },
+                unlocked(){return hasUpgrade("su",191)},
+                display() {return `<h3>开采金！<h3>\n等级： `+ formatWhole(player.su.buyables[13]) + `/1 \nCost: ${format(this.cost())}\n Iron<br>Effect: +${format(this.effect())} gold/s`},
+                effect(x) { 
+                  mult2 = new EN(x)
+                  mult2 = mult2.mul(hasUpgrade("su",201)?upgradeEffect("su",201):1)
+                mult2 = mult2.mul(hasUpgrade("su",202)?upgradeEffect("su",202):1)
+                mult2 = mult2.mul(hasUpgrade("su",203)?upgradeEffect("su",203):1)
+                mult2 = mult2.mul(hasUpgrade("su",204)?upgradeEffect("su",204):1)
+                mult2 = mult2.mul(hasUpgrade("su",205)?upgradeEffect("su",205):1)
+                mult2 = mult2.mul(hasUpgrade("su",211)?upgradeEffect("su",211):1)
+                mult2 = mult2.pow(hasUpgrade("su",281)?1.2:1)
+                mult2 = mult2.pow(hasUpgrade("su",341)?1.3:1)
+                mult2 = mult2.pow(hasUpgrade("su",385)?1.25:1)
+                mult2 = mult2.pow(hasUpgrade("su",441)?upgradeEffect("su",441):1)
+
+                if (player.su.diamond.gte(1)) mult2 = mult2.times(player.su.diamond.max(1).pow(0.25))
+                if (player.su.ruby.gte(1)) mult2 = mult2.times(player.su.ruby.max(1).pow(0.36))
+                if (player.su.emerald.gte(1)) mult2 = mult2.times(player.su.emerald.max(1).pow(0.5))
+                if (player.su.amethyst.gte(1)) mult2 = mult2.times(player.su.amethyst.max(1).pow(0.64))
+                if (player.su.cobalt.gte(1)) mult2 = mult2.times(player.su.cobalt.max(1).pow(0.81))
+                if (player.su.crystal.gte(1)) mult2 = mult2.pow(player.su.crystal.max(1).pow(1))
+
+                  return new EN(mult2)}
+              },
+              14: {
+                title: "<h3>第二十一个可购买项<h3>",
+                cost(x) {return new EN(1e25).pow(new EN(10).pow(x)).floor()},
+                canAfford() { return player.su.gold.gte(this.cost()) && getBuyableAmount('su', 14) < 1},
+                buy() {
+                   player.su.gold = player.su.gold.sub(this.cost())
+                   setBuyableAmount(this.layer, this.id, getBuyableAmount(this.layer, this.id).add(1))
+                },
+                unlocked(){return hasUpgrade("su",241)},
+                display() {return `<h3>开采钻石！<h3>\n等级： `+ formatWhole(player.su.buyables[14]) + `/1 \nCost: ${format(this.cost())}\n Gold<br>Effect: +${format(this.effect())} diamond/s`},
+                effect(x) { 
+                  mult2 = new EN(x)
+                  mult2 = mult2.mul(hasUpgrade("su",251)?upgradeEffect("su",251):1)
+                mult2 = mult2.mul(hasUpgrade("su",252)?upgradeEffect("su",252):1)
+                mult2 = mult2.mul(hasUpgrade("su",253)?upgradeEffect("su",253):1)
+                mult2 = mult2.mul(hasUpgrade("su",254)?upgradeEffect("su",254):1)
+                mult2 = mult2.mul(hasUpgrade("su",261)?upgradeEffect("su",261):1)
+                mult2 = mult2.mul(hasUpgrade("su",272)?upgradeEffect("su",272):1)
+                mult2 = mult2.mul(hasUpgrade("su",273)?upgradeEffect("su",273):1)
+                mult2 = mult2.pow(hasUpgrade("su",341)?1.2:1)
+                mult2 = mult2.pow(hasUpgrade("su",385)?1.2:1)
+                mult2 = mult2.pow(hasUpgrade("su",441)?upgradeEffect("su",441):1)
+
+                if (player.su.ruby.gte(1)) mult2 = mult2.times(player.su.ruby.max(1).pow(0.36))
+                if (player.su.emerald.gte(1)) mult2 = mult2.times(player.su.emerald.max(1).pow(0.5))
+                if (player.su.amethyst.gte(1)) mult2 = mult2.times(player.su.amethyst.max(1).pow(0.64))
+                if (player.su.cobalt.gte(1)) mult2 = mult2.times(player.su.cobalt.max(1).pow(0.81))
+                if (player.su.crystal.gte(1)) mult2 = mult2.pow(player.su.crystal.max(1).pow(1))
+
+                  return new EN(mult2)}
+              },
+              15: {
+                title: "<h3>第二十二个可购买项<h3>",
+                cost(x) {return new EN(1e50).pow(new EN(10).pow(x)).floor()},
+                canAfford() { return player.su.diamond.gte(this.cost()) && getBuyableAmount('su', 15) < 1},
+                buy() {
+                   player.su.diamond = player.su.diamond.sub(this.cost())
+                   setBuyableAmount(this.layer, this.id, getBuyableAmount(this.layer, this.id).add(1))
+                },
+                unlocked(){return hasUpgrade("su",291)},
+                display() {return `<h3>开采红宝石！<h3>\n等级： `+ formatWhole(player.su.buyables[15]) + `/1 \nCost: ${format(this.cost())}\n Diamond<br>Effect: +${format(this.effect())} ruby/s`},
+                effect(x) { 
+                  mult2 = new EN(x)
+                  mult2 = mult2.mul(hasUpgrade("su",301)?upgradeEffect("su",301):1)
+                mult2 = mult2.mul(hasUpgrade("su",302)?upgradeEffect("su",302):1)
+                mult2 = mult2.mul(hasUpgrade("su",303)?upgradeEffect("su",303):1)
+                mult2 = mult2.mul(hasUpgrade("su",304)?upgradeEffect("su",304):1)
+                mult2 = mult2.mul(hasUpgrade("su",305)?upgradeEffect("su",305):1)
+                mult2 = mult2.mul(hasUpgrade("su",311)?upgradeEffect("su",311):1)
+                mult2 = mult2.mul(hasUpgrade("su",322)?upgradeEffect("su",322):1)
+                mult2 = mult2.mul(hasUpgrade("su",331)?upgradeEffect("su",331):1)
+                mult2 = mult2.pow(hasUpgrade("su",385)?1.25:1)
+                mult2 = mult2.pow(hasUpgrade("su",441)?upgradeEffect("su",441):1)
+
+                if (player.su.emerald.gte(1)) mult2 = mult2.times(player.su.emerald.max(1).pow(0.5))
+                if (player.su.amethyst.gte(1)) mult2 = mult2.times(player.su.amethyst.max(1).pow(0.64))
+                if (player.su.cobalt.gte(1)) mult2 = mult2.times(player.su.cobalt.max(1).pow(0.81))
+                if (player.su.crystal.gte(1)) mult2 = mult2.pow(player.su.crystal.max(1).pow(1))
+
+                  return new EN(mult2)}
+              },
+              16: {
+                title: "<h3>第二十三个可购买项<h3>",
+                cost(x) {return new EN(1e74).pow(new EN(10).pow(x)).floor()},
+                canAfford() { return player.su.ruby.gte(this.cost()) && getBuyableAmount('su', 16) < 1},
+                buy() {
+                   player.su.ruby = player.su.ruby.sub(this.cost())
+                   setBuyableAmount(this.layer, this.id, getBuyableAmount(this.layer, this.id).add(1))
+                },
+                unlocked(){return hasUpgrade("su",351)},
+                display() {return `<h3>开采祖母绿！<h3>\n等级： `+ formatWhole(player.su.buyables[16]) + `/1 \nCost: ${format(this.cost())}\n Ruby<br>Effect: +${format(this.effect())} emerald/s`},
+                effect(x) { 
+                  mult2 = new EN(x)
+                  mult2 = mult2.mul(hasUpgrade("su",361)?upgradeEffect("su",361):1)
+                mult2 = mult2.mul(hasUpgrade("su",362)?upgradeEffect("su",362):1)
+                mult2 = mult2.mul(hasUpgrade("su",363)?upgradeEffect("su",363):1)
+                mult2 = mult2.mul(hasUpgrade("su",364)?upgradeEffect("su",364):1)
+                mult2 = mult2.mul(hasUpgrade("su",365)?upgradeEffect("su",365):1)
+                mult2 = mult2.mul(hasUpgrade("su",371)?upgradeEffect("su",371):1)
+                mult2 = mult2.mul(hasUpgrade("su",381)?upgradeEffect("su",381):1)
+                mult2 = mult2.mul(hasUpgrade("su",383)?upgradeEffect("su",383):1)
+                mult2 = mult2.mul(hasUpgrade("su",384)?upgradeEffect("su",384):1)
+                mult2 = mult2.pow(hasUpgrade("su",441)?upgradeEffect("su",441):1)
+
+                if (player.su.amethyst.gte(1)) mult2 = mult2.times(player.su.amethyst.max(1).pow(0.64))
+                if (player.su.cobalt.gte(1)) mult2 = mult2.times(player.su.cobalt.max(1).pow(0.81))
+                if (player.su.crystal.gte(1)) mult2 = mult2.pow(player.su.crystal.max(1).pow(1))
+
+                  return new EN(mult2)}
+              },
+              17: {
+                title: "<h3>第二十四个可购买项<h3>",
+                cost(x) {return new EN(1e75).pow(new EN(10).pow(x)).floor()},
+                canAfford() { return player.su.emerald.gte(this.cost()) && getBuyableAmount('su', 17) < 1},
+                buy() {
+                   player.su.emerald = player.su.emerald.sub(this.cost())
+                   setBuyableAmount(this.layer, this.id, getBuyableAmount(this.layer, this.id).add(1))
+                },
+                unlocked(){return hasUpgrade("su",391)},
+                display() {return `<h3>开采紫水晶！<h3>\n等级： `+ formatWhole(player.su.buyables[17]) + `/1 \nCost: ${format(this.cost())}\n Emerald<br>Effect: +${format(this.effect())} amethyst/s`},
+                effect(x) { 
+                  mult2 = new EN(x)
+                  mult2 = mult2.mul(hasUpgrade("su",401)?upgradeEffect("su",401):1)
+                  mult2 = mult2.mul(hasUpgrade("su",402)?upgradeEffect("su",402):1)
+                  mult2 = mult2.mul(hasUpgrade("su",404)?upgradeEffect("su",404):1)
+                  mult2 = mult2.pow(hasUpgrade("su",441)?upgradeEffect("su",441):1)
+
+                  if (player.su.cobalt.gte(1)) mult2 = mult2.times(player.su.cobalt.max(1).pow(0.81))
+                  if (player.su.crystal.gte(1)) mult2 = mult2.pow(player.su.crystal.max(1).pow(1))
+
+                  return new EN(mult2)}
+              },
+              18: {
+                title: "<h3>第二十五个可购买项<h3>",
+                cost(x) {return new EN(1e60).pow(new EN(10).pow(x)).floor()},
+                canAfford() { return player.su.amethyst.gte(this.cost()) && getBuyableAmount('su', 18) < 1},
+                buy() {
+                   player.su.amethyst = player.su.amethyst.sub(this.cost())
+                   setBuyableAmount(this.layer, this.id, getBuyableAmount(this.layer, this.id).add(1))
+                },
+                unlocked(){return hasUpgrade("su",405)},
+                display() {return `<h3>开采钴！<h3>\n等级： `+ formatWhole(player.su.buyables[18]) + `/1 \nCost: ${format(this.cost())}\n Amethyst<br>Effect: +${format(this.effect())} cobalt/s`},
+                effect(x) { 
+                  mult2 = new EN(x)
+                  mult2 = mult2.mul(hasUpgrade("su",411)?upgradeEffect("su",411):1)
+                  mult2 = mult2.mul(hasUpgrade("su",421)?upgradeEffect("su",421):1)
+                  mult2 = mult2.pow(hasUpgrade("su",441)?upgradeEffect("su",441):1)
+
+                  if (player.su.crystal.gte(1)) mult2 = mult2.pow(player.su.crystal.max(1).pow(1))
+                  return new EN(mult2)}
+              },
+              21: {
+                title: "<h3>第一个子飞升层<h3>",
+                cost() {
+                  let n = getBuyableAmount(this.layer,this.id)
+                  return new EN(1e69).pow(EN.pow(1.01,n.pow(1.01))) },
+                display() { return "<h3>重置升级和你所有的矿石（包括中子星），但你会每秒获得 1 水晶！</h3>"+ "<h3><br>当前：+"+format(this.effect())+ "/秒</h3>" + "\n<h3>需求："+format(this.cost())+" 钴</h3>\n\n<h3>你已完成 "+formatWhole(getBuyableAmount(this.layer,this.id))+" 次水晶重置。<h/3>" },
+              effect(){return new EN(0).add(getBuyableAmount(this.layer,this.id))},
+                canAfford() { return player[this.layer].cobalt.gte(this.cost()) },
+              unlocked(){return hasUpgrade(this.layer,11)||getBuyableAmount(this.layer,this.id).gte(1)},
+              effect(x) { 
+                mult2 = new EN(x)
+                mult2 = mult2.mul(hasUpgrade("su",451)?upgradeEffect("su",451):1)
+                mult2 = mult2.mul(hasUpgrade("su",461)?upgradeEffect("su",461):1)
+                mult2 = mult2.mul(hasUpgrade("su",471)?upgradeEffect("su",471):1)
+                mult2 = mult2.pow(hasUpgrade("su",435)?upgradeEffect("su",435):1)
+                mult2 = mult2.pow(hasUpgrade("su",491)?upgradeEffect("su",491):1)
+                mult2 = mult2.pow(hasUpgrade("su",493)?upgradeEffect("su",493):1)
+                mult2 = mult2.pow(hasUpgrade("su",495)?upgradeEffect("su",495):1)
+                mult2 = mult2.pow(hasMilestone("su",9)?2:1)
+                if (player.su.crystaltiers.gte(1)) mult2 = mult2.pow(player.su.crystaltiers.max(1).pow(1))
+                if (player.su.crystallevels.gte(1)) mult2 = mult2.tetr(player.su.crystallevels.max(1).pow(1))
+                if (player.su.crystalstages.gte(1)) mult2 = mult2.pent(player.su.crystalstages.max(1).pow(1))
+                return new EN(mult2)},
+              buy() {
+                    if(!hasMilestone("su",6)){
+                player[this.layer].points = new EN(0)
+                  player.su.stones=new EN(0)
+                  player.su.coal=new EN(0)
+                  player.su.iron=new EN(0)
+                  player.su.gold=new EN(0)
+                  player.su.diamond=new EN(0)
+                  player.su.ruby=new EN(0)
+                  player.su.emerald=new EN(0)
+                  player.su.amethyst=new EN(0)
+                  player.su.cobalt=new EN(0)
+                    player.su.upgrades=[]
+                    }
+                    setBuyableAmount(this.layer, this.id, getBuyableAmount(this.layer, this.id).add(1))
+                },
+                
+        },
+        22: {
+            title: "<h3>第二个子飞升层<h3>",
+            cost() {
+              let n = getBuyableAmount(this.layer,this.id)
+              return new EN(1e10).pow(EN.pow(Infinity,n.pow(Infinity))) },
+            display() { return "<h3>重置升级和你所有的矿石（包括中子星），但你会获得水晶等级！</h3>"+ "<h3><br>当前：+"+format(this.effect())+ "/秒</h3>" + "\n<h3>需求："+format(this.cost())+" 水晶</h3>\n\n<h3>你已完成 "+formatWhole(getBuyableAmount(this.layer,this.id))+" 次水晶等级重置。<h/3>" },
+          effect(){return new EN(0).add(getBuyableAmount(this.layer,this.id))},
+            canAfford() { return player[this.layer].crystal.gte(this.cost()) },
+          unlocked(){return hasUpgrade(this.layer,11)||getBuyableAmount(this.layer,this.id).gte(1)},
+          effect(x) { 
+            mult2 = new EN(0.01)
+            mult2 = mult2.mul(hasUpgrade("su",434)?100:1)
+            mult2 = mult2.mul(hasMilestone("su",9)?10:1)
+            mult2 = mult2.mul(hasUpgrade("su",493)?100:1)
+            mult2 = mult2.pow(hasUpgrade("su",494)?3:1)
+            mult2 = mult2.mul(hasUpgrade("su",501)?upgradeEffect("su",501):1)
+            mult2 = mult2.pow(hasUpgrade("su",502)?upgradeEffect("su",502):1)
+            mult2 = mult2.mul(hasUpgrade("su",503)?upgradeEffect("su",503):1)
+            mult2 = mult2.pow(hasUpgrade("su",504)?upgradeEffect("su",504):1)
+            mult2 = mult2.pow(hasUpgrade("su",505)?upgradeEffect("su",505):1)
+            if (player.su.crystallevels.gte(1)) mult2 = mult2.tetr(player.su.crystallevels.max(1).pow(1))
+            if (player.su.crystalstages.gte(1)) mult2 = mult2.pent(player.su.crystalstages.max(1).pow(1))
+
+            return new EN(mult2)},
+          buy() {
+                if(!hasMilestone("su",9)){
+            player[this.layer].points = new EN(0)
+              player.su.stones=new EN(0)
+              player.su.coal=new EN(0)
+              player.su.iron=new EN(0)
+              player.su.gold=new EN(0)
+              player.su.diamond=new EN(0)
+              player.su.ruby=new EN(0)
+              player.su.emerald=new EN(0)
+              player.su.amethyst=new EN(0)
+              player.su.cobalt=new EN(0)
+              player.su.crystal=new EN(0)
+                player.su.upgrades=[]
+                }
+                setBuyableAmount(this.layer, this.id, getBuyableAmount(this.layer, this.id).add(1))
+            },
+        },
+        23: {
+            title: "<h3>第三个子飞升层<h3>",
+            cost() {
+              let n = getBuyableAmount(this.layer,this.id)
+              return new EN("10^^1000").pow(EN.pow(Infinity,n.pow(Infinity))) },
+            display() { return "<h3>重置升级和你所有的矿石（包括中子星），但你会获得水晶级别！</h3>"+ "<h3><br>当前：+"+format(this.effect())+ "/秒</h3>" + "\n<h3>需求："+format(this.cost())+" 水晶</h3>\n\n<h3>你已完成 "+formatWhole(getBuyableAmount(this.layer,this.id))+" 次水晶级别重置。<h/3>" },
+          effect(){return new EN(0).add(getBuyableAmount(this.layer,this.id))},
+            canAfford() { return player[this.layer].crystal.gte(this.cost()) },
+          unlocked(){return hasUpgrade(this.layer,11)||getBuyableAmount(this.layer,this.id).gte(1)},
+          effect(x) { 
+            mult2 = new EN(1)
+            mult2 = mult2.mul(hasUpgrade("su",511)?upgradeEffect("su",511):1)
+            mult2 = mult2.mul(hasUpgrade("su",512)?upgradeEffect("su",512):1)
+            mult2 = mult2.mul(hasUpgrade("su",513)?upgradeEffect("su",513):1)
+            mult2 = mult2.pow(hasUpgrade("su",514)?upgradeEffect("su",514):1)
+            mult2 = mult2.pow(hasUpgrade("su",515)?upgradeEffect("su",515):1)
+            mult2 = mult2.tetr(hasUpgrade("su",521)?upgradeEffect("su",521):1)
+            if (player.su.crystalstages.gte(1)) mult2 = mult2.pent(player.su.crystalstages.max(1).pow(1))
+            return new EN(mult2)},
+          buy() {
+            player[this.layer].points = new EN(0)
+              player.su.stones=new EN(0)
+              player.su.coal=new EN(0)
+              player.su.iron=new EN(0)
+              player.su.gold=new EN(0)
+              player.su.diamond=new EN(0)
+              player.su.ruby=new EN(0)
+              player.su.emerald=new EN(0)
+              player.su.amethyst=new EN(0)
+              player.su.cobalt=new EN(0)
+              player.su.crystal=new EN(0)
+                player.su.crystaltiers=new EN(0)
+                player.su.upgrades=[]
+                
+                setBuyableAmount(this.layer, this.id, getBuyableAmount(this.layer, this.id).add(1))
+            },
+        },
+        24: {
+            title: "<h3>第四个子飞升层<h3>",
+            cost() {
+              let n = getBuyableAmount(this.layer,this.id)
+              return new EN("10^^^1000").pow(EN.pow(Infinity,n.pow(Infinity))) },
+            display() { return "<h3>重置升级和你所有的矿石（包括中子星），但你会获得水晶阶段！</h3>"+ "<h3><br>当前：+"+format(this.effect())+ "/秒</h3>" + "\n<h3>需求："+format(this.cost())+" 水晶</h3>\n\n<h3>你已完成 "+formatWhole(getBuyableAmount(this.layer,this.id))+" 次水晶阶段重置。<h/3>" },
+          effect(){return new EN(0).add(getBuyableAmount(this.layer,this.id))},
+            canAfford() { return player[this.layer].crystal.gte(this.cost()) },
+          unlocked(){return hasUpgrade(this.layer,11)||getBuyableAmount(this.layer,this.id).gte(1)},
+          effect(x) { 
+            mult2 = new EN(1)
+            mult2 = mult2.mul(hasUpgrade("su",531)?upgradeEffect("su",531):1)
+            mult2 = mult2.mul(hasUpgrade("su",532)?upgradeEffect("su",532):1)
+            mult2 = mult2.mul(hasUpgrade("su",533)?upgradeEffect("su",533):1)
+            mult2 = mult2.pow(hasUpgrade("su",534)?upgradeEffect("su",534):1)
+            mult2 = mult2.pow(hasUpgrade("sa",12)?upgradeEffect("sa",12):1)
+            mult2 = mult2.tetr(hasUpgrade("sa",13)?upgradeEffect("sa",13):1)
+            mult2 = mult2.mul(hasUpgrade("sa",14)?upgradeEffect("sa",14):1)
+            mult2 = mult2.mul(hasUpgrade("sa",21)?upgradeEffect("sa",21):1)
+            mult2 = mult2.mul(hasUpgrade("sa",41)?upgradeEffect("sa",41):1)
+            if (player.sa.challengeexp.gte(1)) mult2 = mult2.pent(player.sa.challengeexp.max(1).pow(4))
+            if (player.sa.challengetet.gte(1)) mult2 = mult2.pent(player.sa.challengetet.max(1).pow(5))
+            if (player.sa.challengepent.gte(1)) mult2 = mult2.pent(player.sa.challengepent.max(1).tetr(6))
+
+            return new EN(mult2)},
+          buy() {
+            player[this.layer].points = new EN(0)
+              player.su.stones=new EN(0)
+              player.su.coal=new EN(0)
+              player.su.iron=new EN(0)
+              player.su.gold=new EN(0)
+              player.su.diamond=new EN(0)
+              player.su.ruby=new EN(0)
+              player.su.emerald=new EN(0)
+              player.su.amethyst=new EN(0)
+              player.su.cobalt=new EN(0)
+              player.su.crystal=new EN(0)
+                player.su.crystaltiers=new EN(0)
+                player.su.crystallevels=new EN(0)
+                player.su.upgrades=[]
+                
+                setBuyableAmount(this.layer, this.id, getBuyableAmount(this.layer, this.id).add(1))
+            },
+        },
+        25: {
+            title: "<h3>第五个子飞升层<h3>",
+            cost() {
+              let n = getBuyableAmount(this.layer,this.id)
+              return new EN("1e255").pow(EN.pow(Infinity,n.pow(Infinity))) },
+            display() { return "<h3>重置升级和你所有的矿石（包括中子星和 SP），但你会获得挑战点数</h3>"+ "<h3><br>当前：+"+format(this.effect())+ "/秒</h3>" + "\n<h3>需求："+format(this.cost())+" SP</h3>\n\n<h3>你已完成 "+formatWhole(getBuyableAmount(this.layer,this.id))+" 次挑战点数重置。<h/3>" },
+          effect(){return new EN(0).add(getBuyableAmount(this.layer,this.id))},
+            canAfford() { return player.sa.points.gte(this.cost()) },
+          unlocked(){return hasUpgrade(this.layer,535)||getBuyableAmount(this.layer,this.id).gte(1)},
+          effect(x) { 
+            mult2 = new EN(1)
+            mult2 = mult2.mul(hasChallenge("sa",12)?3:1)
+            mult2 = mult2.mul(hasChallenge("sa",13)?2:1)
+            mult2 = mult2.mul(hasMilestone("sa",4)?milestoneEffect("sa",4):1)
+            mult2 = mult2.mul(hasChallenge("sa",21)?6.9420:1)
+            mult2 = mult2.mul(hasMilestone("sa",5)?milestoneEffect("sa",5):1)
+            mult2 = mult2.mul(hasChallenge("sa",22)?10:1)
+            mult2 = mult2.mul(hasChallenge("sa",23)?4:1)
+            mult2 = mult2.mul(hasChallenge("sa",31)?7.77777777777777:1)
+            mult2 = mult2.mul(hasChallenge("sa",32)?1000:1)
+            mult2 = mult2.mul(hasChallenge("sa",33)?69:1)
+            mult2 = mult2.mul(hasChallenge("sa",41)?420:1)
+            if (player.sa.challengepower.gte(1)) mult2 = mult2.tetr(player.sa.challengepower.max(1).pow(3))
+            if (player.sa.challengeexp.gte(1)) mult2 = mult2.pent(player.sa.challengeexp.max(1).pow(4))
+            if (player.sa.challengetet.gte(1)) mult2 = mult2.pent(player.sa.challengetet.max(1).pow(5))
+            if (player.sa.challengepent.gte(1)) mult2 = mult2.pent(player.sa.challengepent.max(1).tetr(6))
+
+            return new EN(mult2)},
+          buy() {
+            player[this.layer].points = new EN(0)
+              player.su.stones=new EN(0)
+              player.su.coal=new EN(0)
+              player.su.iron=new EN(0)
+              player.su.gold=new EN(0)
+              player.su.diamond=new EN(0)
+              player.su.ruby=new EN(0)
+              player.su.emerald=new EN(0)
+              player.su.amethyst=new EN(0)
+              player.su.cobalt=new EN(0)
+              player.su.crystal=new EN(0)
+                player.su.crystaltiers=new EN(0)
+                player.su.crystallevels=new EN(0)
+                player.sa.points = new EN(0)
+                player.su.upgrades=[]
+                player.sa.upgrades=[]
+                setBuyableAmount(this.layer, this.id, getBuyableAmount(this.layer, this.id).add(1))
+            },
+        },
+        26: {
+            title: "<h3>第六个子飞升层<h3>",
+            cost() {
+              let n = getBuyableAmount(this.layer,this.id)
+              return new EN("10^^1000").pow(EN.pow(Infinity,n.pow(Infinity))) },
+            display() { return "<h3>重置升级和你所有的矿石（包括中子星和 SP），但你会获得挑战力量</h3>"+ "<h3><br>当前：+"+format(this.effect())+ "/秒</h3>" + "\n<h3>需求："+format(this.cost())+" SP</h3>\n\n<h3>你已完成 "+formatWhole(getBuyableAmount(this.layer,this.id))+" 次挑战力量^2 重置。<h/3>" },
+          effect(){return new EN(0).add(getBuyableAmount(this.layer,this.id))},
+            canAfford() { return player.sa.points.gte(this.cost()) },
+          unlocked(){return hasUpgrade(this.layer,535)||getBuyableAmount(this.layer,this.id).gte(1)},
+          effect(x) { 
+            mult2 = new EN(1)
+            mult2 = mult2.mul(hasMilestone("sa",6)?milestoneEffect("sa",6):1)
+            mult2 = mult2.pow(hasMilestone("sa",7)?milestoneEffect("sa",7):1)
+            mult2 = mult2.tetr(hasMilestone("sa",8)?milestoneEffect("sa",8):1)
+            
+            if (player.sa.challengeexp.gte(1)) mult2 = mult2.pent(player.sa.challengeexp.max(1).pow(4))
+            if (player.sa.challengetet.gte(1)) mult2 = mult2.pent(player.sa.challengetet.max(1).pow(5))
+            if (player.sa.challengepent.gte(1)) mult2 = mult2.pent(player.sa.challengepent.max(1).tetr(6))
+
+            return new EN(mult2)},
+          buy() {
+            player[this.layer].points = new EN(0)
+              player.su.stones=new EN(0)
+              player.su.coal=new EN(0)
+              player.su.iron=new EN(0)
+              player.su.gold=new EN(0)
+              player.su.diamond=new EN(0)
+              player.su.ruby=new EN(0)
+              player.su.emerald=new EN(0)
+              player.su.amethyst=new EN(0)
+              player.su.cobalt=new EN(0)
+              player.su.crystal=new EN(0)
+                player.su.crystaltiers=new EN(0)
+                player.su.crystallevels=new EN(0)
+                player.sa.points = new EN(0)
+                player.sa.challengepoint = new EN(0)
+                player.su.upgrades=[]
+                player.sa.upgrades=[]
+                player.sa.challenges=[]
+                setBuyableAmount(this.layer, this.id, getBuyableAmount(this.layer, this.id).add(1))
+            },
+        },
+        27: {
+            title: "<h3>第七个子飞升层<h3>",
+            cost() {
+              let n = getBuyableAmount(this.layer,this.id)
+              return new EN("10^^^5000").pow(EN.pow(Infinity,n.pow(Infinity))) },
+            display() { return "<h3>重置升级和你所有的矿石（包括中子星和 SP），但你会获得挑战指数</h3>"+ "<h3><br>当前：+"+format(this.effect())+ "/秒</h3>" + "\n<h3>需求："+format(this.cost())+" SP</h3>\n\n<h3>你已完成 "+formatWhole(getBuyableAmount(this.layer,this.id))+" 次挑战指数重置。<h/3>" },
+          effect(){return new EN(0).add(getBuyableAmount(this.layer,this.id))},
+            canAfford() { return player.sa.points.gte(this.cost()) },
+          unlocked(){return hasUpgrade(this.layer,535)||getBuyableAmount(this.layer,this.id).gte(1)},
+          effect(x) { 
+            mult2 = new EN(1)
+            mult2 = mult2.mul(hasMilestone("sa",9)?milestoneEffect("sa",9):1)
+            mult2 = mult2.pow(hasMilestone("sa",10)?milestoneEffect("sa",10):1)
+            mult2 = mult2.tetr(hasMilestone("sa",11)?milestoneEffect("sa",11):1)
+            mult2 = mult2.tetr(hasUpgrade("sa",61)?upgradeEffect("sa",61):1)
+            if (player.sa.challengetet.gte(1)) mult2 = mult2.pent(player.sa.challengetet.max(1).pow(5))
+            if (player.sa.challengepent.gte(1)) mult2 = mult2.pent(player.sa.challengepent.max(1).tetr(6))
+            return new EN(mult2)},
+          buy() {
+            player[this.layer].points = new EN(0)
+              player.su.stones=new EN(0)
+              player.su.coal=new EN(0)
+              player.su.iron=new EN(0)
+              player.su.gold=new EN(0)
+              player.su.diamond=new EN(0)
+              player.su.ruby=new EN(0)
+              player.su.emerald=new EN(0)
+              player.su.amethyst=new EN(0)
+              player.su.cobalt=new EN(0)
+              player.su.crystal=new EN(0)
+                player.su.crystaltiers=new EN(0)
+                player.su.crystallevels=new EN(0)
+                player.sa.points = new EN(0)
+                player.sa.challengepoint = new EN(0)
+                player.sa.challengepower = new EN(0)
+                player.su.upgrades=[]
+                player.sa.upgrades=[]
+                player.sa.challenges=[]
+                setBuyableAmount(this.layer, this.id, getBuyableAmount(this.layer, this.id).add(1))
+            },
+        },
+        28: {
+            title: "<h3>第八个子飞升层<h3>",
+            cost() {
+              let n = getBuyableAmount(this.layer,this.id)
+              return new EN("10^^^10^^^1e20").pow(EN.pow(Infinity,n.pow(Infinity))) },
+            display() { return "<h3>重置牺牲升级和挑战以及你所有的矿石（包括中子星和 SP），但你会获得挑战迭代幂</h3>"+ "<h3><br>当前：+"+format(this.effect())+ "/秒</h3>" + "\n<h3>需求："+format(this.cost())+" SP</h3>\n\n<h3>你已完成 "+formatWhole(getBuyableAmount(this.layer,this.id))+" 次挑战迭代幂重置。<h/3>" },
+          effect(){return new EN(0).add(getBuyableAmount(this.layer,this.id))},
+            canAfford() { return player.sa.points.gte(this.cost()) },
+          unlocked(){return hasUpgrade(this.layer,535)||getBuyableAmount(this.layer,this.id).gte(1)},
+          effect(x) { 
+            mult2 = new EN(2)
+            mult2 = mult2.tetr(hasUpgrade("sa",62)?upgradeEffect("sa",62):1)
+            if (player.sa.challengepent.gte(1)) mult2 = mult2.pent(player.sa.challengepent.max(1).tetr(6))
+            return new EN(mult2)},
+          buy() {
+            player[this.layer].points = new EN(0)
+              player.su.stones=new EN(0)
+              player.su.coal=new EN(0)
+              player.su.iron=new EN(0)
+              player.su.gold=new EN(0)
+              player.su.diamond=new EN(0)
+              player.su.ruby=new EN(0)
+              player.su.emerald=new EN(0)
+              player.su.amethyst=new EN(0)
+              player.su.cobalt=new EN(0)
+              player.su.crystal=new EN(0)
+                player.su.crystaltiers=new EN(0)
+                player.su.crystallevels=new EN(0)
+                player.sa.points = new EN(0)
+                player.sa.challengepoint = new EN(0)
+                player.sa.challengepower = new EN(0)
+                player.sa.challengeexp = new EN(0)
+                player.sa.upgrades=[]
+                player.sa.challenges=[]
+                setBuyableAmount(this.layer, this.id, getBuyableAmount(this.layer, this.id).add(1))
+            },
+        },
+        29: {
+            title: "<h3>第九个子飞升层<h3>",
+            cost() {
+              let n = getBuyableAmount(this.layer,this.id)
+              return new EN("10^^^10^^^10^^10^^2").pow(EN.pow(Infinity,n.pow(Infinity))) },
+            display() { return "<h3>重置牺牲升级和挑战以及你所有的矿石（包括中子星和 SP），但你会获得挑战五级数</h3>"+ "<h3><br>当前：+"+format(this.effect())+ "/秒</h3>" + "\n<h3>需求："+format(this.cost())+" SP</h3>\n\n<h3>你已完成 "+formatWhole(getBuyableAmount(this.layer,this.id))+" 次挑战五级数^3 重置。<h/3>" },
+          effect(){return new EN(0).add(getBuyableAmount(this.layer,this.id))},
+            canAfford() { return player.sa.points.gte(this.cost()) },
+          unlocked(){return hasUpgrade(this.layer,535)||getBuyableAmount(this.layer,this.id).gte(1)},
+          effect(x) { 
+            mult2 = new EN(1)
+            mult2 = mult2.mul(hasUpgrade("ap",11)?69:1)
+            mult2 = mult2.mul(hasUpgrade("ap",12)?420:1)
+            mult2 = mult2.mul(hasMilestone("sa",12)?milestoneEffect("sa",12):1)
+            mult2 = mult2.pow(hasMilestone("sa",13)?milestoneEffect("sa",13):1)
+            mult2 = mult2.tetr(hasMilestone("sa",14)?milestoneEffect("sa",14):1)
+            mult2 = mult2.pent(hasUpgrade("sa",63)?upgradeEffect("sa",63):1)
+            mult2 = mult2.tetr(hasUpgrade("sa",64)?upgradeEffect("sa",64):1)
+            mult2 = mult2.mul(hasUpgrade("ap",15)?upgradeEffect("ap",15):1)
+            mult2 = mult2.mul(hasUpgrade("ap",25)?upgradeEffect("ap",25):1)
+            return new EN(mult2)},
+          buy() {
+            player[this.layer].points = new EN(0)
+              player.su.stones=new EN(0)
+              player.su.coal=new EN(0)
+              player.su.iron=new EN(0)
+              player.su.gold=new EN(0)
+              player.su.diamond=new EN(0)
+              player.su.ruby=new EN(0)
+              player.su.emerald=new EN(0)
+              player.su.amethyst=new EN(0)
+              player.su.cobalt=new EN(0)
+              player.su.crystal=new EN(0)
+                player.su.crystaltiers=new EN(0)
+                player.su.crystallevels=new EN(0)
+                player.sa.points = new EN(0)
+                player.sa.challengepoint = new EN(0)
+                player.sa.challengepower = new EN(0)
+                player.sa.challengeexp = new EN(0)
+                player.sa.challengetet = new EN(0)
+                player.sa.upgrades=[]
+                player.sa.challenges=[]
+                setBuyableAmount(this.layer, this.id, getBuyableAmount(this.layer, this.id).add(1))
+            },
+        },
+    },
+    upgrades: {
+        11: { title: "951",
+        description: "获得更多光。",
+        cost: new EN("0"),
+        unlocked() {
+            return hasAchievement("a", 111)
+        }
+        },
+        12: { title: "952",
+        description: "洋葱升级 71 强 1,000,000 倍。",
+        cost: new EN("1"),
+        unlocked() {
+            return hasUpgrade("su", 11)
+        }
+        },
+        13: { title: "953",
+        description: "轮回升级 105 和 155 变为立方。",
+        cost: new EN("1"),
+        unlocked() {
+            return hasUpgrade("su", 12)
+        }
+        },
+        14: { title: "954",
+        description: "获得 x100 鸭子 - 果汁。",
+        cost: new EN("1"),
+        unlocked() {
+            return hasUpgrade("su", 13)
+        }
+        },
+        15: { title: "955",
+        description: "轮回升级 171 快 10 倍，并获得 10% 中子星。",
+        cost: new EN("2"),
+        unlocked() {
+            return hasUpgrade("su", 14)
+        }
+        },
+        21: { title: "956",
+        description: "将奖牌获取提高 1.01 倍。",
+        cost: new EN("4"),
+        unlocked() {
+            return hasUpgrade("su", 15)
+        }
+        },
+        22: { title: "957",
+        description: "轮回升级 181 快 10 倍。",
+        cost: new EN("4"),
+        unlocked() {
+            return hasUpgrade("su", 21)
+        }
+        },
+        23: { title: "958",
+        description: "轮回可购买项 11 强 2 倍。",
+        cost: new EN("4"),
+        unlocked() {
+            return hasUpgrade("su", 22)
+        }
+        },
+        24: { title: "959",
+        description: "轮回可购买项 12 强 50%。",
+        cost: new EN("8"),
+        unlocked() {
+            return hasUpgrade("su", 23)
+        }
+        },
+        25: { title: "960",
+        description: "轮回可购买项 21 强 3 倍，并获得 20% 中子星。",
+        cost: new EN("8"),
+        unlocked() {
+            return hasUpgrade("su", 24)
+        }
+        },
+        31: { title: "961",
+        description: "轮回可购买项 22 强 75%。",
+        cost: new EN("8"),
+        unlocked() {
+            return hasUpgrade("su", 25)
+        }
+        },
+        32: { title: "962",
+        description: "解锁一个新的轮回树升级。",
+        cost: new EN("16"),
+        unlocked() {
+            return hasUpgrade("su", 31)
+        }
+        },
+        33: { title: "963",
+        description: "将奖牌获取提高 1.025 倍。",
+        cost: new EN("16"),
+        unlocked() {
+            return hasUpgrade("su", 32)
+        }
+        },
+        34: { title: "964",
+        description: "再次将奖牌获取提高 1.01 倍。",
+        cost: new EN("16"),
+        unlocked() {
+            return hasUpgrade("su", 33)
+        }
+        },
+        35: { title: "965",
+        description: "获得 50% 更多中子星。",
+        cost: new EN("32"),
+        unlocked() {
+            return hasUpgrade("su", 34)
+        }
+        },
+        41: { title: "966",
+        description: "解锁另一个树升级，前 2 个轮回可购买项强 10%。",
+        cost: new EN("32"),
+        unlocked() {
+            return hasUpgrade("su", 35)
+        }
+        },
+        42: { title: "967",
+        description: "中子星自我加成。",
+        cost: new EN("64"),
+        unlocked() {
+            return hasUpgrade("su", 41)
+        },
+        effect(){return player.su.total.root(13).max(1).gte("1.79769e308") ? new EN("1.79769e308") : player.su.total.root(13).max(1)},
+        
+        effectDisplay(){return `${format(this.effect())}x`}
+        },
+        43: { title: "968",
+        description: "中子星以降低的比例提升奖牌获取。",
+        cost: new EN("64"),
+        unlocked() {
+            return hasUpgrade("su", 42)
+        },
+        effect(){return player.su.total.root(69).max(1).gte("2") ? new EN("2") : player.su.total.root(69).max(1)},
+        
+        effectDisplay(){return `^${format(this.effect())}`}
+        },
+        44: { title: "969",
+        description: "最后 2 个轮回可购买项强 25%。",
+        cost: new EN("128"),
+        unlocked() {
+            return hasUpgrade("su", 43)
+        }
+        },
+        45: { title: "970",
+        description: "中子星获取翻倍。",
+        cost: new EN("128"),
+        unlocked() {
+            return hasUpgrade("su", 44)
+        }
+        },
+        51: { title: "971",
+        description: "将奖牌获取提高 1.05 倍。",
+        cost: new EN("256"),
+        unlocked() {
+            return hasUpgrade("su", 45)
+        }
+        },
+        52: { title: "972",
+        description: "所有轮回可购买项强 2 倍。",
+        cost: new EN("512"),
+        unlocked() {
+            return hasUpgrade("su", 51)
+        }
+        },
+        53: { title: "973",
+        description: "每个超新星升级，你获得 5% 更多中子星（复利）",
+        cost: new EN("512"),
+        unlocked() {
+            return hasUpgrade("su", 52)
+        },
+        effect() {
+            let effect = ExpantaNum.pow(1.05, player.su.upgrades.length)
+            return effect
+        },
+        effectDisplay() { return format(upgradeEffect(this.layer, this.id))+"x" }, // Add formatting to the effect      
+        },
+        54: { title: "974",
+        description: "解锁 2 个新的轮回树升级。",
+        cost: new EN("1024"),
+        unlocked() {
+            return hasUpgrade("su", 53)
+        }
+        },
+        55: { title: "975 (25 more to 1K!)",
+        description: "解锁一个新的子标签页，RU155 无效，并根据这次重置的超新星时间获得更多点数。",
+        cost: new EN("65536"),
+        unlocked() {
+            return hasUpgrade("su", 54)
+        },
+        effect() {
+            let time = EN(player.su.resetTime)
+            return EN.pent(1e300, time.pent(3).pent(3), time)
+        },
+        effectDisplay() { return "^" + format(this.effect()) },
+        },
+        61: { title: "第十八个树升级",
+        description: "根据你的中子星获得更多石头（硬上限 1.80e308 倍）",
+        currencyDisplayName: "石头",
+        currencyInternalName: "stones",
+        currencyLayer: "su",
+        cost:("100"),
+        effectDisplay() { return "x" + format(upgradeEffect(this.layer, this.id)) }, // Add formatting to the effect
+        effect() {
+            return player.su.total.add(1).pow(0.1).min("1.79769e308")
+        },
+    },
+    71: { title: "第十九个树升级",
+        description: "将石头获取提高 1.5 倍。",
+        currencyDisplayName: "石头",
+        currencyInternalName: "stones",
+        currencyLayer: "su",
+        cost() {
+            let cost = EN("200")
+            let ugs = EN("2")
+            for (let a = 71; a <= 72; a++) if (hasUpgrade("su", a)) {
+                cost = cost.mul(ugs)
+                ugs = ugs.mul("1")
+            }
+            return cost
+         },
+        req: [61],
+        unlocked() {
+            return hasUpgrade("su", 61)
+        },
+        branches() { 
+            let col = hasUpgrade(this.layer, this.id) ? "#77df5f" : "#9c7575"
+            return this.req.map(x => [x, col]) 
+        },
+        style: { margin: "10px" }
+    },
+    72: { title: "第二十个树升级",
+        description: "将中子星和奖牌获取提高 1.5 倍。",
+        currencyDisplayName: "石头",
+        currencyInternalName: "stones",
+        currencyLayer: "su",
+        cost() {
+            let cost = EN("150")
+            let ugs = EN("5")
+            for (let a = 71; a <= 72; a++) if (hasUpgrade("su", a)) {
+                cost = cost.mul(ugs)
+                ugs = ugs.mul("1")
+            }
+            return cost
+         },        req: [61],
+        unlocked() {
+            return hasUpgrade("su", 61)
+        },
+        branches() { 
+            let col = hasUpgrade(this.layer, this.id) ? "#77df5f" : "#9c7575"
+            return this.req.map(x => [x, col]) 
+        },
+        style: { margin: "10px" }
+    },
+    81: { title: "第二十个树升级",
+        description: "每个超新星升级将石头获取提高 1.01 倍。",
+        currencyDisplayName: "石头",
+        currencyInternalName: "stones",
+        currencyLayer: "su",
+        cost:("2e3"),
+        effect() {
+            let effect = ExpantaNum.pow(1.01, player.su.upgrades.length)
+            return effect
+        },
+        effectDisplay() { return "^" + format(upgradeEffect(this.layer, this.id)) }, // Add formatting to the effect
+        req: [71, 72],
+        unlocked() {
+            return hasUpgrade("su", 71, 72)
+        },
+        branches() { 
+            let col = hasUpgrade(this.layer, this.id) ? "#77df5f" : "#9c7575"
+            return this.req.map(x => [x, col]) 
+        },
+        style: { margin: "10px" }
+    },
+    91: { title: "第二十个树升级",
+        description: "再次将石头获取提高 1.5 倍。",
+        currencyDisplayName: "石头",
+        currencyInternalName: "stones",
+        currencyLayer: "su",
+        cost() {
+            let cost = EN("5000")
+            let ugs = EN("2")
+            for (let a = 91; a <= 92; a++) if (hasUpgrade("su", a)) {
+                cost = cost.mul(ugs)
+                ugs = ugs.mul("1")
+            }
+            return cost
+         },
+        req: [81],
+        unlocked() {
+            return hasUpgrade("su", 81)
+        },
+        branches() { 
+            let col = hasUpgrade(this.layer, this.id) ? "#77df5f" : "#9c7575"
+            return this.req.map(x => [x, col]) 
+        },
+        style: { margin: "10px" }
+    },
+    92: { title: "第二十个树升级",
+        description: "石头自我加成（硬上限 1,000 倍）",
+        currencyDisplayName: "石头",
+        currencyInternalName: "stones",
+        currencyLayer: "su",
+        effectDisplay() { return "x" + format(upgradeEffect(this.layer, this.id)) }, // Add formatting to the effect
+        effect() {
+            return player.su.stones.add(1).pow(0.36).min("1000")
+        },
+        cost() {
+            let cost = EN("5000")
+            let ugs = EN("10")
+            for (let a = 91; a <= 92; a++) if (hasUpgrade("su", a)) {
+                cost = cost.mul(ugs)
+                ugs = ugs.mul("1")
+            }
+            return cost
+         },
+        req: [81],
+        unlocked() {
+            return hasUpgrade("su", 81)
+        },
+        branches() { 
+            let col = hasUpgrade(this.layer, this.id) ? "#77df5f" : "#9c7575"
+            return this.req.map(x => [x, col]) 
+        },
+        style: { margin: "10px" }
+    },
+    101: { title: "第二十个树升级",
+        description: "解锁一个可购买项。",
+        currencyDisplayName: "石头",
+        currencyInternalName: "stones",
+        currencyLayer: "su",
+        cost: ("1e7"),
+        req: [91, 92],
+        unlocked() {
+            return hasUpgrade("su", 91, 92)
+        },
+        branches() { 
+            let col = hasUpgrade(this.layer, this.id) ? "#77df5f" : "#9c7575"
+            return this.req.map(x => [x, col]) 
+        },
+        style: { margin: "10px" }
+    },
+    111: { title: "第二十个树升级",
+        description: "石头加成煤炭获取。",
+        currencyDisplayName: "石头",
+        currencyInternalName: "stones",
+        currencyLayer: "su",
+        effectDisplay() { return "x" + format(upgradeEffect(this.layer, this.id)) }, // Add formatting to the effect
+        effect() {
+            return player.su.stones.add(1).pow(0.13).min("1000000")
+        },
+        cost() {
+            let cost = EN("1e8")
+            let ugs = EN("2")
+            for (let a = 111; a <= 112; a++) if (hasUpgrade("su", a)) {
+                cost = cost.mul(ugs)
+                ugs = ugs.mul("1")
+            }
+            return cost
+         },
+        req: [101],
+        unlocked() {
+            return hasUpgrade("su", 101)
+        },
+        branches() { 
+            let col = hasUpgrade(this.layer, this.id) ? "#77df5f" : "#9c7575"
+            return this.req.map(x => [x, col]) 
+        },
+        style: { margin: "10px" }
+    },
+    112: { title: "第二十个树升级",
+        description: "每个超新星升级为煤炭获取增加 +2 倍。",
+        currencyDisplayName: "煤炭",
+        currencyInternalName: "coal",
+        currencyLayer: "su",
+        effect() {
+            let effect = ExpantaNum.mul(2, player.su.upgrades.length)
+            return effect
+        },
+        effectDisplay() { return "x" + format(upgradeEffect(this.layer, this.id)) }, // Add formatting to the effect
+        cost() {
+            let cost = EN("100")
+            let ugs = EN("10")
+            for (let a = 111; a <= 112; a++) if (hasUpgrade("su", a)) {
+                cost = cost.mul(ugs)
+                ugs = ugs.mul("1")
+            }
+            return cost
+         },
+        req: [101],
+        unlocked() {
+            return hasUpgrade("su", 101)
+        },
+        branches() { 
+            let col = hasUpgrade(this.layer, this.id) ? "#77df5f" : "#9c7575"
+            return this.req.map(x => [x, col]) 
+        },
+        style: { margin: "10px" }
+    },
+    121: { title: "第二十个树升级",
+        description: "根据你的中子星获得更多煤炭。",
+        currencyDisplayName: "煤炭",
+        currencyInternalName: "coal",
+        currencyLayer: "su",
+        effectDisplay() { return "x" + format(upgradeEffect(this.layer, this.id)) }, // Add formatting to the effect
+        effect() {
+            return player.su.total.add(1).pow(0.16).min("1e12")
+        },
+        cost() {
+            let cost = EN("100000")
+            let ugs = EN("10")
+            for (let a = 121; a <= 122; a++) if (hasUpgrade("su", a)) {
+                cost = cost.mul(ugs)
+                ugs = ugs.mul("1")
+            }
+            return cost
+         },
+        req: [111, 112],
+        unlocked() {
+            return hasUpgrade("su", 111, 112)
+        },
+        branches() { 
+            let col = hasUpgrade(this.layer, this.id) ? "#77df5f" : "#9c7575"
+            return this.req.map(x => [x, col]) 
+        },
+        style: { margin: "10px" }
+    },
+    122: { title: "第二十个树升级",
+    description: "煤炭自我加成。",
+    currencyDisplayName: "煤炭",
+    currencyInternalName: "coal",
+    currencyLayer: "su",
+    effectDisplay() { return "x" + format(upgradeEffect(this.layer, this.id)) }, // Add formatting to the effect
+        effect() {
+            return player.su.coal.add(1).pow(0.1296).min("1000")
+        },
+    cost() {
+        let cost = EN("100000")
+        let ugs = EN("10")
+        for (let a = 121; a <= 122; a++) if (hasUpgrade("su", a)) {
+            cost = cost.mul(ugs)
+            ugs = ugs.mul("1")
+        }
+        return cost
+     },
+     
+    req: [111, 112],
+    unlocked() {
+        return hasUpgrade("su", 111, 112)
+    },
+    branches() { 
+        let col = hasUpgrade(this.layer, this.id) ? "#77df5f" : "#9c7575"
+        return this.req.map(x => [x, col]) 
+    },
+    style: { margin: "10px" }
+},
+131: { title: "第二十个树升级",
+    description: "煤炭加成中子星获取。",
+    currencyDisplayName: "煤炭",
+    currencyInternalName: "coal",
+    currencyLayer: "su",
+    effectDisplay() { return "x" + format(upgradeEffect(this.layer, this.id)) }, // Add formatting to the effect
+        effect() {
+            return player.su.coal.add(1).pow(0.2).min("10000")
+        },
+    cost() {
+        let cost = EN("10000000")
+        let ugs = EN("10")
+        for (let a = 131; a <= 132; a++) if (hasUpgrade("su", a)) {
+            cost = cost.mul(ugs)
+            ugs = ugs.mul("1")
+        }
+        return cost
+     },
+    req: [121, 122],
+    unlocked() {
+        return hasUpgrade("su", 121, 122)
+    },
+    branches() { 
+        let col = hasUpgrade(this.layer, this.id) ? "#77df5f" : "#9c7575"
+        return this.req.map(x => [x, col]) 
+    },
+    style: { margin: "10px" }
+},
+132: { title: "第二十个树升级",
+    description: "将石头获取提高 1.25 倍。",
+    currencyDisplayName: "煤炭",
+    currencyInternalName: "coal",
+    currencyLayer: "su",
+    cost() {
+        let cost = EN("10000000")
+        let ugs = EN("10")
+        for (let a = 131; a <= 132; a++) if (hasUpgrade("su", a)) {
+            cost = cost.mul(ugs)
+            ugs = ugs.mul("1")
+        }
+        return cost
+     },
+    req: [121, 122],
+    unlocked() {
+        return hasUpgrade("su", 121, 122)
+    },
+    branches() { 
+        let col = hasUpgrade(this.layer, this.id) ? "#77df5f" : "#9c7575"
+        return this.req.map(x => [x, col]) 
+    },
+    style: { margin: "10px" }
+},
+141: { title: "第三十个树升级",
+        description: "解锁另一个可购买项。",
+        currencyDisplayName: "煤炭",
+        currencyInternalName: "coal",
+        currencyLayer: "su",
+        cost: ("1e9"),
+        req: [131, 132],
+        unlocked() {
+            return hasUpgrade("su", 131, 132)
+        },
+        branches() { 
+            let col = hasUpgrade(this.layer, this.id) ? "#77df5f" : "#9c7575"
+            return this.req.map(x => [x, col]) 
+        },
+        style: { margin: "10px" }
+    },
+151: { title: "第三十个树升级",
+        description: "石头加成铁获取。",
+        currencyDisplayName: "石头",
+        currencyInternalName: "stones",
+        currencyLayer: "su",
+        effectDisplay() { return "x" + format(upgradeEffect(this.layer, this.id)) }, // Add formatting to the effect
+        effect() {
+            return player.su.stones.add(1).pow(0.12345678).min("1000000")
+        },
+        cost() {
+            let cost = EN("1e16")
+            let ugs = EN("2")
+            for (let a = 151; a <= 152; a++) if (hasUpgrade("su", a)) {
+                cost = cost.mul(ugs)
+                ugs = ugs.mul("1")
+            }
+            return cost
+         },
+        req: [141],
+        unlocked() {
+            return hasUpgrade("su", 141)
+        },
+        branches() { 
+            let col = hasUpgrade(this.layer, this.id) ? "#77df5f" : "#9c7575"
+            return this.req.map(x => [x, col]) 
+        },
+        style: { margin: "10px" }
+    },
+        152: { title: "第三十个树升级",
+        description: "煤炭加成铁获取。",
+        currencyDisplayName: "煤炭",
+        currencyInternalName: "coal",
+        currencyLayer: "su",
+        effectDisplay() { return "x" + format(upgradeEffect(this.layer, this.id)) }, // Add formatting to the effect
+        effect() {
+            return player.su.coal.add(1).pow(0.14285714285).min("1000000")
+        },
+        cost() {
+            let cost = EN("4e9")
+            let ugs = EN("2")
+            for (let a = 151; a <= 152; a++) if (hasUpgrade("su", a)) {
+                cost = cost.mul(ugs)
+                ugs = ugs.mul("1")
+            }
+            return cost
+         },
+        req: [141],
+        unlocked() {
+            return hasUpgrade("su", 141)
+        },
+        branches() { 
+            let col = hasUpgrade(this.layer, this.id) ? "#77df5f" : "#9c7575"
+            return this.req.map(x => [x, col]) 
+        },
+        style: { margin: "10px" }
+    },
+    161: { title: "第三十个树升级",
+        description: "根据你的中子星获得更多铁。",
+        currencyDisplayName: "铁",
+        currencyInternalName: "iron",
+        currencyLayer: "su",
+        effectDisplay() { return "x" + format(upgradeEffect(this.layer, this.id)) }, // Add formatting to the effect
+        effect() {
+            return player.su.total.add(1).pow(0.16).min("1000000")
+        },
+        cost() {
+            let cost = EN("1e6")
+            let ugs = EN("10")
+            for (let a = 161; a <= 162; a++) if (hasUpgrade("su", a)) {
+                cost = cost.mul(ugs)
+                ugs = ugs.mul("1")
+            }
+            return cost
+         },
+        req: [151, 152],
+        unlocked() {
+            return hasUpgrade("su", 151, 152)
+        },
+        branches() { 
+            let col = hasUpgrade(this.layer, this.id) ? "#77df5f" : "#9c7575"
+            return this.req.map(x => [x, col]) 
+        },
+        style: { margin: "10px" }
+    },
+        162: { title: "第三十个树升级",
+        description: "每个超新星升级为铁获取提高 10%（复利）",
+        currencyDisplayName: "铁",
+        currencyInternalName: "iron",
+        currencyLayer: "su",
+        effect() {
+            let effect = ExpantaNum.pow(1.1, player.su.upgrades.length)
+            return effect
+        },
+        effectDisplay() { return "x" + format(upgradeEffect(this.layer, this.id)) }, // Add formatting to the effect
+        cost() {
+            let cost = EN("1e6")
+            let ugs = EN("10")
+            for (let a = 161; a <= 162; a++) if (hasUpgrade("su", a)) {
+                cost = cost.mul(ugs)
+                ugs = ugs.mul("1")
+            }
+            return cost
+         },
+        req: [151, 152],
+        unlocked() {
+            return hasUpgrade("su", 151, 152)
+        },
+        branches() { 
+            let col = hasUpgrade(this.layer, this.id) ? "#77df5f" : "#9c7575"
+            return this.req.map(x => [x, col]) 
+        },
+        style: { margin: "10px" }
+    },
+    171: { title: "第三十个树升级",
+        description: "铁自我加成。",
+        currencyDisplayName: "铁",
+        currencyInternalName: "iron",
+        currencyLayer: "su",
+        effectDisplay() { return "x" + format(upgradeEffect(this.layer, this.id)) }, // Add formatting to the effect
+        effect() {
+            return player.su.iron.add(1).pow(0.1).min("1000")
+        },
+        cost() {
+            let cost = EN("1e9")
+            let ugs = EN("10")
+            for (let a = 171; a <= 172; a++) if (hasUpgrade("su", a)) {
+                cost = cost.mul(ugs)
+                ugs = ugs.mul("1")
+            }
+            return cost
+         },
+        req: [161,162],
+        unlocked() {
+            return hasUpgrade("su", 161, 162)
+        },
+        branches() { 
+            let col = hasUpgrade(this.layer, this.id) ? "#77df5f" : "#9c7575"
+            return this.req.map(x => [x, col]) 
+        },
+        style: { margin: "10px" }
+    },
+        172: { title: "第三十个树升级",
+        description: "铁加成中子星获取。",
+        currencyDisplayName: "铁",
+        currencyInternalName: "iron",
+        currencyLayer: "su",
+        effectDisplay() { return "x" + format(upgradeEffect(this.layer, this.id)) }, // Add formatting to the effect
+        effect() {
+            return player.su.iron.add(1).pow(0.333333333333333333333333333).min("1000000")
+        },
+        cost() {
+            let cost = EN("1e9")
+            let ugs = EN("10")
+            for (let a = 171; a <= 172; a++) if (hasUpgrade("su", a)) {
+                cost = cost.mul(ugs)
+                ugs = ugs.mul("1")
+            }
+            return cost
+         },
+        req: [161, 162],
+        unlocked() {
+            return hasUpgrade("su", 161, 162)
+        },
+        branches() { 
+            let col = hasUpgrade(this.layer, this.id) ? "#77df5f" : "#9c7575"
+            return this.req.map(x => [x, col]) 
+        },
+        style: { margin: "10px" }
+    },
+    181: { title: "第三十个树升级",
+        description: "将石头获取提高 1.2 倍。",
+        currencyDisplayName: "煤炭",
+        currencyInternalName: "coal",
+        currencyLayer: "su",
+        cost() {
+            let cost = EN("1e13")
+            let ugs = EN("10")
+            for (let a = 181; a <= 182; a++) if (hasUpgrade("su", a)) {
+                cost = cost.mul(ugs)
+                ugs = ugs.mul("1")
+            }
+            return cost
+         },
+        req: [171,172],
+        unlocked() {
+            return hasUpgrade("su", 171, 172)
+        },
+        branches() { 
+            let col = hasUpgrade(this.layer, this.id) ? "#77df5f" : "#9c7575"
+            return this.req.map(x => [x, col]) 
+        },
+        style: { margin: "10px" }
+    },
+        182: { title: "第三十个树升级",
+        description: "将煤炭获取提高 1.25 倍。",
+        currencyDisplayName: "铁",
+        currencyInternalName: "iron",
+        currencyLayer: "su",
+        cost() {
+            let cost = EN("1e12")
+            let ugs = EN("10")
+            for (let a = 181; a <= 182; a++) if (hasUpgrade("su", a)) {
+                cost = cost.mul(ugs)
+                ugs = ugs.mul("1")
+            }
+            return cost
+         },
+        req: [171, 172],
+        unlocked() {
+            return hasUpgrade("su", 171, 172)
+        },
+        branches() { 
+            let col = hasUpgrade(this.layer, this.id) ? "#77df5f" : "#9c7575"
+            return this.req.map(x => [x, col]) 
+        },
+        style: { margin: "10px" }
+    },
+    191: { title: "第三十个树升级",
+        description: "解锁另一个可购买项。",
+        currencyDisplayName: "铁",
+        currencyInternalName: "iron",
+        currencyLayer: "su",
+        cost: ("1e14"),
+        req: [181, 182],
+        unlocked() {
+            return hasUpgrade("su", 181, 182)
+        },
+        branches() { 
+            let col = hasUpgrade(this.layer, this.id) ? "#77df5f" : "#9c7575"
+            return this.req.map(x => [x, col]) 
+        },
+        style: { margin: "10px" }
+    },
+    201: { title: "第四十个树升级",
+        description: "石头加成金获取。",
+        currencyDisplayName: "石头",
+        currencyInternalName: "stones",
+        currencyLayer: "su",
+        effectDisplay() { return "x" + format(upgradeEffect(this.layer, this.id)) }, // Add formatting to the effect
+        effect() {
+            return player.su.stones.add(1).pow(0.1).min("1000000")
+        },
+        cost() {
+            let cost = EN("1e27")
+            let ugs = EN("10")
+            for (let a = 201; a <= 205; a++) if (hasUpgrade("su", a)) {
+                cost = cost.mul(ugs)
+                ugs = ugs.mul("1")
+            }
+            return cost
+         },
+        req: [191],
+        unlocked() {
+            return hasUpgrade("su", 191)
+        },
+        branches() { 
+            let col = hasUpgrade(this.layer, this.id) ? "#77df5f" : "#9c7575"
+            return this.req.map(x => [x, col]) 
+        },
+        style: { margin: "10px" }
+    },
+    202: { title: "第四十个树升级",
+        description: "煤炭加成金获取。",
+        currencyDisplayName: "煤炭",
+        currencyInternalName: "coal",
+        currencyLayer: "su",
+        effectDisplay() { return "x" + format(upgradeEffect(this.layer, this.id)) }, // Add formatting to the effect
+        effect() {
+            return player.su.coal.add(1).pow(0.1111111111111111111111111111).min("1000000")
+        },
+        cost() {
+            let cost = EN("1e17")
+            let ugs = EN("10")
+            for (let a = 201; a <= 205; a++) if (hasUpgrade("su", a)) {
+                cost = cost.mul(ugs)
+                ugs = ugs.mul("1")
+            }
+            return cost
+         },
+        req: [191],
+        unlocked() {
+            return hasUpgrade("su", 191)
+        },
+        branches() { 
+            let col = hasUpgrade(this.layer, this.id) ? "#77df5f" : "#9c7575"
+            return this.req.map(x => [x, col]) 
+        },
+        style: { margin: "10px" }
+    },
+    203: { title: "第四十个树升级",
+        description: "铁加成金获取。",
+        currencyDisplayName: "铁",
+        currencyInternalName: "iron",
+        currencyLayer: "su",
+        effectDisplay() { return "x" + format(upgradeEffect(this.layer, this.id)) }, // Add formatting to the effect
+        effect() {
+            return player.su.iron.add(1).pow(0.123456789).min("1000000")
+        },
+        cost() {
+            let cost = EN("1e14")
+            let ugs = EN("10")
+            for (let a = 201; a <= 205; a++) if (hasUpgrade("su", a)) {
+                cost = cost.mul(ugs)
+                ugs = ugs.mul("1")
+            }
+            return cost
+         },
+        req: [191],
+        unlocked() {
+            return hasUpgrade("su", 191)
+        },
+        branches() { 
+            let col = hasUpgrade(this.layer, this.id) ? "#77df5f" : "#9c7575"
+            return this.req.map(x => [x, col]) 
+        },
+        style: { margin: "10px" }
+    },
+    204: { title: "第四十个树升级",
+        description: "根据你的中子星获得更多金。",
+        currencyDisplayName: "金",
+        currencyInternalName: "gold",
+        currencyLayer: "su",
+        effectDisplay() { return "x" + format(upgradeEffect(this.layer, this.id)) }, // Add formatting to the effect
+        effect() {
+            return player.su.total.add(1).pow(0.123456789).min("1000000")
+        },
+        cost() {
+            let cost = EN("1e6")
+            let ugs = EN("10")
+            for (let a = 201; a <= 205; a++) if (hasUpgrade("su", a)) {
+                cost = cost.mul(ugs)
+                ugs = ugs.mul("1")
+            }
+            return cost
+         },
+        req: [191],
+        unlocked() {
+            return hasUpgrade("su", 191)
+        },
+        branches() { 
+            let col = hasUpgrade(this.layer, this.id) ? "#77df5f" : "#9c7575"
+            return this.req.map(x => [x, col]) 
+        },
+        style: { margin: "10px" }
+    },
+    205: { title: "第四十个树升级",
+        description: "每个超新星升级为金获取提高 12.5%（复利）。",
+        currencyDisplayName: "金",
+        currencyInternalName: "gold",
+        currencyLayer: "su",
+        effect() {
+            let effect = ExpantaNum.pow(1.125, player.su.upgrades.length)
+            return effect
+        },
+        effectDisplay() { return "x" + format(upgradeEffect(this.layer, this.id)) }, // Add formatting to the effect
+        cost() {
+            let cost = EN("1e8")
+            let ugs = EN("10")
+            for (let a = 201; a <= 205; a++) if (hasUpgrade("su", a)) {
+                cost = cost.mul(ugs)
+                ugs = ugs.mul("1")
+            }
+            return cost
+         },
+        req: [191],
+        unlocked() {
+            return hasUpgrade("su", 191)
+        },
+        branches() { 
+            let col = hasUpgrade(this.layer, this.id) ? "#77df5f" : "#9c7575"
+            return this.req.map(x => [x, col]) 
+        },
+        style: { margin: "10px" }
+    },
+    211: { title: "第四十个树升级",
+        description: "金自我加成。",
+        currencyDisplayName: "金",
+        currencyInternalName: "gold",
+        currencyLayer: "su",
+        effectDisplay() { return "x" + format(upgradeEffect(this.layer, this.id)) }, // Add formatting to the effect
+        effect() {
+            return player.su.gold.add(1).pow(0.14285714285).min("1000000")
+        },
+        cost() {
+            let cost = EN("1e16")
+            let ugs = EN("10")
+            for (let a = 211; a <= 212; a++) if (hasUpgrade("su", a)) {
+                cost = cost.mul(ugs)
+                ugs = ugs.mul("1")
+            }
+            return cost
+         },
+        req: [201, 202, 203, 204, 205],
+        unlocked() {
+            return hasUpgrade("su", 201, 202, 203, 204, 205)
+        },
+        branches() { 
+            let col = hasUpgrade(this.layer, this.id) ? "#77df5f" : "#9c7575"
+            return this.req.map(x => [x, col]) 
+        },
+        style: { margin: "10px" }
+    },
+    221: { title: "第四十个树升级",
+        description: "金加成中子星获取。",
+        currencyDisplayName: "金",
+        currencyInternalName: "gold",
+        currencyLayer: "su",
+        effectDisplay() { return "x" + format(upgradeEffect(this.layer, this.id)) }, // Add formatting to the effect
+        effect() {
+            return player.su.gold.add(1).pow(0.25).min("1e10")
+        },
+        cost() {
+            let cost = EN("1e18")
+            let ugs = EN("10")
+            for (let a = 221; a <= 223; a++) if (hasUpgrade("su", a)) {
+                cost = cost.mul(ugs)
+                ugs = ugs.mul("1")
+            }
+            return cost
+         },
+        req: [211],
+        unlocked() {
+            return hasUpgrade("su", 211)
+        },
+        branches() { 
+            let col = hasUpgrade(this.layer, this.id) ? "#77df5f" : "#9c7575"
+            return this.req.map(x => [x, col]) 
+        },
+        style: { margin: "10px" }
+    },
+    231: { title: "第四十个树升级",
+        description: "石头获取提高 1.2 倍，煤炭 1.3 倍，铁 1.25 倍。",
+        currencyDisplayName: "金",
+        currencyInternalName: "gold",
+        currencyLayer: "su",
+        cost: ("2e20"),
+        req: [221],
+        unlocked() {
+            return hasUpgrade("su", 221)
+        },
+        branches() { 
+            let col = hasUpgrade(this.layer, this.id) ? "#77df5f" : "#9c7575"
+            return this.req.map(x => [x, col]) 
+        },
+        style: { margin: "10px" }
+    },
+    241: { title: "第四十个树升级",
+        description: "解锁另一个新可购买项。",
+        currencyDisplayName: "金",
+        currencyInternalName: "gold",
+        currencyLayer: "su",
+        cost: ("1e25"),
+        req: [231],
+        unlocked() {
+            return hasUpgrade("su", 231)
+        },
+        branches() { 
+            let col = hasUpgrade(this.layer, this.id) ? "#77df5f" : "#9c7575"
+            return this.req.map(x => [x, col]) 
+        },
+        style: { margin: "10px" }
+    },
+    251: { title: "第四十个树升级",
+        description: "石头加成钻石获取。",
+        currencyDisplayName: "石头",
+        currencyInternalName: "stones",
+        currencyLayer: "su",
+        effectDisplay() { return "x" + format(upgradeEffect(this.layer, this.id)) }, // Add formatting to the effect
+        effect() {
+            return player.su.stones.add(1).pow(0.0625).min("1e9")
+        },
+        cost() {
+            let cost = EN("1e55")
+            let ugs = EN("10")
+            for (let a = 251; a <= 254; a++) if (hasUpgrade("su", a)) {
+                cost = cost.mul(ugs)
+                ugs = ugs.mul("1")
+            }
+            return cost
+         },
+        req: [241],
+        unlocked() {
+            return hasUpgrade("su", 241)
+        },
+        branches() { 
+            let col = hasUpgrade(this.layer, this.id) ? "#77df5f" : "#9c7575"
+            return this.req.map(x => [x, col]) 
+        },
+        style: { margin: "10px" }
+    },
+    252: { title: "第五十个树升级！",
+        description: "煤炭加成钻石获取。",
+        currencyDisplayName: "煤炭",
+        currencyInternalName: "coal",
+        currencyLayer: "su",
+        effectDisplay() { return "x" + format(upgradeEffect(this.layer, this.id)) }, // Add formatting to the effect
+        effect() {
+            return player.su.coal.add(1).pow(0.1).min("1e9")
+        },
+        cost() {
+            let cost = EN("1e36")
+            let ugs = EN("10")
+            for (let a = 251; a <= 254; a++) if (hasUpgrade("su", a)) {
+                cost = cost.mul(ugs)
+                ugs = ugs.mul("1")
+            }
+            return cost
+         },
+        req: [241],
+        unlocked() {
+            return hasUpgrade("su", 241)
+        },
+        branches() { 
+            let col = hasUpgrade(this.layer, this.id) ? "#77df5f" : "#9c7575"
+            return this.req.map(x => [x, col]) 
+        },
+        style: { margin: "10px" }
+    },
+    253: { title: "第五十个树升级",
+        description: "铁加成钻石获取。",
+        currencyDisplayName: "铁",
+        currencyInternalName: "iron",
+        currencyLayer: "su",
+        effectDisplay() { return "x" + format(upgradeEffect(this.layer, this.id)) }, // Add formatting to the effect
+        effect() {
+            return player.su.iron.add(1).pow(0.0909090909).min("1e9")
+        },
+        cost() {
+            let cost = EN("1e34")
+            let ugs = EN("10")
+            for (let a = 251; a <= 254; a++) if (hasUpgrade("su", a)) {
+                cost = cost.mul(ugs)
+                ugs = ugs.mul("1")
+            }
+            return cost
+         },
+        req: [241],
+        unlocked() {
+            return hasUpgrade("su", 241)
+        },
+        branches() { 
+            let col = hasUpgrade(this.layer, this.id) ? "#77df5f" : "#9c7575"
+            return this.req.map(x => [x, col]) 
+        },
+        style: { margin: "10px" }
+    },
+    254: { title: "第五十个树升级",
+        description: "金加成钻石获取。",
+        currencyDisplayName: "金",
+        currencyInternalName: "gold",
+        currencyLayer: "su",
+        effectDisplay() { return "x" + format(upgradeEffect(this.layer, this.id)) }, // Add formatting to the effect
+        effect() {
+            return player.su.gold.add(1).pow(0.1).min("1e9")
+        },
+        cost() {
+            let cost = EN("1e29")
+            let ugs = EN("10")
+            for (let a = 251; a <= 254; a++) if (hasUpgrade("su", a)) {
+                cost = cost.mul(ugs)
+                ugs = ugs.mul("1")
+            }
+            return cost
+         },
+        req: [241],
+        unlocked() {
+            return hasUpgrade("su", 241)
+        },
+        branches() { 
+            let col = hasUpgrade(this.layer, this.id) ? "#77df5f" : "#9c7575"
+            return this.req.map(x => [x, col]) 
+        },
+        style: { margin: "10px" }
+    },
+    261: { title: "第五十个树升级",
+        description: "中子星加成钻石获取。",
+        currencyDisplayName: "钻石",
+        currencyInternalName: "diamond",
+        currencyLayer: "su",
+        effectDisplay() { return "x" + format(upgradeEffect(this.layer, this.id)) }, // Add formatting to the effect
+        effect() {
+            return player.su.total.add(1).pow(0.11111111111111111111).min("1e9")
+        },
+        cost() {
+            let cost = EN("1e17")
+            let ugs = EN("10")
+            for (let a = 261; a <= 262; a++) if (hasUpgrade("su", a)) {
+                cost = cost.mul(ugs)
+                ugs = ugs.mul("1")
+            }
+            return cost
+         },
+        req: [251, 252, 253, 254],
+        unlocked() {
+            return hasUpgrade("su", 251, 252, 253, 254)
+        },
+        branches() { 
+            let col = hasUpgrade(this.layer, this.id) ? "#77df5f" : "#9c7575"
+            return this.req.map(x => [x, col]) 
+        },
+        style: { margin: "10px" }
+    },
+    271: { title: "第五十个树升级",
+        description: "钻石加成中子星获取。",
+        currencyDisplayName: "钻石",
+        currencyInternalName: "diamond",
+        currencyLayer: "su",
+        effectDisplay() { return "x" + format(upgradeEffect(this.layer, this.id)) }, // Add formatting to the effect
+        effect() {
+            return player.su.diamond.add(1).pow(0.2222222222222222).min("1e9")
+        },
+        cost() {
+            let cost = EN("2.222e22")
+            let ugs = EN("10")
+            for (let a = 271; a <= 273; a++) if (hasUpgrade("su", a)) {
+                cost = cost.mul(ugs)
+                ugs = ugs.mul("1")
+            }
+            return cost
+         },
+        req: [261],
+        unlocked() {
+            return hasUpgrade("su", 261)
+        },
+        branches() { 
+            let col = hasUpgrade(this.layer, this.id) ? "#77df5f" : "#9c7575"
+            return this.req.map(x => [x, col]) 
+        },
+        style: { margin: "10px" }
+    },
+    272: { title: "第五十个树升级",
+        description: "每个超新星升级为钻石获取提高 20%。",
+        currencyDisplayName: "钻石",
+        currencyInternalName: "diamond",
+        currencyLayer: "su",
+        effect() {
+            let effect = ExpantaNum.pow(1.2, player.su.upgrades.length).min("1e9")
+            return effect
+        },
+        effectDisplay() { return "x" + format(upgradeEffect(this.layer, this.id)) }, // Add formatting to the effect
+        cost() {
+            let cost = EN("2.323e22")
+            let ugs = EN("10")
+            for (let a = 271; a <= 273; a++) if (hasUpgrade("su", a)) {
+                cost = cost.mul(ugs)
+                ugs = ugs.mul("1")
+            }
+            return cost
+         },
+        req: [261],
+        unlocked() {
+            return hasUpgrade("su", 261)
+        },
+        branches() { 
+            let col = hasUpgrade(this.layer, this.id) ? "#77df5f" : "#9c7575"
+            return this.req.map(x => [x, col]) 
+        },
+        style: { margin: "10px" }
+    },
+    273: { title: "第五十个树升级",
+        description: "钻石自我加成。",
+        currencyDisplayName: "钻石",
+        currencyInternalName: "diamond",
+        currencyLayer: "su",
+        effectDisplay() { return "x" + format(upgradeEffect(this.layer, this.id)) }, // Add formatting to the effect
+        effect() {
+            return player.su.diamond.add(1).pow(0.14285714285).min("1e9")
+        },
+        cost() {
+            let cost = EN("1e26")
+            let ugs = EN("10")
+            for (let a = 271; a <= 273; a++) if (hasUpgrade("su", a)) {
+                cost = cost.mul(ugs)
+                ugs = ugs.mul("1")
+            }
+            return cost
+         },
+        req: [261],
+        unlocked() {
+            return hasUpgrade("su", 261)
+        },
+        branches() { 
+            let col = hasUpgrade(this.layer, this.id) ? "#77df5f" : "#9c7575"
+            return this.req.map(x => [x, col]) 
+        },
+        style: { margin: "10px" }
+    },
+    281: { title: "第五十个树升级",
+        description: "中子星获取再次提高 1.5 倍，石头 1.1 倍，煤炭再次 1.3 倍，铁 1.25 倍，金 1.2 倍。",
+        currencyDisplayName: "钻石",
+        currencyInternalName: "diamond",
+        currencyLayer: "su",
+        cost: ("1e35"),
+        req: [271, 272, 273],
+        unlocked() {
+            return hasUpgrade("su", 271, 272, 273)
+        },
+        branches() { 
+            let col = hasUpgrade(this.layer, this.id) ? "#77df5f" : "#9c7575"
+            return this.req.map(x => [x, col]) 
+        },
+        style: { margin: "10px" }
+    },
+    291: { title: "第五十个树升级",
+        description: "解锁一个新可购买项。",
+        currencyDisplayName: "钻石",
+        currencyInternalName: "diamond",
+        currencyLayer: "su",
+        cost: ("1e50"),
+        req: [281],
+        unlocked() {
+            return hasUpgrade("su", 281)
+        },
+        branches() { 
+            let col = hasUpgrade(this.layer, this.id) ? "#77df5f" : "#9c7575"
+            return this.req.map(x => [x, col]) 
+        },
+        style: { margin: "10px" }
+    },
+    301: { title: "第五十个树升级",
+        description: "石头加成红宝石获取。",
+        currencyDisplayName: "石头",
+        currencyInternalName: "stones",
+        currencyLayer: "su",
+        effectDisplay() { return "x" + format(upgradeEffect(this.layer, this.id)) }, // Add formatting to the effect
+        effect() {
+            return player.su.stones.add(1).pow(0.04).min("1e10")
+        },
+        cost() {
+            let cost = EN("1e144")
+            let ugs = EN("1000")
+            for (let a = 301; a <= 305; a++) if (hasUpgrade("su", a)) {
+                cost = cost.mul(ugs)
+                ugs = ugs.mul("1")
+            }
+            return cost
+         },
+        req: [291],
+        unlocked() {
+            return hasUpgrade("su", 291)
+        },
+        branches() { 
+            let col = hasUpgrade(this.layer, this.id) ? "#77df5f" : "#9c7575"
+            return this.req.map(x => [x, col]) 
+        },
+        style: { margin: "10px" }
+    },
+    302: { title: "第六十个树升级",
+        description: "煤炭加成红宝石获取。",
+        currencyDisplayName: "煤炭",
+        currencyInternalName: "coal",
+        currencyLayer: "su",
+        effectDisplay() { return "x" + format(upgradeEffect(this.layer, this.id)) }, // Add formatting to the effect
+        effect() {
+            return player.su.coal.add(1).pow(0.077777777777777777777777777).min("1e10")
+        },
+        cost() {
+            let cost = EN("7.777e77")
+            let ugs = EN("100")
+            for (let a = 301; a <= 305; a++) if (hasUpgrade("su", a)) {
+                cost = cost.mul(ugs)
+                ugs = ugs.mul("1")
+            }
+            return cost
+         },
+        req: [291],
+        unlocked() {
+            return hasUpgrade("su", 291)
+        },
+        branches() { 
+            let col = hasUpgrade(this.layer, this.id) ? "#77df5f" : "#9c7575"
+            return this.req.map(x => [x, col]) 
+        },
+        style: { margin: "10px" }
+    },
+    303: { title: "第六十个树升级",
+        description: "铁加成红宝石获取。",
+        currencyDisplayName: "铁",
+        currencyInternalName: "iron",
+        currencyLayer: "su",
+        effectDisplay() { return "x" + format(upgradeEffect(this.layer, this.id)) }, // Add formatting to the effect
+        effect() {
+            return player.su.iron.add(1).pow(0.1).min("1e10")
+        },
+        cost() {
+            let cost = EN("1e63")
+            let ugs = EN("100")
+            for (let a = 301; a <= 305; a++) if (hasUpgrade("su", a)) {
+                cost = cost.mul(ugs)
+                ugs = ugs.mul("1")
+            }
+            return cost
+         },
+        req: [291],
+        unlocked() {
+            return hasUpgrade("su", 291)
+        },
+        branches() { 
+            let col = hasUpgrade(this.layer, this.id) ? "#77df5f" : "#9c7575"
+            return this.req.map(x => [x, col]) 
+        },
+        style: { margin: "10px" }
+    },
+    304: { title: "第六十个树升级",
+        description: "金加成红宝石获取。",
+        currencyDisplayName: "金",
+        currencyInternalName: "gold",
+        currencyLayer: "su",
+        effectDisplay() { return "x" + format(upgradeEffect(this.layer, this.id)) }, // Add formatting to the effect
+        effect() {
+            return player.su.gold.add(1).pow(0.11111111111111).min("1e10")
+        },
+        cost() {
+            let cost = EN("5.555e55")
+            let ugs = EN("10")
+            for (let a = 301; a <= 305; a++) if (hasUpgrade("su", a)) {
+                cost = cost.mul(ugs)
+                ugs = ugs.mul("1")
+            }
+            return cost
+         },
+        req: [291],
+        unlocked() {
+            return hasUpgrade("su", 291)
+        },
+        branches() { 
+            let col = hasUpgrade(this.layer, this.id) ? "#77df5f" : "#9c7575"
+            return this.req.map(x => [x, col]) 
+        },
+        style: { margin: "10px" }
+    },
+    305: { title: "第六十个树升级",
+        description: "钻石加成红宝石获取。",
+        currencyDisplayName: "钻石",
+        currencyInternalName: "diamond",
+        currencyLayer: "su",
+        effectDisplay() { return "x" + format(upgradeEffect(this.layer, this.id)) }, // Add formatting to the effect
+        effect() {
+            return player.su.diamond.add(1).pow(0.123456789).min("1e10")
+        },
+        cost() {
+            let cost = EN("5.555e55")
+            let ugs = EN("10")
+            for (let a = 301; a <= 305; a++) if (hasUpgrade("su", a)) {
+                cost = cost.mul(ugs)
+                ugs = ugs.mul("1")
+            }
+            return cost
+         },
+        req: [291],
+        unlocked() {
+            return hasUpgrade("su", 291)
+        },
+        branches() { 
+            let col = hasUpgrade(this.layer, this.id) ? "#77df5f" : "#9c7575"
+            return this.req.map(x => [x, col]) 
+        },
+        style: { margin: "10px" }
+    },
+    311: { title: "第六十个树升级",
+        description: "中子星加成红宝石获取。",
+        currencyDisplayName: "红宝石",
+        currencyInternalName: "ruby",
+        currencyLayer: "su",
+        effectDisplay() { return "x" + format(upgradeEffect(this.layer, this.id)) }, // Add formatting to the effect
+        effect() {
+            return player.su.total.add(1).pow(0.123456789).min("1e10")
+        },
+        cost: ("1e44"),
+        req: [301, 302, 303, 304, 305],
+        unlocked() {
+            return hasUpgrade("su", 301, 302, 303, 304, 305)
+        },
+        branches() { 
+            let col = hasUpgrade(this.layer, this.id) ? "#77df5f" : "#9c7575"
+            return this.req.map(x => [x, col]) 
+        },
+        style: { margin: "10px" }
+    },
+    321: { title: "第六十个树升级",
+        description: "红宝石加成中子星获取。",
+        currencyDisplayName: "红宝石",
+        currencyInternalName: "ruby",
+        currencyLayer: "su",
+        effectDisplay() { return "x" + format(upgradeEffect(this.layer, this.id)) }, // Add formatting to the effect
+        effect() {
+            return player.su.ruby.add(1).pow(0.11111111111111).min("1e12")
+        },
+        cost() {
+            let cost = EN("5.555e55")
+            let ugs = EN("1e9")
+            for (let a = 321; a <= 322; a++) if (hasUpgrade("su", a)) {
+                cost = cost.mul(ugs)
+                ugs = ugs.mul("1")
+            }
+            return cost
+         },
+        req: [311],
+        unlocked() {
+            return hasUpgrade("su", 311)
+        },
+        branches() { 
+            let col = hasUpgrade(this.layer, this.id) ? "#77df5f" : "#9c7575"
+            return this.req.map(x => [x, col]) 
+        },
+        style: { margin: "10px" }
+    },
+    322: { title: "第六十个树升级",
+        description: "红宝石自我加成。",
+        currencyDisplayName: "红宝石",
+        currencyInternalName: "ruby",
+        currencyLayer: "su",
+        effectDisplay() { return "x" + format(upgradeEffect(this.layer, this.id)) }, // Add formatting to the effect
+        effect() {
+            return player.su.ruby.add(1).pow(0.1).min("1e10")
+        },
+        cost() {
+            let cost = EN("5.555e55")
+            let ugs = EN("1e9")
+            for (let a = 321; a <= 322; a++) if (hasUpgrade("su", a)) {
+                cost = cost.mul(ugs)
+                ugs = ugs.mul("1")
+            }
+            return cost
+         },
+        req: [311],
+        unlocked() {
+            return hasUpgrade("su", 311)
+        },
+        branches() { 
+            let col = hasUpgrade(this.layer, this.id) ? "#77df5f" : "#9c7575"
+            return this.req.map(x => [x, col]) 
+        },
+        style: { margin: "10px" }
+    },
+    331: { title: "第六十个树升级",
+        description: "每个超新星升级将红宝石获取提高 15%。",
+        currencyDisplayName: "红宝石",
+        currencyInternalName: "ruby",
+        currencyLayer: "su",
+        effect() {
+            let effect = ExpantaNum.pow(1.15, player.su.upgrades.length).min("1e10")
+            return effect
+        },
+        effectDisplay() { return "x" + format(upgradeEffect(this.layer, this.id)) }, // Add formatting to the effect
+        cost() {
+            let cost = EN("1e66")
+            let ugs = EN("1e9")
+            for (let a = 331; a <= 332; a++) if (hasUpgrade("su", a)) {
+                cost = cost.mul(ugs)
+                ugs = ugs.mul("1")
+            }
+            return cost
+         },
+        req: [321, 322],
+        unlocked() {
+            return hasUpgrade("su", 321, 322)
+        },
+        branches() { 
+            let col = hasUpgrade(this.layer, this.id) ? "#77df5f" : "#9c7575"
+            return this.req.map(x => [x, col]) 
+        },
+        style: { margin: "10px" }
+    },
+    341: { title: "第六十个树升级",
+        description: "煤炭、铁、金获取提高 1.25 倍，钻石 1.2 倍。",
+        currencyDisplayName: "红宝石",
+        currencyInternalName: "ruby",
+        currencyLayer: "su",
+        cost: ("6.969e69"),
+        req: [331],
+        unlocked() {
+            return hasUpgrade("su", 331)
+        },
+        branches() { 
+            let col = hasUpgrade(this.layer, this.id) ? "#77df5f" : "#9c7575"
+            return this.req.map(x => [x, col]) 
+        },
+        style: { margin: "10px" }
+    },
+    351: { title: "第六十个树升级（不错）",
+        description: "解锁一个新可购买项。",
+        currencyDisplayName: "红宝石",
+        currencyInternalName: "ruby",
+        currencyLayer: "su",
+        cost: ("1e74"),
+        req: [341],
+        unlocked() {
+            return hasUpgrade("su", 341)
+        },
+        branches() { 
+            let col = hasUpgrade(this.layer, this.id) ? "#77df5f" : "#9c7575"
+            return this.req.map(x => [x, col]) 
+        },
+        style: { margin: "10px" }
+    },
+    361: { title: "第七十个树升级",
+        description: "石头加成祖母绿获取。",
+        currencyDisplayName: "石头",
+        currencyInternalName: "stones",
+        currencyLayer: "su",
+        effectDisplay() { return "x" + format(upgradeEffect(this.layer, this.id)) }, // Add formatting to the effect
+        effect() {
+            return player.su.stones.add(1).pow(0.01).min("1e10")
+        },
+        cost() {
+            let cost = EN("1e250")
+            let ugs = EN("e5")
+            for (let a = 361; a <= 365; a++) if (hasUpgrade("su", a)) {
+                cost = cost.mul(ugs)
+                ugs = ugs.mul("1")
+            }
+            return cost
+         },
+        req: [351],
+        unlocked() {
+            return hasUpgrade("su", 351)
+        },
+        branches() { 
+            let col = hasUpgrade(this.layer, this.id) ? "#77df5f" : "#9c7575"
+            return this.req.map(x => [x, col]) 
+        },
+        style: { margin: "10px" }
+    },
+    362: { title: "第七十个树升级",
+        description: "煤炭加成祖母绿获取。",
+        currencyDisplayName: "煤炭",
+        currencyInternalName: "coal",
+        currencyLayer: "su",
+        effectDisplay() { return "x" + format(upgradeEffect(this.layer, this.id)) }, // Add formatting to the effect
+        effect() {
+            return player.su.coal.add(1).pow(0.04).min("1e10")
+        },
+        cost() {
+            let cost = EN("1e150")
+            let ugs = EN("e5")
+            for (let a = 361; a <= 365; a++) if (hasUpgrade("su", a)) {
+                cost = cost.mul(ugs)
+                ugs = ugs.mul("1")
+            }
+            return cost
+         },
+        req: [351],
+        unlocked() {
+            return hasUpgrade("su", 351)
+        },
+        branches() { 
+            let col = hasUpgrade(this.layer, this.id) ? "#77df5f" : "#9c7575"
+            return this.req.map(x => [x, col]) 
+        },
+        style: { margin: "10px" }
+    },
+    363: { title: "第七十个树升级",
+        description: "铁加成祖母绿获取。",
+        currencyDisplayName: "铁",
+        currencyInternalName: "iron",
+        currencyLayer: "su",
+        effectDisplay() { return "x" + format(upgradeEffect(this.layer, this.id)) }, // Add formatting to the effect
+        effect() {
+            return player.su.iron.add(1).pow(0.042).min("1e10")
+        },
+        cost() {
+            let cost = EN("1e125")
+            let ugs = EN("e5")
+            for (let a = 361; a <= 365; a++) if (hasUpgrade("su", a)) {
+                cost = cost.mul(ugs)
+                ugs = ugs.mul("1")
+            }
+            return cost
+         },
+        req: [351],
+        unlocked() {
+            return hasUpgrade("su", 351)
+        },
+        branches() { 
+            let col = hasUpgrade(this.layer, this.id) ? "#77df5f" : "#9c7575"
+            return this.req.map(x => [x, col]) 
+        },
+        style: { margin: "10px" }
+    },
+    364: { title: "第七十个树升级",
+        description: "金加成祖母绿获取。",
+        currencyDisplayName: "金",
+        currencyInternalName: "gold",
+        currencyLayer: "su",
+        effectDisplay() { return "x" + format(upgradeEffect(this.layer, this.id)) }, // Add formatting to the effect
+        effect() {
+            return player.su.gold.add(1).pow(0.05).min("1e10")
+        },
+        cost() {
+            let cost = EN("e110")
+            let ugs = EN("e5")
+            for (let a = 361; a <= 365; a++) if (hasUpgrade("su", a)) {
+                cost = cost.mul(ugs)
+                ugs = ugs.mul("1")
+            }
+            return cost
+         },
+        req: [351],
+        unlocked() {
+            return hasUpgrade("su", 351)
+        },
+        branches() { 
+            let col = hasUpgrade(this.layer, this.id) ? "#77df5f" : "#9c7575"
+            return this.req.map(x => [x, col]) 
+        },
+        style: { margin: "10px" }
+    },
+    365: { title: "第七十个树升级",
+        description: "钻石加成祖母绿获取。",
+        currencyDisplayName: "钻石",
+        currencyInternalName: "diamond",
+        currencyLayer: "su",
+        effectDisplay() { return "x" + format(upgradeEffect(this.layer, this.id)) }, // Add formatting to the effect
+        effect() {
+            return player.su.diamond.add(1).pow(0.06).min("1e10")
+        },
+        cost() {
+            let cost = EN("e100")
+            let ugs = EN("e5")
+            for (let a = 361; a <= 365; a++) if (hasUpgrade("su", a)) {
+                cost = cost.mul(ugs)
+                ugs = ugs.mul("1")
+            }
+            return cost
+         },
+        req: [351],
+        unlocked() {
+            return hasUpgrade("su", 351)
+        },
+        branches() { 
+            let col = hasUpgrade(this.layer, this.id) ? "#77df5f" : "#9c7575"
+            return this.req.map(x => [x, col]) 
+        },
+        style: { margin: "10px" }
+    },
+    371: { title: "第七十个树升级",
+        description: "红宝石加成祖母绿获取。",
+        currencyDisplayName: "红宝石",
+        currencyInternalName: "ruby",
+        effectDisplay() { return "x" + format(upgradeEffect(this.layer, this.id)) }, // Add formatting to the effect
+        effect() {
+            return player.su.ruby.add(1).pow(0.064).min("1e10")
+        },
+        currencyLayer: "su",
+        cost: ("1e93"),
+        req: [361,362, 363, 364, 365],
+        unlocked() {
+            return hasUpgrade("su", 361, 362, 363, 364, 365)
+        },
+        branches() { 
+            let col = hasUpgrade(this.layer, this.id) ? "#77df5f" : "#9c7575"
+            return this.req.map(x => [x, col]) 
+        },
+        style: { margin: "10px" }
+    },
+    381: { title: "第七十个树升级",
+        description: "中子星加成祖母绿获取。",
+        currencyDisplayName: "祖母绿",
+        currencyInternalName: "emerald",
+        currencyLayer: "su",
+        effectDisplay() { return "x" + format(upgradeEffect(this.layer, this.id)) }, // Add formatting to the effect
+        effect() {
+            return player.su.total.add(1).pow(0.05).min("1e10")
+        },
+        cost() {
+            let cost = EN("1e40")
+            let ugs = EN("e5")
+            for (let a = 381; a <= 385; a++) if (hasUpgrade("su", a)) {
+                cost = cost.mul(ugs)
+                ugs = ugs.mul("1")
+            }
+            return cost
+         },
+        req: [371],
+        unlocked() {
+            return hasUpgrade("su", 371)
+        },
+        branches() { 
+            let col = hasUpgrade(this.layer, this.id) ? "#77df5f" : "#9c7575"
+            return this.req.map(x => [x, col]) 
+        },
+        style: { margin: "10px" }
+    },
+    382: { title: "第七十个树升级（不错）",
+        description: "祖母绿加成中子星获取。",
+        currencyDisplayName: "祖母绿",
+        currencyInternalName: "emerald",
+        currencyLayer: "su",
+        effectDisplay() { return "x" + format(upgradeEffect(this.layer, this.id)) }, // Add formatting to the effect
+        effect() {
+            return player.su.emerald.add(1).pow(0.1111111).min("1e10")
+        },
+        cost() {
+            let cost = EN("1e42")
+            let ugs = EN("e3")
+            for (let a = 381; a <= 385; a++) if (hasUpgrade("su", a)) {
+                cost = cost.mul(ugs)
+                ugs = ugs.mul("1")
+            }
+            return cost
+         },
+        req: [371],
+        unlocked() {
+            return hasUpgrade("su", 371)
+        },
+        branches() { 
+            let col = hasUpgrade(this.layer, this.id) ? "#77df5f" : "#9c7575"
+            return this.req.map(x => [x, col]) 
+        },
+        style: { margin: "10px" }
+    },
+    383: { title: "第七十个树升级",
+        description: "祖母绿自我加成。",
+        currencyDisplayName: "祖母绿",
+        currencyInternalName: "emerald",
+        currencyLayer: "su",
+        effectDisplay() { return "x" + format(upgradeEffect(this.layer, this.id)) }, // Add formatting to the effect
+        effect() {
+            return player.su.emerald.add(1).pow(0.090909090909).min("1e10")
+        },
+        cost() {
+            let cost = EN("1e45")
+            let ugs = EN("e1")
+            for (let a = 381; a <= 385; a++) if (hasUpgrade("su", a)) {
+                cost = cost.mul(ugs)
+                ugs = ugs.mul("1")
+            }
+            return cost
+         },
+        req: [371],
+        unlocked() {
+            return hasUpgrade("su", 371)
+        },
+        branches() { 
+            let col = hasUpgrade(this.layer, this.id) ? "#77df5f" : "#9c7575"
+            return this.req.map(x => [x, col]) 
+        },
+        style: { margin: "10px" }
+    },
+    384: { title: "第七十个树升级",
+        description: "每个超新星升级将祖母绿获取提高 25%。",
+        currencyDisplayName: "祖母绿",
+        currencyInternalName: "emerald",
+        currencyLayer: "su",
+        effect() {
+            let effect = ExpantaNum.pow(1.25, player.su.upgrades.length).min("1e10")
+            return effect
+        },
+        effectDisplay() { return "x" + format(upgradeEffect(this.layer, this.id)) }, // Add formatting to the effect
+        cost() {
+            let cost = EN("e45")
+            let ugs = EN("e3")
+            for (let a = 381; a <= 385; a++) if (hasUpgrade("su", a)) {
+                cost = cost.mul(ugs)
+                ugs = ugs.mul("1")
+            }
+            return cost
+         },
+        req: [371],
+        unlocked() {
+            return hasUpgrade("su", 371)
+        },
+        branches() { 
+            let col = hasUpgrade(this.layer, this.id) ? "#77df5f" : "#9c7575"
+            return this.req.map(x => [x, col]) 
+        },
+        style: { margin: "10px" }
+    },
+    385: { title: "第八十个树升级",
+        description: "煤炭获取提高 1.3 倍，铁、金、红宝石 1.25 倍，钻石 1.2 倍。",
+        currencyDisplayName: "祖母绿",
+        currencyInternalName: "emerald",
+        currencyLayer: "su",
+        cost() {
+            let cost = EN("e54")
+            let ugs = EN("e3")
+            for (let a = 381; a <= 385; a++) if (hasUpgrade("su", a)) {
+                cost = cost.mul(ugs)
+                ugs = ugs.mul("1")
+            }
+            return cost
+         },
+        req: [371],
+        unlocked() {
+            return hasUpgrade("su", 371)
+        },
+        branches() { 
+            let col = hasUpgrade(this.layer, this.id) ? "#77df5f" : "#9c7575"
+            return this.req.map(x => [x, col]) 
+        },
+        style: { margin: "10px" }
+    },
+    391: { title: "第八十个树升级",
+        description: "解锁一个新可购买项。",
+        currencyDisplayName: "祖母绿",
+        currencyInternalName: "emerald",
+        currencyLayer: "su",
+        cost: ("1e75"),
+        req: [381, 382, 383, 384, 385],
+        unlocked() {
+            return hasUpgrade("su", 381, 382, 383, 384, 385)
+        },
+        branches() { 
+            let col = hasUpgrade(this.layer, this.id) ? "#77df5f" : "#9c7575"
+            return this.req.map(x => [x, col]) 
+        },
+        style: { margin: "10px" }
+    },
+    401: { title: "第八十个树升级",
+        description: "石头加成紫水晶获取。",
+        currencyDisplayName: "石头",
+        currencyInternalName: "stones",
+        currencyLayer: "su",
+        effectDisplay() { return "x" + format(upgradeEffect(this.layer, this.id)) }, // Add formatting to the effect
+        effect() {
+            return player.su.stones.add(1).pow(0.0625).min("1e100")
+        },
+        cost() {
+            let cost = EN("1e420")
+            let ugs = EN("e10")
+            for (let a = 401; a <= 405; a++) if (hasUpgrade("su", a)) {
+                cost = cost.mul(ugs)
+                ugs = ugs.mul("1")
+            }
+            return cost
+         },
+        req: [391],
+        unlocked() {
+            return hasUpgrade("su", 391)
+        },
+        branches() { 
+            let col = hasUpgrade(this.layer, this.id) ? "#77df5f" : "#9c7575"
+            return this.req.map(x => [x, col]) 
+        },
+        style: { margin: "10px" }
+    },
+    402: { title: "第八十个树升级",
+        description: "中子星加成紫水晶获取。",
+        currencyDisplayName: "紫水晶",
+        currencyInternalName: "amethyst",
+        currencyLayer: "su",
+        effectDisplay() { return "x" + format(upgradeEffect(this.layer, this.id)) }, // Add formatting to the effect
+        effect() {
+            return player.su.total.add(1).pow(0.06666666666666).min("1e15")
+        },
+        cost() {
+            let cost = EN("1e24")
+            let ugs = EN("e10")
+            for (let a = 401; a <= 405; a++) if (hasUpgrade("su", a)) {
+                cost = cost.mul(ugs)
+                ugs = ugs.mul("1")
+            }
+            return cost
+         },
+        req: [391],
+        unlocked() {
+            return hasUpgrade("su", 391)
+        },
+        branches() { 
+            let col = hasUpgrade(this.layer, this.id) ? "#77df5f" : "#9c7575"
+            return this.req.map(x => [x, col]) 
+        },
+        style: { margin: "10px" }
+    },
+    403: { title: "第八十个树升级",
+        description: "紫水晶加成中子星获取。",
+        currencyDisplayName: "紫水晶",
+        currencyInternalName: "amethyst",
+        currencyLayer: "su",
+        effectDisplay() { return "x" + format(upgradeEffect(this.layer, this.id)) }, // Add formatting to the effect
+        effect() {
+            return player.su.amethyst.add(1).pow(0.15).min("1e15")
+        },
+        cost() {
+            let cost = EN("1e24")
+            let ugs = EN("e10")
+            for (let a = 401; a <= 405; a++) if (hasUpgrade("su", a)) {
+                cost = cost.mul(ugs)
+                ugs = ugs.mul("1")
+            }
+            return cost
+         },
+        req: [391],
+        unlocked() {
+            return hasUpgrade("su", 391)
+        },
+        branches() { 
+            let col = hasUpgrade(this.layer, this.id) ? "#77df5f" : "#9c7575"
+            return this.req.map(x => [x, col]) 
+        },
+        style: { margin: "10px" }
+    },
+    404: { title: "第八十个树升级",
+        description: "紫水晶自我加成。",
+        currencyDisplayName: "紫水晶",
+        currencyInternalName: "amethyst",
+        currencyLayer: "su",
+        effectDisplay() { return "x" + format(upgradeEffect(this.layer, this.id)) }, // Add formatting to the effect
+        effect() {
+            return player.su.amethyst.add(1).pow(0.2).min("1e30")
+        },
+        cost() {
+            let cost = EN("1e30")
+            let ugs = EN("e5")
+            for (let a = 401; a <= 405; a++) if (hasUpgrade("su", a)) {
+                cost = cost.mul(ugs)
+                ugs = ugs.mul("1")
+            }
+            return cost
+         },
+        req: [391],
+        unlocked() {
+            return hasUpgrade("su", 391)
+        },
+        branches() { 
+            let col = hasUpgrade(this.layer, this.id) ? "#77df5f" : "#9c7575"
+            return this.req.map(x => [x, col]) 
+        },
+        style: { margin: "10px" }
+    },
+    405: { title: "第八十个树升级",
+        description: "解锁最终的可购买项。",
+        currencyDisplayName: "紫水晶",
+        currencyInternalName: "amethyst",
+        currencyLayer: "su",
+        cost() {
+            let cost = EN("1e40")
+            let ugs = EN("e5")
+            for (let a = 401; a <= 405; a++) if (hasUpgrade("su", a)) {
+                cost = cost.mul(ugs)
+                ugs = ugs.mul("1")
+            }
+            return cost
+         },
+        req: [391],
+        unlocked() {
+            return hasUpgrade("su", 391)
+        },
+        branches() { 
+            let col = hasUpgrade(this.layer, this.id) ? "#77df5f" : "#9c7575"
+            return this.req.map(x => [x, col]) 
+        },
+        style: { margin: "10px" }
+    },
+    411: { title: "第八十个树升级",
+        description: "石头加成钴获取。",
+        currencyDisplayName: "石头",
+        currencyInternalName: "stones",
+        currencyLayer: "su",
+        effectDisplay() { return "x" + format(upgradeEffect(this.layer, this.id)) }, // Add formatting to the effect
+        effect() {
+            return player.su.stones.add(1).pow(0.05).min("1e100")
+        },
+        cost:("1e650"),
+        req: [401, 402, 403, 404, 405],
+        unlocked() {
+            return hasUpgrade("su", 401, 402, 403, 404, 405)
+        },
+        branches() { 
+            let col = hasUpgrade(this.layer, this.id) ? "#77df5f" : "#9c7575"
+            return this.req.map(x => [x, col]) 
+        },
+        style: { margin: "10px" }
+    },
+    421: { title: "第八十个树升级",
+        description: "中子星加成钴获取。",
+        currencyDisplayName: "钴",
+        currencyInternalName: "cobalt",
+        currencyLayer: "su",
+        effectDisplay() { return "x" + format(upgradeEffect(this.layer, this.id)) }, // Add formatting to the effect
+        effect() {
+            return player.su.total.add(1).pow(0.05).min("1e20")
+        },
+        cost() {
+            let cost = EN("1e54")
+            let ugs = EN("e10")
+            for (let a = 421; a <= 422; a++) if (hasUpgrade("su", a)) {
+                cost = cost.mul(ugs)
+                ugs = ugs.mul("1")
+            }
+            return cost
+         },
+        req: [411],
+        unlocked() {
+            return hasUpgrade("su", 411)
+        },
+        branches() { 
+            let col = hasUpgrade(this.layer, this.id) ? "#77df5f" : "#9c7575"
+            return this.req.map(x => [x, col]) 
+        },
+        style: { margin: "10px" }
+    },
+    422: { title: "第八十个树升级",
+        description: "钴加成中子星获取。",
+        currencyDisplayName: "钴",
+        currencyInternalName: "cobalt",
+        currencyLayer: "su",
+        effectDisplay() { return "x" + format(upgradeEffect(this.layer, this.id)) }, // Add formatting to the effect
+        effect() {
+            return player.su.cobalt.add(1).pow(0.111111111111111).min("1e20")
+        },
+        cost() {
+            let cost = EN("1e60")
+            let ugs = EN("e5")
+            for (let a = 421; a <= 422; a++) if (hasUpgrade("su", a)) {
+                cost = cost.mul(ugs)
+                ugs = ugs.mul("1")
+            }
+            return cost
+         },
+        req: [411],
+        unlocked() {
+            return hasUpgrade("su", 411)
+        },
+        branches() { 
+            let col = hasUpgrade(this.layer, this.id) ? "#77df5f" : "#9c7575"
+            return this.req.map(x => [x, col]) 
+        },
+        style: { margin: "10px" }
+    },
+    431: { title: "976",
+        description: "根据这次重置的超新星时间获得更多点数（更强+）。",
+        cost: new EN("e1e47"),
+        unlocked() {
+            return hasUpgrade("su", 422)
+        },
+        effect() {
+            let time = EN(player.su.resetTime)
+            return EN.pent(10, time.pent("9.3").pent(1), time)
+        },
+        effectDisplay() { return "^" + format(this.effect()) },
+        },
+        432: { title: "977",
+        description: "根据这次重置的超新星时间提高中子星获取。",
+        cost: new EN("e1e50"),
+        unlocked() {
+            return hasUpgrade("su", 431)
+        },
+        effect() {
+            let time = EN(player.su.resetTime)
+            return EN.pow(10, time.pow("1").pow(1), time)
+        },
+        effectDisplay() { return "^" + format(this.effect()) },
+        },
+        433: { title: "978",
+        description: "解锁更多树升级。",
+        cost: new EN("e1e308"),
+        unlocked() {
+            return hasUpgrade("su", 432)
+        },
+        },
+        434: { title: "979",
+        description: "加速水晶等级！",
+        cost: new EN("e2e22222"),
+        unlocked() {
+            return hasUpgrade("su", 481)
+        },
+        },
+        435: { title: "980",
+        description: "水晶等级提升水晶获取。",
+        cost: new EN("ee3e6"),
+        effectDisplay() { return "^" + format(upgradeEffect(this.layer, this.id)) }, // Add formatting to the effect
+        effect() {
+            return player.su.crystaltiers.add(1).pow("0.1").min("1e8")
+        },
+        unlocked() {
+            return hasUpgrade("su", 434)
+        },
+        },
+        441: { title: "第九十个树升级",
+        description: "根据这次重置的超新星时间提高所有矿石获取（不包括水晶）。",
+        currencyDisplayName: "水晶",
+        currencyInternalName: "crystal",
+        currencyLayer: "su",
+        effect() {
+            let time = EN(player.su.resetTime)
+            return EN.mul(10, time.mul("10").mul(10), time)
+        },
+        effectDisplay() { return "^" + format(this.effect()) },
+        cost() {
+            let cost = EN("1e6")
+            let ugs = EN("e1")
+            for (let a = 441; a <= 442; a++) if (hasUpgrade("su", a)) {
+                cost = cost.mul(ugs)
+                ugs = ugs.mul("1")
+            }
+            return cost
+         },
+        req: [421, 422],
+        unlocked() {
+            return hasUpgrade("su", 433)
+        },
+        branches() { 
+            let col = hasUpgrade(this.layer, this.id) ? "#77df5f" : "#9c7575"
+            return this.req.map(x => [x, col]) 
+        },
+        style: { margin: "10px" }
+    },
+    451: { title: "第一个树升级",
+        description: "钴加成水晶获取。",
+        currencyDisplayName: "水晶",
+        currencyInternalName: "crystal",
+        currencyLayer: "su",
+        effectDisplay() { return "x" + format(upgradeEffect(this.layer, this.id)) }, // Add formatting to the effect
+        effect() {
+            return player.su.cobalt.add(1).pow("0.0000000000000001").min("1000")
+        },
+        cost() {
+            let cost = EN("2e6")
+            let ugs = EN("e1")
+            for (let a = 451; a <= 452; a++) if (hasUpgrade("su", a)) {
+                cost = cost.mul(ugs)
+                ugs = ugs.mul("1")
+            }
+            return cost
+         },
+        req: [441],
+        unlocked() {
+            return hasUpgrade("su", 441)
+        },
+        branches() { 
+            let col = hasUpgrade(this.layer, this.id) ? "#77df5f" : "#9c7575"
+            return this.req.map(x => [x, col]) 
+        },
+        style: { margin: "10px" }
+    },
+    461: { title: "第二个树升级",
+        description: "水晶自我加成。",
+        currencyDisplayName: "水晶",
+        currencyInternalName: "crystal",
+        currencyLayer: "su",
+        effectDisplay() { return "x" + format(upgradeEffect(this.layer, this.id)) }, // Add formatting to the effect
+        effect() {
+            return player.su.crystal.add(1).pow("0.1").min("1e100")
+        },
+        cost() {
+            let cost = EN("5e6")
+            let ugs = EN("e1")
+            for (let a = 461; a <= 462; a++) if (hasUpgrade("su", a)) {
+                cost = cost.mul(ugs)
+                ugs = ugs.mul("1")
+            }
+            return cost
+         },
+        req: [451],
+        unlocked() {
+            return hasUpgrade("su", 451)
+        },
+        branches() { 
+            let col = hasUpgrade(this.layer, this.id) ? "#77df5f" : "#9c7575"
+            return this.req.map(x => [x, col]) 
+        },
+        style: { margin: "10px" }
+    },
+    471: { title: "第三个树升级",
+        description: "水晶获取根据这次重置的超新星时间获得加成。",
+        currencyDisplayName: "水晶",
+        currencyInternalName: "crystal",
+        currencyLayer: "su",
+        effect() {
+            let time = EN(player.su.resetTime)
+            return EN.mul(1, time.mul("0.1").mul(0.1), time)
+        },
+        effectDisplay() { return "x" + format(this.effect()) },
+        cost() {
+            let cost = EN("1e7")
+            let ugs = EN("e1")
+            for (let a = 471; a <= 472; a++) if (hasUpgrade("su", a)) {
+                cost = cost.mul(ugs)
+                ugs = ugs.mul("1")
+            }
+            return cost
+         },
+        req: [461],
+        unlocked() {
+            return hasUpgrade("su", 461)
+        },
+        branches() { 
+            let col = hasUpgrade(this.layer, this.id) ? "#77df5f" : "#9c7575"
+            return this.req.map(x => [x, col]) 
+        },
+        style: { margin: "10px" }
+    },
+    481: { title: "第四个树升级",
+        description: "解锁水晶等级。",
+        currencyDisplayName: "水晶",
+        currencyInternalName: "crystal",
+        currencyLayer: "su",
+
+        cost() {
+            let cost = EN("1e10")
+            let ugs = EN("e1")
+            for (let a = 481; a <= 482; a++) if (hasUpgrade("su", a)) {
+                cost = cost.mul(ugs)
+                ugs = ugs.mul("1")
+            }
+            return cost
+         },
+        req: [471],
+        unlocked() {
+            return hasUpgrade("su", 471)
+        },
+        branches() { 
+            let col = hasUpgrade(this.layer, this.id) ? "#77df5f" : "#9c7575"
+            return this.req.map(x => [x, col]) 
+        },
+        style: { margin: "10px" }
+    },
+    491: { title: "981",
+        description: "根据这次重置的超新星时间提高水晶。",
+        cost: new EN("ee2.5e7"),
+        unlocked() {
+            return hasUpgrade("su", 435)
+        },
+        effect() {
+            let time = EN(player.su.resetTime)
+            return EN.pow(2, time.mul("0.1").mul(1), time).min("1000")
+        },
+        effectDisplay() { return "^" + format(this.effect()) },
+        },
+        492: { title: "982",
+        description: "根据这次重置的超新星时间获得更多点数。",
+        cost: new EN("eee10"),
+        unlocked() {
+            return hasUpgrade("su", 491)
+        },
+        effect() {
+            let time = EN(player.su.resetTime)
+            return EN.pent("1e308", time.pent("1e308").pent("1e308"), time)
+        },
+        effectDisplay() { return "^" + format(this.effect()) },
+        },
+        493: { title: "983",
+        description: "获得 100 倍水晶等级，每个超新星升级将水晶获取提高 1.2 倍。",
+        cost: new EN("ee2e10"),
+        unlocked() {
+            return hasUpgrade("su", 492)
+        },
+        effect() {
+            let effect = ExpantaNum.pow(1.2, player.su.upgrades.length)
+            return effect
+        },
+        effectDisplay() { return "^" + format(upgradeEffect(this.layer, this.id))}, // Add formatting to the effect      ,
+        },
+        494: { title: "984",
+        description: "水晶等级获取立方。。",
+        cost: new EN("ee1e21"),
+        unlocked() {
+            return hasUpgrade("su", 493)
+        },
+        },
+        495: { title: "985",
+        description: "根据这次重置的超新星时间提高水晶（更强）。",
+        cost: new EN("ee1e28"),
+        unlocked() {
+            return hasUpgrade("su", 494)
+        },
+        effect() {
+            let time = EN(player.su.resetTime)
+            return EN.pow(10, time.mul("1").mul(1), time)
+        },
+        effectDisplay() { return "^" + format(this.effect()) },
+        },
+        501: { title: "986",
+        description: "根据这次重置的超新星时间获得更多水晶等级。",
+        cost: new EN("ee1.79e308"),
+        unlocked() {
+            return hasUpgrade("su", 495)
+        },
+        effect() {
+            let time = EN(player.su.resetTime)
+            return EN.pow(2, time.mul("1").mul(1), time)
+        },
+        effectDisplay() { return "x" + format(this.effect()) },
+        },
+        502: { title: "987",
+        description: "根据这次重置的超新星时间提高水晶等级获取。",
+        cost: new EN("eee420"),
+        unlocked() {
+            return hasUpgrade("su", 501)
+        },
+        effect() {
+            let time = EN(player.su.resetTime)
+            return EN.mul(1, time.mul("0.1").mul(1), time)
+        },
+        effectDisplay() { return "^" + format(this.effect()) },
+        },
+        503: { title: "988",
+        description: "水晶等级自我加成。",
+        cost: new EN("eeee3"),
+        unlocked() {
+            return hasUpgrade("su", 502)
+        },
+        effectDisplay() { return "x" + format(upgradeEffect(this.layer, this.id)) }, // Add formatting to the effect
+        effect() {
+            return player.su.crystaltiers.add(1).pow("0.090909090909")
+        },
+        },
+        504: { title: "989",
+        description: "水晶等级自我提升。",
+        cost: new EN("ee1e3003"),
+        unlocked() {
+            return hasUpgrade("su", 503)
+        },
+        effectDisplay() { return "^" + format(upgradeEffect(this.layer, this.id)) }, // Add formatting to the effect
+        effect() {
+            return player.su.crystaltiers.add(1).pow("0.0001").min("1000")
+        },
+        },
+        505: { title: "990 (10 More to 1K)",
+        description: "解锁水晶级别，水晶等级进一步提升自身。",
+        cost: new EN("eeeee3"),
+        unlocked() {
+            return hasUpgrade("su", 504)
+        },
+        effectDisplay() { return "^" + format(upgradeEffect(this.layer, this.id)) }, // Add formatting to the effect
+        effect() {
+            return player.su.crystaltiers.add(1).pow("1")
+        },
+    },
+    511: { title: "991",
+        description: "水晶级别自我加成。",
+        cost: new EN("10^^1e6"),
+        unlocked() {
+            return hasUpgrade("su", 505)
+        },
+        effectDisplay() { return "x" + format(upgradeEffect(this.layer, this.id)) }, // Add formatting to the effect
+        effect() {
+            return player.su.crystallevels.add(1).pow("0.5")
+        },
+    },
+    512: { title: "992",
+        description: "水晶级别根据这次重置的超新星时间获得加成。",
+        cost: new EN("10^^1e7"),
+        unlocked() {
+            return hasUpgrade("su", 511)
+        },
+        effect() {
+            let time = EN(player.su.resetTime)
+            return EN.mul(1, time.mul("1").mul(1), time)
+        },
+        effectDisplay() { return "x" + format(this.effect()) },
+    },
+    513: { title: "993",
+        description: "每个超新星升级 = 10% 更多水晶级别。",
+        cost: new EN("10^^1e11"),
+        unlocked() {
+            return hasUpgrade("su", 512)
+        },
+        effect() {
+            let effect = ExpantaNum.pow(1.1, player.su.upgrades.length)
+            return effect
+        },
+        effectDisplay() { return "x" + format(upgradeEffect(this.layer, this.id))}, // Add formatting to the effect      ,
+        },
+        514: { title: "994",
+        description: "水晶级别根据这次重置的超新星时间获得提升。",
+        cost: new EN("10^^1e20"),
+        unlocked() {
+            return hasUpgrade("su", 513)
+        },
+        effect() {
+            let time = EN(player.su.resetTime)
+            return EN.mul(1, time.mul("0.1").mul(1), time)
+        },
+        effectDisplay() { return "^" + format(this.effect()) },
+    },
+    515: { title: "995",
+        description: "水晶级别自我提升，解锁更多树升级。",
+        cost: new EN("10^^10^1e308"),
+        unlocked() {
+            return hasUpgrade("su", 514)
+        },
+        effectDisplay() { return "^" + format(upgradeEffect(this.layer, this.id)) }, // Add formatting to the effect
+        effect() {
+            return player.su.crystallevels.add(1).tetr("1")
+        },
+    },
+    521: { title: "第五个树升级",
+        description: "水晶级别自我迭代幂，并解锁水晶阶段。",
+        currencyDisplayName: "水晶级别",
+        currencyInternalName: "crystallevels",
+        currencyLayer: "su",
+        effectDisplay() { return "^^" + format(upgradeEffect(this.layer, this.id)) }, // Add formatting to the effect
+        effect() {
+            return player.su.crystallevels.add(1).pow("0.1")
+        },
+        cost() {
+            let cost = EN("10^^1000")
+            let ugs = EN("e1")
+            for (let a = 521; a <= 522; a++) if (hasUpgrade("su", a)) {
+                cost = cost.mul(ugs)
+                ugs = ugs.mul("1")
+            }
+            return cost
+         },
+        req: [481],
+        unlocked() {
+            return hasUpgrade("su", 515)
+        },
+        branches() { 
+            let col = hasUpgrade(this.layer, this.id) ? "#77df5f" : "#9c7575"
+            return this.req.map(x => [x, col]) 
+        },
+        style: { margin: "10px" }
+    },
+    531: { title: "996",
+        description: "水晶阶段自我加成。",
+        cost: new EN("10^^^300"),
+        unlocked() {
+            return hasUpgrade("su", 521)
+        },
+        effectDisplay() { return "x" + format(upgradeEffect(this.layer, this.id)) }, // Add formatting to the effect
+        effect() {
+            return player.su.crystalstages.add(1).pow("0.5")
+        },
+    },
+    532: { title: "997",
+        description: "水晶阶段根据这次重置的超新星时间获得加成。",
+        cost: new EN("10^^^10000"),
+        unlocked() {
+            return hasUpgrade("su", 531)
+        },
+        effect() {
+            let time = EN(player.su.resetTime)
+            return EN.mul(1, time.mul("1").mul(1), time)
+        },
+        effectDisplay() { return "x" + format(this.effect()) },
+    },
+    533: { title: "998",
+        description: "每个超新星升级 = 5% 更多水晶阶段。",
+        cost: new EN("10^^^2e7"),
+        unlocked() {
+            return hasUpgrade("su", 532)
+        },
+        effect() {
+            let effect = ExpantaNum.pow(1.05, player.su.upgrades.length)
+            return effect
+        },
+        effectDisplay() { return "x" + format(upgradeEffect(this.layer, this.id))}, // Add formatting to the effect      ,
+        },
+        534: { title: "999",
+        description: "水晶阶段根据这次重置的超新星时间获得提升。",
+        cost: new EN("10^^^1e13"),
+        unlocked() {
+            return hasUpgrade("su", 533)
+        },
+        effect() {
+            let time = EN(player.su.resetTime)
+            return EN.mul(1, time.mul("0.1").mul(1), time)
+        },
+        effectDisplay() { return "^" + format(this.effect()) },
+    },
+    535: { title: "1,000!",
+        description: "解锁一个新飞升层，但移除第 6-7 行的层（不包括虚空）。",
+        cost: new EN("10^^^10^1e308"),
+        unlocked() {
+            return hasUpgrade("su", 534)
+        },
+    },
+},
+    clickables: {
+        11: {
+            display() {
+                return "重置升级，但你不会拿回所有矿石。"
+            },
+            unlocked() {
+                return hasUpgrade("su", 55)
+            },
+            canClick() {
+                return hasUpgrade("su", 61)
+            },
+            onClick() {
+                player.su.upgrades.length
+                for(let i = 0; i < player.su.upgrades.length; i++) { 
+                    if (+player.su.upgrades[i] > 55) { 
+                        player.su.upgrades.splice(i, 1); 
+                        i--; 
+                    }
+                }
+            },
+            onHold() {
+            },
+            style: { ...smallClickable }
+},
+    },
+    name: "超新星", // This is optional, only used in a few places, If absent it just uses the layer id.
+    symbol: "SN", // This appears on the layer's node. Default is the id with the first letter capitalized
+    position: 0, // Horizontal position within a row. By default it uses the layer id and sorts in alphabetical order
+    startData() { return {
+        unlocked: false,
+		points: new EN(0),
+        stones: new EN(0),
+        coal: new EN(0),
+        iron: new EN(0),
+        gold: new EN(0),
+        diamond: new EN(0),
+        ruby: new EN(0),
+        emerald: new EN(0),
+        amethyst: new EN(0),
+        cobalt: new EN(0),
+        crystal: new EN(0),
+        crystaltiers: new EN(0),
+        crystallevels: new EN(0),
+        crystalstages: new EN(0),
+        auto: false,
+    }},
+    color: "#FFB437",
+    requires: new EN("3.333e33333"), // Can be a function that takes requirement increases into account
+    resource: "中子星", // Name of prestige currency
+    baseResource: "Medals", // Name of resource prestige is based on
+    branches: ["re"],
+    baseAmount() {return player.re.points}, // Get the current amount of baseResource
+    type: "normal", // normal: cost to gain currency depends on amount gained. static: cost depends on how much you already have
+    exponent: 0, // Prestige currency exponent
+    gainMult() { // Calculate the multiplier for main currency from bonuses
+        mult = new EN("10")
+        if (hasAchievement('a', 237)) mult = mult.times(1.5)
+        if (hasUpgrade('su', 15)) mult = mult.times(1.1)
+        if (hasUpgrade('su', 25)) mult = mult.times(1.2)
+        if (hasMilestone('su', 3)) mult = mult.times(1.25)
+        if (hasUpgrade('re', 241)) mult = mult.times(2)
+        if (hasUpgrade('su', 35)) mult = mult.times(1.5)
+        if (hasUpgrade('re', 251)) mult = mult.times(3)
+        if (hasUpgrade('su', 42)) mult = mult.times(upgradeEffect('su', 42))
+        if (hasUpgrade('su', 45)) mult = mult.times(2)
+        if (hasUpgrade('su', 53)) mult = mult.times(upgradeEffect('su', 53))
+        if (hasUpgrade('re', 261)) mult = mult.times(4)
+        if (hasUpgrade('re', 262)) mult = mult.times(5)
+        if (player.su.stones.gte(1)) mult = mult.times(player.su.stones.max(1).pow(0.01))
+        if (hasUpgrade('su', 72)) mult = mult.pow(1.5)
+        if (hasUpgrade('su', 131)) mult = mult.times(upgradeEffect('su', 131))
+        if (hasUpgrade('su', 172)) mult = mult.times(upgradeEffect('su', 172))
+        if (hasUpgrade('su', 221)) mult = mult.times(upgradeEffect('su', 221))
+        if (hasUpgrade('su', 271)) mult = mult.times(upgradeEffect('su', 271))
+        if (hasUpgrade('su', 281)) mult = mult.pow(1.5)
+        if (hasUpgrade('su', 321)) mult = mult.times(upgradeEffect('su', 321))
+        if (hasUpgrade('su', 382)) mult = mult.times(upgradeEffect('su', 382))
+        if (hasUpgrade('su', 403)) mult = mult.times(upgradeEffect('su', 403))
+        if (hasUpgrade('su', 422)) mult = mult.times(upgradeEffect('su', 422))
+        if (hasUpgrade('su', 432)) mult = mult.pow(upgradeEffect('su', 432))
+        if (hasMilestone('su', 8)) mult = mult.pow(milestoneEffect('su', 8))
+        return mult
+    },
+    
+    effect2() {
+        if (!hasUpgrade("su", 55))
+            return new EN(1)
+        let eff2 = EN.pow(1)
+        if (hasUpgrade("su", 61)) eff2 = eff2.times(upgradeEffect("su", 61))
+        if (hasUpgrade("su", 71)) eff2 = eff2.pow("1.5")
+        if (hasUpgrade("su", 81)) eff2 = eff2.pow(upgradeEffect("su", 81))
+        if (hasUpgrade("su", 91)) eff2 = eff2.pow("1.5")
+        if (hasUpgrade("su", 92)) eff2 = eff2.times(upgradeEffect("su", 92))
+        if (hasUpgrade("su", 91)) eff2 = eff2.pow("1.5")
+        if (player.su.coal.gte(1)) eff2 = eff2.times(player.su.coal.max(1).pow(0.04))
+        if (hasUpgrade("su", 132)) eff2 = eff2.pow("1.25")
+        if (player.su.iron.gte(1)) eff2 = eff2.times(player.su.iron.max(1).pow(0.1))
+        if (hasUpgrade("su", 181)) eff2 = eff2.pow("1.2")
+        if (player.su.gold.gte(1)) eff2 = eff2.times(player.su.gold.max(1).pow(0.16))
+        if (hasUpgrade("su", 231)) eff2 = eff2.pow("1.2")
+        if (player.su.diamond.gte(1)) eff2 = eff2.times(player.su.diamond.max(1).pow(0.25))
+        if (hasUpgrade("su", 281)) eff2 = eff2.pow("1.1")
+        if (player.su.ruby.gte(1)) eff2 = eff2.times(player.su.ruby.max(1).pow(0.36))
+        if (player.su.emerald.gte(1)) eff2 = eff2.times(player.su.emerald.max(1).pow(0.5))
+        if (player.su.amethyst.gte(1)) eff2 = eff2.times(player.su.amethyst.max(1).pow(0.64))
+        if (player.su.cobalt.gte(1)) eff2 = eff2.times(player.su.cobalt.max(1).pow(0.81))
+        if (player.su.crystal.gte(1)) eff2 = eff2.pow(player.su.crystal.max(1).pow(1))
+        return eff2;
+    },
+    update(diff) {
+        if (player.su.buyables[29].gte(1)) {
+            player.sa.challengepent = player.sa.challengepent.add(buyableEffect("su", 29).times(diff))}
+        if (player.su.buyables[28].gte(1)) {
+            player.sa.challengetet = player.sa.challengetet.add(buyableEffect("su", 28).times(diff))}
+        if (player.su.buyables[27].gte(1)) {
+            player.sa.challengeexp = player.sa.challengeexp.add(buyableEffect("su", 27).times(diff))}
+        if (player.su.buyables[26].gte(1)) {
+            player.sa.challengepower = player.sa.challengepower.add(buyableEffect("su", 26).times(diff))}
+        if (player.su.buyables[25].gte(1)) {
+            player.sa.challengepoint = player.sa.challengepoint.add(buyableEffect("su", 25).times(diff))}
+        if (player.su.buyables[24].gte(1)) {
+            player.su.crystalstages = player.su.crystalstages.add(buyableEffect("su", 24).times(diff))}
+        if (player.su.buyables[23].gte(1)) {
+            player.su.crystallevels = player.su.crystallevels.add(buyableEffect("su", 23).times(diff))}
+        if (player.su.buyables[22].gte(1)) {
+            player.su.crystaltiers = player.su.crystaltiers.add(buyableEffect("su", 22).times(diff))}
+        if (player.su.buyables[21].gte(1)) {
+            player.su.crystal = player.su.crystal.add(buyableEffect("su", 21).times(diff))}
+        if (player.su.buyables[18].gte(1)) {
+            player.su.cobalt = player.su.cobalt.add(buyableEffect("su", 18).times(diff))}
+        if (player.su.buyables[17].gte(1)) {
+            player.su.amethyst = player.su.amethyst.add(buyableEffect("su", 17).times(diff))}
+        if (player.su.buyables[16].gte(1)) {
+            player.su.emerald = player.su.emerald.add(buyableEffect("su", 16).times(diff))}
+        if (player.su.buyables[15].gte(1)) {
+            player.su.ruby = player.su.ruby.add(buyableEffect("su", 15).times(diff))}
+        if (player.su.buyables[14].gte(1)) {
+            player.su.diamond = player.su.diamond.add(buyableEffect("su", 14).times(diff))}
+        if (player.su.buyables[13].gte(1)) {
+            player.su.gold = player.su.gold.add(buyableEffect("su", 13).times(diff))}
+        if (player.su.buyables[12].gte(1)) {
+            player.su.iron = player.su.iron.add(buyableEffect("su", 12).times(diff))}
+        if (player.su.buyables[11].gte(1)) {
+            player.su.coal = player.su.coal.add(buyableEffect("su", 11).times(diff))}
+        if (hasUpgrade("su", 55)) return player.su.stones = player.su.stones.add(tmp.su.effect2.times(diff))
+        },
+    gainExp() { // Calculate the exponent on main currency from bonuses
+        return new EN(1)
+    },
+    hotkeys: [
+        {key: "@", description: "Shift+@：重置获得超新星", onPress(){if (canReset(this.layer)) doReset(this.layer)}},
+    ],
+layerShown(){return (hasUpgrade("re", 231) || player[this.layer].unlocked)},
+    automate() {},
+    milestones: {
+        1: {
+            requirementDescription: "1 颗中子星",
+            effectDescription: "每秒获得重置时奖牌获取量的 100%。",
+            done() { return player.su.points.gte(1) }
+    },
+    2: {
+        requirementDescription: "总共 25 颗中子星",
+        effectDescription: "重置时保留轮回里程碑。",
+        done() { return player.su.total.gte(25) }
+},
+3: {
+    requirementDescription: "总共 100 颗中子星",
+    effectDescription: "获得 25% 更多中子星并自动购买果汁升级。",
+    done() { return player.su.total.gte(100) }
+},
+4: {
+    requirementDescription: "总共 500 颗中子星",
+    effectDescription: "重置时保留轮回挑战。",
+    done() { return player.su.total.gte(500) }
+},
+5: {
+    requirementDescription: "总共 100,000 颗中子星",
+    effectDescription: "重置时保留轮回升级。",
+    done() { return player.su.total.gte(1e5) }
+},
+6: {
+    requirementDescription: "5 次水晶重置",
+    effectDescription: "水晶重置不丢失任何东西。",
+    done() { return getBuyableAmount("su", 21).gte("5")},
+},
+7: {
+    requirementDescription: "总共 e1.797e308 颗中子星",
+    effectDescription: "轮回可购买项变为立方！",
+    done() { return player.su.total.gte("e1.797e308") }
+},
+8: {
+    requirementDescription: "总共 e1e9,000 颗中子星",
+    effect() {
+        let eff = player.su.crystal.pow(3)
+        return eff
+    },
+    effectDescription() {
+        return "水晶也以降低的比例提升中子星获取。<br>当前：^"+format(milestoneEffect("su",8))+""}
+        ,    done() { return player.su.total.gte("ee9000") }
+        
+    },
+    9: {
+        requirementDescription: "总共 e1e1,000,000 颗中子星",
+        effectDescription: "水晶等级再次加速，并使水晶获取平方。",
+        done() { return player.su.total.gte("eee6") }
+    },
+    },
+})
