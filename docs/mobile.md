@@ -683,6 +683,26 @@ snapshot, moving nothing but the readout's string from `0` to `1.111e3,284`: **1
   within the same wrap on a 366 px card (measured on `ptr`: `+111` through `+1.111e3,284 prestige points`, every
   card's height unchanged). It gets the tabular figures with everything else and no reservation, because a
   reservation for prose would be a guess.
+- ⚠ **A `ch` is a column only for a DIGIT, and only in a face with no `letter-spacing` — the counters now MEASURE
+  (tmt-forks-1, 2026-09-22).** `the-classic-tree` puts `letter-spacing: 0.04em` on `*`, which reaches this list, and
+  its `/` is wider than its `0`: a `0/1` counter overran its 3 ch by 1.58 px and gave the width back as the value
+  shortened (M1 leg E, CI run 35777610644). `reserveWidth` (layerlist.js) now measures the value's widest shape
+  (every digit a `0`) on an invisible twin in the card's own font whenever a counter's reservation GROWS, and
+  reserves `max(N ch, that)`; a refresh that grows nothing measures nothing. ⚖ **Correction, recorded as the
+  orchestrator's own:** when U10 built the `ch` reservation it measured that `tabular-nums` makes every digit the
+  same width in every family it could test and concluded `ch` was safe — *"`letter-spacing` never occurred to
+  me"*. The reservation was not wrong about fonts; it was wrong to assume a glyph's advance IS its `ch` at all.
+
+⛔ **A PROBE THAT SHARES ITS SUBJECT'S ASSUMPTION CANNOT SEE THE DEFECT — the fourth time in this arc.** When
+`the-collab-tree-lun4-r` arrived with buyables named by WORD (`feed`, `FasterTimeI`), the list `Number()`ed the id
+to `NaN` — and the harness mirror in `page.mjs`, which computes what the list SHOULD show, made the same
+`Number(id)` and therefore expected NO count on those buyables. The pair agreed with each other and not with the
+engine. It was caught only because the sequence check reads the tab layout's own keys. The same shape, before:
+U11's `progExpect` rebuilt its expectation from the same stale `tmp` the card read; U12's glow leg constructed the
+state it then verified; U10's width leg took its bound from the build under test. The fix is always the same
+direction: the gate now EXPECTS the engine's own `0` for `feed` (it asks `getBuyableAmount` with the engine's key),
+it does not excuse the game. ⚠ **When you write a leg, name the one input it does NOT share with the list** — the
+engine, the tab layout, a constant from the roster — or it is certifying agreement, not correctness.
 
 #### The tooltip: what a chip costs and does (U2e)
 
