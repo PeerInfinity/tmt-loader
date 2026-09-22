@@ -73,7 +73,7 @@ test('sourcesOf refuses a game it cannot read rather than counting it as zero', 
 
 const MOBILE = 'docs/mobile.md';
 for (const [claim, from, to] of [
-  ['buyUpg', '**172 of the 175 games define it', '**173 of the 175 games define it'],
+  ['buyUpg', '**173 of the 175 games define it', '**172 of the 175 games define it'],
   ['tabFormat static declarations (subtree)', '**1393 array-form and 724 object-form', '**1211 array-form and 641 object-form'],
   ['tabFormat static declarations (LOADED', '**962 array-form and 498 object-form', '**962 array-form and 724 object-form'],
   ['purchaseLimit (subtree)', '**159 of the 175 games carry', '**158 of the 175 games carry'],

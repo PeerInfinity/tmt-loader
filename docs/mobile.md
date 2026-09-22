@@ -314,9 +314,9 @@ here that evaluates game code is wrapped: a throw costs one card, never the list
   upgrade chip calls `unlockUpg` — which is what the engine's own second button on that upgrade calls — rather
   than `buyUpgrade`. There is no `locked` chip any more: a component the tab does not draw gets no chip at all.
   ⚠ **U2d found that the upgrade press had never worked on two games.** `buyUpgrade` is an ALIAS the TMT engines
-  grew later: **172 of the 175 games define it, all 175 define `buyUpg`, and `the-modding-tree` (2.0.5.1),
-  `the-burning-tree` and `the-collab-tree-lun4-r` (2.6.6.2) define ONLY `buyUpg`** — so on the first two (the third
-  was added on 2026-09-22) a chip press called a function that does not exist
+  grew later: **173 of the 175 games define it, all 175 define `buyUpg`, and `the-modding-tree` (2.0.5.1) and
+  `the-burning-tree` define ONLY `buyUpg`** (a `const buyUpgrade = buyUpg;` alias counts as defining it —
+  `the-collab-tree-lun4-r` has one) — so on those two a chip press called a function that does not exist
   and bought nothing, silently, for two slices. It went unseen because the gate had never DRIVEN a chip: it pressed
   the reset button and nothing else. U2d's counter press is the first leg that buys, and it caught it on the first
   CI sweep after the push (`the-modding-tree`: `counter=NOT MOVED`, `0/1 → 0/1`). The list now calls whichever name

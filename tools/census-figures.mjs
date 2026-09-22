@@ -259,7 +259,11 @@ const RE = {
   optButton: /<button\b[^>]*\bclass\s*=\s*["'][^"']*\bopt\b/i,
   optionWheel: /\bid\s*=\s*["']optionWheel["']/i,
   buyUpg: /function\s+buyUpg\s*\(/,
-  buyUpgrade: /function\s+buyUpgrade\s*\(/,
+  // ⚠ an ALIAS defines it too: `the-collab-tree-lun4-r` has `const buyUpgrade = buyUpg;` (js/utils.js:89), which the
+  // loader's `typeof buyUpgrade === 'function'` sees and calls. Matching only `function buyUpgrade(` counted that game
+  // as ONLY-buyUpg on the day it was added (2026-09-22) — the same shape of miss as the `js/` bound, one declaration form
+  // instead of one directory.
+  buyUpgrade: /function\s+buyUpgrade\s*\(|\b(?:const|let|var)\s+buyUpgrade\s*=/,
   pseudoUnlGlobal: /function\s+pseudoUnl\s*\(/,
   pseudoUnlComponent: /pseudoUnl\s*[:(]/,
   purchaseLimit: /purchaseLimit/,
