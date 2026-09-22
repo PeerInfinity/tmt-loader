@@ -6004,3 +6004,13 @@ Reading this section: local measurements for the record; the CI sweep (G1 + M1 o
 | assets-1 check-manifest (media rule) | 171 games | — | 0 | 0 | — | — | GREEN | 171/171 GREEN at cef3dc585 (every difference from the squash is a processed media file modified in place) |
 | assets-1 G1 load (local control) | sorbet, rainbow-void, periodic-table, danus | — | 0 | 0 | — | — | GREEN | 4/4 GREEN; the full roster is CI run 35766250049 |
 | assets-1 unit tests | — | — | 0 | 0 | — | — | GREEN | 285/285 with node_modules moved aside (the fast job has no npm ci) |
+
+## 2026-09-22T18:38:07Z — assets-1 — CI sweep run 35766250049 at d02ed209f — commit `9458401af` (tree DIRTY) — 5/5 green
+
+| gate | game | leg | ticks | gameSeconds | diff | hash | result | notes |
+|---|---|---|---|---|---|---|---|---|
+| M1 merge + roster assertion (CI) | 171 games | — | 0 | 0 | — | — | GREEN | rows: 171/171; 0 RED; 6 abstained on the state leg — the SAME six as main at 3d9c61e67 (run 35659984097) |
+| G1 load plain page (CI) | 171 games | — | 0 | 0 | — | — | GREEN | rows: 171/171; 0 RED |
+| G1 load automation page (CI) | 171 games | — | 0 | 0 | — | — | GREEN | rows: 171/171; 0 RED |
+| fast job: units + media check (CI) | — | — | 0 | 0 | — | — | GREEN | success |
+| whole run (CI) | — | — | 0 | 0 | — | — | GREEN | 87 success, 0 failure, 11 CANCELLED by hand once G1/M1 were in: the F1 measurement jobs run on every workflow_dispatch and measure the automation layer, which this slice does not touch (user, 2026-09-22) |
