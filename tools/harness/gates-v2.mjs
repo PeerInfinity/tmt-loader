@@ -458,9 +458,12 @@ async function part4c(browser, base) {
 }
 
 // ---- Part 4b: …and it changes what the feature DOES --------------------------------------------------------------
-// ⛔ THE FLOOR IS MEASURED FIRST. A page's state is NOT reproducible across two loads — the engine's own interval
-// runs between `load()` and `pause()` and leaves its mark in `player` (V1, plan §16.3 item 10) — so two control
-// loads are run and their action counts compared BEFORE the edited arm is believed. The edit is chosen to be
+// ⛔ THE FLOOR IS MEASURED FIRST, AND THE ARMS START MANAGED. A page's state is NOT reproducible across two loads
+// when the engine's own interval runs between `load()` and `pause()` (V1, plan §16.3 item 10) — and on Something
+// Tree this leg is STEEP in that drift: measured 2026-09-22, `reset:unlock` over 300 ticks acts 58 from a clean
+// start, 37 after ~0.26 s of pre-pause drift, 256 after 1 s. CI's floor row went red on exactly 58 / 37 (one control
+// paused instantly, one did not). So the three arms open with `managed=1`, which pauses BEFORE the first tick, and
+// the two control loads are still run and compared BEFORE the edited arm is believed. The edit is chosen to be
 // unmistakable (`always` against the derived `gain>=2x`), and the claim is that the edited arm is outside the
 // spread the two controls define, not that any two numbers are equal.
 async function part4b(browser, base) {
@@ -469,7 +472,7 @@ async function part4b(browser, base) {
     let ok = true;
     const check = (c, w) => { if (!c) ok = false; notes.push(`${c ? '✓' : '✗'} ${w}`); };
     const arm = async (edit) => {
-      const { context, page } = await openGamePage(browser, base, id, '&profile=all');
+      const { context, page } = await openGamePage(browser, base, id, '&managed=1&profile=all');
       try {
         const fid = await page.evaluate(() => { const r = tmtLoader.explain().find((x) => x.kind === 'reset' && x.state !== 'locked' && x.state !== 'excluded'); return r ? r.id : null; });
         // ⚠ THE EDIT HAS TO CHANGE THE RULE. The first cut always wrote `always`, and `something`'s `reset:unlock`
