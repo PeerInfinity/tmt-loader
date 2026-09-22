@@ -105,14 +105,7 @@
     "idleHash": {
       "ticks": 200,
       "diff": 0.05,
-      "hash": "2b5962383a0fba93",
-      "census": {
-        "hash": "db2868c593eb7ad3",
-        "differsIn": [
-          "cheese.cycle"
-        ],
-        "reason": "The census boot (tmt-fork-census lib/boot.mjs, leg()) sets player.offTime = undefined before stepping; the page never does: the engine's load() sets offTime = {remain} and the first gameLoop spends it and clears it. This game's js/cheese.js update(diff) writes a PERSISTED field only while offTime is unset (`if (player.offTime == undefined) player.cheese.cycle = player.cheese.cycle.add(diff)`), so the census counts one more diff into cheese.cycle than the page does. `hash` is the page's value (page.mjs and the Node twin agree); every other state field is equal. Expires with queued item Q6 (fix the census boot). Re-derive: node tools/harness/census-hash-diff.mjs the-collab-tree-lun4-r"
-      }
+      "hash": "2b5962383a0fba93"
     },
     "deterministic": true
   },

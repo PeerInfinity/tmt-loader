@@ -172,16 +172,11 @@ export function checkManifest(id, { boot = true } = {}) {
   } else if (treeNow !== treeSquash) problems.push({ field: 'games pristine', treeNow, treeSquash });
   const dirty = execFileSync('git', ['-C', REPO, 'status', '--porcelain', '--', `games/${id}`], { encoding: 'utf8' }).trim();
   if (dirty) problems.push({ field: 'games pristine (working tree)', dirty });
-  // headless.idleHash.census (⚖ 2026-09-22): where the census's idle hash disagrees with the page's, BOTH are kept —
-  // `hash` is ours (what G3 holds), `census` records the census's, the field(s) it differs in, and why. The shape is
-  // checked here; which fields differ is re-derived by tools/harness/census-hash-diff.mjs (needs the census checkout).
-  const ch = m.headless && m.headless.idleHash && m.headless.idleHash.census;
-  if (ch !== undefined) {
-    if (!ch || typeof ch !== 'object' || !/^[0-9a-f]{16}$/.test(ch.hash || '')) problems.push({ field: 'headless.idleHash.census.hash', error: 'a 16-hex hash' });
-    else if (ch.hash === m.headless.idleHash.hash) problems.push({ field: 'headless.idleHash.census', error: 'the two hashes agree — drop the block' });
-    if (!ch || !Array.isArray(ch.differsIn) || !ch.differsIn.length || !ch.differsIn.every((x) => typeof x === 'string')) problems.push({ field: 'headless.idleHash.census.differsIn', error: 'a non-empty array of player.<layer>.<key> paths' });
-    if (!ch || typeof ch.reason !== 'string' || !ch.reason.trim()) problems.push({ field: 'headless.idleHash.census.reason', error: 'a non-empty reason string' });
-  }
+  // headless.idleHash.census — RETIRED with Q6 (2026-09-22). It recorded the census's hash beside ours where the two
+  // disagreed; its one instance (the-collab-tree-lun4-r, `cheese.cycle`) was the census boot pre-clearing
+  // `player.offTime`, fixed at the census, and the block and its tool (census-hash-diff.mjs) went with it. A block
+  // that reappears is refused rather than silently carried: a new disagreement is a census bug to fix at the census.
+  if (m.headless && m.headless.idleHash && m.headless.idleHash.census !== undefined) problems.push({ field: 'headless.idleHash.census', error: 'retired (Q6): fix the census boot instead of annotating the manifest' });
   if ((m.patches || []).length) problems.push({ field: 'patches', note: 'L1 expects none', live: m.patches });
   // auto (A1; C1): optional per-game automation table, a JSON DOCUMENT outside the subtree prefix (games-auto/<id>.json),
   // fetched by the page and validated by the loader against its own schema (docs/automation.md, "The table (measured defaults)")

@@ -72,11 +72,15 @@ test('sourcesOf refuses a game it cannot read rather than counting it as zero', 
 // ---------------------------------------------------------------------------------------------------------------
 
 const MOBILE = 'docs/mobile.md';
+// ⚖ Q7 (tmt-queue-1): the DENOMINATOR in these mutants is the roster, derived — census-figures already holds the doc's
+// "of the N games" to GAMES().length, so a literal here only re-reds on the day the roster grows. The NUMERATORS are
+// measurements and stay literal: when one moves, the mutant says "re-point", which is the point.
+const N = GAMES().length;
 for (const [claim, from, to] of [
-  ['buyUpg', '**173 of the 175 games define it', '**172 of the 175 games define it'],
+  ['buyUpg', `**173 of the ${N} games define it`, `**172 of the ${N} games define it`],
   ['tabFormat static declarations (subtree)', '**1393 array-form and 724 object-form', '**1211 array-form and 641 object-form'],
   ['tabFormat static declarations (LOADED', '**962 array-form and 498 object-form', '**962 array-form and 724 object-form'],
-  ['purchaseLimit (subtree)', '**159 of the 175 games carry', '**158 of the 175 games carry'],
+  ['purchaseLimit (subtree)', `**159 of the ${N} games carry`, `**158 of the ${N} games carry`],
   ['the games with no purchaseLimit', 'The **16** that do not', 'The **17** that do not'],
   // ⚠ U2e: the figure that matters is the CHIPPED one, not "does this game mention `tooltip`" (171 of 171, and
   // worthless). The digit moved here is the games count, which is what decides whether the field path is worth
@@ -212,7 +216,7 @@ test('a reworded claim FAILS rather than silently ceasing to be checked', () => 
   // The way this gate would really die: someone rewrites the sentence, the anchor stops matching, and a check that
   // reports nothing looks exactly like a check that passed.
   const text = read(MOBILE);
-  const r = judge({ [MOBILE]: text.replace(/\*\*159 of the 175 games carry `purchaseLimit`[^*]*\*\*/, 'most games carry it') });
+  const r = judge({ [MOBILE]: text.replace(new RegExp(`\\*\\*159 of the ${N} games carry \`purchaseLimit\`[^*]*\\*\\*`), 'most games carry it') });
   assert.equal(r.ok, false);
   const x = row(r, 'purchaseLimit (subtree)');
   assert.equal(x.ok, false);
@@ -306,9 +310,9 @@ test('the Options anchors hold over the whole roster, in the scope the loader ac
 test('a wrong anchor figure in the prose is caught, and nothing else moves', () => {
   const text = read(OPTIONS_DOC);
   // ⚠ the sentence WRAPS in the file; the gate flattens whitespace before matching, this mutant must not assume it
-  const from = '**all 175 of the 175 games carry both the';
+  const from = `**all 175 of the ${N} games carry both the`;
   assert.ok(text.includes(from), 'the doc no longer contains the anchored sentence — re-point this mutant');
-  const r = judge({ [OPTIONS_DOC]: text.replace(from, '**all 174 of the 175 games carry both the') });
+  const r = judge({ [OPTIONS_DOC]: text.replace(from, `**all 174 of the ${N} games carry both the`) });
   assert.equal(r.ok, false, 'the doctored document passed');
   const red = r.rows.filter((x) => !x.ok).map((x) => x.name);
   assert.deepEqual(red, [row(r, 'the Options section').name], `other claims went red too: ${red.join(', ')}`);
@@ -316,7 +320,7 @@ test('a wrong anchor figure in the prose is caught, and nothing else moves', () 
 
 test('a reworded anchor claim FAILS rather than silently ceasing to be checked', () => {
   const text = read(OPTIONS_DOC);
-  const r = judge({ [OPTIONS_DOC]: text.replace(/\*\*all 175 of the 175 games carry[^*]*\*\*/, 'every game carries both') });
+  const r = judge({ [OPTIONS_DOC]: text.replace(new RegExp(`\\*\\*all 175 of the ${N} games carry[^*]*\\*\\*`), 'every game carries both') });
   assert.equal(r.ok, false);
   assert.match(row(r, 'the Options section').why, /no longer states this claim/);
 });
