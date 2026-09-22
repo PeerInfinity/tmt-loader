@@ -430,7 +430,10 @@ const LAYERLIST_PROBE_FN = function (CDATA) {
     const t = S(() => tmp[l][kind][id], null);
     if (!t) return false;
     const unl = unlocked(kind, l, id);                                    // (U11) not `tmp` alone
-    if (kind === 'upgrades' && !unl) return S(() => typeof pseudoUnl === 'function' && !!pseudoUnl(l, Number(id)), false);
+    // ⚠ `(isNaN(id) ? id : Number(id))` throughout this mirror, as `compId` in loader/layerlist.js: the engines key
+    // components by number, but `the-collab-tree-lun4-r` names buyables with words (`feed`, `FasterTimeI`), and a bare
+    // `Number(id)` made the mirror expect NO count for a buyable the engine holds at 0 (M1, run 35777610644).
+    if (kind === 'upgrades' && !unl) return S(() => typeof pseudoUnl === 'function' && !!pseudoUnl(l, (isNaN(id) ? id : Number(id))), false);
     if (!unl) return false;
     if (kind === 'milestones') return S(() => typeof milestoneShown === 'function' ? !!milestoneShown(l, id) : true, true);
     if (kind === 'achievements' || kind === 'clickables') return true;   // `unlocked` is the whole of the condition
@@ -438,8 +441,8 @@ const LAYERLIST_PROBE_FN = function (CDATA) {
       const hiding = S(() => !!player.hideChallenges, false) || S(() => !!options.hideChallenges, false);
       if (!hiding) return true;
       const active = S(() => String(player[l].activeChallenge) === String(id), false);
-      const maxed = S(() => typeof maxedChallenge === 'function' ? !!maxedChallenge(l, Number(id))
-        : typeof hasChallenge === 'function' ? !!hasChallenge(l, Number(id)) : Number((player[l].challenges || {})[id]) > 0, false);
+      const maxed = S(() => typeof maxedChallenge === 'function' ? !!maxedChallenge(l, (isNaN(id) ? id : Number(id)))
+        : typeof hasChallenge === 'function' ? !!hasChallenge(l, (isNaN(id) ? id : Number(id))) : Number((player[l].challenges || {})[id]) > 0, false);
       return !(maxed && !active);
     }
     return true;
@@ -533,10 +536,10 @@ const LAYERLIST_PROBE_FN = function (CDATA) {
   const isAmt = (v) => typeof v === 'number' ? isFinite(v) : S(() => !!v && typeof v === 'object' && typeof v.toNumber === 'function', false);
   const posAmt = (v) => typeof v === 'number' ? v > 0 : S(() => typeof v.gt === 'function' ? !!v.gt(0) : Number(v.toNumber()) > 0, false);
   const earned = (kind, l, id) => {
-    if (kind === 'upgrades') return S(() => { const a = player[l].upgrades || []; return a.indexOf(Number(id)) >= 0 || a.indexOf(String(id)) >= 0; }, false);
+    if (kind === 'upgrades') return S(() => { const a = player[l].upgrades || []; return a.indexOf((isNaN(id) ? id : Number(id))) >= 0 || a.indexOf(String(id)) >= 0; }, false);
     if (kind === 'milestones') return S(() => typeof hasMilestone === 'function' && !!hasMilestone(l, id), false);
     if (kind === 'achievements') return S(() => typeof hasAchievement === 'function' && !!hasAchievement(l, id), false);
-    if (kind === 'challenges') return S(() => (typeof maxedChallenge === 'function' && !!maxedChallenge(l, Number(id)))
+    if (kind === 'challenges') return S(() => (typeof maxedChallenge === 'function' && !!maxedChallenge(l, (isNaN(id) ? id : Number(id))))
       || Number((player[l].challenges || {})[id]) > 0, false);
     return false;
   };
@@ -552,7 +555,7 @@ const LAYERLIST_PROBE_FN = function (CDATA) {
       const g = by[kind];
       if (RATIO[kind]) { g.y++; g.any = true; if (earned(kind, ll, id)) g.x++; continue; }
       let amt = null;
-      if (kind === 'buyables') { const b = S(() => typeof getBuyableAmount === 'function' ? getBuyableAmount(ll, Number(id)) : player[ll].buyables[id], null); amt = isAmt(b) ? b : null; }
+      if (kind === 'buyables') { const b = S(() => typeof getBuyableAmount === 'function' ? getBuyableAmount(ll, (isNaN(id) ? id : Number(id))) : player[ll].buyables[id], null); amt = isAmt(b) ? b : null; }
       else { const c = S(() => player[ll].clickables[id], null); amt = (isAmt(c) && posAmt(c)) ? c : null; }
       if (amt === null) continue;
       g.any = true;
@@ -575,7 +578,7 @@ const LAYERLIST_PROBE_FN = function (CDATA) {
     if (kind === 'buyables') {
       const lim = S(() => tmp[ll].buyables[id].purchaseLimit, undefined);
       if (lim === undefined || lim === null) return true;
-      const amt = S(() => typeof getBuyableAmount === 'function' ? getBuyableAmount(ll, Number(id)) : player[ll].buyables[id], null);
+      const amt = S(() => typeof getBuyableAmount === 'function' ? getBuyableAmount(ll, (isNaN(id) ? id : Number(id))) : player[ll].buyables[id], null);
       if (amt === null) return true;
       return S(() => typeof amt.gte === 'function' ? !amt.gte(lim) : !(Number(amt) >= Number(lim.toNumber ? lim.toNumber() : lim)), true);
     }
@@ -611,7 +614,7 @@ const LAYERLIST_PROBE_FN = function (CDATA) {
   };
   const bgOfValue = (css) => (css ? measure((e) => { e.style.backgroundColor = css; }) : NOBG);
   const canAfford = (kind, l, id) => {
-    if (kind === 'upgrades') return S(() => typeof canAffordUpgrade === 'function' ? !!canAffordUpgrade(l, Number(id)) : true, true);
+    if (kind === 'upgrades') return S(() => typeof canAffordUpgrade === 'function' ? !!canAffordUpgrade(l, (isNaN(id) ? id : Number(id))) : true, true);
     if (kind === 'buyables') return S(() => !!tmp[l].buyables[id].canAfford, true);
     return true;                                     // starting a challenge costs nothing in either engine
   };
@@ -650,7 +653,7 @@ const LAYERLIST_PROBE_FN = function (CDATA) {
   const belowLim = (l, id) => {
     const lim = S(() => tmp[l].buyables[id].purchaseLimit, undefined);
     if (lim === undefined || lim === null) return true;
-    const amt = S(() => typeof getBuyableAmount === 'function' ? getBuyableAmount(l, Number(id)) : player[l].buyables[id], null);
+    const amt = S(() => typeof getBuyableAmount === 'function' ? getBuyableAmount(l, (isNaN(id) ? id : Number(id))) : player[l].buyables[id], null);
     if (amt === null) return true;
     return S(() => typeof amt.gte === 'function' ? !amt.gte(lim) : !(Number(amt) >= Number(lim.toNumber ? lim.toNumber() : lim)), true);
   };
@@ -672,7 +675,7 @@ const LAYERLIST_PROBE_FN = function (CDATA) {
       if (!g.avail) g.avail = ctrAvail(kind, ll, id);
       if (RATIO[kind]) { g.y++; g.any = true; if (earned(kind, ll, id)) g.x++; continue; }
       let amt = null;
-      if (kind === 'buyables') { const b = S(() => typeof getBuyableAmount === 'function' ? getBuyableAmount(ll, Number(id)) : player[ll].buyables[id], null); amt = isAmt(b) ? b : null; }
+      if (kind === 'buyables') { const b = S(() => typeof getBuyableAmount === 'function' ? getBuyableAmount(ll, (isNaN(id) ? id : Number(id))) : player[ll].buyables[id], null); amt = isAmt(b) ? b : null; }
       else { const c = S(() => player[ll].clickables[id], null); amt = (isAmt(c) && posAmt(c)) ? c : null; }
       if (amt !== null) g.any = true;
     }
@@ -846,7 +849,7 @@ const LAYERLIST_PROBE_FN = function (CDATA) {
   const ltD = (a, b) => S(() => (typeof a.lt === 'function' ? !!a.lt(b) : Number(a) < Number(b)), false);
   const gteD = (a, b) => S(() => (typeof a.gte === 'function' ? !!a.gte(b) : Number(a) >= Number(b)), false);
   const engAfford = (kind, l, id) => {
-    if (kind === 'upgrades') return S(() => (typeof canAffordUpgrade === 'function' ? !!canAffordUpgrade(l, Number(id)) : null), null);
+    if (kind === 'upgrades') return S(() => (typeof canAffordUpgrade === 'function' ? !!canAffordUpgrade(l, (isNaN(id) ? id : Number(id))) : null), null);
     if (kind === 'buyables') return S(() => { const c = tmp[l].buyables[id].canAfford; return c === undefined ? null : !!c; }, null);
     return null;
   };
@@ -1010,7 +1013,7 @@ const LAYERLIST_PROBE_FN = function (CDATA) {
     // than this roster pass.
     // ⚠ BOTH VIEWS, AND THE SAME STRING: the chip and the action button stand for one component, so a build in
     // which they could differ is the defect U8 had to fix for the reset text. `viewBad` is what asserts it.
-    const wantCount = (ll, id) => { const v = S(() => getBuyableAmount(ll, Number(id)), null); return v === null ? '' : F(v, true); };
+    const wantCount = (ll, id) => { const v = S(() => getBuyableAmount(ll, (isNaN(id) ? id : Number(id))), null); return v === null ? '' : F(v, true); };
     const readCount = (e) => {
       const ll = e.dataset.layer || l, id = e.dataset.cid;
       const n = e.querySelector('.tmt-layerlist-chip-n');
@@ -2599,7 +2602,16 @@ async function gateMobile(browser, base, ids) {
         for (const n of Object.keys(window.__tmtTip.orig)) {
           try { visible[n] = new Function('return typeof ' + n + ' === "function" && ' + n + ' === window.' + n)(); } catch (e) { visible[n] = false; }
         }
-        return { candidate: btn.dataset.layer + '/' + btn.dataset.kind + '/' + btn.dataset.cid, visible,
+        // ⚠ …and the function the list will ACTUALLY call for this chip may be a binding that is NOT on `window` at
+        // all: `the-collab-tree-lun4-r` has `const buyUpgrade = buyUpg;`, the list prefers `buyUpgrade`, and that alias
+        // still points at the unwrapped original — so the tap acts and this leg cannot see it. Named, and abstained on,
+        // rather than read as "the handler swallowed the click" (M1, run 35777610644).
+        const bare = (n) => { try { return new Function('return typeof ' + n + ' === "function"')(); } catch (e) { return false; } };
+        const kind = btn.dataset.kind;
+        const calls = kind === 'upgrades' ? (bare('buyUpgrade') ? 'buyUpgrade' : 'buyUpg')
+          : kind === 'buyables' ? 'buyBuyable' : kind === 'challenges' ? 'startChallenge' : null;
+        const offWindow = calls && bare(calls) && !visible[calls] ? calls : null;
+        return { candidate: btn.dataset.layer + '/' + kind + '/' + btn.dataset.cid, visible, offWindow,
           wrapped: Object.keys(window.__tmtTip.orig), tips: ui.stats().tips, hoverable: ui.tip.hoverable() };
       }, ACT_SEL);
       let tapped = null;
@@ -2623,6 +2635,7 @@ async function gateMobile(browser, base, ids) {
           opened: tapped ? tapped.tips > tapSetup.tips : null, calls: tapped ? tapped.calls : null,
           verdict: !tapSetup.candidate ? `abstains (${tapSetup.why})`
             : wrappedNone ? 'abstains (the engine keeps its buy functions off `window`, so the call cannot be counted)'
+            : tapSetup.offWindow ? `abstains (the list calls \`${tapSetup.offWindow}\`, which this engine binds off \`window\` — a const/let alias — so the call cannot be counted)`
             : !(tapped.tips > tapSetup.tips) ? 'A TAP OPENED NO TOOLTIP'
             // ⚠ NOT "preventDefault?" — that mutant is GREEN, measured on `ptr`: `preventDefault()` suppresses a
             // default ACTION and the control's own click LISTENER runs regardless. A `stopPropagation()` in this
@@ -2753,7 +2766,7 @@ async function gateMobile(browser, base, ids) {
         for (const card of ui.cards()) {
           for (const c of ui.chipsOf(card)) {
             if (c.kind !== 'buyables') continue;
-            const v = (() => { try { return getBuyableAmount(c.layer, Number(c.id)); } catch (e) { return null; } })();
+            const v = (() => { try { return getBuyableAmount(c.layer, (isNaN(c.id) ? c.id : Number(c.id))); } catch (e) { return null; } })();
             const n = Number(v && typeof v.toNumber === 'function' ? v.toNumber() : v);
             if (!(n > 0) || !chipOf(card, 'buyables', c.id)) continue;
             pick = { card, layer: c.layer, id: c.id }; break;
@@ -2770,7 +2783,7 @@ async function gateMobile(browser, base, ids) {
           ui.refresh();
           const el = chipOf(card, 'buyables', id);
           out = { pick, before, present: !!el, count: el ? el.dataset.count : null,
-            accessor: F((() => { try { return getBuyableAmount(layer, Number(id)); } catch (e) { return null; } })()),
+            accessor: F((() => { try { return getBuyableAmount(layer, (isNaN(id) ? id : Number(id))); } catch (e) { return null; } })()),
             direct: F((() => { try { return player[layer].buyables[id]; } catch (e) { return null; } })()) };
         } finally {
           try { player[layer].unlocked = had; } catch (e) { /* put it back whatever happened */ }
@@ -3984,7 +3997,7 @@ async function gateMobile(browser, base, ids) {
         const quiet = ui.stats().counterGlows - gq;
         const g0 = ui.stats().counterGlows;
         try {
-          if (kind === 'upgrades') player[l].upgrades.push(Number(id));
+          if (kind === 'upgrades') player[l].upgrades.push((isNaN(id) ? id : Number(id)));
           else player[l].buyables[id] = new Decimal(player[l].buyables[id] || 0).add(1);
         } catch (e) { return { layer: l, kind, verdict: `abstains (the construction threw: ${String(e).slice(0, 80)})` }; }
         await wait(TH + 20);
