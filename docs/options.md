@@ -103,7 +103,7 @@ rather than inside whichever sub-table the anchor was in — and it is REMOVED t
 open one, because in 2.7 that column is shared with every other layer tab.
 
 ⚠ **Both anchors are properties of the GAMES, so they are censused, not assumed.** `tools/census-figures.mjs`
-measures them over the entry document and the loaded sources — **all 171 of the 171 games carry both the
+measures them over the entry document and the loaded sources — **all 175 of the 175 games carry both the
 `hardReset()` option button and `#optionWheel`** — and refuses if a game ever arrives without one. That check
 exists because nothing that DRIVES games could tell you: a section that is never built throws nothing, reddens
 nothing, and simply is not there.

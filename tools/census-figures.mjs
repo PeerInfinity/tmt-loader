@@ -465,7 +465,12 @@ export function claims(sub, load) {
       doc: 'docs/mobile.md',
       // ⚠ Every figure below is "x of 171". The day the roster grows, ALL of them are stale — so the denominator is
       // itself a claim, checked wherever mobile.md writes one.
-      re: /of (?:the )?(\d+) games/g,
+      // ⚖ 2026-09-22 (tmt-forks-1, the first roster growth after this gate): a figure that is a RECORD of an earlier
+      // tree — a CI run, a census at a named commit, a retracted number quoted as it shipped — is not a claim about
+      // today's roster, and re-deriving it would mean re-running history. It opts out EXPLICITLY, in the prose, with
+      // "games then hosted"; everything else is still held to the roster. The anchors of the checked claims below
+      // spell their own wording, so none of them can take the escape.
+      re: /of (?:the )?(\d+) games(?! then hosted)/g,
       all: true,
       expect: (ms) => {
         const bad = ms.filter((m) => num(m[1]) !== N).map((m) => m[0]);
@@ -488,9 +493,11 @@ export function claims(sub, load) {
     {
       name: 'buyUpg / buyUpgrade definitions (subtree)',
       doc: 'docs/mobile.md',
-      re: /\*\*(\d+) of the (\d+) games define it, all (\d+) define `buyUpg`, and `([a-z0-9-]+)` \([\d.]+\) and `([a-z0-9-]+)` define ONLY `buyUpg`\*\*/,
+      // ⚠ the ONLY-buyUpg games are a LIST (two until 2026-09-22, three since `the-collab-tree-lun4-r`), each name
+      // optionally followed by its engine version in parentheses; the set is compared, not the count
+      re: /\*\*(\d+) of the (\d+) games define it, all (\d+) define `buyUpg`, and ((?:`[a-z0-9-]+`(?: \([\d.]+\))?(?:, and |, | and | ))+)define ONLY `buyUpg`\*\*/,
       expect: (m) => {
-        const want = { upgrade: num(m[1]), roster: num(m[2]), upg: num(m[3]), only: [m[4], m[5]] };
+        const want = { upgrade: num(m[1]), roster: num(m[2]), upg: num(m[3]), only: ids(m[4]) };
         const ok = want.upgrade === sub.buyUpgrade && want.roster === N && want.upg === sub.buyUpg && setEq(want.only, sub.onlyBuyUpg);
         return [ok, `doc: ${want.upgrade}/${want.roster} define buyUpgrade, ${want.upg} define buyUpg, only-buyUpg ${want.only.join(' + ')}`];
       },
@@ -637,12 +644,14 @@ export function claims(sub, load) {
     {
       name: 'pseudoUnl — the global, and the game that has only the component',
       doc: 'docs/mobile.md',
-      re: /(Four|Five|Six|Three|Two|One) games define the global \(([^)]*)\); a fifth, `([a-z0-9-]+)`, declares `pseudoUnl` on components but has no such global/,
+      re: /(Four|Five|Six|Three|Two|One) games define the global \(([^)]*)\); a (second|third|fourth|fifth|sixth|seventh), `([a-z0-9-]+)`, declares `pseudoUnl` on components but has no such global/,
       expect: (m) => {
         const words = { One: 1, Two: 2, Three: 3, Four: 4, Five: 5, Six: 6 };
+        const nth = { second: 2, third: 3, fourth: 4, fifth: 5, sixth: 6, seventh: 7 };
         const named = ids(m[2]);
-        const ok = words[m[1]] === sub.pseudoUnlGlobal.length && setEq(named, sub.pseudoUnlGlobal) && sub.pseudoUnlComponentOnly.includes(m[3]);
-        return [ok, `doc: ${m[1]} (${named.join(', ')}), component-only ${m[3]}`];
+        const ok = words[m[1]] === sub.pseudoUnlGlobal.length && setEq(named, sub.pseudoUnlGlobal) && nth[m[3]] === words[m[1]] + 1
+          && sub.pseudoUnlComponentOnly.length === 1 && sub.pseudoUnlComponentOnly[0] === m[4];
+        return [ok, `doc: ${m[1]} (${named.join(', ')}), component-only ${m[4]}`];
       },
       measured: `${sub.pseudoUnlGlobal.length} (${sub.pseudoUnlGlobal.join(', ')}), component-only ${sub.pseudoUnlComponentOnly.join(', ') || '—'}`,
     },
@@ -665,12 +674,17 @@ export function claims(sub, load) {
     {
       name: 'the global prestigeButtonText: shape and break count (loaded)',
       doc: 'docs/mobile.md',
-      re: /All (\d+) globals keep the family's three-branch shape, (\d+) with four breaks and `([a-z0-9-]+)` with six\./,
+      // ⚠ Since 2026-09-22 one global is OFF the family's shape (`the-collab-tree-lun4-r` answers the layer's own
+      // override FIRST, through `tmp[layer]`, instead of in the `else` branch), so the sentence names the off-shape
+      // games and the gate compares that SET — a count alone would pass on the wrong game.
+      re: /(\d+) of the (\d+) globals keep the family's three-branch shape; the others, ((?:`[a-z0-9-]+`(?:, | and )?)+), [^.]*\. (\d+) globals have four breaks and `([a-z0-9-]+)` six\./,
       expect: (m) => {
-        const ok = num(m[1]) === load.prestigeGlobal && num(m[1]) === N && load.prestigeOffShape.length === 0
-          && load.prestigeGlobalBr[4] === num(m[2]) && load.prestigeGlobalBr[6] === 1
-          && load.prestigeGlobalBrOdd.length === 1 && load.prestigeGlobalBrOdd[0] === m[3];
-        return [ok, `doc: ${m[1]} globals, ${m[2]} with four breaks, ${m[3]} with six`];
+        const off = ids(m[3]);
+        const ok = num(m[2]) === load.prestigeGlobal && num(m[2]) === N && num(m[1]) === N - load.prestigeOffShape.length
+          && setEq(off, load.prestigeOffShape)
+          && load.prestigeGlobalBr[4] === num(m[4]) && load.prestigeGlobalBr[6] === 1
+          && load.prestigeGlobalBrOdd.length === 1 && load.prestigeGlobalBrOdd[0] === m[5];
+        return [ok, `doc: ${m[1]} of ${m[2]} globals on the shape (off: ${off.join(', ')}), ${m[4]} with four breaks, ${m[5]} with six`];
       },
       measured: `${load.prestigeGlobal} globals (${load.prestigeOffShape.length} off-shape), break counts ${JSON.stringify(load.prestigeGlobalBr)}, not four: ${load.prestigeGlobalBrOdd.join(', ') || '\u2014'}`,
     },

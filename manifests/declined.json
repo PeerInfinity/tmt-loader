@@ -35,28 +35,8 @@
     "reason": "needs two scripts no manifest pins \u2014 break_eternity.min.js and bad_notations.js, both from the author's own Pages site \u2014 vendored by hand first. Not a defect in the game; unfinished work here."
   },
   {
-    "repo": "hanlaosan1/The-Wall-Tree",
-    "short": "too big: 71 MB",
-    "reason": "70.8 MB of files, 70.3 of it in four PNGs \u2014 over the 10 MB checkout limit this loader hosts to. The limit sits in a wide gap (largest hosted 5.8 MB, smallest declined 15.7), so nothing rides on where in that gap it falls."
-  },
-  {
-    "repo": "thecuttlefish123213/The-Cosmic-Tree",
-    "short": "too big: 37 MB",
-    "reason": "37.2 MB of files, 34.4 of it MP3 \u2014 over the 10 MB checkout limit, and audio does not compress, so it would cost more to download than every small game added so far put together."
-  },
-  {
     "repo": "jakub791/The-Collab-Tree",
-    "short": "too big: 24 MB",
-    "reason": "23.7 MB of files \u2014 over the 10 MB checkout limit."
-  },
-  {
-    "repo": "certainjellyfish9204/The-Modding-Tree",
-    "short": "too big: 17 MB",
-    "reason": "17.2 MB of files (8.7 MB JS across 293 files, 8.0 MB PNG across 202) \u2014 over the 10 MB checkout limit. Genuinely large rather than carrying one heavy asset."
-  },
-  {
-    "repo": "Lun4-R/The-Collab-Tree",
-    "short": "too big: 16 MB",
-    "reason": "15.7 MB of files \u2014 over the 10 MB checkout limit."
+    "short": "crashes at load",
+    "reason": "never renders a tree: its own load() throws `Cannot read properties of undefined (reading 'upgrades')` (js/dice.js:33, hasUpgrade on a layer that never registers; js/cheese.js and js/reipist.js throw reading 'e' as they load). The PRISTINE upstream page does the same with no loader in the way \u2014 0 tree nodes, the error on every tick \u2014 while Lun4-R/The-Collab-Tree, a fork of the same game served the same way, renders 10 nodes with no errors and is hosted. Declined for size until 2026-09-22; the size limit is gone, and this is the real reason (tmt-forks-1)."
   }
 ]

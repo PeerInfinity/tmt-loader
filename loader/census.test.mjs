@@ -43,18 +43,18 @@ test('⛔ bounded to js/ the census REFUSES, naming the game it dropped', () => 
 });
 
 test('⛔ bounded to js/ the census reproduces the three figures that actually shipped wrong', () => {
-  // Not "some smaller number": the SAME numbers this arc published and had to retract. That is what makes this a
-  // regression test of the bound rather than a test that two globs differ.
+  // On the 171-game roster these were the SAME numbers this arc published and had to retract — 1069 / 621 tabFormat
+  // declarations "in 170 of 171 games", buyUpg "170 of 171", purchaseLimit 154. The roster grew (175 on 2026-09-22,
+  // tmt-forks-1), so the absolute values moved with it; what the bound DOES has not: every per-game figure is exactly
+  // ONE game short, the same game every time, and the declaration counts are strictly lower. Pinned relative to the
+  // unbounded census so it survives the next game added without losing the discriminator.
   const js = measure({ bound: 'js' });
-  assert.equal(js.tabArray, 1069, 'the tabFormat array count that shipped as a finding');
-  assert.equal(js.tabObject, 621, 'the tabFormat object count that shipped as a finding');
-  assert.equal(js.tabGames, 170, 'the "170 of 171 games" that was never a holdout game — it was the bound');
-  assert.equal(js.buyUpg, 170, 'the buyUpg census that shipped as 170 of 171');
-  assert.equal(js.purchaseLimit, 154, 'one game short, and the shortfall is always the same game');
-  // …and unbounded, every one of them is exactly one game larger
-  assert.deepEqual(
-    [sub.tabArray > js.tabArray, sub.tabGames, sub.buyUpg, sub.purchaseLimit],
-    [true, 171, 171, 155]);
+  assert.equal(js.tabGames, sub.tabGames - 1, 'the "170 of 171 games" that was never a holdout game — it was the bound');
+  assert.equal(js.buyUpg, sub.buyUpg - 1, 'the buyUpg census that shipped as 170 of 171');
+  assert.equal(js.purchaseLimit, sub.purchaseLimit - 1, 'one game short, and the shortfall is always the same game');
+  assert.ok(js.tabArray < sub.tabArray && js.tabObject < sub.tabObject, 'the tabFormat counts that shipped as a finding');
+  // …and unbounded, the per-game figures are the whole roster where every game has the thing
+  assert.deepEqual([sub.tabGames, sub.buyUpg], [GAMES().length, GAMES().length]);
 });
 
 test('sourcesOf refuses a game it cannot read rather than counting it as zero', () => {
@@ -73,27 +73,27 @@ test('sourcesOf refuses a game it cannot read rather than counting it as zero', 
 
 const MOBILE = 'docs/mobile.md';
 for (const [claim, from, to] of [
-  ['buyUpg', '**169 of the 171 games define it', '**170 of the 171 games define it'],
-  ['tabFormat static declarations (subtree)', '**1211 array-form and 641 object-form', '**1069 array-form and 621 object-form'],
-  ['tabFormat static declarations (LOADED', '**935 array-form and 455 object-form', '**935 array-form and 641 object-form'],
-  ['purchaseLimit (subtree)', '**155 of the 171 games carry', '**154 of the 171 games carry'],
+  ['buyUpg', '**172 of the 175 games define it', '**173 of the 175 games define it'],
+  ['tabFormat static declarations (subtree)', '**1393 array-form and 724 object-form', '**1211 array-form and 641 object-form'],
+  ['tabFormat static declarations (LOADED', '**962 array-form and 498 object-form', '**962 array-form and 724 object-form'],
+  ['purchaseLimit (subtree)', '**159 of the 175 games carry', '**158 of the 175 games carry'],
   ['the games with no purchaseLimit', 'The **16** that do not', 'The **17** that do not'],
   // ⚠ U2e: the figure that matters is the CHIPPED one, not "does this game mention `tooltip`" (171 of 171, and
   // worthless). The digit moved here is the games count, which is what decides whether the field path is worth
   // preferring at all.
-  ['the tooltip census', '**140 games declare one on a chipped category**', '**141 games declare one on a chipped category**'],
+  ['the tooltip census', '**144 games declare one on a chipped category**', '**145 games declare one on a chipped category**'],
   // ⚠ U5: the two figures the chip colours and the Back memory rest on. The first decides whether the layer list
   // can resolve a colour off an element that is NOT inside the game's own markup; the second, whether it can find
   // the back control by class alone.
-  ['a bare `.bought`', 'a bare `.locked` rule (171 and 171)**, and **4**', 'a bare `.locked` rule (171 and 170)**, and **4**'],
-  ['the back control', '(171), and 166 of', '(171), and 162 of'],
+  ['a bare `.bought`', 'a bare `.locked` rule (175 and 175)**, and **5**', 'a bare `.locked` rule (175 and 174)**, and **5**'],
+  ['the back control', '(175), and 170 of', '(175), and 166 of'],
   // ⚠ U7: the three figures the reset-line split and the other-resources feature rest on. The first decides
   // whether splitting on the FIRST run of breaks and collapsing the rest is the right rule; the second says the
   // engines' own global is the same everywhere but one; the third sizes the other-resources question — and its
   // doctored value is the number the BRIEF quoted, which is what this tree does not produce.
-  ['per-layer prestigeButtonText overrides', 'declare 106 such per-layer overrides', 'declare 107 such per-layer overrides'],
-  ['the global prestigeButtonText', '170 with four breaks', '169 with four breaks'],
-  ['startData blocks carrying', '1,753 (layer, key) pairs', '1,713 (layer, key) pairs'],
+  ['per-layer prestigeButtonText overrides', 'declare 114 such per-layer overrides', 'declare 115 such per-layer overrides'],
+  ['the global prestigeButtonText', '174 globals have four breaks', '173 globals have four breaks'],
+  ['startData blocks carrying', '2,386 (layer, key) pairs', '2,387 (layer, key) pairs'],
 ]) {
   test(`a wrong figure in the prose is caught: ${claim}`, () => {
     const text = read(MOBILE);
@@ -130,8 +130,8 @@ test('startDataExtras keeps the layer\u2019s own Decimals and drops the engine\u
 // mobile.md table above.
 test('a wrong figure in the prose is caught: toggleAuto (docs/automation.md)', () => {
   const DOC = 'docs/automation.md';
-  const from = '149 write the field through `Vue.set` and 22';
-  const to = '147 write the field through `Vue.set` and 24';
+  const from = '153 write the field through `Vue.set` and 22';
+  const to = '151 write the field through `Vue.set` and 24';
   const text = read(DOC);
   assert.ok(text.includes(from), `the doc no longer contains ${JSON.stringify(from)} — re-point this mutant`);
   const r = judge({ [DOC]: text.replace(from, to) });
@@ -161,7 +161,7 @@ test('toggleAutoBodies brace-matches, and does not run past the closing brace', 
 
 // ⚠ U6 — and the SCOPE of that figure: two games ship disagreeing copies, so the answer depends on load order.
 test('the toggleAuto census is answered over the LOADED files, last declaration winning', () => {
-  assert.equal(load.toggleAutoDecl, 171, 'every game declares `function toggleAuto` at top level');
+  assert.equal(load.toggleAutoDecl, GAMES().length, 'every game declares `function toggleAuto` at top level');
   assert.equal(load.toggleAutoInData, 0, 'no game shadows it in its Vue instance\'s data');
   assert.equal(load.toggleAutoVueSet + load.toggleAutoPlain, load.toggleAutoDecl);
   assert.ok(load.toggleAutoPlain > 0 && load.toggleAutoPlain < load.toggleAutoDecl,
@@ -212,7 +212,7 @@ test('a reworded claim FAILS rather than silently ceasing to be checked', () => 
   // The way this gate would really die: someone rewrites the sentence, the anchor stops matching, and a check that
   // reports nothing looks exactly like a check that passed.
   const text = read(MOBILE);
-  const r = judge({ [MOBILE]: text.replace(/\*\*155 of the 171 games carry `purchaseLimit`[^*]*\*\*/, 'most games carry it') });
+  const r = judge({ [MOBILE]: text.replace(/\*\*159 of the 175 games carry `purchaseLimit`[^*]*\*\*/, 'most games carry it') });
   assert.equal(r.ok, false);
   const x = row(r, 'purchaseLimit (subtree)');
   assert.equal(x.ok, false);
@@ -223,9 +223,23 @@ test('the day the roster grows, every "N of 171" in the doc is stale — and the
   // The single event that invalidates all of these at once. It must not pass quietly on the claim that happens to
   // still hold: the DENOMINATOR is itself checked, everywhere the doc writes one.
   const text = read(MOBILE);
-  const r = judge({ [MOBILE]: text.replaceAll('of the 171 games', 'of the 172 games') });
+  const N = GAMES().length;
+  const r = judge({ [MOBILE]: text.replaceAll(`of the ${N} games`, `of the ${N + 1} games`) });
   assert.equal(r.ok, false);
   assert.equal(row(r, 'the roster size every').ok, false, 'the denominator claim did not notice');
+});
+
+test('a DATED figure opts out of the denominator only by saying so — "games then hosted"', () => {
+  // ⚖ 2026-09-22: a record of an earlier tree (a CI run, a census at a named commit, a retracted figure quoted as it
+  // shipped) is not a claim about today's roster. The escape is explicit in the prose, and ONLY that wording takes it:
+  // the same stale number without it is still red, which is what keeps the escape from becoming a way to stop checking.
+  const text = read(MOBILE);
+  const N = GAMES().length;
+  const dated = text.replace(`of the ${N} games`, 'of the 12 games then hosted');
+  assert.equal(row(judge({ [MOBILE]: dated }), 'the roster size every').ok, true, 'an explicitly dated figure was held to the roster');
+  const undated = text.replace(`of the ${N} games`, 'of the 12 games');
+  assert.equal(row(judge({ [MOBILE]: undated }), 'the roster size every').ok, false, 'a stale undated figure passed');
+  assert.ok(/games then hosted/.test(text), 'the doc carries dated figures; if none is left, this test has nothing to hold');
 });
 
 test('a missing doc is a failure, not a pass', () => {
@@ -292,9 +306,9 @@ test('the Options anchors hold over the whole roster, in the scope the loader ac
 test('a wrong anchor figure in the prose is caught, and nothing else moves', () => {
   const text = read(OPTIONS_DOC);
   // ⚠ the sentence WRAPS in the file; the gate flattens whitespace before matching, this mutant must not assume it
-  const from = '**all 171 of the 171 games carry both the';
+  const from = '**all 175 of the 175 games carry both the';
   assert.ok(text.includes(from), 'the doc no longer contains the anchored sentence — re-point this mutant');
-  const r = judge({ [OPTIONS_DOC]: text.replace(from, '**all 170 of the 171 games carry both the') });
+  const r = judge({ [OPTIONS_DOC]: text.replace(from, '**all 174 of the 175 games carry both the') });
   assert.equal(r.ok, false, 'the doctored document passed');
   const red = r.rows.filter((x) => !x.ok).map((x) => x.name);
   assert.deepEqual(red, [row(r, 'the Options section').name], `other claims went red too: ${red.join(', ')}`);
@@ -302,7 +316,7 @@ test('a wrong anchor figure in the prose is caught, and nothing else moves', () 
 
 test('a reworded anchor claim FAILS rather than silently ceasing to be checked', () => {
   const text = read(OPTIONS_DOC);
-  const r = judge({ [OPTIONS_DOC]: text.replace(/\*\*all 171 of the 171 games carry[^*]*\*\*/, 'every game carries both') });
+  const r = judge({ [OPTIONS_DOC]: text.replace(/\*\*all 175 of the 175 games carry[^*]*\*\*/, 'every game carries both') });
   assert.equal(r.ok, false);
   assert.match(row(r, 'the Options section').why, /no longer states this claim/);
 });

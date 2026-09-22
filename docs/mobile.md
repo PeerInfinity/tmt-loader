@@ -314,8 +314,9 @@ here that evaluates game code is wrapped: a throw costs one card, never the list
   upgrade chip calls `unlockUpg` — which is what the engine's own second button on that upgrade calls — rather
   than `buyUpgrade`. There is no `locked` chip any more: a component the tab does not draw gets no chip at all.
   ⚠ **U2d found that the upgrade press had never worked on two games.** `buyUpgrade` is an ALIAS the TMT engines
-  grew later: **169 of the 171 games define it, all 171 define `buyUpg`, and `the-modding-tree` (2.0.5.1) and
-  `the-burning-tree` define ONLY `buyUpg`** — so on those two a chip press called a function that does not exist
+  grew later: **172 of the 175 games define it, all 175 define `buyUpg`, and `the-modding-tree` (2.0.5.1),
+  `the-burning-tree` and `the-collab-tree-lun4-r` (2.6.6.2) define ONLY `buyUpg`** — so on the first two (the third
+  was added on 2026-09-22) a chip press called a function that does not exist
   and bought nothing, silently, for two slices. It went unseen because the gate had never DRIVEN a chip: it pressed
   the reset button and nothing else. U2d's counter press is the first leg that buys, and it caught it on the first
   CI sweep after the push (`the-modding-tree`: `counter=NOT MOVED`, `0/1 → 0/1`). The list now calls whichever name
@@ -412,8 +413,9 @@ Measured over the roster at the gate's own states, counting the layers that get 
 object/subtab-form and 283 declaring no `tabFormat` at all**.
 
 ⚠ **A static declaration count is a different quantity, and the one previously recorded here was WRONG.** The
-brief carried 1069 / 621 "in 170 of 171 games" and this section corroborated it. Re-measured 2026-09-19: the true
-static counts are **1211 array-form and 641 object-form, in 171 of 171 games**. Both the original figure and the
+brief carried 1069 / 621 "in 170 of 171 games then hosted" and this section corroborated it. Re-measured 2026-09-19: the true
+static counts are **1393 array-form and 724 object-form, in 175 of 175 games** (1211 / 641 over the 171 then
+hosted, when this was first re-measured). Both the original figure and the
 "corroboration" swept `games/*/js/**`, and `sorbet-s-convolution-mainframe` keeps its engine under `Javascript/`
 — so the same bound produced the same undercount twice, and agreement between two sessions who share a blind spot
 is not corroboration. The "170 of 171" was never a real finding about one holdout game; it was the bound.
@@ -426,7 +428,7 @@ the tree disagree, and CI runs it on every push.)
 ⚠ **That count is a census of the SUBTREE, and the subtree holds code the loader never loads** — `Old Code/`,
 `demo.html`, a game's own `js/Demo/`. Counted over only the files the loader actually loads (each manifest's
 `load.scripts` + `modFiles`, which is what `games/<id>/` contributes to a page), the same declarations are
-**935 array-form and 455 object-form, in 170 of 171 games** — `distance-incremental`'s only `tabFormat`
+**962 array-form and 498 object-form, in 174 of 175 games** — `distance-incremental`'s only `tabFormat`
 declaration is in `Old Code/gametest.js` and in its `js/Demo/`, neither of which the loader loads. Both numbers
 are true of what they count; a figure without its scope is not a figure, which is the third way the counts in this
 section have gone wrong.
@@ -448,8 +450,8 @@ A chip exists when the engine's own render condition would draw the component:
    (2.7 `v-if="… && tmp[layer].upgrades[data].unlocked"`, 2.2.1 the same through its `upgrades` grid).
 2. **…or `pseudoUnl(l, id)`.** ⚠ `unlocked === false` does **not** mean hidden: PTR renders a *second* button for
    a pseudo-unlocked upgrade — `v-if="pseudoUnl(layer, data) && !(tmp[layer].upgrades[data].unlocked)"` — a
-   visible teaser you press to unlock it. Four games define the global (`ptr`, `prestige-tree-ng`,
-   `prestige-tree-rewritten-unsoftcapped4`, `the-extended-tree`); a fifth, `arctree`, declares `pseudoUnl` on
+   visible teaser you press to unlock it. Five games define the global (`ptr`, `prestige-tree-ng`,
+   `prestige-tree-rewritten-unsoftcapped4`, `the-extended-tree`, `the-classic-tree`); a sixth, `arctree`, declares `pseudoUnl` on
    components but has no such global and therefore no such button. The game's own function is called in a
    try/catch, and a throw means "not pseudo". Such a chip acts through **`unlockUpg`**, which is what that second
    button calls — not through `buyUpgrade`.
@@ -559,11 +561,11 @@ Three readings that phrase leaves open, decided here:
   what that engine's own button does anyway.
   ⚠ **This slice first wrote "only TMT 2.7 declares that field; 2.2.1 has no such concept", and that is FALSE.**
   It generalised from a two-file grep — `ptr` versus `something` — to a claim about engine versions. Re-censused
-  unbounded: **155 of the 171 games carry `purchaseLimit`, 154 of them defaulting it in their own layer support**
-  (`games/something/js/technical/layerSupport.js:127` is one of those 154). The **16** that do not happen to
+  unbounded: **159 of the 175 games carry `purchaseLimit`, 158 of them defaulting it in their own layer support**
+  (`games/something/js/technical/layerSupport.js:127` is one of those 158). The **16** that do not happen to
   include `ptr`, `the-modding-tree` and `the-burning-tree`, which is why two reference games looked like two
   engine generations. The CODE was never affected — it reads the field where it exists and treats its absence as
-  unlimited, which is correct for all 171 — but the explanation beside it was a sample of two.
+  unlimited, which is correct for all 175 — but the explanation beside it was a sample of two.
 
 A **challenge** qualifies while it is not completed, active or not: `startChallenge` is what its own button calls
 in both states.
@@ -719,12 +721,10 @@ layer's `resource`), including **`multiRes`**, the multi-currency cost four game
 undefined. A `goal` uses `format`, as its component does.
 
 ⚠ **A declared `tooltip` field is ADDITIVE, not a substitute — and the brief's rule and its census were both
-wrong.** The brief said "prefer `tooltip` where the component declares one, otherwise compose", on a census of
-*165 of 171 games*. Measured instead:
+wrong.** The brief said "prefer `tooltip` where the component declares one, otherwise compose", on a census of *165 of 171 games then hosted*. Measured instead:
 
-- **all 171 of the 171 games** mention `tooltip` (the engines define the component, so the word is in every tree —
-  that census answers nothing), while **140 games declare one on a chipped category**, 406 declarations against
-  3,133 on achievements — and an achievement gets **no chip**, so the overwhelming majority of the roster's
+- **all 175 of the 175 games** mention `tooltip` (the engines define the component, so the word is in every tree —
+  that census answers nothing), while **144 games declare one on a chipped category**, 453 declarations against 3,743 on achievements — and an achievement gets **no chip**, so the overwhelming majority of the roster's
   `tooltip` declarations can never reach this overlay at all. The "165" is the achievement figure.
 - **Neither reference game DRAWS one.** At its deepest snapshot `ptr` has 80 `tooltip`-bearing achievements and
   `something` 42, and **zero** chipped components with the field on either. So the field path is not the common
@@ -977,11 +977,12 @@ A milestone is **passive**: there is nothing to afford, so it is never `can`. Ea
 a colour of its own.
 
 ⚠ **THE COLOUR IS ASKED OF THE GAME'S STYLESHEET, never carried as a table of hex values.**
-**every one of the 171 games declares a bare `.bought` rule and a bare `.locked` rule (171 and 171)**, and **4** of
+**every one of the 175 games declares a bare `.bought` rule and a bare `.locked` rule (175 and 175)**, and **5** of
 them — `the-congratulations-tree` (`hsl()`), `the-rainbow-void-tree` (its own pair), `the-factoree` (8-digit hex,
-so the chips come out `rgba()` with real alpha) and `the-prestige-tree` (`var(--boughtcolor)`, which its own
-`game.js` re-points at the current tab's layer colour on every tab change) — paint one of the two something other
-than the family's `#77bf5f` / `#bf8f8f`. A hardcoded pair would be wrong on those four and would go stale on the
+so the chips come out `rgba()` with real alpha), `the-prestige-tree` (`var(--boughtcolor)`, which its own
+`game.js` re-points at the current tab's layer colour on every tab change) and `the-cosmic-tree` (an animated linear gradient in the background shorthand, which leaves the background colour transparent,
+so the list reads no colour for its bought chip and keeps the chip's own plain box, by design) — paint one of the two something other
+than the family's `#77bf5f` / `#bf8f8f`. A hardcoded pair would be wrong on those five and would go stale on the
 rest. `tools/census-figures.mjs` checks both numbers against this sentence.
 
 ⚠ **The classes are NOT put on the chip.** They carry geometry as well as colour — `.upg` is 120×120 in PTR,
@@ -1024,8 +1025,8 @@ keep their own per-layer `prevTab` *in the save*; a second, longer-lived memory 
 would disagree with it.
 
 ⚠ **It is NOT an intercept, and that is measured rather than tidy-mindedness.** `goBack` is not "hardcoded to the
-tree": **every one of the 171 games draws its back control with the class `back` or `other-back` (171), and 166 of
-them route it through `goBack`**, but what `goBack` then does differs — 154 are called as
+tree": **every one of the 175 games draws its back control with the class `back` or `other-back` (175), and 170 of
+them route it through `goBack`**, but what `goBack` then does differs — 158 are called as
 `goBack(player.navTab == 'none' ? player.tab : player.navTab)` and read a per-layer `player[layer].prevTab` this
 loader knows nothing about; 8 are the arg-less two-branch form
 (`player.navTab !== 'none' ? showTab('none') : showTab(player.lastSafeTab)`, PTR's shape); and the rest go straight
@@ -1162,10 +1163,11 @@ reservation follows. A half that is genuinely longer than the card is wide still
 box per half, never that prose cannot wrap.
 
 ⚠ **The split is on the FIRST run of `<br>`s and only the first.** The engines' `else` branch hands a layer whose
-`type` is none of normal/static/none to its own `layers[layer].prestigeButtonText()`, and **39 of the 171 games
-declare 106 such per-layer overrides, whose break counts are 0 ×36, 1 ×22, 2 ×35, 3 ×5, 4 ×4, 5 ×1, 6 ×2 and
-8 ×1** — static, brace-matched, over the loaded scope (`tools/census-figures.mjs`). All 171 globals keep the
-family's three-branch shape, 170 with four breaks and `the-factoree` with six. So whatever follows the first run
+`type` is none of normal/static/none to its own `layers[layer].prestigeButtonText()`, and **40 of the 175 games
+declare 114 such per-layer overrides, whose break counts are 0 ×36, 1 ×30, 2 ×35, 3 ×5, 4 ×4, 5 ×1, 6 ×2 and
+8 ×1** — static, brace-matched, over the loaded scope (`tools/census-figures.mjs`). 174 of the 175 globals keep the family's three-branch shape; the others, `the-collab-tree-lun4-r`, answer the
+layer's own override FIRST (reading it off `tmp`, before the `normal` and `static` branches) rather than in the
+`else` branch, so there an override wins for every type; it is still a string, split the same way. 174 globals have four breaks and `the-factoree` six. So whatever follows the first run
 keeps the old space collapse, and a string with no break at all leaves the second row empty — still occupying its
 line box. `resetText()`'s bare-word `Reset` fallback, which a layer whose text throws or returns `''` gets, is one
 line too, and it occupies two.
@@ -1185,8 +1187,8 @@ panel. For example, the generators layer has 'generators' and 'generator power'.
 resources are on each layer and display them all in the Layers view?"*
 
 **It is a broad feature, not a one-game curiosity.** A static census over every tracked `games/**/*.js`, parsing each
-`startData() { … }` body for `<key>: new Decimal(` outside the engine's own key set, finds **463 of the 2,260
-startData blocks carrying at least one extra Decimal key — 1,753 (layer, key) pairs across 93 of the 171 games**
+`startData() { … }` body for `<key>: new Decimal(` outside the engine's own key set, finds **569 of the 2,535
+startData blocks carrying at least one extra Decimal key — 2,386 (layer, key) pairs across 97 of the 175 games**
 (`tools/census-figures.mjs`, subtree scope, brace-matched).
 
 ⚠ **Re-measured, and three of those four numbers moved.** The brief this slice was written from quoted 450 / 1,713
@@ -1250,7 +1252,7 @@ U7 measured it, at a tree where `ptr`'s deepest recorded snapshot was `all/M16` 
 defaults and added M17–M20 and M22, and `deepestSnapshot()` selects by TICKS, so the sweep now reads `ptr` at
 `all/M22` (29,204) — where `t.energy` no longer attributes and `ptr` contributes ONE row instead of two. Re-measured
 from CI's own merged artifact at `7aa5ef5e4` (run 35498862194, 171/171, 0 RED). `resCandidates` and `resCollide`
-did not move. ⚠ **The yield is low BY CONSTRUCTION**: 169 of the 171 games are swept at a FRESH save, where
+did not move. ⚠ **The yield is low BY CONSTRUCTION**: 173 of the 175 games are swept at a FRESH save, where
 every amount on every layer is zero and the text cannot attribute any of them — `the-infinity-tree` alone
 contributes 32 candidates and shows none. The two games with recorded deep snapshots are where the feature has
 anything to report.
@@ -1363,7 +1365,7 @@ whatever the mod does to it at load, so the live object is the only place to see
 |---|---|
 | layers | **2,513** |
 | declaring the GLOBAL `player.points` as their base | **486** (488 before the comment strip) |
-| — of those, on a NUMERIC row 0 | **192**, across **146 of 171 games** |
+| — of those, on a NUMERIC row 0 | **192**, across **146 of 171 games then hosted** |
 | games with exactly ONE such row-0 layer | **118** |
 | with 2 / 3 / 4 / 5 / 8 | 18 / 7 / 1 / 1 / 1 |
 | with none | **25** |
@@ -1536,8 +1538,7 @@ to the x / y summary chips after a purchase in that category is made."* **Both h
 only after the first was measured at noise level.
 
 **⛔ U11'S SIGNAL WAS WRONG, AND THE USER FOUND IT IN PLAY** (⚖ user, 2026-09-20: *"I tested the latest pages
-deploy, and I don't see the glow."*). U11 sampled the engine's clock: `player[l].resetTime`, which **158 of the 171
-games** zero in `doReset`, and on the other **13** — `ptr`, `the-extended-tree`,
+deploy, and I don't see the glow."*). U11 sampled the engine's clock: `player[l].resetTime`, which **158 of the 171 games then hosted** zero in `doReset`, and on the other **13** — `ptr`, `the-extended-tree`,
 `prestige-tree-rewritten-unsoftcapped4`, `the-necromantree`, `prestige-tree-ng`, `the-incrementreeverse`,
 `the-basic-tree`, `the-factoree`, `the-stardust-tree`, `distance-incremental`, `the-romeo-julliet-tree`,
 `the-modding-tree`, `the-burning-tree` — "this layer's points fell to exactly zero". On a progressed save those 13
@@ -1549,7 +1550,7 @@ reset, not in the Layers whose resources got wiped as a side effect."* The sampl
 beside the fix.
 
 **SINCE U12 THE SIGNAL IS A HOOK ON `doReset`** (⚖ user: *"I would prefer hooking doReset. I expect that to be more
-reliable."*). All **171 of the 171 games** declare `doReset` and `rowReset` as top-level function declarations in a
+reliable."*). All **171 of the 171 games then hosted** declare `doReset` and `rowReset` as top-level function declarations in a
 classic script, so each is a writable property of `window`, and every caller resolves the name at CALL time — the
 engines' own `v-on:click="doReset(layer)"`, `gameLoop`'s auto-prestige, `startChallenge`'s `doReset(layer, true)`,
 the list's own reset button and the automation's `doReset(f.layer)`. `loader/layerlist.js` replaces both once the
@@ -1558,7 +1559,7 @@ replaced global is re-hooked; a function carrying the list's mark is never wrapp
 - **A RESET IS A CALL THAT GOT PAST THE EARLY RETURNS.** `doReset` returns early when the layer cannot afford it,
   and on `resetsNothing` after the gain — so a `resetsNothing` layer's prestige does not glow (it did not under U11
   either: the engines zero `resetTime` after that return). ⚖ If that should glow, it is a user question. The one thing every engine does only once it really resets is call
-  `rowReset(x, layer)` with the pressed layer — **171 of the 171 games**, after every early return — so the
+  `rowReset(x, layer)` with the pressed layer — **171 of the 171 games then hosted**, after every early return — so the
   `rowReset` wrapper does exactly one thing: mark the call in flight as PROCEEDED. A press that bought nothing
   glows nothing (ptr's `b` and `g` are the live case: `tmp.canReset` true, the engine's own `canReset()` false).
 - **ONLY THE OUTERMOST CALL IS AN EVENT.** A `doReset` reached from inside another one is a side effect of the
@@ -2316,7 +2317,7 @@ Two verdicts per game, both in the layers leg and both summarised on one `M1 lay
 |---|---|
 | `held while the height moved` | Δ `scrollTop` was 0 while Δ `scrollHeight` was not — the claim, judged |
 | `THE LIST DRIFTED` | the offset followed the height; this is the defect |
-| `abstains (the list is not scrollable at this width: N px of room)` | 127 of the 171 games; the number is printed so it is not mistaken for a pass |
+| `abstains (the list is not scrollable at this width: N px of room)` | 127 of the 171 games then hosted; the number is printed so it is not mistaken for a pass |
 | `abstains (the press did not move the content height)` | the real half only: the reset moved nothing to anchor against |
 
 ⚠ **The abstentions are the majority and the line says so**, because the whole risk here is a green that means
@@ -2536,7 +2537,7 @@ pass every other check here. `resMemKey` asserts the key's namespace and `resRes
 formatting differs from the occurrence they claimed — decision 1's cost, counted on every run.
 
 **2. Leg O — a row survives a DRIVEN reset.** ⛔ This is the leg that goes vacuous by construction if it reads a
-boot state: 169 of the 171 games are swept at a fresh save where nothing attributes, and there is no row to keep.
+boot state: 173 of the 175 games are swept at a fresh save where nothing attributes, and there is no row to keep.
 So it finds a card with an unambiguously attributed row, DRIVES A RESET, and asserts the row is still there.
 ⚠ The reset is the engine's own, and `doReset(l)` is NOT the call that clears `l`'s own data — `rowReset` resets a
 layer only for a resetting layer on a HIGHER row, so the leg resets through the layer above (`ptr`: `doReset('sb',
@@ -2596,7 +2597,7 @@ pixel, and `the-dressy-tree`'s `D` declares one — as is a pair either of whose
 
 ⚠ **AN ABSTENTION IS NOT A PASS, and it is named.** A game whose page does not scroll, or whose engine draws no
 branch (`the-testy-tree`'s ghost layers, `the-universal-tree-voidcons0le-is-dumb`'s `layerShown: false` ones),
-cannot see this. 169 of the 171 games are swept at a FRESH save, one layer deep, where the document is
+cannot see this. 173 of the 175 games are swept at a FRESH save, one layer deep, where the document is
 exactly the viewport — so the leg first tries shrinking the viewport to **390×400** (a short phone is a real
 phone, and it is the same claim) and only abstains when even that does not scroll. The summary prints how many
 were judged, how many were judged at the short viewport, and how many abstained with the reason.
@@ -2676,8 +2677,7 @@ first read must also move no state hash (the write-nothing claim at exactly the 
 ⛔ **WHERE IT RUNS IS THE WHOLE LEG.** Every earlier leg ran after the tab loop in leg 3 had opened every tab the
 save can — which is exactly what corrects the engine's `tmp`, and why three roster sweeps never saw this. So it
 runs (a) on leg 2's fresh-save page, the one page in the gate no tab is ever opened on and nothing else reads
-afterwards, and (b) on the snapshot page straight after `loadFrom`, BEFORE the tab loop. Only 2 of 171 games
-carry a snapshot, which is why (a) exists: without it the leg would judge two games.
+afterwards, and (b) on the snapshot page straight after `loadFrom`, BEFORE the tab loop. Only 2 of 175 games carry a snapshot, which is why (a) exists: without it the leg would judge two games.
 `stale` counts the non-upgrade components whose `tmp.unlocked` disagrees with their own `unlocked()` at the
 first reading: it is what says whether a game could discriminate at all.
 - **fresh save: 171/171 green; a stale `tmp.unlocked` exists on 3** — `prestige-tree-ng` 24, `ptr` 16,
@@ -2739,8 +2739,7 @@ Fixed in `e6357147d`; the table is the re-run.
 
 #### What U12 added to the leg
 
-⛔ **WHY THIS LEG WAS REWRITTEN — READ THIS BEFORE WRITING THE NEXT ONE.** U11's leg R passed **170 of the 171
-games** on a glow that did not work on the flagship game, and the user found it by hand in minutes. It is the third
+⛔ **WHY THIS LEG WAS REWRITTEN — READ THIS BEFORE WRITING THE NEXT ONE.** U11's leg R passed **170 of the 171 games then hosted** on a glow that did not work on the flagship game, and the user found it by hand in minutes. It is the third
 time in this arc (the Tree button, the never-opened chips, now this) that a roster sweep certified a feature the
 user then found broken, and each time the gate measured **a state it had created itself**. U11's leg drove
 `layerDataReset(l)` — a WIPE, which takes the layer's points to zero outright, a state ordinary play never

@@ -70,6 +70,39 @@ joins that file at the pinned commit to fill its `why not hosted` column (tmt-fo
 keeps it honest: every declined repo must carry a reason, appear once, and **not** be hosted — the thing that rots
 is an entry left behind after someone fixes the game and adds it (one emitter fix unblocked five in an afternoon).
 
+## Size: no limit, one advisory
+
+⚖ **User ruling, 2026-09-22** — verbatim: *"now that we have the compression working, we don't need to impose a size
+limit on the repositories. But let's still do a quick check to see if any of them are more than 10 MB after
+compression."*
+
+**There is no size limit.** A game is never declined for its size. What remains is an **advisory**, read AFTER the media
+step: a game's tracked bytes under `games/<id>/` at HEAD, and a game over **10 MB** is named in the slice's report so
+someone can look at why. It gates nothing. The measurement, one line:
+
+```
+git ls-tree -r -l HEAD games/ | awk '{split($5,p,"/"); s[p[2]]+=$4} END {for (g in s) printf "%d %s\n", s[g], g}' | sort -rn | head
+```
+
+Measured 2026-09-22 (tmt-forks-1), over all 175 games after compression: **none is over 10 MB**; the largest is
+`the-classic-tree` at 9.67 MB, and it is large for its **code** (8.7 MB of JS across 293 files, which the media step
+does not touch), not its media. `games/` totals 116.60 MB. The five games declined for size alone, before → after:
+
+| repo | id | before | after | |
+|---|---|---|---|---|
+| `hanlaosan1/The-Wall-Tree` | `the-wall-tree` | 70.83 MB | 0.84 MB | hosted |
+| `thecuttlefish123213/The-Cosmic-Tree` | `the-cosmic-tree` | 37.23 MB | 1.71 MB | hosted (declares one `missingAssets`, [manifest.md](manifest.md)) |
+| `jakub791/The-Collab-Tree` | — | 23.7 MB | — | **declined again, for the real reason**: its own pristine page crashes in `load()` (`manifests/declined.json`) |
+| `certainjellyfish9204/The-Modding-Tree` | `the-classic-tree` | 17.17 MB | 9.67 MB | hosted — the largest game on the roster |
+| `Lun4-R/The-Collab-Tree` | `the-collab-tree-lun4-r` | 15.73 MB | 0.47 MB | hosted |
+
+⚠ **The old rule was false when it was written — do not reinstate it from the old declined entries.** They said *"over
+the 10 MB checkout limit this loader hosts to … largest hosted 5.8 MB"*, written 2026-09-17. `the-periodic-table-tree`
+(50.13 MB) and `the-rainbow-void-tree` (27.67 MB) had been hosted since 2026-09-14, three days earlier; the "limit"
+was never applied to the roster it claimed to describe. Both are now 1.78 MB and 0.83 MB. (Git HISTORY still carries
+every original, since the squash is upstream's bytes; a clone is larger than a checkout, and the Pages deploy
+excludes `.git`, [harness.md](harness.md).)
+
 **When a gate is red**, `node tools/harness/triage.mjs <id>...` runs check-manifest and the load gate over a batch
 and says what kind each red is, with the evidence beside it: which files reference an external host, which script
 the index names that the repo does not ship, and — read out of `tmtLoader.pageErrors` — the FILENAME and count of
@@ -90,7 +123,7 @@ own path handling — `node tools/check-pages.mjs` still does the bare-clone-at-
 the published site when someone publishes: `gh workflow run pages.yml --ref main`.
 
 ⚠ **A new game moves the roster figures**, and `node tools/census-figures.mjs` (CI's fast job, seconds) will refuse
-the push until the counts in `docs/mobile.md` are re-measured against 172 games. That is deliberate: every "N of 171"
+the push until the counts in `docs/mobile.md` are re-measured against the new roster. That is deliberate: every "N of 171"
 in that document is stale the moment the roster grows, and three of them shipped wrong before anything checked.
 
 ## Media: the one exception to pristine

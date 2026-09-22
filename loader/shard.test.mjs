@@ -22,9 +22,11 @@ const roster = GAMES();
 // `--shard i/N` covers the roster exactly once
 // ---------------------------------------------------------------------------------------------------------------
 
-// 1 and 2 are the edges; 10 is what CI runs; 171 and 200 are N >= the roster, where shards legitimately come up
-// empty and an off-by-one would be easiest to hide.
-for (const n of [1, 2, 3, 7, 10, 17, 170, 171, 200]) {
+// 1 and 2 are the edges; 10 is what CI runs; the roster size, one either side of it, and 200 are N near or >= the
+// roster, where shards legitimately come up empty and an off-by-one would be easiest to hide. (Derived from the
+// roster, not written as 170/171: the roster grew to 175 on 2026-09-22 and a literal would have quietly stopped
+// testing the edge it was chosen for.)
+for (const n of [...new Set([1, 2, 3, 7, 10, 17, roster.length - 1, roster.length, roster.length + 1, 200])]) {
   test(`--shard i/${n} partitions the ${roster.length}-game roster exactly once`, () => {
     const shards = assignShards(roster, n);
     assert.equal(shards.length, n, 'one slice per shard, including the empty ones');
@@ -127,7 +129,7 @@ test('ten complete shards merge green and say so', () => {
   writeShards(dir, roster, 10);
   const r = runMerge([dir, '--expect', '10']);
   assert.equal(r.code, 0, r.out);
-  assert.match(r.out, /cover all 171 game\(s\), each exactly once/);
+  assert.match(r.out, new RegExp(`cover all ${roster.length} game\\(s\\), each exactly once`));
 });
 
 test('NINE shards out of ten: the merge FAILS and names the games nobody ran', () => {
@@ -138,7 +140,7 @@ test('NINE shards out of ten: the merge FAILS and names the games nobody ran', (
   const r = runMerge([dir, '--expect', '10']);
   assert.equal(r.code, 1, `the merge accepted a run with a dead shard:\n${r.out}`);
   assert.match(r.out, /SHARD\(S\) MISSING: 4 of 10/);
-  assert.match(r.out, /ROSTER NOT COVERED: \d+ of 171/);
+  assert.match(r.out, new RegExp(`ROSTER NOT COVERED: \\d+ of ${roster.length}`));
   for (const id of shards[3]) assert.ok(r.out.includes(id), `the report never names ${id}, which nobody ran`);
 });
 
@@ -188,7 +190,7 @@ test('a RED row fails the merge without touching the coverage verdict', () => {
   fs.writeFileSync(one, JSON.stringify(d));
   const r = runMerge([dir, '--expect', '10']);
   assert.equal(r.code, 1, r.out);
-  assert.match(r.out, /cover all 171 game\(s\), each exactly once/);  // coverage still passed
+  assert.match(r.out, new RegExp(`cover all ${roster.length} game\\(s\\), each exactly once`));  // coverage still passed
   assert.match(r.out, new RegExp(`1 RED: ${d.rows[0].id}`));
 });
 
