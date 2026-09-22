@@ -1,0 +1,47 @@
+/* Global things */
+body {
+  color: var(--color);
+  overflow: hidden;
+  --background: #000000;
+  --color: #dfdfdf;
+  --points: #ffffff;
+  background: var(--background);
+}
+
+/* General text */
+h1,
+h2,
+h3,
+b,
+input {
+  display: inline;
+  font-family: "Lucida Console", "Courier New", "Times New Roman", monospace;
+}
+
+/* These are styles for different states of components. You can make layer-specific versions with .c.locked, for example */
+.locked {
+  background-color: #bf8f8f;
+  cursor: not-allowed;
+}
+
+/* Can meens can be clicked/bought/etc */
+.can {
+  cursor: pointer;
+}
+
+.can:hover {
+  transform: scale(1.15, 1.15);
+  box-shadow: 0 0 20px var(--points);
+}
+
+.bought {
+  background: linear-gradient(270deg, #2f844a, #328652, #2b844e, #2e9a52);
+  background-size: 800% 800%; /* necessary for animation */
+  animation: ripple 20s ease infinite;
+  cursor: default;
+}
+
+#points {
+  color: var(--points);
+  text-shadow: 0 0 10px var(--points);
+}
