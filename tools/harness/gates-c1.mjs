@@ -25,7 +25,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { spawn } from 'node:child_process';
-import { REPO, parseArgs, writeJSON, headCommit, treeDirty, entryOnly, PRE_F1 } from './lib.mjs';
+import { REPO, GAMES, parseArgs, writeJSON, headCommit, treeDirty, entryOnly, PRE_F1 } from './lib.mjs';
 import { appendSection } from './summary.mjs';
 import { runCells } from './sweep.mjs';
 entryOnly(import.meta.url);
@@ -133,7 +133,32 @@ async function part1() {
 // ---- Part 2 ---------------------------------------------------------------------------------------------------------
 // ⛔ FROZEN: the probe's control over the roster it measured (171 games). Never re-pinned — it is the only thing that
 // can tell "the reader changed" from "the roster changed" on those games.
-const PROBE = { buyables: 1739, one: 1209, foreign: 610, several: 97, none: 431, nobuy: 2 };
+// ⚖ Q7 (tmt-queue-1): its SCOPE is frozen with it — the 103 games that had buyables on that roster, exactly
+// `games-data/index.json` at c43a0e7e3 (the last commit before the four new games' data). It used to be "every game
+// not in the dated set", which a 176th game would have silently joined, turning a frozen control into a roster pin.
+const PROBE = { buyables: 1739, one: 1209, foreign: 610, several: 97, none: 431, nobuy: 2, games: [
+  '1-clicker', 'a-tree-for-sure', 'an-operation-tree', 'arc-tree', 'arctree', 'bsed-tree', 'coffee-shop',
+  'collection-of-everything', 'create-incremental', 'devourer-of-flies', 'distance-incremental', 'excavation-tree',
+  'falling-mountain-s-alterprestige', 'function-of-time', 'gooby-cat-tree', 'layer-tree', 'level-tree',
+  'my-experience-tree-rebuilt', 'plague-tree-vorona-cirus-treesease', 'prestige-tree-ng',
+  'prestige-tree-rewritten-unsoftcapped4', 'ptr', 'reali-tree', 'sheep-incremental', 'small-layers-tree', 'something',
+  'sorbet-s-convolution-mainframe', 'the-abc-tree', 'the-algebra-tree', 'the-atomic-tree', 'the-broken-tree',
+  'the-christmas-tree', 'the-chronicle-tree', 'the-cookie-tree-thepasswordispasswor', 'the-cultree', 'the-danus-tree',
+  'the-dingus-tree', 'the-doors-tree', 'the-dotree', 'the-dressy-tree', 'the-earth-tree', 'the-element-tree',
+  'the-elemental-tree', 'the-energy-factory', 'the-exp-tree', 'the-exponential-tree', 'the-extended-tree',
+  'the-factoree', 'the-function-of-time-tree', 'the-fysc-tree', 'the-galactic-tree', 'the-game-tree',
+  'the-gaming-tree', 'the-genesis-tree', 'the-greek-tree', 'the-h2o-tree', 'the-hyperdimensions-tree',
+  'the-hyperoperator-tree', 'the-incrementreeverse', 'the-infinity-tree', 'the-layered-tree', 'the-leveling-tree',
+  'the-lime-upgrade-tree', 'the-loop-tree', 'the-low-taper-fade-tree', 'the-mana-tree', 'the-mechanic-tree',
+  'the-melge-tree', 'the-mining-tree', 'the-mj-tree', 'the-necromantree', 'the-nova-tree', 'the-number-tree',
+  'the-numbruh-tree', 'the-omega-tree', 'the-ore-tree', 'the-periodic-table-tree', 'the-point-tree', 'the-pp-tree',
+  'the-primordial-tree', 'the-pro-tree', 'the-question-tree', 'the-reset-tree', 'the-rpg-tree',
+  'the-shenanigans-tree-rewritten', 'the-stardust-tree', 'the-tearonq-i-have-no-creative-names', 'the-territory-tree',
+  'the-testy-tree', 'the-tree-emipiplu', 'the-tree-higamezyt', 'the-tree-of-existence-and-reality', 'the-tube-tree',
+  'the-universal-tree', 'the-universal-tree-voidcons0le-is-dumb', 'the-upgrade-tree', 'the-weight-tree',
+  'ultimate-prestige-tree', 'universal-expansion', 'universal-reconstruction', 'weakling-tree',
+  'yet-another-challenge-tree-adventure', 'zavrsni-rad',
+] };
 // ⚖ 2026-09-22 (tmt-forks-1): the games added since get their OWN dated control beside it, from the same probe
 // (NewDocs/plans/tmt/probes/buyable-currency-from-buy-source.js over these ids; the same run reproduced PROBE exactly
 // over the other 171), and each set is compared against its own games — neither overwrites the other.
@@ -144,10 +169,15 @@ const PROBE_2026_09_22 = { games: ['the-wall-tree', 'the-cosmic-tree', 'the-clas
 async function part2() {
   const ids = withData();
   const all = ids.flatMap((id) => entries(readData(id)).map((e) => ({ game: id, ...e })));
-  const added = new Set(PROBE_2026_09_22.games);
-  const nOld = all.filter((e) => !added.has(e.game)).length, nNew = all.filter((e) => added.has(e.game)).length;
-  const controlsOk = nOld === PROBE.buyables && nNew === PROBE_2026_09_22.buyables;
-  const controls = `frozen control ${PROBE.buyables} vs the reader ${nOld} on its ${ids.length - PROBE_2026_09_22.games.length} games; dated control 2026-09-22 ${PROBE_2026_09_22.buyables} vs ${nNew} on its ${PROBE_2026_09_22.games.length}`;
+  // Each control is compared on ITS OWN games, and only those. A game neither probe measured is OUTSIDE the claim —
+  // counted and named in the notes, never folded into either side — and a control game that has vanished from the
+  // data is RED (its count falls), never skipped.
+  const frozen = new Set(PROBE.games), added = new Set(PROBE_2026_09_22.games);
+  const nOld = all.filter((e) => frozen.has(e.game)).length, nNew = all.filter((e) => added.has(e.game)).length;
+  const missing = [...frozen, ...added].filter((g) => !ids.includes(g));
+  const outside = ids.filter((g) => !frozen.has(g) && !added.has(g));
+  const controlsOk = nOld === PROBE.buyables && nNew === PROBE_2026_09_22.buyables && !missing.length;
+  const controls = `frozen control ${PROBE.buyables} vs the reader ${nOld} on its ${PROBE.games.length} games; dated control 2026-09-22 ${PROBE_2026_09_22.buyables} vs ${nNew} on its ${PROBE_2026_09_22.games.length}; ${outside.length} with data under no control${outside.length ? ` (${outside.join(', ')})` : ''}${missing.length ? `; ⛔ control games with NO data: ${missing.join(', ')}` : ''}`;
   const c = { buyables: all.length, one: 0, own: 0, foreign: 0, several: 0, none: 0, price: 0, requirement: 0, unknown: 0 };
   for (const e of all) {
     c[e.cost]++;
@@ -186,9 +216,15 @@ async function part2() {
 }
 
 // ---- Part 3 ---------------------------------------------------------------------------------------------------------
+// ⚖ Q7 (tmt-queue-1, 2026-09-22): the ROSTER is derived, the MEASURED outcomes stay pinned. The digits here were
+// `171 … 103` and reddened a check that had regenerated every game with 0 stale the day the roster became 175 (CI run
+// 35781867043). N is `manifests/index.json` (GAMES()), so "N given" still fails a tool that enumerates anything else and
+// "N read" still fails one boot that did not come up; the with-buyables count is the COMMITTED index — a regeneration
+// that loses a game's buyables disagrees with it. `0 failed` and `0 stale` are the claim itself and are never derived.
 async function part3() {
+  const N = GAMES().length, B = withData().length;
   const legs = [
-    ['C1-3 currency-data --check (the whole roster regenerated)', ['tools/currency-data.mjs', '--check', '--jobs', String(Math.max(POOL, 4))], /CURRENCY-DATA CHECK — 175 games given, 175 read, 0 failed, 107 with buyables, 0 stale/],
+    ['C1-3 currency-data --check (the whole roster regenerated)', ['tools/currency-data.mjs', '--check', '--jobs', String(Math.max(POOL, 4))], new RegExp(`CURRENCY-DATA CHECK — ${N} games given, ${N} read, 0 failed, ${B} with buyables, 0 stale`)],
     ['C1-3 currency-data --check-index', ['tools/currency-data.mjs', '--check-index'], /CURRENCY-INDEX OK/],
     ['C1-3 auto-tables --check (schema file + every table)', ['tools/auto-tables.mjs', '--check'], /AUTO-TABLES CHECK — \d+ tables against formatVersion 1, 0 RED/],
     ['C1-3 auto-tables --provenance (every entry, every commit, every gate)', ['tools/auto-tables.mjs', '--provenance'], /AUTO-TABLES PROVENANCE — \d+ tables, 0 RED/],
