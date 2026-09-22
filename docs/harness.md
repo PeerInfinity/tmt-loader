@@ -208,10 +208,18 @@ run 35637460884 at `3069ee2`. **It is NOT a constant factor, and it is not even 
      evidence; the run's own verdict is not.
    · **A slice needs F1 only if it changes what a reset DECIDES** — a default, a strategy, a rule the tables encode.
      A UI, media, docs or harness change does not, however large its diff.
-   ⚖ **SHIPPED 2026-09-22 — the matrix has its OWN WORKFLOW, `.github/workflows/f1.yml`, and this is how you run it:**
+   ⚖ **SHIPPED 2026-09-22 — it lives in `.github/workflows/measurements.yml`, and this is how you run it:**
 
-       gh workflow run f1.yml --ref <branch>           # the F1 measurement matrix, ~5.5 runner-hours
-       gh workflow run sweep.yml --ref <branch>        # M1 + G1 on a branch; F1 is not in this workflow at all
+       gh workflow run measurements.yml --ref <branch>  # every sharded TABLE, F1's matrix among them
+       gh workflow run sweep.yml --ref <branch>         # M1 + G1 on a branch; no measurement runs
+
+   ⚖ **THE STANDING RULE that file now carries** (automation arc, 2026-09-22): **a sharded TABLE a planner quotes
+   goes in the measurement workflow; only a row that must HOLD goes in `sweep.yml`.** A measurement's rows pass on
+   *"the cell completed, twice equal"* and its verdict is labelled *"(report)"*; a gate asserts a pinned mark, a
+   hash, an inertness or a constructed behaviour. Moved on that reading: F1's matrix, **R3b-2's `ptr` table** (21
+   min/push) and **R3c's rung sweep** (23 min/push) — 44 of the 194 successful runner-minutes a push used to spend.
+   Staying, because they assert: `f1-rows`, `r3b2-rule`, `r3b2-inert`, `r3c-mark` + merge, `r3c-fixtures` +
+   `-m27` (the leg that caught the boot truncation), the R3b row-cycle parts, C1, V1–V5, and M1.
 
    ⛔ **A SEPARATE FILE, NOT JUST A FLAG, AND THE REASON IS CONCURRENCY.** `sweep.yml` is
    `concurrency: sweep-${{ github.ref }}` with `cancel-in-progress`, and a dispatch on `main` and a PUSH to `main`

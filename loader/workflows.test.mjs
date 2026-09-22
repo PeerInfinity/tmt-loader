@@ -88,24 +88,39 @@ test('the sweep does not publish', () => {
 // ⚠ Each assertion below covers a way the split can silently undo itself: a measurement job reappearing in the
 // sweep (a push can kill it again), the new workflow gaining a push trigger (~5.5 runner-hours per push), or
 // `f1-rows` — the cheap `maxRow` GATE — following the measurements out of the sweep and ceasing to gate anything.
-const F1_MEASUREMENT_JOBS = ['f1-cells', 'f1-fixtures', 'f1-groups', 'f1-merge'];
+// ⚖ The standing rule (2026-09-22): a sharded TABLE a planner quotes lives in the measurement workflow; only a row
+// that must HOLD stays in the sweep. These are the tables — F1's matrix, R3b-2's `ptr` table, R3c's rung sweep.
+const MEASUREMENT_JOBS = ['f1-cells', 'f1-fixtures', 'f1-groups', 'f1-merge',
+  'r3b2-table', 'r3b2-table-merge', 'r3c-rung', 'r3c-rung-merge'];
+// ⛔ The GATES that must stay on every push, named so a later move has to argue with this list rather than slip
+// past it: the assertive halves of the same arcs (a pinned mark, a hash, an inertness), and the cheap F1 gate.
+const PUSH_GATES = ['f1-rows', 'r3b2-rule', 'r3b2-inert', 'r3c-mark', 'r3c-mark-merge', 'r3c-fixtures', 'r3c-fixtures-m27'];
 
-test('the F1 measurement jobs live ONLY in f1.yml', () => {
+test('every measurement job lives ONLY in measurements.yml', () => {
   const inSweep = Object.keys(jobs(wf('sweep.yml')));
-  const inF1 = Object.keys(jobs(wf('f1.yml')));
-  for (const j of F1_MEASUREMENT_JOBS) {
-    assert.ok(inF1.includes(j), `${j} is missing from f1.yml`);
-    assert.ok(!inSweep.includes(j), `${j} is back in sweep.yml — a push to main can cancel a campaign again`);
+  const inM = Object.keys(jobs(wf('measurements.yml')));
+  for (const j of MEASUREMENT_JOBS) {
+    assert.ok(inM.includes(j), `${j} is missing from measurements.yml`);
+    assert.ok(!inSweep.includes(j), `${j} is back in sweep.yml — a push can cancel it, and every push pays for it`);
   }
-  assert.deepEqual(inF1.sort(), [...F1_MEASUREMENT_JOBS].sort(), 'f1.yml holds exactly the measurement jobs');
+  assert.deepEqual(inM.sort(), [...MEASUREMENT_JOBS].sort(), 'measurements.yml holds exactly the tables');
 });
 
-test('f1.yml is DISPATCH-ONLY and has its own concurrency group', () => {
-  const s = wf('f1.yml');
-  assert.deepEqual(triggers(s), ['workflow_dispatch'], 'f1.yml must never run on a push — that is ~5.5 runner-hours');
+test('the ASSERTIVE jobs stay in the sweep, on every push', () => {
+  const J = jobs(wf('sweep.yml'));
+  const inM = Object.keys(jobs(wf('measurements.yml')));
+  for (const j of PUSH_GATES) {
+    assert.ok(J[j], `${j} left sweep.yml — a gate that does not run on a push gates nothing`);
+    assert.ok(!inM.includes(j), `${j} is in the measurement workflow; it asserts, so it belongs on every push`);
+  }
+});
+
+test('measurements.yml is DISPATCH-ONLY and has its own concurrency group', () => {
+  const s = wf('measurements.yml');
+  assert.deepEqual(triggers(s), ['workflow_dispatch'], 'it must never run on a push — F1 alone is ~5.5 runner-hours');
   const g = /^concurrency:\n\s+group:\s*(\S.*)$/m.exec(s);
-  assert.ok(g, 'f1.yml declares no concurrency group');
-  assert.doesNotMatch(g[1], /^sweep-/, 'f1.yml must NOT share the sweep group — that is the bug it was split out of');
+  assert.ok(g, 'measurements.yml declares no concurrency group');
+  assert.doesNotMatch(g[1], /^sweep-/, 'it must NOT share the sweep group — that is the bug it was split out of');
 });
 
 test('sweep.yml keeps `f1-rows` on every push, and carries no f1 input any more', () => {
