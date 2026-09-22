@@ -12,7 +12,7 @@ node tools/add-game.mjs <owner/repo> [<owner/repo>...]  # add, then gate
 A game must have a census row (booted, with its shallow clone under `clones/`). Options: `--id <id>` and
 `--sha <full sha>` override the defaults for a single target; `--tag <text>` prefixes the SUMMARY gate names;
 `--au-check` also opens the game with `?automation=1` and checks that the empty `au` tab renders; `--json <out>`.
-It prints one JSON line per game: `{id, repo, rank, sha, license, added, gates: {checkManifest, idleHash, goldens, load}}`
+It prints one JSON line per game: `{id, repo, rank, sha, license, added, media, gates: {checkManifest, media, idleHash, goldens, load}}`
 (plus `skipped`, `detail`, `idCollision`, `error` where they apply).
 
 ## What it does
@@ -41,11 +41,15 @@ It prints one JSON line per game: `{id, repo, rank, sha, license, added, gates: 
    git subtree add --prefix=games/<id> <full sha> --squash
    diff -r -x .git games/<id> <census clone>                # must be empty, else abort and report — never patch
    ```
+   then **the media exception** — images to WebP, audio to the silent stub, same filenames — as its own commit
+   `media(<id>): …` on top of the squash ([below](#media-the-one-exception-to-pristine)).
 3. **Manifest + index**: `manifests/<id>.json`, and `{id, name, repo}` appended to `manifests/index.json` (the picker's
    roster; `repo` = `upstream.repo`, what the census joins on).
 4. **Gates** (rows appended to `tools/harness/results/SUMMARY.md`; a red gate keeps the subtree, which is pristine and
    licensed, and is recorded as `RED: <message>`):
-   - `check-manifest` — the pin vs the live `index.html`, vendor sha256, `games/<id>` pristine at the squash;
+   - `check-manifest` — the pin vs the live `index.html`, vendor sha256, `games/<id>` pristine at the squash up to
+     processed media files modified in place;
+   - **media processed**: every in-scope image WebP, every audio file the stub (`tools/media.mjs <id>`);
    - **idle hash**: `run.mjs <id> --ticks 200 --diff 0.05 --no-automation` = `manifest.headless.idleHash.hash` (the
      census's). A game the census marks nondeterministic is run twice and recorded `nondeterministic`, not failed;
    - **goldens**: `tools/harness/goldens/<id>.ids.json` written, counts = `manifest.census`;
@@ -89,10 +93,111 @@ the published site when someone publishes: `gh workflow run pages.yml --ref main
 the push until the counts in `docs/mobile.md` are re-measured against 172 games. That is deliberate: every "N of 171"
 in that document is stale the moment the roster grows, and three of them shipped wrong before anything checked.
 
+## Media: the one exception to pristine
+
+⚖ **User ruling, 2026-09-22** — verbatim: *"All of the repos are MIT licensed. I'll want to set up a script to automate
+the process of compressing the image files while importing the repos. And I'll want a way to run the tool on the repos
+that have already been imported. I'll want to keep the filenames the same, so that we don't have to change code. Image
+quality isn't important for these images, let's go with maximum compression. And for now, let's drop the audio
+entirely. Either that or replacing the audio files with small silent stub files."*
+
+⛔ **THE EXCEPTION IS NARROW.** The arc's oldest rule is that nothing under `games/<id>/` is ever edited. This ruling
+lifts it for **media files only**: images (`.png .gif .jpg .jpeg`) and audio (`.mp3 .wav .ogg`). **Never code, never
+markup, never a stylesheet, never a licence** — `LICENSE*` / `COPYING*` are out of scope whatever their extension (MIT
+permits modification and requires the notice kept). `.svg` (vector), `.ico` and files that are already `.webp` are out
+of scope too. It is not a licence to patch a game; a game that needs a code change still stops and records why
+(below). `check-manifest.mjs` enforces the boundary: the tree may differ from the subtree squash only by
+**modifications in place of in-scope media files that are processed** — one changed byte of anything else is
+`games pristine`, RED, as before.
+
+**What happens to a file** (`tools/media.mjs`, the encoder `tools/media-encode.py`):
+
+- **Image → WebP bytes under the ORIGINAL filename, at the SAME pixel size.** Lossy quality 0 (alpha quality 0, method
+  6); for a still, lossless is tried too and the smaller wins. Browsers decode an image by its content, not its
+  declared type: WebP bytes under `Nitrogen.gif`, served as `image/gif` by `http.server` (as by GitHub Pages), render
+  at 1280×602 in Chromium, Firefox and WebKit. ⛔ **Never downscaled** — an `<img>` with no width renders at its
+  intrinsic size, so a smaller image is a LAYOUT change, which the ruling did not authorise. `--write` reads every
+  written file back and REFUSES (restoring every original of that game) one whose header size moved; an animation must
+  keep its total duration and loop count (the frame count may fall: identical consecutive frames are merged, their
+  durations summed). A file WebP cannot make smaller, or a JPEG whose EXIF rotates it (orientation 2–8 — WebP would
+  drop the tag), is SKIPPED and listed in `games-media/skipped.json` with the sha256 of the bytes left.
+- **Audio → a silent stub under the ORIGINAL filename**: MPEG-1 Layer III frames under `.mp3`, an 8 kHz mono 8-bit
+  WAV under `.wav` and `.ogg`, **1 s** long (`STUB_SECONDS`). Stubs, not deletion: a deleted file is a 404, which
+  reds G1 on every affected game and throws in a game whose audio code does not handle a failed load; a stub keeps
+  every request succeeding and every code path identical except that it is silent.
+
+**Processed is decided by CONTENT, with no ledger**: an image whose bytes begin `RIFF….WEBP` is done, whatever its
+extension; an audio file byte-identical to its extension's stub is done. So the tool is idempotent — a second run
+changes nothing and never re-encodes lossy on lossy.
+
+**At import**: `add-game.mjs` runs it right after the `diff -r` against the census clone (which compares the
+originals), and commits it as its OWN commit, `media(<id>): …`, on top of the subtree squash — the squash stays
+upstream's bytes, and the compression is a separate commit you can review or revert. The gates then include
+`media processed`.
+
+**Retroactively, or after an update**:
+
+```
+python3 -m venv .venv && .venv/bin/pip install -r tools/media-requirements.txt   # once: Pillow 12.3.0
+node tools/media.mjs --write [<id>...]        # process (all games by default; --jobs N)
+node tools/media.mjs [<id>...]                # the CHECK: node: builtins only, no Python — exit 1 names each raw file
+```
+
+⚠ **RE-RUN IT AFTER EVERY `git subtree pull`.** A pull restores the original of every media file upstream touched,
+and the game still works, so nothing but the check notices. The check runs in CI's fast job (`node tools/media.mjs`,
+beside `loader/media.test.mjs`), and `check-manifest` reds `games pristine (media)` on the same file — so an update
+that skips the re-run is a red push, not a quietly larger download. Commit the re-run separately from the pull, for
+the same reason as at import.
+
+⚠ **Why Pillow and not `sharp`** (measured 2026-09-22): `sharp` 0.34.5's bundled libvips carries an advisory on the
+GIF loader (GHSA-f88m-g3jw-g9cj) and the fixed 0.35.x needs Node ≥ 20, where this repo pins 18.20.6; every Pillow
+before 12.3.0 carries the 2026-07-20 advisories. The encoder refuses an older Pillow and opens files with
+`formats=['PNG','GIF','JPEG','WEBP']`, so no other decoder is reachable whatever a file's bytes claim. Both reach the
+same size on the worst file (Nitrogen.gif: `sharp` `minSize` 0.32 MB, Pillow 0.26 MB at method 6).
+
+**Measured on the retrofit** (2026-09-22, `node tools/media.mjs --write` over all 171 games; commit `media(retrofit)`):
+
+| type | files | games | before | after |
+|---|---|---|---|---|
+| `.gif` | 9 | 1 | 47.71 MB | 0.72 MB |
+| `.png` | 1,420 (+2 already WebP bytes) | 171 | 28.62 MB | 1.06 MB |
+| `.jpg` / `.jpeg` | 27 | 6 | 1.59 MB | 0.12 MB |
+| `.mp3` | 26 | 3 | 26.43 MB | 0.10 MB |
+| `.ogg` | 15 | 4 | 1.63 MB | 0.12 MB |
+| `.wav` | 2 | 2 | 2.52 MB | 0.02 MB |
+| **tracked `games/`** | 1,499 modified | 171 | **210.27 MB** | **103.92 MB** |
+
+Of the 76.02 MB saved on images, 46.99 MB (62 %) is `the-periodic-table-tree`'s nine GIFs and 27.56 MB (36 %) the
+PNGs. 0 files skipped (so `games-media/skipped.json` does not exist); a second `--write` changes nothing.
+
+The witnesses, all local and all for the record:
+- `tools/harness/media-dims.mjs` — every one of the 1,458 in-scope images loaded by a real engine from `http.server`,
+  before (the tree at `3d9c61e67`) and after: **naturalWidth × naturalHeight identical for 1,458 of 1,458 in
+  Chromium, Firefox and WebKit**, 0 decode failures. It found the one thing the header check could not: a blank
+  100×100 PNG encoded (lossless, default) to 28 bytes that WebKit REJECTS while the other two decode it; lossless now
+  runs with `exact=True` and that file is 30 bytes that all three decode.
+- `tools/harness/media-audio.mjs` — the stubs inside the six games that ship audio, through each game's own code
+  (`the-rainbow-void-tree`'s music player over three songs plus three `playSound` effects; `the-jax-tree`'s layered
+  music over all four tracks; `the-danus-tree`'s `.wav` and `.ogg`; sorbet's `playSound`; the two `.mp3` one-shots),
+  6 s each, Chromium / Firefox / WebKit: **every element loads, 0 media errors, 0 page errors, each one-shot fires
+  `ended` exactly once, and the two looping tracks restart silently about once a second** (1 s stubs, `loop = true`).
+  No game in the roster listens for `ended` (measured: zero `onended` / `'ended'` under `games/`), so a stub cannot
+  advance a playlist. The same probe on the ORIGINAL tree is the control: there, `the-danus-tree`'s `tp.wav` fails to
+  decode in Playwright's Chromium — it is an MP4 under a `.wav` name, and that build has no proprietary codecs — so the
+  stub fixed a load error rather than causing one. `the-jax-tree`'s one aborted request is its own track switch, in
+  both trees.
+- `tools/harness/mutants-assets1.sh` (a throwaway worktree; 7 of 7 killed): the encoder DOWNSCALING (the tool refuses
+  with `DIMENSIONS CHANGED` and leaves every original in place); a `git subtree pull` restoring one image and one audio
+  original, committed (`media.mjs` names both, `check-manifest` reds `games pristine (media)`); an audio file that is
+  a 404 instead of a stub (G1 RED on `sorbet-s-convolution-mainframe`, which requests its sound at load); a CODE edit
+  and a LICENCE edit (`check-manifest` reds `games pristine`, `notMedia` — the exception is media only); the CI step
+  deleted (`loader/workflows.test.mjs` RED).
+
 ## By hand, when the tool cannot
 
 - If the Node boot needs a stub the manifest lacks, `run.mjs` re-spawns with it (≤ 12) and reports
   `respawn_prestubs`; add those to `headless.prestubs`. If a field of `player` drifts between two identical runs, add it
   to `headless.stateMask` and say why in the commit.
-- If the game cannot load without a patch: stop and record why before patching anything under `games/<id>/`.
+- If the game cannot load without a patch: stop and record why before patching anything under `games/<id>/`. The
+  media exception above does not cover it — media files only, never code or markup.
 - Optional for a game with unusual markup: add it to `loader/interpret.test.mjs` (`node --test loader/`).

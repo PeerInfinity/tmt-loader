@@ -357,8 +357,9 @@ drove a chip**. ⛔ A check nobody runs is not a check.
 
 | check | where it runs now | cost |
 |---|---|---|
-| unit tests (`npm run harness:test`) | CI, the **fast** job — and everything else `needs:` it | **279 tests**, no browser — RE-MEASURED on F1's final tree, which added twelve (`loader/passive.test.mjs`: the passive yield, its threshold / unlock wall / off-switch / value types / cycle exit, the `resetDefault` / `sinceReset` / `fallbackFires` levers, the stall fallback firing on a PATIENT rule, and the `maxRow` repair) and changed none of the count elsewhere (three assertions in `strategies.test.mjs` / `watch.test.mjs` now read or name the new derived default); the tree F1 started from measured **267** (R3c's 262 plus the UI arc's U13 and two gate fixes); R3c measured 262 on its final tree, which added four (`loader/cycle.test.mjs`: the `turnMark` readings) and changed none elsewhere; C1 measured 258 on its final tree, which added sixteen (`loader/auto-tables.test.mjs` nine: the schema and the provenance gate, each failure by name; `loader/currency.test.mjs` six: the currency consumers; `loader/workflows.test.mjs` one: the C1 jobs) and changed none elsewhere; R3b-2 measured 242 on its final tree, which added five (`loader/cycle.test.mjs`, the dead-member rule) and changed none elsewhere; V5 measured 237, which added eleven (`loader/retry.test.mjs`, the RETRY conditions) and changed none of the count elsewhere (one existing row of `loader/strategies.test.mjs` now draws its refusal per TYPE, because a `predicate` accepts `banana`); R3b-1 re-measured 226 and added twenty-four (`loader/cycle.test.mjs`, the ROW CYCLE) on top of R3a's seventeen (`loader/challenges.test.mjs`, the challenge give-up rule) on top of V4's twenty (`loader/controls.test.mjs`); ⚠ the number V4 wrote here was **180** and the tree it was written on measured **185**, which is the drift this row exists to catch; R2 read 160 and added two (⚠ it read `46 tests`, then `75`, then `82`, then `138`, then `158`, every one of them stale — a count in prose that no gate reads. It had drifted by fifty-two before U7 re-read it, and by twenty again between U7 and the U8 merge. ⛔ RE-MEASURE IT AT EVERY MERGE: this row is the standing example of a count conflict that must not be resolved by picking a branch's number — U3 merged 75-vs-60 and the merged tree measured 79) |
+| unit tests (`npm run harness:test`) | CI, the **fast** job — and everything else `needs:` it | **285 tests**, no browser — RE-MEASURED on assets-1's tree, which added six (`loader/media.test.mjs`: the media scope, header sizes, the stubs' bytes, the dimension assertion, raw/processed/skip on a scratch tree, and the committed roster) and changed none elsewhere; F1 measured **279** on its final tree, which added twelve (`loader/passive.test.mjs`: the passive yield, its threshold / unlock wall / off-switch / value types / cycle exit, the `resetDefault` / `sinceReset` / `fallbackFires` levers, the stall fallback firing on a PATIENT rule, and the `maxRow` repair) and changed none of the count elsewhere (three assertions in `strategies.test.mjs` / `watch.test.mjs` now read or name the new derived default); the tree F1 started from measured **267** (R3c's 262 plus the UI arc's U13 and two gate fixes); R3c measured 262 on its final tree, which added four (`loader/cycle.test.mjs`: the `turnMark` readings) and changed none elsewhere; C1 measured 258 on its final tree, which added sixteen (`loader/auto-tables.test.mjs` nine: the schema and the provenance gate, each failure by name; `loader/currency.test.mjs` six: the currency consumers; `loader/workflows.test.mjs` one: the C1 jobs) and changed none elsewhere; R3b-2 measured 242 on its final tree, which added five (`loader/cycle.test.mjs`, the dead-member rule) and changed none elsewhere; V5 measured 237, which added eleven (`loader/retry.test.mjs`, the RETRY conditions) and changed none of the count elsewhere (one existing row of `loader/strategies.test.mjs` now draws its refusal per TYPE, because a `predicate` accepts `banana`); R3b-1 re-measured 226 and added twenty-four (`loader/cycle.test.mjs`, the ROW CYCLE) on top of R3a's seventeen (`loader/challenges.test.mjs`, the challenge give-up rule) on top of V4's twenty (`loader/controls.test.mjs`); ⚠ the number V4 wrote here was **180** and the tree it was written on measured **185**, which is the drift this row exists to catch; R2 read 160 and added two (⚠ it read `46 tests`, then `75`, then `82`, then `138`, then `158`, every one of them stale — a count in prose that no gate reads. It had drifted by fifty-two before U7 re-read it, and by twenty again between U7 and the U8 merge. ⛔ RE-MEASURE IT AT EVERY MERGE: this row is the standing example of a count conflict that must not be resolved by picking a branch's number — U3 merged 75-vs-60 and the merged tree measured 79) |
 | G6 roster doc + G7 declined list (`games-table.mjs --check`) | CI, the fast job | 0.13 s |
+| media — every image WebP, every audio file the stub (`media.mjs`, no `--write`) | CI, the fast job | ~1 s; see "The media gate" below |
 | C1 the tables' schema + the currency index (`auto-tables.mjs --check`, `currency-data.mjs --check-index`) | CI, the fast job | < 1 s |
 | C1 the currency data regenerated + the provenance gate + the reader's accuracy (`gates-c1 --part 3, 1, 2, 6`) | CI, `c1-data` (full history) | ~70 s for the regeneration locally, ~2 min per boot pass |
 | C1 inertness (`gates-c1 --part 4`) and the consumers + rider (`--part 5, 7`) | CI, `c1-inert` / `c1-consumers` | the M15 → 37048 legs dominate |
@@ -385,6 +386,26 @@ rather than an extrapolation.
 ⛔ **Everything in `sweep.yml` past the fast job is gated on it.** Three seconds of unit tests decide whether
 thirteen runners start. `loader/workflows.test.mjs` asserts the `needs:`, because the way that gets undone is a
 convenience edit by someone whose change "does not touch the units".
+
+### The media gate (`tools/media.mjs`, assets-1)
+
+⚖ The user's 2026-09-22 ruling lets this repo change ONE kind of file under `games/<id>/`: media — images re-encoded
+as WebP at the same pixel size, audio replaced by a silent stub, both under the original filename
+([add-a-game.md](add-a-game.md), "Media: the one exception to pristine"). A `git subtree pull` restores the original
+of every media file upstream touched, and the game still works — so nothing a game-driving gate can see would notice
+the compression quietly disappearing. Two gates do:
+
+- **`node tools/media.mjs`** in the fast job (`node:` builtins only, no Python): exit 1 naming every in-scope image
+  that is not WebP bytes and every audio file that is not byte-identical to its stub, plus any declared skip
+  (`games-media/skipped.json`) whose bytes moved or that the tree no longer has. `loader/media.test.mjs` runs the
+  same check over the committed roster and drives each red on a scratch tree; `loader/workflows.test.mjs` holds the
+  step in place as a real check.
+- **`check-manifest`'s `games pristine`** now admits a difference from the subtree squash made only of in-place
+  modifications of processed media files — so a restored original is `games pristine (media)` RED there too, and a
+  changed byte of code, markup or a licence is still plain `games pristine`.
+
+The fix for a red is `node tools/media.mjs --write <id>` (Pillow in `.venv`), committed on its own. Mutants:
+`tools/harness/mutants-assets1.sh` (7 of 7 killed; add-a-game.md lists them).
 
 ### G1 does not shard, and that is a measurement
 

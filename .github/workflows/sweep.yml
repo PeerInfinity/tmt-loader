@@ -69,6 +69,12 @@ jobs:
       - name: G6 + G7 — the roster doc and the declined list
         run: node tools/games-table.mjs --check
 
+      # ⚖ The media exception (user, 2026-09-22; docs/add-a-game.md): every in-scope image of every game is WebP and
+      # every audio file is the silent stub. `git subtree pull` restores the ORIGINAL of every file upstream touched —
+      # the game still works, so nothing else would notice the compression quietly disappearing. `node:` builtins only.
+      - name: Media — every image WebP, every audio file the stub
+        run: node tools/media.mjs
+
       # C1 (§40-R ruling B): every per-game table validates against the schema the loader itself declares (one schema,
       # one validator — extracted from `loader/tmt-auto.js`), and the generated currency data's index names exactly
       # the files it has. No boot and no history; the roster regeneration and the provenance gate are the `c1-data` job.

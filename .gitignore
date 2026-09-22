@@ -4,3 +4,5 @@ tools/harness/results/*.png
 tools/harness/results/tmp/
 test-results/
 tools/harness/results/r3c-fixtures/
+.venv/
+__pycache__/

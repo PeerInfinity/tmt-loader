@@ -5964,3 +5964,53 @@ Reading this section: A cell key is `<stretch>@<diff>/<config>`; `off` = `passiv
 | F1-3 L3@0.05/e gain>=16x — the long row-3 stretch — all/M15 → M25, diff 0.05, policy:reset:e=gain>=16x | ptr | 2 runs | 247596 | 27625.4 | 0.05 | `a5b8ee90ccb81750` | GREEN | M16 16090.25 · M17 24545.05 · M18 24636.15 · M19 24656.35 · M20 24696.6 · M21 26410.3 · M22 26558.7 · M23 26595.65 · M24 26679.6 · M25 27625.4; resets p 1747 / g 299 / b 501 / s 93 / t 102 / e 170 / sb 25 / q 75 / h 8; twice equal true; wall 1260s (runs [1259996,1255180] ms) |
 | F1-3 O@0.05/p,e gain>=4x — the OPENING — fresh → M12, diff 0.05, policy:reset:p=gain>=4x;policy:reset:e=gain>=4x | ptr | 2 runs | 45468 | 2273.4 | 0.05 | `251eb0acb6c1aca0` | GREEN | M01 0.05 · M02 1015.1 · M03 1467.45 · M04 1576 · M05 1698.65 · M06 1914.1 · M07 1914.6 · M08 2153.35 · M09 2248.85 · M10 2221.95 · M11 2267.75 · M12 2273.4; resets p 641 / g 327 / b 623 / s 17 / t 14 / e 5; twice equal true; wall 504s (runs [503529,503012] ms) |
 | F1-3 VERDICT (report): slowing the resets, per layer — the curve and where its best sits | ptr | — | — | — | — | — | GREEN | P@0.05 — p: gain>=2x M04 1324, gain>=4x M04 1576, gain>=8x M04 1790.55, gain>=16x M04 2422.25, rate-peak@0/0 M04 not reached, rate-peak@0.1/30 M04 3547, rate-peak@0.3/60 M04 not reached, rate-peak@0.5/120 M04 not reached, gap>=5s M04 1648.05, gap>=20s M04 2636.7, gap>=60s M04 not reached ⇒ best gain>=2x (the CONTROL — rarer is not better) ‖ R2@0.05 — e: gain>=2x M16 16108.95, gain>=4x M16 16097.15, gain>=8x M16 16093.45, gain>=16x M16 16090.25, gain>=32x M16 16086.4, gain>=64x M16 16083.45, rate-peak@0/0 M16 16076, rate-peak@0.1/30 M16 16119.05, rate-peak@0.3/60 M16 16173.55, gap>=5s M16 16070.25, gap>=10s M16 16073.5, gap>=20s M16 16074.1, gap>=40s M16 16074, gap>=60s M16 16094 ⇒ best gap>=5s (INTERIOR) ‖ E@0.05 — b+g (masking p): b,g gap>=5s M08 4162.8, b,g gap>=30s M08 not reached ⇒ best b,g gap>=5s ‖ L3@0.05 — q: q gain>=2 M25 25106.8, q gain>=4 M25 not reached, q gain>=8 M25 not reached ⇒ best q gain>=2 (the CONTROL — rarer is not better) ‖ L3@0.05 — q+h (masking row 2): q,h gap>=60s M25 26541.5 ⇒ best q,h gap>=60s ‖ O@0.05 — e (whole opening): e gain>=16x M12 2014.45 ⇒ best e gain>=16x ‖ L3@0.05 — e (whole row-3 stretch): e gain>=16x M25 27625.4 ⇒ best e gain>=16x ‖ O@0.05 — p+e: p,e gain>=4x M12 2273.4 ⇒ best p,e gain>=4x |
+
+## 2026-09-22T18:19:08Z — assets-1 — images to WebP, audio to silent stubs (the media exception) — commit `d02ed209f` (tree DIRTY) — 33/33 green
+
+Reading this section: local measurements for the record; the CI sweep (G1 + M1 over the roster) is run 35766250049 on the pushed branch. Before = the tree at 3d9c61e67.
+
+| gate | game | leg | ticks | gameSeconds | diff | hash | result | notes |
+|---|---|---|---|---|---|---|---|---|
+| assets-1 media check (`media.mjs`) | 171 games | — | 0 | 0 | — | — | GREEN | images 1458 webp + 0 declared skips of 1458; audio 43 stubs of 43; 0 problems; a second `--write` changes nothing |
+| assets-1 bytes (tracked games/) | 171 games | — | 0 | 0 | — | — | GREEN | 210,273,449 -> 103,920,438 (-50.6 %); gif 47.71->0.72 MB (9), png 28.62->1.06 (1,420), jpg/jpeg 1.59->0.12 (27), mp3 26.43->0.10 (26), ogg 1.63->0.12 (15), wav 2.52->0.02 (2); 62 % of the image saving is the-periodic-table-tree GIFs |
+| assets-1 naturalWidth x naturalHeight (chromium) | 171 games | — | 0 | 0 | — | — | GREEN | 1458/1458 identical before (3d9c61e67) vs after; 0 decode failures after (tools/harness/media-dims.mjs) |
+| assets-1 naturalWidth x naturalHeight (firefox) | 171 games | — | 0 | 0 | — | — | GREEN | 1458/1458 identical before (3d9c61e67) vs after; 0 decode failures after (tools/harness/media-dims.mjs) |
+| assets-1 naturalWidth x naturalHeight (webkit) | 171 games | — | 0 | 0 | — | — | GREEN | 1458/1458 identical before (3d9c61e67) vs after; 0 decode failures after (tools/harness/media-dims.mjs) |
+| assets-1 stub audio in the game (chromium, 6 s) | the-rainbow-void-tree | — | 0 | 0 | — | — | GREEN | 8/8 elements loaded, 0 errors, ended 3 (≤1 per one-shot), loop restarts 3, page errors 0, play() rejects AbortError (the game's own pause/switch; also on the original tree) |
+| assets-1 stub audio in the game (chromium, 6 s) | the-jax-tree | — | 0 | 0 | — | — | GREEN | 1/1 elements loaded, 0 errors, ended 0 (≤1 per one-shot), loop restarts 4, page errors 0, play() rejects AbortError (the game's own pause/switch; also on the original tree) |
+| assets-1 stub audio in the game (chromium, 6 s) | the-danus-tree | — | 0 | 0 | — | — | GREEN | 2/2 elements loaded, 0 errors, ended 2 (≤1 per one-shot), loop restarts 0, page errors 0 |
+| assets-1 stub audio in the game (chromium, 6 s) | sorbet-s-convolution-mainframe | — | 0 | 0 | — | — | GREEN | 1/1 elements loaded, 0 errors, ended 1 (≤1 per one-shot), loop restarts 0, page errors 0 |
+| assets-1 stub audio in the game (chromium, 6 s) | the-congratulations-tree | — | 0 | 0 | — | — | GREEN | 1/1 elements loaded, 0 errors, ended 1 (≤1 per one-shot), loop restarts 0, page errors 0 |
+| assets-1 stub audio in the game (chromium, 6 s) | the-dressy-tree | — | 0 | 0 | — | — | GREEN | 1/1 elements loaded, 0 errors, ended 1 (≤1 per one-shot), loop restarts 0, page errors 0 |
+| assets-1 stub audio in the game (firefox, 6 s) | the-rainbow-void-tree | — | 0 | 0 | — | — | GREEN | 8/8 elements loaded, 0 errors, ended 3 (≤1 per one-shot), loop restarts 5, page errors 0, play() rejects AbortError (the game's own pause/switch; also on the original tree) |
+| assets-1 stub audio in the game (firefox, 6 s) | the-jax-tree | — | 0 | 0 | — | — | GREEN | 1/1 elements loaded, 0 errors, ended 0 (≤1 per one-shot), loop restarts 5, page errors 0, play() rejects AbortError (the game's own pause/switch; also on the original tree) |
+| assets-1 stub audio in the game (firefox, 6 s) | the-danus-tree | — | 0 | 0 | — | — | GREEN | 2/2 elements loaded, 0 errors, ended 2 (≤1 per one-shot), loop restarts 0, page errors 0 |
+| assets-1 stub audio in the game (firefox, 6 s) | sorbet-s-convolution-mainframe | — | 0 | 0 | — | — | GREEN | 1/1 elements loaded, 0 errors, ended 1 (≤1 per one-shot), loop restarts 0, page errors 0 |
+| assets-1 stub audio in the game (firefox, 6 s) | the-congratulations-tree | — | 0 | 0 | — | — | GREEN | 1/1 elements loaded, 0 errors, ended 1 (≤1 per one-shot), loop restarts 0, page errors 0 |
+| assets-1 stub audio in the game (firefox, 6 s) | the-dressy-tree | — | 0 | 0 | — | — | GREEN | 1/1 elements loaded, 0 errors, ended 1 (≤1 per one-shot), loop restarts 0, page errors 0 |
+| assets-1 stub audio in the game (webkit, 6 s) | the-rainbow-void-tree | — | 0 | 0 | — | — | GREEN | 8/8 elements loaded, 0 errors, ended 3 (≤1 per one-shot), loop restarts 0, page errors 0, play() rejects AbortError (the game's own pause/switch; also on the original tree) |
+| assets-1 stub audio in the game (webkit, 6 s) | the-jax-tree | — | 0 | 0 | — | — | GREEN | 1/1 elements loaded, 0 errors, ended 0 (≤1 per one-shot), loop restarts 1, page errors 0, play() rejects AbortError (the game's own pause/switch; also on the original tree) |
+| assets-1 stub audio in the game (webkit, 6 s) | the-danus-tree | — | 0 | 0 | — | — | GREEN | 2/2 elements loaded, 0 errors, ended 2 (≤1 per one-shot), loop restarts 0, page errors 0 |
+| assets-1 stub audio in the game (webkit, 6 s) | sorbet-s-convolution-mainframe | — | 0 | 0 | — | — | GREEN | 1/1 elements loaded, 0 errors, ended 1 (≤1 per one-shot), loop restarts 0, page errors 0 |
+| assets-1 stub audio in the game (webkit, 6 s) | the-congratulations-tree | — | 0 | 0 | — | — | GREEN | 1/1 elements loaded, 0 errors, ended 1 (≤1 per one-shot), loop restarts 0, page errors 0 |
+| assets-1 stub audio in the game (webkit, 6 s) | the-dressy-tree | — | 0 | 0 | — | — | GREEN | 1/1 elements loaded, 0 errors, ended 1 (≤1 per one-shot), loop restarts 0, page errors 0 |
+| assets-1 mutant | — | — | 0 | 0 | — | — | GREEN | KILLED  M1 downscale (exit 1, 4 originals left in place, not a halved WebP) |
+| assets-1 mutant | — | — | 0 | 0 | — | — | GREEN | KILLED  M2a media check names both restored originals (exit 1) |
+| assets-1 mutant | — | — | 0 | 0 | — | — | GREEN | KILLED  M2b check-manifest ptr RED on games pristine (media) |
+| assets-1 mutant | — | — | 0 | 0 | — | — | GREEN | KILLED  M3 G1 RED on the 404 (exit 1) |
+| assets-1 mutant | — | — | 0 | 0 | — | — | GREEN | KILLED  M4a code edit → games pristine (notMedia js/mod.js) |
+| assets-1 mutant | — | — | 0 | 0 | — | — | GREEN | KILLED  M4b licence edit → games pristine (notMedia LICENSE) |
+| assets-1 mutant | — | — | 0 | 0 | — | — | GREEN | KILLED  M5 CI media step deleted → workflows.test RED |
+| assets-1 check-manifest (media rule) | 171 games | — | 0 | 0 | — | — | GREEN | 171/171 GREEN at cef3dc585 (every difference from the squash is a processed media file modified in place) |
+| assets-1 G1 load (local control) | sorbet, rainbow-void, periodic-table, danus | — | 0 | 0 | — | — | GREEN | 4/4 GREEN; the full roster is CI run 35766250049 |
+| assets-1 unit tests | — | — | 0 | 0 | — | — | GREEN | 285/285 with node_modules moved aside (the fast job has no npm ci) |
+
+## 2026-09-22T18:38:07Z — assets-1 — CI sweep run 35766250049 at d02ed209f — commit `9458401af` (tree DIRTY) — 5/5 green
+
+| gate | game | leg | ticks | gameSeconds | diff | hash | result | notes |
+|---|---|---|---|---|---|---|---|---|
+| M1 merge + roster assertion (CI) | 171 games | — | 0 | 0 | — | — | GREEN | rows: 171/171; 0 RED; 6 abstained on the state leg — the SAME six as main at 3d9c61e67 (run 35659984097) |
+| G1 load plain page (CI) | 171 games | — | 0 | 0 | — | — | GREEN | rows: 171/171; 0 RED |
+| G1 load automation page (CI) | 171 games | — | 0 | 0 | — | — | GREEN | rows: 171/171; 0 RED |
+| fast job: units + media check (CI) | — | — | 0 | 0 | — | — | GREEN | success |
+| whole run (CI) | — | — | 0 | 0 | — | — | GREEN | 87 success, 0 failure, 11 CANCELLED by hand once G1/M1 were in: the F1 measurement jobs run on every workflow_dispatch and measure the automation layer, which this slice does not touch (user, 2026-09-22) |
