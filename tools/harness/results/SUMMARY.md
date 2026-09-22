@@ -6059,3 +6059,32 @@ the `<img>` keeps its declared 40×40 box and its onclick, and the game's audio 
 | check-manifest | the-cosmic-tree | — | 0 | 0 | — | — | GREEN | missingAssets declared = derived (`resources/mNote.png`) |
 | G1 load (plain) | the-cosmic-tree | — | 0 | 0 | — | — | GREEN | allowed: {"skipped":0,"missingAssets":1,"blockedHosts":[],"errorsBeforeReady":0}; 14 tree nodes |
 | G1 load (automation) | the-cosmic-tree | — | 0 | 0 | — | — | GREEN | allowed: {"skipped":0,"missingAssets":1,"blockedHosts":[],"errorsBeforeReady":0} |
+
+## 2026-09-22T19:50:00Z — add-game (`node tools/add-game.mjs Lun4-R/The-Collab-Tree`) — commit `a9d51c239` (tree DIRTY) — 5/6 green
+
+Reading this section: the subtree commits are in; manifests, index and goldens are uncommitted at the time of the run. idle hash = the plain page's Node twin (`--no-automation`, no exclusion) vs manifest.headless.idleHash; goldens counts vs manifest.census; G1 = `page.mjs <id> --gate load` (no flag).
+
+| gate | game | leg | ticks | gameSeconds | diff | hash | result | notes |
+|---|---|---|---|---|---|---|---|---|
+| add-game check-manifest | the-collab-tree-lun4-r | — | 0 | 0 | — | — | GREEN | 18 scripts, 10 modFiles, subtree split 73e4f62, games/the-collab-tree-lun4-r pristine up to 11 processed media files |
+| add-game media processed | the-collab-tree-lun4-r | — | 0 | 0 | — | — | GREEN | images 7 webp + 0 declared skips of 7; audio 4 stubs of 4 |
+| add-game idle hash = census | the-collab-tree-lun4-r | idle | 200 | 10 | 0.05 | `2b5962383a0fba93` | **RED** | census db2868c593eb7ad3 |
+| add-game goldens counts = census | the-collab-tree-lun4-r | — | 0 | 0 | — | — | GREEN | 59 ids, 16 layers; ms 10 / upg 21 / buy 10 / ch 3 / ach 15 = census |
+| add-game G1 load (plain page) | the-collab-tree-lun4-r | — | 3 | 0.15 | 0.05 | — | GREEN | ready 1186 ms; 10 `#app .treeNode`; 82 requests, 0 non-localhost, 0 failed, 0 page errors; au nodes 0; keys `tmt-loader:the-collab-tree-lun4-r:thecollabtree-9978665485`, `tmt-loader:the-collab-tree-lun4-r:thecollabtree-9978665485_options` |
+| G6 games doc | null | — | 0 | 0 | — | — | GREEN | docs/games.md regenerated: 175 games in manifests/index.json, 175 listed in that order |
+
+## 2026-09-22 — tmt-forks-1: the-collab-tree-lun4-r's idle hash — BOTH recorded (`headless.idleHash.census`) — 4/4 green
+
+Reading this section: the add-game run above reds `idle hash = census` (ours `2b5962383a0fba93`, census
+`db2868c593eb7ad3`). Ours is deterministic (Node twice) and the PAGE agrees (`page.mjs`, 200 × 0.05, `2b5962383a0fba93`).
+The census's own `lib/boot.mjs` over this same tree reproduces `db2868c593eb7ad3`, so the media commit is not the cause.
+Of 305 `player.<layer>.<key>` fields exactly one differs, `cheese.cycle`: the census pre-clears `player.offTime` before
+stepping, the page does not, and `js/cheese.js` advances `cycle` only while `offTime` is unset. ⚖ 2026-09-22: `hash` =
+ours (G3 still reds if it moves), `census` = {hash, differsIn, reason}; the census-side fix is queued (Q6).
+
+| gate | game | leg | ticks | gameSeconds | diff | hash | result | notes |
+|---|---|---|---|---|---|---|---|---|
+| check-manifest (idleHash.census shape) | the-collab-tree-lun4-r | — | 0 | 0 | — | — | GREEN | |
+| census-hash-diff | the-collab-tree-lun4-r | idle | 200 | 10 | 0.05 | 2b5962383a0fba93 | GREEN | census db2868c593eb7ad3; 305 fields; differs ["cheese.cycle"] = declared |
+| census-hash-diff | the-wall-tree, the-cosmic-tree, the-classic-tree | idle | 200 | 10 | 0.05 | — | GREEN | ours = census = manifest; differs [] in 184 / 1052 / 446 fields |
+| idle hash = manifest | the-collab-tree-lun4-r | idle | 200 | 10 | 0.05 | 2b5962383a0fba93 | GREEN | Node twice + page |

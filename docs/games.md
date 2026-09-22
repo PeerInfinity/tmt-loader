@@ -1,6 +1,6 @@
 # The games
 
-174 games, in the order they were added — the same order `manifests/index.json` and the loader's own
+175 games, in the order they were added — the same order `manifests/index.json` and the loader's own
 picker use. The first two were added by hand; the rest by `tools/add-game.mjs` from the
 [tmt-fork-census](https://github.com/PeerInfinity/tmt-fork-census) top 100, choosing games whose own play page
 no longer works.
@@ -187,3 +187,4 @@ and keeps its own license files and credits inside that subtree. `play` opens it
 | `the-wall-tree` | 墙树 | [play](https://peerinfinity.github.io/tmt-loader/?mod=the-wall-tree) · [mobile](https://peerinfinity.github.io/tmt-loader/?mod=the-wall-tree&mobile=1) | `hanlaosan1/The-Wall-Tree` @ `051f853` | TMT 2.7 | MIT |
 | `the-cosmic-tree` | The Cosmic Tree | [play](https://peerinfinity.github.io/tmt-loader/?mod=the-cosmic-tree) · [mobile](https://peerinfinity.github.io/tmt-loader/?mod=the-cosmic-tree&mobile=1) | `thecuttlefish123213/The-Cosmic-Tree` @ `71e44dd` | TMT 2.7 | MIT |
 | `the-classic-tree` | The Classic+ Tree | [play](https://peerinfinity.github.io/tmt-loader/?mod=the-classic-tree) · [mobile](https://peerinfinity.github.io/tmt-loader/?mod=the-classic-tree&mobile=1) | `certainjellyfish9204/The-Modding-Tree` @ `69a77a0` | TMT 2.7 | MIT |
+| `the-collab-tree-lun4-r` | The Collab Tree | [play](https://peerinfinity.github.io/tmt-loader/?mod=the-collab-tree-lun4-r) · [mobile](https://peerinfinity.github.io/tmt-loader/?mod=the-collab-tree-lun4-r&mobile=1) | `Lun4-R/The-Collab-Tree` @ `73e4f62` | TMT 2.6.6.2 | MIT |

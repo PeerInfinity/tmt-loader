@@ -22,7 +22,7 @@ on drift — after a `git subtree pull`, re-emit the manifest.
 | `save.{keyRule,key}` | where the engine keys its save (informational; the prefix shim does not need it) |
 | `headless.prestubs` | globals pre-stubbed before any file in Node |
 | `headless.renderStubs` | functions the census stubbed |
-| `headless.idleHash` | the census's idle state hash; gate G3 reproduces it |
+| `headless.idleHash` | the census's idle state hash; gate G3 reproduces it. **`headless.idleHash.census`** (optional, ⚖ 2026-09-22) — where the census's boot and the page disagree, BOTH are recorded: `hash` becomes the page's own value (still held by G3, so a move in OUR hash is still RED), and `census: {hash, differsIn, reason}` keeps the census's value, the exact `player.<layer>.<key>` field(s) it differs in, and a re-derivable reason. `check-manifest` checks the shape; `node tools/harness/census-hash-diff.mjs <id>` (needs the census checkout) re-derives the differing set and fails if it is not EXACTLY `differsIn` — a second field that starts differing is not covered. One game carries it: `the-collab-tree-lun4-r`, `cheese.cycle`, because the census boot pre-clears `player.offTime` and the page does not (queued to be fixed at the census, after which the block goes). |
 | `headless.stateMask` | optional: extra keys `stateJSON()` drops (none needed in L1) |
 | `license` | `githubSpdx` and the verdict of the license files' TEXT |
 | `census` | the census row's content counts; gate G4 compares `ids()` counts to them |
