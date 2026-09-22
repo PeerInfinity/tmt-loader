@@ -29,6 +29,21 @@ on:
   push:
     branches: [main]
   workflow_dispatch:
+    # ⛔ THE F1 MEASUREMENT MATRIX IS OPT-IN, and this input is the whole opt-in (user, 2026-09-22).
+    # Before it, the four F1 jobs were gated on `github.event_name == 'workflow_dispatch'` alone — a condition that
+    # cannot tell "run the roster on my branch" from "re-decide a reset default". Dispatching the sweep at a branch
+    # is how EVERY slice in both arcs gets M1 and G1 (the workflow only runs on push to `main`), so every one of
+    # them started the matrix too: `tmt-assets-1`, a media-compression slice touching no automation code, spent
+    # ~5.5 runner-hours on a measurement nothing in it asked for.
+    # ⚠ `type: boolean` means `inputs.f1` IS a boolean here. Do NOT write `inputs.f1 == 'true'`: GitHub compares a
+    # boolean with a string by casting the string to a number, so that test is ALWAYS FALSE and the jobs would
+    # never run again — silently, which is the failure mode this input is most likely to have.
+    # `loader/workflows.test.mjs` pins the input AND each job's use of it.
+    inputs:
+      f1:
+        description: 'Run the F1 reset-frequency measurement matrix (~5.5 runner-hours). Only when a reset default is being re-decided.'
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -2200,7 +2215,7 @@ jobs:
     # (workflow_dispatch) when a reset default is being re-decided; `f1-rows` is the F1 gate that runs on every push.
     name: F1 cell ${{ matrix.cell }}
     needs: fast
-    if: ${{ github.event_name == 'workflow_dispatch' }}
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.f1 }}
     runs-on: ubuntu-latest
     timeout-minutes: 100
     strategy:
@@ -2296,7 +2311,7 @@ jobs:
     # (workflow_dispatch) when a reset default is being re-decided; `f1-rows` is the F1 gate that runs on every push.
     name: F1 fixtures — the shipped leg from a fresh game, twice
     needs: fast
-    if: ${{ github.event_name == 'workflow_dispatch' }}
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.f1 }}
     runs-on: ubuntu-latest
     timeout-minutes: 100
     steps:
@@ -2346,7 +2361,7 @@ jobs:
     # (workflow_dispatch) when a reset default is being re-decided; `f1-rows` is the F1 gate that runs on every push.
     name: F1 group ${{ matrix.group }}
     needs: fast
-    if: ${{ github.event_name == 'workflow_dispatch' }}
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.f1 }}
     runs-on: ubuntu-latest
     timeout-minutes: 100
     strategy:
@@ -2401,7 +2416,7 @@ jobs:
     name: F1 merge — every cell present, the tables and the verdicts
     needs: [f1-cells, f1-groups]
     # manual only, like the cells it merges; `!cancelled()` still runs it when a cell FAILED
-    if: ${{ github.event_name == 'workflow_dispatch' && !cancelled() }}
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.f1 && !cancelled() }}
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:

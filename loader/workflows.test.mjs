@@ -80,6 +80,46 @@ test('the sweep does not publish', () => {
   }
 });
 
+// ⛔ THE F1 MATRIX IS OPT-IN, AND ITS FAILURE MODE IS SILENCE. The four measurement jobs cost ~5.5 runner-hours;
+// before the `f1` input they ran on EVERY dispatch, including a slice dispatching the sweep at its own branch to
+// get M1 and G1 (`tmt-assets-1`, a media change, paid for a full matrix). Now they require the input.
+// ⚠ Both halves are pinned because either one alone re-arms the old cost or removes the measurement for good:
+// drop the input and the jobs never run again; drop a job's `inputs.f1` and that job runs on every dispatch.
+// ⚠ And `inputs.f1 == 'true'` is pinned OUT: `type: boolean` makes `inputs.f1` a boolean, and GitHub compares a
+// boolean to a string by casting the string to a number, so that form is always false — the jobs would vanish
+// quietly, which no roster sweep would ever notice.
+const F1_MEASUREMENT_JOBS = ['f1-cells', 'f1-fixtures', 'f1-groups', 'f1-merge'];
+
+test('the sweep declares an `f1` dispatch input, defaulting to OFF', () => {
+  const s = wf('sweep.yml');
+  const block = /^on:\n(?:.*\n)*?  workflow_dispatch:\n((?:    .*\n|\n)*)/m.exec(s);
+  assert.ok(block, 'sweep.yml has no workflow_dispatch block to carry the input');
+  assert.match(block[1], /^ {6}f1:\s*$/m, 'the `f1` input is gone — the F1 jobs would never run again');
+  assert.match(block[1], /^ {8}type:\s*boolean\s*$/m, '`f1` must be a boolean; a string input changes how it is tested');
+  assert.match(block[1], /^ {8}default:\s*false\s*$/m, '`f1` must default to OFF, or every dispatch pays ~5.5 runner-hours');
+});
+
+test('every F1 measurement job requires the input — and none tests it as a STRING', () => {
+  const s = wf('sweep.yml');
+  const J = jobs(s);
+  const named = Object.keys(J).filter((k) => /^f1(-|$)/.test(k) && k !== 'f1-rows');
+  assert.deepEqual(named.sort(), [...F1_MEASUREMENT_JOBS].sort(),
+    'the F1 measurement jobs are not the ones this test pins — rename or re-pin deliberately');
+  for (const k of named) {
+    const m = /^\s{4}if:\s*(.+)$/m.exec(J[k]);
+    assert.ok(m, `job ${k} has no \`if:\` — it would run on every dispatch`);
+    assert.match(m[1], /github\.event_name == 'workflow_dispatch'/, `job ${k} must stay dispatch-only`);
+    assert.match(m[1], /&&\s*inputs\.f1\b/, `job ${k} does not require \`inputs.f1\` — it runs on every dispatch again`);
+    assert.doesNotMatch(m[1], /inputs\.f1\s*==/, `job ${k} compares \`inputs.f1\`; a boolean vs a string is ALWAYS false`);
+  }
+});
+
+test('`f1-rows` is NOT gated on the input — it is the cheap F1 gate that runs on every push', () => {
+  const J = jobs(wf('sweep.yml'));
+  assert.ok(J['f1-rows'], 'f1-rows is gone');
+  assert.doesNotMatch(J['f1-rows'], /inputs\.f1/, 'f1-rows must keep running on every push');
+});
+
 test('the sweep runs on push and on dispatch', () => {
   assert.deepEqual(triggers(wf('sweep.yml')).sort(), ['push', 'workflow_dispatch']);
 });

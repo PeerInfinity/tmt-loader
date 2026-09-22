@@ -208,8 +208,18 @@ run 35637460884 at `3069ee2`. **It is NOT a constant factor, and it is not even 
      evidence; the run's own verdict is not.
    · **A slice needs F1 only if it changes what a reset DECIDES** — a default, a strategy, a rule the tables encode.
      A UI, media, docs or harness change does not, however large its diff.
-   · ⚖ The durable fix is a `workflow_dispatch` input (`f1: false` by default) so the matrix runs only when asked;
-     that is the automation arc's call, since F1 is its gate. A longer stretch CHAINS with `--stop-snapshot` + `--from-snapshot`,
+   ⚖ **SHIPPED 2026-09-22 — the matrix is now OPT-IN, and this is how you ask for it:**
+
+       gh workflow run sweep.yml -f f1=true            # the F1 measurement matrix, ~5.5 runner-hours
+       gh workflow run sweep.yml --ref <branch>        # M1 + G1 on a branch; F1 does NOT run
+
+   The four measurement jobs require `github.event_name == 'workflow_dispatch' && inputs.f1`; `f1-rows` still runs
+   on every push. ⚠ **A planner who cannot find this switch will quote a STALE 0.05 row instead of measuring one** —
+   the tick policy says no default moves without a 0.05 row, and that row comes from exactly these jobs.
+   ⛔ `inputs.f1` is a BOOLEAN, so never write `inputs.f1 == 'true'`: GitHub compares a boolean to a string by
+   casting the string to a number, making the test always false and the jobs silently unreachable.
+   `loader/workflows.test.mjs` pins the input, each job's use of it, that the comparison form is NOT used, and that
+   `f1-rows` stays ungated. A longer stretch CHAINS with `--stop-snapshot` + `--from-snapshot`,
    and ⚠ a resumed leg is credited the offline time of its boot: compare resumed with resumed, from the same fixture.
 4. ⚠ **The ladder's `diff` fields are H1's COARSE-tick calibration (1 / 5 / 20 / 60 against 1) and say nothing about
    0.05.** They remain what they were: the coarsest diff a mark's timing survives within 2 % of `diff 1`.
