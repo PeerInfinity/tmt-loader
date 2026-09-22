@@ -207,7 +207,10 @@ async function main() {
     else if (want === null) { if (have !== null) fs.rmSync(f); }
     else { fs.mkdirSync(DATA, { recursive: true }); fs.writeFileSync(f, want); }
   }
-  if (!A.check && !A.shard && !A.ids) fs.writeFileSync(path.join(DATA, 'index.json'), text(indexDoc(filesOnDisk())));
+  // The index is the files on disk, nothing booted — so an `--ids` write (add-game's, for the games it adds) rewrites it
+  // too, or a new game's file lands unnamed and `--check-index` reds (CI run 35777610644, tmt-forks-1). A `--shard`
+  // write still does not: shards run side by side and the merge owns the index.
+  if (!A.check && !A.shard) fs.writeFileSync(path.join(DATA, 'index.json'), text(indexDoc(filesOnDisk())));
   if (A.json) { fs.mkdirSync(path.dirname(path.resolve(A.json)), { recursive: true }); fs.writeFileSync(A.json, JSON.stringify({ ids, rows }, null, 1) + '\n'); }
   const withB = rows.filter((r) => r.ok && r.buyables);
   const tot = withB.reduce((s, r) => { for (const k in r.summary) s[k] = (s[k] || 0) + r.summary[k]; return s; }, {});

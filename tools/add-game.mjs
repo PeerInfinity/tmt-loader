@@ -14,7 +14,8 @@
 //      (tools/media.mjs: images → WebP at the same pixel size, audio → the silent stub, same filenames) as its OWN commit
 //      `media(<id>): …` on top of the squash — the one change to games/<id>/ this repo makes (docs/add-a-game.md).
 //   3. manifests/<id>.json + manifests/index.json, then docs/games.md regenerated (gate G6 holds it to the index, so a
-//      game added without it is a red gate), then the gates per game (a red gate keeps the subtree): check-manifest;
+//      game added without it is a red gate), then the generated currency data for the added games (games-data/,
+//      tools/currency-data.mjs --ids; C1's freshness gate), then the gates per game (a red gate keeps the subtree): check-manifest;
 //      Node idle hash (plain page, no automation) = manifest.headless.idleHash; goldens written, counts = manifest.census;
 //      page.mjs --gate load (the plain page). Rows appended to results/SUMMARY.md.
 // The census checkout is a DEV-TIME dependency of this tool only (its license classifier and manifest emitter); the page
@@ -270,7 +271,24 @@ fs.writeFileSync(indexFile, JSON.stringify(index, null, 2) + '\n');
       : g.problems.join('; ').slice(0, 400) };
 }
 
+// The generated currency data (C1: which `player` field each buyable pays in; `games-data/<id>.json` + the index),
+// for the games just added and ONLY those — it boots each from the manifest written above, so it runs here. Before
+// this step every import reddened C1's freshness gate on its first CI run with "no file, and the game has buyables"
+// (run 35777610644, tmt-forks-1). A game with no buyables gets no file, which is also what the gate wants.
+let currencyRow = null;
+if (added.length) {
+  const ids = added.map((r) => r.id).join(',');
+  const c = spawnSync(process.execPath, [path.join(REPO, 'tools/currency-data.mjs'), '--write', '--ids', ids], { cwd: REPO, encoding: 'utf8', maxBuffer: 64 << 20 });
+  const last = (c.stdout || '').trim().split('\n').pop() || '';
+  const ok = c.status === 0 && /^CURRENCY-DATA WRITE/.test(last) && / 0 failed/.test(last);
+  log(`currency data: ${ok ? last.slice(0, 160) : `exit ${c.status} — ${(c.stderr || last).slice(-300)}`}`);
+  for (const r of added) r.gates.currencyData = ok ? 'GREEN' : `RED: currency-data exit ${c.status}`;
+  currencyRow = { gate: `${TAG} C1 currency data written`, id: ids, ok, ticks: 0, gameSeconds: 0, diff: null, hash: null,
+    notes: ok ? `\`currency-data --write --ids\` — ${last.slice(0, 300)}` : `exit ${c.status}: ${(c.stderr || last).slice(-300)}` };
+}
+
 const rows = [];
+if (currencyRow) rows.push(currencyRow);
 for (const r of results) if (r.skipped || r.error) rows.push({ gate: `${TAG} ${r.skipped ? 'skipped: ' + r.skipped : 'error'}`, id: r.id || r.repo, ok: false, notes: `${r.repo}: ${JSON.stringify(r.detail ?? r.error ?? '').slice(0, 400)}` });
 if (added.length) {
   const { checkManifest } = await import('./harness/check-manifest.mjs');

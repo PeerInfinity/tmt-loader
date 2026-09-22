@@ -59,7 +59,13 @@ It prints one JSON line per game: `{id, repo, rank, sha, license, added, media, 
      hotlinks images: re-run `check-manifest <id>` with `"known": {}` in `load`, copy the drift it reports into the block
      (plus an `errorsBeforeReady` reason if needed), and re-run the gates. `add-game.mjs` keeps an existing `known`.
 
-5. **The roster doc**: [games.md](games.md), regenerated from `manifests/` — `add-game.mjs` does this itself, at the
+5. **The generated currency data**: `node tools/currency-data.mjs --write --ids <the added ids>` — `games-data/<id>.json`
+   for each added game that has buyables, and `games-data/index.json` (docs/automation.md, "The currency reader").
+   `add-game.mjs` runs it at the end of phase 3, after the manifests exist (it boots each game from its manifest), and
+   records a `C1 currency data written` row. It touches only the games it names. Before it did, every import
+   reddened C1's freshness check on the first CI run (`STALE <id>: no file, and the game has buyables`).
+
+6. **The roster doc**: [games.md](games.md), regenerated from `manifests/` — `add-game.mjs` does this itself, at the
    end of phase 3, and records a G6 row for it. Doing it by hand is `node tools/games-table.mjs`. Gate G6 holds the
    doc to `manifests/index.json` (every game, once, in that order), so a game added without it is a red gate:
    `node tools/games-table.mjs --check`, or `gates.mjs --only G6`.
@@ -112,7 +118,7 @@ for `1-clicker`, a path that came from a bug in our own modFiles handling — wh
 an accepted quirk of that game. Triage now flags a "missing" script whose name appears in neither the index nor
 `modFiles` as exactly that: a path we derived, to be fixed rather than declared.
 
-Commit what the tool leaves uncommitted (`manifests/`, `tools/harness/goldens/`, `docs/games.md`, `SUMMARY.md`) on top
+Commit what the tool leaves uncommitted (`manifests/`, `tools/harness/goldens/`, `games-data/`, `docs/games.md`, `SUMMARY.md`) on top
 of its subtree commits. For several games, pass them in one call:
 all subtrees go in first, then the manifests and gates, so one commit covers the batch.
 
