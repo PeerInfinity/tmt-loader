@@ -4,8 +4,10 @@
 // commit (its tree equals the subtree squash commit's tree, and that squash names manifest.upstream.commit) — up to
 // the media exception: processed images and audio, modified in place (docs/add-a-game.md; tools/media.mjs).
 // load.known (L2b, hand-kept): the declared allowances must EQUAL what the tree contains — missingScripts = the
-// index-named local scripts (static and modFiles) absent under games/<id>/; externalHosts = the hosts of absolute
-// http(s) asset URLs (image/audio/video/font extension) in index.html and js/** (knownFromTree below).
+// index-named local scripts (static and modFiles) absent under games/<id>/; missingAssets = the index-named local
+// assets (a relative `src`/`href` in the entry document whose path ends in an asset extension) absent under
+// games/<id>/, compared CASE-SENSITIVELY as a web server does; externalHosts = the hosts of absolute http(s) asset URLs
+// (image/audio/video/font extension) in index.html and js/** (knownFromTree below).
 //   node check-manifest.mjs [<id>...]
 import fs from 'node:fs';
 import path from 'node:path';
@@ -27,7 +29,40 @@ const URL_RE = /https?:\/\/[^\s"'`()<>\\,;]+/gi;
 const ASSET_EXT_RE = /\.(png|jpe?g|gif|webp|svg|bmp|ico|avif|mp3|ogg|oga|wav|m4a|flac|aac|opus|mp4|webm|woff2?|ttf|otf|eot)$/i;
 const walk = (dir) => (fs.existsSync(dir) ? fs.readdirSync(dir, { withFileTypes: true }).flatMap((e) => (e.isDirectory() ? walk(path.join(dir, e.name)) : e.isFile() ? [path.join(dir, e.name)] : [])) : []);
 
-/** What load.known must equal, measured from the tree: {missingScripts, externalHosts, hostFiles}. */
+// A relative asset reference in markup: `src="…"` / `href="…"`, no scheme, not protocol-relative, not a data: URI, and
+// not ROOT-absolute (`/favicon.ico` names the site's root, not the game's directory — the-challenge-tree has one).
+// Comments are stripped first: zavrsni-rad names a `discord.png` it does not ship inside `<!-- … -->`, which no browser
+// requests — the first version of this scan read it and would have reddened a game that loads cleanly.
+const ATTR_RE = /\b(?:src|href)\s*=\s*(["'])([^"']*)\1/gi;
+/** Does `rel` exist under `root` with EXACTLY this case? `fs.existsSync` answers for the disk, and a case-insensitive
+ *  disk (Windows, macOS) would say yes to `mNote.png` when only `mnote.png` is there — the very defect this finds. */
+function existsExact(root, rel) {
+  let dir = root;
+  for (const part of rel.split('/')) {
+    if (part === '' || part === '.') continue;
+    if (part === '..') return false;  // normalised away above; a path that still climbs is not the game's
+    let names; try { names = fs.readdirSync(dir); } catch { return false; }
+    if (!names.includes(part)) return false;
+    dir = path.join(dir, part);
+  }
+  return true;
+}
+/** The entry document's own local asset references that the tree does not hold (sorted, manifest-relative). */
+export function missingAssetsOf(root, entry = 'index.html') {
+  const html = fs.readFileSync(path.join(root, entry), 'utf8').replace(/<!--[\s\S]*?-->/g, '');
+  const out = [];
+  for (const m of html.matchAll(ATTR_RE)) {
+    const raw = m[2].trim();
+    if (!raw || /^[a-z][a-z0-9+.-]*:/i.test(raw) || raw.startsWith('/') || raw.startsWith('#')) continue;
+    let rel; try { rel = decodeURI(raw.split(/[?#]/)[0]); } catch { continue; }
+    rel = path.posix.normalize(path.posix.join(path.posix.dirname(entry), rel)).replace(/^\.\//, '');
+    if (!ASSET_EXT_RE.test(rel) || rel.startsWith('../')) continue;
+    if (!existsExact(root, rel)) out.push(rel);
+  }
+  return sorted(out);
+}
+
+/** What load.known must equal, measured from the tree: {missingScripts, missingAssets, externalHosts, hostFiles}. */
 export function knownFromTree(id, m, plan, modFiles) {
   const root = path.join(REPO, 'games', id);
   const { static: statics, slot } = executionOrder(plan);
@@ -44,7 +79,8 @@ export function knownFromTree(id, m, plan, modFiles) {
       (hostFiles[url.hostname] ||= new Set()).add(path.relative(root, f));
     }
   }
-  return { missingScripts, externalHosts: sorted(Object.keys(hostFiles)), hostFiles: Object.fromEntries(Object.entries(hostFiles).map(([h, fs_]) => [h, [...fs_].sort()])) };
+  const missingAssets = missingAssetsOf(root, m.entry || 'index.html');
+  return { missingScripts, missingAssets, externalHosts: sorted(Object.keys(hostFiles)), hostFiles: Object.fromEntries(Object.entries(hostFiles).map(([h, fs_]) => [h, [...fs_].sort()])) };
 }
 
 export function checkManifest(id, { boot = true } = {}) {
@@ -98,15 +134,15 @@ export function checkManifest(id, { boot = true } = {}) {
   const tree = knownFromTree(id, m, plan, modFiles ?? m.load.modFiles);
   const known = m.load.known;
   if (known !== undefined) {
-    const keys = ['missingScripts', 'errorsBeforeReady', 'externalHosts'];
+    const keys = ['missingScripts', 'missingAssets', 'errorsBeforeReady', 'externalHosts'];
     if (known === null || typeof known !== 'object' || Array.isArray(known)) problems.push({ field: 'load.known', error: 'must be an object' });
     else {
       for (const k of Object.keys(known)) if (!keys.includes(k)) problems.push({ field: `load.known.${k}`, error: 'unknown key' });
       if ('errorsBeforeReady' in known && !(typeof known.errorsBeforeReady === 'string' && known.errorsBeforeReady.trim())) problems.push({ field: 'load.known.errorsBeforeReady', error: 'a non-empty reason string, or absent' });
-      for (const k of ['missingScripts', 'externalHosts']) if (k in known && !(Array.isArray(known[k]) && known[k].every((x) => typeof x === 'string'))) problems.push({ field: `load.known.${k}`, error: 'an array of strings, or absent' });
+      for (const k of ['missingScripts', 'missingAssets', 'externalHosts']) if (k in known && !(Array.isArray(known[k]) && known[k].every((x) => typeof x === 'string'))) problems.push({ field: `load.known.${k}`, error: 'an array of strings, or absent' });
     }
   }
-  for (const k of ['missingScripts', 'externalHosts']) {
+  for (const k of ['missingScripts', 'missingAssets', 'externalHosts']) {
     const declared = sorted((known && Array.isArray(known[k]) && known[k]) || []);
     if (!same(declared, tree[k])) problems.push({ field: `load.known.${k}`, drift: true, manifest: declared, live: tree[k], declaredNotInTree: declared.filter((x) => !tree[k].includes(x)), inTreeNotDeclared: tree[k].filter((x) => !declared.includes(x)), ...(k === 'externalHosts' ? { files: tree.hostFiles } : {}) });
   }
@@ -144,7 +180,7 @@ export function checkManifest(id, { boot = true } = {}) {
     else if (!fs.existsSync(path.join(REPO, m.auto))) problems.push({ field: 'auto', error: 'file missing', live: m.auto });
   }
 
-  return { id, ok: problems.length === 0, known: known ?? null, knownTree: { missingScripts: tree.missingScripts, externalHosts: tree.externalHosts }, mediaFiles: media, scripts: live.length, modFiles: modFiles && modFiles.length, external: liveExternal, vendor, subtreeSplit: split, tree: treeNow, problems };
+  return { id, ok: problems.length === 0, known: known ?? null, knownTree: { missingScripts: tree.missingScripts, missingAssets: tree.missingAssets, externalHosts: tree.externalHosts }, mediaFiles: media, scripts: live.length, modFiles: modFiles && modFiles.length, external: liveExternal, vendor, subtreeSplit: split, tree: treeNow, problems };
 }
 
 async function main() {
