@@ -9,6 +9,10 @@
 export function judgeLoad(manifest, base, pw, loader) {
   const known = (manifest.load && manifest.load.known) || null;
   const missing = new Set((known && known.missingScripts) || []);
+  // load.known.missingAssets: an image/audio/font the entry document names and the repository does not ship. A
+  // browser shows a broken image and carries on, so it may fail its request — and it is never in `skipped`, which
+  // is the loader's record of SCRIPTS it skipped.
+  const assets = new Set((known && known.missingAssets) || []);
   const hosts = new Set((known && known.externalHosts) || []);
   const gamePath = new URL(`games/${manifest.id}/`, base).pathname;
   const pathOf = (u) => { try { const p = new URL(u.split(' ')[0]).pathname; return p.startsWith(gamePath) ? p.slice(gamePath.length) : null; } catch { return null; } };
@@ -27,7 +31,7 @@ export function judgeLoad(manifest, base, pw, loader) {
   const httpFailedUrls = new Set(pw.failed.filter((f) => !/net::ERR_ABORTED/.test(String(f))).map((f) => String(f).split(' ')[0]));
   const isUnpairedAbort = (f) => /net::ERR_ABORTED/.test(String(f)) && !httpFailedUrls.has(String(f).split(' ')[0]);
   const abortedAlone = pw.failed.filter(isUnpairedAbort);
-  const failedBad = pw.failed.filter((f) => !missing.has(pathOf(f)) && !isUnpairedAbort(f));
+  const failedBad = pw.failed.filter((f) => !missing.has(pathOf(f)) && !assets.has(pathOf(f)) && !isUnpairedAbort(f));
   const blockedBad = pw.blocked.filter((u) => !hosts.has(hostOf(u)));
   const skipped = [...(loader.skipped || [])].sort();
   const skippedOk = JSON.stringify(skipped) === JSON.stringify([...missing].sort());
@@ -36,6 +40,6 @@ export function judgeLoad(manifest, base, pw, loader) {
   // Playwright's own count cannot exceed the loader's (read later); anything else means an error the loader did not see
   const errorsOk = known && known.errorsBeforeReady ? after.length === 0 && pw.pageErrors.length <= before.length + after.length : pw.pageErrors.length === 0 && after.length === 0 && before.length === 0;
   const ok = failedBad.length === 0 && blockedBad.length === 0 && skippedOk && errorsOk;
-  const allowed = known ? { skipped: skipped.filter((f) => missing.has(f)).length, blockedHosts: [...new Set(pw.blocked.filter((u) => hosts.has(hostOf(u))).map(hostOf))].sort(), errorsBeforeReady: known.errorsBeforeReady ? before.length : 0 } : null;
+  const allowed = known ? { skipped: skipped.filter((f) => missing.has(f)).length, missingAssets: assets.size ? pw.failed.filter((f) => assets.has(pathOf(f)) && !/net::ERR_ABORTED/.test(String(f))).length : undefined, blockedHosts: [...new Set(pw.blocked.filter((u) => hosts.has(hostOf(u))).map(hostOf))].sort(), errorsBeforeReady: known.errorsBeforeReady ? before.length : 0 } : null;
   return { ok, allowed, failedBad, blockedBad, skippedOk, skipped, abortedAlone, errorsBeforeReady: before.length, errorsAfterReady: after.length, errorsAfterReadySample: after.slice(0, 3) };
 }

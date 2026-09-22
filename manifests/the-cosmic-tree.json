@@ -1,0 +1,176 @@
+{
+  "schema": 1,
+  "id": "the-cosmic-tree",
+  "name": "The Cosmic Tree",
+  "version": "0.1.1",
+  "author": "Anthony",
+  "upstream": {
+    "repo": "thecuttlefish123213/The-Cosmic-Tree",
+    "url": "https://github.com/thecuttlefish123213/The-Cosmic-Tree.git",
+    "branch": "master",
+    "commit": "71e44dd1ebce1d9f3406fc246981c1558336d6ce",
+    "pushed_at": "2026-09-10T21:34:06Z"
+  },
+  "engine": {
+    "tmtNum": "2.7",
+    "stock_commit": "4d8a86c",
+    "moved": false,
+    "deviation": {
+      "added": 1884,
+      "removed": 1180
+    }
+  },
+  "entry": "index.html",
+  "load": {
+    "onload": "load()",
+    "scripts": [
+      "js/technical/break_eternity.js",
+      "js/technical/layerSupport.js",
+      "js/mod.js",
+      "js/technical/loader.js",
+      "js/technical/temp.js",
+      "js/technical/displays.js",
+      "js/game.js",
+      "js/utils.js",
+      "js/utils/easyAccess.js",
+      "js/technical/systemComponents.js",
+      "js/components.js",
+      "js/technical/canvas.js",
+      "js/technical/particleSystem.js",
+      "js/utils/NumberFormating.js",
+      "js/utils/minigames.js",
+      "js/utils/options.js",
+      "js/utils/save.js",
+      "js/utils/themes.js"
+    ],
+    "renderOnly": [
+      "js/technical/systemComponents.js",
+      "js/components.js",
+      "js/technical/canvas.js",
+      "js/technical/particleSystem.js"
+    ],
+    "modFilesPrefix": "js/",
+    "modFiles": [
+      "layers/layer1/layers.js",
+      "tree.js",
+      "layers/layer1/quarks.js",
+      "layers/layer2/hypermultiplier.js",
+      "layers/sidelayer/craftingtable.js",
+      "layers/sidelayer/bossfights.js",
+      "layers/sidelayer/orbitalstation.js",
+      "layers/sidelayer/acheivments.js",
+      "layers/layer2/vinylmultiplier.js",
+      "layers/layer2/atoms.js",
+      "layers/layer2/cosmicdust.js",
+      "layers/sidelayer/alchemylab.js",
+      "layers/layer3/cells.js",
+      "layers/layer3/heavymultiplier.js",
+      "layers/layer3/tetra.js",
+      "layers/layer3/boracite.js",
+      "layers/layer4/dimensions.js",
+      "layers/layer3/mechanicalmultiplier.js",
+      "layers/sidelayer/artifacts.js",
+      "layers/layer4/megamultiplier.js",
+      "layers/layer4/organs.js",
+      "layers/layer4/nissionite.js",
+      "layers/layer5/evolution.js",
+      "layers/layer5/nuclearmultiplier.js",
+      "layers/layer5/axioms.js",
+      "layers/layer6/volts.js",
+      "layers/layer5/stargazedmetal.js",
+      "layers/layer7/civilization.js",
+      "layers/layer7/computers.js",
+      "layers/layer7/entropy.js",
+      "layers/layer8/pendulums.js",
+      "layers/layer8/supermultiplier.js",
+      "layers/layer8/supercomputers.js",
+      "layers/layer9/quantummultiplier.js",
+      "layers/layer9/prisms.js",
+      "layers/layer9/quantumcomputers.js",
+      "layers/layer10/ai.js",
+      "layers/layer10/physics.js",
+      "layers/layer10/virtualengine.js",
+      "layers/layer11/matrix.js",
+      "layers/layer11/singularity.js",
+      "layers/layerFinal/encapsulatedsingularity.js"
+    ],
+    "external": {
+      "https://unpkg.com/vue@2.7.16/dist/vue.min.js": "vendor",
+      "https://fonts.googleapis.com/css?family=Inconsolata": "drop"
+    },
+    "vendor": {
+      "https://unpkg.com/vue@2.7.16/dist/vue.min.js": {
+        "path": "vendor/vue-2.7.16.min.js",
+        "sha256": "3c1d4b0c549e8de9d4a9bafb12ab70b6a1ac747d07293b98c5b25b6632999afd"
+      }
+    },
+    "known": {
+      "missingAssets": [
+        "resources/mNote.png"
+      ]
+    }
+  },
+  "save": {
+    "keyRule": "getModID (modInfo.id ?? name-author)",
+    "key": "The-Cosmic-Tree-Anthony"
+  },
+  "headless": {
+    "prestubs": [],
+    "renderStubs": [
+      "loadVue",
+      "resizeCanvas",
+      "retrieveCanvasData",
+      "drawTree",
+      "drawComponentBranches",
+      "drawTreeBranch",
+      "makeParticles",
+      "makeShinies",
+      "updateParticles",
+      "setDir",
+      "setSpeed",
+      "updateMouse",
+      "getOpacity",
+      "constructParticleStyle",
+      "clearParticles",
+      "sin",
+      "cos",
+      "tan",
+      "asin",
+      "acos",
+      "atan"
+    ],
+    "idleHash": {
+      "ticks": 200,
+      "diff": 0.05,
+      "hash": "f803e8e71f984ccf"
+    },
+    "deterministic": true
+  },
+  "license": {
+    "githubSpdx": "NOASSERTION",
+    "files": {
+      "LICENSE": "MIT",
+      "Prestige-tree-license": "MIT"
+    },
+    "verdict": "MIT"
+  },
+  "census": {
+    "full_name": "thecuttlefish123213/The-Cosmic-Tree",
+    "head": "71e44dd",
+    "score": 98.67,
+    "layers": 23,
+    "rows": 7,
+    "milestones": 43,
+    "upgrades": 175,
+    "buyables": 134,
+    "challenges": 17,
+    "achievements": 63,
+    "trace_fields": 10
+  },
+  "patches": [],
+  "generated": {
+    "by": "tmt-fork-census scripts/manifest.mjs",
+    "commit": "4a63e16",
+    "at": "2026-09-22T19:40:23.149Z"
+  }
+}

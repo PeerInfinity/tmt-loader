@@ -86,6 +86,9 @@ for (const id of ids) {
       findings.push({ kind: 'declarable', key: 'missingScripts', suggest: p.inTreeNotDeclared,
         evidence: `the index names these and games/${id}/ does not have them`,
         warn: suspect.length ? `⚠ ${JSON.stringify(suspect)} appears in NEITHER the index nor modFiles — a path WE derived, not one the game asks for. Fix the derivation; do not declare it.` : null });
+    } else if (p.field === 'load.known.missingAssets') {
+      findings.push({ kind: 'declarable', key: 'missingAssets', suggest: p.inTreeNotDeclared,
+        evidence: `the entry document names these assets and games/${id}/ does not have them (case-sensitive)`, warn: null });
     } else if (p.field === 'load.known.externalHosts') {
       findings.push({ kind: 'declarable', key: 'externalHosts', suggest: p.inTreeNotDeclared,
         evidence: `absolute asset URLs in the tree: ${j(p.files || {}, 300)}`, warn: null });

@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+
+<head>
+
+	<link rel="stylesheet" type="text/css" href="css/system-style.css" />
+	<link rel="stylesheet" type="text/css" href="css/bars.css" />
+	<link rel="stylesheet" type="text/css" href="css/components.css" />
+	<link rel="stylesheet" type="text/css" href="css/general-style.css" />
+	<link rel="stylesheet" type="text/css" href="css/misc.css" />
+	<link rel="stylesheet" type="text/css" href="css/other-tabs.css" />
+	<link rel="stylesheet" type="text/css" href="css/popup.css" />
+	<link rel="stylesheet" type="text/css" href="css/tree-node.css" />
+	<link rel="stylesheet" type="text/css" href="eternal_notations_images/dominoes.css" />
+
+	<!-- Google Fonts: Sci-Fi, Coding, Retro, Clean, Fantasy, Math, and Display fonts (50+ fonts) -->
+	<link rel="preconnect" href="https://fonts.googleapis.com">
+	<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+	<link href="https://fonts.googleapis.com/css2?family=Audiowide&family=Chakra+Petch:wght@500;700&family=Electrolize&family=Exo+2:wght@600;700&family=Megrim&family=Michroma&family=Orbitron:wght@500;700&family=Quantico:wght@400;700&family=Rajdhani:wght@600;700&family=Russo+One&family=Syncopate:wght@400;700&family=Teko:wght@500;700&display=swap" rel="stylesheet">
+	<link href="https://fonts.googleapis.com/css2?family=Courier+Prime:wght@400;700&family=Fira+Code:wght@400;700&family=Inconsolata:wght@400;700&family=JetBrains+Mono:wght@400;700&family=Nova+Mono&family=Roboto+Mono:wght@400;700&family=Share+Tech+Mono&family=Space+Mono:wght@400;700&family=Special+Elite&display=swap" rel="stylesheet">
+	<link href="https://fonts.googleapis.com/css2?family=Black+Ops+One&family=Bungee&family=Bungee+Shade&family=Creepster&family=DotGothic16&family=Faster+One&family=Monoton&family=Press+Start+2P&family=Silkscreen:wght@400;700&family=VT323&display=swap" rel="stylesheet">
+	<link href="https://fonts.googleapis.com/css2?family=Comfortaa:wght@500;700&family=Fredoka:wght@500;700&family=Inter:wght@400;700&family=Montserrat:wght@400;700&family=Outfit:wght@400;700&family=Poppins:wght@400;700&family=Righteous&family=Rubik:wght@500;700&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
+	<link href="https://fonts.googleapis.com/css2?family=Almendra:ital,wght@0,700;1,700&family=Bangers&family=Caesar+Dressing&family=Caveat:wght@600;700&family=Cinzel:wght@700&family=Cinzel+Decorative:wght@700&family=Comic+Neue:wght@400;700&family=Marcellus&family=MedievalSharp&family=Pacifico&family=Permanent+Marker&family=Pirata+One&family=Playfair+Display:ital,wght@0,600;1,600&family=STIX+Two+Text:ital,wght@0,400;0,700;1,400;1,700&family=Uncial+Antiqua&family=UnifrakturMaguntia&family=Noto+Sans+Symbols&family=Noto+Sans+Symbols+2&display=swap" rel="stylesheet">
+	<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.21/dist/katex.min.css" crossorigin="anonymous">
+	<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/aaaakshat/cm-web-fonts@latest/fonts.css">
+	<style>
+		/*
+		 * ↊ (U+218A, Turned Digit Two) and ↋ (U+218B, Turned Digit Three)
+		 * These dozenal digits are in the Number Forms block (U+2150-218F).
+		 * Most web fonts don't include them. System fonts that DO:
+		 *   Windows: Segoe UI Symbol, Tahoma, Microsoft Sans Serif
+		 *   macOS: Apple Symbols, Menlo
+		 *   Linux: DejaVu Sans, Symbola (if installed)
+		 * We declare them as separate @font-face with local() first.
+		 */
+		@font-face {
+			font-family: 'DozenalFallback';
+			src: local('Segoe UI Symbol'),
+				 local('Tahoma'),
+				 local('Microsoft Sans Serif'),
+				 local('Apple Symbols'),
+				 local('DejaVu Sans'),
+				 local('Symbola');
+			unicode-range: U+218A-218B;
+		}
+	</style>
+
+	<script src="https://unpkg.com/vue@2.7.16/dist/vue.min.js"></script>
+	<script src="js/technical/break_eternity.js"></script>
+	<script src="js/utils/eternal_notations.js"></script>
+	<script src="js/technical/layerSupport.js"></script>
+
+	<script src="js/mod.js"></script>
+	<script src="js/technical/loader.js"></script>
+
+	<script src="js/technical/temp.js"></script>
+	<script src="js/technical/displays.js"></script>
+	
+	<script src="js/game.js"></script>
+	<script src="js/utils.js"></script>
+	<script src="js/utils/easyAccess.js"></script>
+	<script src="js/technical/systemComponents.js"></script>
+	<script src="js/components.js"></script>
+	<script src="js/technical/canvas.js"></script>
+	<script src="js/technical/particleSystem.js"></script>
+	<script src="js/utils/NumberFormating.js"></script>
+	<script src="js/utils/options.js"></script>
+	<script src="js/utils/save.js"></script>
+	<script src="js/utils/saveSlots.js"></script>
+	<script src="js/utils/officialSaveBank.js"></script>
+	<script src="js/utils/themes.js"></script>
+	<script src="js/technical/transport.js"></script>
+	<script src="js/technical/multiverse.js"></script>
+
+</head>
+
+
+<body onload="load()" onmousemove="updateMouse(event)">
+	<div id="app">
+		<canvas id="treeCanvas" class="canvas" v-if="!(tmp.gameEnded && !player.keepGoing)"></canvas>
+
+		<div v-if="false" id="loadingSection" class="fullWidth">
+			<h1>Loading... (If this takes too long it means there was a serious error!)←</h1>
+		</div>
+		<div class="vl" v-if="player.navTab !== 'none' && tmp.other.splitScreen && player.tab!='none' && !(tmp.gameEnded && !player.keepGoing)"></div>
+		<div v-if="(tmp.gameEnded && !player.keepGoing)" class="fullWidth">
+			<br>
+			<h2>{{modInfo.name}} {{VERSION.withoutName}}</h2><br><br>
+			<h3 v-html="modInfo.winText"></h3><br>
+			<h3>Please check the Discord to see if there are new content updates!</h3><br><br>
+			<div v-if="!player.timePlayedReset">It took you {{formatTime(player.timePlayed)}} to beat the game.</div>
+			<br>
+			<button class="longUpg can" onclick="hardReset(true)">Play Again</button>&nbsp;&nbsp;&nbsp;&nbsp;<button
+				class="longUpg can" onclick="keepGoing()">Keep Going</button>
+			<br><br><br>
+			<span v-if="modInfo.discordLink"><a class="link" v-bind:href="modInfo.discordLink"
+					target="_blank">{{modInfo.discordName}}</a><br></span>
+			<a class="link" href="https://discord.gg/F3xveHV" target="_blank"
+				v-bind:style="modInfo.discordLink ? {'font-size': '16px'} : {}">The Modding Tree Discord</a><br>
+			<a class="link" href="http://discord.gg/wwQfgPa" target="_blank" v-bind:style="{'font-size': '16px'}">Main
+				Prestige Tree server</a><br>
+			<br><br>
+		</div>
+
+		<div id="treeOverlay" v-if="!(tmp.gameEnded && !player.keepGoing) && (player.tab === 'none' || tmp.other.splitScreen || !readData(layoutInfo.showTree))" class="treeOverlay" onscroll="resizeCanvas()"
+			v-bind:class="{ 
+			fullWidth: (player.tab == 'none' || player.navTab == 'none'), 
+			col: (player.tab !== 'none' && player.navTab !== 'none'), 
+			left: (player.tab !== 'none' && player.navTab !== 'none')}"
+			 :style="{'margin-top': !readData(layoutInfo.showTree) && player.tab == 'info-tab' ? '50px' : ''}">
+			<div id="version" onclick="showTab('changelog-tab')" class="overlayThing" style="margin-right: 13px" >
+				{{VERSION.withoutName}}</div>
+			<button
+			v-if="((player.navTab == 'none' && (tmp[player.tab].row == 'side' || tmp[player.tab].row == 'otherside' || player[player.tab].prevTab)) || player[player.navTab]?.prevTab)"				class="other-back overlayThing" onclick="goBack(player.navTab == 'none' ? player.tab : player.navTab)">←</button>
+			<img id="optionWheel" class="overlayThing" v-if="player.tab!='options-tab'" src="options_wheel.png"
+				onclick="showTab('options-tab')"></img>
+			<div id="info" v-if="player.tab!='info-tab'" class="overlayThing" onclick="showTab('info-tab')"><br>i</div>
+			<div id="discord" class="overlayThing">
+				<img onclick="window.open((modInfo.discordLink ? modInfo.discordLink : 'https://discord.gg/F3xveHV'),'mywindow')"
+					src="discord.png" target="_blank"></img>
+				<ul id="discord-links">
+					<li v-if="modInfo.discordLink"><a class="link" v-bind:href="modInfo.discordLink"
+							target="_blank">{{modInfo.discordName}}</a><br></li>
+					<li><a class="link" href="https://discord.gg/F3xveHV" target="_blank"
+							v-bind:style="modInfo.discordLink ? {'font-size': '16px'} : {}">The Modding Tree
+							Discord</a><br></li>
+					<li><a class="link" href="http://discord.gg/wwQfgPa" target="_blank"
+							v-bind:style="{'font-size': '16px'}">Main Prestige Tree server</a></li>
+				</ul>
+			</div>
+			<overlay-head v-if="!(tmp.gameEnded && !player.keepGoing)"></overlay-head>
+			<div class="sideLayers">
+				<div v-for="(node, index) in OTHER_LAYERS['side']">
+					<tree-node :layer='node' :abb='tmp[node].symbol' :size="'small'" :key="'side' + index"></tree-node>
+				</div>
+			</div>
+		</div>
+		
+		<div v-if="!(tmp.gameEnded && !player.keepGoing) && (player.tab === 'none' || tmp.other.splitScreen)" id="treeTab"  onscroll="resizeCanvas()" 
+			v-bind:class="{ fullWidth: (player.tab == 'none' || player.navTab == 'none'), col: (player.tab !== 'none' && player.navTab !== 'none'), left: (player.tab !== 'none' && player.navTab !== 'none')}">
+			<br><br><br><br>
+			<overlay-head id="fakeHead" style="visibility: hidden;">
+			</overlay-head>
+			<layer-tab :layer="player.navTab == 'none' ? player.tab : player.navTab" :key="'left'"></layer-tab>
+			<bg :layer="player.navTab == 'none' ? player.tab : player.navTab" ></bg>
+		</div>
+
+		<!-- Popups -->
+		<div class="popup-container">
+			<transition-group name="fade">
+				<div v-for="popup,index in activePopups" class="popup" v-bind:class="popup.type"
+					v-bind:key="'p' + popup.id" v-on:click="() => {activePopups.splice(index, 1)}" v-bind:style="popup.color ? {'background-color': popup.color} : {}">
+					<h3>{{popup.title}}</h3><br>
+					<h2 v-html="popup.message"></h2>
+				</div>
+			</transition-group>
+		</div>
+		<div class="particle-container">
+				<div v-for="particle,index in particles">
+					<particle :data="particle" :index="index" v-bind:key="'b' + particle.id"></particle>
+				</div>
+		</div>
+
+		<div v-if="player.navTab !== 'none' && player.tab !== 'none' && !(tmp.gameEnded && !player.keepGoing)" onscroll="resizeCanvas()" v-bind:class="{ fullWidth: player.navTab == 'none' || !tmp.other.splitScreen || !readData(layoutInfo.showTree), col: player.navTab != 'none', right: player.navTab != 'none', fast: true, tab: true}">
+			<div v-for="layer in LAYERS">
+				<div v-if="player.tab==layer">
+					<layer-tab :layer="layer" :back="'none'" :spacing="'50px'" :key="'left'"></layer-tab>
+				</div>
+			</div>
+			<bg :layer="player.tab" ></bg>
+
+		</div>
+		<div class = "bg2" v-bind:style = "tmp.backgroundStyle"></div>
+
+	</div>
+</body>

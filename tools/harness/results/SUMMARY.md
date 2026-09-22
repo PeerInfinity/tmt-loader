@@ -6014,3 +6014,91 @@ Reading this section: local measurements for the record; the CI sweep (G1 + M1 o
 | G1 load automation page (CI) | 171 games | — | 0 | 0 | — | — | GREEN | rows: 171/171; 0 RED |
 | fast job: units + media check (CI) | — | — | 0 | 0 | — | — | GREEN | success |
 | whole run (CI) | — | — | 0 | 0 | — | — | GREEN | 87 success, 0 failure, 11 CANCELLED by hand once G1/M1 were in: the F1 measurement jobs run on every workflow_dispatch and measure the automation layer, which this slice does not touch (user, 2026-09-22) |
+
+## 2026-09-22T19:25:08Z — add-game (`node tools/add-game.mjs hanlaosan1/The-Wall-Tree`) — commit `18d07982b` (tree DIRTY) — 6/6 green
+
+Reading this section: the subtree commits are in; manifests, index and goldens are uncommitted at the time of the run. idle hash = the plain page's Node twin (`--no-automation`, no exclusion) vs manifest.headless.idleHash; goldens counts vs manifest.census; G1 = `page.mjs <id> --gate load` (no flag).
+
+| gate | game | leg | ticks | gameSeconds | diff | hash | result | notes |
+|---|---|---|---|---|---|---|---|---|
+| add-game check-manifest | the-wall-tree | — | 0 | 0 | — | — | GREEN | 17 scripts, 2 modFiles, subtree split 051f853, games/the-wall-tree pristine up to 5 processed media files |
+| add-game media processed | the-wall-tree | — | 0 | 0 | — | — | GREEN | images 5 webp + 0 declared skips of 5; audio 0 stubs of 0 |
+| add-game idle hash = census | the-wall-tree | idle | 200 | 10 | 0.05 | `010ee92ca67549dd` | GREEN | census 010ee92ca67549dd |
+| add-game goldens counts = census | the-wall-tree | — | 0 | 0 | — | — | GREEN | 81 ids, 10 layers; ms 9 / upg 66 / buy 1 / ch 5 / ach 0 = census |
+| add-game G1 load (plain page) | the-wall-tree | — | 3 | 0.15 | 0.05 | — | GREEN | ready 1219 ms; 4 `#app .treeNode`; 70 requests, 0 non-localhost, 0 failed, 0 page errors; au nodes 0; keys `tmt-loader:the-wall-tree:墙树-hanlaosan`, `tmt-loader:the-wall-tree:墙树-hanlaosan_options` |
+| G6 games doc | null | — | 0 | 0 | — | — | GREEN | docs/games.md regenerated: 172 games in manifests/index.json, 172 listed in that order |
+
+## 2026-09-22T19:48:56Z — add-game (`node tools/add-game.mjs thecuttlefish123213/The-Cosmic-Tree certainjellyfish9204/The-Modding-Tree`) — commit `61f25aee1` (tree DIRTY) — 9/11 green
+
+Reading this section: the subtree commits are in; manifests, index and goldens are uncommitted at the time of the run. idle hash = the plain page's Node twin (`--no-automation`, no exclusion) vs manifest.headless.idleHash; goldens counts vs manifest.census; G1 = `page.mjs <id> --gate load` (no flag).
+
+| gate | game | leg | ticks | gameSeconds | diff | hash | result | notes |
+|---|---|---|---|---|---|---|---|---|
+| add-game check-manifest | the-cosmic-tree | — | 0 | 0 | — | — | **RED** | [{"field":"load.known.missingAssets","drift":true,"manifest":[],"live":["resources/mNote.png"],"declaredNotInTree":[],"inTreeNotDeclared":["resources/mNote.png"]}] |
+| add-game media processed | the-cosmic-tree | — | 0 | 0 | — | — | GREEN | images 10 webp + 0 declared skips of 10; audio 5 stubs of 5 |
+| add-game idle hash = census | the-cosmic-tree | idle | 200 | 10 | 0.05 | `f803e8e71f984ccf` | GREEN | census f803e8e71f984ccf |
+| add-game goldens counts = census | the-cosmic-tree | — | 0 | 0 | — | — | GREEN | 432 ids, 37 layers; ms 43 / upg 175 / buy 134 / ch 17 / ach 63 = census |
+| add-game G1 load (plain page) | the-cosmic-tree | — | 3 | 0.15 | 0.05 | — | **RED** | ready 1549 ms; 14 `#app .treeNode`; 123 requests, 0 non-localhost, 1 failed, 0 page errors; au nodes 0; keys `tmt-loader:the-cosmic-tree:The-Cosmic-Tree-Anthony_options`, `tmt-loader:the-cosmic-tree:The-Cosmic-Tree-Anthony`; RED: ready true error null; 14 treeNodes; blocked 0 []; failed ["http://127.0.0.1:9559/games/the-cosmic-tree/resources/mNote.png HTTP 404"]; page errors []; verdict vs load.known {"ok":false,"failedNotDeclared":["http://127.0.0.1:9559/games/the-cosmic-tree/resources/mNote.png HTTP 404"],"blockedNotDeclared":[],"skippedEqualsDeclared":true,"errorsAfterReadySample":[]} |
+| add-game check-manifest | the-classic-tree | — | 0 | 0 | — | — | GREEN | 22 scripts, 7 modFiles, subtree split 69a77a0, games/the-classic-tree pristine up to 202 processed media files |
+| add-game media processed | the-classic-tree | — | 0 | 0 | — | — | GREEN | images 202 webp + 0 declared skips of 202; audio 0 stubs of 0 |
+| add-game idle hash = census | the-classic-tree | idle | 200 | 10 | 0.05 | `99c286e6976dc34d` | GREEN | census 99c286e6976dc34d |
+| add-game goldens counts = census | the-classic-tree | — | 0 | 0 | — | — | GREEN | 604 ids, 23 layers; ms 105 / upg 223 / buy 72 / ch 40 / ach 164 = census |
+| add-game G1 load (plain page) | the-classic-tree | — | 3 | 0.15 | 0.05 | — | GREEN | ready 1389 ms; 12 `#app .treeNode`; 83 requests, 0 non-localhost, 0 failed, 0 page errors; au nodes 0; keys `tmt-loader:the-classic-tree:classicPlusFull_options`, `tmt-loader:the-classic-tree:classicPlusFull` |
+| G6 games doc | null | — | 0 | 0 | — | — | GREEN | docs/games.md regenerated: 174 games in manifests/index.json, 174 listed in that order |
+
+## 2026-09-22 — tmt-forks-1: the-cosmic-tree after declaring `load.known.missingAssets` — 3/3 green
+
+Reading this section: the add-game run above reds `check-manifest` and G1 on ONE fact, `resources/mNote.png`, which
+`index.html:149` names while the repository ships `resources/mnote.png` (a 404 on any case-sensitive server,
+GitHub Pages included). Declared as `load.known: {missingAssets: ["resources/mNote.png"]}` (⚖ 2026-09-22; derived
+by check-manifest, equality in both directions; docs/manifest.md) and re-run. The image is the music toggle's icon;
+the `<img>` keeps its declared 40×40 box and its onclick, and the game's audio is the silent stub anyway.
+
+| gate | game | leg | ticks | gameSeconds | diff | hash | result | notes |
+|---|---|---|---|---|---|---|---|---|
+| check-manifest | the-cosmic-tree | — | 0 | 0 | — | — | GREEN | missingAssets declared = derived (`resources/mNote.png`) |
+| G1 load (plain) | the-cosmic-tree | — | 0 | 0 | — | — | GREEN | allowed: {"skipped":0,"missingAssets":1,"blockedHosts":[],"errorsBeforeReady":0}; 14 tree nodes |
+| G1 load (automation) | the-cosmic-tree | — | 0 | 0 | — | — | GREEN | allowed: {"skipped":0,"missingAssets":1,"blockedHosts":[],"errorsBeforeReady":0} |
+
+## 2026-09-22T19:50:00Z — add-game (`node tools/add-game.mjs Lun4-R/The-Collab-Tree`) — commit `a9d51c239` (tree DIRTY) — 5/6 green
+
+Reading this section: the subtree commits are in; manifests, index and goldens are uncommitted at the time of the run. idle hash = the plain page's Node twin (`--no-automation`, no exclusion) vs manifest.headless.idleHash; goldens counts vs manifest.census; G1 = `page.mjs <id> --gate load` (no flag).
+
+| gate | game | leg | ticks | gameSeconds | diff | hash | result | notes |
+|---|---|---|---|---|---|---|---|---|
+| add-game check-manifest | the-collab-tree-lun4-r | — | 0 | 0 | — | — | GREEN | 18 scripts, 10 modFiles, subtree split 73e4f62, games/the-collab-tree-lun4-r pristine up to 11 processed media files |
+| add-game media processed | the-collab-tree-lun4-r | — | 0 | 0 | — | — | GREEN | images 7 webp + 0 declared skips of 7; audio 4 stubs of 4 |
+| add-game idle hash = census | the-collab-tree-lun4-r | idle | 200 | 10 | 0.05 | `2b5962383a0fba93` | **RED** | census db2868c593eb7ad3 |
+| add-game goldens counts = census | the-collab-tree-lun4-r | — | 0 | 0 | — | — | GREEN | 59 ids, 16 layers; ms 10 / upg 21 / buy 10 / ch 3 / ach 15 = census |
+| add-game G1 load (plain page) | the-collab-tree-lun4-r | — | 3 | 0.15 | 0.05 | — | GREEN | ready 1186 ms; 10 `#app .treeNode`; 82 requests, 0 non-localhost, 0 failed, 0 page errors; au nodes 0; keys `tmt-loader:the-collab-tree-lun4-r:thecollabtree-9978665485`, `tmt-loader:the-collab-tree-lun4-r:thecollabtree-9978665485_options` |
+| G6 games doc | null | — | 0 | 0 | — | — | GREEN | docs/games.md regenerated: 175 games in manifests/index.json, 175 listed in that order |
+
+## 2026-09-22 — tmt-forks-1: the-collab-tree-lun4-r's idle hash — BOTH recorded (`headless.idleHash.census`) — 4/4 green
+
+Reading this section: the add-game run above reds `idle hash = census` (ours `2b5962383a0fba93`, census
+`db2868c593eb7ad3`). Ours is deterministic (Node twice) and the PAGE agrees (`page.mjs`, 200 × 0.05, `2b5962383a0fba93`).
+The census's own `lib/boot.mjs` over this same tree reproduces `db2868c593eb7ad3`, so the media commit is not the cause.
+Of 305 `player.<layer>.<key>` fields exactly one differs, `cheese.cycle`: the census pre-clears `player.offTime` before
+stepping, the page does not, and `js/cheese.js` advances `cycle` only while `offTime` is unset. ⚖ 2026-09-22: `hash` =
+ours (G3 still reds if it moves), `census` = {hash, differsIn, reason}; the census-side fix is queued (Q6).
+
+| gate | game | leg | ticks | gameSeconds | diff | hash | result | notes |
+|---|---|---|---|---|---|---|---|---|
+| check-manifest (idleHash.census shape) | the-collab-tree-lun4-r | — | 0 | 0 | — | — | GREEN | |
+| census-hash-diff | the-collab-tree-lun4-r | idle | 200 | 10 | 0.05 | 2b5962383a0fba93 | GREEN | census db2868c593eb7ad3; 305 fields; differs ["cheese.cycle"] = declared |
+| census-hash-diff | the-wall-tree, the-cosmic-tree, the-classic-tree | idle | 200 | 10 | 0.05 | — | GREEN | ours = census = manifest; differs [] in 184 / 1052 / 446 fields |
+| idle hash = manifest | the-collab-tree-lun4-r | idle | 200 | 10 | 0.05 | 2b5962383a0fba93 | GREEN | Node twice + page |
+
+## 2026-09-22 — tmt-forks-1: the second CI round's reds, fixed and re-run locally at 175 games
+
+Reading this section: CI run 35777610644 (`c43a0e7e3`) reddened C1-3 (no currency data for the four new games) and M1 on
+`the-collab-tree-lun4-r` and `the-classic-tree`; run 35781867043 (`f146a92ab`) had M1 `rows: 175/175 game(s); 0 RED;
+7 abstained on the state leg` and reddened only C1-3, on a roster count pinned in its match regex. Local re-runs below.
+
+| gate | game | leg | ticks | gameSeconds | diff | hash | result | notes |
+|---|---|---|---|---|---|---|---|---|
+| M1 --gate mobile | the-classic-tree, the-collab-tree-lun4-r, ptr, something, the-modding-tree, the-factoree | — | — | — | — | — | GREEN | 6/6 after `compId` + `reserveWidth` (layerlist.js) and the mirror's own `Number(id)` |
+| C1 part 1 | — | — | — | — | — | — | GREEN | 21/21 |
+| C1 part 2 | — | — | — | — | — | — | GREEN | 3/3: frozen probe control 1739 = reader 1739 on its games; dated control 2026-09-22 217 = 217 on the four new (the probe re-run reproduced the frozen control exactly over the other 171) |
+| C1 part 3 | — | — | — | — | — | — | GREEN | 4/4 (regex digits 171/103 → 175/107; derivation queued as Q7) |
+| C1 part 6 | — | — | — | — | — | — | GREEN | 16/16 |

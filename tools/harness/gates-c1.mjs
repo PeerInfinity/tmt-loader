@@ -131,10 +131,23 @@ async function part1() {
 }
 
 // ---- Part 2 ---------------------------------------------------------------------------------------------------------
+// ⛔ FROZEN: the probe's control over the roster it measured (171 games). Never re-pinned — it is the only thing that
+// can tell "the reader changed" from "the roster changed" on those games.
 const PROBE = { buyables: 1739, one: 1209, foreign: 610, several: 97, none: 431, nobuy: 2 };
+// ⚖ 2026-09-22 (tmt-forks-1): the games added since get their OWN dated control beside it, from the same probe
+// (NewDocs/plans/tmt/probes/buyable-currency-from-buy-source.js over these ids; the same run reproduced PROBE exactly
+// over the other 171), and each set is compared against its own games — neither overwrites the other.
+// ⚠ Both the probe and the reader skip a buyable with a NON-NUMERIC id (`isNaN(id)`): the-collab-tree-lun4-r's eight
+// word-id buyables (`feed`, `FasterTimeI`, …) are in neither count, so this agreement is not coverage of them.
+const PROBE_2026_09_22 = { games: ['the-wall-tree', 'the-cosmic-tree', 'the-classic-tree', 'the-collab-tree-lun4-r'],
+  buyables: 217, one: 171, foreign: 85, several: 42, none: 4, nobuy: 0 };
 async function part2() {
   const ids = withData();
   const all = ids.flatMap((id) => entries(readData(id)).map((e) => ({ game: id, ...e })));
+  const added = new Set(PROBE_2026_09_22.games);
+  const nOld = all.filter((e) => !added.has(e.game)).length, nNew = all.filter((e) => added.has(e.game)).length;
+  const controlsOk = nOld === PROBE.buyables && nNew === PROBE_2026_09_22.buyables;
+  const controls = `frozen control ${PROBE.buyables} vs the reader ${nOld} on its ${ids.length - PROBE_2026_09_22.games.length} games; dated control 2026-09-22 ${PROBE_2026_09_22.buyables} vs ${nNew} on its ${PROBE_2026_09_22.games.length}`;
   const c = { buyables: all.length, one: 0, own: 0, foreign: 0, several: 0, none: 0, price: 0, requirement: 0, unknown: 0 };
   for (const e of all) {
     c[e.cost]++;
@@ -144,10 +157,10 @@ async function part2() {
   }
   const out = {}; for (const e of all) out[e.game] = (out[e.game] || 0) + (e.scored && !Array.isArray(e.pays) && e.pays !== `player.${e.l}.points` ? 1 : 0);
   const noPlague = { foreign: c.foreign - (out['plague-tree-vorona-cirus-treesease'] || 0), one: c.one - entries(readData('plague-tree-vorona-cirus-treesease')).filter((e) => e.scored && !Array.isArray(e.pays)).length };
-  row({ gate: 'C1-2 COVERAGE over the roster (the rollback\'s answers)', id: `${ids.length} games`, leg: 'games-data/*.json', ok: c.buyables === PROBE.buyables, ticks: 0,
-    notes: `${c.buyables} buyables: ONE field ${c.one} (own ${c.own}, FOREIGN ${c.foreign} in ${Object.values(out).filter(Boolean).length} games; without plague ${noPlague.foreign} of ${noPlague.one} = ${(100 * noPlague.foreign / noPlague.one).toFixed(1)} %) · SEVERAL ${c.several} · ABSTAIN ${c.none}; price ${c.price} / requirement ${c.requirement} / unknown ${c.unknown}` });
-  row({ gate: 'C1-2 against the probe\'s control (a regex, not a truth)', id: `${ids.length} games`, leg: 'probes/buyable-currency-from-buy-source', ok: c.buyables === PROBE.buyables,
-    notes: `probe: ${PROBE.buyables} buyables, one field ${PROBE.one} (foreign ${PROBE.foreign}), several ${PROBE.several}, none ${PROBE.none}, no buy ${PROBE.nobuy}. The reader: one ${c.one}, several ${c.several}, abstain ${c.none}. The differences are the rollback's: a regex pick is not an answer until a buy confirms it, a field the regex misses is found by the fall, and a requirement (compared, never subtracted) is its own kind` });
+  row({ gate: 'C1-2 COVERAGE over the roster (the rollback\'s answers)', id: `${ids.length} games`, leg: 'games-data/*.json', ok: controlsOk, ticks: 0,
+    notes: `${controls}; ${c.buyables} buyables: ONE field ${c.one} (own ${c.own}, FOREIGN ${c.foreign} in ${Object.values(out).filter(Boolean).length} games; without plague ${noPlague.foreign} of ${noPlague.one} = ${(100 * noPlague.foreign / noPlague.one).toFixed(1)} %) · SEVERAL ${c.several} · ABSTAIN ${c.none}; price ${c.price} / requirement ${c.requirement} / unknown ${c.unknown}` });
+  row({ gate: 'C1-2 against the probe\'s control (a regex, not a truth)', id: `${ids.length} games`, leg: 'probes/buyable-currency-from-buy-source', ok: controlsOk,
+    notes: `probe (frozen, 171 games): ${PROBE.buyables} buyables, one field ${PROBE.one} (foreign ${PROBE.foreign}), several ${PROBE.several}, none ${PROBE.none}, no buy ${PROBE.nobuy}; probe (2026-09-22, ${PROBE_2026_09_22.games.length} games): ${PROBE_2026_09_22.buyables}, one ${PROBE_2026_09_22.one} (foreign ${PROBE_2026_09_22.foreign}), several ${PROBE_2026_09_22.several}, none ${PROBE_2026_09_22.none}, no buy ${PROBE_2026_09_22.nobuy}. The reader: one ${c.one}, several ${c.several}, abstain ${c.none}. The differences are the rollback's: a regex pick is not an answer until a buy confirms it, a field the regex misses is found by the fall, and a requirement (compared, never subtracted) is its own kind` });
   const drives = await pool(ids, Math.max(POOL, 6), (id) => drive(id, 'currency-regex.js'));
   let dec = 0, ext = 0, probeNone = 0, recovered = 0, byHow = {}, failed = [], noneScored = 0, noneForeign = 0;
   drives.forEach((r, i) => {
@@ -175,7 +188,7 @@ async function part2() {
 // ---- Part 3 ---------------------------------------------------------------------------------------------------------
 async function part3() {
   const legs = [
-    ['C1-3 currency-data --check (the whole roster regenerated)', ['tools/currency-data.mjs', '--check', '--jobs', String(Math.max(POOL, 4))], /CURRENCY-DATA CHECK — 171 games given, 171 read, 0 failed, 103 with buyables, 0 stale/],
+    ['C1-3 currency-data --check (the whole roster regenerated)', ['tools/currency-data.mjs', '--check', '--jobs', String(Math.max(POOL, 4))], /CURRENCY-DATA CHECK — 175 games given, 175 read, 0 failed, 107 with buyables, 0 stale/],
     ['C1-3 currency-data --check-index', ['tools/currency-data.mjs', '--check-index'], /CURRENCY-INDEX OK/],
     ['C1-3 auto-tables --check (schema file + every table)', ['tools/auto-tables.mjs', '--check'], /AUTO-TABLES CHECK — \d+ tables against formatVersion 1, 0 RED/],
     ['C1-3 auto-tables --provenance (every entry, every commit, every gate)', ['tools/auto-tables.mjs', '--provenance'], /AUTO-TABLES PROVENANCE — \d+ tables, 0 RED/],

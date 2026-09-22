@@ -853,5 +853,25 @@
     "id": "the-exp-tree",
     "name": "The exp tree",
     "repo": "TelosNox/The-Modding-Tree"
+  },
+  {
+    "id": "the-wall-tree",
+    "name": "墙树",
+    "repo": "hanlaosan1/The-Wall-Tree"
+  },
+  {
+    "id": "the-cosmic-tree",
+    "name": "The Cosmic Tree",
+    "repo": "thecuttlefish123213/The-Cosmic-Tree"
+  },
+  {
+    "id": "the-classic-tree",
+    "name": "The Classic+ Tree",
+    "repo": "certainjellyfish9204/The-Modding-Tree"
+  },
+  {
+    "id": "the-collab-tree-lun4-r",
+    "name": "The Collab Tree",
+    "repo": "Lun4-R/The-Collab-Tree"
   }
 ]

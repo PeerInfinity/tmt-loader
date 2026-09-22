@@ -371,6 +371,16 @@
    *  ⚠ The grid is BOUNDED by `rows` / `cols`. TMT 2.7 derives them to cover every numeric id (`setRowCol`), so
    *  there the bound is vacuous — but 2.2.1 does NOT derive them, so an id outside a declared grid is simply never
    *  drawn, and a chip for it would be a chip for something the tab does not show. */
+  /** A component id as the ENGINE holds it. The engines key upgrades and buyables by NUMBER (`hasUpgrade` tests
+   *  `.includes(11)`, so a `"11"` is a purchase that does nothing), which is why the chips convert — but a game may
+   *  name a component with a WORD: `the-collab-tree-lun4-r` lays out `["buyable", "feed"]` and
+   *  `["buyable", "FasterTimeI"]`, and its own buttons pass that string. `Number()` made those `NaN`
+   *  (`cheese/buyables/NaN` — M1, CI run 35777610644), so a key that is not numeric stays the engine's own string. */
+  function compId(id) {
+    var n = Number(id);
+    return (typeof id === 'string' && id.trim() === '') || isNaN(n) ? id : n;
+  }
+
   function idsOf(kind, l) {
     var src = safe(function () { return layers[l][kind]; }, null) || safe(function () { return tmp[l][kind]; }, null);
     if (!src || typeof src !== 'object') return [];
@@ -480,9 +490,9 @@
         // ⚠ `unlocked === false` does NOT mean hidden. PTR renders a SECOND button for a pseudo-unlocked upgrade
         // — `v-if="pseudoUnl(layer, data) && !(tmp[layer].upgrades[data].unlocked)"` — a visible teaser you press
         // to unlock it. The game's own function is the only one that knows; a throw means "not pseudo".
-        return safe(function () { return typeof pseudoUnl === 'function' && !!pseudoUnl(l, Number(id)); }, false) ? 'pseudo' : null;
+        return safe(function () { return typeof pseudoUnl === 'function' && !!pseudoUnl(l, compId(id)); }, false) ? 'pseudo' : null;
       }
-      return safe(function () { var a = player[l].upgrades || []; return a.indexOf(Number(id)) >= 0 || a.indexOf(String(id)) >= 0; }, false) ? 'done' : 'open';
+      return safe(function () { var a = player[l].upgrades || []; return a.indexOf(compId(id)) >= 0 || a.indexOf(String(id)) >= 0; }, false) ? 'done' : 'open';
     }
     if (!unlocked) return null;
     if (kind === 'milestones') {
@@ -494,8 +504,8 @@
     if (kind === 'challenges') {
       var active = safe(function () { return String(player[l].activeChallenge) === String(id); }, false);
       var maxed = safe(function () {
-        if (typeof maxedChallenge === 'function') return !!maxedChallenge(l, Number(id));
-        if (typeof hasChallenge === 'function') return !!hasChallenge(l, Number(id));
+        if (typeof maxedChallenge === 'function') return !!maxedChallenge(l, compId(id));
+        if (typeof hasChallenge === 'function') return !!hasChallenge(l, compId(id));
         var c = player[l].challenges || {}; return Number(c[id]) > 0;
       }, false);
       // both engines hide a finished challenge behind the player's own "hide completed" option (2.2.1 puts the
@@ -544,7 +554,7 @@
       // straight into `player[l].upgrades`, and `hasUpgrade` tests it with `.includes(11)` — a `"11"` in the
       // save is an upgrade that is bought, paid for, and does nothing. MEASURED on ptr: the chip wrote
       // `["11"]` where the game's own button writes `[11]`. A milestone id is a plain key and stays one.
-      items.push({ layer: e.layer, kind: e.kind, act: K.act, id: e.kind === 'milestones' ? e.id : Number(e.id),
+      items.push({ layer: e.layer, kind: e.kind, act: K.act, id: e.kind === 'milestones' ? e.id : compId(e.id),
         key: e.key, title: stripTags(title).trim(), tokens: tokens, state: e.state });
     });
     nameChips(items);
@@ -602,7 +612,7 @@
    *  its box at zero — the asymmetry is the engines', not ours. */
   function ownedAmount(kind, l, id) {
     if (kind === 'buyables') {
-      var b = safe(function () { return typeof getBuyableAmount === 'function' ? getBuyableAmount(l, Number(id)) : player[l].buyables[id]; }, null);
+      var b = safe(function () { return typeof getBuyableAmount === 'function' ? getBuyableAmount(l, compId(id)) : player[l].buyables[id]; }, null);
       return isAmount(b) ? b : null;
     }
     var c = safe(function () { return player[l].clickables[id]; }, null);
@@ -654,7 +664,7 @@
    *  `canAffordUpgrade` is not the question its own button asks. ⚠ A clickable has no chip and no button, so this
    *  is the ONLY place its `canClick` is read. */
   function componentAvailable(kind, l, id, state) {
-    if (kind === 'upgrades') return state === 'open' && affordable({ kind: 'upgrades', layer: l, id: Number(id) });
+    if (kind === 'upgrades') return state === 'open' && affordable({ kind: 'upgrades', layer: l, id: compId(id) });
     if (kind === 'buyables') return belowLimit(l, id) && affordable({ kind: 'buyables', layer: l, id: id });
     if (kind === 'clickables') return safe(function () { return !!tmp[l].clickables[id].canClick; }, false);
     return false;
@@ -726,7 +736,7 @@
   function belowLimit(l, id) {
     var lim = safe(function () { var t = tmp[l].buyables[id]; return t ? t.purchaseLimit : undefined; }, undefined);
     if (lim === undefined || lim === null) return true;
-    var amt = safe(function () { return typeof getBuyableAmount === 'function' ? getBuyableAmount(l, Number(id)) : player[l].buyables[id]; }, null);
+    var amt = safe(function () { return typeof getBuyableAmount === 'function' ? getBuyableAmount(l, compId(id)) : player[l].buyables[id]; }, null);
     if (amt === null) return true;
     return safe(function () { return typeof amt.gte === 'function' ? !amt.gte(lim) : !(Number(amt) >= Number(lim.toNumber ? lim.toNumber() : lim)); }, true);
   }
@@ -1556,7 +1566,7 @@
    *  ⚠ THREE-VALUED ON PURPOSE. `affordable()` defaults an undeclared answer to `true`, which is right for lighting
    *  a button and would make the guard below fire on every component that declares nothing at all. */
   function engineAfford(kind, l, id) {
-    if (kind === 'upgrades') return safe(function () { return typeof canAffordUpgrade === 'function' ? !!canAffordUpgrade(l, Number(id)) : null; }, null);
+    if (kind === 'upgrades') return safe(function () { return typeof canAffordUpgrade === 'function' ? !!canAffordUpgrade(l, compId(id)) : null; }, null);
     if (kind === 'buyables') return safe(function () { var c = tmp[l].buyables[id].canAfford; return c === undefined ? null : !!c; }, null);
     return null;   // starting a challenge costs nothing in either engine, so there is no answer to disagree with
   }
@@ -2055,6 +2065,29 @@
     rec.counterKeys = counters.map(function (g) { return g.kind; }).join(' ');
     syncCounters(rec, counters);
   }
+  /** The width a counter's value needs at its widest, in THIS card's own font. The reservation is `N ch`, which is N
+   *  columns only if every glyph is one `ch` wide: `tabular-nums` makes the digits so, but not the separator, and not a
+   *  game's `letter-spacing` — `the-classic-tree` puts `0.04em` on `*`, which reaches this list, and its `/` is wider
+   *  than its `0`, so `0/1` overran its 3 ch by 1.58 px and gave the width back as the value shortened (M1 leg E,
+   *  CI run 35777610644). So when a reservation GROWS — rarely, never per refresh — the widest shape of the value
+   *  (every digit a `0`, which `tabular-nums` makes as wide as any digit) is measured on an invisible twin of the value
+   *  in the same parent, and the reservation is whichever is wider. Nothing is measured on a refresh that grows
+   *  nothing; a measurement that fails leaves the `ch` reservation as it was. */
+  function reserveWidth(el, chars, text) {
+    var px = 0;
+    try {
+      var twin = el.cloneNode(false);
+      twin.style.cssText = 'position:absolute;visibility:hidden;min-width:0;width:auto;white-space:nowrap';
+      var shape = String(text).replace(/[0-9]/g, '0');
+      var pad = chars - shape.length;
+      twin.textContent = (pad > 0 ? new Array(pad + 1).join('0') : '') + shape;
+      el.parentNode.appendChild(twin);
+      px = twin.getBoundingClientRect().width;
+      el.parentNode.removeChild(twin);
+    } catch (e) { px = 0; }
+    el.style.minWidth = px > 0 ? 'max(' + chars + 'ch, ' + Math.ceil(px * 100) / 100 + 'px)' : chars + 'ch';
+    return px > 0;   // false while the card is not laid out (the list still hidden): the caller measures again next time
+  }
   function syncCounters(rec, counters) {
     counters.forEach(function (g, i) {
       var e = rec.counterEls[i];
@@ -2066,7 +2099,7 @@
       // ⚠ THE RESERVATION ONLY GROWS. A width that shrank back would move the row the moment a number did, which
       // is the jitter the reservation exists to prevent (see `chars` above, and `tabular-nums` in the CSS).
       var want = Math.max(g.chars, rec.reserved[g.kind] || 0);
-      if (want !== rec.reserved[g.kind]) { rec.reserved[g.kind] = want; e.val.style.minWidth = want + 'ch'; }
+      if (want !== rec.reserved[g.kind] && reserveWidth(e.val, want, g.text)) rec.reserved[g.kind] = want;
       paintCounter(rec.layer, e, g);   // (U6) and the counter's own colour, on the same budget as the digits
     });
   }

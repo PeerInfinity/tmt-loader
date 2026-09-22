@@ -76,7 +76,7 @@ The V1 read-out is unchanged and stays LIVE beside the controls — watching the
 editing. **Choices live in the save** (`player.au.edits`, below).
 
 ⚠ **Subtabs make the loader depend, on every game, on a component it had never asked for**: the engine draws the
-subtab bar itself, with `tab-buttons`. Censused quote-agnostically over `games/`: **all 171 of the 171 games register
+subtab bar itself, with `tab-buttons`. Censused quote-agnostically over `games/`: **all 175 of the 175 games register
 `Vue.component("tab-buttons")`**. ⛔ That is a REGISTRATION count and not a rendering result — a game could register
 the component and still fail to draw the tab — so it is only the premise; `gates-v1 --part 6` opens the Advanced
 subtab on every game and is the witness.
@@ -149,7 +149,7 @@ string's length does): **two different problems.**
 ⚖ **Corrected during V2** (the user asked why the engines' own inputs could not be used on every game — they can be
 SUPPLIED). Both engines' `column` / `row` render **any registered component by name** (`v-bind:is="item[0]"` with
 `:layer` and `:data` — ptr `js/components.js:71-73`, something `:60-72`), so a component the LOADER registers appears
-inside a `tabFormat` exactly like an engine one. Censused quote-agnostically over `games/`: **all 171 of the 171
+inside a `tabFormat` exactly like an engine one. Censused quote-agnostically over `games/`: **all 175 of the 175
 games register `Vue.component("column")`**, which is the premise the whole design rests on. `tmt-auto.js` registers
 **seven** components (four since V2, two more since V3, one more since V4b), namespaced so nothing can collide:
 
@@ -177,7 +177,7 @@ and no file under `games/` changes. ⚠ **Registration is in automation mode onl
 contract-only early return, so a page without `?automation=1` has no `tmtl-*` component at all
 (`gates-v2 --part 4`). In **Node** the definitions go to the harness's Vue *stub* (`boot.mjs:119`) and render nothing.
 
-⚠ **Do NOT depend on the engines' own `text-input` / `slider` / `drop-down`:** only 154 / 154 / 152 of the 171 games
+⚠ **Do NOT depend on the engines' own `text-input` / `slider` / `drop-down`:** only 158 / 158 / 156 of the 175 games
 register them, and their behaviour differs by engine version. **17 register none of the three, `ptr` among them** —
 one of the two reference games this whole arc is measured on. There is no second "fallback" control family: one
 family on all 171, and a game that needed anything else is a RED in `gates-v2 --part 6`, not a fallback.
@@ -644,7 +644,7 @@ removal was untested rather than tested.
 ⚠ **That the wrapper COULD be reached at all was a census, not an assumption** — and the census stays, because it is
 also what says the seeded key is enough: — it depends on `toggleAuto` being a
 property of the global object and on the Vue instance not shadowing it, and both are the GAMES' business:
-**of the 171 games, 171 declare `function toggleAuto` at top level, 149 write the field through `Vue.set` and 22
+**of the 175 games, 175 declare `function toggleAuto` at top level, 153 write the field through `Vue.set` and 22
 assign plainly, and 0 put `toggleAuto` in the Vue instance's `data`.** A top-level function declaration in a classic
 script IS a `globalThis` property (and the same holds in the harness's `vm.runInThisContext` context), and with
 nothing shadowing it the compiled template's `with(this)` falls through to exactly the property this replaces.

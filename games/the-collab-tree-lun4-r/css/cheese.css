@@ -1,0 +1,14 @@
+.cheese.upg.can {
+  color: rgb(244, 144, 12);
+  border-color: rgb(255, 172, 51);
+}
+
+.cheese.upg {
+  border-radius: 25%;
+  border: 5px solid;
+  border-color: rgba(0, 0, 0, 0.125);
+}
+
+.cheese.upg * {
+  font-family: Bahnschrift SemiBold;
+}

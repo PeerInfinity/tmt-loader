@@ -45,7 +45,7 @@ env:
 jobs:
   # ---------------------------------------------------------------------------------------------------------------
   # Seconds, no browser, no per-game boot — and EVERYTHING else needs it. If the units are red there is no point
-  # spending fourteen runners to find out that the roster still has 171 games in it.
+  # spending fourteen runners to find out that the roster is still the size it was.
   # ---------------------------------------------------------------------------------------------------------------
   fast:
     name: units + repo-wide checks
@@ -104,7 +104,7 @@ jobs:
           } >> "$GITHUB_STEP_SUMMARY"
 
   # ---------------------------------------------------------------------------------------------------------------
-  # M1 — the mobile sweep, 171 games, sharded ten ways.
+  # M1 — the mobile sweep, the whole roster, sharded ten ways.
   # ---------------------------------------------------------------------------------------------------------------
   shard:
     name: M1 shard ${{ matrix.shard }}/10
@@ -205,7 +205,9 @@ jobs:
         shell: bash
         run: |
           {
-            echo '## M1 mobile sweep — 171 games over '"$SHARDS"' shards'
+            # ⚠ DERIVED, never written: this line said "171 games" and was wrong the day the roster became 175.
+            # A cosmetic count is still a count, and a reader trusts a headline.
+            echo "## M1 mobile sweep — $(node -e 'console.log(JSON.parse(require("fs").readFileSync("manifests/index.json","utf8")).length)') games over $SHARDS shards"
             echo ''
             echo '```'
             cat merge.txt 2>/dev/null || echo 'the merge produced no output — see the step above'
