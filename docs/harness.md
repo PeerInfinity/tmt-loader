@@ -208,13 +208,18 @@ run 35637460884 at `3069ee2`. **It is NOT a constant factor, and it is not even 
      evidence; the run's own verdict is not.
    · **A slice needs F1 only if it changes what a reset DECIDES** — a default, a strategy, a rule the tables encode.
      A UI, media, docs or harness change does not, however large its diff.
-   ⚖ **SHIPPED 2026-09-22 — the matrix is now OPT-IN, and this is how you ask for it:**
+   ⚖ **SHIPPED 2026-09-22 — the matrix has its OWN WORKFLOW, `.github/workflows/f1.yml`, and this is how you run it:**
 
-       gh workflow run sweep.yml -f f1=true            # the F1 measurement matrix, ~5.5 runner-hours
-       gh workflow run sweep.yml --ref <branch>        # M1 + G1 on a branch; F1 does NOT run
+       gh workflow run f1.yml --ref <branch>           # the F1 measurement matrix, ~5.5 runner-hours
+       gh workflow run sweep.yml --ref <branch>        # M1 + G1 on a branch; F1 is not in this workflow at all
 
-   The four measurement jobs require `github.event_name == 'workflow_dispatch' && inputs.f1`; `f1-rows` still runs
-   on every push. ⚠ **A planner who cannot find this switch will quote a STALE 0.05 row instead of measuring one** —
+   ⛔ **A SEPARATE FILE, NOT JUST A FLAG, AND THE REASON IS CONCURRENCY.** `sweep.yml` is
+   `concurrency: sweep-${{ github.ref }}` with `cancel-in-progress`, and a dispatch on `main` and a PUSH to `main`
+   share that group — so a push KILLED a campaign in flight. Measured: run 35646386975 (34 measurement jobs
+   succeeded, **7 cancelled**) and 35636667015 (16 succeeded, **4 cancelled**). A dispatch input could not fix that;
+   only a different concurrency group can. `f1.yml` has its own, and keeps `cancel-in-progress` — a second dispatch
+   superseding a first is a choice someone made, a push killing a campaign is not.
+   `f1-rows`, the cheap `maxRow` GATE, stays in `sweep.yml` and runs on every push. ⚠ **A planner who cannot find this switch will quote a STALE 0.05 row instead of measuring one** —
    the tick policy says no default moves without a 0.05 row, and that row comes from exactly these jobs.
    ⛔ `inputs.f1` is a BOOLEAN, so never write `inputs.f1 == 'true'`: GitHub compares a boolean to a string by
    casting the string to a number, making the test always false and the jobs silently unreachable.

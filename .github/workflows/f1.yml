@@ -1,0 +1,259 @@
+# The F1 reset-frequency MEASUREMENT matrix — its own workflow, and dispatch-only.
+#
+# ⛔ WHY IT IS NOT IN `sweep.yml`, measured 2026-09-21/22. It used to live there, gated on the event being a
+# dispatch. Two things were wrong with that, and only the second is obvious:
+#   · `sweep.yml` is `concurrency: sweep-${{ github.ref }}` with `cancel-in-progress`, and a DISPATCH on `main` and
+#     a PUSH to `main` share that group — so any push KILLED a campaign in flight. It happened twice in two days:
+#     run 35646386975 (34 measurement jobs succeeded, 7 cancelled) and 35636667015 (16 succeeded, 4 cancelled).
+#     Most of a ~5.5 runner-hour matrix, thrown away by an unrelated push.
+#   · dispatching the sweep at a branch is how EVERY slice in both arcs gets M1 and G1, because the sweep only runs
+#     on push to `main` — so the event test could not tell "run the roster on my branch" from "re-decide a reset
+#     default", and every slice started the matrix. `tmt-assets-1`, a media-compression slice touching no
+#     automation code at all, paid for a full one.
+# An input (`f1: false`) fixed the second and not the first; its own workflow fixes both, and needs no input — so
+# the `inputs.f1 == 'true'` trap (a boolean compared with a string is ALWAYS false) cannot come back either.
+#
+# ⚖ `f1-rows` stays in `sweep.yml`: it is the cheap `maxRow` gate that must run on every push. What is here is the
+# MEASUREMENT — a table a planner quotes, not a row count that must hold.
+#
+# TO RUN IT:  gh workflow run f1.yml --ref <branch>
+#
+# ⚠ `cancel-in-progress` IS set for this workflow's own group: a second dispatch superseding a first is a choice
+# someone made; a push killing a campaign is not. That is the whole distinction this file exists to draw.
+# ⚠ These jobs no longer `needs: fast` — a job cannot depend on one in another workflow. The units are cheap and
+# already gate every push; a measurement dispatched by hand does not need them re-run first.
+
+name: f1
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: f1-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  # Local and CI must agree, because the merge's verdicts are compared against a local full sweep's.
+  NODE_VERSION: '18.20.6'
+  SHARDS: '10'
+
+jobs:
+
+  # ---------------------------------------------------------------------------------------------------------------
+  # F1 — HOW OFTEN SHOULD A RESET FIRE, scored at the page's REAL tick (`diff 0.05`; plan §46–§48).
+  # One cell per job, each cell TWICE (`gates-f1 --cell <key>`); the merge re-reads every cell file of a part and
+  # REFUSES a missing one by name (LESS LOOKS GREENER). A real-tick leg costs ~20× the wall of a `diff 1` leg per
+  # game-second, so the long cells (the opening, M15 → M25) exist only here; `--wall-ms` is the graceful bound (a
+  # run killed by the job's own timeout writes nothing), set under `timeout-minutes`.
+  # ---------------------------------------------------------------------------------------------------------------
+  f1-cells:
+    # ⚖ MANUAL ONLY (user, 2026-09-21): a MEASUREMENT table, not a gate — ~5.5 runner-hours per run, its slowest
+    # cells the configurations that WALL (they burn their whole real-tick budget). Run it from the Actions tab
+    # (workflow_dispatch) when a reset default is being re-decided; `f1-rows` is the F1 gate that runs on every push.
+    name: F1 cell ${{ matrix.cell }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 100
+    strategy:
+      fail-fast: false
+      matrix:
+        cell: ['E@1/off', 'E@0.05/off', 'R2@1/off', 'R2@0.05/off', 'R3@1/off', 'R3@0.05/off',
+               'E@1/yield', 'E@0.05/yield', 'R2@1/yield', 'R2@0.05/yield', 'R3@1/yield', 'R3@0.05/yield',
+               'O@1/off', 'O@1/yield', 'O@0.05/off', 'O@0.05/yield',
+               'L3@1/off', 'L3@1/yield', 'L3@0.05/off', 'L3@0.05/yield']
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - run: npm ci
+
+      - name: "F1 cell ${{ matrix.cell }}, twice"
+        shell: bash
+        run: |
+          set -o pipefail
+          node tools/harness/gates-f1.mjs --cell '${{ matrix.cell }}' --wall-ms 5400000 --pool 2 \
+            --no-summary --assert | tee f1-cell.txt
+
+      - name: Summary
+        if: always()
+        shell: bash
+        run: |
+          {
+            echo '## F1 cell ${{ matrix.cell }}'
+            echo ''
+            echo '```'
+            cat f1-cell.txt 2>/dev/null | grep -E 'VERDICT|REFUSED|^RED|^GREEN|PROGRESS' || echo 'no output'
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload the cell
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: f1-cell-${{ strategy.job-index }}
+          path: tools/harness/results/gates-f1-cell-*.json
+          if-no-files-found: warn
+          retention-days: 14
+
+
+  # F1-fix: the ladder's fixtures regenerated under the shipped configuration (after F1), the shipped leg TWICE from
+  # a FRESH game — ONE chain, M01 onward — every mark's snapshot written by each run into its own directory and compared file by file;
+  # both sets are uploaded and a fixture is committed only from a run whose twin agreed.
+  f1-fixtures:
+    # ⚖ MANUAL ONLY (user, 2026-09-21): a MEASUREMENT table, not a gate — ~5.5 runner-hours per run, its slowest
+    # cells the configurations that WALL (they burn their whole real-tick budget). Run it from the Actions tab
+    # (workflow_dispatch) when a reset default is being re-decided; `f1-rows` is the F1 gate that runs on every push.
+    name: F1 fixtures — the shipped leg from a fresh game, twice
+    runs-on: ubuntu-latest
+    timeout-minutes: 100
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - run: npm ci
+
+      - name: F1 part fix
+        shell: bash
+        run: |
+          set -o pipefail
+          node tools/harness/gates-f1.mjs --part fix --wall-ms 5400000 --no-summary --assert | tee f1-fix.txt
+
+      - name: Summary
+        if: always()
+        shell: bash
+        run: |
+          {
+            echo '## F1 fixtures'
+            echo ''
+            echo '```'
+            cat f1-fix.txt 2>/dev/null | grep -E 'VERDICT|REFUSED|^RED|^GREEN' || echo 'no output'
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload both runs' fixtures
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: f1-fixtures
+          path: tools/harness/results/f1-fixtures/
+          if-no-files-found: warn
+          retention-days: 14
+
+
+  # Parts 2 and 3 run as GROUPS (`--group`): a group is the cells that share a stretch, so one runner walks them
+  # side by side and the long row-3 cells get a job each.
+  f1-groups:
+    # ⚖ MANUAL ONLY (user, 2026-09-21): a MEASUREMENT table, not a gate — ~5.5 runner-hours per run, its slowest
+    # cells the configurations that WALL (they burn their whole real-tick budget). Run it from the Actions tab
+    # (workflow_dispatch) when a reset default is being re-decided; `f1-rows` is the F1 gate that runs on every push.
+    name: F1 group ${{ matrix.group }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 100
+    strategy:
+      fail-fast: false
+      matrix:
+        group: ['ST', 'L3-gain2x', 'L3-stall5',
+                'X:the-extended-tree', 'X:prestige-tree-ng', 'X:the-normal-tree', 'X:the-omega-tree',
+                'X:the-function-of-time-tree', 'X:the-pp-tree', 'X:the-point-tree', 'X:weakling-tree',
+                'P3-P', 'P3-R2', 'P3-E', 'P3-O',
+                'P3-L3-q gain>=2', 'P3-L3-q gain>=4', 'P3-L3-q gain>=8', 'P3-L3-q,h gap>=60s', 'P3-L3-e gain>=16x']
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - run: npm ci
+
+      - name: "F1 group ${{ matrix.group }}, every cell twice"
+        shell: bash
+        run: |
+          set -o pipefail
+          node tools/harness/gates-f1.mjs --group '${{ matrix.group }}' --wall-ms 5400000 --pool 4 \
+            --no-summary --assert | tee f1-group.txt
+
+      - name: Summary
+        if: always()
+        shell: bash
+        run: |
+          {
+            echo '## F1 group ${{ matrix.group }}'
+            echo ''
+            echo '```'
+            cat f1-group.txt 2>/dev/null | grep -E 'VERDICT|REFUSED|^RED|^GREEN|PROGRESS' || echo 'no output'
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload the group
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: f1-group-${{ strategy.job-index }}
+          path: tools/harness/results/gates-f1-cell-*.json
+          if-no-files-found: warn
+          retention-days: 14
+
+
+  f1-merge:
+    name: F1 merge — every cell present, the tables and the verdicts
+    needs: [f1-cells, f1-groups]
+    # manual only, like the cells it merges; `!cancelled()` still runs it when a cell FAILED
+    if: ${{ !cancelled() }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - run: npm ci
+
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: f1-*
+          path: cells
+          merge-multiple: true
+
+      - name: Merge parts 0 (the tick calibration), 1 (the yield), 2 (the derived default) and 3 (the throttle)
+        shell: bash
+        run: |
+          set -o pipefail
+          node tools/harness/gates-f1.mjs --part m --cell 0 --from cells --no-summary --assert | tee f1-m0.txt
+          node tools/harness/gates-f1.mjs --part m --cell 1 --from cells --no-summary --assert | tee f1-m1.txt
+          node tools/harness/gates-f1.mjs --part m --cell 2 --from cells --no-summary --assert | tee f1-m2.txt
+          node tools/harness/gates-f1.mjs --part m --cell 3 --from cells --no-summary --assert | tee f1-m3.txt
+
+      - name: Summary
+        if: always()
+        shell: bash
+        run: |
+          {
+            echo '## F1 merge'
+            echo ''
+            echo '```'
+            cat f1-m0.txt f1-m1.txt f1-m2.txt f1-m3.txt 2>/dev/null || echo 'no output'
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"

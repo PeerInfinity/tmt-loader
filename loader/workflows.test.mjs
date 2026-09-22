@@ -80,44 +80,40 @@ test('the sweep does not publish', () => {
   }
 });
 
-// ⛔ THE F1 MATRIX IS OPT-IN, AND ITS FAILURE MODE IS SILENCE. The four measurement jobs cost ~5.5 runner-hours;
-// before the `f1` input they ran on EVERY dispatch, including a slice dispatching the sweep at its own branch to
-// get M1 and G1 (`tmt-assets-1`, a media change, paid for a full matrix). Now they require the input.
-// ⚠ Both halves are pinned because either one alone re-arms the old cost or removes the measurement for good:
-// drop the input and the jobs never run again; drop a job's `inputs.f1` and that job runs on every dispatch.
-// ⚠ And `inputs.f1 == 'true'` is pinned OUT: `type: boolean` makes `inputs.f1` a boolean, and GitHub compares a
-// boolean to a string by casting the string to a number, so that form is always false — the jobs would vanish
-// quietly, which no roster sweep would ever notice.
+// ⛔ THE F1 MEASUREMENT MATRIX LIVES IN ITS OWN WORKFLOW, and these pins are what stop it drifting back.
+// It used to sit in `sweep.yml` gated on the event being a dispatch. That cost real work twice: `sweep.yml` is
+// `concurrency: sweep-<ref>` with `cancel-in-progress`, and a dispatch and a PUSH on `main` share that group, so a
+// push killed a campaign in flight — run 35646386975 (34 measurement jobs succeeded, 7 cancelled) and 35636667015
+// (16 / 4). An input fixed a different half of the problem and not that one.
+// ⚠ Each assertion below covers a way the split can silently undo itself: a measurement job reappearing in the
+// sweep (a push can kill it again), the new workflow gaining a push trigger (~5.5 runner-hours per push), or
+// `f1-rows` — the cheap `maxRow` GATE — following the measurements out of the sweep and ceasing to gate anything.
 const F1_MEASUREMENT_JOBS = ['f1-cells', 'f1-fixtures', 'f1-groups', 'f1-merge'];
 
-test('the sweep declares an `f1` dispatch input, defaulting to OFF', () => {
-  const s = wf('sweep.yml');
-  const block = /^on:\n(?:.*\n)*?  workflow_dispatch:\n((?:    .*\n|\n)*)/m.exec(s);
-  assert.ok(block, 'sweep.yml has no workflow_dispatch block to carry the input');
-  assert.match(block[1], /^ {6}f1:\s*$/m, 'the `f1` input is gone — the F1 jobs would never run again');
-  assert.match(block[1], /^ {8}type:\s*boolean\s*$/m, '`f1` must be a boolean; a string input changes how it is tested');
-  assert.match(block[1], /^ {8}default:\s*false\s*$/m, '`f1` must default to OFF, or every dispatch pays ~5.5 runner-hours');
+test('the F1 measurement jobs live ONLY in f1.yml', () => {
+  const inSweep = Object.keys(jobs(wf('sweep.yml')));
+  const inF1 = Object.keys(jobs(wf('f1.yml')));
+  for (const j of F1_MEASUREMENT_JOBS) {
+    assert.ok(inF1.includes(j), `${j} is missing from f1.yml`);
+    assert.ok(!inSweep.includes(j), `${j} is back in sweep.yml — a push to main can cancel a campaign again`);
+  }
+  assert.deepEqual(inF1.sort(), [...F1_MEASUREMENT_JOBS].sort(), 'f1.yml holds exactly the measurement jobs');
 });
 
-test('every F1 measurement job requires the input — and none tests it as a STRING', () => {
+test('f1.yml is DISPATCH-ONLY and has its own concurrency group', () => {
+  const s = wf('f1.yml');
+  assert.deepEqual(triggers(s), ['workflow_dispatch'], 'f1.yml must never run on a push — that is ~5.5 runner-hours');
+  const g = /^concurrency:\n\s+group:\s*(\S.*)$/m.exec(s);
+  assert.ok(g, 'f1.yml declares no concurrency group');
+  assert.doesNotMatch(g[1], /^sweep-/, 'f1.yml must NOT share the sweep group — that is the bug it was split out of');
+});
+
+test('sweep.yml keeps `f1-rows` on every push, and carries no f1 input any more', () => {
   const s = wf('sweep.yml');
   const J = jobs(s);
-  const named = Object.keys(J).filter((k) => /^f1(-|$)/.test(k) && k !== 'f1-rows');
-  assert.deepEqual(named.sort(), [...F1_MEASUREMENT_JOBS].sort(),
-    'the F1 measurement jobs are not the ones this test pins — rename or re-pin deliberately');
-  for (const k of named) {
-    const m = /^\s{4}if:\s*(.+)$/m.exec(J[k]);
-    assert.ok(m, `job ${k} has no \`if:\` — it would run on every dispatch`);
-    assert.match(m[1], /github\.event_name == 'workflow_dispatch'/, `job ${k} must stay dispatch-only`);
-    assert.match(m[1], /&&\s*inputs\.f1\b/, `job ${k} does not require \`inputs.f1\` — it runs on every dispatch again`);
-    assert.doesNotMatch(m[1], /inputs\.f1\s*==/, `job ${k} compares \`inputs.f1\`; a boolean vs a string is ALWAYS false`);
-  }
-});
-
-test('`f1-rows` is NOT gated on the input — it is the cheap F1 gate that runs on every push', () => {
-  const J = jobs(wf('sweep.yml'));
-  assert.ok(J['f1-rows'], 'f1-rows is gone');
-  assert.doesNotMatch(J['f1-rows'], /inputs\.f1/, 'f1-rows must keep running on every push');
+  assert.ok(J['f1-rows'], 'f1-rows is gone — the cheap maxRow gate must stay in the sweep');
+  assert.doesNotMatch(J['f1-rows'], /^\s{4}if:/m, 'f1-rows must not be gated: it runs on every push');
+  assert.doesNotMatch(s, /inputs\.f1/, 'the `f1` input is back; the split removed the need for it and its `== \'true\'` trap');
 });
 
 test('the sweep runs on push and on dispatch', () => {
