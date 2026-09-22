@@ -6027,3 +6027,35 @@ Reading this section: the subtree commits are in; manifests, index and goldens a
 | add-game goldens counts = census | the-wall-tree | — | 0 | 0 | — | — | GREEN | 81 ids, 10 layers; ms 9 / upg 66 / buy 1 / ch 5 / ach 0 = census |
 | add-game G1 load (plain page) | the-wall-tree | — | 3 | 0.15 | 0.05 | — | GREEN | ready 1219 ms; 4 `#app .treeNode`; 70 requests, 0 non-localhost, 0 failed, 0 page errors; au nodes 0; keys `tmt-loader:the-wall-tree:墙树-hanlaosan`, `tmt-loader:the-wall-tree:墙树-hanlaosan_options` |
 | G6 games doc | null | — | 0 | 0 | — | — | GREEN | docs/games.md regenerated: 172 games in manifests/index.json, 172 listed in that order |
+
+## 2026-09-22T19:48:56Z — add-game (`node tools/add-game.mjs thecuttlefish123213/The-Cosmic-Tree certainjellyfish9204/The-Modding-Tree`) — commit `61f25aee1` (tree DIRTY) — 9/11 green
+
+Reading this section: the subtree commits are in; manifests, index and goldens are uncommitted at the time of the run. idle hash = the plain page's Node twin (`--no-automation`, no exclusion) vs manifest.headless.idleHash; goldens counts vs manifest.census; G1 = `page.mjs <id> --gate load` (no flag).
+
+| gate | game | leg | ticks | gameSeconds | diff | hash | result | notes |
+|---|---|---|---|---|---|---|---|---|
+| add-game check-manifest | the-cosmic-tree | — | 0 | 0 | — | — | **RED** | [{"field":"load.known.missingAssets","drift":true,"manifest":[],"live":["resources/mNote.png"],"declaredNotInTree":[],"inTreeNotDeclared":["resources/mNote.png"]}] |
+| add-game media processed | the-cosmic-tree | — | 0 | 0 | — | — | GREEN | images 10 webp + 0 declared skips of 10; audio 5 stubs of 5 |
+| add-game idle hash = census | the-cosmic-tree | idle | 200 | 10 | 0.05 | `f803e8e71f984ccf` | GREEN | census f803e8e71f984ccf |
+| add-game goldens counts = census | the-cosmic-tree | — | 0 | 0 | — | — | GREEN | 432 ids, 37 layers; ms 43 / upg 175 / buy 134 / ch 17 / ach 63 = census |
+| add-game G1 load (plain page) | the-cosmic-tree | — | 3 | 0.15 | 0.05 | — | **RED** | ready 1549 ms; 14 `#app .treeNode`; 123 requests, 0 non-localhost, 1 failed, 0 page errors; au nodes 0; keys `tmt-loader:the-cosmic-tree:The-Cosmic-Tree-Anthony_options`, `tmt-loader:the-cosmic-tree:The-Cosmic-Tree-Anthony`; RED: ready true error null; 14 treeNodes; blocked 0 []; failed ["http://127.0.0.1:9559/games/the-cosmic-tree/resources/mNote.png HTTP 404"]; page errors []; verdict vs load.known {"ok":false,"failedNotDeclared":["http://127.0.0.1:9559/games/the-cosmic-tree/resources/mNote.png HTTP 404"],"blockedNotDeclared":[],"skippedEqualsDeclared":true,"errorsAfterReadySample":[]} |
+| add-game check-manifest | the-classic-tree | — | 0 | 0 | — | — | GREEN | 22 scripts, 7 modFiles, subtree split 69a77a0, games/the-classic-tree pristine up to 202 processed media files |
+| add-game media processed | the-classic-tree | — | 0 | 0 | — | — | GREEN | images 202 webp + 0 declared skips of 202; audio 0 stubs of 0 |
+| add-game idle hash = census | the-classic-tree | idle | 200 | 10 | 0.05 | `99c286e6976dc34d` | GREEN | census 99c286e6976dc34d |
+| add-game goldens counts = census | the-classic-tree | — | 0 | 0 | — | — | GREEN | 604 ids, 23 layers; ms 105 / upg 223 / buy 72 / ch 40 / ach 164 = census |
+| add-game G1 load (plain page) | the-classic-tree | — | 3 | 0.15 | 0.05 | — | GREEN | ready 1389 ms; 12 `#app .treeNode`; 83 requests, 0 non-localhost, 0 failed, 0 page errors; au nodes 0; keys `tmt-loader:the-classic-tree:classicPlusFull_options`, `tmt-loader:the-classic-tree:classicPlusFull` |
+| G6 games doc | null | — | 0 | 0 | — | — | GREEN | docs/games.md regenerated: 174 games in manifests/index.json, 174 listed in that order |
+
+## 2026-09-22 — tmt-forks-1: the-cosmic-tree after declaring `load.known.missingAssets` — 3/3 green
+
+Reading this section: the add-game run above reds `check-manifest` and G1 on ONE fact, `resources/mNote.png`, which
+`index.html:149` names while the repository ships `resources/mnote.png` (a 404 on any case-sensitive server,
+GitHub Pages included). Declared as `load.known: {missingAssets: ["resources/mNote.png"]}` (⚖ 2026-09-22; derived
+by check-manifest, equality in both directions; docs/manifest.md) and re-run. The image is the music toggle's icon;
+the `<img>` keeps its declared 40×40 box and its onclick, and the game's audio is the silent stub anyway.
+
+| gate | game | leg | ticks | gameSeconds | diff | hash | result | notes |
+|---|---|---|---|---|---|---|---|---|
+| check-manifest | the-cosmic-tree | — | 0 | 0 | — | — | GREEN | missingAssets declared = derived (`resources/mNote.png`) |
+| G1 load (plain) | the-cosmic-tree | — | 0 | 0 | — | — | GREEN | allowed: {"skipped":0,"missingAssets":1,"blockedHosts":[],"errorsBeforeReady":0}; 14 tree nodes |
+| G1 load (automation) | the-cosmic-tree | — | 0 | 0 | — | — | GREEN | allowed: {"skipped":0,"missingAssets":1,"blockedHosts":[],"errorsBeforeReady":0} |
