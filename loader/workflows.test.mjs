@@ -130,14 +130,15 @@ test('every expensive job in the sweep is GATED by the fast one', () => {
   assert.deepEqual(needs(j.merge), ['shard']);
 });
 
-test('the fast job runs all three cheap checks — as CHECKS, not inside its own summary', () => {
+test('the fast job runs all its cheap checks — as CHECKS, not inside its own summary', () => {
   // ⚠ The first version of this test asserted only that the command appeared in the job, and a mutant walked
   // straight through it: the summary step at the end of the job reruns `census-figures.mjs` to paste its output
   // into $GITHUB_STEP_SUMMARY, swallowing the exit code with `|| true`. Deleting the real step left the text in
   // place and the test green. A command whose status nothing reads is not a check.
   const j = jobs(wf('sweep.yml'));
   const steps = j.fast.split(/^ {6}- /m).slice(1);
-  for (const cmd of ['npm run harness:test', 'node tools/games-table.mjs --check', 'node tools/census-figures.mjs']) {
+  // `node tools/media.mjs` (assets-1): the media check — a `git subtree pull` restores originals and nothing else sees it
+  for (const cmd of ['npm run harness:test', 'node tools/games-table.mjs --check', 'node tools/census-figures.mjs', 'node tools/media.mjs']) {
     const real = steps.filter((st) => st.includes(cmd) && !st.includes('GITHUB_STEP_SUMMARY'));
     assert.ok(real.length >= 1, `the fast job no longer runs \`${cmd}\` as a step whose failure fails the job`);
   }
