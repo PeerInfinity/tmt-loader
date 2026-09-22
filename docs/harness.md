@@ -191,7 +191,25 @@ run 35637460884 at `3069ee2`. **It is NOT a constant factor, and it is not even 
    one cell per job (`gates-f1 --cell <key>` / `--group <g>`, `--wall-ms 5400000` under a 100-minute job; the merge
    `--part m` refuses a missing cell by name). ⚖ **Those jobs are MANUAL** (`workflow_dispatch` only, user 2026-09-21): a
    measurement table costs ~5.5 runner-hours and re-measures a known answer on every push; run it from the Actions tab
-   when a default is being re-decided. `f1-rows` (the `maxRow` gate) is the F1 job that runs on every push. A longer stretch CHAINS with `--stop-snapshot` + `--from-snapshot`,
+   when a default is being re-decided. `f1-rows` (the `maxRow` gate) is the F1 job that runs on every push.
+
+   ⛔ **BUT "MANUAL" DOES NOT MEAN "ONLY WHEN SOMEONE WANTS F1" — ANY DISPATCH OF `sweep.yml` STARTS THEM**, including
+   a slice dispatching the sweep at its own branch to get M1 and G1. The gate is
+   `if: ${{ github.event_name == 'workflow_dispatch' }}`, which cannot tell "run the roster on my branch" from
+   "re-decide a reset default". MEASURED 2026-09-22: `tmt-assets-1`, a media-compression slice that changes no
+   automation code at all, dispatched the sweep for M1/G1 and started the whole F1 matrix with it — about 5.5
+   runner-hours of measurement to answer a question nothing in that slice asked.
+
+   **So, until the workflow takes an input for it:**
+   · **Dispatching the sweep on a branch is how you get M1 and G1, and it is correct** — do not stop doing it.
+   · ⚠ **Then look at the run and CANCEL the F1 jobs** unless your slice is re-deciding a reset default. Cancelling
+     them does NOT invalidate the rest: read each job's own conclusion, because the RUN will then be marked
+     `cancelled` while `units`, both `G1 load` jobs and `merge + roster assertion` still say `success`. That is the
+     evidence; the run's own verdict is not.
+   · **A slice needs F1 only if it changes what a reset DECIDES** — a default, a strategy, a rule the tables encode.
+     A UI, media, docs or harness change does not, however large its diff.
+   · ⚖ The durable fix is a `workflow_dispatch` input (`f1: false` by default) so the matrix runs only when asked;
+     that is the automation arc's call, since F1 is its gate. A longer stretch CHAINS with `--stop-snapshot` + `--from-snapshot`,
    and ⚠ a resumed leg is credited the offline time of its boot: compare resumed with resumed, from the same fixture.
 4. ⚠ **The ladder's `diff` fields are H1's COARSE-tick calibration (1 / 5 / 20 / 60 against 1) and say nothing about
    0.05.** They remain what they were: the coarsest diff a mark's timing survives within 2 % of `diff 1`.
