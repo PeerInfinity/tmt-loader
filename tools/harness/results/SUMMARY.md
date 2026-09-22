@@ -6088,3 +6088,17 @@ ours (G3 still reds if it moves), `census` = {hash, differsIn, reason}; the cens
 | census-hash-diff | the-collab-tree-lun4-r | idle | 200 | 10 | 0.05 | 2b5962383a0fba93 | GREEN | census db2868c593eb7ad3; 305 fields; differs ["cheese.cycle"] = declared |
 | census-hash-diff | the-wall-tree, the-cosmic-tree, the-classic-tree | idle | 200 | 10 | 0.05 | — | GREEN | ours = census = manifest; differs [] in 184 / 1052 / 446 fields |
 | idle hash = manifest | the-collab-tree-lun4-r | idle | 200 | 10 | 0.05 | 2b5962383a0fba93 | GREEN | Node twice + page |
+
+## 2026-09-22 — tmt-forks-1: the second CI round's reds, fixed and re-run locally at 175 games
+
+Reading this section: CI run 35777610644 (`c43a0e7e3`) reddened C1-3 (no currency data for the four new games) and M1 on
+`the-collab-tree-lun4-r` and `the-classic-tree`; run 35781867043 (`f146a92ab`) had M1 `rows: 175/175 game(s); 0 RED;
+7 abstained on the state leg` and reddened only C1-3, on a roster count pinned in its match regex. Local re-runs below.
+
+| gate | game | leg | ticks | gameSeconds | diff | hash | result | notes |
+|---|---|---|---|---|---|---|---|---|
+| M1 --gate mobile | the-classic-tree, the-collab-tree-lun4-r, ptr, something, the-modding-tree, the-factoree | — | — | — | — | — | GREEN | 6/6 after `compId` + `reserveWidth` (layerlist.js) and the mirror's own `Number(id)` |
+| C1 part 1 | — | — | — | — | — | — | GREEN | 21/21 |
+| C1 part 2 | — | — | — | — | — | — | GREEN | 3/3: frozen probe control 1739 = reader 1739 on its games; dated control 2026-09-22 217 = 217 on the four new (the probe re-run reproduced the frozen control exactly over the other 171) |
+| C1 part 3 | — | — | — | — | — | — | GREEN | 4/4 (regex digits 171/103 → 175/107; derivation queued as Q7) |
+| C1 part 6 | — | — | — | — | — | — | GREEN | 16/16 |
