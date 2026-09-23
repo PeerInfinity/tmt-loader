@@ -33,8 +33,9 @@ export function render(rows) {
   return [
     '# The games',
     '',
-    `${rows.length} games, in the order they were added — the same order \`manifests/index.json\` and the loader's own`,
-    'picker use. The first two were added by hand; the rest by `tools/add-game.mjs` from the',
+    `${rows.length} games, in the order they were added — the same order as \`manifests/index.json\`. To choose a game`,
+    'to play, use the [TMT fork census](https://peerinfinity.github.io/tmt-fork-census/), which ranks and describes',
+    'them. The first two were added by hand; the rest by `tools/add-game.mjs` from the',
     '[tmt-fork-census](https://github.com/PeerInfinity/tmt-fork-census) top 100, choosing games whose own play page',
     'no longer works.',
     '',

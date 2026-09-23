@@ -15,7 +15,7 @@ games headless and is proven equal to the page.
 Before any game script runs it installs a `localStorage` prefix shim (every key becomes `tmt-loader:<id>:<key>`, so
 games on one origin never share a save) and a timer recorder, then sets `<base href="games/<id>/">` so every relative
 URL the game uses resolves without rewriting. `window.tmtLoader` (`loader/tmt-auto.js`, see [docs/contract.md](contract.md)) is
-the one interface a runner talks to. Without `?mod=` the page shows a picker. `?managed=1` pauses the game after
+the one interface a runner talks to. Without `?mod=` the page shows a short explanation and a link to the [census](https://peerinfinity.github.io/tmt-fork-census/), which is where the games are listed (U15); it fetches nothing. `?managed=1` pauses the game after
 `onload` so a runner drives `tmtLoader.tick(diff)`. `?automation=1` opts in to the automation tools
 ([docs/automation.md](automation.md)); without it the loader adds nothing to the game — no layer, no UI, nothing in the save.
 `?mobile=1` opts in to the mobile layout ([docs/mobile.md](mobile.md)): one column, master-detail and a bottom nav bar, for

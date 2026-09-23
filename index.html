@@ -5,31 +5,28 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>tmt-loader</title>
 <style>
-  #picker { font: 15px/1.5 system-ui, sans-serif; max-width: 52rem; margin: 2rem auto; padding: 0 1rem; color: #ddd; }
-  #picker h1 { font-size: 1.4rem; }
-  #picker ul { list-style: none; padding: 0; }
-  #picker li { border: 1px solid #444; border-radius: 6px; padding: .6rem .9rem; margin: .6rem 0; }
-  #picker a { color: #8cf; font-size: 1.1rem; }
-  #picker .meta { font-size: .85rem; color: #aaa; margin: .2rem 0 .4rem; }
-  #picker button { font-size: .8rem; }
-  #picker .intro a, #picker .about a { font-size: inherit; }
-  #picker .about { border: 1px solid #444; border-radius: 6px; padding: .2rem .9rem; margin: 1rem 0; }
-  #picker .about summary { cursor: pointer; padding: .4rem 0; }
-  #picker .about dl { margin: .2rem 0 .6rem; }
-  #picker .about dt { font-weight: 600; margin-top: .5rem; }
-  #picker .about dd { margin: 0; color: #bbb; }
-  #picker .foot { font-size: .85rem; color: #aaa; }
-  body.tmt-loader-picker { background: #111; margin: 0; }
+  #home { font: 15px/1.5 system-ui, sans-serif; max-width: 44rem; margin: 2rem auto; padding: 0 1rem; color: #ddd; }
+  #home h1 { font-size: 1.4rem; }
+  #home a { color: #8cf; }
+  #home .go { display: inline-block; font-size: 1.15rem; margin: .4rem 0 1rem; }
+  #home .about { border: 1px solid #444; border-radius: 6px; padding: .2rem .9rem; margin: 1rem 0; }
+  #home .about summary { cursor: pointer; padding: .4rem 0; }
+  #home .about dl { margin: .2rem 0 .6rem; }
+  #home .about dt { font-weight: 600; margin-top: .5rem; }
+  #home .about dd { margin: 0; color: #bbb; }
+  #home .foot { font-size: .85rem; color: #aaa; }
+  body.tmt-loader-home { background: #111; margin: 0; }
 </style>
 </head>
-<body class="tmt-loader-picker">
-<div id="picker" hidden>
-  <h1>The Modding Tree games</h1>
-  <p class="intro">Incremental games built on <a href="https://github.com/Acamaeda/The-Modding-Tree">The Modding Tree</a>,
-    each running on the engine version it was written for. Pick one below to play it in this browser — nothing to
-    install. Not sure where to start? <a href="?mod=ptr">Prestige Tree Rewritten</a> is the classic.</p>
-  <p class="intro">Your progress saves automatically, in this browser only and separately for each game. To keep a
-    copy or move it to another device, use the game's own <em>Export</em> and <em>Import</em> buttons in its options.</p>
+<body class="tmt-loader-home">
+<div id="home" hidden>
+  <h1>tmt-loader</h1>
+  <p>Plays incremental games built on <a href="https://github.com/Acamaeda/The-Modding-Tree">The Modding Tree</a> in
+    your browser, each on the engine version it was written for — including games whose own page no longer works.
+    Progress saves automatically, in this browser only and separately for each game.</p>
+  <p>The games are listed, ranked and described on the TMT fork census. Its <b>▶ loader</b> and <b>▶ mobile</b> links
+    open a game here.</p>
+  <a class="go" href="https://peerinfinity.github.io/tmt-fork-census/">Choose a game on the TMT fork census →</a>
   <details class="about">
     <summary>Playing on a phone, or want extra tools? Options you can turn on</summary>
     <dl>
@@ -42,16 +39,14 @@
       <dd>An extra <em>AU</em> tab that can reset and buy things for you. Every feature starts off; you choose what to
         turn on. Nothing in the game itself is changed.</dd>
     </dl>
-    <p>To turn one on, open any game, open its options (the game's settings button) and use the
+    <p>To turn one on, open a game, open its options (the game's settings button) and use the
       <strong>tmt-loader</strong> buttons at the bottom. The page reloads, and the choice is remembered in this browser
       for every game.</p>
   </details>
-  <ul></ul>
-  <p class="foot">Each game belongs to its author: the line under its name gives the author, the source repository
-    and commit it was copied from, the engine version and its licence. How these games were chosen:
-    <a href="https://peerinfinity.github.io/tmt-fork-census/">the TMT fork census</a>. Source code and documentation:
-    <a href="https://github.com/PeerInfinity/tmt-loader">github.com/PeerInfinity/tmt-loader</a> — the loader was written
-    with AI assistance (Claude Code), directed and reviewed by PeerInfinity.</p>
+  <p class="foot">Source code and documentation:
+    <a href="https://github.com/PeerInfinity/tmt-loader">github.com/PeerInfinity/tmt-loader</a> — written with AI
+    assistance (Claude Code), directed and reviewed by PeerInfinity. Each game belongs to its author and keeps its own
+    licence.</p>
 </div>
 <script type="module">
   // an absolute URL computed from location.href: the page may be served from any sub-path

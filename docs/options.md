@@ -164,3 +164,15 @@ them and a non-zero count fails the row.
   never runs. Nothing about the storage would have to change.
 - **anything per game.** All three toggles are one global preference. If a per-game override is ever wanted, it is
   a second key under `tmt-loader:<id>:` and a resolution order of URL → game → global; nothing here forecloses it.
+
+## U15 — the way back, and the picker's removal
+
+The section now ends with an **← All games** link. ⚖ The loader's home page stopped being a list in U15 (user,
+2026-09-23: the census lists the games), so the link goes to the census rather than to `index.html`. It is an
+absolute URL because the page runs under `<base href="games/<id>/">`. Before leaving it calls the game's own `save()`
+— but only when the game's autosave is on, read where each engine keeps it (`options.autosave` from TMT 2.6,
+`player.autosave` before), because the engines autosave on a timer and almost none save on unload.
+
+Two statements above describe the picker as it was and are left as the record: the "clear this game's save" button
+(under *Where the preference lives*) no longer exists — a game's own HARD RESET is what remains — and *What is not in
+it* no longer has a picker page to be absent from.

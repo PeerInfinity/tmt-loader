@@ -66,7 +66,8 @@
   var CSS = '#' + ID + '{margin-top:24px}' +
     '#' + ID + ' .' + ID + '-head{opacity:.8;font-size:.9em;letter-spacing:.04em}' +
     '#' + ID + ' .' + ID + '-note{opacity:.75;font-size:.8em;max-width:46em;margin:.4em auto 0;line-height:1.4}' +
-    '#' + ID + ' table{margin:0 auto}';
+    '#' + ID + ' table{margin:0 auto}' +
+    '#' + ID + ' .' + ID + '-home{display:inline-block;margin-top:.8em;color:inherit;opacity:.85}';
 
   function build() {
     if (!document.getElementById(ID + '-style')) {
@@ -98,7 +99,24 @@
     table.appendChild(body);
     noteEl = document.createElement('div');
     noteEl.className = ID + '-note';
-    section.append(head, table, noteEl);
+    // (U15) the way back to the list of games, which is the census (⚖ user, 2026-09-23: the loader's own page is
+    // not a list). An absolute URL, so the `<base href="games/<id>/">` the page runs under cannot touch it.
+    var home = document.createElement('a');
+    home.className = ID + '-home';
+    home.href = 'https://peerinfinity.github.io/tmt-fork-census/';
+    home.textContent = '\u2190 All games';
+    home.title = 'The list of games, on the TMT fork census. This game is saved first if its autosave is on.';
+    // the engines autosave every few seconds and only two of them save on unload, so leaving by a link could drop the
+    // last seconds of play; save first, under the same switch the game's own autosave reads — `options.autosave` from
+    // TMT 2.6 on, `player.autosave` before it (a 2.6+ `player` has no such field, so reading only that never saves)
+    home.addEventListener('click', function () {
+      try {
+        var on = (typeof options === 'object' && options && 'autosave' in options) ? options.autosave
+          : !!(window.player && player.autosave);
+        if (on && typeof save === 'function') save();
+      } catch (e) { /* leave anyway */ }
+    });
+    section.append(head, table, noteEl, home);
     label();
   }
 

@@ -1,24 +1,26 @@
 # tmt-loader
 
-**▶ Play: <https://peerinfinity.github.io/tmt-loader/>**
+**▶ Choose a game to play: <https://peerinfinity.github.io/tmt-fork-census/>** — the TMT fork census lists, ranks and
+describes the games, and its **▶ loader** and **▶ mobile** links open each one here.
 
 A collection of incremental games built on [The Modding Tree](https://github.com/Acamaeda/The-Modding-Tree) (TMT),
-playable in the browser with nothing to install. Most of them no longer have a working page of their own; here each
-one runs **on the engine version it was written for**, from a copy of its author's repository.
+playable in the browser with nothing to install — including many whose own page no longer works. Each one runs
+**on the engine version it was written for**, from a copy of its author's repository.
 
 **AI disclosure.** The code, the documentation and the harness in this repository were AI-generated (Claude Code sessions directed by PeerInfinity, who set the questions and reviewed the output). Every gate number is produced by the harness in `tools/` and can be regenerated.
 
 ## Playing
 
-Open the link above and pick a game. Not sure where to start? [Prestige Tree Rewritten](https://peerinfinity.github.io/tmt-loader/?mod=ptr)
-is the classic. The full list, with a direct link to each game, is **[docs/games.md](docs/games.md)**.
+Pick a game on the [census](https://peerinfinity.github.io/tmt-fork-census/) and follow its **▶ loader** link (or
+**▶ mobile** on a phone). Not sure where to start? [Prestige Tree Rewritten](https://peerinfinity.github.io/tmt-loader/?mod=ptr)
+is the classic. Every hosted game, with a direct link, is also listed in [docs/games.md](docs/games.md).
 
 **Your progress** is saved automatically, in your browser only and separately for each game — two games never share
 a save. To back a save up or move it to another device, use the game's own *Export* and *Import* buttons in its
-options. The game list has a button per game that deletes that game's save from this browser.
+options; to start over, use its *HARD RESET*.
 
-To get back to the game list from inside a game, use **← All games** at the bottom of the game's options (the
-**tmt-loader** section). It saves the game first if the game's autosave is on.
+To get back to the list of games from inside a game, use **← All games** at the bottom of the game's options (the
+**tmt-loader** section); it opens the census. It saves the game first if the game's autosave is on.
 
 ## What you can turn on
 

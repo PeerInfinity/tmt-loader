@@ -687,3 +687,8 @@ metadata) and G1 over a NAMED three-game sample: `ptr` (the deepest), `sorbet-s-
 every bounded sweep in this repo has dropped at least once) and `the-modding-tree` (the stock engine). ⚠ It cannot
 check "the clone is unmodified" or "the repo is clean" — there is no clone — and it prints those as SKIPPED rather
 than letting them pass silently.
+
+> **U15 (2026-09-23):** the picker is gone — ⚖ the user ruled that the loader's home page is a short explanation and a
+> link to the census, which is where the games are listed. G5's three picker steps are replaced by three home-page
+> steps (ready with no error; fetches nothing but `index.html` and `loader/` modules; links the census), so the
+> paragraph above no longer describes a whole-roster check. The roster is held by G6 and the sweep.
