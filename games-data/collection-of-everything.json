@@ -15,14 +15,14 @@
   1
  ],
  "summary": {
-  "buyables": 4,
-  "scored": 4,
-  "price": 4,
+  "buyables": 9,
+  "scored": 9,
+  "price": 9,
   "requirement": 0,
   "unknown": 0,
   "own": 0,
-  "foreign": 4,
-  "several": 0,
+  "foreign": 5,
+  "several": 4,
   "impure": 0
  },
  "buyables": {
@@ -95,6 +95,107 @@
      "player.w.points"
     ],
     "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "a1": {
+    "pays": "player.FoodA.wheat",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.FoodA.wheat",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "a2": {
+    "pays": [
+     "player.FoodA.rice",
+     "player.FoodB.fsh"
+    ],
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": [
+     "player.FoodA.rice",
+     "player.FoodB.fsh"
+    ],
+    "how": "lift-2",
+    "from": [
+     "fresh"
+    ]
+   },
+   "a3": {
+    "pays": [
+     "player.FoodA.banana",
+     "player.FoodB.mlk"
+    ],
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": [
+     "player.FoodA.banana",
+     "player.FoodB.mlk"
+    ],
+    "how": "lift-2",
+    "from": [
+     "fresh"
+    ]
+   },
+   "a4": {
+    "pays": [
+     "player.FoodA.apple",
+     "player.FoodA.cabbage",
+     "player.FoodA.carrot"
+    ],
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": [
+     "player.FoodA.apple",
+     "player.FoodA.cabbage",
+     "player.FoodA.carrot"
+    ],
+    "how": "lift-3",
+    "from": [
+     "fresh"
+    ]
+   },
+   "a5": {
+    "pays": [
+     "player.FoodA.potato",
+     "player.FoodB.pig",
+     "player.s.buyables.a4"
+    ],
+    "cost": "price",
+    "by": [
+     "rollback",
+     "trace"
+    ],
+    "scored": true,
+    "pick": [
+     "player.FoodA.potato",
+     "player.FoodB.pig"
+    ],
+    "how": "lift-3",
     "from": [
      "fresh"
     ]

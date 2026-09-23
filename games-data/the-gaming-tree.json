@@ -17,17 +17,141 @@
   3
  ],
  "summary": {
-  "buyables": 61,
+  "buyables": 73,
   "scored": 42,
   "price": 42,
   "requirement": 0,
-  "unknown": 19,
+  "unknown": 31,
   "own": 1,
   "foreign": 21,
   "several": 20,
   "impure": 0
  },
  "buyables": {
+  "c": {
+   "quarry": {
+    "pays": null,
+    "cost": "unknown",
+    "by": [],
+    "scored": false,
+    "how": "affordable",
+    "why": "no field fell by the published cost",
+    "from": [
+     "fresh"
+    ]
+   },
+   "mine": {
+    "pays": null,
+    "cost": "unknown",
+    "by": [],
+    "scored": false,
+    "why": "not affordable, and it publishes no usable cost to lift towards",
+    "from": [
+     "fresh"
+    ]
+   },
+   "forest": {
+    "pays": null,
+    "cost": "unknown",
+    "by": [],
+    "scored": false,
+    "how": "affordable",
+    "why": "no field fell by the published cost",
+    "from": [
+     "fresh"
+    ]
+   },
+   "sawmill": {
+    "pays": null,
+    "cost": "unknown",
+    "by": [],
+    "scored": false,
+    "why": "not affordable, and it publishes no usable cost to lift towards",
+    "from": [
+     "fresh"
+    ]
+   },
+   "research_center": {
+    "pays": null,
+    "cost": "unknown",
+    "by": [],
+    "scored": false,
+    "why": "not affordable, and it publishes no usable cost to lift towards",
+    "from": [
+     "fresh"
+    ]
+   },
+   "deep_mine": {
+    "pays": null,
+    "cost": "unknown",
+    "by": [],
+    "scored": false,
+    "why": "not affordable, and it publishes no usable cost to lift towards",
+    "from": [
+     "fresh"
+    ]
+   },
+   "coal_generator": {
+    "pays": null,
+    "cost": "unknown",
+    "by": [],
+    "scored": false,
+    "why": "not affordable, and it publishes no usable cost to lift towards",
+    "from": [
+     "fresh"
+    ]
+   },
+   "observatory": {
+    "pays": null,
+    "cost": "unknown",
+    "by": [],
+    "scored": false,
+    "why": "not affordable, and it publishes no usable cost to lift towards",
+    "from": [
+     "fresh"
+    ]
+   },
+   "duplicator": {
+    "pays": null,
+    "cost": "unknown",
+    "by": [],
+    "scored": false,
+    "why": "not affordable, and it publishes no usable cost to lift towards",
+    "from": [
+     "fresh"
+    ]
+   },
+   "smelter": {
+    "pays": null,
+    "cost": "unknown",
+    "by": [],
+    "scored": false,
+    "why": "not affordable, and it publishes no usable cost to lift towards",
+    "from": [
+     "fresh"
+    ]
+   },
+   "well": {
+    "pays": null,
+    "cost": "unknown",
+    "by": [],
+    "scored": false,
+    "why": "not affordable, and it publishes no usable cost to lift towards",
+    "from": [
+     "fresh"
+    ]
+   },
+   "arc_furnace": {
+    "pays": null,
+    "cost": "unknown",
+    "by": [],
+    "scored": false,
+    "why": "not affordable, and it publishes no usable cost to lift towards",
+    "from": [
+     "fresh"
+    ]
+   }
+  },
   "lo": {
    "11": {
     "pays": [

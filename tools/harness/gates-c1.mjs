@@ -162,22 +162,37 @@ const PROBE = { buyables: 1739, one: 1209, foreign: 610, several: 97, none: 431,
 // ⚖ 2026-09-22 (tmt-forks-1): the games added since get their OWN dated control beside it, from the same probe
 // (NewDocs/plans/tmt/probes/buyable-currency-from-buy-source.js over these ids; the same run reproduced PROBE exactly
 // over the other 171), and each set is compared against its own games — neither overwrites the other.
-// ⚠ Both the probe and the reader skip a buyable with a NON-NUMERIC id (`isNaN(id)`): the-collab-tree-lun4-r's eight
-// word-id buyables (`feed`, `FasterTimeI`, …) are in neither count, so this agreement is not coverage of them.
+// ⚠ Both the probe and the reader skipped a buyable with a NON-NUMERIC id (`isNaN(id)`) when this was measured:
+// the-collab-tree-lun4-r's eight word-id buyables (`feed`, `FasterTimeI`, …) are in neither count, so this agreement is
+// not coverage of them.
 const PROBE_2026_09_22 = { games: ['the-wall-tree', 'the-cosmic-tree', 'the-classic-tree', 'the-collab-tree-lun4-r'],
   buyables: 217, one: 171, foreign: 85, several: 42, none: 4, nobuy: 0 };
+// ⛔ C1b (brief `tmt-auto-20`, Q8): THE READER NOW READS WORD-ID BUYABLES, and the two controls above did not measure
+// them — so each is held to what it MEASURED: the NUMERIC-id buyables of its own games. Both are UNEDITED; the same
+// fixed probe (`tools/harness/probe-buyable-currency.js`, the NewDocs probe with the `isNaN` skip dropped and a `word`
+// tally) reproduced both exactly on numeric ids at C1b over all 175 games (1739 / 1209 / 610 / 97 / 431 / 2 and
+// 217 / 171 / 85 / 42 / 4 / 0), which is the evidence the split is the old scope and not a new one.
+// The WORD-id buyables get their OWN dated control, from that probe, over the five games that have any (all 175 booted;
+// no other game has a word-id object in `buyables`). Named `_WORD` because it was recorded the same day as the one above.
+const PROBE_2026_09_22_WORD = { games: ['collection-of-everything', 'the-collab-tree-lun4-r', 'the-gaming-tree', 'the-hyperoperator-tree', 'universal-reconstruction'],
+  buyables: 63, one: 37, foreign: 10, several: 4, none: 22, nobuy: 0 };
+const isWord = (id) => isNaN(id);
 async function part2() {
   const ids = withData();
   const all = ids.flatMap((id) => entries(readData(id)).map((e) => ({ game: id, ...e })));
   // Each control is compared on ITS OWN games, and only those. A game neither probe measured is OUTSIDE the claim —
   // counted and named in the notes, never folded into either side — and a control game that has vanished from the
   // data is RED (its count falls), never skipped.
-  const frozen = new Set(PROBE.games), added = new Set(PROBE_2026_09_22.games);
-  const nOld = all.filter((e) => frozen.has(e.game)).length, nNew = all.filter((e) => added.has(e.game)).length;
-  const missing = [...frozen, ...added].filter((g) => !ids.includes(g));
+  const frozen = new Set(PROBE.games), added = new Set(PROBE_2026_09_22.games), worded = new Set(PROBE_2026_09_22_WORD.games);
+  // the two numeric-id controls on their own games' NUMERIC ids; the word-id control on ITS games' word ids — and a
+  // word-id entry on any game outside that list is outside every claim, counted and named, never folded in
+  const nOld = all.filter((e) => frozen.has(e.game) && !isWord(e.id)).length, nNew = all.filter((e) => added.has(e.game) && !isWord(e.id)).length;
+  const nWord = all.filter((e) => worded.has(e.game) && isWord(e.id)).length;
+  const strayWord = [...new Set(all.filter((e) => isWord(e.id) && !worded.has(e.game)).map((e) => e.game))];
+  const missing = [...frozen, ...added, ...worded].filter((g) => !ids.includes(g));
   const outside = ids.filter((g) => !frozen.has(g) && !added.has(g));
-  const controlsOk = nOld === PROBE.buyables && nNew === PROBE_2026_09_22.buyables && !missing.length;
-  const controls = `frozen control ${PROBE.buyables} vs the reader ${nOld} on its ${PROBE.games.length} games; dated control 2026-09-22 ${PROBE_2026_09_22.buyables} vs ${nNew} on its ${PROBE_2026_09_22.games.length}; ${outside.length} with data under no control${outside.length ? ` (${outside.join(', ')})` : ''}${missing.length ? `; ⛔ control games with NO data: ${missing.join(', ')}` : ''}`;
+  const controlsOk = nOld === PROBE.buyables && nNew === PROBE_2026_09_22.buyables && nWord === PROBE_2026_09_22_WORD.buyables && !missing.length;
+  const controls = `frozen control ${PROBE.buyables} vs the reader ${nOld} (numeric ids) on its ${PROBE.games.length} games; dated control 2026-09-22 ${PROBE_2026_09_22.buyables} vs ${nNew} (numeric ids) on its ${PROBE_2026_09_22.games.length}; dated WORD-id control 2026-09-22 ${PROBE_2026_09_22_WORD.buyables} vs ${nWord} on its ${PROBE_2026_09_22_WORD.games.length}; ${outside.length} with data under no numeric control${outside.length ? ` (${outside.join(', ')})` : ''}; ${strayWord.length} with word ids under no control${strayWord.length ? ` (${strayWord.join(', ')})` : ''}${missing.length ? `; ⛔ control games with NO data: ${missing.join(', ')}` : ''}`;
   const c = { buyables: all.length, one: 0, own: 0, foreign: 0, several: 0, none: 0, price: 0, requirement: 0, unknown: 0 };
   for (const e of all) {
     c[e.cost]++;
@@ -190,15 +205,18 @@ async function part2() {
   row({ gate: 'C1-2 COVERAGE over the roster (the rollback\'s answers)', id: `${ids.length} games`, leg: 'games-data/*.json', ok: controlsOk, ticks: 0,
     notes: `${controls}; ${c.buyables} buyables: ONE field ${c.one} (own ${c.own}, FOREIGN ${c.foreign} in ${Object.values(out).filter(Boolean).length} games; without plague ${noPlague.foreign} of ${noPlague.one} = ${(100 * noPlague.foreign / noPlague.one).toFixed(1)} %) · SEVERAL ${c.several} · ABSTAIN ${c.none}; price ${c.price} / requirement ${c.requirement} / unknown ${c.unknown}` });
   row({ gate: 'C1-2 against the probe\'s control (a regex, not a truth)', id: `${ids.length} games`, leg: 'probes/buyable-currency-from-buy-source', ok: controlsOk,
-    notes: `probe (frozen, 171 games): ${PROBE.buyables} buyables, one field ${PROBE.one} (foreign ${PROBE.foreign}), several ${PROBE.several}, none ${PROBE.none}, no buy ${PROBE.nobuy}; probe (2026-09-22, ${PROBE_2026_09_22.games.length} games): ${PROBE_2026_09_22.buyables}, one ${PROBE_2026_09_22.one} (foreign ${PROBE_2026_09_22.foreign}), several ${PROBE_2026_09_22.several}, none ${PROBE_2026_09_22.none}, no buy ${PROBE_2026_09_22.nobuy}. The reader: one ${c.one}, several ${c.several}, abstain ${c.none}. The differences are the rollback's: a regex pick is not an answer until a buy confirms it, a field the regex misses is found by the fall, and a requirement (compared, never subtracted) is its own kind` });
+    notes: `probe (frozen, 171 games): ${PROBE.buyables} buyables, one field ${PROBE.one} (foreign ${PROBE.foreign}), several ${PROBE.several}, none ${PROBE.none}, no buy ${PROBE.nobuy}; probe (2026-09-22, ${PROBE_2026_09_22.games.length} games): ${PROBE_2026_09_22.buyables}, one ${PROBE_2026_09_22.one} (foreign ${PROBE_2026_09_22.foreign}), several ${PROBE_2026_09_22.several}, none ${PROBE_2026_09_22.none}, no buy ${PROBE_2026_09_22.nobuy}; probe (2026-09-22 WORD ids, ${PROBE_2026_09_22_WORD.games.length} games): ${PROBE_2026_09_22_WORD.buyables}, one ${PROBE_2026_09_22_WORD.one} (foreign ${PROBE_2026_09_22_WORD.foreign}), several ${PROBE_2026_09_22_WORD.several}, none ${PROBE_2026_09_22_WORD.none}, no buy ${PROBE_2026_09_22_WORD.nobuy}. The reader: one ${c.one}, several ${c.several}, abstain ${c.none}. The differences are the rollback's: a regex pick is not an answer until a buy confirms it, a field the regex misses is found by the fall, and a requirement (compared, never subtracted) is its own kind` });
   const drives = await pool(ids, Math.max(POOL, 6), (id) => drive(id, 'currency-regex.js'));
-  let dec = 0, ext = 0, probeNone = 0, recovered = 0, byHow = {}, failed = [], noneScored = 0, noneForeign = 0;
+  // ⚠ C1b: this row's comparison with the frozen probe's 431 is over NUMERIC ids, which is what that probe measured; the
+  // word-id buyables the drive now also returns are counted beside it, not inside it.
+  let dec = 0, ext = 0, probeNone = 0, recovered = 0, byHow = {}, failed = [], noneScored = 0, noneForeign = 0, wordN = 0, wordNone = 0;
   drives.forEach((r, i) => {
     const ps = r.plannerScript;
     if (!ps || !ps.patterns) { failed.push(ids[i]); return; }
     const D0 = readData(ids[i]).buyables;
     for (const p of ps.patterns) {
       if (!p.found) continue;
+      if (isWord(p.id)) { wordN++; if (!p.found.some((d) => d.how === 'assign-sub')) wordNone++; continue; }
       const decOnly = p.found.filter((d) => d.how === 'assign-sub');
       if (decOnly.length) dec++;
       else {
@@ -211,7 +229,7 @@ async function part2() {
     }
   });
   row({ gate: 'C1-2 the SECOND decrement pattern: the probe\'s "none" recovered', id: `${ids.length} games`, leg: 'alias / `-=` / addPoints(…, negative)', ok: !failed.length, ticks: 0,
-    notes: `the probe's pattern alone finds a decrement in ${dec} buyables and none in ${probeNone} (the probe: ${PROBE.none}); the second pattern recovers ${recovered} of those (${JSON.stringify(byHow)}), leaving ${probeNone - recovered} with no decrement any pattern reads. ⛔ THE ROLLBACK scores ${noneScored} of the ${probeNone} (${noneForeign} of them FOREIGN) — the currency is spent somewhere no source pattern reaches (a helper, a computed key), and the fall finds it — so the honest unknowns among them are ${probeNone - noneScored}, not ${PROBE.none}. (${probeNone} not ${PROBE.none}: this reader strips comments first, and the probe counted ${probeNone - PROBE.none} commented-out decrements as real — measured: arctree lab 21/22/31 and arc-tree lab 22/31 carry the line //player.light.points = player.light.points.sub(cost.fo);)${failed.length ? `; FAILED to boot: ${failed.join(', ')}` : ''}` });
+    notes: `the probe's pattern alone finds a decrement in ${dec} buyables and none in ${probeNone} (the probe: ${PROBE.none}); the second pattern recovers ${recovered} of those (${JSON.stringify(byHow)}), leaving ${probeNone - recovered} with no decrement any pattern reads. ⛔ THE ROLLBACK scores ${noneScored} of the ${probeNone} (${noneForeign} of them FOREIGN) — the currency is spent somewhere no source pattern reaches (a helper, a computed key), and the fall finds it — so the honest unknowns among them are ${probeNone - noneScored}, not ${PROBE.none}. (${probeNone} not ${PROBE.none}: this reader strips comments first, and the probe counted ${probeNone - PROBE.none} commented-out decrements as real — measured: arctree lab 21/22/31 and arc-tree lab 22/31 carry the line //player.light.points = player.light.points.sub(cost.fo);) Word ids (C1b), apart: ${wordN} with a buy(), ${wordNone} with no assign-sub decrement (the WORD control's probe: ${PROBE_2026_09_22_WORD.none} none).${failed.length ? `; FAILED to boot: ${failed.join(', ')}` : ''}` });
   row({ gate: 'C1-2 VERDICT', id: '—', ok: rows.every((r) => r.ok), notes: `${rows.filter((r) => r.ok).length}/${rows.length}` });
 }
 

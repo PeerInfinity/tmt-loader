@@ -793,7 +793,7 @@
       var L = layers[ls[i]];
       if (!L || !L.buyables || typeof L.buyables !== 'object') continue;
       for (var id in L.buyables) {
-        if (isNaN(id) || !L.buyables[id] || typeof L.buyables[id] !== 'object') continue;
+        if (!isBuyableDef(L.buyables[id])) continue;   // C1b: word ids too — the reader's own rule (see below)
         var h0 = P.hashes().hashGame, B = L.buyables[id];
         traceReads(function () { return callOn(B, 'canAfford'); });
         if (P.hashes().hashGame !== h0) moved.push(ls[i] + '/' + id);
@@ -802,14 +802,27 @@
     return { before: before, after: P.hashes().hashGame, moved: moved };
   };
   P.decrementsIn = function (fn, l) { var d = decrementsIn(fn, l); return d.found; };
+  // ⛔ C1b (Q8, brief `tmt-auto-20`): WHICH KEYS OF `layers[l].buyables` ARE BUYABLES — BY SHAPE, NOT BY NAME. Until
+  // C1b the reader also required a NUMERIC id (`!isNaN(id)`, the census's numKeys rule, there to drop `rows` / `cols` /
+  // `respec`), and so never read a buyable with a WORD id: 63 over 5 games (universal-reconstruction 24,
+  // the-hyperoperator-tree 14, the-gaming-tree 12, the-collab-tree-lun4-r 8, collection-of-everything 5), every one an
+  // object with its own `buy()` and `cost`, bought by the game's own tab under that word. MEASURED over all 175 games at
+  // boot: the word keys that are NOT buyables are all non-objects — 886 numbers (`rows`, `cols`), 476 strings (the
+  // engine's own `layer` back-reference, `respecText`), 68 functions (`respec`, `showRespec`), 17 booleans
+  // (`respecConfirm`) — and no word key anywhere holds an object that is not a buyable. So the object test that
+  // already dropped all of those is the whole rule; `null` (`typeof null === 'object'`) and an array are the two
+  // objects it must still refuse.
+  function isBuyableDef(v) { return !!v && typeof v === 'object' && !Array.isArray(v); }
+  P.isBuyableDef = isBuyableDef;
   /** Every buyable of every tree layer, in walk order. */
   P.readCurrencies = function (opts) {
     var out = [], ls = allLayers();
     for (var i = 0; i < ls.length; i++) {
       var l = ls[i], L = layers[l];
       if (!L || !L.buyables || typeof L.buyables !== 'object') continue;
-      var ids = Object.keys(L.buyables).filter(function (k) { return !isNaN(k) && L.buyables[k] && typeof L.buyables[k] === 'object'; });
-      ids.sort(function (a, b) { return Number(a) - Number(b); });
+      var ids = Object.keys(L.buyables).filter(function (k) { return isBuyableDef(L.buyables[k]); });
+      // numeric ids ascending, then WORD ids in declaration order (the order `Object.keys` and JSON both keep)
+      ids.sort(function (a, b) { var na = !isNaN(a), nb = !isNaN(b); return na && nb ? Number(a) - Number(b) : na ? -1 : nb ? 1 : 0; });
       for (var j = 0; j < ids.length; j++) {
         try { out.push(readBuyable(l, ids[j], opts)); }
         catch (e) { out.push({ layer: l, id: ids[j], pays: null, cost: 'unknown', by: [], scored: false, why: 'the reader threw: ' + String(e && e.message || e).slice(0, 160) }); }

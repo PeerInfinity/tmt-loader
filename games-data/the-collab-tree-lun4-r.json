@@ -15,13 +15,13 @@
   1
  ],
  "summary": {
-  "buyables": 10,
-  "scored": 7,
-  "price": 7,
-  "requirement": 0,
-  "unknown": 3,
-  "own": 5,
-  "foreign": 2,
+  "buyables": 18,
+  "scored": 14,
+  "price": 11,
+  "requirement": 3,
+  "unknown": 4,
+  "own": 6,
+  "foreign": 8,
   "several": 0,
   "impure": 0
  },
@@ -164,6 +164,117 @@
     "by": [],
     "scored": false,
     "why": "not affordable, and it publishes no usable cost to lift towards",
+    "from": [
+     "fresh"
+    ]
+   },
+   "feed": {
+    "pays": "player.cheese.points",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.cheese.points",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "prestige": {
+    "pays": null,
+    "cost": "unknown",
+    "by": [],
+    "scored": false,
+    "why": "not affordable, and it publishes no usable cost to lift towards",
+    "from": [
+     "fresh"
+    ]
+   },
+   "ab11": {
+    "pays": "player.cheese.laeceaPoints",
+    "cost": "requirement",
+    "by": [
+     "rollback",
+     "trace"
+    ],
+    "scored": true,
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "ab12": {
+    "pays": "player.cheese.laeceaPoints",
+    "cost": "requirement",
+    "by": [
+     "rollback",
+     "trace"
+    ],
+    "scored": true,
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "ab13": {
+    "pays": "player.cheese.laeceaPoints",
+    "cost": "requirement",
+    "by": [
+     "rollback",
+     "trace"
+    ],
+    "scored": true,
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   }
+  },
+  "t": {
+   "FasterTimeI": {
+    "pays": "player.t.time",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.t.time",
+    "how": "affordable",
+    "from": [
+     "fresh"
+    ]
+   },
+   "BetterBaseI": {
+    "pays": "player.t.time",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.t.time",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "FasterTimeII": {
+    "pays": "player.t.time",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.t.time",
+    "how": "lift-1",
     "from": [
      "fresh"
     ]

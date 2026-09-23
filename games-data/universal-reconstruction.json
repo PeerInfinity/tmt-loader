@@ -15,12 +15,12 @@
   1
  ],
  "summary": {
-  "buyables": 56,
-  "scored": 56,
-  "price": 56,
+  "buyables": 80,
+  "scored": 74,
+  "price": 74,
   "requirement": 0,
-  "unknown": 0,
-  "own": 0,
+  "unknown": 6,
+  "own": 18,
   "foreign": 56,
   "several": 0,
   "impure": 0
@@ -710,6 +710,338 @@
     ],
     "scored": true,
     "pick": "player.fome.fome.quantum.points",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   }
+  },
+  "timecube": {
+   "front": {
+    "pays": null,
+    "cost": "unknown",
+    "by": [],
+    "scored": false,
+    "why": "not affordable, and it publishes no usable cost to lift towards",
+    "from": [
+     "fresh"
+    ]
+   },
+   "frontBuy": {
+    "pays": "player.timecube.points",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.timecube.points",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "frontBuyNext": {
+    "pays": "player.timecube.points",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.timecube.points",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "frontBuyMax": {
+    "pays": "player.timecube.points",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.timecube.points",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "right": {
+    "pays": null,
+    "cost": "unknown",
+    "by": [],
+    "scored": false,
+    "why": "not affordable, and it publishes no usable cost to lift towards",
+    "from": [
+     "fresh"
+    ]
+   },
+   "rightBuy": {
+    "pays": "player.timecube.points",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.timecube.points",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "rightBuyNext": {
+    "pays": "player.timecube.points",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.timecube.points",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "rightBuyMax": {
+    "pays": "player.timecube.points",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.timecube.points",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "top": {
+    "pays": null,
+    "cost": "unknown",
+    "by": [],
+    "scored": false,
+    "why": "not affordable, and it publishes no usable cost to lift towards",
+    "from": [
+     "fresh"
+    ]
+   },
+   "topBuy": {
+    "pays": "player.timecube.points",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.timecube.points",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "topBuyNext": {
+    "pays": "player.timecube.points",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.timecube.points",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "topBuyMax": {
+    "pays": "player.timecube.points",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.timecube.points",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "back": {
+    "pays": null,
+    "cost": "unknown",
+    "by": [],
+    "scored": false,
+    "why": "not affordable, and it publishes no usable cost to lift towards",
+    "from": [
+     "fresh"
+    ]
+   },
+   "backBuy": {
+    "pays": "player.timecube.points",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.timecube.points",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "backBuyNext": {
+    "pays": "player.timecube.points",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.timecube.points",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "backBuyMax": {
+    "pays": "player.timecube.points",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.timecube.points",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "left": {
+    "pays": null,
+    "cost": "unknown",
+    "by": [],
+    "scored": false,
+    "why": "not affordable, and it publishes no usable cost to lift towards",
+    "from": [
+     "fresh"
+    ]
+   },
+   "leftBuy": {
+    "pays": "player.timecube.points",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.timecube.points",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "leftBuyNext": {
+    "pays": "player.timecube.points",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.timecube.points",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "leftBuyMax": {
+    "pays": "player.timecube.points",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.timecube.points",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "bottom": {
+    "pays": null,
+    "cost": "unknown",
+    "by": [],
+    "scored": false,
+    "why": "not affordable, and it publishes no usable cost to lift towards",
+    "from": [
+     "fresh"
+    ]
+   },
+   "bottomBuy": {
+    "pays": "player.timecube.points",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.timecube.points",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "bottomBuyNext": {
+    "pays": "player.timecube.points",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.timecube.points",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "bottomBuyMax": {
+    "pays": "player.timecube.points",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.timecube.points",
     "how": "lift-1",
     "from": [
      "fresh"
