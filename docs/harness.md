@@ -384,6 +384,27 @@ node tools/currency-data.mjs --check-index
 - Cost, measured on this box: **~60–80 s for the whole roster at `--jobs 6–8`** (171 boots; 11 games drew randomness
   and were read three times). No process is near the 10-minute wall; `--shard i/N` exists for CI if it ever is.
 
+**Which keys it enumerates (C1b, Q8, brief `tmt-auto-20`).** Every key of `layers[l].buyables` whose value is a
+non-null, non-array OBJECT (`isBuyableDef`, `loader/tmt-planner.js`) — the reader, its purity pass, both
+`gates-c1` drives (`currency-sample.js`, `currency-regex.js`) and the probe mirror all use that one rule. Until C1b
+they also required a NUMERIC id and skipped 63 word-id buyables over 5 games; the regeneration added exactly those 63
+entries (and moved only those five files' `summary` lines otherwise): universal-reconstruction 24,
+the-hyperoperator-tree 14, the-gaming-tree 12, the-collab-tree-lun4-r 8, collection-of-everything 5 — 30 scored (19
+own points, 7 foreign, 4 several), 33 abstaining. ⚠ 14 of those abstentions are a PRE-EXISTING reader defect, not a
+word-id one: every buyable of `the-hyperoperator-tree` (numeric ids too) abstains with *"the reader threw: Decimal is
+not defined"* — the game ships ExpantaNum and `tmt-planner.js`'s `D()` assumes `Decimal` (the same shape
+`tmt-auto.js` fixed for itself with `NUMBER` in U2g).
+
+**The probe controls in `gates-c1 --part 2` — each held to what it MEASURED.** The frozen `PROBE` (103 games) and
+`PROBE_2026_09_22` (4 games) were measured by a probe that skipped word ids, so each is now compared with the reader's
+NUMERIC-id entries on its own games; neither is edited. The probe itself is mirrored as
+`tools/harness/probe-buyable-currency.js` (the NewDocs original with the `isNaN` skip dropped and a `word` tally) and,
+run over all 175 games at C1b, reproduced both numeric controls to the digit (1739 / 1209 / 610 / 97 / 431 / 2 and
+217 / 171 / 85 / 42 / 4 / 0). The word ids have their OWN dated control, `PROBE_2026_09_22_WORD` (5 games: 63
+buyables; the probe's regex finds one field for 37 — own 27, foreign 10 — several for 4, none for 22), against the
+reader's word-id entries on those games: **63 = 63**. Q7's rule holds: the roster is derived, the measurement pinned —
+a word-id entry on a game outside that list is named as outside every claim, never folded in.
+
 `tools/auto-tables.mjs` is its authored-data counterpart: `--check` (the schema file equals the loader's, every
 `games-auto/<id>.json` validates with the loader's own validator), `--write` (regenerate the schema file), and
 `--provenance` (the provenance GATE — every entry has a record, every commit is an ancestor of HEAD, every gate is a

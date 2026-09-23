@@ -81,6 +81,33 @@ subtab bar itself, with `tab-buttons`. Censused quote-agnostically over `games/`
 the component and still fail to draw the tab — so it is only the premise; `gates-v1 --part 6` opens the Advanced
 subtab on every game and is the witness.
 
+### The feature toggles in `Advanced` — ONE store, both views (V6)
+
+⚖ Q5 (user, 2026-09-20: *"toggle each of the automation tools on and off, and for this to be synchronized with the simple
+automation tab"*; 2026-09-22: *"the same set of toggles as the simple grid"*). Every block — collapsed or not — carries
+the feature's own toggle beside its title, **one per registered feature, exactly the grid's set**, and the view's
+toolbar carries the grid's **All features** press with its `n / N on` readout.
+
+- **There is one store and no copy.** The toggle presses the grid's own function (`toggleSaved`, via
+  `tmtLoader.pressFeature(id)`) and renders the grid's own word and colour (`tmtLoader.toggleView(id)` →
+  `toggleWord` / `onColor`): **On / Off / Locked / Armed**, from `isOnSaved` / `active()` / `armable` — read fresh on
+  every render, never held in the component (a number field keeps a DRAFT because it is typed into; a toggle is a
+  press). The master is the grid's `onClick` itself (`toggleAll`, `tmtLoader.pressAll()`), U4's arming semantics
+  included. So the two views cannot disagree: a press in either writes `player.au.features[<id>]` and the other reads
+  it. `toggleSaved` writes with `Vue.set` (the id is a key ADDED on its first press) and invalidates the Advanced rows'
+  per-redraw cache, so a PAUSED page (`?managed=1`) shows a press in either view without a tick.
+- **A locked feature obeys `armable(f)` exactly as the grid's button does**: with the arming setting off the press
+  refuses and the block says why (*"locked — switch on “Arm features that are not unlocked yet” on the Simple tab to
+  arm it"*); with it on the press ARMS it and both views read `Armed`. The first press sets `player.au.disclosed`.
+- **When something other than the saved choice decides** — the PROFILE (`?profile=all` / `off`) or a RUNTIME override
+  (`setFeatureEnabled`: the advanced planner's epoch, the stall watch's rung, a harness lever) — the toggle's word is
+  what RUNS (as the grid's is) and an **OVERRIDDEN** line under the title says which of the two it is and what the
+  player's own saved choice is. It is the policy chip's twin: that one is about the STRATEGY, this one about whether
+  the feature runs at all. **A press under an override writes the SAVE and leaves the override alone** — measured to
+  be what the grid's press does (`gates-v6 --part 5`); the override keeps deciding until whoever set it clears it.
+- `player.au` is outside `hashGame` and inside the FULL hash, so a toggle moves the full hash — as the grid's always
+  has. *reset the automation settings* clears `features`, and every toggle reads Off with no reload.
+
 ### On a phone, and while the numbers move (V5)
 
 ⚖ The user (2026-09-20): *"In the advanced automation tab, some of the controls extend past the right side of the
@@ -2097,6 +2124,17 @@ states it was read in (fresh, and the deepest `all/M*` snapshot where there is o
 `--check-index`. See docs/harness.md, "The currency generator".
 
 **The consumers** (`loader/tmt-auto.js`; `T.currencyData` is the parsed file, handed in by the host):
+
+**Which keys are buyables — by SHAPE, not by name (C1b, Q8).** Until C1b the reader, its two harness drives and the
+probe also required a NUMERIC id (`!isNaN(id)`, the census's rule) and so never read a buyable with a WORD id — 63 over
+5 games (universal-reconstruction 24, the-hyperoperator-tree 14, the-gaming-tree 12, the-collab-tree-lun4-r 8,
+collection-of-everything 5), each an object with its own `buy()` and `cost`. The rule is now `isBuyableDef` in
+`tmt-planner.js`: a non-null, non-array OBJECT. Measured over all 175 games at boot, every word key that is NOT a
+buyable is a non-object — `rows` / `cols` (numbers), the engine's own `layer` back-reference and `respecText`
+(strings), `respec` / `showRespec` (functions), `respecConfirm` (booleans) — and no word key anywhere holds an object
+that is not a buyable. Ordering: numeric ids ascending, then word ids in declaration order (what JSON keeps). ⚠ The
+automation's own PURCHASE code (`buyables` kind, `reserve`'s foreign scan, `resetBuysSomething`) and the planner's
+goal walk still enumerate numeric ids only (`numIds`): the 63 are now READ, not yet BOUGHT.
 
 - `tmtLoader.paysIn(l, id)` — the scored single field, or null. `tmtLoader.currencyOf(l, id)` — a COPY of the whole
   entry, or null: what the UI arc's card row reads (`? / ?` where it abstains).
