@@ -437,7 +437,7 @@ async function part7(browser, base, ids) {
 async function shots(browser, base) {
   // ⚠ FROM THE MID-GAME FIXTURE (part 2's): at a fresh save ptr has ONE unlocked feature, so there is no second one to
   // show OVERRIDDEN — the first cut's ptr shot showed only the On block. Each of the three blocks is its own image.
-  const dir = path.join(REPO, 'tools/harness/results/v6');
+  const dir = path.join(REPO, 'tools/harness/results');   // flat: `results/*.png` is what .gitignore covers
   fs.mkdirSync(dir, { recursive: true });
   for (const id of GAMES6) {
     const out = [];
@@ -453,7 +453,7 @@ async function shots(browser, base) {
         await view(page, 'Advanced');
         await page.locator('#app button.tmtl-collapse-all').first().click({ timeout: 5000 });
         await redraw(page);
-        const file0 = path.join(dir, `${id}-advanced-${w}.png`);
+        const file0 = path.join(dir, `v6-${id}-advanced-${w}.png`);
         await page.locator('#app button.tmtl-all-features').first().scrollIntoViewIfNeeded();
         await page.screenshot({ path: file0 });
         out.push(path.relative(REPO, file0));
@@ -463,7 +463,7 @@ async function shots(browser, base) {
           await redraw(page);
           const blk = page.locator(`#app button.tmtl-onoff[data-fid="${f.id}"]`).first().locator('xpath=../..');
           await blk.scrollIntoViewIfNeeded();
-          const file = path.join(dir, `${id}-${tag}-${w}.png`);
+          const file = path.join(dir, `v6-${id}-${tag}-${w}.png`);
           await blk.screenshot({ path: file });
           out.push(`${tag} ${f.id} ${path.relative(REPO, file)}`);
         }
