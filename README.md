@@ -1,14 +1,59 @@
 # tmt-loader
 
-One static page that loads games built on [The Modding Tree](https://github.com/Acamaeda/The-Modding-Tree)
-(TMT) **on each game's own engine version**, with no CDN and no build step, plus a Node harness that boots the same
-games headless and is proven equal to the page.
+**▶ Play: <https://peerinfinity.github.io/tmt-loader/>**
 
-**▶ Play the games: <https://peerinfinity.github.io/tmt-loader/>**
+A collection of incremental games built on [The Modding Tree](https://github.com/Acamaeda/The-Modding-Tree) (TMT),
+playable in the browser with nothing to install. Most of them no longer have a working page of their own; here each
+one runs **on the engine version it was written for**, from a copy of its author's repository.
 
 **AI disclosure.** The code, the documentation and the harness in this repository were AI-generated (Claude Code sessions directed by PeerInfinity, who set the questions and reviewed the output). Every gate number is produced by the harness in `tools/` and can be regenerated.
 
-## What it does
+## Playing
+
+Open the link above and pick a game. Not sure where to start? [Prestige Tree Rewritten](https://peerinfinity.github.io/tmt-loader/?mod=ptr)
+is the classic. The full list, with a direct link to each game, is **[docs/games.md](docs/games.md)**.
+
+**Your progress** is saved automatically, in your browser only and separately for each game — two games never share
+a save. To back a save up or move it to another device, use the game's own *Export* and *Import* buttons in its
+options. The game list has a button per game that deletes that game's save from this browser.
+
+## What you can turn on
+
+The loader can add three things to any game. All of them are **off** until you turn them on, and none of them
+changes the game itself:
+
+| option | what it gives you |
+|---|---|
+| **Mobile layout** | one column with large buttons, for a phone: the tree first, then the layer you open at full width. The games themselves have no phone layout at all. Includes the nav bar. |
+| **Nav bar** | a bar along the bottom of the screen. Its *Layers* button lists every layer as a card, grouped by tree row, with its reset button, its counters and a button for everything you can buy there. Useful on a desktop too. |
+| **Automation tools** | an extra *AU* tab that can reset layers and buy upgrades and buyables for you. Every feature starts off and you choose which to turn on; it only presses the game's own buttons. |
+
+**To turn one on:** open any game, open its options (the game's settings button) and use the **tmt-loader** buttons
+at the bottom. The page reloads, and the choice is remembered in this browser for every game.
+
+**Or by link:** add `&mobile=1`, `&navbar=1` or `&automation=1` to a game's address — for example
+<https://peerinfinity.github.io/tmt-loader/?mod=ptr&mobile=1>. A link always wins over the remembered choice, so it is
+the way to share a game with an option on (or, with `=0`, off).
+
+## Where the games come from
+
+The games were chosen by **[tmt-fork-census](https://github.com/PeerInfinity/tmt-fork-census)**
+([live results](https://peerinfinity.github.io/tmt-fork-census/)), a survey of the GitHub forks of The Modding Tree
+and Prestige Tree that ranks them by how branching the tree is, how much content it has and whether it still boots.
+Each game belongs to its author and keeps its own licence and credits; the game list names the author, the source
+repository and the commit each copy was taken from.
+
+---
+
+# For developers
+
+Everything below is how the loader works and how it is tested.
+
+## How it works
+
+One static page that loads games built on [The Modding Tree](https://github.com/Acamaeda/The-Modding-Tree)
+(TMT) **on each game's own engine version**, with no CDN and no build step, plus a Node harness that boots the same
+games headless and is proven equal to the page.
 
 `index.html?mod=<id>` reads `manifests/<id>.json`, fetches the game's own `games/<id>/index.html`, and interprets it
 (`loader/interpret.mjs`): the stylesheets, the scripts in index order (CDN libraries replaced by the copies in
@@ -92,7 +137,7 @@ See [docs/add-a-game.md](docs/add-a-game.md) (and [docs/manifest.md](docs/manife
 [tmt-fork-census](https://github.com/PeerInfinity/tmt-fork-census) `scripts/manifest.mjs`, vendor its CDN libraries,
 run the gates.
 
-## tmt-fork-census
+## The census and the loader
 
 The games here come from **[tmt-fork-census](https://github.com/PeerInfinity/tmt-fork-census)** ([live results](https://peerinfinity.github.io/tmt-fork-census/)) — a survey of the ~1,900 GitHub
 forks of The Modding Tree and Prestige Tree, which ranks them by how branching the tree is, how much content it

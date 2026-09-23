@@ -122,12 +122,17 @@
       if (b.title !== title) b.title = title;
       if (src === 'url') overridden.push('?' + e.flag + '=' + (on ? '1' : '0'));
     });
-    var note = 'Pressing one of these reloads the page. The choice is remembered in this browser for every game, '
+    // (U15) the first sentence says what each button IS, for a player who has never read docs/options.md; gate O1
+    // reads this note for "reloads the page", so that phrase stays.
+    var note = 'Added by tmt-loader, not by the game. Mobile layout: one column with large buttons, for a phone. '
+      + 'Nav bar: a bar along the bottom, with a Layers view listing every layer. Automation tools: an AU tab that '
+      + 'can reset and buy things for you, each feature off until you turn it on. '
+      + 'Pressing one of these reloads the page. The choice is remembered in this browser for every game, '
       + 'and is not part of any game’s save.'
       + (overridden.length
         ? ' The address is answering for ' + overridden.join(' and ') + ' right now; pressing that button drops the'
           + ' parameter so the remembered choice applies.'
-        : ' A ?mobile= , ?navbar= or ?automation= in the address overrides what is remembered.');
+        : ' A link that carries ?mobile=, ?navbar= or ?automation= overrides what is remembered.');
     if (noteEl.textContent !== note) noteEl.textContent = note;
   }
 

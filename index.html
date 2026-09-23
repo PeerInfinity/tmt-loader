@@ -12,14 +12,46 @@
   #picker a { color: #8cf; font-size: 1.1rem; }
   #picker .meta { font-size: .85rem; color: #aaa; margin: .2rem 0 .4rem; }
   #picker button { font-size: .8rem; }
+  #picker .intro a, #picker .about a { font-size: inherit; }
+  #picker .about { border: 1px solid #444; border-radius: 6px; padding: .2rem .9rem; margin: 1rem 0; }
+  #picker .about summary { cursor: pointer; padding: .4rem 0; }
+  #picker .about dl { margin: .2rem 0 .6rem; }
+  #picker .about dt { font-weight: 600; margin-top: .5rem; }
+  #picker .about dd { margin: 0; color: #bbb; }
+  #picker .foot { font-size: .85rem; color: #aaa; }
   body.tmt-loader-picker { background: #111; margin: 0; }
 </style>
 </head>
 <body class="tmt-loader-picker">
 <div id="picker" hidden>
-  <h1>tmt-loader</h1>
-  <p>The Modding Tree games, each on its own engine. Saves are kept per game in this browser.</p>
+  <h1>The Modding Tree games</h1>
+  <p class="intro">Incremental games built on <a href="https://github.com/Acamaeda/The-Modding-Tree">The Modding Tree</a>,
+    each running on the engine version it was written for. Pick one below to play it in this browser — nothing to
+    install. Not sure where to start? <a href="?mod=ptr">Prestige Tree Rewritten</a> is the classic.</p>
+  <p class="intro">Your progress saves automatically, in this browser only and separately for each game. To keep a
+    copy or move it to another device, use the game's own <em>Export</em> and <em>Import</em> buttons in its options.</p>
+  <details class="about">
+    <summary>Playing on a phone, or want extra tools? Options you can turn on</summary>
+    <dl>
+      <dt>Mobile layout</dt>
+      <dd>One column with large buttons: the tree first, then the layer you open at full width. For phones.</dd>
+      <dt>Nav bar</dt>
+      <dd>A bar along the bottom of the screen, with a <em>Layers</em> view that lists every layer as a card with its
+        reset button and what you can buy. Useful on a desktop too; the mobile layout always includes it.</dd>
+      <dt>Automation tools</dt>
+      <dd>An extra <em>AU</em> tab that can reset and buy things for you. Every feature starts off; you choose what to
+        turn on. Nothing in the game itself is changed.</dd>
+    </dl>
+    <p>To turn one on, open any game, open its options (the game's settings button) and use the
+      <strong>tmt-loader</strong> buttons at the bottom. The page reloads, and the choice is remembered in this browser
+      for every game.</p>
+  </details>
   <ul></ul>
+  <p class="foot">Each game belongs to its author: the line under its name gives the author, the source repository
+    and commit it was copied from, the engine version and its licence. How these games were chosen:
+    <a href="https://peerinfinity.github.io/tmt-fork-census/">the TMT fork census</a>. Source code and documentation:
+    <a href="https://github.com/PeerInfinity/tmt-loader">github.com/PeerInfinity/tmt-loader</a> — the loader was written
+    with AI assistance (Claude Code), directed and reviewed by PeerInfinity.</p>
 </div>
 <script type="module">
   // an absolute URL computed from location.href: the page may be served from any sub-path
