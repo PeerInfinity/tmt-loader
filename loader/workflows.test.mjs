@@ -94,7 +94,7 @@ const MEASUREMENT_JOBS = ['f1-cells', 'f1-fixtures', 'f1-groups', 'f1-merge',
   'r3b2-table', 'r3b2-table-merge', 'r3c-rung', 'r3c-rung-merge'];
 // ⛔ The GATES that must stay on every push, named so a later move has to argue with this list rather than slip
 // past it: the assertive halves of the same arcs (a pinned mark, a hash, an inertness), and the cheap F1 gate.
-const PUSH_GATES = ['f1-rows', 'r3b2-rule', 'r3b2-inert', 'r3c-mark', 'r3c-mark-merge', 'r3c-fixtures', 'r3c-fixtures-m27'];
+const PUSH_GATES = ['f1-rows', 'r3b2-rule', 'r3b2-inert', 'r3c-mark', 'r3c-mark-merge', 'r3c-fixtures', 'r3c-fixtures-m27', 'v6-page'];
 
 test('every measurement job lives ONLY in measurements.yml', () => {
   const inSweep = Object.keys(jobs(wf('sweep.yml')));

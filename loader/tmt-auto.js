@@ -4049,11 +4049,79 @@
   T.auTitle = 'Automation Tools';
   var clickables = { rows: 1, cols: 4 };
 
+  // ⛔ V6 (⚖ Q5, user 2026-09-20/22): THE ONE WRITE OF A FEATURE'S ON/OFF, AND BOTH VIEWS CALL IT. The Simple grid's
+  // button and the Advanced block's toggle press THIS function and read `isOnSaved` fresh on every render, so the two
+  // cannot disagree: there is ONE store (`player.au.features`) and no copy of it anywhere else. "Synchronised" is true
+  // by construction; `gates-v6 --part 1` proves it both ways with no reload rather than assuming it.
+  // ⚠ `setIn` (Vue.set), not a plain assignment: the id is a key ADDED to `features` on its first press, and Vue 2 does
+  // not observe an added key (U6's rule) — the grid never needed it because the engine re-reads a clickable's
+  // `display()` in `updateTemp`, but the Advanced toggle is a Vue component and would sit on the old word on a PAUSED
+  // page. ⚠ `invalidateView()` for the same page: the Advanced rows are a per-redraw cache, and a press in EITHER view
+  // must not leave the other one showing the answer from before it (a `?managed=1` page does not redraw on its own).
+  // ⚠ A RUNTIME OVERRIDE (`setFeatureEnabled`, the planner's epoch, the watch's rung) IS LEFT ALONE — a press writes
+  // the player's SAVED choice and nothing else, as the grid's press always has; the override keeps deciding `active()`
+  // until whoever set it clears it, and the Advanced block says so (`toggleView().by`).
   function toggleSaved(f) {
     if (!player[AU].features) player[AU].features = {};
-    player[AU].features[f.id] = !player[AU].features[f.id];
+    setIn(player[AU].features, f.id, !player[AU].features[f.id]);
     player[AU].disclosed = true;
+    invalidateView();
   }
+  // ⚖ U4's master press, NAMED so both views run the SAME function: with the arming setting ON it arms the locked ones
+  // too; with it OFF it refuses them. Every armable feature on if any armable one is off, else every one off.
+  function toggleAll() {
+    var anyOff = false;
+    for (var i = 0; i < features.length; i++) if (!isOnSaved(features[i]) && armable(features[i])) anyOff = true;
+    if (!player[AU].features) player[AU].features = {};
+    for (var j = 0; j < features.length; j++) setIn(player[AU].features, features[j].id, anyOff && armable(features[j]));
+    player[AU].disclosed = true;
+    invalidateView();
+  }
+  function allDisplay() {
+    var on = 0;
+    for (var i = 0; i < features.length; i++) if (isOnSaved(features[i])) on++;
+    return on + ' / ' + features.length + ' on' + (T.profileName !== 'saved' ? ' (profile ' + T.profileName + ')' : '');
+  }
+  // The toggle's WORD — the grid's rule, once. A locked feature reads `Locked` exactly as it did before the arming
+  // setting existed; with the setting on it says which of the two locked states it is in (`Armed` is what a press
+  // buys). An unlocked one reads what `active()` says, so a profile or runtime override that runs it reads `On`.
+  function toggleWord(f) {
+    if (!featureUnlocked(f)) return !armLocked() ? 'Locked' : (isOnSaved(f) ? 'Armed' : 'Off');
+    return active(f) ? 'On' : 'Off';
+  }
+  // WHO decides `active()` when it is not the saved choice: `profile` (`?profile=all|off`) or `runtime`
+  // (`setFeatureEnabled`) — `null` when the saved choice is what runs. The precedence is `active()`'s own.
+  function enabledBy(f) {
+    if (T.profileName === 'off') return 'profile';
+    if (enableOverride[f.id] !== undefined) return 'runtime';
+    if (T.profileName === 'all') return 'profile';
+    return null;
+  }
+  /** V6: what a feature's toggle shows — the SAME word and colour as the Simple grid's button — and who decides. */
+  T.toggleView = function (id) {
+    var f = byId[id];
+    if (!f) throw new Error('no feature "' + id + '"');
+    var by = enabledBy(f), ok = armable(f);
+    return { id: id, word: toggleWord(f), color: onColor(f), saved: isOnSaved(f), active: active(f), unlocked: featureUnlocked(f),
+      armable: ok, by: by, profile: T.profileName, override: enableOverride[id] === undefined ? null : enableOverride[id],
+      why: ok ? null : 'locked — switch on “' + ARM_LABEL.replace(/ —.*$/, '') + '” on the Simple tab to arm it' };
+  };
+  /** V6: the toggle's PRESS — the grid's `canClick` + `onClick`, one call. Refuses (and says why) when not armable. */
+  T.pressFeature = function (id) {
+    var f = byId[id];
+    if (!f) throw new Error('no feature "' + id + '"');
+    if (!player[AU]) return { ok: false, saved: null, error: 'this save has no automation store yet' };
+    if (!armable(f)) return { ok: false, saved: isOnSaved(f), error: T.toggleView(id).why };
+    toggleSaved(f);
+    return { ok: true, saved: isOnSaved(f), error: null };
+  };
+  /** V6: the master press — the grid's `All features` onClick, the same function. */
+  T.pressAll = function () {
+    if (!player[AU] || !features.length) return { ok: false, on: 0 };
+    toggleAll();
+    return { ok: true, display: allDisplay() };
+  };
+  T.allFeaturesDisplay = allDisplay;
   // Green = running; blue = unlocked and off; AMBER = armed while still locked (saved on, waiting for the unlock);
   // grey = locked. The amber is the only visible difference between "armed" and "off" on a locked button, and it can
   // only appear while the setting is on, because that is the only way the flag can have been set.
@@ -4099,6 +4167,12 @@
   function chip(text, bg) { return '<span style="display:inline-block;padding:0 6px;border-radius:3px;background:' + bg + ';color:#fff;font-size:.8em;vertical-align:middle">' + esc(text) + '</span>'; }
   // V4: the player's word for each link of the controls' precedence chain. `you` is the one that has to be
   // unmistakable — a condition the player typed and a condition the GAME's table shipped read identically otherwise.
+  // V6: the on/off's OVERRIDDEN line — which of the two overrides is deciding, and what the player's own choice is.
+  T.enabledByHTML = function (tv) {
+    var mine = 'your saved choice is <b>' + (tv.saved ? 'on' : 'off') + '</b>';
+    if (tv.by === 'runtime') return chip('OVERRIDDEN', '#8a6d3b') + ' switched ' + (tv.override ? 'on' : 'off') + ' by a runtime setting — ' + mine + '; a press changes your saved choice, not this';
+    return chip('OVERRIDDEN', '#8a6d3b') + ' by the profile “' + esc(tv.profile) + '” — ' + (tv.profile === 'off' ? 'nothing runs' : 'it runs every unlocked feature') + '; ' + mine;
+  };
   var CTL_WORD = { runtime: 'a runtime setting', you: 'yours', table: 'the game’s table', derived: 'derived' };
   var STATE_BG = { on: '#4f9a6a', off: '#3d6f91', armed: '#8a6d3b', locked: '#666666', excluded: '#5a4a4a' };
   // A feature that cannot run yet is ONE LINE. There are 78 of them on ptr at a fresh save and 3 that are doing
@@ -4591,6 +4665,19 @@
           return this.mods.map(function (m) { return { id: m.id, label: m.label, help: m.help, on: !!on && on.id === m.id }; });
         },
         edited: function () { return !!this.data.row.policy.saved; },
+        // ---- V6 (⚖ Q5): the feature's ON/OFF, the Simple grid's own button in this view ------------------------------
+        // ⛔ NO LOCAL COPY OF THE VALUE. Unlike a number field (a DRAFT, because it is typed into), a toggle is a PRESS,
+        // so its state is read FRESH through `T.toggleView` — `isOnSaved` / `active()` / `armable`, the grid's own
+        // predicates — every time the block re-renders (TRAP (ii) is why that is every tick). `clock` and `gen` are read
+        // so the computed re-evaluates on each redraw and after a press on a paused page; the value itself lives in
+        // `player.au.features` and nowhere else. An EXCLUDED row is not a registered feature and has no toggle.
+        tv: function () {
+          var d = this.data; void d.clock; void d.gen;
+          return d.row.state === 'excluded' ? null : T.toggleView(d.row.id);
+        },
+        // who is deciding instead of the saved choice — the OVERRIDDEN chip's twin for the on/off (the policy's own
+        // chip says "by a runtime setting" about the STRATEGY; this one is about whether the feature runs at all)
+        byHTML: function () { return this.tv && this.tv.by ? T.enabledByHTML(this.tv) : ''; },
         // ---- V4: the three per-feature CONTROLS, rendered GENERICALLY from `T.controls()` ------------------------
         // ⚖ minimize hardcoding, the same way V2's parameter editors are built from the strategy table: a fourth
         // control would be one more row of `CONTROLS` and no code here at all.
@@ -4623,12 +4710,14 @@
         toggleMod: function (id) { T.setSavedModifier(this.data.row.id, this.data.row.policy.modifier && this.data.row.policy.modifier.id === id ? null : id); },
         toDefault: function () { T.setSavedPolicy(this.data.row.id, null); },
         toggleOpen: function () { this.$emit('toggle', this.data.row.id); },
+        // V6: the grid's press, the same function (`toggleSaved` via `T.pressFeature`); a refusal says why
+        press: function () { var r = T.pressFeature(this.data.row.id); this.refused = !r.ok; this.$emit('pressed'); },
         addRung: function () { var r = T.addEscalationRung(this.data.row.id); this.rungError = r.ok ? null : r.error; },
         dropRung: function (n) { var r = T.removeEscalationRung(this.data.row.id, n); this.rungError = r.ok ? null : r.error; },
         moveRung: function (n, d) { var r = T.moveEscalationRung(this.data.row.id, n, d); this.rungError = r.ok ? null : r.error; },
         listToDefault: function () { T.setEscalation(this.data.row.id, null); this.rungError = null; },
       },
-      data: function () { return { rungError: null, ctlError: null }; },
+      data: function () { return { rungError: null, ctlError: null, refused: false }; },
       template: '<div style="text-align:left">'
         + '<h3 v-if="data.head" style="margin:14px 0 4px 0;text-align:left">{{ data.layerName }} <span style="opacity:.5;font-size:.7em">{{ data.row.layer }}</span></h3>'
         // ⚖ Q1: every block collapses, one press each. The chevron is BESIDE the block rather than inside the HTML,
@@ -4637,8 +4726,16 @@
         +   '<button type="button" class="tmtl-fold" :data-fid="data.row.id" :data-open="data.collapsed ? 0 : 1"'
         +   ' :title="data.collapsed ? \'show this feature\' : \'collapse this feature\'" style="' + BTN_STYLE + ';flex:0 0 auto;margin-top:2px"'
         +   ' @click="toggleOpen" @keydown.stop>{{ data.collapsed ? \'+\' : \'\\u2212\' }}</button>'
+        // ⚖ V6 (Q5): the feature's toggle BESIDE its title, in a collapsed block too — the grid's word and colour
+        // (`T.toggleView`), `@keydown.stop` so the engines' bare-letter hotkeys cannot fire from it (V2's trap (i)).
+        +   '<button v-if="tv" type="button" class="tmtl-onoff" :data-fid="data.row.id" :data-state="tv.word" :data-saved="tv.saved ? 1 : 0"'
+        +   ' :title="tv.why || (tv.saved ? \'switch this feature off\' : \'switch this feature on\')"'
+        +   ' :style="\'' + BTN_STYLE + ';flex:0 0 auto;margin-top:2px;min-width:3.6em;color:#fff;background-color:\' + tv.color + (tv.armable ? \'\' : \';opacity:.7;cursor:not-allowed\')"'
+        +   ' @click="press" @keydown.stop>{{ tv.word }}</button>'
         +   '<div style="flex:1 1 auto;min-width:0" v-html="html"></div>'
         + '</div>'
+        + '<div v-if="refused && tv && tv.why" class="tmtl-error tmtl-onoff-why" :data-fid="data.row.id" style="color:#d07a7a;font-size:.85em;text-align:left;margin:-4px 0 6px 0;padding:0 0 0 11px">{{ tv.why }}</div>'
+        + '<div v-if="byHTML" class="tmtl-onoff-by" :data-fid="data.row.id" :data-by="tv.by" style="text-align:left;font-size:.85em;margin:-4px 0 6px 0;padding:0 0 0 11px" v-html="byHTML"></div>'
         + '<div v-if="editable" style="text-align:left;margin:-6px 0 10px 0;padding:0 0 0 11px">'
         +   '<div style="text-align:left;margin-bottom:2px">'
         +     '<span style="opacity:.75;font-size:.85em;margin-right:4px">strategy</span>'
@@ -4869,6 +4966,7 @@
           T.setCollapsedAll(on);
           this.gen++;
         },
+        pressAll: function () { T.pressAll(); this.gen++; },
         isFolded: function (id) {
           if (this.fold[id] !== undefined) return this.fold[id];
           var c = T.collapsed(id);
@@ -4900,17 +4998,24 @@
         // disagree with what the player is looking at.
         rowsNow: function () { return this.blocks.map(function (b) { return b.row; }); },
         folded: function () { var b = this.blocks, n = 0; for (var i = 0; i < b.length; i++) if (b[i].collapsed) n++; return n; },
+        allText: function () { void this.blocks; return T.allFeaturesDisplay(); },
       },
       template: '<div class="tmtl-root" style="' + ROOT_STYLE + '">'
         + '<tmtl-watch :data="{watch: watch, fl: floors}"></tmtl-watch>'
         // ⚖ Q1's second half: expand all / collapse all, and they set EVERY block including the ones whose default is
         // the other way — `collapse all` then `expand all` has to be reachable from any state.
+        // ⚖ V6 (Q5): the grid's `All features` press — the SAME onClick (`toggleAll`, U4's arming semantics included)
+        // and the same readout, so the two views cannot offer two different "all"s.
+        + '<div style="text-align:left;margin-bottom:4px;font-size:.9em">'
+        +   '<button type="button" class="tmtl-all-features" style="' + BTN_STYLE + '" @click="pressAll" @keydown.stop>All features</button>'
+        +   '<span class="tmtl-all-read" style="opacity:.7;margin-left:6px">{{ allText }}</span>'
+        + '</div>'
         + '<div style="text-align:left;margin-bottom:6px;font-size:.9em">'
         +   '<button type="button" class="tmtl-expand-all" style="' + BTN_STYLE + '" @click="all(false)" @keydown.stop>expand all</button>'
         +   '<button type="button" class="tmtl-collapse-all" style="' + BTN_STYLE + '" @click="all(true)" @keydown.stop>collapse all</button>'
         +   '<span style="opacity:.7;margin-left:6px">{{ folded }} of {{ blocks.length }} collapsed</span>'
         + '</div>'
-        + '<tmtl-feature v-for="b in blocks" :key="b.row.id" :data="b" @toggle="toggle"></tmtl-feature>'
+        + '<tmtl-feature v-for="b in blocks" :key="b.row.id" :data="b" @toggle="toggle" @pressed="gen++"></tmtl-feature>'
         // ⚠ LAST, under every block: it is the one control here that cannot be undone.
         + '<tmtl-reset :data="{rows: rowsNow, watch: watch}"></tmtl-reset>'
         + '</div>',
@@ -4930,24 +5035,15 @@
     // 11: the master toggle (every unlocked registered feature on, or all off)
     clickables[11] = {
       title: 'All features',
-      display: function () {
-        var on = 0;
-        for (var i = 0; i < features.length; i++) if (isOnSaved(features[i])) on++;
-        return on + ' / ' + features.length + ' on' + (T.profileName !== 'saved' ? ' (profile ' + T.profileName + ')' : '');
-      },
+      display: allDisplay,
       unlocked: true,
       canClick: function () { return features.length > 0; },
       // ⚖ DECIDED (U4): with the setting ON, *All features* arms the locked ones too. An "All" that quietly meant
       // "all the unlocked ones" would leave the player pressing every locked button by hand to reach the state the
       // master toggle exists to reach in one press, and the two toggles reading DIFFERENT predicates is exactly the
       // kind of split a later reader has to re-derive. With the setting OFF both refuse, as they do today.
-      onClick: function () {
-        var anyOff = false;
-        for (var i = 0; i < features.length; i++) if (!isOnSaved(features[i]) && armable(features[i])) anyOff = true;
-        if (!player[AU].features) player[AU].features = {};
-        for (var j = 0; j < features.length; j++) player[AU].features[features[j].id] = anyOff && armable(features[j]);
-        player[AU].disclosed = true;
-      },
+      // ⚠ V6: the Advanced view's `All features` press calls this SAME function (`T.pressAll`).
+      onClick: toggleAll,
       style: { 'background-color': '#7fb2d9' },
     };
     for (var i = 0; i < features.length; i++) {
@@ -4958,8 +5054,9 @@
           display: function () {
             // A locked feature reads `Locked` exactly as it did before the setting existed; with the setting on it
             // says which of the two locked states it is in, because `Armed` is what the press just bought.
-            if (!featureUnlocked(f)) return !armLocked() ? 'Locked' : (isOnSaved(f) ? 'Armed' : 'Off') + '<br>locked';
-            return (active(f) ? 'On' : 'Off') + (T.profileName !== 'saved' ? ' (profile ' + T.profileName + ')' : '') + '<br>' + f.policy;
+            // V6: the WORD is `toggleWord`, which the Advanced toggle renders too — one rule, two views.
+            if (!featureUnlocked(f)) return !armLocked() ? 'Locked' : toggleWord(f) + '<br>locked';
+            return toggleWord(f) + (T.profileName !== 'saved' ? ' (profile ' + T.profileName + ')' : '') + '<br>' + f.policy;
           },
           unlocked: true,
           canClick: function () { return armable(f); },

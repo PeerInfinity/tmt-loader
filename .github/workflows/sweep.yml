@@ -1993,3 +1993,62 @@ jobs:
             cat f1-rows.txt 2>/dev/null || echo 'no output'
             echo '```'
           } >> "$GITHUB_STEP_SUMMARY"
+
+  # ---------------------------------------------------------------------------------------------------------------
+  # ---- V6: every feature's toggle in the ADVANCED view, synchronised with the Simple grid (⚖ Q5, brief tmt-auto-20)
+  # ⛔ A GATE, not a table (§49d's rule): every row asserts a constructed behaviour — synchronised both ways with no
+  # reload, the toggle changes what the feature DOES (managed start, counts compared), reload persistence, arming,
+  # the override display, the reset — so it runs on every push. The roster leg (part 7) is a recorded run, not CI.
+  v6-page:
+    name: V6 Advanced toggles — in the page (parts 1–6)
+    needs: fast
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - run: npm ci
+
+      - name: Cache the Playwright browser
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+
+      - run: npx playwright install --with-deps chromium
+
+      # ⚠ `--part page` runs parts 1–6 in one browser and `--assert` requires exactly 18 rows, all green: a battery
+      # that dies part-way prints fewer rows, and fewer rows is fewer reds.
+      - name: "Parts 1–6 — both ways, what it does, reload, arming, overrides, the reset (ptr AND something)"
+        shell: bash
+        run: |
+          set -o pipefail
+          node tools/harness/gates-v6.mjs --part page --no-summary --assert | tee v6.txt
+
+      - name: Summary
+        if: always()
+        shell: bash
+        run: |
+          {
+            echo '## V6 Advanced toggles — in the page'
+            echo ''
+            echo '```'
+            cat v6.txt 2>/dev/null | grep -E 'VERDICT|^RED|^GREEN' | cut -c1-300 || echo 'no output'
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload the rows
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: v6-page
+          path: tools/harness/results/tmp/gates-v6-part*-last.json
+          if-no-files-found: warn
+          retention-days: 14
