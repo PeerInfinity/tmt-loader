@@ -2953,6 +2953,12 @@ desktop window the column is 193 px and the list matches it. Locally on 11 games
 `tree`, `the-dressy-tree`, `something`, `1-clicker`, `universal-reconstruction`, `the-yes-tree`), the gate at
 `efaeae795` was pointed at the old loader and at the new one: old 1 GREEN / 10 RED on leg S, new **11/11 GREEN** (10 judged, 1
 abstained — `the-burning-tree`: no layer is reachable at a fresh save).
+**On the roster, in CI** (sweep `35808980574` at `e9c7a7d`, the merge job's own line `rows: 175/175 game(s); 0
+RED`): leg S desktop **171/175 green, 0 red**, and 4 ABSTAIN by name — no layer is reachable at a fresh save on
+`the-mj-tree`, `the-earth-tree`, `the-space-tree` and `the-burning-tree`; the phone half the same. The list equals
+`#treeTab`'s box on all 171: 170 split 633.6 / 646.4 and ONE engine splits 640 / 640 with no gutter — which a
+hardcoded half-width would have got wrong and a box read off the engine does not. At the 390 px desktop window: 170
+at 193 px, the other at 195.
 
 **`?mobile=1` is untouched — the number.** The same 11 games, the old loader against the new, comparing each M1
 row's PHONE projection (every key but leg S, leg 5, leg 6's desktop half and the desktop tooltip readings):
