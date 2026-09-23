@@ -89,12 +89,12 @@ test('the sweep does not publish', () => {
 // sweep (a push can kill it again), the new workflow gaining a push trigger (~5.5 runner-hours per push), or
 // `f1-rows` — the cheap `maxRow` GATE — following the measurements out of the sweep and ceasing to gate anything.
 // ⚖ The standing rule (2026-09-22): a sharded TABLE a planner quotes lives in the measurement workflow; only a row
-// that must HOLD stays in the sweep. These are the tables — F1's matrix, R3b-2's `ptr` table, R3c's rung sweep.
+// that must HOLD stays in the sweep. These are the tables — F1's matrix, R3b-2's `ptr` table, R3c's rung sweep, C1c's buying table.
 const MEASUREMENT_JOBS = ['f1-cells', 'f1-fixtures', 'f1-groups', 'f1-merge',
-  'r3b2-table', 'r3b2-table-merge', 'r3c-rung', 'r3c-rung-merge'];
+  'r3b2-table', 'r3b2-table-merge', 'r3c-rung', 'r3c-rung-merge', 'c1c-buy'];
 // ⛔ The GATES that must stay on every push, named so a later move has to argue with this list rather than slip
 // past it: the assertive halves of the same arcs (a pinned mark, a hash, an inertness), and the cheap F1 gate.
-const PUSH_GATES = ['f1-rows', 'r3b2-rule', 'r3b2-inert', 'r3c-mark', 'r3c-mark-merge', 'r3c-fixtures', 'r3c-fixtures-m27', 'v6-page'];
+const PUSH_GATES = ['f1-rows', 'r3b2-rule', 'r3b2-inert', 'r3c-mark', 'r3c-mark-merge', 'r3c-fixtures', 'r3c-fixtures-m27', 'v6-page', 'c1c-cap', 'c1c-inert'];
 
 test('every measurement job lives ONLY in measurements.yml', () => {
   const inSweep = Object.keys(jobs(wf('sweep.yml')));

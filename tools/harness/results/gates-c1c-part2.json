@@ -1,0 +1,153 @@
+{
+  "gate": "C1c part 2",
+  "commit": "f29fd69a3",
+  "dirty": true,
+  "rows": [
+    {
+      "gate": "C1c-2 BEFORE → AFTER, fresh 3600 game-s, profile all, diff 1, seed 1",
+      "id": "universal-reconstruction",
+      "ok": true,
+      "ticks": 3600,
+      "gameSeconds": 3600,
+      "diff": 1,
+      "hash": "5ac2c12a0fa6cfc3",
+      "notes": "events/game-s 0.4067 → 0.4067 (1464 → 1464); hashGame 5ac2c12a0fa6cfc3 → 5ac2c12a0fa6cfc3 (UNMOVED); word-id things held at the end: before {} → after {}; actions before [buyables:fome 1441, buyables:skyrmion 40430, reset:acceleron 31, reset:skyrmion 15, upgrades:acceleron 4, upgrades:skyrmion 13] → after [buyables:fome 1441, buyables:skyrmion 40430, reset:acceleron 31, reset:skyrmion 15, upgrades:acceleron 4, upgrades:skyrmion 13]; after twice equal true; wall 53s / 53s"
+    },
+    {
+      "gate": "C1c-2 BEFORE → AFTER, fresh 3600 game-s, profile all, diff 1, seed 1",
+      "id": "the-hyperoperator-tree",
+      "ok": true,
+      "ticks": 3600,
+      "gameSeconds": 3600,
+      "diff": 1,
+      "hash": "9e59d7bf6f148a88",
+      "notes": "events/game-s 0 → 0 (0 → 0); hashGame 9e59d7bf6f148a88 → 9e59d7bf6f148a88 (UNMOVED); word-id things held at the end: before {} → after {}; actions before [none] → after [none]; after twice equal true; wall 27s / 27s"
+    },
+    {
+      "gate": "C1c-2 BEFORE → AFTER, fresh 3600 game-s, profile all, diff 1, seed 1",
+      "id": "the-gaming-tree",
+      "ok": true,
+      "ticks": 3600,
+      "gameSeconds": 3600,
+      "diff": 1,
+      "hash": "3ed19bc1e9b17310",
+      "notes": "events/game-s 0.0006 → 0.0006 (2 → 2); hashGame 3ed19bc1e9b17310 → 3ed19bc1e9b17310 (UNMOVED); word-id things held at the end: before {} → after {}; actions before [upgrades:a 1] → after [upgrades:a 1]; after twice equal true; wall 188s / 187s"
+    },
+    {
+      "gate": "C1c-2 BEFORE → AFTER, fresh 3600 game-s, profile all, diff 1, seed 1",
+      "id": "the-collab-tree-lun4-r",
+      "ok": true,
+      "ticks": 3600,
+      "gameSeconds": 3600,
+      "diff": 1,
+      "hash": "1905af3670a35063",
+      "notes": "events/game-s 0.0031 → 0.0031 (11 → 11); hashGame 1905af3670a35063 → 1905af3670a35063 (UNMOVED); word-id things held at the end: before {} → after {}; actions before [reset:cv 35, reset:tb 62, reset:tdr 5, upgrades:cv 15, upgrades:tb 20] → after [reset:cv 35, reset:tb 62, reset:tdr 5, upgrades:cv 15, upgrades:tb 20]; after twice equal true; wall 13s / 15s"
+    },
+    {
+      "gate": "C1c-2 BEFORE → AFTER, fresh 3600 game-s, profile all, diff 1, seed 1",
+      "id": "collection-of-everything",
+      "ok": true,
+      "ticks": 3600,
+      "gameSeconds": 3600,
+      "diff": 1,
+      "hash": "38b7d3ce58fbc6bc",
+      "notes": "events/game-s 0.0056 → 0.0056 (20 → 20); hashGame 38b7d3ce58fbc6bc → 38b7d3ce58fbc6bc (UNMOVED); word-id things held at the end: before {} → after {}; actions before [reset:bam 719, reset:mush 24, reset:switch 704, reset:w 3600, upgrades:bam 2, upgrades:s 4] → after [reset:bam 719, reset:mush 24, reset:switch 704, reset:w 3600, upgrades:bam 2, upgrades:s 4]; after twice equal true; wall 15s / 16s"
+    },
+    {
+      "gate": "C1c-2 BEFORE → AFTER, fresh 3600 game-s, profile all, diff 1, seed 1",
+      "id": "yet-another-challenge-tree-adventure",
+      "ok": true,
+      "ticks": 3600,
+      "gameSeconds": 3600,
+      "diff": 1,
+      "hash": "7a0249f53b35e7b0",
+      "notes": "events/game-s 0 → 0 (0 → 0); hashGame 7a0249f53b35e7b0 → 7a0249f53b35e7b0 (UNMOVED); word-id things held at the end: before {} → after {}; actions before [none] → after [none]; after twice equal true; wall 13s / 13s"
+    },
+    {
+      "gate": "C1c-2 BEFORE → AFTER, fresh 3600 game-s, profile all, diff 1, seed 1",
+      "id": "the-factoree",
+      "ok": true,
+      "ticks": 3600,
+      "gameSeconds": 3600,
+      "diff": 1,
+      "hash": "d376ef52da5d0ba1",
+      "notes": "events/game-s 0.0011 → 0.0011 (4 → 4); hashGame d376ef52da5d0ba1 → d376ef52da5d0ba1 (UNMOVED); word-id things held at the end: before {} → after {}; f 13's slot 0 → 0; actions before [reset:e 18, upgrades:e 4] → after [reset:e 18, upgrades:e 4]; after twice equal true; wall 37s / 39s"
+    },
+    {
+      "gate": "C1c-2 BEFORE → AFTER, LIFTED (lift-word.js on the fresh boot), 600 game-s, profile all, diff 1, seed 1",
+      "id": "universal-reconstruction",
+      "ok": true,
+      "ticks": 600,
+      "gameSeconds": 600,
+      "diff": 1,
+      "hash": "83d9612e041884d9",
+      "notes": "lifted 18 (skipped 6: timecube buyable front (no scored single-field price); timecube buyable right (no scored single-field price); timecube buyable top (no scored single-field price); timecube buyable back (no scored single-field price); timecube buyable left (no scored single-field price); timecube buyable bottom (no scored single-field price)); events/game-s 1.2333 → 1.2333 (740 → 740); hashGame 83d9612e041884d9 → 83d9612e041884d9 (UNMOVED); word-id things held at the end: before {} → after {}; actions before [buyables:fome 1090, buyables:skyrmion 21240, reset:acceleron 15, reset:skyrmion 3, upgrades:acceleron 4, upgrades:skyrmion 13, upgrades:timecube 6] → after [buyables:fome 1090, buyables:skyrmion 21240, reset:acceleron 15, reset:skyrmion 3, upgrades:acceleron 4, upgrades:skyrmion 13, upgrades:timecube 6]; after twice equal true; wall 18s / 18s"
+    },
+    {
+      "gate": "C1c-2 BEFORE → AFTER, LIFTED (lift-word.js on the fresh boot), 600 game-s, profile all, diff 1, seed 1",
+      "id": "the-hyperoperator-tree",
+      "ok": true,
+      "ticks": 600,
+      "gameSeconds": 600,
+      "diff": 1,
+      "hash": "1ab323b4af79014f",
+      "notes": "lifted 43 (skipped 16: m upgrade p-11 (no usable cost); e upgrade l-11 (currencyLocation); e upgrade l-12 (currencyLocation); e upgrade l-13 (currencyLocation); e upgrade l-14 (currencyLocation); e upgrade l-15 (currencyLocation)); events/game-s 0.0233 → 0.005 (14 → 3); hashGame 5b13b981feee6c64 → 1ab323b4af79014f (MOVED); word-id things held at the end: before {} → after {}; actions before [upgrades:a 10, upgrades:m 1, upgrades:s 3] → after [upgrades:a 2, upgrades:m 1]; after twice equal true; wall 6s / 7s"
+    },
+    {
+      "gate": "C1c-2 BEFORE → AFTER, LIFTED (lift-word.js on the fresh boot), 600 game-s, profile all, diff 1, seed 1",
+      "id": "the-gaming-tree",
+      "ok": true,
+      "ticks": 600,
+      "gameSeconds": 600,
+      "diff": 1,
+      "hash": "338b43e145034b4e",
+      "notes": "lifted 0 (skipped 12: c buyable quarry (no scored single-field price); c buyable mine (no scored single-field price); c buyable forest (no scored single-field price); c buyable sawmill (no scored single-field price); c buyable research_center (no scored single-field price); c buyable deep_mine (no scored single-field price)); events/game-s 0.0033 → 0.0083 (2 → 5); hashGame 29f5c097a748df04 → 338b43e145034b4e (MOVED); word-id things held at the end: before {} → after {\"c.buyables.quarry\":\"1001\",\"c.buyables.forest\":\"1000\"}; actions before [upgrades:a 1] → after [buyables:c 2001, upgrades:a 1]; after twice equal true; wall 31s / 31s"
+    },
+    {
+      "gate": "C1c-2 BEFORE → AFTER, LIFTED (lift-word.js on the fresh boot), 600 game-s, profile all, diff 1, seed 1",
+      "id": "the-collab-tree-lun4-r",
+      "ok": true,
+      "ticks": 600,
+      "gameSeconds": 600,
+      "diff": 1,
+      "hash": "ff27a87f013e7225",
+      "notes": "lifted 0 (skipped 0); events/game-s 0.015 → 0.015 (9 → 9); hashGame ff27a87f013e7225 → ff27a87f013e7225 (UNMOVED); word-id things held at the end: before {} → after {}; actions before [reset:cv 8, reset:tb 18, reset:tdr 2, upgrades:cv 4, upgrades:tb 6] → after [reset:cv 8, reset:tb 18, reset:tdr 2, upgrades:cv 4, upgrades:tb 6]; after twice equal true; wall 4s / 3s"
+    },
+    {
+      "gate": "C1c-2 BEFORE → AFTER, LIFTED (lift-word.js on the fresh boot), 600 game-s, profile all, diff 1, seed 1",
+      "id": "collection-of-everything",
+      "ok": true,
+      "ticks": 600,
+      "gameSeconds": 600,
+      "diff": 1,
+      "hash": "9ec5d2d18b2d5ce6",
+      "notes": "lifted 1 (skipped 4: s buyable a2 (no scored single-field price); s buyable a3 (no scored single-field price); s buyable a4 (no scored single-field price); s buyable a5 (no scored single-field price)); events/game-s 0.0233 → 0.025 (14 → 15); hashGame d19a650de15b8e32 → 9ec5d2d18b2d5ce6 (MOVED); word-id things held at the end: before {} → after {\"s.buyables.a1\":\"10\"}; actions before [reset:bam 122, reset:mush 4, reset:switch 109, reset:w 600, upgrades:bam 1, upgrades:s 2] → after [buyables:s 10, reset:bam 122, reset:mush 4, reset:switch 109, reset:w 600, upgrades:bam 1, upgrades:s 2]; after twice equal true; wall 3s / 3s"
+    },
+    {
+      "gate": "C1c-2 BEFORE → AFTER, LIFTED (lift-word.js on the fresh boot), 600 game-s, profile all, diff 1, seed 1",
+      "id": "yet-another-challenge-tree-adventure",
+      "ok": true,
+      "ticks": 600,
+      "gameSeconds": 600,
+      "diff": 1,
+      "hash": "6e9da87f014f2bd7",
+      "notes": "lifted 0 (skipped 0); events/game-s 0 → 0 (0 → 0); hashGame 6e9da87f014f2bd7 → 6e9da87f014f2bd7 (UNMOVED); word-id things held at the end: before {} → after {}; actions before [none] → after [none]; after twice equal true; wall 2s / 2s"
+    },
+    {
+      "gate": "C1c-2 BEFORE → AFTER, LIFTED (lift-word.js on the fresh boot), 600 game-s, profile all, diff 1, seed 1",
+      "id": "the-factoree",
+      "ok": true,
+      "ticks": 600,
+      "gameSeconds": 600,
+      "diff": 1,
+      "hash": "a00666535360e895",
+      "notes": "lifted 1 (skipped 0); events/game-s 0.0433 → 0.0433 (26 → 26); hashGame a00666535360e895 → a00666535360e895 (UNMOVED); word-id things held at the end: before {} → after {}; f 13's slot 3 → 3; actions before [buyables:f 13, reset:e 67, reset:f 99, upgrades:e 9, upgrades:f 4] → after [buyables:f 13, reset:e 67, reset:f 99, upgrades:e 9, upgrades:f 4]; after twice equal true; wall 8s / 7s"
+    },
+    {
+      "gate": "C1c-2 VERDICT (a measurement: every leg ran, twice equal at HEAD; the table is the finding)",
+      "id": "—",
+      "ok": true,
+      "notes": "14/14"
+    }
+  ]
+}

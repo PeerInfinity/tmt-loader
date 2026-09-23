@@ -5,7 +5,7 @@
 # verdict is labelled "(report)". A gate asserts a pinned mark, a hash, an inertness or a constructed behaviour.
 #
 # What lives here: the F1 reset-frequency matrix; R3b-2's `ptr` table (the weight x policy x variant sweep whose
-# verdict NAMES a configuration); R3c's rung sweep (which weight reaches the rung's marks first).
+# verdict NAMES a configuration); R3c's rung sweep (which weight reaches the rung's marks first); C1c's buying table.
 #
 # ⛔ WHY IT IS NOT IN `sweep.yml`, measured 2026-09-21/22. It used to live there, gated on the event being a
 # dispatch. Two things were wrong with that, and only the second is obvious:
@@ -498,3 +498,49 @@ jobs:
             cat r3c-2m.txt 2>/dev/null || echo 'no output'
             echo '```'
           } >> "$GITHUB_STEP_SUMMARY"
+
+  # ---------------------------------------------------------------------------------------------------------------
+  # C1c Part 2 — BUYING THE WORD IDS IS A BEHAVIOUR CHANGE, measured before it ships: the seven games whose purchase
+  # enumeration changed, each fresh (3600 game-s) and LIFTED (the reader's lift on the live state, 600 ticks), at HEAD
+  # twice and at the commit BEFORE C1c once (a control worktree — the checkout needs the history). A MEASUREMENT:
+  # its rows pass on "every leg ran, twice equal"; the table is the finding.
+  # ---------------------------------------------------------------------------------------------------------------
+  c1c-buy:
+    name: C1c buying the word ids — before → after (part 2)
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Part 2 — seven games, fresh and lifted, HEAD twice and the commit before
+        shell: bash
+        run: |
+          set -o pipefail
+          node tools/harness/gates-c1c.mjs --part 2 --no-summary --assert --pool 4 | tee c1c-2.txt
+
+      - name: Summary
+        if: always()
+        shell: bash
+        run: |
+          {
+            echo '## C1c part 2 — buying the word ids'
+            echo ''
+            echo '```'
+            cat c1c-2.txt 2>/dev/null | grep -E 'VERDICT|REFUSED|^RED|^GREEN' || echo 'no output'
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload the rows
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: c1c-buy
+          path: tools/harness/results/gates-c1c-part*.json
+          if-no-files-found: warn
+          retention-days: 14

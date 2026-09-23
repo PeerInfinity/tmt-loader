@@ -1,0 +1,90 @@
+{
+  "gate": "C1c part 4",
+  "commit": "f29fd69a3",
+  "dirty": true,
+  "rows": [
+    {
+      "gate": "C1c-4 BUTTONS in the generated data — a buyable whose purchase raises ANOTHER buyable (`raises`)",
+      "id": "107 games",
+      "ok": true,
+      "ticks": 0,
+      "notes": "19 (18 universal-reconstruction: every <face>Buy / BuyNext / BuyMax raises its own face; the-factoree f.21→13)"
+    },
+    {
+      "gate": "C1c-4 FACES and BUTTONS — universal-reconstruction's `timecube` at boot",
+      "id": "universal-reconstruction",
+      "ok": true,
+      "ticks": 0,
+      "notes": "24 declared objects; faces (canAfford: false, a constant) front, right, top, back, left, bottom — none enumerated; purchaseIds 18 (the buttons); timecube features [upgrades:timecube, clickables:timecube] — ⚠ no buyables:timecube: the game builds these buyables in its OWN setupLayer at load, after the automation derives its features, so nothing here buys them (before or after)"
+    },
+    {
+      "gate": "C1c-4 Part 1: the planner computes in the game’s own number type with NO global `Decimal`",
+      "id": "stub",
+      "ok": true,
+      "ticks": 0,
+      "notes": "passed"
+    },
+    {
+      "gate": "C1c-4 Part 1: the type is whatever `player.points` is an instance of — the stub’s own class here",
+      "id": "stub",
+      "ok": true,
+      "ticks": 0,
+      "notes": "passed"
+    },
+    {
+      "gate": "C1c-4 Part 1: a method the type LACKS makes that operation abstain BY NAME — never a coercion",
+      "id": "stub",
+      "ok": true,
+      "ticks": 0,
+      "notes": "passed"
+    },
+    {
+      "gate": "C1c-4 Part 1: a game whose `player.points` is not a number object abstains by name, it does not guess",
+      "id": "stub",
+      "ok": true,
+      "ticks": 0,
+      "notes": "passed"
+    },
+    {
+      "gate": "C1c-4 Part 2: purchaseIds = numeric ids ascending AS NUMBERS, then word ids that hold an object, in declaration order",
+      "id": "stub",
+      "ok": true,
+      "ticks": 0,
+      "notes": "passed"
+    },
+    {
+      "gate": "C1c-4 Part 2: a display-only object (canAfford: false as a CONSTANT) is not a purchase thing; a canAfford() function is",
+      "id": "stub",
+      "ok": true,
+      "ticks": 0,
+      "notes": "passed"
+    },
+    {
+      "gate": "C1c-4 Part 2: the buyables kind BUYS a word-id buyable, and registers a feature for a layer that has only word ids",
+      "id": "stub",
+      "ok": true,
+      "ticks": 0,
+      "notes": "passed"
+    },
+    {
+      "gate": "C1c-4 Part 3: a button’s purchase is judged by the amount the data says it RAISES — bought to exhaustion, and counted",
+      "id": "stub",
+      "ok": true,
+      "ticks": 0,
+      "notes": "passed"
+    },
+    {
+      "gate": "C1c-4 Part 3: with NO data the button is today’s rule — one purchase a tick, reported as nothing bought (three-valued: unknown = before)",
+      "id": "stub",
+      "ok": true,
+      "ticks": 0,
+      "notes": "passed"
+    },
+    {
+      "gate": "C1c-4 VERDICT",
+      "id": "—",
+      "ok": true,
+      "notes": "exit 0; 9/9 tests; 11/11 rows"
+    }
+  ]
+}
