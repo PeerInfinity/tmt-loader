@@ -2650,7 +2650,10 @@
     // ⚠ BEFORE `hide()`, and with no `cameFrom` write either: U5's remembered view must not record a tab that
     // never opened — a memory set here would send the next back press to the list from a tab the list never opened.
     if (!reachable(l)) return false;
-    hide();
+    // (U14) ON A DESKTOP WHOSE LEFT COLUMN IS THE LIST, the list stays: the tab opens on the right, exactly as a tree
+    // node's press opens it beside the tree. Everywhere else (the phone, and a desktop that chose the tree) the list
+    // is an overlay and gets out of the way, as it always did.
+    if (T.mobile || leftRead() !== 'layers') hide();
     cameFrom = l;   // (U5) we are the view this tab was opened from
     try { showTab(l); } catch (e) { /* a game without showTab keeps the card inert rather than throwing */ }
     return true;
@@ -2677,6 +2680,106 @@
     });
   }
 
+
+  // ---------------------------------------------------------------- U14: ON A DESKTOP, THE LIST IS THE LEFT COLUMN
+  // ⚖ "when we're not in the mobile layout, I want toggling between Layers view and Tree view to toggle which of
+  // those two views is displayed in the left panel when one of the layers is active and the display splits into two
+  // panels" (user, 2026-09-22).
+  //
+  // THE SPLIT IS THE ENGINE'S, and so is the answer to "is it up". A layer tab makes the engine render `#treeTab` as
+  // a `col left` beside the tab's `col right` (MEASURED on ptr at 1280x800, `?navbar=1`: `#treeTab` 634 px at x 0,
+  // the tab at x 646). Before U14 the list was `position: fixed` across the whole window and covered BOTH columns.
+  // In the split it now takes the LEFT COLUMN'S BOX — read off `#treeTab` itself, never computed — and the tab on
+  // the right stays exactly where the engine put it.
+  //
+  // ⛔ NOT A WIDTH TEST. The split is driven by `player.tab`, not by pixels: a narrow desktop window is still the
+  // desktop layout, and the phone layout is `T.mobile`, which the URL / the stored flag decide (loader/flags.mjs).
+  // `split()` asks, in order, and ABSTAINS BY NAME at the first no:
+  //   · `mobile`           — `?mobile=1`: the full-screen overlay is what that layout was built for. Unchanged.
+  //   · `tree`             — `player.tab` is this engine's tree (`navbarUI.treeTab()`, U10's derivation — five games
+  //                          call it `'tree'`, not `'none'`): there is no tab beside which to stand.
+  //   · `no #treeTab`      — a fork without the element: the overlay stays an overlay.
+  //   · `not a left column`— the ENGINE did not split (U10 learned that the class is the engine's own signal and it
+  //                          is not the same on every fork). Named, never forced.
+  //   · `no box`           — the column is there but not laid out.
+  // ⚠ THE CHOICE IS A VIEW PREFERENCE, stored in the game's own namespace through `storage.raw` exactly as
+  // `PREF_KEY` is, and never in `player`: which view fills the left column is how this person likes to look at the
+  // game, not a fact about the save. `'layers'` is the only value written; absent means the tree, which is also
+  // what the engine shows — so a first load, a cleared save and a private window all get the engine's own layout.
+  var LEFT_KEY = 'ui.layerlist.left';
+  var leftView = null;   // 'layers' | 'tree'; null until the first read
+  function leftKey() {
+    var st = T.storage;
+    return st && st.prefix && st.raw ? st.prefix + LEFT_KEY : null;
+  }
+  function leftRead() {
+    if (leftView !== null) return leftView;
+    leftView = 'tree';
+    try { var k = leftKey(); if (k && T.storage.raw.getItem.call(localStorage, k) === 'layers') leftView = 'layers'; }
+    catch (e) { /* no storage: the engine's own layout */ }
+    return leftView;
+  }
+  function leftWrite(v) {
+    leftView = v;
+    try {
+      var k = leftKey();
+      if (!k) return;
+      if (v === 'layers') T.storage.raw.setItem.call(localStorage, k, 'layers');
+      else T.storage.raw.removeItem.call(localStorage, k);   // the tree is the default, and a default is not stored
+    } catch (e) { /* a full or read-only store costs the preference, never the column */ }
+  }
+  function treeName() {
+    return safe(function () { return T.navbarUI && T.navbarUI.treeTab ? str(T.navbarUI.treeTab()) : 'none'; }, 'none');
+  }
+  function splitState() {
+    if (T.mobile) return { split: false, why: 'mobile' };
+    var tab = currentTab();
+    if (!tab || tab === treeName()) return { split: false, why: 'tree', tab: tab };
+    var col = document.getElementById('treeTab');
+    if (!col) return { split: false, why: 'no #treeTab', tab: tab };
+    if (!(col.classList.contains('col') && col.classList.contains('left'))) return { split: false, why: 'not a left column', tab: tab, treeClass: str(col.className) };
+    var r = col.getBoundingClientRect();
+    if (!(r.width > 0 && r.height > 0)) return { split: false, why: 'no box', tab: tab };
+    return { split: true, why: 'split', tab: tab, left: r.left, width: r.width };
+  }
+  var inSplit = false, colBox = '';
+  /** Put the panel where the split says, and report the split. Cheap when nothing moved: the inline box is written
+   *  only when it changes, and the row fit is re-measured only then (a column is narrower than the window). */
+  function layout() {
+    var s = splitState();
+    inSplit = s.split;
+    if (!panel) return s;
+    var box = s.split ? s.left + ',' + s.width : '';
+    panel.classList.toggle('tmt-layerlist-split', s.split);
+    if (box !== colBox) {
+      colBox = box;
+      panel.style.left = s.split ? s.left + 'px' : '';
+      panel.style.width = s.split ? s.width + 'px' : '';
+      if (open) fitCards(null);
+    }
+    return s;
+  }
+  /** Follow the engine: re-lay the panel, and when the split COMES UP with the list chosen for the left column,
+   *  show it there. Only the rising edge shows it — a press of Tree inside the split is never undone by this. */
+  function syncSplit() {
+    var was = inSplit, s = layout();
+    if (s.split && !was && !open && leftRead() === 'layers') show();
+    return s;
+  }
+  /** Tree, pressed while the split is up: the tree takes the left column back and the tab STAYS OPEN. */
+  function showTree() {
+    if (!splitState().split) return false;
+    leftWrite('tree');
+    hide();
+    return true;
+  }
+  function toggle() {
+    var s = splitState();
+    if (open) hide(); else show();
+    // the choice is remembered only where it means something: in the split, the button chose a column's content
+    if (s.split) leftWrite(open ? 'layers' : 'tree');
+  }
+
   function show() {
     build();
     wantCurrency();
@@ -2685,6 +2788,7 @@
     skinCache = null;
     open = true;
     panel.hidden = false;
+    layout();   // (U14) the left column's box in the split, the whole window everywhere else — before the fit measures
     rebuild();
     refresh();
     if (T.navbarUI && T.navbarUI.refresh) T.navbarUI.refresh();
@@ -2735,14 +2839,33 @@
     // sees it; the row is simply re-measured. Still no timer of ours, and still nothing written to `player`.
     var rq = false;
     window.addEventListener('resize', function () {
-      if (!open || rq) return;
+      if (rq) return;
       rq = true;
-      requestAnimationFrame(function () { rq = false; fitCards(null); });
+      // (U14) the left column is the engine's box, and a resize moves it: re-lay first (which re-fits when the box
+      // moved), then the fit for a full-window list whose box is the window's
+      requestAnimationFrame(function () { rq = false; syncSplit(); if (open) fitCards(null); });
     });
+    // (U14) THE SPLIT FOLLOWS THE ENGINE, not a timer and not a width: the engine flips `#treeTab`'s class when a tab
+    // opens or closes, so an observer on CLASS changes catches both edges. Separate from the one above because that
+    // one runs only while the panel is open, and the rising edge is exactly when it is not. One frame, coalesced.
+    var sq = false;
+    var splitObs = new MutationObserver(function () {
+      if (sq) return;
+      sq = true;
+      requestAnimationFrame(function () { sq = false; syncSplit(); });
+    });
+    if (app) splitObs.observe(app, { subtree: true, attributes: true, attributeFilter: ['class'] });
+    requestAnimationFrame(function () { syncSplit(); });   // a reload that lands on an open tab
     T.layerListUI = {
       panel: panel,
       open: show, close: hide,
-      toggle: function () { open ? hide() : show(); },
+      toggle: toggle,
+      // (U14) the desktop split: whether it is up (and, when not, which test said no), the Tree press inside it,
+      // and which view the left column is set to show. `split()` is what navbar.js asks before a press.
+      split: function () { return splitState(); },
+      showTree: showTree,
+      leftView: function () { return leftRead(); },
+      leftKey: leftKey,
       isOpen: function () { return open; },
       refresh: refresh,
       groups: groups,

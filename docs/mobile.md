@@ -1810,6 +1810,64 @@ space (`layers.s.space().gt(0)`), the "engine says no" case that was never a sig
 | m2 `? / ?` rows hidden (an unknown cost is no candidate) | `the-cookie-tree-thepasswordispasswor` | the row count: `0 rows, expected 1` on `g`. (On `function-of-time` the category keeps a row, so the item check reds instead: `buyables/f/21 != buyables/f/11`) |
 | m3 the lazy fetch made eager | `ptr` | leg F: 2 `games-data/` requests on the never-opened page (35 → 37 requests), 4 before the first open |
 
+#### On a desktop, the list is the LEFT COLUMN of the split (U14)
+
+⚖ user, 2026-09-22: *"when we're not in the mobile layout, I want toggling between Layers view and Tree view to
+toggle which of those two views is displayed in the left panel when one of the layers is active and the display
+splits into two panels."*
+
+**THE SPLIT IS THE ENGINE'S.** A layer tab makes the engine render `#treeTab` as a `col left` and the tab in a
+`col right` beside it. MEASURED on `ptr` at 1280×800, `?navbar=1`, with `p` open (at `4d8ee5a69`, fresh save):
+`#treeTab` 633.6 px at x 0, the tab at x 646.4 — and the list, `position: fixed` with `left: 0; right: 0`, **1280 px
+wide over both**. Since U14 the list takes **the left column's box** in that state — `left` and `width` written
+inline from `#treeTab`'s own `getBoundingClientRect()`, never computed, and the class `tmt-layerlist-split` sets
+`right: auto` — so the tab the engine put on the right stays visible and usable beside it.
+
+**WHEN IT APPLIES is derived, never a width** (`layerListUI.split()`, which answers `{split, why, …}` and names the
+first test that said no):
+
+| `why` | meaning |
+|---|---|
+| `mobile` | `?mobile=1` (or the stored preference): the full-screen overlay is that layout, unchanged. ⚠ It is the FIRST test, because `?mobile=1` implies `?navbar=1` — without it every condition below would be live on the phone |
+| `tree` | `player.tab` is this engine's tree — U10's derived name (`navbarUI.treeTab()`), so the five that call it `tree` are right |
+| `no #treeTab` | a fork without the element |
+| `not a left column` | the ENGINE did not split: `#treeTab` is not `col` + `left`. The engine's own class is the signal, and a fork that does not produce it keeps the overlay rather than being forced into a column |
+| `no box` | the column exists but has no layout |
+| `split` | all of the above passed: the list goes in the column |
+
+⛔ **No viewport test anywhere.** A narrow desktop window is still the desktop layout: at 390 px WITHOUT
+`?mobile=1` the engine still splits (193 px a column on `ptr`) and the list still takes the left one. That is the
+leg's discriminator against the tempting build (mutant m2 below).
+
+**The two buttons, in the split:**
+- **Layers** shows the list in the left column; pressed again, it gives the column back to the tree. `player.tab`
+  does not move either way.
+- **Tree** puts the tree back in the left column and **LEAVES THE TAB OPEN**. ⚖ *What Tree does there is a decision
+  this item had to make*: before U14 it called `showTab(<tree>)`, which closes the tab — collapsing the very split
+  the user is toggling. In the split it is now "the tree in the left column", and pressing it while the tree is
+  already there does nothing. **Closing the tab is the engine's own Back**, which it always was on a desktop (the
+  tab carries its own back control). Everywhere else — no tab open, or `?mobile=1` — Tree is exactly what it was:
+  `showTab(<tree>)` (U10).
+- **Info / Help / Options** open their tab on the right beside whatever the left column shows; in the split they no
+  longer close the list, because there it is a column, not an overlay over the tab being opened.
+
+**The choice is remembered, as a VIEW preference.** `tmt-loader:<id>:ui.layerlist.left`, written through
+`storage.raw` in the game's own namespace exactly like the expander's key — never `player`, because which view
+fills the column is how this person likes to look at the game, not a fact about the save. Only `layers` is ever
+written; absent means the tree, which is the engine's own layout — so a first load, a cleared save and a private
+window all get what the author shipped. It is written ONLY by a press inside the split (a press where the split
+is not up says nothing about the column). While it says `layers`:
+- a card pressed in the left column opens its layer on the right and **the list stays** — as a tree node's press
+  leaves the tree; with the choice on the tree (and always on the phone) a card press still gets the overlay out of
+  the way, as before;
+- the split **coming up** by any other path (a tree node, the engine's own navigation, a reload that lands on an
+  open tab) shows the list in the column. Only the RISING edge does this, so a Tree press inside the split is never
+  undone by it. It is driven by a `MutationObserver` on class changes under `#app`, coalesced to one animation frame
+  — the engine flips `#treeTab`'s class on both edges — and a resize re-lays the box. Still no timer.
+- when the tab CLOSES (the engine's Back), the list stays open and becomes the full-window overlay again. ⚠ Chosen
+  over hiding it, because U5's "Back returns to the list" re-opens it on the next frame after the same click, and a
+  second listener hiding it in that frame would race the first.
+
 ### Reading a card can make the ENGINE write `player`
 
 The list assigns nothing to `player`. That is not the same as the state not moving, and two measured cases say why:
@@ -1864,6 +1922,10 @@ Since U3 each flag is ALSO reachable as a remembered preference, set from button
 says anything about a flag — `?mobile=0` over a remembered *on* as much as `?mobile=1` over a remembered *off* —
 and a page with neither a parameter nor a preference is still inert. The gate's inertness leg below is re-asked,
 against a stored preference as well as a parameter, by gate O1.
+
+U14's split is not an exception either: whether the list is a column or the whole window is decided by the ENGINE's
+state (`player.tab` and `#treeTab`'s class) and by `?mobile=1`, never by the width — see "On a desktop, the list is
+the LEFT COLUMN of the split".
 
 ## Not in scope
 

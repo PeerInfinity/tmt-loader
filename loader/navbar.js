@@ -16,6 +16,8 @@
 // control that has been seen and is now absent means its tab is the open one.
 // THE TREE BUTTON IS THE ONE WITH NO CORNER CONTROL TO FORWARD TO, so it calls `showTab` itself — and since U10 it
 // asks the ENGINE what that tab is called rather than assuming `'none'` (see `treeTab` below).
+// (U14) …except inside the DESKTOP SPLIT, where the list is the left column and Tree only gives that column back
+// to the tree, leaving the tab open (see the click handler in `build`, and docs/mobile.md, "The split").
 (function () {
   'use strict';
   var T = window.tmtLoader;
@@ -89,7 +91,15 @@
       b.append(g, l);
       b.addEventListener('click', function () {
         if (e.key === 'layers') return T.layerListUI ? T.layerListUI.toggle() : undefined;
-        if (T.layerListUI) T.layerListUI.close(); // the list is an overlay over the tab this button is about to open
+        // (U14) ON A DESKTOP WITH A LAYER TAB OPEN the list is not an overlay: it is the engine's LEFT COLUMN, and
+        // Layers / Tree choose which of the two fills it (docs/mobile.md, "The split"). Tree then shows the tree in
+        // that column and LEAVES THE TAB OPEN — `showTab(<tree>)` would collapse the very split being toggled — and
+        // a system button opens its tab on the right beside the list rather than closing it. Whether the split is
+        // up is the list's call (`split()`), because it is the one that derives it; with no list, or on the phone,
+        // or with no tab open, `split()` is false and every press below is exactly what it was before U14.
+        var inSplit = !!(T.layerListUI && T.layerListUI.split && T.layerListUI.split().split);
+        if (inSplit && e.target === null) return T.layerListUI.showTree();
+        if (T.layerListUI && !inSplit) T.layerListUI.close(); // the list is an overlay over the tab this button is about to open
         if (e.target === null) return onTree();
         var el = document.querySelector(e.target);
         if (el) el.click(); // the game's own handler, with the tab id that engine uses
