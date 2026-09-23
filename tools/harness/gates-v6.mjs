@@ -435,30 +435,42 @@ async function part7(browser, base, ids) {
 
 // ---- shots: what the user looks at -------------------------------------------------------------------------------------
 async function shots(browser, base) {
+  // ⚠ FROM THE MID-GAME FIXTURE (part 2's): at a fresh save ptr has ONE unlocked feature, so there is no second one to
+  // show OVERRIDDEN — the first cut's ptr shot showed only the On block. Each of the three blocks is its own image.
   const dir = path.join(REPO, 'tools/harness/results/v6');
   fs.mkdirSync(dir, { recursive: true });
   for (const id of GAMES6) {
     const out = [];
+    const s = JSON.parse(fs.readFileSync(path.join(REPO, SNAP[id]), 'utf8'));
     for (const w of [1280, 390]) {
       const { context, page } = await openPage(browser, base, id, { width: w, mobile: w === 390 });
       try {
         await page.evaluate(() => tmtLoader.storage.clear());
+        await pageLoadFrom(page, s.player);
         const st = await page.evaluate(() => tmtLoader.features.map((f) => tmtLoader.featureState(f.id)));
-        const on = st.find((x) => x.unlocked), over = st.filter((x) => x.unlocked)[1] || null, arm = st.find((x) => !x.unlocked);
-        await page.evaluate(() => tmtLoader.armLocked(true));
-        await page.evaluate(([o, v, m]) => { tmtLoader.pressFeature(o); if (m) tmtLoader.pressFeature(m); if (v) tmtLoader.setFeatureEnabled(v, true); }, [on.id, over && over.id, arm && arm.id]);
+        const unl = st.filter((x) => x.unlocked), on = unl[0], over = unl[1] || null, arm = st.find((x) => !x.unlocked) || null;
+        await page.evaluate(([o, v, m]) => { tmtLoader.armLocked(true); tmtLoader.pressFeature(o); if (m) tmtLoader.pressFeature(m); if (v) tmtLoader.setFeatureEnabled(v, true); }, [on.id, over && over.id, arm && arm.id]);
         await view(page, 'Advanced');
         await page.locator('#app button.tmtl-collapse-all').first().click({ timeout: 5000 });
         await redraw(page);
-        for (const f of [on, over, arm].filter(Boolean)) { await page.locator(`#app button.tmtl-fold[data-fid="${f.id}"]`).first().click({ timeout: 5000 }); await redraw(page); }
+        const file0 = path.join(dir, `${id}-advanced-${w}.png`);
         await page.locator('#app button.tmtl-all-features').first().scrollIntoViewIfNeeded();
-        const file = path.join(dir, `${id}-advanced-${w}.png`);
-        await page.screenshot({ path: file, fullPage: false });
-        out.push(path.relative(REPO, file));
+        await page.screenshot({ path: file0 });
+        out.push(path.relative(REPO, file0));
+        for (const [tag, f] of [['on', on], ['overridden', over], ['armed', arm]]) {
+          if (!f) { out.push(`${tag}: none on this fixture`); continue; }
+          await page.locator(`#app button.tmtl-fold[data-fid="${f.id}"]`).first().click({ timeout: 5000 });
+          await redraw(page);
+          const blk = page.locator(`#app button.tmtl-onoff[data-fid="${f.id}"]`).first().locator('xpath=../..');
+          await blk.scrollIntoViewIfNeeded();
+          const file = path.join(dir, `${id}-${tag}-${w}.png`);
+          await blk.screenshot({ path: file });
+          out.push(`${tag} ${f.id} ${path.relative(REPO, file)}`);
+        }
         await page.evaluate(() => tmtLoader.storage.clear());
       } finally { await context.close(); }
     }
-    row({ gate: 'V6 screenshots: a block On, one Armed, one Overridden', id, ok: out.length === 2, notes: out.join(', ') });
+    row({ gate: 'V6 screenshots: a block On, one Armed, one Overridden', id, ok: out.filter((x) => /\.png$/.test(x)).length === 8, notes: out.join(', ') });
   }
 }
 
