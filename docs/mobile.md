@@ -2925,6 +2925,57 @@ reset 0.1–0.2 times a second. The wrapper itself, on an early-returning `doRes
 over the original (e.g. `ptr` 365 vs 280 ns) — against a tick of milliseconds. U11's per-card sampler is gone from
 the throttled path, so nothing is added there.
 
+#### What U14 added to the leg
+
+**Leg S, the desktop split** (`splitLeg` in `tools/harness/page.mjs`; its own two contexts, fresh saves, so nothing
+another leg pressed or loaded is under it). It opens the first TREE layer the engine says is reachable — a layer on
+a numbered row: 2.x registers `info-tab`, `options-tab` and `blank` as layers too, and MEASURED on `ptr` the first
+two picks without that filter were `info-tab` and `blank` — with the engine's own `showTab`, then presses the REAL
+buttons. ⚠ Every expectation is read off the ENGINE: the column is `#treeTab`'s box, the right column is
+`.col.right`'s, "covered" is what `elementFromPoint` finds at a column's centre, and the tab is `player.tab`.
+`split()` is the list's own answer and is judged against those, never trusted — so a list that says `split` and
+still covers the window reds (mutant m4). Whether the engine split at all is also read off the engine (`#treeTab`
+a `left` column, a `.col.right` on screen, the tab not the tree); where it did not, the leg ABSTAINS by name.
+
+| step | page | asserted |
+|---|---|---|
+| D1 | desktop 1280×800, `?navbar=1` | a layer tab open and the engine split — else abstains, naming why |
+| D2 | Layers | `player.tab` unchanged; the list's x and width = `#treeTab`'s (±1 px); the right column's box unchanged and not covered; the left covered; the choice `layers` stored at `tmt-loader:<id>:ui.layerlist.left`, and not in `player` |
+| D3 | Tree, twice | `player.tab` unchanged both times; the list gone, the tree uncovered, the right column kept; the key removed |
+| D4 | Layers, then the window at 390×844 — still no `?mobile=1` | still the split, the list still `#treeTab`'s box, the right column not covered |
+| D5 | the tab closed (the engine's tree), Layers, then Tree | the pre-U14 full-window overlay (`split()` says `tree`); Tree closes it and the tab stays the tree |
+| P1 | phone 390×844, touch, `?mobile=1`, a tab open, Layers | `split()` says `mobile`; the list is the full window; nothing stored |
+| P2 | Tree | the engine's tree (U10's name) — what Tree has always done there |
+
+**Before → after**, at `4d8ee5a69` → U14, 1280×800, fresh saves: the list was **1280 px over a 633.6 px column**
+on every game the leg judged; it is now **633.6 px at x 0**, and the tab at x 646.4 is uncovered. At a 390 px
+desktop window the column is 193 px and the list matches it. Locally on 11 games (`ptr`, the five whose tree is
+`tree`, `the-dressy-tree`, `something`, `1-clicker`, `universal-reconstruction`, `the-yes-tree`), the gate at
+`efaeae795` was pointed at the old loader and at the new one: old 1 GREEN / 10 RED on leg S, new **11/11 GREEN** (10 judged, 1
+abstained — `the-burning-tree`: no layer is reachable at a fresh save).
+
+**`?mobile=1` is untouched — the number.** The same 11 games, the old loader against the new, comparing each M1
+row's PHONE projection (every key but leg S, leg 5, leg 6's desktop half and the desktop tooltip readings):
+**11/11 byte-identical, 202,117 bytes** — after four wall-clock readings are taken out (`throttle.ms` and the
+`syncs` / `cap` derived from it, and the glow leg's `ticked`, whose loop is bounded by `performance.now()`). ⚠ Those
+four are not an excuse: each also moved between two runs of the SAME loader (`the-incrementreeverse`'s `ticked` 561
+then 496 on the old one, 563 then 485 on the new; `ptr`'s `throttle.ms` 203 then 202 on the old one). With them
+left in, the first run was 7/10 identical and a rerun of the three that differed was 2/3 old-vs-new, while
+new-vs-new moved on 3/3.
+
+**Mutants** (`tools/harness/mutants-u14.sh`, restored from a copy, `git status` clean after each; m2–m4 at `efaeae795`, m1/m1b rerun at `e0b373953` after the script fix below — the loader is the same at both):
+
+| mutant | reddened |
+|---|---|
+| m1 the `mobile` guard deleted | the phone half: `THE PHONE IS NOT EXEMPT FROM THE SPLIT (split() says "no box")`. ⚠ Nothing else reddens, and that is the phone layout's own doing: mobile.css §2 hides `.col.left`, so the derivation falls through to `no box` and the overlay stays full-window |
+| m1b the guard AND the box test deleted — the desktop branch in full on the phone | the phone half (`split() says "split"`) AND U10's pre-existing Tree leg: `TREE DID NOT COME BACK FROM AN OPEN TAB` |
+| m2 the engine's `col left` test replaced by `innerWidth < 768` | the desktop half, at D4 only: `A NARROW DESKTOP WINDOW LOST THE SPLIT (390 px: split "narrow", list x 0 w 390, #treeTab w 193)` |
+| m3 Tree closes the tab in the split | the desktop half: `PRESSING TREE CLOSED THE TAB (player.tab "p" → "none" → "none")` |
+| m4 the column's width not applied | the desktop half: `THE LIST IS NOT THE LEFT COLUMN (list x 0 w 1280, #treeTab x 0 w 633.6)` |
+
+⚠ **The mutant script's first run scored m1 and m1b GREEN while their own verdicts read red**: the leg was named
+`lphone`, and `grep "phone=true"` matched inside `lphone=true`. Renamed, and the match is `-w`.
+
 ### The state leg needs a control
 
 A hash that differs between the plain and the mobile page only means the mode moved the game **if the game reaches
