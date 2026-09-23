@@ -49,6 +49,11 @@
   overflow: hidden;                 /* the body below is the scroller */
 }
 #tmt-layerlist[hidden] { display: none; }
+/* (U14) ON A DESKTOP WITH A LAYER TAB OPEN the list is the engine's LEFT COLUMN, not an overlay over both: layerlist.js
+ * writes `left` and `width` inline from `#treeTab`'s own box (never computed here, never a breakpoint) and sets this
+ * class, so the tab the engine put in the right column stays visible beside the list. Never set under `?mobile=1`,
+ * where the full-screen overlay above is the layout. */
+#tmt-layerlist.tmt-layerlist-split { right: auto; }
 
 #tmt-layerlist .tmt-layerlist-head {
   flex: 0 0 auto;

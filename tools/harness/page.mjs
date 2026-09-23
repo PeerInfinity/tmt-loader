@@ -1920,6 +1920,162 @@ async function treeButtonLeg(page) {
   return rec;
 }
 
+/**
+ * (U14) THE DESKTOP SPLIT — leg S of gate M1 (docs/mobile.md, "The split").
+ * ⚖ user, 2026-09-22: off the phone, with a layer tab open, Layers and Tree toggle which view fills the LEFT column.
+ *
+ * Before U14 the list was `position: fixed` across the window: MEASURED on ptr at 1280x800, `?navbar=1`, with `p`
+ * open — `#treeTab` a 634 px `col left`, the tab a `col right` at x 646, and the list 1280 wide over both.
+ *
+ * ⚠ EVERY EXPECTATION IS READ OFF THE ENGINE, never asked of the list (the arc's "a probe must not share its
+ * subject's assumption"): the column is `#treeTab`'s own box and `.col.right`'s own box, "visible" is what
+ * `elementFromPoint` finds at the column's centre, and the tab is `player.tab`. `ui.split()` is RECORDED — it is
+ * the list's own answer — but the verdicts are judged against the engine's boxes, so a list that says "split" and
+ * still covers the window reds.
+ *
+ * The desktop page (no touch, `?navbar=1`):
+ *   D1 a layer tab open → the engine split (else the leg ABSTAINS, naming the reason `split()` gives);
+ *   D2 Layers → `player.tab` unchanged, the list's x/width = `#treeTab`'s, the right column's box unchanged and
+ *      NOT covered, the left column covered, and the choice stored in THIS game's namespace;
+ *   D3 Tree → `player.tab` unchanged (⛔ the old `showTab(<tree>)` here collapses the split), the list gone and the
+ *      tree uncovered; Tree again → still unchanged (idempotent);
+ *   D4 Layers, then the window shrunk to 390 px WITHOUT `?mobile=1` → still the split, the list still the column's
+ *      box. A width test instead of the engine's state reds HERE;
+ *   D5 with the tab CLOSED, Layers → the pre-U14 full-window overlay, and Tree → the engine's tree.
+ * The phone page (`?mobile=1`, touch): P1 a tab open and Layers pressed → `split()` says `mobile`, the list is the
+ * full window, and nothing is stored; P2 Tree → the engine's tree, which is what Tree has always done there.
+ */
+async function splitLeg(browser, base, id) {
+  const LOOK = `(${function () {
+    const T = window.tmtLoader, ui = T.layerListUI;
+    const bx = (el) => { if (!el) return null; const c = getComputedStyle(el), r = el.getBoundingClientRect();
+      return { x: Math.round(r.left * 10) / 10, y: Math.round(r.top), w: Math.round(r.width * 10) / 10, h: Math.round(r.height),
+        shown: c.display !== 'none' && c.visibility !== 'hidden' && r.width > 0 && r.height > 0 }; };
+    const tt = document.getElementById('treeTab'), list = document.getElementById('tmt-layerlist');
+    const right = [...document.querySelectorAll('#app .col.right')].find((e) => e.getClientRects().length) || null;
+    const hitIn = (b) => { if (!b || !b.shown) return null;
+      const el = document.elementFromPoint(b.x + b.w / 2, Math.min(b.y + b.h / 2, innerHeight / 2));
+      return !!(el && list && list.contains(el)); };
+    let tab = null; try { tab = String(player.tab); } catch (e) { tab = null; }
+    const k = ui && ui.leftKey ? ui.leftKey() : null;
+    let stored = null; try { stored = k ? T.storage.raw.getItem.call(localStorage, k) : null; } catch (e) { stored = 'threw'; }
+    const tb = bx(tt), rb = bx(right);
+    return { tab, vw: innerWidth, treeClass: tt ? String(tt.className) : null, tree: tb, right: rb,
+      list: bx(list), open: !!(ui && ui.isOpen()), split: ui && ui.split ? ui.split() : null,
+      leftView: ui && ui.leftView ? ui.leftView() : null, key: k, inNamespace: !!(k && T.storage.prefix && k.indexOf(T.storage.prefix) === 0),
+      stored, leftCovered: hitIn(tb), rightCovered: hitIn(rb),
+      inPlayer: (() => { try { return /layerlist\.left/.test(JSON.stringify(player)); } catch (e) { return null; } })() };
+  }})()`;
+  // a TREE layer — one on a numbered row — not one of the engine's own system tabs: 2.x registers `info-tab`,
+  // `options-tab` and `blank` as layers too (MEASURED on ptr: `LAYERS` opens with `info-tab`, and `blank` was the
+  // next pick once that was skipped), and those are not what the ruling is about
+  const openLayer = (p) => p.evaluate(() => {
+    try {
+      for (const l of LAYERS) {
+        if (!layers[l] || !/^\d+$/.test(String(layers[l].row))) continue;   // a number, or a game that wrote it as a string
+        if (typeof layerunlocked === 'function' ? layerunlocked(l) : (player[l] && player[l].unlocked)) { showTab(l); return l; }
+      }
+    } catch (e) { /* engines differ */ }
+    return null;
+  });
+  const near = (a, b) => a !== null && b !== null && Math.abs(a - b) <= 1;
+  const sameBox = (a, b) => !!(a && b && near(a.x, b.x) && near(a.w, b.w));
+  const out = { desktop: null, phone: null };
+  // ---- the desktop page
+  {
+    const { context: c } = await openContext(browser, { contextOptions: DESKTOP_CONTEXT });
+    try {
+      const p = await c.newPage();
+      await p.goto(new URL(`index.html?mod=${encodeURIComponent(id)}&managed=1&navbar=1`, base).href, { waitUntil: 'load' });
+      const r = await waitReady(p);
+      const press = async (key) => { await p.evaluate((k) => { const b = document.querySelector(`#tmt-navbar button[data-key="${k}"]`); if (b) b.click(); }, key); await p.waitForTimeout(250); return p.evaluate(LOOK); };
+      const d = out.desktop = { ready: r.ready, layer: null };
+      if (r.ready) {
+        d.layer = await openLayer(p);
+        await p.waitForTimeout(250);
+        d.d1 = await p.evaluate(LOOK);
+        d.treeName = await p.evaluate(() => { try { return String(window.tmtLoader.navbarUI.treeTab()); } catch (e) { return null; } });
+        // THE ENGINE'S SPLIT, read off the engine alone: the tab is not the tree, `#treeTab` is a `left` column, and
+        // a `.col.right` is on screen. NOT `ui.split()` — that is the subject's answer, judged against this below.
+        d.engineSplit = !!(d.layer && d.d1.tab === d.layer && d.d1.tab !== d.treeName && d.d1.tree && d.d1.tree.shown
+          && /\bleft\b/.test(d.d1.treeClass || '') && d.d1.right && d.d1.right.shown);
+        if (d.engineSplit) {
+          d.d2 = await press('layers');
+          d.d3 = await press('tree');
+          d.d3b = await press('tree');
+          d.d4pre = await press('layers');
+          await p.setViewportSize({ width: 390, height: 844 });
+          await p.waitForTimeout(300);
+          d.d4 = await p.evaluate(LOOK);
+          await p.setViewportSize(DESKTOP);
+          await p.waitForTimeout(300);
+          await press('layers');   // closes it, and puts the choice back to the tree
+          await p.evaluate(() => { try { showTab(window.tmtLoader.navbarUI.treeTab()); } catch (e) { /* the D5 checks judge it */ } });
+          await p.waitForTimeout(250);
+          d.d5 = await press('layers');
+          d.d5b = await press('tree');
+        }
+      }
+    } catch (e) { out.desktop = { ...(out.desktop || {}), exception: String((e && e.stack) || e).slice(0, 400) }; } finally { await c.close(); }
+  }
+  // ---- the phone page
+  {
+    const { context: c } = await openContext(browser, { contextOptions: PHONE_CONTEXT });
+    try {
+      const p = await c.newPage();
+      await p.goto(new URL(`index.html?mod=${encodeURIComponent(id)}&managed=1&mobile=1`, base).href, { waitUntil: 'load' });
+      const r = await waitReady(p);
+      const press = async (key) => { await p.evaluate((k) => { const b = document.querySelector(`#tmt-navbar button[data-key="${k}"]`); if (b) b.click(); }, key); await p.waitForTimeout(250); return p.evaluate(LOOK); };
+      const q = out.phone = { ready: r.ready, layer: null };
+      if (r.ready) {
+        q.layer = await openLayer(p);
+        await p.waitForTimeout(250);
+        q.p0 = await p.evaluate(LOOK);
+        q.p1 = await press('layers');
+        q.treeName = await p.evaluate(() => { try { return String(window.tmtLoader.navbarUI.treeTab()); } catch (e) { return null; } });
+        q.p2 = await press('tree');
+      }
+    } catch (e) { out.phone = { ...(out.phone || {}), exception: String((e && e.stack) || e).slice(0, 400) }; } finally { await c.close(); }
+  }
+  // ---- verdicts
+  const d = out.desktop || {}, q = out.phone || {};
+  const why = (L) => (L && L.split ? L.split.why : 'no split()');
+  const col = (L) => L && L.open && L.list && L.tree && L.list.shown && sameBox(L.list, L.tree) && L.leftCovered === true;
+  const fullWin = (L) => L && L.open && L.list && L.list.shown && near(L.list.x, 0) && near(L.list.w, L.vw);
+  const rightKept = (L) => L && L.right && d.d1.right && L.right.shown && sameBox(L.right, d.d1.right) && L.rightCovered === false;
+  let dv;
+  if (d.exception) dv = `THE DESKTOP LEG THREW (${d.exception.split('\n')[0]})`;
+  else if (!d.ready) dv = 'abstains (the desktop page did not load)';
+  else if (!d.layer) dv = 'abstains (no layer is reachable at a fresh save, so no tab to split beside)';
+  else if (!d.engineSplit) dv = `abstains (the engine did not split beside ${JSON.stringify(d.layer)}: player.tab ${JSON.stringify(d.d1.tab)}, #treeTab "${d.d1.treeClass}", right column ${d.d1.right ? 'shown' : 'absent'}; split() says ${JSON.stringify(why(d.d1))})`;
+  else if (d.d2.tab !== d.d1.tab) dv = `PRESSING LAYERS CLOSED THE TAB (player.tab ${JSON.stringify(d.d1.tab)} → ${JSON.stringify(d.d2.tab)})`;
+  else if (!col(d.d2)) dv = `THE LIST IS NOT THE LEFT COLUMN (list x ${d.d2.list && d.d2.list.x} w ${d.d2.list && d.d2.list.w}, #treeTab x ${d.d2.tree && d.d2.tree.x} w ${d.d2.tree && d.d2.tree.w}, left covered ${d.d2.leftCovered})`;
+  else if (!rightKept(d.d2)) dv = `THE RIGHT COLUMN DID NOT SURVIVE LAYERS (right ${JSON.stringify(d.d2.right)} vs ${JSON.stringify(d.d1.right)}, covered ${d.d2.rightCovered})`;
+  else if (!(d.d1.split && d.d1.split.split)) dv = `THE ENGINE SPLIT BUT split() SAYS ${JSON.stringify(why(d.d1))} (#treeTab "${d.d1.treeClass}")`;
+  else if (!(d.d2.leftView === 'layers' && d.d2.stored === 'layers' && d.d2.inNamespace && d.d2.inPlayer === false)) dv = `THE CHOICE IS NOT A VIEW PREFERENCE IN THIS GAME'S NAMESPACE (leftView ${d.d2.leftView}, stored ${JSON.stringify(d.d2.stored)} at ${JSON.stringify(d.d2.key)}, in player ${d.d2.inPlayer})`;
+  else if (d.d3.tab !== d.d1.tab || d.d3b.tab !== d.d1.tab) dv = `PRESSING TREE CLOSED THE TAB (player.tab ${JSON.stringify(d.d1.tab)} → ${JSON.stringify(d.d3.tab)} → ${JSON.stringify(d.d3b.tab)})`;
+  else if (d.d3.open || d.d3.leftCovered !== false || !rightKept(d.d3) || d.d3.stored !== null) dv = `TREE DID NOT GIVE THE LEFT COLUMN BACK (open ${d.d3.open}, left covered ${d.d3.leftCovered}, stored ${JSON.stringify(d.d3.stored)})`;
+  else if (d.d4pre.tab !== d.d1.tab || !col(d.d4pre)) dv = 'LAYERS DID NOT RETURN THE LIST TO THE COLUMN';
+  else if (!(d.d4.split && d.d4.split.split && col(d.d4) && d.d4.rightCovered === false)) dv = `A NARROW DESKTOP WINDOW LOST THE SPLIT (${d.d4.vw} px: split ${JSON.stringify(why(d.d4))}, list x ${d.d4.list && d.d4.list.x} w ${d.d4.list && d.d4.list.w}, #treeTab w ${d.d4.tree && d.d4.tree.w})`;
+  else if (!(fullWin(d.d5) && why(d.d5) === 'tree')) dv = `WITH NO TAB OPEN THE LIST IS NOT THE FULL-WINDOW OVERLAY (split ${JSON.stringify(why(d.d5))}, list ${JSON.stringify(d.d5.list)})`;
+  else if (d.d5b.open || d.d5b.tab !== d.d5.tab) dv = `WITH NO TAB OPEN, TREE IS NOT WHAT IT WAS (open ${d.d5b.open}, tab ${JSON.stringify(d.d5b.tab)})`;
+  else dv = `the list took the ${d.d2.tree.w} px left column (x ${d.d2.tree.x}) beside tab ${JSON.stringify(d.d1.tab)} at x ${d.d1.right.x}; Tree gave it back with the tab still open; at 390 px the column was ${d.d4.tree.w} px and the list matched it`;
+  let pv;
+  if (q.exception) pv = `THE PHONE LEG THREW (${q.exception.split('\n')[0]})`;
+  else if (!q.ready) pv = 'abstains (the phone page did not load)';
+  else if (!q.layer) pv = 'abstains (no layer is reachable at a fresh save)';
+  else if (why(q.p1) !== 'mobile') pv = `THE PHONE IS NOT EXEMPT FROM THE SPLIT (split() says ${JSON.stringify(why(q.p1))})`;
+  else if (!fullWin(q.p1)) pv = `THE PHONE'S LIST IS NOT THE FULL WINDOW (${JSON.stringify(q.p1.list)} at vw ${q.p1.vw})`;
+  else if (q.p1.stored !== null || q.p1.leftView !== 'tree') pv = `THE PHONE STORED A COLUMN CHOICE (${JSON.stringify(q.p1.stored)})`;
+  else if (q.p2.tab !== q.treeName || q.p2.open) pv = `TREE ON THE PHONE DID NOT GO TO THE TREE (player.tab ${JSON.stringify(q.p2.tab)}, want ${JSON.stringify(q.treeName)})`;
+  else pv = `the full-window overlay over tab ${JSON.stringify(q.p0.tab)} (${q.p1.list.w} px of ${q.p1.vw}); Tree went to ${JSON.stringify(q.treeName)}`;
+  out.desktopVerdict = dv; out.phoneVerdict = pv;
+  // a RED verdict opens in capitals, as everywhere in this file; greens and abstentions open in lower case
+  const RED = /^(THE |PRESSING |A NARROW |WITH NO TAB|TREE |LAYERS )/;
+  out.ok = !RED.test(dv) && !RED.test(pv);
+  return out;
+}
+
 /** (U11) leg Q's probe — see its call sites in `gateMobile`. Reads every card's chip set on a page where no layer
  *  tab has been opened, then opens and closes each layer's tab with `updateTemp()` standing in for the tick the
  *  paused page does not run, and reads them again. `stale` counts the non-upgrade components whose `tmp.unlocked`
@@ -2253,6 +2409,10 @@ async function gateMobile(browser, base, ids) {
           appColumnCount: v.appColumnCount, controlAppColumnCount: c.appColumnCount,
           mobileCss: v.hasMobileCss, navbarCss: v.hasNavbarCss, htmlClass: v.htmlClass,
           escaping: v.escaping.slice(0, 3), controlEscaping: c.escaping.slice(0, 3), docScrollWidth: v.docScrollWidth })) };
+      // --- leg S (U14): the desktop split — the list is the LEFT COLUMN beside an open tab, and the phone is exempt.
+      // Its own two contexts, fresh saves, so nothing the other legs pressed or loaded is under it.
+      row.split = await splitLeg(browser, base, id);
+      row.splitOk = row.split.ok;
       row.navbarOnlyOk = !!(nb.ready && ctl.ready && paired.length === nb.views.length && paired.length > 0
         && paired.every(({ v }) => v.flags.mobile === false && v.flags.navbar === true && barOn(v))
         && paired.every(({ c }) => inert(c)) && paired.every(layoutOff) && paired.every(fits));
@@ -4114,7 +4274,7 @@ async function gateMobile(browser, base, ids) {
       // the mobile page must load as cleanly as the plain one: judged against the SAME manifest allowances as G1
       const j = judgeLoad(readManifest(id), base, structuredClone({ ...stats.of(page) }), await page.evaluate(() => ({ skipped: tmtLoader.skipped, pageErrors: tmtLoader.pageErrors })));
       row.loadVerdict = { ok: j.ok, failedNotDeclared: j.failedBad, blockedNotDeclared: j.blockedBad, errorsAfterReady: j.errorsAfterReady, errorsAfterReadySample: j.errorsAfterReadySample };
-      row.ok = !!(row.ready && !row.error && row.inertOk && row.stateOk && row.geometryOk && row.navOk && row.bothOk && row.navbarOnlyOk && row.layersOk && row.treeOk && row.treeButtonOk && j.ok);
+      row.ok = !!(row.ready && !row.error && row.inertOk && row.stateOk && row.geometryOk && row.navOk && row.bothOk && row.navbarOnlyOk && row.layersOk && row.treeOk && row.treeButtonOk && row.splitOk && j.ok);
     } catch (e) {
       row.exception = String((e && e.stack) || e).slice(0, 600);
     } finally { await context.close(); }
@@ -4423,6 +4583,15 @@ async function main() {
       const tbNames = [...new Set(tb.map((r) => String(r.treeButton.treeTab)))].sort();
       const tbOdd = tb.filter((r) => r.treeButton.treeTab !== 'none').map((r) => `${r.id}=${r.treeButton.treeTab}`);
       console.log(`M1 tree button (U10 — the REAL navbar press, then the visible \`.treeNode\` count; ⛔ a reading AT LOAD is vacuous, all five of the games this fixes are green there): ${tb.length - tbRed.length}/${tb.length} green; the engine's own tree-tab name ${JSON.stringify(tbNames)}${tbOdd.length ? ` — NOT \`none\` on ${tbOdd.length}: ${tbOdd.join(', ')}` : ''}; ${tbNodes.filter((r) => r.treeButton.nodes).length}/${tbNodes.length} showed a tree node after the press${tbNoNode.length ? `, ${tbNoNode.length} ABSTAINED (this game draws none at a fresh save: ${tbNoNode.join(', ')})` : ''}; master-detail judged on ${tbDetail.filter((r) => r.treeButton.detail).length}/${tbDetail.length}${tbRed.length ? ` (RED: ${tbRed.map((r) => `${r.id} ${r.treeButton.verdict}`).join('; ')})` : ''}`);
+      {
+        // (U14) leg S — every row has both halves, so the tallies partition the roster: green, abstained, red
+        const sp = rows.filter((r) => r.split);
+        const tally = (k) => { const v = sp.map((r) => String(r.split[k] || '')); const red = sp.filter((r, i) => /^(THE |PRESSING |A NARROW |WITH NO TAB|TREE |LAYERS )/.test(v[i]));
+          const abs = sp.filter((r, i) => /^abstains/.test(v[i])); return { green: sp.length - red.length - abs.length, abs, red }; };
+        const D = tally('desktopVerdict'), P = tally('phoneVerdict');
+        const whyAbs = {}; for (const r of D.abs) { const k = String(r.split.desktopVerdict).replace(/ beside .*|: player\.tab.*$/, '').slice(0, 70); whyAbs[k] = (whyAbs[k] || 0) + 1; }
+        console.log(`M1 split (U14 — ${DESKTOP.width}×${DESKTOP.height} \`?navbar=1\` with a layer tab open: the list takes #treeTab's box, the tab survives Layers AND Tree, and holds at a 390 px desktop window; \`?mobile=1\` exempt by name): desktop ${D.green}/${sp.length} green, ${D.abs.length} abstained ${JSON.stringify(whyAbs)}, ${D.red.length} red; phone ${P.green}/${sp.length} green, ${P.abs.length} abstained, ${P.red.length} red${D.red.length + P.red.length ? ` (RED: ${[...D.red.map((r) => `${r.id} ${r.split.desktopVerdict}`), ...P.red.map((r) => `${r.id} ${r.split.phoneVerdict}`)].slice(0, 6).join('; ')})` : ''}`);
+      }
       console.log(`M1 layers leg: ${rows.filter((r) => r.layersOk).length}/${rows.length} green over ${cards} card(s) and ${chips} chip(s), at ${PHONE.width}px with touch and at ${DESKTOP.width}px without`);
       // (U13) THE THREE-WAY SPLIT over the rows as rendered on the phone page, the cross-check, and the lazy fetch.
       {
