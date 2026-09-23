@@ -738,6 +738,7 @@
     "scored": true,
     "pick": "player.timecube.points",
     "how": "lift-1",
+    "raises": "front",
     "from": [
      "fresh"
     ]
@@ -753,6 +754,7 @@
     "scored": true,
     "pick": "player.timecube.points",
     "how": "lift-1",
+    "raises": "front",
     "from": [
      "fresh"
     ]
@@ -768,6 +770,7 @@
     "scored": true,
     "pick": "player.timecube.points",
     "how": "lift-1",
+    "raises": "front",
     "from": [
      "fresh"
     ]
@@ -793,6 +796,7 @@
     "scored": true,
     "pick": "player.timecube.points",
     "how": "lift-1",
+    "raises": "right",
     "from": [
      "fresh"
     ]
@@ -808,6 +812,7 @@
     "scored": true,
     "pick": "player.timecube.points",
     "how": "lift-1",
+    "raises": "right",
     "from": [
      "fresh"
     ]
@@ -823,6 +828,7 @@
     "scored": true,
     "pick": "player.timecube.points",
     "how": "lift-1",
+    "raises": "right",
     "from": [
      "fresh"
     ]
@@ -848,6 +854,7 @@
     "scored": true,
     "pick": "player.timecube.points",
     "how": "lift-1",
+    "raises": "top",
     "from": [
      "fresh"
     ]
@@ -863,6 +870,7 @@
     "scored": true,
     "pick": "player.timecube.points",
     "how": "lift-1",
+    "raises": "top",
     "from": [
      "fresh"
     ]
@@ -878,6 +886,7 @@
     "scored": true,
     "pick": "player.timecube.points",
     "how": "lift-1",
+    "raises": "top",
     "from": [
      "fresh"
     ]
@@ -903,6 +912,7 @@
     "scored": true,
     "pick": "player.timecube.points",
     "how": "lift-1",
+    "raises": "back",
     "from": [
      "fresh"
     ]
@@ -918,6 +928,7 @@
     "scored": true,
     "pick": "player.timecube.points",
     "how": "lift-1",
+    "raises": "back",
     "from": [
      "fresh"
     ]
@@ -933,6 +944,7 @@
     "scored": true,
     "pick": "player.timecube.points",
     "how": "lift-1",
+    "raises": "back",
     "from": [
      "fresh"
     ]
@@ -958,6 +970,7 @@
     "scored": true,
     "pick": "player.timecube.points",
     "how": "lift-1",
+    "raises": "left",
     "from": [
      "fresh"
     ]
@@ -973,6 +986,7 @@
     "scored": true,
     "pick": "player.timecube.points",
     "how": "lift-1",
+    "raises": "left",
     "from": [
      "fresh"
     ]
@@ -988,6 +1002,7 @@
     "scored": true,
     "pick": "player.timecube.points",
     "how": "lift-1",
+    "raises": "left",
     "from": [
      "fresh"
     ]
@@ -1013,6 +1028,7 @@
     "scored": true,
     "pick": "player.timecube.points",
     "how": "lift-1",
+    "raises": "bottom",
     "from": [
      "fresh"
     ]
@@ -1028,6 +1044,7 @@
     "scored": true,
     "pick": "player.timecube.points",
     "how": "lift-1",
+    "raises": "bottom",
     "from": [
      "fresh"
     ]
@@ -1043,6 +1060,7 @@
     "scored": true,
     "pick": "player.timecube.points",
     "how": "lift-1",
+    "raises": "bottom",
     "from": [
      "fresh"
     ]

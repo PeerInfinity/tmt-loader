@@ -16,53 +16,73 @@
  ],
  "summary": {
   "buyables": 34,
-  "scored": 0,
-  "price": 0,
-  "requirement": 0,
-  "unknown": 34,
-  "own": 0,
-  "foreign": 0,
+  "scored": 27,
+  "price": 24,
+  "requirement": 3,
+  "unknown": 7,
+  "own": 14,
+  "foreign": 13,
   "several": 0,
   "impure": 0
  },
  "buyables": {
   "s": {
    "11": {
-    "pays": null,
-    "cost": "unknown",
-    "by": [],
-    "scored": false,
-    "why": "the reader threw: Decimal is not defined",
+    "pays": "player.s.points",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.s.points",
+    "how": "lift-1",
     "from": [
      "fresh"
     ]
    },
    "12": {
-    "pays": null,
-    "cost": "unknown",
-    "by": [],
-    "scored": false,
-    "why": "the reader threw: Decimal is not defined",
+    "pays": "player.s.points",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.s.points",
+    "how": "lift-1",
     "from": [
      "fresh"
     ]
    },
    "13": {
-    "pays": null,
-    "cost": "unknown",
-    "by": [],
-    "scored": false,
-    "why": "the reader threw: Decimal is not defined",
+    "pays": "player.s.points",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.s.points",
+    "how": "lift-1",
     "from": [
      "fresh"
     ]
    },
    "14": {
-    "pays": null,
-    "cost": "unknown",
-    "by": [],
-    "scored": false,
-    "why": "the reader threw: Decimal is not defined",
+    "pays": "player.s.points",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.s.points",
+    "how": "lift-1",
     "from": [
      "fresh"
     ]
@@ -72,7 +92,8 @@
     "cost": "unknown",
     "by": [],
     "scored": false,
-    "why": "the reader threw: Decimal is not defined",
+    "pick": "player.s.points",
+    "why": "not affordable, and it publishes no usable cost to lift towards",
     "from": [
      "fresh"
     ]
@@ -80,41 +101,61 @@
   },
   "u": {
    "11": {
-    "pays": null,
-    "cost": "unknown",
-    "by": [],
-    "scored": false,
-    "why": "the reader threw: Decimal is not defined",
+    "pays": "player.u.points",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.u.points",
+    "how": "lift-1",
     "from": [
      "fresh"
     ]
    },
    "12": {
-    "pays": null,
-    "cost": "unknown",
-    "by": [],
-    "scored": false,
-    "why": "the reader threw: Decimal is not defined",
+    "pays": "player.u.points",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.u.points",
+    "how": "lift-1",
     "from": [
      "fresh"
     ]
    },
    "13": {
-    "pays": null,
-    "cost": "unknown",
-    "by": [],
-    "scored": false,
-    "why": "the reader threw: Decimal is not defined",
+    "pays": "player.u.points",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.u.points",
+    "how": "lift-1",
     "from": [
      "fresh"
     ]
    },
    "14": {
-    "pays": null,
-    "cost": "unknown",
-    "by": [],
-    "scored": false,
-    "why": "the reader threw: Decimal is not defined",
+    "pays": "player.u.points",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.u.points",
+    "how": "lift-1",
     "from": [
      "fresh"
     ]
@@ -122,21 +163,31 @@
   },
   "w": {
    "11": {
-    "pays": null,
-    "cost": "unknown",
-    "by": [],
-    "scored": false,
-    "why": "the reader threw: Decimal is not defined",
+    "pays": "player.w.points",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.w.points",
+    "how": "lift-1",
     "from": [
      "fresh"
     ]
    },
    "12": {
-    "pays": null,
-    "cost": "unknown",
-    "by": [],
-    "scored": false,
-    "why": "the reader threw: Decimal is not defined",
+    "pays": "player.w.points",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.w.points",
+    "how": "lift-1",
     "from": [
      "fresh"
     ]
@@ -144,21 +195,31 @@
   },
   "y": {
    "11": {
-    "pays": null,
-    "cost": "unknown",
-    "by": [],
-    "scored": false,
-    "why": "the reader threw: Decimal is not defined",
+    "pays": "player.y.points",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.y.points",
+    "how": "lift-1",
     "from": [
      "fresh"
     ]
    },
    "12": {
-    "pays": null,
-    "cost": "unknown",
-    "by": [],
-    "scored": false,
-    "why": "the reader threw: Decimal is not defined",
+    "pays": "player.y.points",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.y.points",
+    "how": "lift-1",
     "from": [
      "fresh"
     ]
@@ -166,41 +227,61 @@
   },
   "re": {
    "11": {
-    "pays": null,
-    "cost": "unknown",
-    "by": [],
-    "scored": false,
-    "why": "the reader threw: Decimal is not defined",
+    "pays": "player.re.points",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.re.points",
+    "how": "lift-1",
     "from": [
      "fresh"
     ]
    },
    "12": {
-    "pays": null,
-    "cost": "unknown",
-    "by": [],
-    "scored": false,
-    "why": "the reader threw: Decimal is not defined",
+    "pays": "player.re.points",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.re.points",
+    "how": "lift-1",
     "from": [
      "fresh"
     ]
    },
    "21": {
-    "pays": null,
-    "cost": "unknown",
-    "by": [],
-    "scored": false,
-    "why": "the reader threw: Decimal is not defined",
+    "pays": "player.re.badges",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.re.badges",
+    "how": "lift-1",
     "from": [
      "fresh"
     ]
    },
    "22": {
-    "pays": null,
-    "cost": "unknown",
-    "by": [],
-    "scored": false,
-    "why": "the reader threw: Decimal is not defined",
+    "pays": "player.re.badges",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.re.badges",
+    "how": "lift-1",
     "from": [
      "fresh"
     ]
@@ -208,101 +289,147 @@
   },
   "su": {
    "11": {
-    "pays": null,
-    "cost": "unknown",
-    "by": [],
-    "scored": false,
-    "why": "the reader threw: Decimal is not defined",
+    "pays": "player.su.stones",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.su.stones",
+    "how": "lift-1",
     "from": [
      "fresh"
     ]
    },
    "12": {
-    "pays": null,
-    "cost": "unknown",
-    "by": [],
-    "scored": false,
-    "why": "the reader threw: Decimal is not defined",
+    "pays": "player.su.coal",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.su.coal",
+    "how": "lift-1",
     "from": [
      "fresh"
     ]
    },
    "13": {
-    "pays": null,
-    "cost": "unknown",
-    "by": [],
-    "scored": false,
-    "why": "the reader threw: Decimal is not defined",
+    "pays": "player.su.iron",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.su.iron",
+    "how": "lift-1",
     "from": [
      "fresh"
     ]
    },
    "14": {
-    "pays": null,
-    "cost": "unknown",
-    "by": [],
-    "scored": false,
-    "why": "the reader threw: Decimal is not defined",
+    "pays": "player.su.gold",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.su.gold",
+    "how": "lift-1",
     "from": [
      "fresh"
     ]
    },
    "15": {
-    "pays": null,
-    "cost": "unknown",
-    "by": [],
-    "scored": false,
-    "why": "the reader threw: Decimal is not defined",
+    "pays": "player.su.diamond",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.su.diamond",
+    "how": "lift-1",
     "from": [
      "fresh"
     ]
    },
    "16": {
-    "pays": null,
-    "cost": "unknown",
-    "by": [],
-    "scored": false,
-    "why": "the reader threw: Decimal is not defined",
+    "pays": "player.su.ruby",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.su.ruby",
+    "how": "lift-1",
     "from": [
      "fresh"
     ]
    },
    "17": {
-    "pays": null,
-    "cost": "unknown",
-    "by": [],
-    "scored": false,
-    "why": "the reader threw: Decimal is not defined",
+    "pays": "player.su.emerald",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.su.emerald",
+    "how": "lift-1",
     "from": [
      "fresh"
     ]
    },
    "18": {
-    "pays": null,
-    "cost": "unknown",
-    "by": [],
-    "scored": false,
-    "why": "the reader threw: Decimal is not defined",
+    "pays": "player.su.amethyst",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.su.amethyst",
+    "how": "lift-1",
     "from": [
      "fresh"
     ]
    },
    "21": {
-    "pays": null,
-    "cost": "unknown",
-    "by": [],
-    "scored": false,
-    "why": "the reader threw: Decimal is not defined",
+    "pays": "player.su.cobalt",
+    "cost": "requirement",
+    "by": [
+     "rollback",
+     "trace"
+    ],
+    "scored": true,
+    "how": "lift-1",
     "from": [
      "fresh"
     ]
    },
    "22": {
-    "pays": null,
-    "cost": "unknown",
-    "by": [],
-    "scored": false,
-    "why": "the reader threw: Decimal is not defined",
+    "pays": "player.su.crystal",
+    "cost": "requirement",
+    "by": [
+     "rollback",
+     "trace"
+    ],
+    "scored": true,
+    "how": "lift-1",
     "from": [
      "fresh"
     ]
@@ -312,7 +439,7 @@
     "cost": "unknown",
     "by": [],
     "scored": false,
-    "why": "the reader threw: Decimal is not defined",
+    "why": "not affordable, and it publishes no usable cost to lift towards",
     "from": [
      "fresh"
     ]
@@ -322,17 +449,20 @@
     "cost": "unknown",
     "by": [],
     "scored": false,
-    "why": "the reader threw: Decimal is not defined",
+    "why": "not affordable, and it publishes no usable cost to lift towards",
     "from": [
      "fresh"
     ]
    },
    "25": {
-    "pays": null,
-    "cost": "unknown",
-    "by": [],
-    "scored": false,
-    "why": "the reader threw: Decimal is not defined",
+    "pays": "player.sa.points",
+    "cost": "requirement",
+    "by": [
+     "rollback",
+     "trace"
+    ],
+    "scored": true,
+    "how": "lift-1",
     "from": [
      "fresh"
     ]
@@ -342,7 +472,7 @@
     "cost": "unknown",
     "by": [],
     "scored": false,
-    "why": "the reader threw: Decimal is not defined",
+    "why": "not affordable, and it publishes no usable cost to lift towards",
     "from": [
      "fresh"
     ]
@@ -352,7 +482,7 @@
     "cost": "unknown",
     "by": [],
     "scored": false,
-    "why": "the reader threw: Decimal is not defined",
+    "why": "not affordable, and it publishes no usable cost to lift towards",
     "from": [
      "fresh"
     ]
@@ -362,7 +492,7 @@
     "cost": "unknown",
     "by": [],
     "scored": false,
-    "why": "the reader threw: Decimal is not defined",
+    "why": "not affordable, and it publishes no usable cost to lift towards",
     "from": [
      "fresh"
     ]
@@ -372,7 +502,7 @@
     "cost": "unknown",
     "by": [],
     "scored": false,
-    "why": "the reader threw: Decimal is not defined",
+    "why": "not affordable, and it publishes no usable cost to lift towards",
     "from": [
      "fresh"
     ]

@@ -35,8 +35,55 @@
   }
   function has(name) { return api(name) !== null; }
   function need(name) { var f = api(name); if (!f) throw new Error('tmtLoader.planner: this engine has no ' + name + '() — the planner needs it'); return f; }
-  var D = function (x) { return x instanceof Decimal ? x : new Decimal(x === undefined || x === null ? 0 : x); };
-  function isDec(x) { return x instanceof Decimal; }
+  // ---- the game's own NUMBER TYPE — by CAPABILITY, never by name (C1c; tmt-automation-plan §53) -------------------
+  // ⛔ NOT EVERY FORK'S BIG NUMBER IS CALLED `Decimal`. Until C1c this helper was `x instanceof Decimal ? x : new
+  // Decimal(x)`, and on a game with no global `Decimal` it threw — so every buyable of `the-hyperoperator-tree`
+  // (ExpantaNum) and `the-pro-tree` (OmegaNum) ABSTAINED with "Decimal is not defined" from C1 on, numeric ids too.
+  // The type is whatever `player.points` IS AN INSTANCE OF: the engine's own getStartPlayer built it, so it is the
+  // type every engine sum on this game already runs in. No library is named here (§40-R), in code or as a fallback.
+  // ⚠ RESOLVED OUTSIDE ANY TRACE, THEN CACHED: traceReads swaps `player` for a recording Proxy, and a first read of
+  // `player.points` under it would record a read the predicate never made (and recurse through isDec) — so
+  // traceReads resolves the type before it swaps.
+  // ⚠ A METHOD MAY BE MISSING ON SOME LIBRARY. Each OPERATION below names the methods it calls on a number; if the
+  // game's type lacks one, that operation ABSTAINS by name (`numbersFor`) instead of coercing to a float. Measured
+  // 2026-09-22 on every library the roster ships (gates-c1c part 1): none lacks any — the abstention is constructed-only.
+  var NUM = null;
+  var NUM_OPS = {
+    // readBuyable / costParts / fellBy / lifted / the tighten step
+    read: ['gt', 'gte', 'lt', 'lte', 'cmp', 'sub', 'abs', 'times', 'log10'],
+    // the threshold probe: huge() and the bracket are powers of ten
+    probe: ['pow', 'gte', 'lte', 'log10'],
+    // knowledge / goals / screen / confirmation
+    plan: ['gt', 'gte', 'lt', 'lte', 'plus', 'times', 'div', 'max', 'log10'],
+  };
+  function numType() {
+    if (NUM) return NUM;
+    var p = typeof player !== 'undefined' && player ? player.points : undefined;
+    if (p === null || typeof p !== 'object' || typeof p.constructor !== 'function' || p.constructor === Object || !(p instanceof p.constructor)) return null;
+    return (NUM = p.constructor);
+  }
+  /** The methods operation `op` needs that this game's number type lacks ([] = it can run). */
+  function numMissing(op) {
+    var C = numType();
+    if (!C) return ['(no number type: player.points is not a number object)'];
+    return (NUM_OPS[op] || []).filter(function (m) { return typeof C.prototype[m] !== 'function'; });
+  }
+  /** Throws, naming the operation and the method, when the game's number type cannot run `op` — the abstention. */
+  function numbersFor(op) {
+    var miss = numMissing(op);
+    if (miss.length) throw new Error('the game’s number type has no ' + miss.map(function (m) { return m.charAt(0) === '(' ? m : m + '()'; }).join(', ') + ' — the ' + op + ' operation abstains');
+  }
+  P.numbers = function () {
+    var C = numType(), o = { resolved: !!C, from: 'player.points', ops: {} };
+    for (var op in NUM_OPS) o.ops[op] = { needs: NUM_OPS[op].slice(), missing: numMissing(op) };
+    return o;
+  };
+  var D = function (x) {
+    var C = numType();
+    if (!C) throw new Error('the game’s player.points is not a number object — no number type to compute in');
+    return x instanceof C ? x : new C(x === undefined || x === null ? 0 : x);
+  };
+  function isDec(x) { var C = numType(); return !!C && x instanceof C; }
   function numLike(x) { return typeof x === 'number' || isDec(x); }
   function dstr(x) { try { return String(D(x)); } catch (e) { return null; } }
   // log10 of a non-negative quantity, as a plain number, for ordering and for the threshold search
@@ -52,6 +99,9 @@
   // ---- stable ordering -------------------------------------------------------------------------------------------
   // Determinism rule: layers by row ascending then `layers` key order (side layers last, in key order); ids numeric.
   function numIds(obj) { var o = []; for (var id in obj) if (!isNaN(id)) o.push(Number(id)); return o.sort(function (a, b) { return a - b; }); }
+  // C1c: upgrades / buyables / challenges are enumerated by tmt-auto.js's ONE rule (`purchaseIds`: numeric ids as
+  // `numIds`, then word ids holding a purchase object); milestones / achievements keep `numIds`.
+  var purchaseIds = T.purchaseIds;
   function allLayers() {
     var ls = [], keyIdx = {}, i = 0, l;
     for (l in layers) { if (!layers[l] || layers[l].tmtLoaderLayer) continue; ls.push(l); keyIdx[l] = i++; }
@@ -299,6 +349,7 @@
   // are wrapped recursively so a read records its full path; a Decimal or an array is a LEAF (wrapping a Decimal would
   // record its internals, and array membership is not a dimension).
   function traceReads(fn) {
+    numType();   // ⚠ resolve the number type on the REAL player, before it is swapped for the Proxy (see numType)
     var reads = [], seen = {};
     var record = function (p, v) {
       if (seen[p]) return;
@@ -327,13 +378,13 @@
   // A predicate the walk cannot read a number out of (a milestone's / achievement's done()) gets its threshold
   // MEASURED: set one traced field on the copy, re-evaluate, binary search the minimal passing value.
   var HUGE = null;
-  function huge() { if (!HUGE) HUGE = Decimal.pow(10, 1e6); return HUGE; }
+  function huge() { if (!HUGE) HUGE = D(10).pow(1e6); return HUGE; }
   function probeField(path, test, asDecimal) {
     // exponential bracket on log10, then binary search, then an integer refinement where the value is small enough
     var CAP = asDecimal ? 1e6 : 300;
-    var mk = function (e) { return asDecimal ? Decimal.pow(10, e) : Math.pow(10, e); };
+    var mk = function (e) { return asDecimal ? D(10).pow(e) : Math.pow(10, e); };
     var at = function (v) { setPath(path, v); return !!test(); };
-    if (at(asDecimal ? new Decimal(0) : 0)) return { threshold: '0', exact: true, note: 'holds at zero' };
+    if (at(asDecimal ? D(0) : 0)) return { threshold: '0', exact: true, note: 'holds at zero' };
     var lo = null, hi = null, e;
     if (at(mk(0))) { lo = -Infinity; hi = 0; }
     else {
@@ -346,7 +397,7 @@
     if (lo === -Infinity) {
       // between 0 and 1: search the mantissa directly
       var a = 0, b = 1;
-      for (var j = 0; j < 60; j++) { var m = (a + b) / 2; if (at(asDecimal ? new Decimal(m) : m)) b = m; else a = m; }
+      for (var j = 0; j < 60; j++) { var m = (a + b) / 2; if (at(asDecimal ? D(m) : m)) b = m; else a = m; }
       return { threshold: String(b), exact: false, note: 'below 1' };
     }
     for (var i = 0; i < 80 && hi - lo > 1e-12 * Math.max(1, Math.abs(hi)); i++) {
@@ -357,7 +408,7 @@
     // integer refinement: a threshold a human would read as "8" must come back as 8, not 8.000000001
     if (hi < 15) {
       var n = Math.ceil(Number(asDecimal ? Number(val) : val) - 1e-9);
-      if (n >= 0 && at(asDecimal ? new Decimal(n) : n) && (n === 0 || !at(asDecimal ? new Decimal(n - 1) : n - 1))) {
+      if (n >= 0 && at(asDecimal ? D(n) : n) && (n === 0 || !at(asDecimal ? D(n - 1) : n - 1))) {
         return { threshold: String(n), exact: true, note: 'integer' };
       }
     }
@@ -372,6 +423,8 @@
    * Every perturbed value is saved and restored; the caller's excursion is the safety net.
    */
   P.probe = function (test) {
+    var nm = numMissing('probe');
+    if (nm.length) return { probeable: false, why: 'the game\u2019s number type has no ' + nm.join('(), ') + '() — the probe operation abstains', reads: [] };
     var tr = traceReads(test);
     if (tr.error) return { probeable: false, why: 'the predicate throws: ' + tr.error, reads: tr.reads };
     if (tr.value) return { probeable: false, why: 'already true', reads: tr.reads };
@@ -602,6 +655,7 @@
    */
   function readBuyable(l, id, opts) {
     opts = opts || {};
+    numbersFor('read');
     var B = layers[l].buyables[id], r = { layer: l, id: String(id) };
     if (typeof B.buy !== 'function') { r.pays = null; r.cost = 'unknown'; r.by = []; r.scored = false; r.why = 'no buy() function'; return r; }
     // instrument 1 — the candidates, and whether reading them moved anything
@@ -695,7 +749,11 @@
       var b1 = leaves(player, 'player', 0, {});
       var bought = JSON.stringify(player) !== amt0;   // ⚠ ANY change: a spell (PTR's `m`) spends and moves no amount
       var f = fellBy(b0, b1, parts);
-      return { scorable: true, how: how, lift: lift || [], bought: bought, error: err, exact: f.exact, fell: f.any };
+      // C1c: WHICH AMOUNT the purchase raised — its own, or another buyable's (a BUTTON: universal-reconstruction's
+      // `frontBuy` / `frontBuyNext` / `frontBuyMax` each add to the face `front` and never to themselves)
+      var amt = 'player.' + l + '.buyables.', rose = [];
+      for (var q in b1) if (q.indexOf(amt) === 0 && q.slice(amt.length).indexOf('.') < 0 && q in b0 && D(b1[q]).gt(D(b0[q]))) rose.push(q.slice(amt.length));
+      return { scorable: true, how: how, lift: lift || [], bought: bought, error: err, exact: f.exact, fell: f.any, rose: rose };
     });
     r.score = s;
     // the CANDIDATES are every field any trace of the search read — the first trace alone stops at the first false term
@@ -739,6 +797,11 @@
         : s.exact.length ? '' : 'no field fell by the published cost' + (s.fell.length ? ' (' + s.fell.length + ' fell by something else)' : '');
     }
     r.pays = pays; r.cost = kind; r.by = by; r.scored = scored;
+    // C1c: a BUTTON — the purchase raised exactly one OTHER buyable's amount and not its own. The automation judges
+    // "did it buy?" by that amount (tmt-auto.js `amountSlot`); without it a button spends while its own amount never
+    // moves, and the kind's loop reads "nothing bought". Measured over the roster: 19 of 1762 rollback-bought buyables
+    // (universal-reconstruction's 18 Buy / BuyNext / BuyMax, the-factoree `f` 21 → 13).
+    if (s.scorable && s.bought && s.rose && s.rose.length === 1 && s.rose[0] !== String(id)) r.raises = s.rose[0];
     return r;
   }
   P.readBuyable = readBuyable;
@@ -812,7 +875,7 @@
   // (`respecConfirm`) — and no word key anywhere holds an object that is not a buyable. So the object test that
   // already dropped all of those is the whole rule; `null` (`typeof null === 'object'`) and an array are the two
   // objects it must still refuse.
-  function isBuyableDef(v) { return !!v && typeof v === 'object' && !Array.isArray(v); }
+  var isBuyableDef = T.isObjectDef;   // C1c: ONE definition — tmt-auto.js's shape test (the purchase enumeration's base)
   P.isBuyableDef = isBuyableDef;
   /** Every buyable of every tree layer, in walk order. */
   P.readCurrencies = function (opts) {
@@ -868,7 +931,7 @@
       // 3. upg:<l>:<id> — unlocked and unowned. A pseudo-upgrade (pseudoUnl, the discoverable class) that is not
       //    unlocked yet is HIDDEN, not offered: its gate is traced, never guessed.
       if (L.upgrades) {
-        ids = numIds(L.upgrades);
+        ids = purchaseIds(L.upgrades);
         for (j = 0; j < ids.length; j++) {
           id = ids[j];
           if (held(l, 'upg', id)) continue;
@@ -887,7 +950,7 @@
       }
       // 4. buy:<l>:<id> — the next level of an unlocked buyable.
       if (L.buyables && unl) {
-        ids = numIds(L.buyables);
+        ids = purchaseIds(L.buyables);
         for (j = 0; j < ids.length; j++) {
           id = ids[j];
           var B = tmpItem(l, 'buyables', id);
@@ -933,7 +996,7 @@
       }
       // 6. ch:<l>:<id> — the challenge goal and its currency. `unlocked` is read LIVE (tmp skips it outside the tab).
       if (L.challenges && unl) {
-        ids = numIds(L.challenges);
+        ids = purchaseIds(L.challenges);
         for (j = 0; j < ids.length; j++) {
           id = ids[j];
           var C = L.challenges[id], Ct = tmpItem(l, 'challenges', id);
@@ -944,7 +1007,7 @@
           var cc = currencyOf(l, Ct || C);
           out.push({ id: 'ch:' + l + ':' + id, kind: 'ch', layer: l, item: id, dimension: cc.dimension, dimensionHow: cc.how,
             threshold: Ct && Ct.goal !== undefined ? dstr(Ct.goal) : null, held: cc.dimension ? dstr(getPath(cc.dimension)) : null,
-            completions: done, completionLimit: limit, active: Number(player[l].activeChallenge || 0) === id, source: 'tmp.challenges[' + id + '].goal' });
+            completions: done, completionLimit: limit, active: String(player[l].activeChallenge || 0) === String(id), source: 'tmp.challenges[' + id + '].goal' });
         }
       }
     }
@@ -971,7 +1034,7 @@
         l2 = m[1]; group = m[2];
         if (!layers[l2] || !layers[l2][group] || !player[l2] || !Array.isArray(player[l2][group])) continue;
         var arr = player[l2][group];
-        ids = numIds(layers[l2][group]);
+        ids = group === 'upgrades' ? purchaseIds(layers[l2][group]) : numIds(layers[l2][group]);
         for (j = 0; j < ids.length; j++) {
           id = ids[j];
           if (arr.map(String).indexOf(String(id)) >= 0) continue;
@@ -987,7 +1050,7 @@
       if (m) {
         l2 = m[1];
         if (!layers[l2] || !layers[l2].challenges || !player[l2] || !player[l2].challenges) continue;
-        ids = numIds(layers[l2].challenges);
+        ids = purchaseIds(layers[l2].challenges);
         for (j = 0; j < ids.length; j++) {
           id = ids[j];
           var was = player[l2].challenges[id];
@@ -1225,6 +1288,7 @@
   /** knowledge(): goals, producers and chains — one deterministic walk, everything measured on a copy. */
   P.knowledge = function (opts) {
     opts = opts || {};
+    numbersFor('plan');
     // k = the WAIT window (how long "what moves this?" is asked over); regrowthK = the window each reset's post-reset
     // regrowth is measured over, which needs no more than a few ticks. They were one number in P1a; they are two here
     // because the wait window must match the EPOCH while the regrowth window must stay cheap. Omitting regrowthK keeps
@@ -1898,6 +1962,7 @@
    */
   P.round = function (opts) {
     opts = opts || {};
+    numbersFor('plan');
     var t0 = wallMs(), reason = opts.reason || 'epoch-end';
     // The planning instant is NORMALISED first: restore(snapshot()) settles tmp the way every excursion's restore will.
     // Without it candidate 1 is measured at the live tick's tmp and candidate 2 at a restored tmp — tmp is not a pure

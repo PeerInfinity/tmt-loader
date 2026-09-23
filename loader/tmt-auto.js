@@ -1065,6 +1065,39 @@
   function num(x) { return NUMBER ? new NUMBER(x) : x; }
   function D(x) { return NUMBER ? (x instanceof NUMBER ? x : new NUMBER(x === undefined || x === null ? 0 : x)) : x; }
   function numIds(obj) { var o = []; for (var id in obj) if (!isNaN(id)) o.push(Number(id)); return o.sort(function (a, b) { return a - b; }); }
+  // ⛔ C1c: WHICH KEYS OF A LAYER'S `upgrades` / `buyables` / `challenges` ARE PURCHASE THINGS — ONE RULE, BY SHAPE.
+  // `numIds` ("every key that is a number") was the core's enumeration of all three, and C1b's reader enumerates
+  // buyables by SHAPE (`isBuyableDef`: a non-null, non-array object) — so 30 word-id buyables had a currency the
+  // automation would never buy. MEASURED over all 175 games at boot (2026-09-22, tmt-automation-plan §53): WORD keys
+  // holding an object exist in exactly three groups — buyables 63 (5 games), upgrades 55 (the-hyperoperator-tree 45,
+  // the-collab-tree-lun4-r 10), challenges 2 (yet-another-challenge-tree-adventure `IV.POS` / `IV.NEG`); every other
+  // word key is a non-object (`rows`, `cols`, `layer`, `respec`, …); and NO numeric key holds a non-object. So:
+  //   numeric ids ascending, as Numbers — exactly `numIds` (the order every pinned run bought in) — then word ids
+  //   whose value is an object, in declaration order.
+  // ⚠ WHAT ELSE IT ADMITS, AND THE GUARD: an object is not a purchase just by being there. universal-reconstruction's
+  // six cube FACES (`front`, …) are buyables that declare `canAfford: false` as a CONSTANT — a display, never
+  // affordable by any state — and are left out (`displayOnly`). Milestones, achievements and clickables are not
+  // purchases and keep `numIds` (word-id clickables: 469 over the roster; not this rule's question).
+  // `isObjectDef` is the SHAPE — the one test the currency reader enumerates by too (tmt-planner.js `isBuyableDef` IS
+  // this function); `isPurchaseDef` is the shape minus the display-only guard. The reader keeps reading the faces (it
+  // describes what the game declares, and they abstain there); the automation does not buy them.
+  function isObjectDef(v) { return !!v && typeof v === 'object' && !Array.isArray(v); }
+  function displayOnly(v) { return v.canAfford === false; }
+  function isPurchaseDef(v) { return isObjectDef(v) && !displayOnly(v); }
+  function purchaseIds(obj) {
+    var o = numIds(obj);
+    for (var id in obj) if (isNaN(id) && isPurchaseDef(obj[id])) o.push(id);
+    return o;
+  }
+  T.purchaseIds = purchaseIds;
+  T.isPurchaseDef = isPurchaseDef;
+  T.isObjectDef = isObjectDef;
+  // Two ids are the same purchase thing when they print the same: a save may hold `11` or `"11"`, and a word id is
+  // only ever a string. (For numeric ids this is exactly the `Number(a) === b` it replaces.)
+  function sameId(a, b) { return a !== null && a !== undefined && b !== null && b !== undefined && String(a) === String(b); }
+  // A cost tie broken by id: numeric ids by value (what `a - b` did), a number before a word, and two words keep the
+  // order they came in (Array#sort is stable) — which is purchaseIds' declaration order.
+  function idCmp(a, b) { var na = typeof a === 'number', nb = typeof b === 'number'; return na && nb ? a - b : na ? -1 : nb ? 1 : 0; }
   function owned(l, id) { return player[l].upgrades.indexOf(id) >= 0 || player[l].upgrades.indexOf(String(id)) >= 0; }
   // upgrades a feature may buy: unlocked, unowned, not a pseudo-upgrade (`pseudoUnl`, PTR)
   function buyableUpgrade(l, id) {
@@ -1088,6 +1121,14 @@
     return e && e.scored === true && typeof e.pays === 'string' ? e.pays : null;
   }
   T.paysIn = paysIn;
+  // ⛔ C1c: WHICH AMOUNT A PURCHASE MOVES. A buyable's own `player[l].buyables[id]` — except a BUTTON, whose `buy()`
+  // adds to ANOTHER buyable (universal-reconstruction's `frontBuy` / `frontBuyNext` / `frontBuyMax` all add to the cube
+  // face `front`; the-factoree's `f` 21 stores its level in 13's slot). The generated data names that other slot
+  // (`raises`, measured by the reader's rollback buy); no data, or no `raises`, is the buyable's own id — today's rule.
+  function amountSlot(l, id) {
+    var d = T.currencyData, e = d && d.buyables && d.buyables[l] && d.buyables[l][String(id)];
+    return e && typeof e.raises === 'string' && player[l] && player[l].buyables && e.raises in player[l].buyables ? e.raises : id;
+  }
   /** The generated entry itself (`{pays, cost, by, scored, …}`), or null — what the UI arc's card row reads. */
   T.currencyOf = function (l, id) {
     var d = T.currencyData, e = d && d.buyables && d.buyables[l] && d.buyables[l][String(id)];
@@ -1116,7 +1157,7 @@
       if (!isTreeLayer(l2)) continue;
       var L2 = layers[l2];
       if (!L2.upgrades || !(tmp[l2] && tmp[l2].upgrades)) continue;
-      var ids = numIds(L2.upgrades);
+      var ids = purchaseIds(L2.upgrades);
       for (var i = 0; i < ids.length; i++) {
         if (!buyableUpgrade(l2, ids[i]) || upgradePath(l2, L2.upgrades[ids[i]]) !== path) continue;
         var c = D(tmp[l2].upgrades[ids[i]].cost);
@@ -2571,14 +2612,14 @@
   function resetBuysSomething(l) {
     var L = layers[l], after = D(player[l].points).plus(D(tmp[l].resetGain));
     if (L.upgrades) {
-      var ids = numIds(L.upgrades);
+      var ids = purchaseIds(L.upgrades);
       for (var i = 0; i < ids.length; i++) {
         if (!buyableUpgrade(l, ids[i]) || !ownCurrency(L.upgrades[ids[i]])) continue;
         if (D(tmp[l].upgrades[ids[i]].cost).lte(after)) return true;
       }
     }
     if (L.buyables && tmp[l].buyables) {
-      var bs = numIds(L.buyables);
+      var bs = purchaseIds(L.buyables);
       for (var j = 0; j < bs.length; j++) {
         var B = tmp[l].buyables[bs[j]];
         if (!B || !B.unlocked || B.cost === undefined || !ownCurrency(L.buyables[bs[j]])) continue;
@@ -2593,7 +2634,7 @@
   function savingForWhat(l) {
     var L = layers[l];
     if (!L.upgrades) return null;
-    var ids = numIds(L.upgrades), held = D(player[l].points);
+    var ids = purchaseIds(L.upgrades), held = D(player[l].points);
     for (var i = 0; i < ids.length; i++) {
       if (!buyableUpgrade(l, ids[i]) || !ownCurrency(L.upgrades[ids[i]])) continue;
       var c = D(tmp[l].upgrades[ids[i]].cost);
@@ -2608,7 +2649,7 @@
   function cheapestOwnUpgradeCost(l) {
     var L = layers[l];
     if (!L.upgrades || !(tmp[l] && tmp[l].upgrades)) return null;
-    var ids = numIds(L.upgrades), best = null;
+    var ids = purchaseIds(L.upgrades), best = null;
     for (var i = 0; i < ids.length; i++) {
       if (!buyableUpgrade(l, ids[i]) || !ownCurrency(L.upgrades[ids[i]])) continue;
       var c = D(tmp[l].upgrades[ids[i]].cost);
@@ -2622,7 +2663,7 @@
     buyUpgrade(l, id);
     return player[l].upgrades.length > before ? 1 : 0;
   }
-  function byCost(l) { var U = tmp[l].upgrades; return function (a, b) { var c = D(U[a].cost).cmp(D(U[b].cost)); return c !== 0 ? c : a - b; }; }
+  function byCost(l) { var U = tmp[l].upgrades; return function (a, b) { var c = D(U[a].cost).cmp(D(U[b].cost)); return c !== 0 ? c : idCmp(a, b); }; }
 
   // ⚠ EVERY MEMBER USED TO RETURN A COUNT. It now returns `{act, n, code, values}` — the same actions in the same
   // order, with the exit named. `n` is the count the caller adds to `stats.actions`; `act` is `n > 0` and is what
@@ -2661,7 +2702,7 @@
         for (i = 0; i < ordered.length; i++) buy(ordered[i]);
         if (f.policy === 'order') return n ? { act: true, n: n, code: 'acted:upgrades', values: { n: n, ids: bought } } : nothingBought(l, 'upgrade', ordered.sort(byCost(l)));
       }
-      var rest = numIds(L.upgrades).filter(function (id) { return buyableUpgrade(l, id) && !(f.policy === 'order-then-cheapest' && f.order && f.order.indexOf(id) >= 0); });
+      var rest = purchaseIds(L.upgrades).filter(function (id) { return buyableUpgrade(l, id) && !(f.policy === 'order-then-cheapest' && f.order && f.order.indexOf(id) >= 0); });
       rest.sort(byCost(l));
       for (i = 0; i < rest.length; i++) buy(rest[i]);
       if (n) return { act: true, n: n, code: 'acted:upgrades', values: { n: n, ids: bought } };
@@ -2706,7 +2747,7 @@
       // points for some buyable of this layer; otherwise this is the code that ran before C1, line for line — an
       // unknown currency is today's behaviour, and that is what `gates-c1` part 4 measures to the hash.
       var ownPath = 'player.' + l + '.points', foreign = false;
-      if (rsv) { var bids = numIds(L.buyables); for (var bi = 0; bi < bids.length; bi++) { var pp = paysIn(l, bids[bi]); if (pp && pp !== ownPath) { foreign = true; break; } } }
+      if (rsv) { var bids = purchaseIds(L.buyables); for (var bi = 0; bi < bids.length; bi++) { var pp = paysIn(l, bids[bi]); if (pp && pp !== ownPath) { foreign = true; break; } } }
       var limIn = {};
       var limFor = function (path) {
         if (!(path in limIn)) limIn[path] = rsv[1] === 'next-upgrade' ? (path === ownPath ? cheapestOwnUpgradeCost(l) : cheapestUpgradeIn(path)) : D(rsv[1]);
@@ -2724,7 +2765,7 @@
         if (r) heldIn = { path: path, have: have, reserve: lm };
         return r;
       };
-      var ids = f.order ? f.order.slice() : numIds(L.buyables);
+      var ids = f.order ? f.order.slice() : purchaseIds(L.buyables);
       if (f.policy === 'highest-first' && !f.order) ids.reverse();
       var n = 0, bought = [], held = false, seen = 0, minC = null, minId = null, autoed = [];
       for (var i = 0; i < ids.length; i++) {
@@ -2752,16 +2793,17 @@
         // ⚠ the cheapest UNBOUGHT candidate, tracked only while nothing has been bought — once something has, the
         // answer is `acted:` and this costs nothing more.
         if (n === 0 && B[id].cost !== undefined) { try { var c = D(B[id].cost); if (minC === null || c.lt(minC)) { minC = c; minId = id; } } catch (e) { /* a cost this engine will not compare */ } }
+        var slot = amountSlot(l, id);
         if (f.policy === 'buyMax' && L.buyables[id].buyMax && typeof buyMaxBuyable === 'function') {
-          var b0 = String(player[l].buyables[id]);
+          var b0 = String(player[l].buyables[slot]);
           buyMaxBuyable(l, id);
-          if (String(player[l].buyables[id]) !== b0) { n++; bought.push(id); }
+          if (String(player[l].buyables[slot]) !== b0) { n++; bought.push(id); }
           continue;
         }
         for (var k = 0; k < 1000; k++) {
-          var before = String(player[l].buyables[id]);
+          var before = String(player[l].buyables[slot]);
           buyBuyable(l, id);
-          if (String(player[l].buyables[id]) === before) break;
+          if (String(player[l].buyables[slot]) === before) break;
           n++;
           if (bought[bought.length - 1] !== id) bought.push(id);
           if (reserved(id)) { held = true; break; }
@@ -2812,7 +2854,7 @@
       var G = P.modifier;
       var l = f.layer, C = tmp[l] && tmp[l].challenges;
       if (!C || !player[l].unlocked) return { act: false, code: 'nothing-to-do', values: { kind: 'challenges', layer: l } };
-      var ids = f.order ? f.order.slice() : numIds(layers[l].challenges);
+      var ids = f.order ? f.order.slice() : purchaseIds(layers[l].challenges);
       var pick = null;
       for (var i = 0; i < ids.length; i++) {
         var c = C[ids[i]];
@@ -2824,7 +2866,7 @@
       if (cs.gaveUp === undefined) cs.gaveUp = 0;
       var act = player[l].activeChallenge;
       if (act !== null && act !== undefined && act !== 0 && act !== false) {
-        if (pick === null || Number(act) !== pick) return { act: false, code: 'in-challenge', values: { id: Number(act) } };
+        if (pick === null || !sameId(act, pick)) return { act: false, code: 'in-challenge', values: { id: isNaN(act) ? act : Number(act) } };
         if (canCompleteChallenge(l, pick)) {
           if (typeof canExitChallenge === 'function' && !canExitChallenge(l, pick)) return { act: false, code: 'blocked:exit', values: { id: pick } };
           startChallenge(l, pick);
@@ -2855,7 +2897,7 @@
       if (typeof canEnterChallenge === 'function' && !canEnterChallenge(l, pick)) return { act: false, code: 'blocked:enter', values: { id: pick } };
       var before = G ? layerHeld(l) : null;
       startChallenge(l, pick);
-      if (Number(player[l].activeChallenge) === pick) {
+      if (sameId(player[l].activeChallenge, pick)) {
         cs.enter++;
         if (G) { delete chAttempt[f.id]; attemptOf(f, pick, Number(player.timePlayed) || 0).startHeld = String(before); }
         return { act: true, n: 1, code: 'acted:challenge-enter', values: { id: pick } };
@@ -2926,7 +2968,7 @@
   var STRANDED = {
     challenges: function (f) {
       var a = player[f.layer] && player[f.layer].activeChallenge;
-      return a === null || a === undefined || a === 0 || a === false ? null : Number(a);
+      return a === null || a === undefined || a === 0 || a === false ? null : isNaN(a) ? a : Number(a);
     },
   };
   /** The `paused:in-challenge` values, or null when this pause strands nothing. */
@@ -5155,6 +5197,7 @@
   T.tableSchema = TABLE_SCHEMA;
   var KIND_LABEL = { toggles: 'milestone toggles', upgrades: 'upgrades', buyables: 'buyables', challenges: 'challenges', clickables: 'clickables', reset: 'reset' };
   function hasNumIds(obj) { return !!obj && typeof obj === 'object' && numIds(obj).length > 0; }
+  function hasPurchaseIds(obj) { return !!obj && typeof obj === 'object' && purchaseIds(obj).length > 0; }
   function isTreeLayer(l) { var L = layers[l]; return !!L && !L.tmtLoaderLayer && L.row !== undefined && L.row !== null && L.row !== '' && !isNaN(L.row); }
   function listOpt(name, fallback) {
     var v = T.options && T.options[name];
@@ -5186,9 +5229,9 @@
       var L = layers[l];
       var has = {
         toggles: false,
-        upgrades: hasNumIds(L.upgrades),
-        buyables: hasNumIds(L.buyables),
-        challenges: hasNumIds(L.challenges),
+        upgrades: hasPurchaseIds(L.upgrades),
+        buyables: hasPurchaseIds(L.buyables),
+        challenges: hasPurchaseIds(L.challenges),
         clickables: hasNumIds(L.clickables),
         reset: L.type === 'normal' || L.type === 'static' || L.type === 'custom',
       };

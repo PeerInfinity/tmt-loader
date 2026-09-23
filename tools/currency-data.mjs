@@ -92,6 +92,7 @@ function entry(r, from) {
   if (r.score && r.score.how) e.how = r.score.how;
   if (!e.scored && r.why) e.why = r.why;
   if (r.pure === false) e.impure = true;
+  if (typeof r.raises === 'string') e.raises = r.raises;   // C1c: a BUTTON — its purchase raises this other buyable
   e.from = from;
   return e;
 }

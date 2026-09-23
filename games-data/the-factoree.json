@@ -85,6 +85,7 @@
     "scored": true,
     "pick": "player.f.embers",
     "how": "lift-1",
+    "raises": "13",
     "from": [
      "fresh"
     ]
