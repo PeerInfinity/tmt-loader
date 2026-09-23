@@ -40,11 +40,9 @@ the way to share a game with an option on (or, with `=0`, off).
 
 ## Where the games come from
 
-The games were chosen by **[tmt-fork-census](https://github.com/PeerInfinity/tmt-fork-census)**
-([live results](https://peerinfinity.github.io/tmt-fork-census/)), a survey of the GitHub forks of The Modding Tree
-and Prestige Tree that ranks them by how branching the tree is, how much content it has and whether it still boots.
-Each game belongs to its author and keeps its own licence and credits; the game list names the author, the source
-repository and the commit each copy was taken from.
+The games were chosen with the **[TMT fork census](https://peerinfinity.github.io/tmt-fork-census/)** — see it for
+how, and for the games that are not hosted here. Each game belongs to its author and keeps its own licence and
+credits.
 
 ## For developers
 
