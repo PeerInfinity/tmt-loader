@@ -79,7 +79,7 @@ jobs:
   # not propagated yet" is a measured wait rather than a flaky red.
   # ⚠ G1 over the whole roster across the public network is minutes of traffic for a per-game check the sweep
   # workflow already owns on every push. So the live form bounds G1 to a NAMED sample and says so in its verdict
-  # line; what it covers for the whole roster is the picker, which names all 171 games in one page load.
+  # line. (Until U15 it also covered the whole roster through the picker; the home page is now a link to the census.)
   # ---------------------------------------------------------------------------------------------------------------
   verify:
     name: G5 — the live site serves this commit

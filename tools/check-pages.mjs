@@ -4,7 +4,7 @@
 //                                                               (git clone --depth 1 file://…) into a temp dir, serve
 //                                                               its PARENT with python3 -m http.server so the loader
 //                                                               lives under /tmt-loader/ exactly as on Pages, run G1
-//                                                               against it, assert the picker lists every game, and
+//                                                               against it, assert the home page loads and links the census, and
 //                                                               check nothing in the clone changed.
 //   node tools/check-pages.mjs --live https://…/tmt-loader/     the DEPLOY form: the same checks against the PUBLISHED
 //                                                               site, plus the one thing only it can check — that what
@@ -22,14 +22,15 @@
 //
 // ⚠ The two forms are not the same check and the run says so. `--live` cannot check that a clone is unmodified (there
 // is no clone), and it bounds G1 to a NAMED sample (the whole roster over the public network is minutes of traffic for
-// a check whose per-game part the CI sweep already owns on every push). What it does cover for the whole roster is the
-// picker — one page load that names all 171 games and their metadata.
+// a check whose per-game part the CI sweep already owns on every push). It used to cover the whole roster through the
+// picker; since U15 the home page is a short text and a link to the census, not a list, so the roster is held by G6
+// (docs/games.md ≡ manifests/index.json) and the sweep, and this gate checks the home page itself.
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { execFileSync, spawnSync } from 'node:child_process';
 import { chromium } from 'playwright';
-import { REPO, GAMES, parseArgs, startServer, headCommit, readManifest } from './harness/lib.mjs';
+import { REPO, GAMES, parseArgs, startServer, headCommit } from './harness/lib.mjs';
 import { openContext, waitReady } from './harness/page.mjs';
 
 const a = parseArgs(process.argv.slice(2), ['keep']);
@@ -107,7 +108,10 @@ try {
   for (const r of g1rows) step(`G1 load ${r.id} @ subpath`, r.ok, { readyMs: r.loadMs, layerNodes: r.layerNodes, requests: r.requests, blocked: r.blocked, failed: r.failed.length, pageErrors: r.pageErrors.length, keys: r.keys });
   if (g1.status !== 0 || g1rows.length !== SAMPLE.length) step('G1 exit', false, { status: g1.status, stderr: (g1.stderr || '').slice(-400) });
 
-  // the picker: no ?mod=
+  // the HOME page: no ?mod= (⚖ U15, user 2026-09-23 — it is a short explanation and a link to the census, not a
+  // list; the census is where the games are listed). What only this page can prove: it is ready without error, it
+  // fetches NOTHING beyond the page and the loader's own modules — no manifest, nothing under games/ — and its link
+  // to the census is there.
   browser = await chromium.launch();
   const { context, stats } = await openContext(browser, { allowHosts: LIVE ? [new URL(base).hostname] : [] });
   try {
@@ -115,15 +119,14 @@ try {
     const t0 = Date.now();
     await page.goto(`${base}index.html`, { waitUntil: 'load' });
     const r = await waitReady(page, t0);
-    const listed = await page.$$eval('#picker li.game', (els) => els.map((e) => ({ id: e.dataset.id, name: e.querySelector('a').textContent, href: e.querySelector('a').href, meta: e.querySelector('.meta').textContent })));
-    const want = GAMES();
-    // each entry names the game, its upstream repo @ commit, its engine and its license verdict (from its manifest)
-    const metaBad = listed.filter((x) => { const m = readManifest(x.id); return !(x.name === m.name && x.meta.includes(`${m.upstream.repo} @ ${m.upstream.commit.slice(0, 7)}`) && x.meta.includes(`TMT ${m.engine.tmtNum}`) && x.meta.includes(`license ${m.license.verdict}`)); }).map((x) => x.id);
-    step('picker entries name repo@sha, engine, license', listed.length === want.length && metaBad.length === 0, { count: listed.length, bad: metaBad });
-    step('picker lists every game', r.ready && !r.error && listed.map((x) => x.id).join() === want.join() && stats.blocked.length === 0 && stats.failed.length === 0 && stats.pageErrors.length === 0,
-      { listed, blocked: stats.blocked.length, failed: stats.failed, pageErrors: stats.pageErrors });
-    // a picker link resolves under the sub-path
-    step('picker links stay under the sub-path', listed.every((x) => x.href.startsWith(base)), { hrefs: listed.map((x) => x.href) });
+    const urls = stats.urls.map((u) => (u.startsWith(base) ? u.slice(base.length).split('?')[0] : u));
+    const stray = urls.filter((u) => !(u === 'index.html' || /^loader\/[^/]+(\/[^/]+)?\.m?js$/.test(u)));
+    const census = await page.$$eval('#home a', (els) => els.map((e) => e.href).filter((h) => /tmt-fork-census/.test(h)));
+    const shown = await page.$eval('#home', (e) => !e.hidden).catch(() => false);
+    step('home page ready, shown, no errors', r.ready && !r.error && shown && stats.blocked.length === 0 && stats.failed.length === 0 && stats.pageErrors.length === 0,
+      { ready: r.ready, error: r.error || null, shown, blocked: stats.blocked.length, failed: stats.failed, pageErrors: stats.pageErrors });
+    step('home page fetches only the page and the loader modules', stray.length === 0, { requests: urls.length, stray });
+    step('home page links the census', census.length > 0, { census });
   } finally { await context.close(); }
 } finally {
   if (browser) await browser.close();
@@ -142,8 +145,7 @@ if (!LIVE) {
 }
 result.ok = result.steps.every((s) => s.ok);
 if (parent && !a.keep) fs.rmSync(parent, { recursive: true, force: true });
-result.pickerCount = (result.steps.find((x) => x.name === 'picker lists every game') || {}).listed?.length;
-console.log(`${result.gate}: ${result.ok ? 'GREEN' : 'RED'} (commit ${result.commit}, ${base}; G1 on ${SAMPLE.length} game(s) — ${SAMPLE.join(', ')}; picker ${result.pickerCount} games${LIVE ? `; settled in ${Math.round((result.settleMs || 0) / 1000)} s over ${result.settleTries} probe(s)` : ''})`);
+console.log(`${result.gate}: ${result.ok ? 'GREEN' : 'RED'} (commit ${result.commit}, ${base}; G1 on ${SAMPLE.length} game(s) — ${SAMPLE.join(', ')}${LIVE ? `; settled in ${Math.round((result.settleMs || 0) / 1000)} s over ${result.settleTries} probe(s)` : ''})`);
 fs.mkdirSync(path.join(REPO, 'tools/harness/results/tmp'), { recursive: true });
 fs.writeFileSync(path.join(REPO, 'tools/harness/results/tmp/check-pages-last.json'), JSON.stringify(result, null, 2));
 process.exit(result.ok ? 0 : 1);

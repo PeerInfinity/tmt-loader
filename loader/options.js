@@ -66,7 +66,8 @@
   var CSS = '#' + ID + '{margin-top:24px}' +
     '#' + ID + ' .' + ID + '-head{opacity:.8;font-size:.9em;letter-spacing:.04em}' +
     '#' + ID + ' .' + ID + '-note{opacity:.75;font-size:.8em;max-width:46em;margin:.4em auto 0;line-height:1.4}' +
-    '#' + ID + ' table{margin:0 auto}';
+    '#' + ID + ' table{margin:0 auto}' +
+    '#' + ID + ' .' + ID + '-home{display:inline-block;margin-top:.8em;color:inherit;opacity:.85}';
 
   function build() {
     if (!document.getElementById(ID + '-style')) {
@@ -98,7 +99,24 @@
     table.appendChild(body);
     noteEl = document.createElement('div');
     noteEl.className = ID + '-note';
-    section.append(head, table, noteEl);
+    // (U15) the way back to the list of games, which is the census (⚖ user, 2026-09-23: the loader's own page is
+    // not a list). An absolute URL, so the `<base href="games/<id>/">` the page runs under cannot touch it.
+    var home = document.createElement('a');
+    home.className = ID + '-home';
+    home.href = 'https://peerinfinity.github.io/tmt-fork-census/';
+    home.textContent = '\u2190 All games';
+    home.title = 'The list of games, on the TMT fork census. This game is saved first if its autosave is on.';
+    // the engines autosave every few seconds and only two of them save on unload, so leaving by a link could drop the
+    // last seconds of play; save first, under the same switch the game's own autosave reads — `options.autosave` from
+    // TMT 2.6 on, `player.autosave` before it (a 2.6+ `player` has no such field, so reading only that never saves)
+    home.addEventListener('click', function () {
+      try {
+        var on = (typeof options === 'object' && options && 'autosave' in options) ? options.autosave
+          : !!(window.player && player.autosave);
+        if (on && typeof save === 'function') save();
+      } catch (e) { /* leave anyway */ }
+    });
+    section.append(head, table, noteEl, home);
     label();
   }
 
@@ -122,12 +140,17 @@
       if (b.title !== title) b.title = title;
       if (src === 'url') overridden.push('?' + e.flag + '=' + (on ? '1' : '0'));
     });
-    var note = 'Pressing one of these reloads the page. The choice is remembered in this browser for every game, '
+    // (U15) the first sentence says what each button IS, for a player who has never read docs/options.md; gate O1
+    // reads this note for "reloads the page", so that phrase stays.
+    var note = 'Added by tmt-loader, not by the game. Mobile layout: one column with large buttons, for a phone. '
+      + 'Nav bar: a bar along the bottom, with a Layers view listing every layer. Automation tools: an AU tab that '
+      + 'can reset and buy things for you, each feature off until you turn it on. '
+      + 'Pressing one of these reloads the page. The choice is remembered in this browser for every game, '
       + 'and is not part of any game’s save.'
       + (overridden.length
         ? ' The address is answering for ' + overridden.join(' and ') + ' right now; pressing that button drops the'
           + ' parameter so the remembered choice applies.'
-        : ' A ?mobile= , ?navbar= or ?automation= in the address overrides what is remembered.');
+        : ' A link that carries ?mobile=, ?navbar= or ?automation= overrides what is remembered.');
     if (noteEl.textContent !== note) noteEl.textContent = note;
   }
 

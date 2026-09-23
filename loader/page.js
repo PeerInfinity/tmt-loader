@@ -1,6 +1,6 @@
-// The browser side of the loader (plan §3c). Reads ?mod=<id>; without it shows the picker.
+// The browser side of the loader (plan §3c). Reads ?mod=<id>; without it shows the short home page.
 import { interpret, executionOrder, modFilePaths } from './interpret.mjs';
-import { installSavePrefix, captureRaw, rawKeys, prefixFor } from './shims/save-prefix.js';
+import { installSavePrefix } from './shims/save-prefix.js';
 import { installTimers } from './shims/timers.js';
 import { FLAGS, PREF_KEY, parsePrefs, serializePrefs, resolveFlags } from './flags.mjs';
 
@@ -288,50 +288,17 @@ async function boot(id) {
   window.dispatchEvent(new CustomEvent('tmt-loader:ready', { detail: { id } }));
 }
 
-async function picker() {
-  const raw = captureRaw(Storage.prototype);
+// ⚖ (U15, user 2026-09-23) THE HOME PAGE IS NOT A LIST. It used to fetch every manifest and draw one card per game;
+// the list of games belongs to the census, which ranks and describes them and links each one back here. So without
+// `?mod=` the page shows the static text in index.html and FETCHES NOTHING — the markup is already in the document.
+async function home() {
   document.title = 'tmt-loader';
-  const root = document.getElementById('picker');
-  root.hidden = false;
-  const list = root.querySelector('ul');
-  const roster = JSON.parse(await fetchText(abs('manifests/index.json'), 'manifests/index.json'));
-  for (const entry of roster) {
-    const m = JSON.parse(await fetchText(abs(`manifests/${entry.id}.json`), `manifests/${entry.id}.json`));
-    const li = document.createElement('li');
-    li.className = 'game';
-    li.dataset.id = m.id;
-    const a = document.createElement('a');
-    a.href = `?mod=${encodeURIComponent(m.id)}`;
-    // ⚠ A FIELD A GAME DOES NOT HAVE IS NOT THE STRING "null". Two games (`the-modding-tree`, `the-burning-tree`)
-    // carry no `author` at all — their TMT 2.0.x `modInfo` predates the field — and this line used to render them
-    // as `vnull by null`, on the published site, for as long as they have been hosted. An absent part is dropped;
-    // the parts that are present still read the same.
-    a.textContent = m.name || m.id;
-    const meta = document.createElement('div');
-    meta.className = 'meta';
-    const up = m.upstream || {};
-    const byline = [m.version ? `v${m.version}` : null, m.author ? `by ${m.author}` : null].filter(Boolean).join(' ');
-    meta.textContent = [byline || null,
-      up.repo ? `${up.repo} @ ${(up.commit || '').slice(0, 7)}` : null,
-      m.engine && m.engine.tmtNum ? `TMT ${m.engine.tmtNum}` : null,
-      m.license && m.license.verdict ? `license ${m.license.verdict}` : null].filter(Boolean).join(' · ');
-    const count = () => rawKeys(raw, localStorage, prefixFor(m.id)).length;
-    const btn = document.createElement('button');
-    const label = () => { btn.textContent = `clear this game's save (${count()} keys)`; };
-    btn.addEventListener('click', () => {
-      if (!confirm(`Delete every saved key of ${m.name || m.id} in this browser?`)) return;
-      for (const k of rawKeys(raw, localStorage, prefixFor(m.id))) raw.removeItem.call(localStorage, k);
-      label();
-    });
-    label();
-    li.append(a, meta, btn);
-    list.appendChild(li);
-  }
+  document.getElementById('home').hidden = false;
   T.ready = true;
   window.dispatchEvent(new CustomEvent('tmt-loader:ready', { detail: { id: null } }));
 }
 
-(MOD ? boot(MOD) : picker()).catch((e) => {
+(MOD ? boot(MOD) : home()).catch((e) => {
   T.error = { step: T.step, message: String((e && e.message) || e) };
   overlay(`failed at step "${T.step}"`, T.error.message);
   console.error('tmt-loader', T.error, e);
