@@ -40,6 +40,40 @@ loads it lands on the same tick and the same hash as one that does not (gate P1a
   the wait window, `regrowthK` the (cheap) window each reset's post-reset regrowth is measured over; omitting
   `regrowthK` keeps both at `k`, which is P1a's behaviour and what the committed goldens hold.
 
+## The number type — by CAPABILITY, never by name (C1c)
+
+⛔ **Not every fork's big number is called `Decimal`.** 172 of the 175 games expose a global `Decimal`
+(break_eternity or break_infinity); `the-classic-tree`'s is minified (`player.points.constructor.name` is `t`) but IS
+the global `Decimal`; **`the-hyperoperator-tree` ships ExpantaNum and `the-pro-tree` OmegaNum, and neither defines
+`Decimal` at all.** Until C1c the planner's helper was `x instanceof Decimal ? x : new Decimal(x)`, so on those two games
+it threw and every buyable they have — numeric ids too — ABSTAINED from C1 on ("the reader threw: Decimal is not
+defined"; 20 + 34 entries).
+
+The rule now: **the type is whatever `player.points` is an instance of** — the engine's own `getStartPlayer` built it,
+so it is the type every sum on that game already runs in. It is resolved once and cached, on the REAL `player`
+(`traceReads` resolves it before swapping `player` for its recording Proxy — a first read under the Proxy would record
+a read the predicate never made). No library is named in the planner, in code or as a fallback (§40-R).
+`tmtLoader.planner.numbers()` reports it.
+
+**A method may be missing, so each OPERATION names what it calls, and abstains BY NAME** — never a coercion to a float:
+
+| operation | the methods it calls on a number | where it abstains |
+|---|---|---|
+| `read` (the currency reader: `readBuyable`, `costParts`, `fellBy`, the lift) | `gt gte lt lte cmp sub abs times log10` | `readBuyable` throws → the entry abstains "the reader threw: the game’s number type has no sub() — the read operation abstains" |
+| `probe` (the threshold probe: `huge()`, the power-of-ten bracket) | `pow gte lte log10` | `probe()` returns `{probeable: false, why: "… has no pow() — the probe operation abstains"}` |
+| `plan` (`knowledge`, `goals`, the screen, the confirmation) | `gt gte lt lte plus times div max log10` | `knowledge()` / `round()` throw, naming the method |
+
+Measured on every game at boot (gate C1c-1): **no roster library lacks any of them** — the abstention is constructed only
+(`loader/c1c.test.mjs`). The battery over the same operations finds ExpantaNum different from break_eternity in exactly
+two ways: `log10(0)` is `-Infinity` where break_eternity gives `NaN` (the planner's `lg()` tests `lte(0)` first, so no
+decision reads it), and `div` / `pow` round their last digit differently (`1e10 / 3` = …333.3335 vs …333.333) — below
+the reader's 1e-9 tolerance. Regenerated: the-hyperoperator-tree 0 → **20** of 20 scored (14 own points, 6 foreign),
+the-pro-tree 0 → **27** of 34 (14 own, 13 foreign; 7 abstain — no usable cost to lift towards). No control's
+population moved (the entries existed; only their scores did).
+
+⚠ `tmt-auto.js` still resolves ITS number type by trying the three library names (`NUMBER`, U2g) — it runs at insert
+time, before `player` exists, so `player.points` is not there to ask. Recorded, not changed here.
+
 ## Part 1 — snapshot / restore / excursion / measure
 
 ```js

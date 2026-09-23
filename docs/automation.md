@@ -885,9 +885,9 @@ order**:
 | Kind | Feature id | Registered when the layer declares | Default policy (no table entry) | `unlocked()` |
 |---|---|---|---|---|
 | `toggles` | `toggles:<l>` | a milestone with `toggles: [[layer, field], …]` | `on` | `player[l].unlocked` |
-| `upgrades` | `upgrades:<l>` | numeric ids in `upgrades` | `cheapest-first`; `order-then-cheapest` when the table gives `order` | `player[l].unlocked` |
-| `buyables` | `buyables:<l>` | numeric ids in `buyables` | `buy` | `player[l].unlocked` |
-| `challenges` | `challenges:<l>` | numeric ids in `challenges` | `off`; **`sequential\|give-up@0.1/30/2x`** when the table gives `order` (R3a — see below) | `player[l].unlocked` |
+| `upgrades` | `upgrades:<l>` | purchase ids in `upgrades` (C1c: numeric ids, then word ids holding an object — see *Which keys are purchase things*) | `cheapest-first`; `order-then-cheapest` when the table gives `order` | `player[l].unlocked` |
+| `buyables` | `buyables:<l>` | purchase ids in `buyables` (C1c; a display-only object is not one) | `buy` | `player[l].unlocked` |
+| `challenges` | `challenges:<l>` | purchase ids in `challenges` (C1c) | `off`; **`sequential\|give-up@0.1/30/2x`** when the table gives `order` (R3a — see below) | `player[l].unlocked` |
 | `clickables` | `clickables:<l>` | numeric ids in `clickables` | `off`; `when` when the table lists the layer's clickables | `player[l].unlocked` |
 | `reset` | `reset:<l>` | a prestige: `type` `normal`, `static` or `custom` | `always` for a static layer; **`gain>=2x\|stall>=5x/5`** for normal / custom (F1; `gain>=2x` before it) | `layerShown !== false` evaluated live (the node is visible) — not `tmp[l].layerShown`, which `updateTemp` computes before `gameLoop` and so lags a layer the game unlocks inside `gameLoop` by one tick |
 
@@ -2132,9 +2132,47 @@ collection-of-everything 5), each an object with its own `buy()` and `cost`. The
 `tmt-planner.js`: a non-null, non-array OBJECT. Measured over all 175 games at boot, every word key that is NOT a
 buyable is a non-object — `rows` / `cols` (numbers), the engine's own `layer` back-reference and `respecText`
 (strings), `respec` / `showRespec` (functions), `respecConfirm` (booleans) — and no word key anywhere holds an object
-that is not a buyable. Ordering: numeric ids ascending, then word ids in declaration order (what JSON keeps). ⚠ The
-automation's own PURCHASE code (`buyables` kind, `reserve`'s foreign scan, `resetBuysSomething`) and the planner's
-goal walk still enumerate numeric ids only (`numIds`): the 63 are now READ, not yet BOUGHT.
+that is not a buyable. Ordering: numeric ids ascending, then word ids in declaration order (what JSON keeps). Since C1c
+the reader's test is `tmtLoader.isObjectDef` — ONE definition, which the automation's purchase enumeration builds on
+(below) — and the 63 are BOUGHT as well as read.
+
+### Which keys are purchase things — ONE rule (C1c)
+
+`tmtLoader.purchaseIds(obj)` is the core's enumeration of a layer's `upgrades`, `buyables` and `challenges`, everywhere
+it walks them: feature derivation, the `upgrades` / `buyables` / `challenges` kinds, `reserve`'s foreign-currency scan
+and `next-upgrade`, `buy-unless-saving`, `unlocks-purchase` (`resetBuysSomething`), and the planner's goal walk and
+membership probe. It is **numeric ids ascending, as Numbers — exactly the `numIds` it replaces, the order every pinned
+run bought in — then word ids whose value is an object (`isPurchaseDef`), in declaration order.** Measured over all 175
+games at boot: word keys holding an object exist in exactly three groups — buyables 63 (5 games), upgrades 55
+(the-hyperoperator-tree 45, the-collab-tree-lun4-r 10), challenges 2 (yet-another-challenge-tree-adventure `IV`'s `POS` /
+`NEG`); no numeric key holds a non-object. So on every other game the enumeration is `numIds` exactly (gate C1c-3 holds
+the opening, `all/M15` → M25 and Something Tree to the hash against the commit before). Milestones, achievements and
+clickables are not purchases and keep `numIds` (word-id clickables — 469 over the roster — are not this rule's question).
+
+- **What else an object admits, and the guard.** A buyable that declares `canAfford: false` as a CONSTANT is a
+  DISPLAY, never affordable in any state — universal-reconstruction's six cube faces (`front`, …) — and is not a
+  purchase thing (`displayOnly`). The READER still reads it (it describes what the game declares; the faces abstain
+  there, "no usable cost"). A `canAfford()` FUNCTION that returns false is an ordinary unaffordable purchase.
+- **A word id is a string, a numeric id a Number.** Where the kinds compared ids as numbers (`Number(activeChallenge)
+  === pick`, a cost tie broken by `a - b`) they now compare by what the id prints (`sameId`) and break a tie numeric
+  first, then declaration order (`idCmp`) — equal to the old comparison for numeric ids.
+- ⚠ **The enumeration runs at DERIVATION, and a game may declare purchase things later.** universal-reconstruction
+  builds its `timecube` buyables inside its OWN `setupLayer` during load (`createSquareBuyables`), after `tmt-auto.js`
+  derived its features — so no `buyables:timecube` exists, before C1c or after, and nothing buys its buttons. Recorded,
+  not changed (a re-derivation after load is its own question).
+
+### A BUTTON — a purchase that raises ANOTHER buyable (C1c)
+
+universal-reconstruction declares, per cube face, three buyables that are UI verbs for one purchase: `frontBuy` (+ the
+player's chosen step), `frontBuyNext` (up to the next round number) and `frontBuyMax` (as many as affordable) — each
+spends `player.timecube.points` and calls `addBuyables('timecube', 'front', n)`; none ever moves its OWN amount. The
+`buyables` kind judged "did it buy?" by the buyable's own amount, so a button would SPEND once a tick and report that it
+bought nothing. The reader's rollback now records WHICH amount a purchase raised; a buyable whose purchase raises exactly
+one OTHER buyable is written `"raises": "<id>"` in `games-data/` (measured: **19 of the 1762** the rollback could buy —
+the 18 buttons, and the-factoree's `f` 21, which keeps its level in buyable 13's slot). The kind then judges that
+buyable's purchase by the raised amount (`amountSlot`): it is bought until unaffordable and COUNTED, like any other.
+No data, or no `raises`, is the buyable's own amount — the rule before C1c. On universal-reconstruction the question is
+moot today (the derivation note above); on the-factoree `f` 21 is now bought to exhaustion instead of once a tick.
 
 - `tmtLoader.paysIn(l, id)` — the scored single field, or null. `tmtLoader.currencyOf(l, id)` — a COPY of the whole
   entry, or null: what the UI arc's card row reads (`? / ?` where it abstains).
