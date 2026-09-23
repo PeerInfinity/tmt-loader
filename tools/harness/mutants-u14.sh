@@ -34,9 +34,11 @@ trap restore EXIT
 #            list is the full window, nothing is stored, and Tree goes to the tree.
 #   tree   — leg 3a (U10), a PRE-EXISTING phone leg: the real Tree press puts the engine on its tree, and from an
 #            open tab brings it back.
-#   lphone — leg 6's phone half (the layer list at 390 px), another pre-existing phone leg.
+#   layers — leg 6's phone half (the layer list at 390 px), another pre-existing phone leg.
 # ⚠ A leg that ABSTAINS reads as GREEN here, and the row prints the verdicts so an abstention is visible.
-LEGS="desk phone tree lphone"
+# ⚠ NO NAME MAY CONTAIN ANOTHER: this leg was first called `lphone`, and `grep "phone=true"` then matched INSIDE
+# `lphone=true` — both phone mutants scored green while their own verdict read red. The match is also `-w` now.
+LEGS="desk phone tree layers"
 
 read_row() {
   node tools/harness/page.mjs "$1" --gate mobile 2>/dev/null | node -e '
@@ -48,7 +50,7 @@ read_row() {
       const S = d.split || {};
       const RED = /^(THE |PRESSING |A NARROW |WITH NO TAB|TREE |LAYERS )/;
       const o = { desk: !!S.desktopVerdict && !RED.test(S.desktopVerdict), phone: !!S.phoneVerdict && !RED.test(S.phoneVerdict),
-        tree: d.treeButtonOk, lphone: !!(d.layers && d.layers.phoneOk) };
+        tree: d.treeButtonOk, layers: !!(d.layers && d.layers.phoneOk) };
       console.log(Object.entries(o).map(([k, v]) => `${k}=${v === true}`).join(" ")
         + ` || desk: ${S.desktopVerdict} || phone: ${S.phoneVerdict} || tree: ${d.treeButton && d.treeButton.verdict}`);
     });'
@@ -70,7 +72,7 @@ mutant() {
     local out; out="$(read_row "$g")"
     echo "  $g: $out" | tee -a "$OUT/$name.log"
     local red=()
-    for leg in $LEGS; do grep -q -- "$leg=true" <<<"$out" || red+=("$leg"); done
+    for leg in $LEGS; do grep -qw -- "$leg=true" <<<"$out" || red+=("$leg"); done
     local got="${red[*]:-}"
     if [ "$got" = "$want" ]; then echo "  OK   $g — red: [${got:-none}]"
     else echo "  FAIL $g — red: [${got:-none}], expected [${want:-none}]"; ok=0; fi
