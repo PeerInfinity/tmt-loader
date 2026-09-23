@@ -13,7 +13,7 @@
 //         BEFORE commit (a control worktree): the progress tracker's events per game-second, hashGame, the actions per
 //         feature, and which word-id things were bought (the amount / ownership / completions at the end).
 // Part 3  INERTNESS where every purchase id is numeric (must HOLD: sweep.yml). ptr's opening (fresh → M12, pinned
-//         6862 / cf8df88462606277), ptr all/M15 → M25, Something Tree fresh → S05 — each at HEAD twice and at the
+//         6862 / cf8df88462606277), ptr all/M15 → M25 (pinned 28260 / dee581e710a1bf53, the F1 chain), Something Tree fresh → S05 — each at HEAD twice and at the
 //         BEFORE commit once, marks + end game-second + hashGame equal.
 // Part 4  BUTTONS AND FACES (Part 3 of the brief): the `raises` census from the committed data, universal-reconstruction's
 //         enumeration at boot (6 faces out, 18 buttons in) and its derive-time finding, and the unit tests
@@ -191,14 +191,16 @@ const PTR_LADDER = path.join('tools/harness/ladder/ptr.json');
 const S_LADDER = path.join('tools/harness/ladder/something.json');
 const LEGS = [
   { key: 'O', id: 'ptr', name: 'ptr\'s opening — fresh → M12', flags: { diff: 1, profile: 'all', ticks: 8000, 'wall-ms': 570000, ladder: PTR_LADDER, to: 'M12', stall: 1e6 }, pin: { mark: 'M12', gs: 6862, hashGame: 'cf8df88462606277' } },
-  { key: 'L', id: 'ptr', name: 'ptr all/M15 → M25 (the F1 chain\'s fixture)', flags: { diff: 1, profile: 'all', ticks: 21000, 'wall-ms': 570000, ladder: PTR_LADDER, to: 'M25', stall: 1e6, 'from-snapshot': 'tools/harness/snapshots/ptr/all/M15.json' } },
+  { key: 'L', id: 'ptr', name: 'ptr all/M15 → M25 (the F1 chain\'s fixture)', flags: { diff: 1, profile: 'all', ticks: 21000, 'wall-ms': 570000, ladder: PTR_LADDER, to: 'M25', stall: 1e6, 'from-snapshot': 'tools/harness/snapshots/ptr/all/M15.json' }, pin: { mark: 'M25', gs: 28260, hashGame: 'dee581e710a1bf53' } },
   { key: 'S', id: 'something', name: 'Something Tree fresh → S05 (no table)', flags: { diff: 1, profile: 'all', ticks: 3000, 'wall-ms': 570000, ladder: S_LADDER, to: 'S05', stall: 1e6 } },
 ];
+// ⚠ MEASURED: under a pool of 4 the long leg (20,092 ticks) ran 572 s and was cut by its wall 132 game-s short of
+// M25 — so this part runs at most THREE children at once (one per leg), whatever --pool says.
 async function part3() {
   const root = beforeRoot();
   const jobs = [];
   for (const L of LEGS) { for (let k = 0; k < REPEAT; k++) jobs.push({ L, side: 'after', k }); jobs.push({ L, side: 'before', k: 0 }); }
-  const out = await pool(jobs, POOL, async (j) => ({ ...j, r: await runAt(j.side === 'after' ? REPO : root, j.L.id, j.L.flags) }));
+  const out = await pool(jobs, Math.min(POOL, 3), async (j) => ({ ...j, r: await runAt(j.side === 'after' ? REPO : root, j.L.id, j.L.flags) }));
   for (const L of LEGS) {
     const af = out.filter((x) => x.L === L && x.side === 'after').map((x) => x.r), bf = out.find((x) => x.L === L && x.side === 'before').r;
     const A = af[0], twice = af.every((r) => agree(r, A)), same = agree(A, bf);

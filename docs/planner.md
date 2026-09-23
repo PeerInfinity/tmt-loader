@@ -43,7 +43,7 @@ loads it lands on the same tick and the same hash as one that does not (gate P1a
 ## The number type — by CAPABILITY, never by name (C1c)
 
 ⛔ **Not every fork's big number is called `Decimal`.** 172 of the 175 games expose a global `Decimal`
-(break_eternity or break_infinity); `the-classic-tree`'s is minified (`player.points.constructor.name` is `t`) but IS
+(all 172 give one identical answer to the battery below); `the-classic-tree`'s is minified (`player.points.constructor.name` is `t`) but IS
 the global `Decimal`; **`the-hyperoperator-tree` ships ExpantaNum and `the-pro-tree` OmegaNum, and neither defines
 `Decimal` at all.** Until C1c the planner's helper was `x instanceof Decimal ? x : new Decimal(x)`, so on those two games
 it threw and every buyable they have — numeric ids too — ABSTAINED from C1 on ("the reader threw: Decimal is not
@@ -64,10 +64,10 @@ a read the predicate never made). No library is named in the planner, in code or
 | `plan` (`knowledge`, `goals`, the screen, the confirmation) | `gt gte lt lte plus times div max log10` | `knowledge()` / `round()` throw, naming the method |
 
 Measured on every game at boot (gate C1c-1): **no roster library lacks any of them** — the abstention is constructed only
-(`loader/c1c.test.mjs`). The battery over the same operations finds ExpantaNum different from break_eternity in exactly
-two ways: `log10(0)` is `-Infinity` where break_eternity gives `NaN` (the planner's `lg()` tests `lte(0)` first, so no
-decision reads it), and `div` / `pow` round their last digit differently (`1e10 / 3` = …333.3335 vs …333.333) — below
-the reader's 1e-9 tolerance. Regenerated: the-hyperoperator-tree 0 → **20** of 20 scored (14 own points, 6 foreign),
+(`loader/c1c.test.mjs`). The battery over the same operations gives exactly two answers — the 173 `Decimal` games (the-classic-tree included)
+and the two others (OmegaNum and ExpantaNum agree with each other to the digit), which differ in exactly three places: `log10(0)` is `-Infinity` where break_eternity gives `NaN` (the planner's `lg()` tests `lte(0)` first, so no
+decision reads it), and `div` / `pow` round their last digit differently (`1e10 / 3` = …333.3335 vs …333.333;
+`10^308.5` = 3.16227766016838e308 vs 3.16227766016755e308) — below the reader's 1e-9 tolerance. Regenerated: the-hyperoperator-tree 0 → **20** of 20 scored (14 own points, 6 foreign),
 the-pro-tree 0 → **27** of 34 (14 own, 13 foreign; 7 abstain — no usable cost to lift towards). No control's
 population moved (the entries existed; only their scores did).
 
