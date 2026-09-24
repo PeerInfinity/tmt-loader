@@ -643,6 +643,7 @@ async function part6(browser, base) {
       // ---- `until`, the BLOCK's reason, a RELOAD and the RE-ARM PRESS -------------------------------------------
       const set = await page.evaluate((fid) => {
         tmtLoader.setSavedControl(fid, 'while', null);
+        tmtLoader.setDevDetails(true);   // ⚖ U16: the block is found by its feature id, a developer detail
         const r = tmtLoader.setSavedControl(fid, 'until', 'true');
         tmtLoader.tick(1, 3);
         tmtLoader.invalidateView();

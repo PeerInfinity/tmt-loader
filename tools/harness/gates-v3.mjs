@@ -388,6 +388,7 @@ async function part5(browser, base) {
         const r = tmtLoader.explain().find((x) => x.kind === 'reset' && x.state !== 'locked' && x.state !== 'excluded');
         tmtLoader.setSavedParam(r.id, 'n', '<img src=x onerror="window.__tmtXSS=1">');
         tmtLoader.autoProvenance[r.id] = '<b id="tmtl-xss-probe">not markup</b>';
+        tmtLoader.setDevDetails(true);   // ⚖ U16: the table's note is a developer detail — drawn only with the switch on
         tmtLoader.invalidateView();
         return r.id;
       });

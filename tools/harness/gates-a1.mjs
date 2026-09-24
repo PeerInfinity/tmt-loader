@@ -441,6 +441,9 @@ async function part2Advanced(id) {
 
     // run the game a little so there is something to say, then select Advanced the way the engine's button does
     await page.evaluate(() => tmtLoader.tick(1, 300));
+    // ⚖ U16: ids, rule codes and the table's notes are DEVELOPER DETAILS, drawn only while the switch is on — and
+    // render ≡ headless below is a comparison of exactly those, so this leg reads the view with them shown
+    await page.evaluate(() => tmtLoader.setDevDetails(true));
     await page.evaluate(() => { player.subtabs[tmtLoader.auLayer].mainTabs = 'Advanced'; });
     await redraw();
     await page.waitForTimeout(300);

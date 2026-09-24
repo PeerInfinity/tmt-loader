@@ -3705,7 +3705,9 @@
     // every layer the tree declares, so "…until the NEXT layer is unlocked" needs no typing at all
     try {
       var ks = [];
-      for (var k in layers) if (k !== AU && layers[k] && !layers[k].tmtLoaderLayer && layers[k].row !== undefined) ks.push(k);
+      // ⚖ U16: only the TREE's layers — a numeric row. Side layers (achievements, statistics) and pseudo-layers a game
+      // uses for its own tabs (`info-tab`, `options-tab` on ptr) are not things a player waits to unlock.
+      for (var k in layers) if (k !== AU && layers[k] && !layers[k].tmtLoaderLayer && layers[k].row !== undefined && layers[k].row !== '' && isFinite(Number(layers[k].row))) ks.push(k);
       for (var j = 0; j < ks.length; j++) out.push({ src: 'player.' + ks[j] + '.unlocked', label: String(layers[ks[j]].name || ks[j]) + ' is unlocked' });
     } catch (e2) { /* a fork with no layers map */ }
     return out;
@@ -4195,11 +4197,13 @@
     try { return (player.tab === AU || player.navTab === AU) && !!player.subtabs && !!player.subtabs[AU] && player.subtabs[AU].mainTabs === 'Advanced'; } catch (e) { return false; }
   }
   // ⚠ V1's word was "Read-only." — V2 is the slice that stopped it being true.
-  var ADV_INTRO = 'What each feature decided on the last tick it was asked, and why — and the strategy it decides by, which you can change here.';
+  // ⚖ U16 (user, 2026-09-23): the tab's text is for a PLAYER. The sentence keeps "What each feature decided", which
+  // gates v1 / v2 / v3 / a1 use as their "the Advanced view rendered" sentinel.
+  var ADV_INTRO = 'Switch a feature on with its button. What each feature decided most recently, and why, is shown in its block; open a block (+) to change how it decides.';
   // ⛔ V4 Part 4 — THE ONE SENTENCE BESIDE THE SWITCH, and it is `docs/automation.md`'s own (R2's measurement, in the
   // words a player reads rather than a plan §). It names the MECHANISM, because the number belongs to one game and
   // the mechanism belongs to every patient default there is.
-  var WATCH_WARN = 'A default that is correctly PATIENT looks exactly like one that is STUCK, so the watch can escalate a feature that was doing the right thing: measured on Prestige Tree Rewritten, switching it on reached no ladder mark at all where leaving it off reached six. Do not leave it on unattended.';
+  var WATCH_WARN = 'A feature whose strategy is correctly waiting looks exactly like one that is stuck, so the watch can switch a feature that was doing the right thing to a worse strategy. Tested on Prestige Tree Rewritten, turning it on made far less progress than leaving it off. Do not leave it on unattended.';
   var PROG_INTRO = 'Everything this session has held for the first time, newest first — an unlock, an upgrade, a milestone, an achievement, a challenge completion or a buyable past its own best. Re-buying what a reset took away is not progress, which is what makes a stall visible.';
   // ⚠ THE PLAYER'S WORDS FOR THE SIX KINDS, and the only place they are written. The IDs beside them are the GAME's own.
   var PROG_LABEL = { unlocked: 'unlocked', upg: 'upgrade', ms: 'milestone', ach: 'achievement', ch: 'challenge', buy: 'buyable' };
@@ -4213,7 +4217,7 @@
   T.enabledByHTML = function (tv) {
     var mine = 'your saved choice is <b>' + (tv.saved ? 'on' : 'off') + '</b>';
     if (tv.by === 'runtime') return chip('OVERRIDDEN', '#8a6d3b') + ' switched ' + (tv.override ? 'on' : 'off') + ' by a runtime setting — ' + mine + '; a press changes your saved choice, not this';
-    return chip('OVERRIDDEN', '#8a6d3b') + ' by the profile “' + esc(tv.profile) + '” — ' + (tv.profile === 'off' ? 'nothing runs' : 'it runs every unlocked feature') + '; ' + mine;
+    return chip('OVERRIDDEN', '#8a6d3b') + ' — the page’s address sets profile “' + esc(tv.profile) + '”, which ' + (tv.profile === 'off' ? 'runs nothing' : 'runs every unlocked feature') + '; ' + mine;
   };
   var CTL_WORD = { runtime: 'a runtime setting', you: 'yours', table: 'the game’s table', derived: 'derived' };
   var STATE_BG = { on: '#4f9a6a', off: '#3d6f91', armed: '#8a6d3b', locked: '#666666', excluded: '#5a4a4a' };
@@ -4249,6 +4253,40 @@
   // moved away from (a big reset shrinks everything at once). The layer list's floors are per session for the same
   // reason. The header (a `display-text`, not a component) keeps its own and drops it whenever the tab is off screen.
   var FLOORS_ON = true;
+  // ---- U16: DEVELOPER DETAILS ----------------------------------------------------------------------------------------
+  // ⚖ U16 (user, 2026-09-23): the rule codes (`gain>=2x|stall>=5x/5`), the feature and layer ids, the table's
+  // measurement notes (`provenance`) and the "derived / table / alt" comparisons are for whoever maintains the tables,
+  // not for a player. They are drawn only while this is on — a checkbox at the top of the Advanced view, and
+  // `tmtLoader.setDevDetails(true)` for a gate that reads them. ⚠ A PAGE-SIDE flag, never saved and never stored: it
+  // resets on reload, so a player who ticked it once is not left looking at codes for ever.
+  var DEV = false;
+  T.setDevDetails = function (on) { DEV = !!on; invalidateView(); return DEV; };
+  T.devDetails = function () { return DEV; };
+  /** An availability reason in a player's words: no plan §, no backticks, no "table declares". */
+  function playerWhy(w) {
+    if (w === null || w === undefined) return w;
+    if (DEV) return w;
+    return String(w).replace(/\s*\(plan §[^)]*\)/g, '').replace(/`/g, '').replace(/this game’s table declares no /g, 'this game has no ');
+  }
+  T.playerWhy = playerWhy;
+  /** A layer's own display name, falling back to its id — the name the game shows, never a second naming scheme. */
+  function layerName(l) { try { return layers[l] && layers[l].name ? String(layers[l].name) : String(l); } catch (e) { return String(l); } }
+  /** A policy in words — the strategy's own label with its parameters filled in, then the modifier's label. */
+  function policyWords(kind, p) {
+    if (!p) return '';
+    var S = p.strategy ? byStrategyId(kind, p.strategy) : null;
+    if (!S) return p.inForce || '';
+    var fill = function (label, ps) {
+      var out = label;
+      for (var k in (ps || {})) if (/^[a-z]$/.test(k)) out = out.replace(new RegExp('\\b' + k.toUpperCase() + '\\b', 'g'), String(ps[k]));
+      return out;
+    };
+    var out = fill(S.label, p.params);
+    var M = p.modifier ? byStrategyId(kind, p.modifier.id) : null;
+    if (M) out += ', and “' + fill(M.label, p.modifier.params) + '”';
+    return out;
+  }
+  T.policyWords = policyWords;
   /** The control switch for gates-v5 part 2's CONTROL rows — a page-side flag, never saved. */
   T.setViewFloors = function (on) { FLOORS_ON = !!on; invalidateView(); return FLOORS_ON; };
   T.newFloors = function () { return { w: Object.create(null), g: Object.create(null) }; };
@@ -4299,24 +4337,30 @@
     var bits = '';
     if (r.policy && r.policy.escalated) bits += ' ' + chip('ESCALATED', '#a06a3e');
     if (r.neverFired) bits += ' <span style="color:#c08a3e">⚠ never fired</span>';
-    return line(F, r.id, 'col', '<div class="tmtl-collapsed" style="opacity:' + (r.state === 'on' ? '.85' : '.6') + ';padding:2px 0;text-align:left">' + esc(r.title) + ' <span style="opacity:.6;font-size:.85em">' + esc(r.id) + '</span> — '
-      + chip(r.state.toUpperCase(), STATE_BG[r.state]) + bits + ' <span style="font-size:.9em">' + lastHTML(F, r.id + '|col', r.last) + '</span></div>');
+    // U16: the id is a developer detail, and a reason that only repeats the state word ("LOCKED … Locked") is dropped
+    var echo = r.last && !r.last.parts && String(r.last.text).toLowerCase() === r.state;
+    return line(F, r.id, 'col', '<div class="tmtl-collapsed" style="opacity:' + (r.state === 'on' ? '.85' : '.6') + ';padding:2px 0;text-align:left">' + esc(r.title) + (DEV ? ' <span style="opacity:.6;font-size:.85em">' + esc(r.id) + '</span>' : '') + ' — '
+      + chip(r.state.toUpperCase(), STATE_BG[r.state]) + bits + (echo && !DEV ? '' : ' <span style="font-size:.9em">' + lastHTML(F, r.id + '|col', r.last) + '</span>') + '</div>');
   }
   function featureBlock(r, F) {
     var p = r.policy, bits = [], id = r.id;
-    // ⚠ the table's entry and the generic derivation's shown BESIDE what is in force, and only when they DIFFER —
-    // survey §4.5. Equal values side by side is noise; a difference is the whole reason the table has that row.
-    bits.push('<b>' + esc(p.inForce) + '</b>');
-    // V2: an EDITED feature has to READ as edited, with the answer it would go back to beside it — that is what
-    // makes "one press returns it to the default" a visible offer rather than a guess.
-    if (p.saved) bits.push(chip('EDITED', '#7fb2d9') + ' default ' + esc(p.base));
+    // ⚖ U16: the player reads the strategy IN WORDS (the picker's own label, its numbers filled in); the rule code and
+    // the table / derived / alternative comparisons are developer details (see DEV).
+    bits.push('<b>' + esc(policyWords(r.kind, p)) + '</b>');
+    // V2: an EDITED feature has to READ as edited — "use the default" below is the one press that returns it.
+    if (p.saved) bits.push(chip('EDITED', '#7fb2d9') + (DEV ? ' default ' + esc(p.base) : ' you changed this'));
     if (p.runtime) bits.push(chip('OVERRIDDEN', '#8a6d3b') + ' by a runtime setting');
-    // V3: an ESCALATED feature is visibly different from an EDITED one and from an OVERRIDDEN one, and it names the
-    // rule it came FROM — the stall watch moved it, so the player's own answer has to stay on screen beside it.
+    // V3: an ESCALATED feature is visibly different from an EDITED one and from an OVERRIDDEN one.
     if (p.escalated) bits.push(chip('ESCALATED', '#a06a3e') + ' by the stall watch · its own rule is ' + esc(r.escalation ? r.escalation.primary : '?'));
-    if (p.table !== null && p.table !== p.inForce) bits.push('table says ' + esc(p.table));
-    if (p.derived !== null && p.derived !== p.inForce) bits.push('derived would be ' + esc(p.derived));
-    if (p.alternatives.length) bits.push('alt ' + p.alternatives.map(esc).join(', '));
+    // ⚠ the table's entry and the generic derivation's shown BESIDE what is in force, and only when they DIFFER —
+    // survey §4.5. Developer details since U16.
+    var dev = [];
+    if (DEV) {
+      dev.push('rule <b>' + esc(p.inForce) + '</b>');
+      if (p.table !== null && p.table !== p.inForce) dev.push('table says ' + esc(p.table));
+      if (p.derived !== null && p.derived !== p.inForce) dev.push('derived would be ' + esc(p.derived));
+      if (p.alternatives.length) dev.push('alt ' + p.alternatives.map(esc).join(', '));
+    }
     // ⚠ `text-align:left` ON EVERY DIV, not only on the wrappers, and INHERITANCE IS NOT ENOUGH — measured: the
     // block's own child divs compute `center` with no inline style of their own, so a game's stylesheet is
     // targeting them DIRECTLY and beating what they would have inherited. An inline declaration is what wins.
@@ -4329,8 +4373,10 @@
     // something that is not the thing it is asking about. The class is what it is asking about.
     // ⚠ V5: EVERY LINE BELOW GOES THROUGH `line()`, present or not, so a line that disappears leaves its height.
     var o = ['<div class="tmtl-block" style="border-left:3px solid ' + STATE_BG[r.state] + ';background:rgba(127,178,217,.08);border-radius:4px;padding:6px 8px;margin:0 0 8px 0;text-align:left">'];
-    o.push(line(F, id, 'title', '<div style="text-align:left">' + chip(r.state.toUpperCase(), STATE_BG[r.state]) + ' <b>' + esc(r.title) + '</b> <span style="opacity:.55;font-size:.85em">' + esc(r.id) + '</span></div>'));
-    o.push(line(F, id, 'policy', '<div style="text-align:left;font-size:.9em;opacity:.85">policy ' + bits.join(' · ') + '</div>'));
+    // U16: the state chip only where there is no on/off button beside the block to say it (an EXCLUDED row), or DEV
+    o.push(line(F, id, 'title', '<div style="text-align:left">' + (r.state === 'excluded' || DEV ? chip(r.state.toUpperCase(), STATE_BG[r.state]) + ' ' : '') + '<b>' + esc(r.title) + '</b>' + (DEV ? ' <span style="opacity:.55;font-size:.85em">' + esc(r.id) + '</span>' : '') + '</div>'));
+    o.push(line(F, id, 'policy', '<div style="text-align:left;font-size:.9em;opacity:.85">strategy: ' + bits.join(' · ') + '</div>'));
+    o.push(line(F, id, 'dev', dev.length ? '<div class="tmtl-dev" style="text-align:left;font-size:.85em;opacity:.65">' + dev.join(' · ') + '</div>' : ''));
     // ---- V4: the two PREDICATE controls and the priority, in the READ-ONLY half -------------------------------------
     // ⚠ WHOSE PREDICATE IT IS is on the line, for the reason the reason code carries it: the slot has four possible
     // sources and "gate X" could not tell a player whether they had typed X themselves.
@@ -4341,18 +4387,19 @@
     var wl = '';
     if (ctl && ctl['while'].value) wl = '<div style="text-align:left;font-size:.9em;opacity:.85">acts only while <code>' + esc(ctl['while'].value) + '</code> <span style="opacity:.7">(' + esc(CTL_WORD[ctl['while'].owner] || ctl['while'].owner) + ')</span>'
       + (ctl['while'].error ? ' <span style="color:#d07a7a">⚠ ' + esc(ctl['while'].error) + '</span>' : ctl['while'].holds === false ? ' <span style="color:#c08a3e">— false now</span>' : '') + '</div>';
-    else if (r.gate) wl = '<div style="text-align:left;font-size:.9em;opacity:.85">gate <code>' + esc(r.gate) + '</code></div>';
+    else if (r.gate) wl = '<div style="text-align:left;font-size:.9em;opacity:.85">waits for <code>' + esc(r.gate) + '</code> <span style="opacity:.7">(the game’s table)</span></div>';
     o.push(line(F, id, 'while', wl));
     o.push(line(F, id, 'until', ctl && ctl.until.value ? '<div style="text-align:left;font-size:.9em;opacity:.85">stops once <code>' + esc(ctl.until.value) + '</code> <span style="opacity:.7">(' + esc(CTL_WORD[ctl.until.owner] || ctl.until.owner) + ')</span>'
       + (ctl.until.error ? ' <span style="color:#d07a7a">⚠ ' + esc(ctl.until.error) + '</span>' : ctl.until.stopped ? ' <span style="color:#c08a3e">— STOPPED at ' + esc(ctl.until.hitAt) + ' s</span>' : '') + '</div>' : ''));
-    o.push(line(F, id, 'prio', ctl && ctl.priority.owner ? '<div style="text-align:left;font-size:.9em;opacity:.85">priority <b>' + esc(ctl.priority.effective) + '</b> <span style="opacity:.7">(' + esc(CTL_WORD[ctl.priority.owner] || ctl.priority.owner) + '; its kind’s place is ' + esc(ctl.priority.kindPlace) + ') — within this layer only</span></div>' : ''));
-    o.push(line(F, id, 'after', r.after && r.after.length ? '<div style="text-align:left;font-size:.9em;opacity:.85">after ' + r.after.map(esc).join(', ') + '</div>' : ''));
+    o.push(line(F, id, 'prio', ctl && ctl.priority.owner ? '<div style="text-align:left;font-size:.9em;opacity:.85">priority <b>' + esc(ctl.priority.effective) + '</b> <span style="opacity:.7">(' + esc(CTL_WORD[ctl.priority.owner] || ctl.priority.owner) + (DEV ? '; its kind’s place is ' + esc(ctl.priority.kindPlace) : '') + ') — within this layer only</span></div>' : ''));
+    // `after` is the table's unlockOrder: this reset waits until those sibling layers are unlocked (`blocked:after`)
+    o.push(line(F, id, 'after', r.after && r.after.length ? '<div style="text-align:left;font-size:.9em;opacity:.85">waits until ' + r.after.map(function (l) { return esc(layerName(l)) + (DEV ? ' <span style="opacity:.6">' + esc(l) + '</span>' : ''); }).join(', ') + (r.after.length > 1 ? ' are' : ' is') + ' unlocked</div>' : ''));
     o.push(line(F, id, 'now', '<div style="text-align:left;margin-top:3px"><b>now:</b> ' + (r.last ? lastHTML(F, id + '|now', r.last) : 'nothing decided yet') + '</div>'));
     // ⚠ V5: `last at` IS ROUNDED TO A TENTH. It printed the raw float (`115100.98603999999 s`), whose length changed
     // with the float noise from one act to the next — a line that re-wrapped for no reason a player could see.
-    o.push(line(F, id, 'acted', '<div style="text-align:left;font-size:.9em;opacity:.7">acted ' + numHTML(F, id + '|acted', r.acted)
-      + (r.lastActedAt === null ? '' : ' · last at ' + numHTML(F, id + '|lastAt', r1(r.lastActedAt)) + ' s')
-      + (r.eligibleFor === null ? '' : ' · on for ' + numHTML(F, id + '|onFor', r.eligibleFor) + ' s') + '</div>'));
+    o.push(line(F, id, 'acted', '<div style="text-align:left;font-size:.9em;opacity:.7">acted ' + numHTML(F, id + '|acted', r.acted) + ' time(s)'
+      + (r.lastActedAt === null ? '' : ' · most recently at ' + numHTML(F, id + '|lastAt', r1(r.lastActedAt)) + ' s of game time')
+      + (r.eligibleFor === null ? '' : ' · able to act for ' + numHTML(F, id + '|onFor', r.eligibleFor) + ' s') + '</div>'));
     o.push(line(F, id, 'never', r.neverFired ? '<div style="text-align:left;font-size:.9em;color:#c08a3e">⚠ never fired — on and unlocked this whole time, and it has never acted</div>' : ''));
     var el = '';
     if (r.escalation && r.escalation.rung) el = '<div style="text-align:left;font-size:.9em;color:#c08a3e">the stall watch has this feature on rung ' + r.escalation.rung + ' of ' + r.escalation.of
@@ -4361,7 +4408,10 @@
     o.push(line(F, id, 'esc', el));
     // ⚠ AUTHOR-WRITTEN TEXT THROUGH `v-html`. Escaped, like every other table string above (`off` reasons, gate
     // predicates) and like the GAME's own layer names and feature titles.
-    o.push(line(F, id, 'prov', r.provenance ? '<div style="text-align:left;font-size:.85em;opacity:.65;font-style:italic;margin-top:3px">' + esc(r.provenance) + '</div>' : ''));
+    // ⚖ U16: the table's notes are measurement records (gate ids, commits, ladder marks). What a player can use from
+    // them is one fact — this default was chosen by testing it on this game — and the record is a developer detail.
+    o.push(line(F, id, 'prov', !r.provenance ? '' : DEV ? '<div style="text-align:left;font-size:.85em;opacity:.65;font-style:italic;margin-top:3px">' + esc(r.provenance) + '</div>'
+      : '<div class="tmtl-prov-plain" style="text-align:left;font-size:.85em;opacity:.65;margin-top:3px">ⓘ this game’s default was chosen by testing it on this game — <i>show developer details</i> has the measurements</div>'));
     o.push('</div>');
     return o.join('');
   }
@@ -4450,7 +4500,9 @@
     var F = HDR_F;
     return '<div class="tmtl-root" style="' + ROOT_STYLE + '">'
       + '<div style="opacity:.75;font-size:.9em;margin-bottom:6px;text-align:left">' + esc(ADV_INTRO) + '</div>'
-      + line(F, '', 'hdr', '<div style="margin-bottom:4px;text-align:left">Profile <b>' + esc(T.profileName) + '</b> · ' + numHTML(F, 'hdr.run', running) + ' of ' + numHTML(F, 'hdr.all', rows.length) + ' running'
+      // U16: the PROFILE is a harness lever (`?profile=`); a player only needs to hear about it when the address set one
+      + line(F, '', 'hdr', '<div style="margin-bottom:4px;text-align:left">' + numHTML(F, 'hdr.run', running) + ' of ' + numHTML(F, 'hdr.all', rows.length) + ' features running'
+      + (T.profileName && T.profileName !== 'saved' ? ' · the page’s address sets profile “' + esc(T.profileName) + '”' : '')
       + (never ? ' · <b style="color:#c08a3e">' + numHTML(F, 'hdr.never', never) + ' never fired</b>' : '')
       + (edited ? ' · <b style="color:#7fb2d9">' + numHTML(F, 'hdr.edited', edited) + ' edited</b>' : '')
       + (escalated ? ' · <b style="color:#a06a3e">' + numHTML(F, 'hdr.esc', escalated) + ' escalated</b>' : '') + '</div>') + '</div>';
@@ -4615,7 +4667,18 @@
     'tmtl-select': {
       props: ['data'],
       data: function () { return { error: null }; },
+      computed: {
+        // ⚖ U16: the chosen strategy's own one-sentence help, ON SCREEN — it was only a hover title, which a phone
+        // never shows. Not for a helper pick-list (`control`), whose options are predicates, not strategies.
+        help: function () {
+          if (this.data.control) return '';
+          var os = this.data.options || [];
+          for (var i = 0; i < os.length; i++) if (os[i].id === this.data.value) return os[i].help || '';
+          return '';
+        },
+      },
       methods: {
+        why: function (o) { return T.playerWhy(o.why); },
         onChange: function (e) {
           // ⚠ V4 — THE HELPER PICK-LIST. It does NOT introduce a second language: it WRITES predicate TEXT into the
           // same saved field the text box edits, where it stays fully editable. Picking the blank first option is a
@@ -4634,8 +4697,9 @@
       template: '<span style="display:inline-block;text-align:left;max-width:100%">'
         + '<select class="tmtl-select" :data-fid="data.fid" :data-rung="data.rung || 0" :data-control="data.control || null" :value="data.value" style="' + SELECT_STYLE + '"'
         + ' @change="onChange" @keydown.stop @keyup.stop>'
-        + '<option v-for="o in data.options" :value="o.id" :disabled="!o.available">{{ o.label }}{{ o.available ? \'\' : \' — \' + o.why }}</option>'
+        + '<option v-for="o in data.options" :value="o.id" :disabled="!o.available" :title="o.help || null">{{ o.label }}{{ o.available ? \'\' : \' — not available: \' + why(o) }}</option>'
         + '</select>'
+        + '<span v-if="help" class="tmtl-help" style="display:block;text-align:left;opacity:.7;font-size:.85em;white-space:normal">{{ help }}</span>'
         + '<span v-if="error" class="tmtl-error" style="color:#d07a7a;font-size:.85em;display:block">{{ error }}</span>'
         + '</span>',
     },
@@ -4741,7 +4805,7 @@
         },
         helperOptions: function () {
           var hs = T.predicateHelpers(this.data.row.id);
-          return [{ id: '', label: 'suggestions — pick one to fill the box', available: true }]
+          return [{ id: '', label: 'pick a suggestion to fill the box…', available: true }]
             .concat(hs.map(function (h) { return { id: h.src, label: h.label, available: true }; }));
         },
       },
@@ -4761,7 +4825,7 @@
       },
       data: function () { return { rungError: null, ctlError: null, refused: false }; },
       template: '<div style="text-align:left">'
-        + '<h3 v-if="data.head" style="margin:14px 0 4px 0;text-align:left">{{ data.layerName }} <span style="opacity:.5;font-size:.7em">{{ data.row.layer }}</span></h3>'
+        + '<h3 v-if="data.head" style="margin:14px 0 4px 0;text-align:left">{{ data.layerName }} <span v-if="data.dev" style="opacity:.5;font-size:.7em">{{ data.row.layer }}</span></h3>'
         // ⚖ Q1: every block collapses, one press each. The chevron is BESIDE the block rather than inside the HTML,
         // because the block is a `v-html` string and a handler cannot live in one.
         + '<div style="display:flex;align-items:flex-start;gap:4px;text-align:left">'
@@ -4790,6 +4854,10 @@
         +   '<div v-if="mods.length" style="text-align:left;font-size:.9em">'
         +     '<button v-for="m in modRows" :key="m.id" type="button" class="tmtl-mod" :data-fid="data.row.id" :data-mod="m.id" :data-on="m.on ? 1 : 0" style="' + BTN_STYLE + '" :title="m.help" @click="toggleMod(m.id)" @keydown.stop>{{ (m.on ? \'remove \' : \'add \') + \'“\' + m.label + \'”\' }}</button>'
         +     '<span v-if="modReadout" class="tmtl-modread" style="opacity:.7;margin-left:6px" v-html="modReadout"></span>'
+        // ⚖ U16: what each of these buttons does, in the table's own help sentences — collapsed, since it is a block
+        +     '<details class="tmtl-mod-help" style="text-align:left;opacity:.8;font-size:.9em"><summary style="text-align:left;cursor:pointer">what these extra rules do</summary>'
+        +       '<div v-for="m in modRows" :key="m.id" style="text-align:left;margin:2px 0 2px 8px"><b>{{ m.label }}</b> — {{ m.help }}</div>'
+        +     '</details>'
         +   '</div>'
         // ---- the per-feature CONTROLS (V4): the pause, the stop and the priority ----------------------------------
         // ⚖ §13b, the user's own two requests. ⚠ Every press carries `@keydown.stop`, and the text boxes are
@@ -4803,14 +4871,20 @@
         +       '<span v-else-if="c.name === \'while\' && c.value && c.holds === false" style="color:#c08a3e"> — false now, so this feature is paused</span>'
         +       '<span v-if="c.stopped" style="color:#c08a3e"> — STOPPED at {{ c.hitAt }} s</span>'
         +       '<button v-if="c.stopped" type="button" class="tmtl-rearm" :data-fid="data.row.id" style="' + BTN_STYLE + ';margin-left:4px" @click="rearm" @keydown.stop>re-arm it</button>'
-        +       '<span v-if="c.name === \'priority\'" style="opacity:.6;display:block">its kind’s place is {{ c.kindPlace }} · this orders THIS layer’s features only — the engine decides in what order layers run</span>'
+        +       '<span v-if="c.name === \'priority\'" style="opacity:.6;display:block;text-align:left">1 runs first. This orders the features of this layer only; the layers themselves run in the game’s own order.<span v-if="data.dev"> (its kind’s place is {{ c.kindPlace }})</span></span>'
         +       '<tmtl-select v-if="c.type === \'predicate\'" :data="{fid: data.row.id, control: c.name, value: \'\', options: helperOptions}"></tmtl-select>'
         +     '</div>'
         +     '<span v-if="ctlError" class="tmtl-error" style="color:#d07a7a">{{ ctlError }}</span>'
+        // ⚖ U16: what the two conditions mean and what goes in the box — collapsed, since it is a block of text
+        +     '<details class="tmtl-ctl-help" style="text-align:left;opacity:.8"><summary style="text-align:left;cursor:pointer">about these conditions</summary>'
+        +       '<div style="text-align:left;margin:2px 0 2px 8px"><b>act only while</b> — the feature pauses whenever this is false, and carries on when it is true again.</div>'
+        +       '<div style="text-align:left;margin:2px 0 2px 8px"><b>stop once</b> — the feature stops for good the first time this is true, until you press <i>re-arm it</i>.</div>'
+        +       '<div style="text-align:left;margin:2px 0 2px 8px">Both take a condition on the game’s state, such as <code>player.p.points.gte(100)</code>. Pick a suggestion from the list to fill the box, then edit it — a number in it is yours to change. Leave the box empty for no condition.</div>'
+        +     '</details>'
         +   '</div>'
         // ---- the ESCALATION LIST (V3): the rungs the stall watch would try, in order ------------------------------
         +   '<div v-if="esc" class="tmtl-esc" :data-fid="data.row.id" style="text-align:left;font-size:.9em;margin-top:4px;border-top:1px dashed rgba(127,178,217,.35);padding-top:3px">'
-        +     '<div style="opacity:.75">if the game stalls, try in order <span v-if="!esc.typed" style="opacity:.7">(derived — nothing typed here yet)</span>'
+        +     '<div style="opacity:.75">if the stall watch finds the game stuck, it tries these strategies in order <span v-if="!esc.typed" style="opacity:.7">(the default list)</span>'
         +       '<button v-if="esc.typed" type="button" class="tmtl-esc-default" :data-fid="data.row.id" style="' + BTN_STYLE + ';margin-left:6px" @click="listToDefault" @keydown.stop>use the derived list</button>'
         +     '</div>'
         +     '<div v-for="g in rungs" :key="g.key" class="tmtl-rung" :data-fid="data.row.id" :data-rung="g.n" style="text-align:left;padding:1px 0">'
@@ -4860,14 +4934,21 @@
         // game-seconds against the control's six. The one-sentence reason is the mechanism, not the number, because
         // the number is about one game and the mechanism is about every patient default there is.
         // ⚠ The behaviour is UNCHANGED by this slice; its own sweep is a later one.
-        + '<div class="tmtl-watch-warn" style="text-align:left;color:#c08a3e;font-size:.9em;margin-bottom:3px">'
-        +   '<b>experimental — not a safety net.</b> <span style="opacity:.85">' + esc(WATCH_WARN) + '</span>'
-        + '</div>'
+        // ⚖ U16: one line saying what the watch is, the buttons worded as what a press DOES, and the warning — a block
+        // of text — collapsed under them. ⚠ `.tmtl-watch-warn` keeps its class and its "experimental — not a safety
+        // net" (gates-v4 reads its textContent, which a closed <details> still has).
+        + '<div style="text-align:left;margin-bottom:3px"><b>Stall watch</b> <span style="color:#c08a3e">(experimental)</span> — when the game stops making progress, it switches waiting features to other strategies.</div>'
         + '<div style="text-align:left">'
-        +   '<button type="button" class="tmtl-watch-toggle" :data-on="w.on ? 1 : 0" style="' + BTN_STYLE + '" @click="toggleWatch" @keydown.stop>{{ w.on ? \'the stall watch is ON\' : \'the stall watch is off\' }}</button>'
-        +   '<button v-if="!w.on" type="button" class="tmtl-track-toggle" :data-on="w.options.saved.track ? 1 : 0" style="' + BTN_STYLE + ';margin-left:4px" @click="toggleTrack" @keydown.stop>{{ w.options.saved.track ? \'progress tracker ON\' : \'progress tracker off\' }}</button>'
+        +   '<button type="button" class="tmtl-watch-toggle" :data-on="w.on ? 1 : 0" style="' + BTN_STYLE + '" @click="toggleWatch" @keydown.stop>{{ w.on ? \'turn the stall watch off\' : \'turn the stall watch on\' }}</button>'
+        +   '<button v-if="!w.on" type="button" class="tmtl-track-toggle" :data-on="w.options.saved.track ? 1 : 0" style="' + BTN_STYLE + ';margin-left:4px" @click="toggleTrack" @keydown.stop>{{ w.options.saved.track ? \'stop tracking progress\' : \'track progress only\' }}</button>'
         +   '<span style="opacity:.8;margin-left:6px" v-html="wText"></span>'
         + '</div>'
+        + '<details class="tmtl-watch-more" style="text-align:left;font-size:.9em;margin-top:3px"><summary style="text-align:left;cursor:pointer;color:#c08a3e">before you turn it on</summary>'
+        +   '<div class="tmtl-watch-warn" style="text-align:left;color:#c08a3e;margin:2px 0 2px 8px">'
+        +     '<b>experimental — not a safety net.</b> <span style="opacity:.85">' + esc(WATCH_WARN) + '</span>'
+        +   '</div>'
+        +   '<div style="text-align:left;opacity:.8;margin:2px 0 2px 8px"><i>track progress only</i> records what the game unlocks and buys for the first time — the Progress tab lists it — without changing any feature.</div>'
+        + '</details>'
         + '<div v-if="w.on" style="text-align:left"><tmtl-number v-for="f in fields" :key="f.key" :data="f"></tmtl-number></div>'
         + '<div v-if="w.on && w.escalated.length" style="text-align:left;color:#c08a3e">escalated: <span v-for="e in w.escalated" :key="e.id">{{ e.id }} \u2192 {{ e.policy }} (rung {{ e.rung }} of {{ e.of }}) </span></div>'
         + '<span v-if="error" class="tmtl-error" style="color:#d07a7a;font-size:.85em;display:block">{{ error }}</span>'
@@ -4948,6 +5029,7 @@
             return { key: e.key + '@' + e.at, at: e.at, what: PROG_LABEL[e.kind] || e.kind, layerName: name, layer: e.layer, id: e.id, marks: e.marks };
           });
           p.watch = T.watchState();
+          p.dev = T.devDetails();
           return p;
         },
       },
@@ -4970,7 +5052,7 @@
         +   '<div v-if="p.dropped" style="text-align:left;font-size:.85em;opacity:.7">showing the newest {{ p.cap }} \u2014 {{ p.dropped }} older event(s) are counted above and not listed</div>'
         +   '<div v-for="r in p.rows" :key="r.key" class="tmtl-prog-row" style="text-align:left;padding:1px 0;border-bottom:1px solid rgba(127,178,217,.12)">'
         +     '<span style="opacity:.65;font-size:.85em">{{ r.at }} s</span> '
-        +     '<b>{{ r.layerName }}</b> <span style="opacity:.55;font-size:.85em">{{ r.layer }}</span> '
+        +     '<b>{{ r.layerName }}</b> <span v-if="p.dev" style="opacity:.55;font-size:.85em">{{ r.layer }}</span> '
         +     '<span>{{ r.what }}</span><span v-if="r.id !== null"> {{ r.id }}</span>'
         +     '<span v-if="r.marks" style="color:#7fb2d9"> \u2014 {{ r.marks.join(", ") }}</span>'
         +   '</div>'
@@ -5009,6 +5091,8 @@
           this.gen++;
         },
         pressAll: function () { T.pressAll(); this.gen++; },
+        // U16: the developer-details switch — page-side, never saved (see DEV)
+        setDev: function () { T.setDevDetails(!T.devDetails()); this.gen++; },
         isFolded: function (id) {
           if (this.fold[id] !== undefined) return this.fold[id];
           var c = T.collapsed(id);
@@ -5029,7 +5113,7 @@
             var l = rows[i].layer;
             var name = l;
             try { name = layers[l] && layers[l].name ? String(layers[l].name) : l; } catch (e) { name = l; }
-            out.push({ row: rows[i], head: l !== prev, layerName: name, clock: clock, gen: gen, collapsed: this.isFolded(rows[i].id), fl: this.fl });
+            out.push({ row: rows[i], head: l !== prev, layerName: name, clock: clock, gen: gen, collapsed: this.isFolded(rows[i].id), fl: this.fl, dev: T.devDetails() });
             prev = l;
           }
           return out;
@@ -5041,9 +5125,22 @@
         rowsNow: function () { return this.blocks.map(function (b) { return b.row; }); },
         folded: function () { var b = this.blocks, n = 0; for (var i = 0; i < b.length; i++) if (b[i].collapsed) n++; return n; },
         allText: function () { void this.blocks; return T.allFeaturesDisplay(); },
+        dev: function () { void this.gen; return T.devDetails(); },
       },
       template: '<div class="tmtl-root" style="' + ROOT_STYLE + '">'
-        + '<tmtl-watch :data="{watch: watch, fl: floors}"></tmtl-watch>'
+        // ⚖ U16: how the tab works, collapsed — and the developer-details switch beside it
+        + '<details class="tmtl-howto" style="text-align:left;margin-bottom:6px;font-size:.9em"><summary style="text-align:left;cursor:pointer">how this works</summary>'
+        +   '<div style="text-align:left;margin:2px 0 2px 8px">Each <b>feature</b> is one job the automation can do in one layer: reset it, buy its upgrades or buyables, switch its milestones, run its challenges or press its clickables. It only ever presses the game’s own buttons — nothing in the game is changed.</div>'
+        +   '<div style="text-align:left;margin:2px 0 2px 8px">The <b>strategy</b> decides when a feature acts. Every feature starts on a default; change it in the feature’s block, and <i>use the default</i> puts it back. The sentence under the strategy list says what the chosen strategy does.</div>'
+        +   '<div style="text-align:left;margin:2px 0 2px 8px">A feature can also be given <b>conditions</b> (<i>act only while</i>, <i>stop once</i>) and a <b>priority</b> within its layer. Features that are not unlocked yet are shown as one line; switch one on and it starts by itself when the game unlocks it.</div>'
+        +   '<div style="text-align:left;margin:2px 0 2px 8px"><i>reset the automation settings</i>, at the bottom, puts every feature back to how a new save has it. Your game itself is never touched.</div>'
+        + '</details>'
+        // ⚠ A BUTTON, NOT A CHECKBOX: a 13 px checkbox is a tap target smaller than any this tab had, and gates-v5
+        // part 1 holds every one to its pre-V5 size (a phone needs the 44 px the mobile layout gives a button)
+        + '<div style="text-align:left;margin-bottom:6px">'
+        +   '<button type="button" class="tmtl-dev-toggle" :data-on="dev ? 1 : 0" style="' + BTN_STYLE + '" @click="setDev" @keydown.stop>{{ dev ? \'hide developer details\' : \'show developer details\' }}</button>'
+        +   '<span style="opacity:.6;margin-left:6px;font-size:.85em">rule codes, ids and the measurements behind each default</span>'
+        + '</div>'
         // ⚖ Q1's second half: expand all / collapse all, and they set EVERY block including the ones whose default is
         // the other way — `collapse all` then `expand all` has to be reachable from any state.
         // ⚖ V6 (Q5): the grid's `All features` press — the SAME onClick (`toggleAll`, U4's arming semantics included)
@@ -5058,6 +5155,9 @@
         +   '<span style="opacity:.7;margin-left:6px">{{ folded }} of {{ blocks.length }} collapsed</span>'
         + '</div>'
         + '<tmtl-feature v-for="b in blocks" :key="b.row.id" :data="b" @toggle="toggle" @pressed="gen++"></tmtl-feature>'
+        // ⚖ U16: the stall watch sits under the features it acts on — it is experimental, and the first thing on the
+        // tab was a long warning about something a player had not switched on
+        + '<tmtl-watch :data="{watch: watch, fl: floors}"></tmtl-watch>'
         // ⚠ LAST, under every block: it is the one control here that cannot be undone.
         + '<tmtl-reset :data="{rows: rowsNow, watch: watch}"></tmtl-reset>'
         + '</div>',
