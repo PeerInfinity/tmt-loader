@@ -4047,6 +4047,9 @@
         escalation: escalationOf(f),
         last: f.last ? lastRow(f.last) : null,
         acted: acted, lastActedAt: f.lastActedAt,
+        // U17 (⚖ user, 2026-09-23): how long AGO it last acted, on the same clock — "at 115100 s of game time" asks the
+        // player to subtract; the view renders this and computes nothing of its own (V1's rule)
+        sinceActed: f.lastActedAt === null ? null : Math.round((now - f.lastActedAt) * 10) / 10,
         // on + unlocked for long enough, and it has still never done anything. A configuration that CANNOT fire is
         // survey §4.6, and it is the one thing a list of reasons cannot say by itself: every individual reason is
         // reasonable, and the feature is dead anyway.
@@ -4067,7 +4070,7 @@
         policy: { inForce: null, table: null, derived: null, alternatives: [], saved: null, runtime: null, base: null, escalated: null, strategy: null, params: null, modifier: null },
         stall: null, escalation: null, control: null,
         last: { code: 'off:excluded', text: codeText('off:excluded', { reason: T.autoExcluded[id] }), values: { reason: T.autoExcluded[id] }, tick: T.ticks, at: now },
-        acted: 0, lastActedAt: null, neverFired: false, eligibleFor: null,
+        acted: 0, lastActedAt: null, sinceActed: null, neverFired: false, eligibleFor: null,
         gate: null, after: [],
         provenance: (T.autoProvenance && T.autoProvenance[id]) || null,
       });
@@ -4398,7 +4401,7 @@
     // ⚠ V5: `last at` IS ROUNDED TO A TENTH. It printed the raw float (`115100.98603999999 s`), whose length changed
     // with the float noise from one act to the next — a line that re-wrapped for no reason a player could see.
     o.push(line(F, id, 'acted', '<div style="text-align:left;font-size:.9em;opacity:.7">acted ' + numHTML(F, id + '|acted', r.acted) + ' time(s)'
-      + (r.lastActedAt === null ? '' : ' · most recently at ' + numHTML(F, id + '|lastAt', r1(r.lastActedAt)) + ' s of game time')
+      + (r.sinceActed === null || r.sinceActed === undefined ? '' : ' · last ' + numHTML(F, id + '|since', r.sinceActed) + ' s ago')
       + (r.eligibleFor === null ? '' : ' · able to act for ' + numHTML(F, id + '|onFor', r.eligibleFor) + ' s') + '</div>'));
     o.push(line(F, id, 'never', r.neverFired ? '<div style="text-align:left;font-size:.9em;color:#c08a3e">⚠ never fired — on and unlocked this whole time, and it has never acted</div>' : ''));
     var el = '';

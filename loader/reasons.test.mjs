@@ -469,3 +469,20 @@ test('CONSTRUCTED: waiting:stall-yield — stalled, and another stalled feature 
   assert.equal(r.last.values.layer, 'b', 'it yielded to the wrong feature');
   assert.deepEqual(ctx.resets, ['b'], `only the closest may fire: ${JSON.stringify(ctx.resets)}`);
 });
+
+// U17 (⚖ user, 2026-09-23): the Advanced view says how long AGO a feature last acted, not the game-clock time it
+// acted at. The row carries it on the SAME clock as `lastActedAt` (`player.timePlayed`), so the view computes nothing.
+test('sinceActed is the game-seconds since the feature last acted, and null until it has', () => {
+  const ctx = boot({ options: { neverFiredSeconds: '10' } });
+  ctx.player.a.points = new Decimal(100);          // so `upgrades:a` acts; `reset:a` never does
+  tick(ctx, 5);
+  assert.equal(rowOf(ctx, 'reset:a').sinceActed, null, 'a feature that never acted has no "ago"');
+  const r = rowOf(ctx, 'upgrades:a');
+  assert.ok(r.acted > 0 && r.lastActedAt !== null, 'the control feature never acted, so it proves nothing');
+  const now = Number(ctx.player.timePlayed);
+  assert.equal(r.sinceActed, Math.round((now - r.lastActedAt) * 10) / 10);
+  tick(ctx, 20);                                   // nothing left to buy: the clock moves, the last act does not
+  const r2 = rowOf(ctx, 'upgrades:a');
+  assert.ok(r2.sinceActed >= r.sinceActed, `the "ago" did not grow (${r.sinceActed} → ${r2.sinceActed})`);
+  assert.equal(r2.sinceActed, Math.round((Number(ctx.player.timePlayed) - r2.lastActedAt) * 10) / 10);
+});
