@@ -4411,7 +4411,7 @@
     // ⚖ U16: the table's notes are measurement records (gate ids, commits, ladder marks). What a player can use from
     // them is one fact — this default was chosen by testing it on this game — and the record is a developer detail.
     o.push(line(F, id, 'prov', !r.provenance ? '' : DEV ? '<div style="text-align:left;font-size:.85em;opacity:.65;font-style:italic;margin-top:3px">' + esc(r.provenance) + '</div>'
-      : '<div class="tmtl-prov-plain" style="text-align:left;font-size:.85em;opacity:.65;margin-top:3px">ⓘ this game’s default was chosen by testing it on this game — “show developer details” has the measurements</div>'));
+      : '<div class="tmtl-prov-plain" style="text-align:left;font-size:.85em;opacity:.65;margin-top:3px">ⓘ this game’s default was chosen by testing it on this game — <i>show developer details</i> has the measurements</div>'));
     o.push('</div>');
     return o.join('');
   }
@@ -5092,7 +5092,7 @@
         },
         pressAll: function () { T.pressAll(); this.gen++; },
         // U16: the developer-details switch — page-side, never saved (see DEV)
-        setDev: function (e) { T.setDevDetails(!!e.target.checked); this.gen++; },
+        setDev: function () { T.setDevDetails(!T.devDetails()); this.gen++; },
         isFolded: function (id) {
           if (this.fold[id] !== undefined) return this.fold[id];
           var c = T.collapsed(id);
@@ -5135,9 +5135,12 @@
         +   '<div style="text-align:left;margin:2px 0 2px 8px">A feature can also be given <b>conditions</b> (<i>act only while</i>, <i>stop once</i>) and a <b>priority</b> within its layer. Features that are not unlocked yet are shown as one line; switch one on and it starts by itself when the game unlocks it.</div>'
         +   '<div style="text-align:left;margin:2px 0 2px 8px"><i>reset the automation settings</i>, at the bottom, puts every feature back to how a new save has it. Your game itself is never touched.</div>'
         + '</details>'
-        + '<label class="tmtl-dev-toggle" style="display:block;text-align:left;margin-bottom:6px;font-size:.85em;opacity:.8;cursor:pointer">'
-        +   '<input type="checkbox" :checked="dev" @change="setDev" @keydown.stop style="vertical-align:middle;margin:0 4px 0 0"> show developer details <span style="opacity:.7">(rule codes, ids and the measurements behind each default)</span>'
-        + '</label>'
+        // ⚠ A BUTTON, NOT A CHECKBOX: a 13 px checkbox is a tap target smaller than any this tab had, and gates-v5
+        // part 1 holds every one to its pre-V5 size (a phone needs the 44 px the mobile layout gives a button)
+        + '<div style="text-align:left;margin-bottom:6px">'
+        +   '<button type="button" class="tmtl-dev-toggle" :data-on="dev ? 1 : 0" style="' + BTN_STYLE + '" @click="setDev" @keydown.stop>{{ dev ? \'hide developer details\' : \'show developer details\' }}</button>'
+        +   '<span style="opacity:.6;margin-left:6px;font-size:.85em">rule codes, ids and the measurements behind each default</span>'
+        + '</div>'
         // ⚖ Q1's second half: expand all / collapse all, and they set EVERY block including the ones whose default is
         // the other way — `collapse all` then `expand all` has to be reachable from any state.
         // ⚖ V6 (Q5): the grid's `All features` press — the SAME onClick (`toggleAll`, U4's arming semantics included)
