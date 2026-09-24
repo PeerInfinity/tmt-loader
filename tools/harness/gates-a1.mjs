@@ -42,6 +42,9 @@ const noAuto = PART === '1';
 const commit = headCommit(), dirty = treeDirty();
 const date = new Date().toISOString().slice(0, 19) + 'Z';
 const rows = [];
+// ⚖ U16: which ids' player view actually had a table note to replace — the per-game check is an equality, so the
+// question "did anything exercise it at all?" belongs to the RUN, and is answered once, after the loop.
+const provSeen = [];
 const row = (r) => { rows.push(r); console.log(`${r.ok ? 'GREEN' : 'RED  '} ${r.gate} ${r.id} ${r.leg || ''} ticks=${r.ticks ?? '-'} gs=${r.gameSeconds ?? '-'} diff=${r.diff ?? '-'} hash=${r.hash ?? '-'} ${r.notes || ''}`); };
 const base0 = { 'no-auto': noAuto || undefined };
 
@@ -106,6 +109,14 @@ try {
       } finally { await context.close(); }
     }
     if (!noAuto) { await part2Page(id); await part2Arm(id); await part2Advanced(id); }
+  }
+  // ⚖ U16: the player view's provenance replacement, asked of the RUN. A run in which no game had a note to
+  // replace has not tested that line — and saying so is the difference between a green and a green that means
+  // something. (A single-game run on a game with no notes therefore goes red HERE, on purpose.)
+  if (PART === '2' && provSeen.length) {
+    const with_ = provSeen.filter(([, n]) => n > 0);
+    row({ gate: 'A1-2 the PLAYER view’s table notes were exercised by this run', id: provSeen.map(([i]) => i).join('+'), ok: with_.length > 0, ticks: 0, gameSeconds: 0, diff: null, hash: null,
+      notes: with_.length ? `${with_.map(([i, n]) => `${i} ${n}`).join(', ')} note(s) on drawn rows` : `no game in this run drew a block carrying a table note (${provSeen.map(([i, n]) => `${i} ${n}`).join(', ')}) — the replacement is untested here` });
   }
 } finally {
   await browser.close();
@@ -418,6 +429,13 @@ async function part2Advanced(id) {
   const notes = [];
   let ok = true;
   const check = (c, w) => { if (!c) ok = false; notes.push(`${c ? '✓' : '✗'} ${w}`); };
+  // ⚖ U16 (this file's OWN rework, agreed with the automation arc 2026-09-23): the player view gets its own ROW,
+  // not extra checks on the row above, because the two read DIFFERENT VIEWS of the same tab and a reader has to be
+  // able to see which one went red. It starts RED: a throw anywhere before the pass leaves `NOT RUN` in the summary
+  // rather than a row that quietly never happened.
+  const notes2 = ['✗ NOT RUN — the leg threw before the player-view pass'];
+  let ok2 = false;
+  const check2 = (c, w) => { if (!c) ok2 = false; notes2.push(`${c ? '✓' : '✗'} ${w}`); };
   try {
     const page = await context.newPage();
     await page.setViewportSize({ width: 390, height: 844 });   // the phone width the brief names
@@ -441,10 +459,86 @@ async function part2Advanced(id) {
 
     // run the game a little so there is something to say, then select Advanced the way the engine's button does
     await page.evaluate(() => tmtLoader.tick(1, 300));
-    // ⚖ U16: ids, rule codes and the table's notes are DEVELOPER DETAILS, drawn only while the switch is on — and
-    // render ≡ headless below is a comparison of exactly those, so this leg reads the view with them shown
-    await page.evaluate(() => tmtLoader.setDevDetails(true));
     await page.evaluate(() => { player.subtabs[tmtLoader.auLayer].mainTabs = 'Advanced'; });
+    await redraw();
+    await page.waitForTimeout(300);
+
+    // ---- THE PLAYER VIEW, which is the DEFAULT one -------------------------------------------------------------
+    // ⚠ EVERYTHING BELOW THIS PASS READS A VIEW A PLAYER NEVER SEES. U16 moved the ids, the rule codes, the
+    // table / derived / alternative comparisons and the measurement notes behind a switch that starts OFF, and the
+    // three legs that compare render ≡ headless turn it ON because those are exactly the things they compare. That
+    // left the default view asserted by nothing — the gap tmt-automation-planning-2 named when the switch landed.
+    // The pass runs FIRST, on the same boot, before the switch is ever touched: a leg that flipped it back would be
+    // reading a view that had been in the other state, and the collapse / floor state is per-instance.
+    //
+    // What it holds, all of it derived from `explain()` rather than typed here:
+    //   ① the switch really is off on a fresh boot — otherwise every check below passes on the dev view;
+    //   ② one block per runnable feature, each with the on/off button that carries its state word (in the player
+    //      view the block no longer names its own id, so the button's `data-fid` is the only hook there is);
+    //   ③ a REASON per block, non-empty and not a bare echo of the state word — a block drawn with an empty
+    //      `now:` line is the failure a count-only leg sails straight past;
+    //   ④ no rule code and no feature id anywhere in the rendered TEXT. Both are read off the rows, and only the
+    //      CODE-SHAPED ones are asserted absent: a policy whose `inForce` is an ordinary word ("always") is SUPPOSED
+    //      to appear, because the player view spells the strategy out in words.
+    //   ⑤ the stall watch's buttons say what a press does, in words.
+    const plain = await page.evaluate(() => {
+      const T = window.tmtLoader, rows = T.explain();
+      const root = document.querySelector('#app');
+      const text = root.innerText || '';
+      const runnable = rows.filter((r) => r.state !== 'locked' && r.state !== 'excluded');
+      const codeShaped = (v) => typeof v === 'string' && /[>=<|/:]/.test(v);
+      const problems = [];
+      let withButton = 0, withReason = 0;
+      for (const r of runnable) {
+        const btn = root.querySelector(`button.tmtl-onoff[data-fid="${(window.CSS && CSS.escape) ? CSS.escape(r.id) : r.id}"]`);
+        if (!btn) { problems.push(`${r.id}: no on/off button`); continue; }
+        if (!(btn.innerText || '').trim()) { problems.push(`${r.id}: the on/off button has no word`); continue; }
+        withButton++;
+        const block = btn.parentElement && btn.parentElement.querySelector('div.tmtl-block');
+        if (!block) { problems.push(`${r.id}: no block beside the button`); continue; }
+        const bt = block.innerText || '';
+        const line = bt.split('\n').find((L) => L.trim().toLowerCase().startsWith('now:'));
+        if (line === undefined) { problems.push(`${r.id}: no \`now:\` line`); continue; }
+        const reason = line.trim().slice(4).trim();
+        if (!reason) { problems.push(`${r.id}: the \`now:\` line is EMPTY`); continue; }
+        if (reason.toLowerCase() === r.state) { problems.push(`${r.id}: the reason only echoes the state word (${reason})`); continue; }
+        if (!r.last && reason !== 'nothing decided yet') { problems.push(`${r.id}: no decision, yet the line reads "${reason}"`); continue; }
+        withReason++;
+      }
+      const leakedIds = rows.filter((r) => codeShaped(r.id) && text.indexOf(r.id) >= 0).map((r) => r.id);
+      const leakedCodes = rows.filter((r) => r.policy && codeShaped(r.policy.inForce) && text.indexOf(r.policy.inForce) >= 0).map((r) => `${r.id}=${r.policy.inForce}`);
+      const watch = [...root.querySelectorAll('button.tmtl-watch-toggle')].map((b) => (b.innerText || '').trim());
+      return { dev: T.devDetails(), runnable: runnable.length, withButton, withReason, problems: problems.slice(0, 6),
+        devDivs: root.querySelectorAll('.tmtl-dev').length, devToggle: (root.querySelector('button.tmtl-dev-toggle') || {}).innerText,
+        // ⚠ OVER THE RUNNABLE ROWS, NOT ALL OF THEM — the control caught this: a collapsed row (locked or
+        // excluded) draws ONE LINE and no provenance at all, so `rows.filter(has a note)` compared 11 notes against
+        // the 4 lines the 6 drawn blocks carry, and the leg went red on a view rendering exactly right.
+        plainProv: root.querySelectorAll('.tmtl-prov-plain').length, provWithNotes: runnable.filter((r) => r.provenance).length,
+        leakedIds: leakedIds.slice(0, 4), leakedCodes: leakedCodes.slice(0, 4), watch,
+        codeShapedIds: rows.filter((r) => codeShaped(r.id)).length, codeShapedPolicies: rows.filter((r) => r.policy && codeShaped(r.policy.inForce)).length };
+    });
+    check2(plain.dev === false, `a fresh boot draws the PLAYER view (devDetails ${plain.dev}), and the switch offers "${plain.devToggle}"`);
+    check2(plain.devDivs === 0, `no developer-detail line is drawn (${plain.devDivs} \`.tmtl-dev\`)`);
+    check2(plain.withButton === plain.runnable && plain.problems.length === 0,
+      `one block per runnable feature, each with its on/off word (${plain.withButton} of ${plain.runnable})${plain.problems.length ? ': ' + plain.problems.join(' · ') : ''}`);
+    check2(plain.withReason === plain.runnable, `and each block says in words what it decided (${plain.withReason} of ${plain.runnable} non-empty reasons)`);
+    check2(plain.leakedIds.length === 0, `no feature id in the rendered text (${plain.codeShapedIds} code-shaped ids checked)${plain.leakedIds.length ? ': ' + plain.leakedIds.join(', ') : ''}`);
+    check2(plain.leakedCodes.length === 0, `no rule code in the rendered text (${plain.codeShapedPolicies} code-shaped policies checked)${plain.leakedCodes.length ? ': ' + plain.leakedCodes.join(', ') : ''}`);
+    check2(plain.codeShapedIds > 0 && plain.codeShapedPolicies > 0, `and the two absences are not vacuous — there ARE ${plain.codeShapedIds} ids and ${plain.codeShapedPolicies} policies that would show`);
+    // ⚠ EQUALITY ONLY, AND THE VACUITY IS THE ROSTER'S QUESTION, NOT THIS GAME'S. The control measured `something`
+    // with 0 notes on its 5 drawn rows — a legitimate zero (its table has none there), which a `> 0` clause turned
+    // red on a correct view. A per-game non-vacuity check cannot be right for a game that has nothing to exercise
+    // it; what has to be true is that SOME game in the run did. That is the row after the loop.
+    provSeen.push([id, plain.provWithNotes]);
+    check2(plain.plainProv === plain.provWithNotes, `every table note a drawn block carries is replaced by the one fact a player can use (${plain.plainProv} plain lines, ${plain.provWithNotes} of the ${plain.runnable} drawn rows carry a note${plain.provWithNotes ? '' : ' — this game does not exercise it'})`);
+    check2(plain.watch.length === 1 && /turn the stall watch (on|off)/.test(plain.watch[0]), `the stall watch's button says what a press does: ${JSON.stringify(plain.watch)}`);
+    await page.screenshot({ path: path.join(REPO, `tools/harness/results/${id}-au-advanced-player-390.png`), fullPage: true });
+    ok2 = notes2.length > 1 && notes2.slice(1).every((n) => n.startsWith('✓'));
+    notes2.shift();   // the NOT RUN placeholder: the pass ran
+
+    // ⚖ U16: ids, rule codes and the table's notes are DEVELOPER DETAILS, drawn only while the switch is on — and
+    // render ≡ headless below is a comparison of exactly those, so the rest of this leg reads the view with them shown
+    await page.evaluate(() => tmtLoader.setDevDetails(true));
     await redraw();
     await page.waitForTimeout(300);
 
@@ -509,6 +603,7 @@ async function part2Advanced(id) {
   } catch (e) { ok = false; notes.push('EXCEPTION ' + String((e && e.stack) || e).slice(0, 400)); }
   finally { await context.close(); }
   row({ gate: 'A1-2 the Advanced subtab (page, 390 px)', id, ok, ticks: 0, gameSeconds: 0, diff: null, hash: null, notes: notes.join('; ') + `; screenshot results/${id}-au-advanced-390.png` });
+  row({ gate: 'A1-2 the Advanced subtab — PLAYER view (developer details off, 390 px)', id, ok: ok2, ticks: 0, gameSeconds: 0, diff: null, hash: null, notes: notes2.join('; ') + `; screenshot results/${id}-au-advanced-player-390.png` });
 }
 
 // ---- Part 3 --------------------------------------------------------------------------------------------------------
