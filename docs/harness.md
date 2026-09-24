@@ -431,7 +431,7 @@ drove a chip**. ⛔ A check nobody runs is not a check.
 | S1 part 1 — the automation anchors | CI, its own job beside the matrix | 52 checks, 197 s locally |
 | G5 (`check-pages.mjs`) | **the deploy**, `pages.yml`, after the site is published | ~100 s+ |
 | O1 options (`--gate options`) | a slice, on a bounded set; not sharded | ~19 page loads per game, ~1 min/game locally |
-| A1 part 2 — the `au` tab's own page checks, including the U4 arming flow | ⛔ **nowhere in CI** — a slice runs it by hand on `ptr` + `something` | 24 checks, ~3 min locally |
+| A1 part 2 — the `au` tab's own page checks, including the U4 arming flow and the U16 PLAYER view | CI, the `a1` job — over a set DERIVED from `games-auto/` plus the table-less control, never typed | ~14 rows per game, ~3 min for two locally |
 | the M1 sweep on a bounded local set | a slice, before it pushes | minutes |
 
 ⚠ The numbers above are local wall clock on one workstation unless they say CI; CI runs this kind of work about
@@ -448,6 +448,40 @@ rather than an extrapolation.
 ⛔ **Everything in `sweep.yml` past the fast job is gated on it.** Three seconds of unit tests decide whether
 thirteen runners start. `loader/workflows.test.mjs` asserts the `needs:`, because the way that gets undone is a
 convenience edit by someone whose change "does not touch the units".
+
+### The PLAYER view has its own row, and the vacuity question belongs to the RUN (U16)
+
+U16 put the feature ids, the rule codes, the table / derived / alternative comparisons and the measurement notes
+behind a *show developer details* switch that starts **off**. Three legs turn it on — `gates-a1` part 2's
+render ≡ headless comparison, `gates-v3` part 5's provenance-inertness check and `gates-v4` part 6's
+find-the-block-by-id — because each compares exactly the things the switch hides. That is the right fix for those
+three, and it left the view a player actually sees asserted by **nothing**.
+
+`gates-a1 --part 2` therefore emits a SECOND row per game, `A1-2 … PLAYER view (developer details off, 390 px)`.
+It runs first, on the same boot, before the switch is touched, and it starts RED (`NOT RUN`) so that a throw before
+the pass leaves a row rather than a silence. The block no longer names its own id, so
+`button.tmtl-onoff[data-fid]` is the hook; the block is its sibling.
+
+Three things about it are easy to get wrong, and all three were measured getting it wrong first:
+
+- **Compare like with like.** A locked or excluded row draws one collapsed line and no provenance at all, so
+  "every table note is replaced" has to count the rows that DRAW A BLOCK, not every row `explain()` returns. The
+  first cut compared 4 drawn lines against 11 notes and went red on a view rendering perfectly.
+- **A per-game non-vacuity clause is wrong for a game with nothing to exercise it.** `ptr` carries 4 notes on its 6
+  drawn rows; `something` carries 0 on its 5 — a legitimate zero, which a `> 0` clause turned red. What has to be
+  true is that SOME game in the run exercised it, so that is one run-level row emitted after the loop, and a run
+  where nothing exercised it says so instead of passing quietly.
+- **⛔ A run-level row must carry `runLevel: true`, and `--assert` must filter it out.** `gateCoverage` places
+  every row by its game id and asks whether every game is present and whether they all ran the same battery. A row
+  whose id is the RUN's (`ptr+something`) is neither: unfiltered, it reads as a row for a game the run was never
+  given AND as an unequal per-game count, and CI **refuses a correct run**. Its verdict is not lost — the process
+  exit is over every row.
+
+Mutants, all four killed, each on its intended check (`results/` screenshots are written either way):
+one feature dropped from the list entirely; the raw rule code appended to the strategy line with NO `.tmtl-dev`
+div; the `now:` line drawn with an empty reason; the feature id appended to the title. The middle two are shaped to
+leak WITHOUT tripping the `.tmtl-dev` count, so each isolates the check it targets — a mutant that trips two
+checks tells you less than one that trips the one you meant.
 
 ### The media gate (`tools/media.mjs`, assets-1)
 

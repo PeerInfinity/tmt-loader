@@ -115,7 +115,10 @@ try {
   // something. (A single-game run on a game with no notes therefore goes red HERE, on purpose.)
   if (PART === '2' && provSeen.length) {
     const with_ = provSeen.filter(([, n]) => n > 0);
-    row({ gate: 'A1-2 the PLAYER view’s table notes were exercised by this run', id: provSeen.map(([i]) => i).join('+'), ok: with_.length > 0, ticks: 0, gameSeconds: 0, diff: null, hash: null,
+    // ⚠ `runLevel: true` AND IT IS LOAD-BEARING: `gateCoverage` places every row by its game id, and this row's id
+    // is the RUN's (`ptr+something`). Without the marker it reads as "a row for a game the run was not given", and
+    // as an unequal per-game row count — CI would have REFUSED a correct run. The assert block filters on it.
+    row({ gate: 'A1-2 the PLAYER view’s table notes were exercised by this run', id: provSeen.map(([i]) => i).join('+'), runLevel: true, ok: with_.length > 0, ticks: 0, gameSeconds: 0, diff: null, hash: null,
       notes: with_.length ? `${with_.map(([i, n]) => `${i} ${n}`).join(', ')} note(s) on drawn rows` : `no game in this run drew a block carrying a table note (${provSeen.map(([i, n]) => `${i} ${n}`).join(', ')}) — the replacement is untested here` });
   }
 } finally {
@@ -705,7 +708,11 @@ console.log(`gates-a1 part ${PART}: ${rows.filter((r) => r.ok).length}/${rows.le
 // whose rows do not cover the roster it was GIVEN, and one where the games did not all run the same battery.
 if (a.assert) {
   const label = `a1-part${PART}`;
-  const c = gateCoverage(rows, ids, { label });
+  // ⚠ PER-GAME ROWS ONLY. `gateCoverage` asks two questions of the roster — is every game present, and did they
+  // all run the SAME battery — and both are counted per game id. A run-level row (one per RUN, id `a+b`) is
+  // neither, and passing it in makes the run look like it measured a game it was never given. Its own verdict is
+  // not lost: the process exit below is over EVERY row.
+  const c = gateCoverage(rows.filter((r) => !r.runLevel), ids, { label });
   console.log(coverageLine(c, label));
   if (!c.ok) { console.log(`${label} REFUSED:`); for (const p of c.problems) console.log(`  · ${p}`); process.exit(1); }
 }
