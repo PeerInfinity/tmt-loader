@@ -1,0 +1,131 @@
+{
+  "schema": 1,
+  "id": "the-rainbow-void-tree",
+  "name": "The Rainbow Void Tree",
+  "version": "0.2",
+  "author": "nobody",
+  "upstream": {
+    "repo": "CudjzikxmxR/The-Rainbow-Void-Tree",
+    "url": "https://github.com/CudjzikxmxR/The-Rainbow-Void-Tree.git",
+    "branch": "master",
+    "commit": "9b6754418f44b66eae6239f2b1dc04687f55a897",
+    "pushed_at": "2026-02-12T12:25:03Z"
+  },
+  "engine": {
+    "tmtNum": "2.7",
+    "stock_commit": "0a6abc6",
+    "moved": false,
+    "deviation": {
+      "added": 599,
+      "removed": 43
+    }
+  },
+  "entry": "index.html",
+  "load": {
+    "onload": "load()",
+    "scripts": [
+      "js/technical/break_eternity.js",
+      "js/technical/layerSupport.js",
+      "js/mod.js",
+      "js/technical/loader.js",
+      "js/technical/temp.js",
+      "js/technical/displays.js",
+      "js/game.js",
+      "js/utils.js",
+      "js/utils/easyAccess.js",
+      "js/technical/systemComponents.js",
+      "js/components.js",
+      "js/technical/canvas.js",
+      "js/technical/particleSystem.js",
+      "js/utils/NumberFormating.js",
+      "js/utils/options.js",
+      "js/utils/save.js",
+      "js/utils/themes.js"
+    ],
+    "renderOnly": [
+      "js/technical/systemComponents.js",
+      "js/components.js",
+      "js/technical/canvas.js",
+      "js/technical/particleSystem.js"
+    ],
+    "modFilesPrefix": "js/",
+    "modFiles": [
+      "layers.js",
+      "guide.js",
+      "tree.js"
+    ],
+    "external": {
+      "https://unpkg.com/vue@2.7.16/dist/vue.min.js": "vendor",
+      "https://fonts.googleapis.com/css?family=Inconsolata": "drop"
+    },
+    "vendor": {
+      "https://unpkg.com/vue@2.7.16/dist/vue.min.js": {
+        "path": "vendor/vue-2.7.16.min.js",
+        "sha256": "3c1d4b0c549e8de9d4a9bafb12ab70b6a1ac747d07293b98c5b25b6632999afd"
+      }
+    }
+  },
+  "save": {
+    "keyRule": "getModID (modInfo.id ?? name-author)",
+    "key": "The-Rainbow-Void-Tree-nobody"
+  },
+  "headless": {
+    "prestubs": [],
+    "renderStubs": [
+      "loadVue",
+      "resizeCanvas",
+      "retrieveCanvasData",
+      "drawTree",
+      "drawComponentBranches",
+      "drawTreeBranch",
+      "makeParticles",
+      "makeShinies",
+      "updateParticles",
+      "setDir",
+      "setSpeed",
+      "updateMouse",
+      "getOpacity",
+      "constructParticleStyle",
+      "clearParticles",
+      "sin",
+      "cos",
+      "tan",
+      "asin",
+      "acos",
+      "atan"
+    ],
+    "idleHash": {
+      "ticks": 200,
+      "diff": 0.05,
+      "hash": "a54bc54b5c495ca1"
+    },
+    "deterministic": true
+  },
+  "license": {
+    "githubSpdx": "NOASSERTION",
+    "files": {
+      "LICENSE": "MIT",
+      "Prestige-tree-license": "MIT"
+    },
+    "verdict": "MIT"
+  },
+  "census": {
+    "full_name": "CudjzikxmxR/The-Rainbow-Void-Tree",
+    "head": "9b67544",
+    "score": 49.01,
+    "layers": 5,
+    "rows": 3,
+    "milestones": 28,
+    "upgrades": 79,
+    "buyables": 0,
+    "challenges": 0,
+    "achievements": 40,
+    "trace_fields": 2
+  },
+  "patches": [],
+  "generated": {
+    "by": "tmt-fork-census scripts/manifest.mjs",
+    "commit": "27c6654",
+    "at": "2026-09-15T06:34:25.135Z"
+  }
+}

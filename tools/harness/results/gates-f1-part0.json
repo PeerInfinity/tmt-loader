@@ -1,0 +1,351 @@
+{
+  "gate": "F1 part 0",
+  "commit": "9e5895863",
+  "dirty": true,
+  "lines": [
+    {
+      "cell": "E@1/off",
+      "part": "0",
+      "s": "E",
+      "diff": 1,
+      "opt": "passiveYield=off",
+      "start": 2629,
+      "commit": "9e5895863",
+      "wallS": 160,
+      "ok": true,
+      "twiceEqual": true,
+      "gameSeconds": 5381,
+      "ticks": 5381,
+      "hashGame": "602033b644836ccc",
+      "marks": {
+        "M05": 2891,
+        "M06": 3427,
+        "M07": 3436,
+        "M08": 5381
+      },
+      "actions": {
+        "reset:p": 932,
+        "upgrades:p": 381,
+        "reset:g": 277,
+        "upgrades:g": 90,
+        "reset:b": 331,
+        "upgrades:b": 84,
+        "reset:s": 14,
+        "buyables:s": 15,
+        "upgrades:s": 5
+      },
+      "walled": false,
+      "runWallMs": [
+        160312,
+        158790
+      ],
+      "error": null
+    },
+    {
+      "cell": "E@0.05/off",
+      "part": "0",
+      "s": "E",
+      "diff": 0.05,
+      "opt": "passiveYield=off",
+      "start": 2629,
+      "commit": "9e5895863",
+      "wallS": 514,
+      "ok": true,
+      "twiceEqual": true,
+      "gameSeconds": 3309.75,
+      "ticks": 16244,
+      "hashGame": "33656a8246f51ebe",
+      "marks": {
+        "M05": 2747.8,
+        "M06": 2971.6,
+        "M07": 2974.25,
+        "M08": 3309.75
+      },
+      "actions": {
+        "reset:p": 3249,
+        "upgrades:p": 390,
+        "reset:g": 334,
+        "upgrades:g": 90,
+        "reset:b": 362,
+        "upgrades:b": 84,
+        "reset:s": 14,
+        "buyables:s": 15,
+        "upgrades:s": 5
+      },
+      "walled": false,
+      "runWallMs": [
+        514332,
+        512327
+      ],
+      "error": null
+    },
+    {
+      "cell": "R2@1/off",
+      "part": "0",
+      "s": "R2",
+      "diff": 1,
+      "opt": "passiveYield=off",
+      "start": 16048,
+      "commit": "9e5895863",
+      "wallS": 37,
+      "ok": true,
+      "twiceEqual": true,
+      "gameSeconds": 17058,
+      "ticks": 17058,
+      "hashGame": "e4e0d1ee6c8eeeb8",
+      "marks": {
+        "M16": 17058
+      },
+      "actions": {
+        "reset:p": 1789,
+        "upgrades:p": 637,
+        "reset:g": 299,
+        "upgrades:g": 90,
+        "reset:b": 501,
+        "upgrades:b": 123,
+        "reset:s": 39,
+        "buyables:s": 69,
+        "upgrades:s": 10,
+        "toggles:s": 1,
+        "reset:t": 44,
+        "upgrades:t": 10,
+        "toggles:t": 1,
+        "reset:e": 125,
+        "buyables:e": 34,
+        "buyables:t": 21,
+        "upgrades:e": 8,
+        "reset:sb": 5
+      },
+      "walled": false,
+      "runWallMs": [
+        36496,
+        36794
+      ],
+      "error": null
+    },
+    {
+      "cell": "R2@0.05/off",
+      "part": "0",
+      "s": "R2",
+      "diff": 0.05,
+      "opt": "passiveYield=off",
+      "start": 16048,
+      "commit": "9e5895863",
+      "wallS": 218,
+      "ok": true,
+      "twiceEqual": true,
+      "gameSeconds": 16202.15,
+      "ticks": 19131,
+      "hashGame": "9b1e307bfe782404",
+      "marks": {
+        "M16": 16202.15
+      },
+      "actions": {
+        "reset:p": 3133,
+        "upgrades:p": 637,
+        "reset:g": 299,
+        "upgrades:g": 90,
+        "reset:b": 501,
+        "upgrades:b": 123,
+        "reset:s": 39,
+        "buyables:s": 69,
+        "upgrades:s": 10,
+        "toggles:s": 1,
+        "reset:t": 44,
+        "upgrades:t": 10,
+        "toggles:t": 1,
+        "reset:e": 129,
+        "buyables:e": 34,
+        "buyables:t": 21,
+        "upgrades:e": 8,
+        "reset:sb": 5
+      },
+      "walled": false,
+      "runWallMs": [
+        217856,
+        216832
+      ],
+      "error": null
+    },
+    {
+      "cell": "R3@1/off",
+      "part": "0",
+      "s": "R3",
+      "diff": 1,
+      "opt": "passiveYield=off",
+      "start": 30618,
+      "commit": "9e5895863",
+      "wallS": 7,
+      "ok": true,
+      "twiceEqual": true,
+      "gameSeconds": 30736,
+      "ticks": 30736,
+      "hashGame": "b73aef45c9ce7d08",
+      "marks": {
+        "M23": 30683,
+        "M24": 30736
+      },
+      "actions": {
+        "reset:p": 2388,
+        "upgrades:p": 646,
+        "reset:g": 299,
+        "upgrades:g": 90,
+        "reset:b": 501,
+        "upgrades:b": 130,
+        "reset:s": 92,
+        "buyables:s": 138,
+        "upgrades:s": 20,
+        "toggles:s": 1,
+        "reset:t": 102,
+        "upgrades:t": 19,
+        "toggles:t": 1,
+        "reset:e": 224,
+        "buyables:e": 70,
+        "buyables:t": 42,
+        "upgrades:e": 15,
+        "reset:sb": 25,
+        "reset:q": 13,
+        "buyables:q": 3,
+        "toggles:q": 5,
+        "reset:h": 1,
+        "challenges:h": 3,
+        "upgrades:q": 3
+      },
+      "walled": false,
+      "runWallMs": [
+        6765,
+        6887
+      ],
+      "error": null
+    },
+    {
+      "cell": "R3@0.05/off",
+      "part": "0",
+      "s": "R3",
+      "diff": 0.05,
+      "opt": "passiveYield=off",
+      "start": 30618,
+      "commit": "9e5895863",
+      "wallS": 250,
+      "ok": true,
+      "twiceEqual": true,
+      "gameSeconds": 30854.6,
+      "ticks": 35350,
+      "hashGame": "69ee6b8dc907a15d",
+      "marks": {
+        "M23": 30802.6,
+        "M24": 30854.6
+      },
+      "actions": {
+        "reset:p": 4145,
+        "upgrades:p": 655,
+        "reset:g": 299,
+        "upgrades:g": 90,
+        "reset:b": 501,
+        "upgrades:b": 139,
+        "reset:s": 92,
+        "buyables:s": 138,
+        "upgrades:s": 20,
+        "toggles:s": 1,
+        "reset:t": 102,
+        "upgrades:t": 19,
+        "toggles:t": 1,
+        "reset:e": 352,
+        "buyables:e": 70,
+        "buyables:t": 42,
+        "upgrades:e": 15,
+        "reset:sb": 25,
+        "reset:q": 13,
+        "buyables:q": 3,
+        "toggles:q": 5,
+        "reset:h": 2,
+        "challenges:h": 5,
+        "upgrades:q": 3
+      },
+      "walled": false,
+      "runWallMs": [
+        250015,
+        248511
+      ],
+      "error": null
+    }
+  ],
+  "rows": [
+    {
+      "gate": "F1-0 E@1/off — early — all/M04 → M08 (row 1: p, b, g), diff 1, passiveYield=off",
+      "id": "ptr",
+      "leg": "2 runs",
+      "ok": true,
+      "ticks": 5381,
+      "gameSeconds": 5381,
+      "diff": 1,
+      "hash": "602033b644836ccc",
+      "notes": "M05 2891 · M06 3427 · M07 3436 · M08 5381; resets p 932 / g 277 / b 331 / s 14; twice equal true; wall 160s (runs [160312,158790] ms)"
+    },
+    {
+      "gate": "F1-0 E@0.05/off — early — all/M04 → M08 (row 1: p, b, g), diff 0.05, passiveYield=off",
+      "id": "ptr",
+      "leg": "2 runs",
+      "ok": true,
+      "ticks": 16244,
+      "gameSeconds": 3309.75,
+      "diff": 0.05,
+      "hash": "33656a8246f51ebe",
+      "notes": "M05 2747.8 · M06 2971.6 · M07 2974.25 · M08 3309.75; resets p 3249 / g 334 / b 362 / s 14; twice equal true; wall 514s (runs [514332,512327] ms)"
+    },
+    {
+      "gate": "F1-0 R2@1/off — row 2 — all/M15 → M16 (the row-2 push), diff 1, passiveYield=off",
+      "id": "ptr",
+      "leg": "2 runs",
+      "ok": true,
+      "ticks": 17058,
+      "gameSeconds": 17058,
+      "diff": 1,
+      "hash": "e4e0d1ee6c8eeeb8",
+      "notes": "M16 17058; resets p 1789 / g 299 / b 501 / s 39 / t 44 / e 125 / sb 5; twice equal true; wall 37s (runs [36496,36794] ms)"
+    },
+    {
+      "gate": "F1-0 R2@0.05/off — row 2 — all/M15 → M16 (the row-2 push), diff 0.05, passiveYield=off",
+      "id": "ptr",
+      "leg": "2 runs",
+      "ok": true,
+      "ticks": 19131,
+      "gameSeconds": 16202.15,
+      "diff": 0.05,
+      "hash": "9b1e307bfe782404",
+      "notes": "M16 16202.15; resets p 3133 / g 299 / b 501 / s 39 / t 44 / e 129 / sb 5; twice equal true; wall 218s (runs [217856,216832] ms)"
+    },
+    {
+      "gate": "F1-0 R3@1/off — row 3 — all/M22 → M24 (H11, q11–q13), diff 1, passiveYield=off",
+      "id": "ptr",
+      "leg": "2 runs",
+      "ok": true,
+      "ticks": 30736,
+      "gameSeconds": 30736,
+      "diff": 1,
+      "hash": "b73aef45c9ce7d08",
+      "notes": "M23 30683 · M24 30736; resets p 2388 / g 299 / b 501 / s 92 / t 102 / e 224 / sb 25 / q 13 / h 1; twice equal true; wall 7s (runs [6765,6887] ms)"
+    },
+    {
+      "gate": "F1-0 R3@0.05/off — row 3 — all/M22 → M24 (H11, q11–q13), diff 0.05, passiveYield=off",
+      "id": "ptr",
+      "leg": "2 runs",
+      "ok": true,
+      "ticks": 35350,
+      "gameSeconds": 30854.6,
+      "diff": 0.05,
+      "hash": "69ee6b8dc907a15d",
+      "notes": "M23 30802.6 · M24 30854.6; resets p 4145 / g 299 / b 501 / s 92 / t 102 / e 352 / sb 25 / q 13 / h 2; twice equal true; wall 250s (runs [250015,248511] ms)"
+    },
+    {
+      "gate": "F1-0 VERDICT (report): is the real tick a CONSTANT factor from `diff 1` on the same configuration?",
+      "id": "ptr",
+      "ok": true,
+      "ticks": null,
+      "gameSeconds": null,
+      "diff": null,
+      "hash": null,
+      "notes": "E M05: 118.8/262 = 0.453 · E M06: 342.6/798 = 0.429 · E M07: 345.25/807 = 0.428 · E M08: 680.75/2752 = 0.247 · R2 M16: 154.15/1010 = 0.153 · R3 M23: 184.6/65 = 2.84 · R3 M24: 236.6/118 = 2.005 — range 0.153–2.84 (NOT a constant factor)"
+    }
+  ]
+}

@@ -1,0 +1,76 @@
+{
+  "id": "the-abc-tree",
+  "commit": "46e1d9682e909cd25c877f1f57a70e2391e13ed8",
+  "layers": {
+    "info-tab": {
+      "row": "otherside",
+      "type": "none"
+    },
+    "options-tab": {
+      "row": "otherside",
+      "type": "none"
+    },
+    "changelog-tab": {
+      "row": "otherside",
+      "type": "none"
+    },
+    "a": {
+      "row": 0,
+      "type": "normal"
+    },
+    "b": {
+      "row": 1,
+      "type": "normal"
+    },
+    "c": {
+      "row": 1,
+      "type": "normal"
+    },
+    "blank": {
+      "row": null,
+      "type": "none"
+    },
+    "tree-tab": {
+      "row": null,
+      "type": "none"
+    }
+  },
+  "ids": [
+    "a:ms:0",
+    "a:ms:1",
+    "a:upg:11",
+    "a:upg:12",
+    "a:upg:13",
+    "a:upg:21",
+    "a:upg:22",
+    "a:upg:23",
+    "a:upg:31",
+    "a:upg:32",
+    "a:upg:33",
+    "b:ms:0",
+    "b:ms:1",
+    "b:ms:2",
+    "b:upg:11",
+    "b:upg:12",
+    "b:upg:13",
+    "b:upg:21",
+    "b:upg:22",
+    "b:upg:23",
+    "b:upg:31",
+    "b:upg:32",
+    "b:upg:33",
+    "b:upg:41",
+    "b:ch:11",
+    "c:ms:0",
+    "c:buy:11",
+    "c:buy:12",
+    "c:buy:13"
+  ],
+  "counts": {
+    "ms": 6,
+    "upg": 19,
+    "buy": 3,
+    "ch": 1,
+    "ach": 0
+  }
+}

@@ -1,0 +1,79 @@
+{
+  "id": "the-stardust-tree",
+  "commit": "af92a978533d139d81cf528f45db697061deefa7",
+  "layers": {
+    "s": {
+      "row": 0,
+      "type": "normal"
+    },
+    "so": {
+      "row": 1,
+      "type": "normal"
+    },
+    "n": {
+      "row": 1,
+      "type": "normal"
+    },
+    "c": {
+      "row": 2,
+      "type": "static"
+    },
+    "stats": {
+      "row": "side",
+      "type": "none"
+    },
+    "automation": {
+      "row": "side",
+      "type": "none"
+    }
+  },
+  "ids": [
+    "s:upg:11",
+    "s:upg:12",
+    "s:upg:13",
+    "s:upg:14",
+    "s:upg:21",
+    "s:upg:22",
+    "s:upg:23",
+    "s:upg:24",
+    "s:upg:31",
+    "s:upg:32",
+    "s:upg:33",
+    "so:upg:11",
+    "so:upg:12",
+    "so:upg:13",
+    "so:upg:14",
+    "so:upg:21",
+    "so:upg:22",
+    "so:upg:23",
+    "so:buy:11",
+    "so:buy:12",
+    "n:upg:11",
+    "n:upg:12",
+    "n:upg:13",
+    "n:upg:14",
+    "n:upg:21",
+    "n:upg:22",
+    "n:upg:23",
+    "n:buy:11",
+    "n:buy:12",
+    "n:buy:13",
+    "n:buy:14",
+    "c:buy:11",
+    "c:buy:12",
+    "c:buy:13",
+    "c:buy:21",
+    "c:buy:22",
+    "c:buy:23",
+    "c:buy:31",
+    "c:buy:32",
+    "c:buy:33"
+  ],
+  "counts": {
+    "ms": 0,
+    "upg": 25,
+    "buy": 15,
+    "ch": 0,
+    "ach": 0
+  }
+}

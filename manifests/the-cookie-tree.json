@@ -1,0 +1,130 @@
+{
+  "schema": 1,
+  "id": "the-cookie-tree",
+  "name": "The Cookie Tree",
+  "version": "1.03",
+  "author": "thecoolcookie366",
+  "upstream": {
+    "repo": "thecoolcookie366/The-Modding-Tree",
+    "url": "https://github.com/thecoolcookie366/The-Modding-Tree.git",
+    "branch": "master",
+    "commit": "6701b1d68999b71daebcf2181579344cc2bcf5a0",
+    "pushed_at": "2026-08-28T16:08:58Z"
+  },
+  "engine": {
+    "tmtNum": "2.7",
+    "stock_commit": "0a6abc6",
+    "moved": false,
+    "deviation": {
+      "added": 15,
+      "removed": 14
+    }
+  },
+  "entry": "index.html",
+  "load": {
+    "onload": "load()",
+    "scripts": [
+      "js/technical/break_eternity.js",
+      "js/technical/layerSupport.js",
+      "js/mod.js",
+      "js/technical/loader.js",
+      "js/technical/temp.js",
+      "js/technical/displays.js",
+      "js/game.js",
+      "js/utils.js",
+      "js/utils/easyAccess.js",
+      "js/technical/systemComponents.js",
+      "js/components.js",
+      "js/technical/canvas.js",
+      "js/technical/particleSystem.js",
+      "js/utils/NumberFormating.js",
+      "js/utils/options.js",
+      "js/utils/save.js",
+      "js/utils/themes.js"
+    ],
+    "renderOnly": [
+      "js/technical/systemComponents.js",
+      "js/components.js",
+      "js/technical/canvas.js",
+      "js/technical/particleSystem.js"
+    ],
+    "modFilesPrefix": "js/",
+    "modFiles": [
+      "layers.js",
+      "tree.js"
+    ],
+    "external": {
+      "https://unpkg.com/vue@2.7.16/dist/vue.min.js": "vendor",
+      "https://fonts.googleapis.com/css?family=Inconsolata": "drop"
+    },
+    "vendor": {
+      "https://unpkg.com/vue@2.7.16/dist/vue.min.js": {
+        "path": "vendor/vue-2.7.16.min.js",
+        "sha256": "3c1d4b0c549e8de9d4a9bafb12ab70b6a1ac747d07293b98c5b25b6632999afd"
+      }
+    }
+  },
+  "save": {
+    "keyRule": "getModID (modInfo.id ?? name-author)",
+    "key": "The-Cookie-Tree-thecoolcookie366"
+  },
+  "headless": {
+    "prestubs": [],
+    "renderStubs": [
+      "loadVue",
+      "resizeCanvas",
+      "retrieveCanvasData",
+      "drawTree",
+      "drawComponentBranches",
+      "drawTreeBranch",
+      "makeParticles",
+      "makeShinies",
+      "updateParticles",
+      "setDir",
+      "setSpeed",
+      "updateMouse",
+      "getOpacity",
+      "constructParticleStyle",
+      "clearParticles",
+      "sin",
+      "cos",
+      "tan",
+      "asin",
+      "acos",
+      "atan"
+    ],
+    "idleHash": {
+      "ticks": 200,
+      "diff": 0.05,
+      "hash": "a21036d23fb17175"
+    },
+    "deterministic": false
+  },
+  "license": {
+    "githubSpdx": "NOASSERTION",
+    "files": {
+      "LICENSE": "MIT",
+      "Prestige-tree-license": "MIT"
+    },
+    "verdict": "MIT"
+  },
+  "census": {
+    "full_name": "thecoolcookie366/The-Modding-Tree",
+    "head": "6701b1d",
+    "score": 77.21,
+    "layers": 32,
+    "rows": 8,
+    "milestones": 24,
+    "upgrades": 113,
+    "buyables": 0,
+    "challenges": 2,
+    "achievements": 36,
+    "trace_fields": 8
+  },
+  "patches": [],
+  "generated": {
+    "by": "tmt-fork-census scripts/manifest.mjs",
+    "commit": "24a9702",
+    "at": "2026-09-18T01:09:29.463Z"
+  }
+}

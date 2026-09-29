@@ -1,0 +1,158 @@
+{
+  "id": "the-chronicle-tree",
+  "commit": "416e097542685aa8cc82433dba7432db075af2b7",
+  "layers": {
+    "info-tab": {
+      "row": "otherside",
+      "type": "none"
+    },
+    "options-tab": {
+      "row": "otherside",
+      "type": "none"
+    },
+    "changelog-tab": {
+      "row": "otherside",
+      "type": "none"
+    },
+    "blank": {
+      "row": null,
+      "type": "none"
+    },
+    "placeholder": {
+      "row": 1,
+      "type": "none"
+    },
+    "placeholder2": {
+      "row": 2,
+      "type": "none"
+    },
+    "placeholder3": {
+      "row": 3,
+      "type": "none"
+    },
+    "tree-tab": {
+      "row": null,
+      "type": "none"
+    },
+    "g": {
+      "row": 0,
+      "type": "normal"
+    },
+    "p": {
+      "row": 0,
+      "type": "normal"
+    },
+    "mp": {
+      "row": 0,
+      "type": "normal"
+    },
+    "f": {
+      "row": 0,
+      "type": "normal"
+    },
+    "t": {
+      "row": 0,
+      "type": "normal"
+    },
+    "i": {
+      "row": "side",
+      "type": "normal"
+    },
+    "mk": {
+      "row": "side",
+      "type": "normal"
+    },
+    "r": {
+      "row": 10,
+      "type": "normal"
+    },
+    "m": {
+      "row": "side",
+      "type": "normal"
+    },
+    "e": {
+      "row": 0,
+      "type": "normal"
+    },
+    "s": {
+      "row": "side",
+      "type": "normal"
+    },
+    "b": {
+      "row": "side",
+      "type": "normal"
+    },
+    "l": {
+      "row": "side",
+      "type": "none"
+    }
+  },
+  "ids": [
+    "g:upg:11",
+    "g:upg:12",
+    "g:upg:13",
+    "p:upg:11",
+    "p:upg:12",
+    "p:upg:13",
+    "p:upg:21",
+    "p:upg:22",
+    "p:upg:23",
+    "p:upg:24",
+    "p:upg:25",
+    "p:upg:26",
+    "p:upg:31",
+    "p:upg:32",
+    "p:upg:33",
+    "p:upg:34",
+    "p:upg:35",
+    "p:upg:41",
+    "p:upg:42",
+    "p:buy:11",
+    "p:buy:12",
+    "p:buy:13",
+    "p:buy:14",
+    "mp:upg:11",
+    "mp:upg:12",
+    "mp:upg:13",
+    "mp:upg:14",
+    "mp:upg:15",
+    "mp:upg:16",
+    "mp:buy:11",
+    "mp:buy:21",
+    "mp:buy:22",
+    "mp:buy:23",
+    "i:buy:11",
+    "r:upg:11",
+    "r:upg:12",
+    "r:upg:13",
+    "r:upg:14",
+    "r:buy:11",
+    "r:buy:12",
+    "r:buy:13",
+    "r:buy:21",
+    "r:buy:22",
+    "r:buy:23",
+    "r:buy:31",
+    "m:ach:11",
+    "m:ach:12",
+    "m:ach:13",
+    "m:ach:14",
+    "m:ach:15",
+    "m:ach:16",
+    "m:ach:21",
+    "m:ach:22",
+    "m:ach:23",
+    "m:ach:24",
+    "s:buy:11",
+    "s:buy:12",
+    "s:buy:13",
+    "l:ms:0"
+  ],
+  "counts": {
+    "ms": 1,
+    "upg": 29,
+    "buy": 19,
+    "ch": 0,
+    "ach": 10
+  }
+}

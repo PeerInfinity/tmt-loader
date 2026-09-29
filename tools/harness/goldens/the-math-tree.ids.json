@@ -1,0 +1,56 @@
+{
+  "id": "the-math-tree",
+  "commit": "c58c317bbf6435898602916aa4df210384f68365",
+  "layers": {
+    "info-tab": {
+      "row": "otherside",
+      "type": "none"
+    },
+    "options-tab": {
+      "row": "otherside",
+      "type": "none"
+    },
+    "changelog-tab": {
+      "row": "otherside",
+      "type": "none"
+    },
+    "p": {
+      "row": 0,
+      "type": "normal"
+    },
+    "m": {
+      "row": 1,
+      "type": "static"
+    },
+    "f": {
+      "row": 1,
+      "type": "static"
+    },
+    "blank": {
+      "row": null,
+      "type": "none"
+    },
+    "tree-tab": {
+      "row": null,
+      "type": "none"
+    }
+  },
+  "ids": [
+    "p:upg:11",
+    "p:upg:12",
+    "p:upg:13",
+    "m:upg:11",
+    "m:upg:12",
+    "m:upg:13",
+    "f:upg:11",
+    "f:upg:12",
+    "f:upg:13"
+  ],
+  "counts": {
+    "ms": 0,
+    "upg": 9,
+    "buy": 0,
+    "ch": 0,
+    "ach": 0
+  }
+}

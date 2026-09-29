@@ -1,0 +1,43 @@
+{
+  "gate": "C1c part 3",
+  "commit": "71bae0c09",
+  "dirty": true,
+  "rows": [
+    {
+      "gate": "C1c-3 INERTNESS — ptr's opening — fresh → M12: HEAD ≡ 4d8ee5a69 (marks, end game-second, hashGame)",
+      "id": "ptr",
+      "ok": true,
+      "ticks": 6862,
+      "gameSeconds": 6862,
+      "diff": 1,
+      "hash": "cf8df88462606277",
+      "notes": "M01 1 · M02 918 · M03 1627 · M04 1850 · M05 2119 · M06 2637 · M07 2663 · M08 4712 · M09 6451 · M10 5939 · M11 6815 · M12 6862; end 6862 / cf8df88462606277; before 6862 / cf8df88462606277 — EQUAL; pinned M12 6862 / cf8df88462606277: held; twice equal true; wall 241s"
+    },
+    {
+      "gate": "C1c-3 INERTNESS — ptr all/M15 → M25 (the F1 chain's fixture): HEAD ≡ 4d8ee5a69 (marks, end game-second, hashGame)",
+      "id": "ptr",
+      "ok": true,
+      "ticks": 28260,
+      "gameSeconds": 28260,
+      "diff": 1,
+      "hash": "dee581e710a1bf53",
+      "notes": "M16 9157 · M17 15919 · M18 18105 · M19 18450 · M20 19137 · M21 20598 · M22 23262 · M23 23328 · M24 23381 · M25 28260; end 28260 / dee581e710a1bf53; before 28260 / dee581e710a1bf53 — EQUAL; pinned M25 28260 / dee581e710a1bf53: held; twice equal true; wall 475s"
+    },
+    {
+      "gate": "C1c-3 INERTNESS — Something Tree fresh → S05 (no table): HEAD ≡ 4d8ee5a69 (marks, end game-second, hashGame)",
+      "id": "something",
+      "ok": true,
+      "ticks": 874,
+      "gameSeconds": 874,
+      "diff": 1,
+      "hash": "a44f1bd5010a4344",
+      "notes": "S01 6 · S02 484 · S03 485 · S04 485 · S05 874; end 874 / a44f1bd5010a4344; before 874 / a44f1bd5010a4344 — EQUAL; twice equal true; wall 10s"
+    },
+    {
+      "gate": "C1c-3 VERDICT: where every purchase id is numeric, nothing moved",
+      "id": "—",
+      "ok": true,
+      "notes": "3/3"
+    }
+  ]
+}

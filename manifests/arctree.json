@@ -1,0 +1,132 @@
+{
+  "schema": 1,
+  "id": "arctree",
+  "name": "ArcTree",
+  "version": "0.0.7.0",
+  "author": "cyxw & sxy62146214",
+  "upstream": {
+    "repo": "cyxw/Arctree",
+    "url": "https://github.com/cyxw/Arctree.git",
+    "branch": "master",
+    "commit": "83d8a43e1816edf3b3c8679e5bc1eef4b78a22e7",
+    "pushed_at": "2022-10-31T14:21:10Z"
+  },
+  "engine": {
+    "tmtNum": "2.6.6.2",
+    "stock_commit": "8cf14c4",
+    "moved": false,
+    "deviation": {
+      "added": 208,
+      "removed": 34
+    }
+  },
+  "entry": "index.html",
+  "load": {
+    "onload": "load()",
+    "scripts": [
+      "js/vue.js",
+      "js/technical/break_eternity.js",
+      "js/technical/layerSupport.js",
+      "js/mod.js",
+      "js/technical/loader.js",
+      "js/technical/temp.js",
+      "js/technical/displays.js",
+      "js/technical/color.js",
+      "js/game.js",
+      "js/utils.js",
+      "js/utils/easyAccess.js",
+      "js/technical/systemComponents.js",
+      "js/components.js",
+      "js/technical/canvas.js",
+      "js/technical/particleSystem.js",
+      "js/utils/NumberFormating.js",
+      "js/utils/options.js",
+      "js/utils/save.js",
+      "js/utils/themes.js",
+      "layers/story.js",
+      "layers/lab.js",
+      "layers/institution.js",
+      "layers/fracture.js",
+      "layers/tempest.js"
+    ],
+    "renderOnly": [
+      "js/vue.js",
+      "js/technical/systemComponents.js",
+      "js/components.js",
+      "js/technical/canvas.js",
+      "js/technical/particleSystem.js"
+    ],
+    "modFilesPrefix": "js/",
+    "modFiles": [
+      "layers.js",
+      "tree.js"
+    ],
+    "external": {
+      "https://fonts.googleapis.com/css?family=Inconsolata": "drop"
+    },
+    "vendor": {}
+  },
+  "save": {
+    "keyRule": "modInfo.id",
+    "key": "arctree"
+  },
+  "headless": {
+    "prestubs": [],
+    "renderStubs": [
+      "loadVue",
+      "resizeCanvas",
+      "retrieveCanvasData",
+      "drawTree",
+      "drawComponentBranches",
+      "drawTreeBranch",
+      "makeParticles",
+      "makeShinies",
+      "updateParticles",
+      "setDir",
+      "setSpeed",
+      "updateMouse",
+      "getOpacity",
+      "constructParticleStyle",
+      "clearParticles",
+      "sin",
+      "cos",
+      "tan",
+      "asin",
+      "acos",
+      "atan"
+    ],
+    "idleHash": {
+      "ticks": 200,
+      "diff": 0.05,
+      "hash": "3f2fae68ae510061"
+    },
+    "deterministic": true
+  },
+  "license": {
+    "githubSpdx": "NOASSERTION",
+    "files": {
+      "LICENSE": "MIT",
+      "Prestige-tree-license": "MIT"
+    },
+    "verdict": "MIT"
+  },
+  "census": {
+    "full_name": "cyxw/Arctree",
+    "head": "83d8a43",
+    "score": 56.83,
+    "layers": 32,
+    "rows": 6,
+    "milestones": 73,
+    "upgrades": 220,
+    "buyables": 18,
+    "challenges": 27,
+    "achievements": 90,
+    "trace_fields": 22
+  },
+  "patches": [],
+  "generated": {
+    "by": "tmt-fork-census scripts/manifest.mjs",
+    "commit": "24a9702",
+    "at": "2026-09-18T01:09:33.270Z"
+  }
+}

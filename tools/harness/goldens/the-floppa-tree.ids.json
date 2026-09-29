@@ -1,0 +1,88 @@
+{
+  "id": "the-floppa-tree",
+  "commit": "60dcd818f1a7cbdc962e762d0b1a82d722d09805",
+  "layers": {
+    "info-tab": {
+      "row": "otherside",
+      "type": "none"
+    },
+    "options-tab": {
+      "row": "otherside",
+      "type": "none"
+    },
+    "changelog-tab": {
+      "row": "otherside",
+      "type": "none"
+    },
+    "f": {
+      "row": 0,
+      "type": "normal"
+    },
+    "d": {
+      "row": 1,
+      "type": "normal"
+    },
+    "a": {
+      "row": "side",
+      "type": "none"
+    },
+    "b": {
+      "row": 0,
+      "type": "normal"
+    },
+    "blank": {
+      "row": null,
+      "type": "none"
+    },
+    "tree-tab": {
+      "row": null,
+      "type": "none"
+    }
+  },
+  "ids": [
+    "f:upg:11",
+    "f:upg:12",
+    "f:upg:13",
+    "f:upg:14",
+    "f:upg:15",
+    "f:upg:21",
+    "f:upg:22",
+    "f:upg:23",
+    "f:upg:24",
+    "f:upg:25",
+    "d:upg:11",
+    "d:upg:12",
+    "d:upg:13",
+    "d:upg:14",
+    "d:upg:15",
+    "d:upg:21",
+    "d:upg:22",
+    "d:upg:23",
+    "d:upg:24",
+    "d:upg:25",
+    "a:ach:11",
+    "a:ach:12",
+    "a:ach:13",
+    "a:ach:14",
+    "a:ach:15",
+    "a:ach:16",
+    "a:ach:17",
+    "a:ach:18",
+    "a:ach:19",
+    "a:ach:21",
+    "a:ach:22",
+    "b:upg:11",
+    "b:upg:12",
+    "b:upg:13",
+    "b:ch:11",
+    "b:ch:12",
+    "b:ch:13"
+  ],
+  "counts": {
+    "ms": 0,
+    "upg": 23,
+    "buy": 0,
+    "ch": 3,
+    "ach": 11
+  }
+}

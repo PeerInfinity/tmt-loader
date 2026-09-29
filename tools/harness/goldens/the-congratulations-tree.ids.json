@@ -1,0 +1,120 @@
+{
+  "id": "the-congratulations-tree",
+  "commit": "0fe659e611004737c1ec66fcb424dd17ec032cb8",
+  "layers": {
+    "info-tab": {
+      "row": "otherside",
+      "type": "none"
+    },
+    "options-tab": {
+      "row": "otherside",
+      "type": "none"
+    },
+    "changelog-tab": {
+      "row": "otherside",
+      "type": "none"
+    },
+    "main": {
+      "row": 0,
+      "type": "normal"
+    },
+    "moon": {
+      "row": 1,
+      "type": "normal"
+    },
+    "liz": {
+      "row": 1,
+      "type": "normal"
+    },
+    "cud": {
+      "row": 1,
+      "type": "normal"
+    },
+    "lostcat": {
+      "row": 0,
+      "type": "normal"
+    },
+    "fizzy": {
+      "row": 2,
+      "type": "normal"
+    },
+    "blank": {
+      "row": null,
+      "type": "none"
+    },
+    "tree-tab": {
+      "row": null,
+      "type": "none"
+    },
+    "achievements": {
+      "row": "side",
+      "type": "none"
+    }
+  },
+  "ids": [
+    "main:upg:11",
+    "main:upg:12",
+    "main:upg:13",
+    "main:upg:14",
+    "main:upg:15",
+    "main:upg:16",
+    "main:upg:17",
+    "main:upg:18",
+    "main:upg:19",
+    "main:upg:21",
+    "main:upg:22",
+    "main:upg:23",
+    "main:upg:24",
+    "main:upg:25",
+    "main:upg:26",
+    "main:upg:27",
+    "main:upg:28",
+    "main:upg:29",
+    "main:upg:31",
+    "main:upg:32",
+    "main:upg:33",
+    "main:upg:34",
+    "moon:upg:11",
+    "moon:upg:12",
+    "moon:upg:13",
+    "moon:upg:14",
+    "moon:upg:15",
+    "moon:upg:16",
+    "moon:upg:17",
+    "moon:upg:18",
+    "moon:upg:19",
+    "liz:upg:11",
+    "liz:upg:12",
+    "liz:upg:13",
+    "liz:upg:14",
+    "liz:upg:15",
+    "liz:upg:16",
+    "liz:upg:17",
+    "cud:upg:11",
+    "cud:upg:12",
+    "cud:upg:13",
+    "cud:upg:14",
+    "cud:upg:15",
+    "cud:upg:16",
+    "cud:upg:17",
+    "lostcat:upg:11",
+    "lostcat:upg:12",
+    "lostcat:upg:13",
+    "lostcat:upg:14",
+    "fizzy:upg:11",
+    "fizzy:upg:12",
+    "fizzy:upg:13",
+    "achievements:ach:11",
+    "achievements:ach:12",
+    "achievements:ach:13",
+    "achievements:ach:14",
+    "achievements:ach:15"
+  ],
+  "counts": {
+    "ms": 0,
+    "upg": 52,
+    "buy": 0,
+    "ch": 0,
+    "ach": 5
+  }
+}

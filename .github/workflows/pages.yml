@@ -1,0 +1,135 @@
+# Publishes the site to GitHub Pages. MANUAL ONLY.
+#
+# ⚖ User ruling, 2026-09-18: the Pages deploy stops happening on every push. Until then the repo was on
+# `build_type: legacy` with source {branch: main, path: /}, so every push to `main` republished the site.
+# This workflow replaces that, and the ONLY trigger it may ever have is `workflow_dispatch`.
+#
+# ⛔ Do not add `on: push` here, and do not let the sweep workflow (.github/workflows/sweep.yml) call this one.
+# Either would quietly restore the push-deploys-the-site behaviour this file exists to remove.
+#
+# WHAT is served is unchanged: the legacy build served the branch's tracked tree from the repo root, and the
+# staging step below is `git archive HEAD` — exactly the tracked tree, nothing else. Only WHEN it is served moved.
+#
+# ⚖ AND THE DEPLOY IS NOW CHECKED (user ruling, 2026-09-18). G5 (`tools/check-pages.mjs`) used to run before a push,
+# on a session's own box, against a bare clone served from a local sub-path. It belongs here instead:
+#   · a push no longer deploys, so on a push G5 certified something the push did not change;
+#   · nothing verified a manual publish at all. The deploy job going green says the ARTIFACT uploaded — U2h still had
+#     to fetch the URL by hand to see whether the site was serving. A deploy that succeeds and serves the previous
+#     tree is the failure with no witness.
+# The `verify` job below is that witness, and it checks the one thing only a post-deploy run can: that the bytes the
+# live URL returns ARE this commit's. It waits for the deploy to settle rather than assuming it has, and it FAILS the
+# workflow — it is not advisory.
+name: pages
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# One deploy at a time; never cancel one in flight (a cancelled deploy can leave the site mid-swap).
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    outputs:
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      # `git archive HEAD` is the tracked tree and nothing else: no .git (210 MB), no node_modules, no
+      # untracked harness output. That is byte-for-byte what the legacy deploy-from-branch build served.
+      # ⛔ `shell: bash` (= `bash -eo pipefail`). `git archive … | tar -x` under the default `bash -e` reports TAR's
+      # status: a `git archive` that failed would leave a partial `_site` and this step would go green — and the
+      # next steps would PUBLISH it. It cannot change what a successful archive contains; it decides whether a
+      # failed one gets served. Found 2026-09-19 by the rule in loader/workflows.test.mjs, not by a run.
+      - name: Stage the tracked tree
+        shell: bash
+        run: |
+          mkdir _site
+          git archive --format=tar HEAD | tar -x -C _site
+          echo "artifact staged: $(du -sh _site | cut -f1) over $(find _site -type f | wc -l) file(s)"
+          test ! -e _site/.git
+          test ! -e _site/node_modules
+
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+      - id: deployment
+        uses: actions/deploy-pages@v4
+
+  # ---------------------------------------------------------------------------------------------------------------
+  # G5, against the site that was just published.
+  #
+  # ⛔ It must be able to FAIL, and it must fail the workflow: a verification step that cannot go red is decoration.
+  # ⚠ It runs against the LIVE URL, never against the artifact — an artifact that is correct and a site that is not
+  # is exactly the case this job exists for. `check-pages.mjs --live` polls the served bytes against
+  # `git show HEAD:<path>` until they match (up to 5 minutes) and reports how long settling took, so "the deploy had
+  # not propagated yet" is a measured wait rather than a flaky red.
+  # ⚠ G1 over the whole roster across the public network is minutes of traffic for a per-game check the sweep
+  # workflow already owns on every push. So the live form bounds G1 to a NAMED sample and says so in its verdict
+  # line. (Until U15 it also covered the whole roster through the picker; the home page is now a link to the census.)
+  # ---------------------------------------------------------------------------------------------------------------
+  verify:
+    name: G5 — the live site serves this commit
+    needs: deploy
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # `git show HEAD:<path>` only needs HEAD, which is what the deploy staged with `git archive HEAD`.
+          fetch-depth: 1
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '18.20.6'
+          cache: npm
+
+      - run: npm ci
+
+      - name: Cache the Playwright browser
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+
+      - run: npx playwright install --with-deps chromium
+
+      - name: G5 against ${{ needs.deploy.outputs.url }}
+        shell: bash  # bash -eo pipefail: without it `| tee` reports the pipe's status and a RED deploy check passes
+        run: node tools/check-pages.mjs --live "$URL" | tee g5.txt
+        env:
+          URL: ${{ needs.deploy.outputs.url }}
+
+      - name: Summary
+        if: always()
+        shell: bash
+        run: |
+          {
+            echo '## G5 — the published site'
+            echo ''
+            echo '```'
+            tail -30 g5.txt 2>/dev/null || echo 'no output'
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload the result
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: g5-live
+          path: tools/harness/results/tmp/check-pages-last.json
+          if-no-files-found: warn
+          retention-days: 14

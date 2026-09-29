@@ -1,0 +1,43 @@
+{
+ "generated": true,
+ "generator": "tools/currency-data.mjs",
+ "generatorVersion": 1,
+ "formatVersion": 1,
+ "game": "the-testy-tree",
+ "upstream": {
+  "repo": "rowantrees/The-Modding-Tree",
+  "commit": "3d66fcd1343b0dcc4551712ee15e8d44f16f135a"
+ },
+ "states": [
+  "fresh"
+ ],
+ "seeds": [
+  1
+ ],
+ "summary": {
+  "buyables": 1,
+  "scored": 0,
+  "price": 0,
+  "requirement": 0,
+  "unknown": 1,
+  "own": 0,
+  "foreign": 0,
+  "several": 0,
+  "impure": 0
+ },
+ "buyables": {
+  "c": {
+   "11": {
+    "pays": null,
+    "cost": "unknown",
+    "by": [],
+    "scored": false,
+    "how": "lift-1",
+    "why": "no field fell by the published cost (1 fell by something else)",
+    "from": [
+     "fresh"
+    ]
+   }
+  }
+ }
+}

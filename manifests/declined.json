@@ -1,0 +1,42 @@
+[
+  {
+    "repo": "ducdat0507/prestreestuck",
+    "short": "no tree",
+    "reason": "renders zero tree nodes \u2014 checked on the tree tab itself, not just at load. A loader for The Modding Tree has nothing to show for it."
+  },
+  {
+    "repo": "IEmory/TreeQuest",
+    "short": "no tree",
+    "reason": "renders zero tree nodes on the tree tab, the same as prestreestuck, though it boots and has one working control."
+  },
+  {
+    "repo": "beterbriffin/Moding-Tree-game-or-something",
+    "short": "crashes at load",
+    "reason": "never reaches ready: its own load() throws `prestigeEffect is not defined`."
+  },
+  {
+    "repo": "Cubedey/The-Tree-Prestige",
+    "short": "crashes at load",
+    "reason": "dies in its own getResetGain \u2014 `Cannot read properties of undefined (reading 'eq')` at js/game.js:18 \u2014 and hotlinks two stock-photo CDNs."
+  },
+  {
+    "repo": "GabRioBlu/the-castle-wars-tree",
+    "short": "ships no Vue",
+    "reason": "its index names a local js/vue.js that the repository does not ship, so the page dies at `Vue is not defined`. The census booted it only because the headless harness stubs Vue. Nothing declarable fixes a missing engine, and the loader keeps games/<id>/ pristine."
+  },
+  {
+    "repo": "Losan33/The-Chroma-Tree",
+    "short": "needs Firebase",
+    "reason": "initialises Firebase from a CDN, and the loader makes no third-party request by policy, so its inline script throws `firebase is not defined` in every boot. load.known has a key for a script that is MISSING but none for one that THROWS; adding one would be new schema surface for a single game."
+  },
+  {
+    "repo": "The179UCETile/wextwall-tree",
+    "short": "needs vendoring",
+    "reason": "needs two scripts no manifest pins \u2014 break_eternity.min.js and bad_notations.js, both from the author's own Pages site \u2014 vendored by hand first. Not a defect in the game; unfinished work here."
+  },
+  {
+    "repo": "jakub791/The-Collab-Tree",
+    "short": "crashes at load",
+    "reason": "never renders a tree: its own load() throws `Cannot read properties of undefined (reading 'upgrades')` (js/dice.js:33, hasUpgrade on a layer that never registers; js/cheese.js and js/reipist.js throw reading 'e' as they load). The PRISTINE upstream page does the same with no loader in the way \u2014 0 tree nodes, the error on every tick \u2014 while Lun4-R/The-Collab-Tree, a fork of the same game served the same way, renders 10 nodes with no errors and is hosted. Declined for size until 2026-09-22; the size limit is gone, and this is the real reason (tmt-forks-1)."
+  }
+]

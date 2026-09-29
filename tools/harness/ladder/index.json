@@ -1,0 +1,7 @@
+{
+ "note": "Which games have a ladder file. loader/page.js reads THIS before it asks for a ladder, so a game without one costs no 404 - and the G1 load gate judges every request a page makes. Kept in step with the directory by loader/watch.test.mjs.",
+ "games": [
+  "ptr",
+  "something"
+ ]
+}

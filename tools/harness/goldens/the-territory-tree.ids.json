@@ -1,0 +1,104 @@
+{
+  "id": "the-territory-tree",
+  "commit": "2db5e13675bb795355550087a7f07c0205a17e04",
+  "layers": {
+    "info-tab": {
+      "row": "otherside",
+      "type": "none"
+    },
+    "options-tab": {
+      "row": "otherside",
+      "type": "none"
+    },
+    "changelog-tab": {
+      "row": "otherside",
+      "type": "none"
+    },
+    "p": {
+      "row": 0,
+      "type": "normal"
+    },
+    "blank": {
+      "row": null,
+      "type": "none"
+    },
+    "tree-tab": {
+      "row": null,
+      "type": "none"
+    },
+    "e": {
+      "row": 5,
+      "type": "static"
+    },
+    "se": {
+      "row": 3,
+      "type": "static"
+    },
+    "a": {
+      "row": 1,
+      "type": "normal"
+    }
+  },
+  "ids": [
+    "p:ms:0",
+    "p:ms:1",
+    "p:ms:2",
+    "p:upg:11",
+    "p:upg:12",
+    "p:upg:13",
+    "p:upg:21",
+    "p:upg:22",
+    "p:upg:23",
+    "p:upg:31",
+    "p:upg:32",
+    "p:upg:33",
+    "p:buy:11",
+    "p:buy:12",
+    "p:buy:21",
+    "e:ms:0",
+    "e:ms:1",
+    "e:ms:2",
+    "e:ms:3",
+    "e:ms:4",
+    "e:ms:5",
+    "e:ms:6",
+    "e:ms:7",
+    "e:ms:8",
+    "e:ms:9",
+    "e:ms:10",
+    "e:upg:10",
+    "e:upg:11",
+    "e:upg:12",
+    "e:ch:11",
+    "e:ch:12",
+    "e:ch:21",
+    "se:ms:0",
+    "se:ms:1",
+    "se:ms:2",
+    "se:ms:3",
+    "se:ms:4",
+    "se:upg:10",
+    "se:upg:11",
+    "se:upg:12",
+    "se:upg:20",
+    "se:buy:11",
+    "se:buy:12",
+    "se:buy:13",
+    "se:ch:11",
+    "se:ch:12",
+    "se:ch:13",
+    "a:upg:11",
+    "a:upg:12",
+    "a:upg:13",
+    "a:upg:21",
+    "a:upg:22",
+    "a:upg:23"
+  ],
+  "counts": {
+    "ms": 19,
+    "upg": 22,
+    "buy": 6,
+    "ch": 6,
+    "ach": 0
+  }
+}

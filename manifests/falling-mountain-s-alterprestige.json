@@ -1,0 +1,131 @@
+{
+  "schema": 1,
+  "id": "falling-mountain-s-alterprestige",
+  "name": "Falling Mountain's AlterPrestige",
+  "version": "0.4.0c Beta",
+  "author": "Falling Mountain, original Prestige by Makiki99",
+  "upstream": {
+    "repo": "FallingMountain/The-Modding-Tree",
+    "url": "https://github.com/FallingMountain/The-Modding-Tree.git",
+    "branch": "master",
+    "commit": "d3b83ae428f20d29c111e4d4ba5c0f6bd6bbec4f",
+    "pushed_at": "2023-03-18T03:35:41Z"
+  },
+  "engine": {
+    "tmtNum": "2.6.4.3",
+    "stock_commit": "eb890f0",
+    "moved": false,
+    "deviation": {
+      "added": 2,
+      "removed": 2
+    }
+  },
+  "entry": "index.html",
+  "load": {
+    "onload": "load()",
+    "scripts": [
+      "js/vue.js",
+      "js/technical/break_eternity.js",
+      "js/technical/layerSupport.js",
+      "js/mod.js",
+      "js/technical/loader.js",
+      "js/technical/temp.js",
+      "js/technical/displays.js",
+      "js/game.js",
+      "js/utils.js",
+      "js/utils/easyAccess.js",
+      "js/technical/systemComponents.js",
+      "js/components.js",
+      "js/technical/canvas.js",
+      "js/technical/particleSystem.js",
+      "js/utils/NumberFormating.js",
+      "js/utils/options.js",
+      "js/utils/save.js",
+      "js/utils/themes.js"
+    ],
+    "renderOnly": [
+      "js/vue.js",
+      "js/technical/systemComponents.js",
+      "js/components.js",
+      "js/technical/canvas.js",
+      "js/technical/particleSystem.js"
+    ],
+    "modFilesPrefix": "js/",
+    "modFiles": [
+      "nano.js",
+      "tree.js",
+      "micro.js",
+      "mini.js",
+      "small.js",
+      "partial.js",
+      "achievements.js"
+    ],
+    "external": {
+      "https://fonts.googleapis.com/css?family=Inconsolata": "drop"
+    },
+    "vendor": {}
+  },
+  "save": {
+    "keyRule": "modInfo.id",
+    "key": "alterPrestige"
+  },
+  "headless": {
+    "prestubs": [],
+    "renderStubs": [
+      "loadVue",
+      "resizeCanvas",
+      "retrieveCanvasData",
+      "drawTree",
+      "drawComponentBranches",
+      "drawTreeBranch",
+      "makeParticles",
+      "makeShinies",
+      "updateParticles",
+      "setDir",
+      "setSpeed",
+      "updateMouse",
+      "getOpacity",
+      "constructParticleStyle",
+      "clearParticles",
+      "sin",
+      "cos",
+      "tan",
+      "asin",
+      "acos",
+      "atan"
+    ],
+    "idleHash": {
+      "ticks": 200,
+      "diff": 0.05,
+      "hash": "30f8d94e75cd69ec"
+    },
+    "deterministic": false
+  },
+  "license": {
+    "githubSpdx": "NOASSERTION",
+    "files": {
+      "LICENSE": "MIT",
+      "Prestige-tree-license": "MIT"
+    },
+    "verdict": "MIT"
+  },
+  "census": {
+    "full_name": "FallingMountain/The-Modding-Tree",
+    "head": "d3b83ae",
+    "score": 51.32,
+    "layers": 10,
+    "rows": 5,
+    "milestones": 37,
+    "upgrades": 107,
+    "buyables": 27,
+    "challenges": 5,
+    "achievements": 69,
+    "trace_fields": 8
+  },
+  "patches": [],
+  "generated": {
+    "by": "tmt-fork-census scripts/manifest.mjs",
+    "commit": "24a9702",
+    "at": "2026-09-18T01:09:35.429Z"
+  }
+}

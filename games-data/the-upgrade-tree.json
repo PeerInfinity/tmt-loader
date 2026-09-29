@@ -1,0 +1,47 @@
+{
+ "generated": true,
+ "generator": "tools/currency-data.mjs",
+ "generatorVersion": 1,
+ "formatVersion": 1,
+ "game": "the-upgrade-tree",
+ "upstream": {
+  "repo": "BskyTeam/The-Upgrades-Tree",
+  "commit": "33323e4e493b8f69de82ef0de28ea6a41bdae4a9"
+ },
+ "states": [
+  "fresh"
+ ],
+ "seeds": [
+  1
+ ],
+ "summary": {
+  "buyables": 1,
+  "scored": 1,
+  "price": 1,
+  "requirement": 0,
+  "unknown": 0,
+  "own": 1,
+  "foreign": 0,
+  "several": 0,
+  "impure": 0
+ },
+ "buyables": {
+  "r": {
+   "11": {
+    "pays": "player.r.points",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.r.points",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   }
+  }
+ }
+}

@@ -1,0 +1,110 @@
+{
+ "generated": true,
+ "generator": "tools/currency-data.mjs",
+ "generatorVersion": 1,
+ "formatVersion": 1,
+ "game": "the-leveling-tree",
+ "upstream": {
+  "repo": "denisolenison/The-Leveling-Tree",
+  "commit": "838af4a41ec46e093870daf4a355ce7a1e42f731"
+ },
+ "states": [
+  "fresh"
+ ],
+ "seeds": [
+  1
+ ],
+ "summary": {
+  "buyables": 6,
+  "scored": 0,
+  "price": 0,
+  "requirement": 0,
+  "unknown": 6,
+  "own": 0,
+  "foreign": 0,
+  "several": 0,
+  "impure": 0
+ },
+ "buyables": {
+  "xp": {
+   "11": {
+    "pays": null,
+    "cost": "unknown",
+    "by": [],
+    "scored": false,
+    "pick": "player.xp.points",
+    "how": "lift-1",
+    "why": "buy() changed nothing (it threw: Cannot read properties of undefined (reading 'gte'))",
+    "from": [
+     "fresh"
+    ]
+   }
+  },
+  "g": {
+   "11": {
+    "pays": null,
+    "cost": "unknown",
+    "by": [],
+    "scored": false,
+    "pick": "player.g.points",
+    "how": "lift-1",
+    "why": "buy() changed nothing (it threw: Cannot read properties of undefined (reading 'gte'))",
+    "from": [
+     "fresh"
+    ]
+   }
+  },
+  "l": {
+   "11": {
+    "pays": null,
+    "cost": "unknown",
+    "by": [],
+    "scored": false,
+    "pick": "player.l.points",
+    "how": "lift-1",
+    "why": "buy() changed nothing (it threw: Cannot read properties of undefined (reading 'gte'))",
+    "from": [
+     "fresh"
+    ]
+   },
+   "12": {
+    "pays": null,
+    "cost": "unknown",
+    "by": [],
+    "scored": false,
+    "pick": "player.l.points",
+    "how": "lift-1",
+    "why": "buy() changed nothing (it threw: Cannot read properties of undefined (reading 'gte'))",
+    "from": [
+     "fresh"
+    ]
+   }
+  },
+  "r": {
+   "11": {
+    "pays": null,
+    "cost": "unknown",
+    "by": [],
+    "scored": false,
+    "pick": "player.r.points",
+    "how": "lift-1",
+    "why": "buy() changed nothing (it threw: Cannot read properties of undefined (reading 'gte'))",
+    "from": [
+     "fresh"
+    ]
+   },
+   "12": {
+    "pays": null,
+    "cost": "unknown",
+    "by": [],
+    "scored": false,
+    "pick": "player.r.points",
+    "how": "lift-1",
+    "why": "buy() changed nothing (it threw: Cannot read properties of undefined (reading 'div'))",
+    "from": [
+     "fresh"
+    ]
+   }
+  }
+ }
+}

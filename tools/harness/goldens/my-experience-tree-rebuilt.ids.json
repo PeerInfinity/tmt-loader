@@ -1,0 +1,153 @@
+{
+  "id": "my-experience-tree-rebuilt",
+  "commit": "1fff082614e98ddc44df5923e27ecb9e8a13fe41",
+  "layers": {
+    "info-tab": {
+      "row": "otherside",
+      "type": "none"
+    },
+    "options-tab": {
+      "row": "otherside",
+      "type": "none"
+    },
+    "changelog-tab": {
+      "row": "otherside",
+      "type": "none"
+    },
+    "p": {
+      "row": 0,
+      "type": "normal"
+    },
+    "e": {
+      "row": 1,
+      "type": "normal"
+    },
+    "t": {
+      "row": 2,
+      "type": "static"
+    },
+    "li": {
+      "row": 1,
+      "type": "normal"
+    },
+    "i": {
+      "row": 2,
+      "type": "static"
+    },
+    "a": {
+      "row": "side",
+      "type": "normal"
+    },
+    "c": {
+      "row": 3,
+      "type": "static"
+    },
+    "blank": {
+      "row": null,
+      "type": "none"
+    },
+    "tree-tab": {
+      "row": null,
+      "type": "none"
+    }
+  },
+  "ids": [
+    "p:ms:0",
+    "p:ms:1",
+    "p:ms:2",
+    "p:upg:11",
+    "p:upg:12",
+    "p:upg:13",
+    "p:upg:14",
+    "p:upg:21",
+    "p:upg:22",
+    "p:upg:23",
+    "p:upg:24",
+    "p:upg:31",
+    "p:upg:32",
+    "p:upg:33",
+    "p:upg:34",
+    "e:upg:11",
+    "e:upg:12",
+    "e:upg:13",
+    "e:upg:14",
+    "e:upg:15",
+    "e:upg:21",
+    "e:upg:22",
+    "e:upg:23",
+    "e:upg:24",
+    "e:upg:25",
+    "t:ms:0",
+    "t:ms:1",
+    "t:ms:2",
+    "t:ms:3",
+    "t:ch:11",
+    "t:ch:12",
+    "t:ch:21",
+    "t:ch:22",
+    "li:ms:0",
+    "li:ms:1",
+    "li:buy:11",
+    "li:buy:12",
+    "li:buy:21",
+    "i:ms:0",
+    "i:ms:1",
+    "i:ms:2",
+    "i:upg:11",
+    "i:upg:21",
+    "i:upg:22",
+    "i:upg:31",
+    "i:upg:32",
+    "i:upg:33",
+    "a:ach:11",
+    "a:ach:12",
+    "a:ach:13",
+    "a:ach:14",
+    "a:ach:15",
+    "a:ach:16",
+    "a:ach:17",
+    "a:ach:21",
+    "a:ach:22",
+    "a:ach:23",
+    "a:ach:24",
+    "a:ach:25",
+    "a:ach:26",
+    "a:ach:27",
+    "a:ach:31",
+    "a:ach:32",
+    "a:ach:33",
+    "a:ach:34",
+    "a:ach:35",
+    "a:ach:36",
+    "a:ach:37",
+    "a:ach:41",
+    "a:ach:42",
+    "a:ach:43",
+    "a:ach:44",
+    "a:ach:45",
+    "a:ach:46",
+    "a:ach:47",
+    "a:ach:51",
+    "a:ach:52",
+    "a:ach:53",
+    "a:ach:54",
+    "a:ach:55",
+    "a:ach:56",
+    "a:ach:57",
+    "c:ms:0",
+    "c:ms:1",
+    "c:ms:2",
+    "c:ms:3",
+    "c:ms:4",
+    "c:upg:11",
+    "c:upg:12",
+    "c:upg:13"
+  ],
+  "counts": {
+    "ms": 17,
+    "upg": 31,
+    "buy": 3,
+    "ch": 4,
+    "ach": 35
+  }
+}

@@ -1,0 +1,150 @@
+{
+  "schema": 1,
+  "id": "the-gaming-tree",
+  "name": "The Gaming Tree",
+  "version": "R0.B.6",
+  "author": "medsal15",
+  "upstream": {
+    "repo": "medsal15/The-Gaming-Tree",
+    "url": "https://github.com/medsal15/The-Gaming-Tree.git",
+    "branch": "master",
+    "commit": "2a07a20117aa944b69814f3195b2b23ce94530b6",
+    "pushed_at": "2024-06-11T13:10:51Z"
+  },
+  "engine": {
+    "tmtNum": "2.6.6.2",
+    "stock_commit": "8cf14c4",
+    "moved": false,
+    "deviation": {
+      "added": 982,
+      "removed": 511
+    }
+  },
+  "entry": "index.html",
+  "load": {
+    "onload": "load()",
+    "scripts": [
+      "js/technical/vue_2_6_12.js",
+      "js/technical/break_eternity.js",
+      "js/technical/layerSupport.js",
+      "js/moreutils.js",
+      "js/mod.js",
+      "js/technical/loader.js",
+      "js/technical/temp.js",
+      "js/technical/displays.js",
+      "js/game.js",
+      "js/utils.js",
+      "js/utils/easyAccess.js",
+      "js/technical/systemComponents.js",
+      "js/components.js",
+      "js/technical/canvas.js",
+      "js/technical/particleSystem.js",
+      "js/utils/NumberFormating.js",
+      "js/utils/options.js",
+      "js/utils/save.js",
+      "js/utils/themes.js"
+    ],
+    "renderOnly": [
+      "js/technical/vue_2_6_12.js",
+      "js/technical/systemComponents.js",
+      "js/components.js",
+      "js/technical/canvas.js",
+      "js/technical/particleSystem.js"
+    ],
+    "modFilesPrefix": "js/",
+    "modFiles": [
+      "tree.js",
+      "layers/hotkeys.js",
+      "layers/star.js",
+      "layers/side/achievements.js",
+      "layers/side/clock.js",
+      "layers/side/casino.js",
+      "layers/side/magic.js",
+      "layers/side/stats.js",
+      "layers/0/experience.js",
+      "layers/0/mining.js",
+      "layers/0/tree.js",
+      "layers/1/level.js",
+      "layers/1/loot.js",
+      "layers/1/forge.js",
+      "layers/2/boss.js",
+      "layers/2/shop.js",
+      "layers/2/alternator.js",
+      "alternate/side/successes.js",
+      "alternate/side/time_cubes.js",
+      "alternate/side/bingo.js",
+      "alternate/side/condiments.js",
+      "alternate/0/experience.js",
+      "alternate/0/city.js",
+      "alternate/0/plants.js",
+      "alternate/1/tower.js",
+      "alternate/1/kitchen.js",
+      "alternate/1/freezer.js"
+    ],
+    "external": {},
+    "vendor": {}
+  },
+  "save": {
+    "keyRule": "modInfo.id",
+    "key": "thegamingtreev3"
+  },
+  "headless": {
+    "prestubs": [],
+    "renderStubs": [
+      "loadVue",
+      "resizeCanvas",
+      "retrieveCanvasData",
+      "drawTree",
+      "drawComponentBranches",
+      "drawTreeBranch",
+      "makeParticles",
+      "makeShinies",
+      "updateParticles",
+      "setDir",
+      "setSpeed",
+      "updateMouse",
+      "getOpacity",
+      "constructParticleStyle",
+      "clearParticles",
+      "sin",
+      "cos",
+      "tan",
+      "asin",
+      "acos",
+      "atan"
+    ],
+    "idleHash": {
+      "ticks": 200,
+      "diff": 0.05,
+      "hash": "78de1dcb4e419431"
+    },
+    "deterministic": false
+  },
+  "license": {
+    "githubSpdx": "NOASSERTION",
+    "files": {
+      "LICENSE": "MIT",
+      "Prestige-tree-license": "MIT"
+    },
+    "verdict": "MIT"
+  },
+  "census": {
+    "full_name": "medsal15/The-Gaming-Tree",
+    "head": "2a07a20",
+    "score": 57.62,
+    "layers": 17,
+    "rows": 4,
+    "milestones": 11,
+    "upgrades": 153,
+    "buyables": 61,
+    "challenges": 16,
+    "achievements": 116,
+    "trace_fields": 2
+  },
+  "patches": [],
+  "generated": {
+    "by": "tmt-fork-census scripts/manifest.mjs",
+    "commit": "16d69c4",
+    "at": "2026-09-18T01:29:14.122Z"
+  }
+}

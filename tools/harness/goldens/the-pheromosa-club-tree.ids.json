@@ -1,0 +1,56 @@
+{
+  "id": "the-pheromosa-club-tree",
+  "commit": "915e403c5b74d99306bb84782b11a644a4d10e1c",
+  "layers": {
+    "info-tab": {
+      "row": "otherside",
+      "type": "none"
+    },
+    "options-tab": {
+      "row": "otherside",
+      "type": "none"
+    },
+    "changelog-tab": {
+      "row": "otherside",
+      "type": "none"
+    },
+    "h": {
+      "row": 0,
+      "type": "normal"
+    },
+    "a": {
+      "row": "side",
+      "type": "none"
+    },
+    "blank": {
+      "row": null,
+      "type": "none"
+    },
+    "tree-tab": {
+      "row": null,
+      "type": "none"
+    }
+  },
+  "ids": [
+    "h:upg:11",
+    "a:ms:0",
+    "a:ms:1",
+    "a:ms:2",
+    "a:ms:3",
+    "a:ms:4",
+    "a:ms:5",
+    "a:ms:6",
+    "a:ms:7",
+    "a:ms:8",
+    "a:ms:9",
+    "a:ms:10",
+    "a:ach:11"
+  ],
+  "counts": {
+    "ms": 11,
+    "upg": 1,
+    "buy": 0,
+    "ch": 0,
+    "ach": 1
+  }
+}

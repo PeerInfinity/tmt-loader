@@ -1,0 +1,142 @@
+{
+  "schema": 1,
+  "id": "the-question-tree",
+  "name": "The Question Tree",
+  "version": "0.0.4",
+  "author": "ArkSayCode",
+  "upstream": {
+    "repo": "ArkSayCode/The-Question-Tree",
+    "url": "https://github.com/ArkSayCode/The-Question-Tree.git",
+    "branch": "master",
+    "commit": "ad063e73cdeb9cd6f5538544c6756e7c5476d615",
+    "pushed_at": "2024-07-26T04:45:53Z"
+  },
+  "engine": {
+    "tmtNum": "2.6.6.2",
+    "stock_commit": "8cf14c4",
+    "moved": false,
+    "deviation": {
+      "added": 10,
+      "removed": 3
+    }
+  },
+  "entry": "index.html",
+  "load": {
+    "onload": "load()",
+    "scripts": [
+      "js/technical/break_eternity.js",
+      "js/technical/layerSupport.js",
+      "js/mod.js",
+      "js/technical/loader.js",
+      "js/technical/temp.js",
+      "js/technical/displays.js",
+      "js/game.js",
+      "js/utils.js",
+      "js/utils/easyAccess.js",
+      "js/technical/systemComponents.js",
+      "js/components.js",
+      "js/technical/canvas.js",
+      "js/technical/particleSystem.js",
+      "js/utils/NumberFormating.js",
+      "js/utils/options.js",
+      "js/utils/save.js",
+      "js/utils/themes.js"
+    ],
+    "renderOnly": [
+      "js/technical/systemComponents.js",
+      "js/components.js",
+      "js/technical/canvas.js",
+      "js/technical/particleSystem.js"
+    ],
+    "modFilesPrefix": "js/",
+    "modFiles": [
+      "Layers/q.js",
+      "Layers/a.js",
+      "Layers/e.js",
+      "Layers/i.js",
+      "Layers/t.js",
+      "Layers/m.js",
+      "Layers/o.js",
+      "Layers/ac.js",
+      "tree.js"
+    ],
+    "external": {
+      "https://cdn.jsdelivr.net/npm/vue@2.6.12": "vendor",
+      "https://fonts.googleapis.com/css?family=Inconsolata": "drop"
+    },
+    "vendor": {
+      "https://cdn.jsdelivr.net/npm/vue@2.6.12": {
+        "path": "vendor/vue-2.6.12.min.js",
+        "sha256": "29296ccacaa9ed35ed168fc51e36f54fd6f8db9c7786bbf38cc59a27229ba5c2"
+      }
+    },
+    "known": {
+      "missingScripts": [
+        "js/Layers/m.js"
+      ]
+    }
+  },
+  "save": {
+    "keyRule": "modInfo.id",
+    "key": "TQT"
+  },
+  "headless": {
+    "prestubs": [],
+    "renderStubs": [
+      "loadVue",
+      "resizeCanvas",
+      "retrieveCanvasData",
+      "drawTree",
+      "drawComponentBranches",
+      "drawTreeBranch",
+      "makeParticles",
+      "makeShinies",
+      "updateParticles",
+      "setDir",
+      "setSpeed",
+      "updateMouse",
+      "getOpacity",
+      "constructParticleStyle",
+      "clearParticles",
+      "sin",
+      "cos",
+      "tan",
+      "asin",
+      "acos",
+      "atan"
+    ],
+    "idleHash": {
+      "ticks": 200,
+      "diff": 0.05,
+      "hash": "e827372d905c21fb"
+    },
+    "deterministic": true
+  },
+  "license": {
+    "githubSpdx": "NOASSERTION",
+    "files": {
+      "LICENSE": "MIT",
+      "Prestige-tree-license": "MIT"
+    },
+    "verdict": "MIT"
+  },
+  "census": {
+    "full_name": "ArkSayCode/The-Question-Tree",
+    "head": "ad063e7",
+    "score": 54.33,
+    "layers": 6,
+    "rows": 4,
+    "milestones": 9,
+    "upgrades": 15,
+    "buyables": 9,
+    "challenges": 4,
+    "achievements": 8,
+    "trace_fields": 5
+  },
+  "patches": [],
+  "generated": {
+    "by": "tmt-fork-census scripts/manifest.mjs",
+    "commit": "24a9702",
+    "at": "2026-09-18T01:09:33.618Z"
+  }
+}

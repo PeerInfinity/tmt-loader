@@ -1,0 +1,4714 @@
+{
+ "generated": true,
+ "generator": "tools/currency-data.mjs",
+ "generatorVersion": 1,
+ "formatVersion": 1,
+ "game": "plague-tree-vorona-cirus-treesease",
+ "upstream": {
+  "repo": "c0v1d-9119361/The-Plague-Tree",
+  "commit": "bbbd3b5ecf72b3bbc219fe2a38921e5e71ff9f3f"
+ },
+ "states": [
+  "fresh"
+ ],
+ "seeds": [
+  1
+ ],
+ "summary": {
+  "buyables": 319,
+  "scored": 302,
+  "price": 280,
+  "requirement": 22,
+  "unknown": 17,
+  "own": 44,
+  "foreign": 258,
+  "several": 0,
+  "impure": 0
+ },
+ "buyables": {
+  "Uv": {
+   "11": {
+    "pays": "player.Uv.points",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.Uv.points",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "12": {
+    "pays": "player.Uv.points",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.Uv.points",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   }
+  },
+  "Ui": {
+   "11": {
+    "pays": "player.Ui.points",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.Ui.points",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "21": {
+    "pays": "player.Ui.points",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.Ui.points",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "22": {
+    "pays": "player.Ui.points",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.Ui.points",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "23": {
+    "pays": "player.Ui.points",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.Ui.points",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "31": {
+    "pays": "player.Ui.points",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.Ui.points",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "32": {
+    "pays": "player.Ui.points",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.Ui.points",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "33": {
+    "pays": "player.Ui.points",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.Ui.points",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   }
+  },
+  "Ur": {
+   "11": {
+    "pays": "player.Ur.replicants",
+    "cost": "requirement",
+    "by": [
+     "rollback",
+     "trace"
+    ],
+    "scored": true,
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "12": {
+    "pays": "player.Ur.replicants",
+    "cost": "requirement",
+    "by": [
+     "rollback",
+     "trace"
+    ],
+    "scored": true,
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "13": {
+    "pays": "player.Ur.replicants",
+    "cost": "requirement",
+    "by": [
+     "rollback",
+     "trace"
+    ],
+    "scored": true,
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "21": {
+    "pays": "player.d.points",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.d.points",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "22": {
+    "pays": "player.d.points",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.d.points",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "23": {
+    "pays": "player.d.points",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.d.points",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   }
+  },
+  "s": {
+   "11": {
+    "pays": "player.s.severity",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.s.severity",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "12": {
+    "pays": "player.s.severity",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.s.severity",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "13": {
+    "pays": "player.s.severity",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.s.severity",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "21": {
+    "pays": "player.s.severity",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.s.severity",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "22": {
+    "pays": "player.s.severity",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.s.severity",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "23": {
+    "pays": "player.s.severity",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.s.severity",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "31": {
+    "pays": "player.s.severity",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.s.severity",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "32": {
+    "pays": "player.s.severity",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.s.severity",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "33": {
+    "pays": "player.s.severity",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.s.severity",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   }
+  },
+  "d": {
+   "11": {
+    "pays": "player.d.points",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.d.points",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "12": {
+    "pays": "player.d.points",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.d.points",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "13": {
+    "pays": "player.d.points",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.d.points",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   }
+  },
+  "Up": {
+   "11": {
+    "pays": "player.Up.points",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.Up.points",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "12": {
+    "pays": "player.Up.points",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.Up.points",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "13": {
+    "pays": "player.Up.points",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.Up.points",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "21": {
+    "pays": "player.Up.points",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.Up.points",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "22": {
+    "pays": "player.Up.points",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.Up.points",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "23": {
+    "pays": "player.Up.points",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.Up.points",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "31": {
+    "pays": "player.Up.protein",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.Up.protein",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "32": {
+    "pays": "player.Up.protein",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.Up.protein",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "33": {
+    "pays": "player.Up.protein",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.Up.protein",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "41": {
+    "pays": "player.Up.uprotein",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.Up.uprotein",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "42": {
+    "pays": "player.Up.uprotein",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.Up.uprotein",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "43": {
+    "pays": "player.Up.uprotein",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.Up.uprotein",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "51": {
+    "pays": "player.Up.points",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.Up.points",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "52": {
+    "pays": "player.f.casualty",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.f.casualty",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "53": {
+    "pays": "player.Up.prp",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.Up.prp",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "61": {
+    "pays": "player.Up.prpsc",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.Up.prpsc",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "62": {
+    "pays": "player.Up.prpsc",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.Up.prpsc",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "63": {
+    "pays": "player.Up.prpsc",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.Up.prpsc",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "71": {
+    "pays": "player.Up.prpres",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.Up.prpres",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "72": {
+    "pays": "player.Up.prpres",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.Up.prpres",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "73": {
+    "pays": "player.Up.prpres",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.Up.prpres",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   }
+  },
+  "f": {
+   "11": {
+    "pays": "player.f.points",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.f.points",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "12": {
+    "pays": "player.f.points",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.f.points",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "13": {
+    "pays": "player.f.points",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.f.points",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "14": {
+    "pays": "player.f.points",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.f.points",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "21": {
+    "pays": "player.f.points",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.f.points",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "22": {
+    "pays": "player.f.points",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.f.points",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "23": {
+    "pays": "player.f.points",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.f.points",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "24": {
+    "pays": "player.f.points",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.f.points",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "31": {
+    "pays": "player.f.points",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.f.points",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "32": {
+    "pays": "player.f.buyables.22",
+    "cost": "requirement",
+    "by": [
+     "rollback",
+     "trace"
+    ],
+    "scored": true,
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "33": {
+    "pays": "player.f.buyables.24",
+    "cost": "requirement",
+    "by": [
+     "rollback",
+     "trace"
+    ],
+    "scored": true,
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "34": {
+    "pays": "player.f.casualty",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.f.casualty",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "41": {
+    "pays": "player.f.casualty",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.f.casualty",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "42": {
+    "pays": "player.f.casualty",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.f.casualty",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "43": {
+    "pays": "player.f.casualty",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.f.casualty",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "44": {
+    "pays": "player.f.casualty",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.f.casualty",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "51": {
+    "pays": "player.f.casualty",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.f.casualty",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "52": {
+    "pays": "player.f.casualty",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.f.casualty",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "53": {
+    "pays": "player.f.casualty",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.f.casualty",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "54": {
+    "pays": "player.f.casualty",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.f.casualty",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "61": {
+    "pays": "player.f.casualty",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.f.casualty",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "62": {
+    "pays": "player.f.casualty",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.f.casualty",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "63": {
+    "pays": "player.f.casualty",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.f.casualty",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "64": {
+    "pays": "player.f.casualty",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.f.casualty",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "71": {
+    "pays": "player.f.casualty",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.f.casualty",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "72": {
+    "pays": "player.f.casualty",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.f.casualty",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "73": {
+    "pays": "player.f.casualty",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.f.casualty",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "74": {
+    "pays": "player.f.casualty",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.f.casualty",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "81": {
+    "pays": "player.f.casualty",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.f.casualty",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "82": {
+    "pays": "player.f.casualty",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.f.casualty",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "83": {
+    "pays": "player.f.casualty",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.f.casualty",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "84": {
+    "pays": "player.f.casualty",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.f.casualty",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "91": {
+    "pays": "player.f.casualty",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.f.casualty",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "92": {
+    "pays": "player.f.casualty",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.f.casualty",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "93": {
+    "pays": "player.f.casualty",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.f.casualty",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "101": {
+    "pays": "player.f.virus",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.f.virus",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "102": {
+    "pays": "player.f.virus",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.f.virus",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "103": {
+    "pays": "player.f.virus",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.f.virus",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   }
+  },
+  "e": {
+   "11": {
+    "pays": "player.e.p",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.e.p",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "12": {
+    "pays": "player.e.p",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.e.p",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "13": {
+    "pays": "player.e.p",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.e.p",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "21": {
+    "pays": "player.e.p",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.e.p",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "22": {
+    "pays": "player.e.p",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.e.p",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "23": {
+    "pays": "player.e.p",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.e.p",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "31": {
+    "pays": "player.e.p",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.e.p",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "41": {
+    "pays": "player.e.diseases",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.e.diseases",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "42": {
+    "pays": "player.e.diseases",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.e.diseases",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "51": {
+    "pays": "player.e.qc",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.e.qc",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "52": {
+    "pays": "player.e.qc",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.e.qc",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "53": {
+    "pays": "player.e.qc",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.e.qc",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "61": {
+    "pays": "player.e.qc",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.e.qc",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "62": {
+    "pays": "player.e.qc",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.e.qc",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "63": {
+    "pays": "player.e.qc",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.e.qc",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "71": {
+    "pays": "player.e.rna",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.e.rna",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "72": {
+    "pays": "player.e.rna",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.e.rna",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "81": {
+    "pays": "player.e.rna",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.e.rna",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "82": {
+    "pays": "player.e.rna",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.e.rna",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "83": {
+    "pays": "player.e.rna",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.e.rna",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "91": {
+    "pays": "player.e.rna",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.e.rna",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "92": {
+    "pays": "player.e.rna",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.e.rna",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "93": {
+    "pays": "player.e.mrna",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.e.mrna",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "94": {
+    "pays": "player.e.mrna",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.e.mrna",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "95": {
+    "pays": "player.e.mrna",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.e.mrna",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "101": {
+    "pays": "player.e.mrna",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.e.mrna",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "102": {
+    "pays": "player.e.mrna",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.e.mrna",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "103": {
+    "pays": "player.e.mrna",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.e.mrna",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "104": {
+    "pays": "player.e.mrna",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.e.mrna",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "105": {
+    "pays": "player.e.mrna",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.e.mrna",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "111": {
+    "pays": "player.e.crna",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.e.crna",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "112": {
+    "pays": "player.e.crna",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.e.crna",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "113": {
+    "pays": "player.e.crna",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.e.crna",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "121": {
+    "pays": "player.e.crna",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.e.crna",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "122": {
+    "pays": "player.e.crna",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.e.crna",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "123": {
+    "pays": "player.e.crna",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.e.crna",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   }
+  },
+  "Uu": {
+   "11": {
+    "pays": "player.e.p",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.e.p",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "12": {
+    "pays": "player.Uu.power",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.Uu.power",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "13": {
+    "pays": "player.Uu.power",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.Uu.power",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "21": {
+    "pays": "player.Uu.power",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.Uu.power",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "22": {
+    "pays": "player.Uu.power",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.Uu.power",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "23": {
+    "pays": "player.Uu.power",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.Uu.power",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "31": {
+    "pays": "player.Uu.power",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.Uu.power",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "32": {
+    "pays": "player.Uu.power",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.Uu.power",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "33": {
+    "pays": "player.Uu.power",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.Uu.power",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "41": {
+    "pays": "player.Uu.enzymes",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.Uu.enzymes",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "42": {
+    "pays": "player.Uu.enzymes",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.Uu.enzymes",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "43": {
+    "pays": "player.Uu.enzymes",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.Uu.enzymes",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "51": {
+    "pays": "player.Uu.enzymes",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.Uu.enzymes",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "52": {
+    "pays": "player.Uu.enzymes",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.Uu.enzymes",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "53": {
+    "pays": "player.Uu.enzymes",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.Uu.enzymes",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "61": {
+    "pays": "player.e.qc",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.e.qc",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "62": {
+    "pays": "player.e.qc",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.e.qc",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "63": {
+    "pays": "player.e.qc",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.e.qc",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   }
+  },
+  "Us": {
+   "11": {
+    "pays": "player.Us.severity",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.Us.severity",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "12": {
+    "pays": "player.e.h",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.e.h",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "13": {
+    "pays": "player.e.c",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.e.c",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "21": {
+    "pays": "player.e.n",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.e.n",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "22": {
+    "pays": "player.e.o",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.e.o",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "23": {
+    "pays": "player.e.ph",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.e.ph",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "31": {
+    "pays": "player.e.at",
+    "cost": "requirement",
+    "by": [
+     "rollback",
+     "trace"
+    ],
+    "scored": true,
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "41": {
+    "pays": "player.Us.severity",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.Us.severity",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "42": {
+    "pays": "player.Us.severity",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.Us.severity",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "43": {
+    "pays": "player.Us.severity",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.Us.severity",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "51": {
+    "pays": "player.Us.severity",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.Us.severity",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "52": {
+    "pays": "player.Us.severity",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.Us.severity",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "53": {
+    "pays": "player.Us.severity",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.Us.severity",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "61": {
+    "pays": "player.Us.severity",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.Us.severity",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "62": {
+    "pays": "player.Us.severity",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.Us.severity",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "63": {
+    "pays": "player.Us.severity",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.Us.severity",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "71": {
+    "pays": "player.Us.severity",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.Us.severity",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "72": {
+    "pays": "player.e.mrna",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.e.mrna",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "73": {
+    "pays": "player.Us.trna",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.Us.trna",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "81": {
+    "pays": "player.Us.trna",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.Us.trna",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "82": {
+    "pays": "player.Us.trna",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.Us.trna",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "83": {
+    "pays": "player.Us.trna",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.Us.trna",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "91": {
+    "pays": null,
+    "cost": "unknown",
+    "by": [],
+    "scored": false,
+    "why": "not affordable, and no lift of up to three candidates to 10× the cost makes it so",
+    "from": [
+     "fresh"
+    ]
+   },
+   "92": {
+    "pays": null,
+    "cost": "unknown",
+    "by": [],
+    "scored": false,
+    "why": "not affordable, and no lift of up to three candidates to 10× the cost makes it so",
+    "from": [
+     "fresh"
+    ]
+   },
+   "93": {
+    "pays": null,
+    "cost": "unknown",
+    "by": [],
+    "scored": false,
+    "why": "not affordable, and no lift of up to three candidates to 10× the cost makes it so",
+    "from": [
+     "fresh"
+    ]
+   },
+   "94": {
+    "pays": null,
+    "cost": "unknown",
+    "by": [],
+    "scored": false,
+    "why": "not affordable, and no lift of up to three candidates to 10× the cost makes it so",
+    "from": [
+     "fresh"
+    ]
+   },
+   "101": {
+    "pays": null,
+    "cost": "unknown",
+    "by": [],
+    "scored": false,
+    "why": "not affordable, and no lift of up to three candidates to 10× the cost makes it so",
+    "from": [
+     "fresh"
+    ]
+   },
+   "102": {
+    "pays": null,
+    "cost": "unknown",
+    "by": [],
+    "scored": false,
+    "why": "not affordable, and no lift of up to three candidates to 10× the cost makes it so",
+    "from": [
+     "fresh"
+    ]
+   },
+   "103": {
+    "pays": null,
+    "cost": "unknown",
+    "by": [],
+    "scored": false,
+    "why": "not affordable, and no lift of up to three candidates to 10× the cost makes it so",
+    "from": [
+     "fresh"
+    ]
+   },
+   "104": {
+    "pays": null,
+    "cost": "unknown",
+    "by": [],
+    "scored": false,
+    "why": "not affordable, and no lift of up to three candidates to 10× the cost makes it so",
+    "from": [
+     "fresh"
+    ]
+   },
+   "111": {
+    "pays": null,
+    "cost": "unknown",
+    "by": [],
+    "scored": false,
+    "why": "not affordable, and no lift of up to three candidates to 10× the cost makes it so",
+    "from": [
+     "fresh"
+    ]
+   },
+   "112": {
+    "pays": null,
+    "cost": "unknown",
+    "by": [],
+    "scored": false,
+    "why": "not affordable, and no lift of up to three candidates to 10× the cost makes it so",
+    "from": [
+     "fresh"
+    ]
+   },
+   "113": {
+    "pays": null,
+    "cost": "unknown",
+    "by": [],
+    "scored": false,
+    "why": "not affordable, and no lift of up to three candidates to 10× the cost makes it so",
+    "from": [
+     "fresh"
+    ]
+   },
+   "114": {
+    "pays": null,
+    "cost": "unknown",
+    "by": [],
+    "scored": false,
+    "why": "not affordable, and no lift of up to three candidates to 10× the cost makes it so",
+    "from": [
+     "fresh"
+    ]
+   }
+  },
+  "Ud": {
+   "11": {
+    "pays": "player.Ud.points",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.Ud.points",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "12": {
+    "pays": "player.Ud.points",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.Ud.points",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "13": {
+    "pays": "player.Ud.points",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.Ud.points",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "21": {
+    "pays": "player.Ud.points",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.Ud.points",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "22": {
+    "pays": "player.Ud.points",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.Ud.points",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "23": {
+    "pays": "player.Ud.points",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.Ud.points",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "31": {
+    "pays": null,
+    "cost": "unknown",
+    "by": [],
+    "scored": false,
+    "pick": "player.Ud.points",
+    "how": "lift-1",
+    "why": "no field fell by the published cost",
+    "from": [
+     "fresh"
+    ]
+   },
+   "32": {
+    "pays": null,
+    "cost": "unknown",
+    "by": [],
+    "scored": false,
+    "pick": "player.Ud.points",
+    "how": "lift-1",
+    "why": "no field fell by the published cost",
+    "from": [
+     "fresh"
+    ]
+   },
+   "33": {
+    "pays": "player.Ud.points",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.Ud.points",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "41": {
+    "pays": "player.Ud.points",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.Ud.points",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "42": {
+    "pays": "player.ct.points",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.ct.points",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "43": {
+    "pays": "player.ct.points",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.ct.points",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "51": {
+    "pays": "player.ct.points",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.ct.points",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "52": {
+    "pays": "player.ct.points",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.ct.points",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "53": {
+    "pays": "player.ct.points",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.ct.points",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "54": {
+    "pays": "player.ct.points",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.ct.points",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "61": {
+    "pays": "player.ct.points",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.ct.points",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "62": {
+    "pays": "player.ct.points",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.ct.points",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "71": {
+    "pays": "player.ct.points",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.ct.points",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "72": {
+    "pays": "player.ct.points",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.ct.points",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "81": {
+    "pays": "player.Ud.mutants",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.Ud.mutants",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "82": {
+    "pays": "player.Ud.mutants",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.Ud.mutants",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "83": {
+    "pays": "player.Ud.mutants",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.Ud.mutants",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "84": {
+    "pays": "player.Ud.mutants",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.Ud.mutants",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "85": {
+    "pays": "player.Ud.mutants",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.Ud.mutants",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "91": {
+    "pays": "player.Ud.dmutants",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.Ud.dmutants",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "92": {
+    "pays": "player.Ud.dmutants",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.Ud.dmutants",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "93": {
+    "pays": "player.Ud.dmutants",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.Ud.dmutants",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "94": {
+    "pays": "player.Ud.dmutants",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.Ud.dmutants",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "95": {
+    "pays": "player.Ud.dmutants",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.Ud.dmutants",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "101": {
+    "pays": "player.ct.LaBas",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.ct.LaBas",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "102": {
+    "pays": "player.ct.LaBas",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.ct.LaBas",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "103": {
+    "pays": "player.ct.LaBas",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.ct.LaBas",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "104": {
+    "pays": "player.ct.LaBas",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.ct.LaBas",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "111": {
+    "pays": "player.Ud.crows",
+    "cost": "requirement",
+    "by": [
+     "rollback",
+     "trace"
+    ],
+    "scored": true,
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "112": {
+    "pays": "player.Ud.crows",
+    "cost": "requirement",
+    "by": [
+     "rollback",
+     "trace"
+    ],
+    "scored": true,
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "113": {
+    "pays": "player.Ud.crows",
+    "cost": "requirement",
+    "by": [
+     "rollback",
+     "trace"
+    ],
+    "scored": true,
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "114": {
+    "pays": "player.Ud.crows",
+    "cost": "requirement",
+    "by": [
+     "rollback",
+     "trace"
+    ],
+    "scored": true,
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "121": {
+    "pays": "player.Ud.crows",
+    "cost": "requirement",
+    "by": [
+     "rollback",
+     "trace"
+    ],
+    "scored": true,
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "122": {
+    "pays": "player.Ud.crows",
+    "cost": "requirement",
+    "by": [
+     "rollback",
+     "trace"
+    ],
+    "scored": true,
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "123": {
+    "pays": "player.Ud.crows",
+    "cost": "requirement",
+    "by": [
+     "rollback",
+     "trace"
+    ],
+    "scored": true,
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "124": {
+    "pays": "player.Ud.crows",
+    "cost": "requirement",
+    "by": [
+     "rollback",
+     "trace"
+    ],
+    "scored": true,
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "131": {
+    "pays": "player.Ud.crowBirds",
+    "cost": "requirement",
+    "by": [
+     "rollback",
+     "trace"
+    ],
+    "scored": true,
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "132": {
+    "pays": "player.Ud.crowBirds",
+    "cost": "requirement",
+    "by": [
+     "rollback",
+     "trace"
+    ],
+    "scored": true,
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "133": {
+    "pays": "player.Ud.crowBirds",
+    "cost": "requirement",
+    "by": [
+     "rollback",
+     "trace"
+    ],
+    "scored": true,
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "134": {
+    "pays": "player.Ud.crowBirds",
+    "cost": "requirement",
+    "by": [
+     "rollback",
+     "trace"
+    ],
+    "scored": true,
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   }
+  },
+  "ct": {
+   "11": {
+    "pays": "player.ct.points",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.ct.points",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "12": {
+    "pays": "player.ct.points",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.ct.points",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "13": {
+    "pays": "player.ct.points",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.ct.points",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "21": {
+    "pays": "player.ct.points",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.ct.points",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "22": {
+    "pays": "player.ct.points",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.ct.points",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "23": {
+    "pays": "player.ct.points",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.ct.points",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "31": {
+    "pays": "player.ct.corona",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.ct.corona",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "32": {
+    "pays": "player.ct.corona",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.ct.corona",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "33": {
+    "pays": "player.ct.corona",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.ct.corona",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "41": {
+    "pays": "player.ct.points",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.ct.points",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "42": {
+    "pays": "player.ct.points",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.ct.points",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "43": {
+    "pays": "player.ct.LaBas",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.ct.LaBas",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "51": {
+    "pays": "player.ct.LaBas",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.ct.LaBas",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "52": {
+    "pays": "player.ct.LaBas",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.ct.LaBas",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "53": {
+    "pays": "player.ct.LaBas",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.ct.LaBas",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "61": {
+    "pays": "player.ct.LaBas",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.ct.LaBas",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "62": {
+    "pays": "player.ct.LaBas",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.ct.LaBas",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "63": {
+    "pays": "player.ct.LaBas",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.ct.LaBas",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "71": {
+    "pays": "player.ct.CorVid",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.ct.CorVid",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "72": {
+    "pays": "player.ct.CorVid",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.ct.CorVid",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "73": {
+    "pays": "player.ct.CorVid",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.ct.CorVid",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "81": {
+    "pays": "player.ct.CorVid",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.ct.CorVid",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "82": {
+    "pays": "player.ct.CorVid",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.ct.CorVid",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "83": {
+    "pays": "player.ct.Am",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.ct.Am",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "91": {
+    "pays": "player.ct.Am",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.ct.Am",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "92": {
+    "pays": "player.ct.Am",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.ct.Am",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "93": {
+    "pays": "player.ct.Am",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.ct.Am",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "101": {
+    "pays": "player.ct.Am",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.ct.Am",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "102": {
+    "pays": "player.ct.Am",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.ct.Am",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "103": {
+    "pays": "player.ct.Am",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.ct.Am",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "111": {
+    "pays": "player.ct.Am",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.ct.Am",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "112": {
+    "pays": "player.ct.Am",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.ct.Am",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "113": {
+    "pays": "player.ct.Am",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.ct.Am",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "121": {
+    "pays": "player.ct.Am",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.ct.Am",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "122": {
+    "pays": "player.ct.Am",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.ct.Am",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "123": {
+    "pays": "player.ct.Am",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.ct.Am",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "131": {
+    "pays": "player.ct.Am",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.ct.Am",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "132": {
+    "pays": "player.ct.Am",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.ct.Am",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "133": {
+    "pays": "player.ct.Am",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.ct.Am",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "141": {
+    "pays": "player.ct.Avaccines",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.ct.Avaccines",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "142": {
+    "pays": "player.ct.Avaccines",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.ct.Avaccines",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "143": {
+    "pays": "player.ct.Avaccines",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.ct.Avaccines",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "151": {
+    "pays": "player.ct.SideEff",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.ct.SideEff",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "152": {
+    "pays": "player.ct.SideEff",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.ct.SideEff",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "153": {
+    "pays": "player.ct.SideEff",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.ct.SideEff",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "161": {
+    "pays": "player.ct.AdEff",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.ct.AdEff",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "162": {
+    "pays": "player.ct.AdEff",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.ct.AdEff",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "163": {
+    "pays": "player.ct.Adversity",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.ct.Adversity",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "164": {
+    "pays": "player.ct.Adversity",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.ct.Adversity",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "171": {
+    "pays": "player.ct.Avaxxers",
+    "cost": "requirement",
+    "by": [
+     "rollback",
+     "trace"
+    ],
+    "scored": true,
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "181": {
+    "pays": "player.ct.Ui",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.ct.Ui",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "191": {
+    "pays": "player.ct.Ui",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.ct.Ui",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "201": {
+    "pays": "player.ct.Advaxxers",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.ct.Advaxxers",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "202": {
+    "pays": "player.ct.Advaxxers",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.ct.Advaxxers",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "203": {
+    "pays": "player.ct.Advaxxers",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.ct.Advaxxers",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "204": {
+    "pays": "player.ct.Advaxxers",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.ct.Advaxxers",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "211": {
+    "pays": "player.ct.Advaxxers",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.ct.Advaxxers",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "221": {
+    "pays": "player.ct.Advaxxers",
+    "cost": "requirement",
+    "by": [
+     "rollback",
+     "trace"
+    ],
+    "scored": true,
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "231": {
+    "pays": "player.ct.Advaxxers",
+    "cost": "requirement",
+    "by": [
+     "rollback",
+     "trace"
+    ],
+    "scored": true,
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "232": {
+    "pays": "player.ct.aBoost",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.ct.aBoost",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "233": {
+    "pays": "player.ct.aBoost",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.ct.aBoost",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "241": {
+    "pays": "player.ct.aBoost",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.ct.aBoost",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "242": {
+    "pays": "player.ct.aBoost",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.ct.aBoost",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "243": {
+    "pays": "player.ct.aBoost",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.ct.aBoost",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "251": {
+    "pays": "player.ct.buyables.241",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "trace"
+    ],
+    "scored": true,
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "261": {
+    "pays": "player.ct.aBoost",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.ct.aBoost",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "262": {
+    "pays": "player.ct.aBoost",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.ct.aBoost",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "263": {
+    "pays": "player.ct.aBoost",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.ct.aBoost",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "271": {
+    "pays": "player.ct.aBoost",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.ct.aBoost",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "272": {
+    "pays": "player.ct.aBoost",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.ct.aBoost",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "273": {
+    "pays": "player.ct.aBoost",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.ct.aBoost",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "281": {
+    "pays": null,
+    "cost": "unknown",
+    "by": [],
+    "scored": false,
+    "why": "not affordable, and no lift of up to three candidates to 10× the cost makes it so",
+    "from": [
+     "fresh"
+    ]
+   },
+   "282": {
+    "pays": null,
+    "cost": "unknown",
+    "by": [],
+    "scored": false,
+    "why": "not affordable, and no lift of up to three candidates to 10× the cost makes it so",
+    "from": [
+     "fresh"
+    ]
+   },
+   "283": {
+    "pays": null,
+    "cost": "unknown",
+    "by": [],
+    "scored": false,
+    "why": "not affordable, and no lift of up to three candidates to 10× the cost makes it so",
+    "from": [
+     "fresh"
+    ]
+   },
+   "291": {
+    "pays": "player.ct.AdvVaxTime",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.ct.AdvVaxTime",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "292": {
+    "pays": "player.ct.AnTNA",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.ct.AnTNA",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "293": {
+    "pays": "player.ct.AnTNA",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.ct.AnTNA",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "294": {
+    "pays": "player.ct.Advaxxers",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.ct.Advaxxers",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "321": {
+    "pays": "player.ct.AnTBH",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.ct.AnTBH",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "322": {
+    "pays": "player.ct.AnTBH",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.ct.AnTBH",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "323": {
+    "pays": "player.ct.AnTBH",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.ct.AnTBH",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "324": {
+    "pays": "player.ct.AnTBH",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.ct.AnTBH",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   }
+  },
+  "uv": {
+   "11": {
+    "pays": "player.points",
+    "cost": "requirement",
+    "by": [
+     "rollback",
+     "trace"
+    ],
+    "scored": true,
+    "how": "affordable",
+    "from": [
+     "fresh"
+    ]
+   },
+   "21": {
+    "pays": "player.uv.virus",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.uv.virus",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "22": {
+    "pays": "player.uv.virus",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.uv.virus",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "23": {
+    "pays": "player.uv.virus",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.uv.virus",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "31": {
+    "pays": "player.uv.virus",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.uv.virus",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "32": {
+    "pays": "player.uv.virus",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.uv.virus",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "33": {
+    "pays": "player.uv.virus",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.uv.virus",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "41": {
+    "pays": "player.uv.virus",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.uv.virus",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "42": {
+    "pays": "player.uv.virus",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.uv.virus",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "43": {
+    "pays": "player.uv.virus",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.uv.virus",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "51": {
+    "pays": "player.uv.virus",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.uv.virus",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "52": {
+    "pays": "player.uv.virus",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.uv.virus",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "53": {
+    "pays": "player.uv.virus",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.uv.virus",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "101": {
+    "pays": "player.uv.virus",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.uv.virus",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "102": {
+    "pays": "player.uv.virus",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.uv.virus",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "103": {
+    "pays": "player.uv.virus",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.uv.virus",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "111": {
+    "pays": "player.uv.virus",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.uv.virus",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   }
+  }
+ }
+}

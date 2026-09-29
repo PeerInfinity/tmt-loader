@@ -1,0 +1,65 @@
+{
+  "id": "the-dingus-tree",
+  "commit": "3a94b26452d07e7f72136645142124694f155985",
+  "layers": {
+    "info-tab": {
+      "row": "otherside",
+      "type": "none"
+    },
+    "options-tab": {
+      "row": "otherside",
+      "type": "none"
+    },
+    "changelog-tab": {
+      "row": "otherside",
+      "type": "none"
+    },
+    "p": {
+      "row": 0,
+      "type": "normal"
+    },
+    "a": {
+      "row": "side",
+      "type": "none"
+    },
+    "f": {
+      "row": 1,
+      "type": "static"
+    },
+    "c": {
+      "row": 0,
+      "type": "normal"
+    },
+    "blank": {
+      "row": null,
+      "type": "none"
+    },
+    "tree-tab": {
+      "row": null,
+      "type": "none"
+    }
+  },
+  "ids": [
+    "p:upg:11",
+    "p:upg:12",
+    "p:upg:13",
+    "a:ach:11",
+    "a:ach:12",
+    "a:ach:13",
+    "c:ms:0",
+    "c:ms:1",
+    "c:upg:11",
+    "c:upg:12",
+    "c:upg:13",
+    "c:upg:22",
+    "c:buy:11",
+    "c:ch:11"
+  ],
+  "counts": {
+    "ms": 2,
+    "upg": 7,
+    "buy": 1,
+    "ch": 1,
+    "ach": 3
+  }
+}

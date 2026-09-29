@@ -1,0 +1,79 @@
+/* tmt-loader — the bottom nav bar (docs/mobile.md). Opt-in: `?navbar=1` links this file and runs loader/navbar.js,
+ * which puts `tmt-navbar` on <html> once the bar is actually installed. `?mobile=1` implies the flag, so the mobile
+ * layout always has the bar; the bar does NOT bring the layout, which is the whole point of the separate flag.
+ *
+ * Everything here is scoped under `html.tmt-navbar` and names only the bar's own elements and the game's corner
+ * controls the bar replaces. Nothing in this file lays a tab out — that is loader/mobile.css, under `tmt-mobile`.
+ */
+
+html.tmt-navbar {
+  /* the bar's measured height, written by navbar.js on every refresh. Declared here because the bar owns it; read
+   * here (below) and by the mobile layout, which pads the bottom of a column the bar would otherwise cover. */
+  --tmt-navbar-h: 0px;
+}
+
+/* the game's corner controls are now duplicated in the nav bar; leave them in the DOM (the nav forwards clicks to
+ * them, and their presence is what tells the nav which tab is open) but take them out of the layout */
+html.tmt-navbar #optionWheel,
+html.tmt-navbar #info,
+html.tmt-navbar #help,
+html.tmt-navbar #discord { display: none; }
+
+html.tmt-navbar #tmt-navbar {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 2147483000; /* over .treeOverlay's z-index: 200000, under the loader's own error overlay */
+  display: flex;
+  justify-content: space-around;
+  align-items: stretch;
+  background: var(--background, #111);
+  border-top: 1px solid rgba(127, 127, 127, .45);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+html.tmt-navbar .tmt-navbar-btn {
+  flex: 1 1 0;
+  min-height: 56px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  padding: 6px 2px;
+  background: transparent;
+  border: 0;
+  color: var(--color, #ddd);
+  opacity: .62;
+  cursor: pointer;
+  transition-duration: 0s;
+}
+html.tmt-navbar .tmt-navbar-btn[hidden] { display: none; }
+html.tmt-navbar .tmt-navbar-btn.active { opacity: 1; }
+html.tmt-navbar .tmt-navbar-glyph { font-size: 20px; line-height: 1; }
+html.tmt-navbar .tmt-navbar-label { font-size: 11px; line-height: 1; font-weight: normal; }
+
+/* ---------------------------------------------------------------- the room the bar takes
+ * The bar is `position: fixed` over the bottom of the page, and the engines scroll INSIDE a box of `height: 100%`
+ * — so without this the last ~57px of a fully scrolled tab sit under the bar with nothing left to scroll, which is
+ * the class of defect the mobile mode exists to remove, not to introduce.
+ *
+ * `.col` / `.fullWidth` are the engines' own scrolling boxes, `position: absolute; height: 100%; min-height: 100%;
+ * overflow-y: auto` in every engine the loader hosts (measured in 2.2.1 and 2.7; the same vocabulary mobile.css
+ * relies on). Shortening them by the bar's height is the whole accommodation: no WIDTH changes, no box-sizing of
+ * the engine's is touched — switching `.col` to border-box would move its measured width, which gate M1's navbar
+ * leg compares against the plain page.
+ *
+ * ⚠ `min-height: 0` is not optional. The engines declare `min-height: 100%` beside the height (and `html, body
+ * { min-height: 100% }`), and MEASURED on ptr the min-height wins on its own: the box stayed the full 800px with
+ * the height rule already applied.
+ *
+ * `:not(.tmt-mobile)` because the mobile layout already accounts for the bar — there the PAGE scrolls, `.col` is
+ * in flow with `height: auto`, and mobile.css pads `.col.right` / `.fullWidth` by `--tmt-navbar-h`.
+ */
+html.tmt-navbar:not(.tmt-mobile) .col,
+html.tmt-navbar:not(.tmt-mobile) .fullWidth {
+  height: calc(100% - var(--tmt-navbar-h, 0px));
+  min-height: 0;
+}

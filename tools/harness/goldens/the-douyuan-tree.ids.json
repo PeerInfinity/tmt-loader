@@ -1,0 +1,77 @@
+{
+  "id": "the-douyuan-tree",
+  "commit": "56fedd11f1b30d11e6efbfa8efa9989c61a705df",
+  "layers": {
+    "info-tab": {
+      "row": "otherside",
+      "type": "none"
+    },
+    "options-tab": {
+      "row": "otherside",
+      "type": "none"
+    },
+    "changelog-tab": {
+      "row": "otherside",
+      "type": "none"
+    },
+    "p": {
+      "row": 0,
+      "type": "normal"
+    },
+    "P": {
+      "row": 1,
+      "type": "static"
+    },
+    "T": {
+      "row": 1,
+      "type": "normal"
+    },
+    "I": {
+      "row": 1,
+      "type": "normal"
+    },
+    "blank": {
+      "row": null,
+      "type": "none"
+    },
+    "tree-tab": {
+      "row": null,
+      "type": "none"
+    }
+  },
+  "ids": [
+    "p:upg:11",
+    "p:upg:12",
+    "p:upg:13",
+    "p:upg:21",
+    "p:upg:22",
+    "p:upg:23",
+    "p:upg:31",
+    "p:upg:32",
+    "p:upg:33",
+    "P:ms:0",
+    "P:ms:1",
+    "P:ms:2",
+    "P:upg:11",
+    "P:upg:12",
+    "P:upg:13",
+    "P:upg:14",
+    "P:upg:21",
+    "P:upg:22",
+    "P:upg:23",
+    "P:upg:24",
+    "T:upg:11",
+    "T:upg:12",
+    "T:upg:13",
+    "I:upg:11",
+    "I:upg:12",
+    "I:upg:13"
+  ],
+  "counts": {
+    "ms": 3,
+    "upg": 23,
+    "buy": 0,
+    "ch": 0,
+    "ach": 0
+  }
+}

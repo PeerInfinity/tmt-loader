@@ -1,0 +1,133 @@
+{
+  "schema": 1,
+  "id": "the-primordial-tree",
+  "name": "The Primordial Tree",
+  "version": "2.3",
+  "author": "Yrahcaz7",
+  "upstream": {
+    "repo": "Inferno-Inc/The-Primordial-Tree",
+    "url": "https://github.com/Inferno-Inc/The-Primordial-Tree.git",
+    "branch": "master",
+    "commit": "481c8bd00ed94f14755c766a43b7ef90e999bb34",
+    "pushed_at": "2022-11-04T08:50:57Z"
+  },
+  "engine": {
+    "tmtNum": "2.6.6.2",
+    "stock_commit": "8cf14c4",
+    "moved": false,
+    "deviation": {
+      "added": 2284,
+      "removed": 3453
+    }
+  },
+  "entry": "index.html",
+  "load": {
+    "onload": "load();fullcolordisplay()",
+    "scripts": [
+      "js/technical/break_eternity.js",
+      "html/changelog.html",
+      "js/technical/layerSupport.js",
+      "js/mod.js",
+      "js/technical/loader.js",
+      "js/technical/temp.js",
+      "js/technical/displays.js",
+      "js/game.js",
+      "js/utils.js",
+      "js/utils/easyAccess.js",
+      "html/systemComponents.html",
+      "js/technical/systemComponents.js",
+      "js/components.js",
+      "js/technical/canvas.js",
+      "js/technical/particleSystem.js",
+      "js/utils/NumberFormating.js",
+      "js/utils/options.js",
+      "js/utils/save.js",
+      "js/utils/themes.js"
+    ],
+    "renderOnly": [
+      "js/technical/systemComponents.js",
+      "js/components.js",
+      "js/technical/canvas.js",
+      "js/technical/particleSystem.js"
+    ],
+    "modFilesPrefix": "js/",
+    "modFiles": [
+      "layers.js",
+      "tree.js"
+    ],
+    "external": {
+      "https://cdn.jsdelivr.net/npm/vue@2.6.12": "vendor",
+      "https://fonts.googleapis.com/css?family=Inconsolata": "drop"
+    },
+    "vendor": {
+      "https://cdn.jsdelivr.net/npm/vue@2.6.12": {
+        "path": "vendor/vue-2.6.12.min.js",
+        "sha256": "29296ccacaa9ed35ed168fc51e36f54fd6f8db9c7786bbf38cc59a27229ba5c2"
+      }
+    }
+  },
+  "save": {
+    "keyRule": "modInfo.id",
+    "key": "Yrahcaz7-ModTree-ThePrimordialTree"
+  },
+  "headless": {
+    "prestubs": [],
+    "renderStubs": [
+      "loadVue",
+      "resizeCanvas",
+      "retrieveCanvasData",
+      "drawTree",
+      "drawComponentBranches",
+      "drawTreeBranch",
+      "makeParticles",
+      "makeShinies",
+      "updateParticles",
+      "setDir",
+      "setSpeed",
+      "updateMouse",
+      "getOpacity",
+      "constructParticleStyle",
+      "clearParticles",
+      "sin",
+      "cos",
+      "tan",
+      "asin",
+      "acos",
+      "atan"
+    ],
+    "idleHash": {
+      "ticks": 200,
+      "diff": 0.05,
+      "hash": "44231aea805bee8c"
+    },
+    "deterministic": true
+  },
+  "license": {
+    "githubSpdx": "NOASSERTION",
+    "files": {
+      "LICENSE": "MIT",
+      "Prestige-tree-license": "MIT",
+      "modding-tree-license": "MIT"
+    },
+    "verdict": "MIT"
+  },
+  "census": {
+    "full_name": "Inferno-Inc/The-Primordial-Tree",
+    "head": "481c8bd",
+    "score": 56.49,
+    "layers": 13,
+    "rows": 5,
+    "milestones": 144,
+    "upgrades": 138,
+    "buyables": 13,
+    "challenges": 5,
+    "achievements": 72,
+    "trace_fields": 11
+  },
+  "patches": [],
+  "generated": {
+    "by": "tmt-fork-census scripts/manifest.mjs",
+    "commit": "27c6654",
+    "at": "2026-09-15T06:30:04.752Z"
+  }
+}

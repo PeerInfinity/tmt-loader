@@ -1,0 +1,114 @@
+{
+  "id": "the-rpg-tree",
+  "commit": "094195d91c7da75c79e8562894c2ddaa787b6c5b",
+  "layers": {
+    "info-tab": {
+      "row": "otherside",
+      "type": "none"
+    },
+    "options-tab": {
+      "row": "otherside",
+      "type": "none"
+    },
+    "changelog-tab": {
+      "row": "otherside",
+      "type": "none"
+    },
+    "c": {
+      "row": 0,
+      "type": "none"
+    },
+    "e": {
+      "row": 0,
+      "type": "none"
+    },
+    "i": {
+      "row": 0,
+      "type": "none"
+    },
+    "pve": {
+      "row": 0,
+      "type": "none"
+    },
+    "pvp": {
+      "row": 0,
+      "type": "none"
+    },
+    "blank": {
+      "row": null,
+      "type": "none"
+    },
+    "tree-tab": {
+      "row": null,
+      "type": "none"
+    },
+    "str": {
+      "row": 1,
+      "type": "none"
+    },
+    "dex": {
+      "row": 1,
+      "type": "none"
+    },
+    "con": {
+      "row": 2,
+      "type": "none"
+    },
+    "int": {
+      "row": 2,
+      "type": "none"
+    },
+    "wis": {
+      "row": 3,
+      "type": "none"
+    },
+    "cha": {
+      "row": 3,
+      "type": "none"
+    },
+    "m": {
+      "row": 0,
+      "type": "none"
+    },
+    "q": {
+      "row": 1,
+      "type": "none"
+    },
+    "t": {
+      "row": 0,
+      "type": "none"
+    }
+  },
+  "ids": [
+    "pve:upg:11",
+    "pve:buy:11",
+    "pvp:upg:11",
+    "pvp:buy:11",
+    "str:ms:0",
+    "str:ms:1",
+    "str:ms:2",
+    "dex:ms:0",
+    "con:ms:0",
+    "int:ms:0",
+    "int:ms:1",
+    "wis:ms:0",
+    "cha:ms:0",
+    "m:upg:11",
+    "m:upg:12",
+    "m:upg:13",
+    "m:upg:14",
+    "m:upg:15",
+    "m:upg:16",
+    "m:upg:17",
+    "m:upg:31",
+    "q:ch:11",
+    "q:ch:12"
+  ],
+  "counts": {
+    "ms": 9,
+    "upg": 10,
+    "buy": 2,
+    "ch": 2,
+    "ach": 0
+  }
+}

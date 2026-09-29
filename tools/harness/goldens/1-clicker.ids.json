@@ -1,0 +1,67 @@
+{
+  "id": "1-clicker",
+  "commit": "45431e0db095c8c7e08ead41fdc34829b53fb2bb",
+  "layers": {
+    "info-tab": {
+      "row": "otherside",
+      "type": "none"
+    },
+    "options-tab": {
+      "row": "otherside",
+      "type": "none"
+    },
+    "changelog-tab": {
+      "row": "otherside",
+      "type": "none"
+    },
+    "c": {
+      "row": 0,
+      "type": "static"
+    },
+    "p": {
+      "row": 1,
+      "type": "normal"
+    },
+    "sp": {
+      "row": 2,
+      "type": "normal"
+    },
+    "r": {
+      "row": 3,
+      "type": "normal"
+    },
+    "ap": {
+      "row": 4,
+      "type": "normal"
+    },
+    "ff": {
+      "row": 5,
+      "type": "normal"
+    },
+    "blank": {
+      "row": null,
+      "type": "none"
+    },
+    "tree-tab": {
+      "row": null,
+      "type": "none"
+    }
+  },
+  "ids": [
+    "p:buy:11",
+    "p:buy:12",
+    "p:buy:13",
+    "sp:upg:12",
+    "sp:upg:13",
+    "sp:upg:21",
+    "sp:upg:22",
+    "sp:upg:23"
+  ],
+  "counts": {
+    "ms": 0,
+    "upg": 5,
+    "buy": 3,
+    "ch": 0,
+    "ach": 0
+  }
+}

@@ -1,0 +1,209 @@
+{
+  "id": "the-loop-tree",
+  "commit": "1adc1ad79356fa9e4d04cd110d2f29ff867de35e",
+  "layers": {
+    "info-tab": {
+      "row": "otherside",
+      "type": "none"
+    },
+    "options-tab": {
+      "row": "otherside",
+      "type": "none"
+    },
+    "changelog-tab": {
+      "row": "otherside",
+      "type": "none"
+    },
+    "p": {
+      "row": 1,
+      "type": "normal"
+    },
+    "r": {
+      "row": 2,
+      "type": "normal"
+    },
+    "u": {
+      "row": 2,
+      "type": "normal"
+    },
+    "a": {
+      "row": 3,
+      "type": "normal"
+    },
+    "s": {
+      "row": 3,
+      "type": "normal"
+    },
+    "lv": {
+      "row": 3,
+      "type": "static"
+    },
+    "lp": {
+      "row": 100,
+      "type": "normal"
+    },
+    "l": {
+      "row": 100,
+      "type": "static"
+    },
+    "ach": {
+      "row": "side",
+      "type": "none"
+    },
+    "mg": {
+      "row": "side",
+      "type": "none"
+    },
+    "mga": {
+      "row": "side",
+      "type": "normal"
+    },
+    "mgb": {
+      "row": "side",
+      "type": "normal"
+    },
+    "blank": {
+      "row": null,
+      "type": "none"
+    },
+    "tree-tab": {
+      "row": null,
+      "type": "none"
+    }
+  },
+  "ids": [
+    "p:upg:11",
+    "p:upg:12",
+    "p:upg:13",
+    "p:upg:14",
+    "p:ch:11",
+    "r:upg:11",
+    "r:upg:12",
+    "r:upg:13",
+    "r:upg:14",
+    "r:upg:21",
+    "r:upg:22",
+    "r:ch:11",
+    "r:ch:12",
+    "u:upg:11",
+    "u:upg:21",
+    "u:upg:22",
+    "u:upg:31",
+    "u:upg:32",
+    "u:upg:33",
+    "u:upg:41",
+    "a:upg:11",
+    "a:upg:12",
+    "a:upg:13",
+    "a:upg:14",
+    "a:buy:11",
+    "a:buy:12",
+    "a:buy:13",
+    "s:upg:11",
+    "s:upg:12",
+    "s:upg:13",
+    "s:upg:14",
+    "s:upg:15",
+    "s:upg:21",
+    "s:upg:22",
+    "s:upg:23",
+    "s:upg:24",
+    "lv:ms:1",
+    "lv:ms:2",
+    "lv:ms:3",
+    "lv:ms:4",
+    "lp:ms:1",
+    "lp:ms:2",
+    "lp:ms:3",
+    "lp:ms:4",
+    "lp:upg:11",
+    "lp:upg:12",
+    "lp:upg:13",
+    "lp:upg:14",
+    "lp:upg:15",
+    "lp:upg:21",
+    "lp:upg:22",
+    "lp:upg:23",
+    "lp:upg:24",
+    "lp:upg:25",
+    "lp:upg:31",
+    "lp:upg:32",
+    "lp:upg:33",
+    "lp:upg:34",
+    "lp:upg:35",
+    "lp:upg:41",
+    "lp:upg:42",
+    "lp:upg:43",
+    "lp:upg:44",
+    "lp:upg:45",
+    "lp:upg:51",
+    "lp:upg:52",
+    "lp:upg:53",
+    "lp:upg:54",
+    "lp:upg:55",
+    "lp:upg:61",
+    "lp:buy:11",
+    "lp:buy:12",
+    "lp:buy:13",
+    "lp:buy:21",
+    "lp:buy:22",
+    "lp:buy:23",
+    "lp:ch:11",
+    "l:ms:1",
+    "l:ms:2",
+    "l:ms:3",
+    "l:ms:4",
+    "l:ms:5",
+    "l:ms:6",
+    "l:ms:7",
+    "l:ms:8",
+    "l:ms:9",
+    "l:ms:10",
+    "l:ms:11",
+    "ach:ach:11",
+    "ach:ach:12",
+    "ach:ach:13",
+    "ach:ach:14",
+    "ach:ach:15",
+    "ach:ach:21",
+    "ach:ach:22",
+    "ach:ach:23",
+    "ach:ach:24",
+    "ach:ach:25",
+    "ach:ach:31",
+    "ach:ach:32",
+    "ach:ach:33",
+    "ach:ach:34",
+    "ach:ach:35",
+    "ach:ach:41",
+    "ach:ach:42",
+    "ach:ach:43",
+    "ach:ach:44",
+    "ach:ach:45",
+    "ach:ach:51",
+    "ach:ach:52",
+    "ach:ach:53",
+    "ach:ach:54",
+    "ach:ach:55",
+    "ach:ach:61",
+    "ach:ach:62",
+    "ach:ach:63",
+    "ach:ach:64",
+    "ach:ach:65",
+    "ach:ach:71",
+    "ach:ach:72",
+    "ach:ach:73",
+    "mga:upg:11",
+    "mga:upg:12",
+    "mga:upg:13",
+    "mga:upg:14",
+    "mgb:upg:11"
+  ],
+  "counts": {
+    "ms": 19,
+    "upg": 61,
+    "buy": 9,
+    "ch": 4,
+    "ach": 33
+  }
+}

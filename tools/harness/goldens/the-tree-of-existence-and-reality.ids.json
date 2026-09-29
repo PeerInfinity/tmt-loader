@@ -1,0 +1,166 @@
+{
+  "id": "the-tree-of-existence-and-reality",
+  "commit": "7a2c3c4f44f44072a0a8ccb516b2c6abbf5567b1",
+  "layers": {
+    "info-tab": {
+      "row": "otherside",
+      "type": "none"
+    },
+    "options-tab": {
+      "row": "otherside",
+      "type": "none"
+    },
+    "changelog-tab": {
+      "row": "otherside",
+      "type": "none"
+    },
+    "p": {
+      "row": 0,
+      "type": "static"
+    },
+    "sp": {
+      "row": 1,
+      "type": "static"
+    },
+    "t": {
+      "row": 1,
+      "type": "static"
+    },
+    "a": {
+      "row": 1,
+      "type": "static"
+    },
+    "f": {
+      "row": 2,
+      "type": "static"
+    },
+    "s": {
+      "row": 2,
+      "type": "static"
+    },
+    "ee": {
+      "row": 0,
+      "type": "normal"
+    },
+    "bh": {
+      "row": 0,
+      "type": "normal"
+    },
+    "null": {
+      "row": null,
+      "type": "none"
+    },
+    "ac": {
+      "row": "side",
+      "type": "none"
+    },
+    "stat": {
+      "row": "side",
+      "type": "none"
+    },
+    "sc": {
+      "row": "side",
+      "type": "none"
+    },
+    "inf": {
+      "row": 7,
+      "type": "normal"
+    },
+    "eter": {
+      "row": 8,
+      "type": "normal"
+    },
+    "lore": {
+      "row": "side",
+      "type": "none"
+    },
+    "blank": {
+      "row": null,
+      "type": "none"
+    },
+    "tree-tab": {
+      "row": null,
+      "type": "none"
+    }
+  },
+  "ids": [
+    "p:ms:0",
+    "p:ms:1",
+    "p:upg:11",
+    "p:upg:12",
+    "p:upg:13",
+    "p:upg:14",
+    "p:upg:15",
+    "p:upg:31",
+    "sp:ms:0",
+    "sp:upg:11",
+    "sp:upg:12",
+    "sp:upg:13",
+    "sp:upg:14",
+    "sp:upg:15",
+    "sp:upg:21",
+    "sp:ch:11",
+    "sp:ch:12",
+    "sp:ch:13",
+    "sp:ch:21",
+    "t:ms:0",
+    "t:ms:1",
+    "t:upg:11",
+    "t:upg:12",
+    "t:upg:13",
+    "t:upg:14",
+    "t:upg:15",
+    "t:upg:21",
+    "a:upg:11",
+    "a:upg:12",
+    "a:upg:13",
+    "a:upg:14",
+    "a:upg:15",
+    "a:upg:21",
+    "a:upg:22",
+    "a:upg:23",
+    "a:buy:11",
+    "a:buy:12",
+    "a:buy:13",
+    "a:buy:21",
+    "a:buy:22",
+    "a:buy:23",
+    "ee:upg:11",
+    "ee:upg:12",
+    "ee:upg:13",
+    "ee:upg:14",
+    "ac:ach:11",
+    "ac:ach:12",
+    "ac:ach:13",
+    "ac:ach:14",
+    "ac:ach:15",
+    "ac:ach:16",
+    "ac:ach:21",
+    "ac:ach:22",
+    "ac:ach:23",
+    "ac:ach:24",
+    "ac:ach:25",
+    "ac:ach:26",
+    "ac:ach:31",
+    "ac:ach:32",
+    "ac:ach:33",
+    "ac:ach:34",
+    "ac:ach:35",
+    "ac:ach:36",
+    "inf:buy:11",
+    "inf:buy:12",
+    "inf:buy:13",
+    "inf:buy:14",
+    "eter:buy:11",
+    "eter:buy:12",
+    "eter:buy:13",
+    "eter:buy:14"
+  ],
+  "counts": {
+    "ms": 5,
+    "upg": 30,
+    "buy": 14,
+    "ch": 4,
+    "ach": 18
+  }
+}

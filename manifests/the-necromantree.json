@@ -1,0 +1,108 @@
+{
+  "schema": 1,
+  "id": "the-necromantree",
+  "name": "The NecromanTree",
+  "version": "0.3.2",
+  "author": "monkeh42",
+  "upstream": {
+    "repo": "monkeh42/The-Modding-Tree",
+    "url": "https://github.com/monkeh42/The-Modding-Tree.git",
+    "branch": "master",
+    "commit": "9d089aa9f289d8c7a16d06cdd69626afb482541c",
+    "pushed_at": "2021-09-08T16:20:09Z"
+  },
+  "engine": {
+    "tmtNum": "2.3.4",
+    "stock_commit": "6ed4f91",
+    "moved": false,
+    "deviation": {
+      "added": 497,
+      "removed": 46
+    }
+  },
+  "entry": "index.html",
+  "load": {
+    "onload": "load()",
+    "scripts": [
+      "js/technical/break_eternity.js",
+      "js/technical/layerSupport.js",
+      "js/tree.js",
+      "js/layers.js",
+      "js/altLayers.js",
+      "js/mod.js",
+      "js/technical/temp.js",
+      "js/game.js",
+      "js/utils.js",
+      "js/sc.js",
+      "js/technical/systemComponents.js",
+      "js/components.js",
+      "js/technical/canvas.js"
+    ],
+    "renderOnly": [
+      "js/technical/systemComponents.js",
+      "js/components.js",
+      "js/technical/canvas.js"
+    ],
+    "modFilesPrefix": null,
+    "modFiles": [],
+    "external": {
+      "https://cdn.jsdelivr.net/npm/vue@2.6.12": "vendor",
+      "https://fonts.googleapis.com/css?family=Inconsolata": "drop"
+    },
+    "vendor": {
+      "https://cdn.jsdelivr.net/npm/vue@2.6.12": {
+        "path": "vendor/vue-2.6.12.min.js",
+        "sha256": "29296ccacaa9ed35ed168fc51e36f54fd6f8db9c7786bbf38cc59a27229ba5c2"
+      }
+    }
+  },
+  "save": {
+    "keyRule": "modInfo.id",
+    "key": "eggbrahamtree"
+  },
+  "headless": {
+    "prestubs": [
+      "colors"
+    ],
+    "renderStubs": [
+      "loadVue",
+      "resizeCanvas",
+      "retrieveCanvasData",
+      "drawTree",
+      "drawTreeBranch"
+    ],
+    "idleHash": {
+      "ticks": 200,
+      "diff": 0.05,
+      "hash": "3f5285cd84e6b738"
+    },
+    "deterministic": true
+  },
+  "license": {
+    "githubSpdx": "NOASSERTION",
+    "files": {
+      "LICENSE": "MIT",
+      "Prestige-tree-license": "MIT"
+    },
+    "verdict": "MIT"
+  },
+  "census": {
+    "full_name": "monkeh42/The-Modding-Tree",
+    "head": "9d089aa",
+    "score": 47.78,
+    "layers": 10,
+    "rows": 4,
+    "milestones": 20,
+    "upgrades": 28,
+    "buyables": 3,
+    "challenges": 0,
+    "achievements": 0,
+    "trace_fields": 6
+  },
+  "patches": [],
+  "generated": {
+    "by": "tmt-fork-census scripts/manifest.mjs",
+    "commit": "27c6654",
+    "at": "2026-09-15T06:32:59.670Z"
+  }
+}

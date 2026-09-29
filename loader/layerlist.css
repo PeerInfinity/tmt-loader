@@ -1,0 +1,553 @@
+/* tmt-loader — the LAYER LIST (docs/mobile.md). Opt-in with the nav bar: `?navbar=1` (which `?mobile=1` implies)
+ * links this file and runs loader/layerlist.js. A SELECTABLE ALTERNATE VIEW of the tree, opened from the Layers
+ * button in the bar and closed again — the tree is never replaced (⚖ user, 2026-09-17).
+ *
+ * Everything here is scoped under `#tmt-layerlist`, the overlay's own element, and names only its own classes.
+ * NOTHING in this file touches the game's markup: the list is our DOM, appended to <body>, so a rule here cannot
+ * move a tab, a node or a column — which is what lets the M1 geometry legs compare the page against the plain one.
+ *
+ * ⚠ The prefix is `tmt-layerlist`, not `tmt-mobile-*`: the list is wanted on a desktop as much as on a phone, and a
+ * `tmt-mobile*` name would match the M1 inertness leg's own `/tmt-mobile/` regex (docs/mobile.md, "The file names").
+ */
+
+/* ---------------------------------------------------------------- the game's universal rule reaches in here
+ * MEASURED on ptr: `style.css` opens with `* { margin: auto; text-align: center; transition-duration: 0.5s }`, and a
+ * universal selector matches OUR elements too — it is not scoped to the game's markup. `margin: auto` on a flex item
+ * in a column flex box shrink-wraps it: the list body measured 447 px inside a 1280 px panel, so the card grid
+ * collapsed to ONE column on a desktop. The engines differ in what they declare there, so the overlay states its own
+ * box rules instead of inheriting whatever a game happens to say, and re-centres only what should be centred.
+ * `#tmt-layerlist *` is 1-0-0 against the universal selector's 0-0-0, so this wins wherever it is loaded. */
+#tmt-layerlist,
+#tmt-layerlist * {
+  margin: 0;
+  text-align: left;
+  box-sizing: border-box;
+  transition-duration: 0s;
+  /* ⚠ TABULAR FIGURES FOR EVERY READOUT IN THE LIST (U2c), declared here rather than per element: the card carries
+   * several numbers on several rows — the amount, each counter, and the game's own prestige text — and in a face
+   * with PROPORTIONAL figures a `1` is narrower than a `7`, so a number that changes without changing length
+   * still shuffles the text around it. `font-feature-settings` is the same request for the older engines' fonts.
+   * ⚠ MEASURED, and the measurement is the point: on the two reference engines' own fonts this changes NOTHING —
+   * "111" and "777" are both 30.72 px in the amount readout with it and without it, because those fonts already
+   * default to tabular figures. It is declared for the games that ship a font that does not, and because a
+   * reservation in `ch` is only a fixed number of columns if a column is a fixed width. */
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum";
+}
+
+#tmt-layerlist {
+  position: fixed;
+  left: 0;
+  right: 0;
+  top: 0;
+  bottom: var(--tmt-navbar-h, 0px); /* written by navbar.js: the list sits ABOVE the bar, never under it */
+  z-index: 2147482999;              /* under #tmt-navbar (2147483000), over .treeOverlay (200000) */
+  display: flex;
+  flex-direction: column;
+  background: var(--background, #111);
+  color: var(--color, #ddd);
+  overflow: hidden;                 /* the body below is the scroller */
+}
+#tmt-layerlist[hidden] { display: none; }
+/* (U14) ON A DESKTOP WITH A LAYER TAB OPEN the list is the engine's LEFT COLUMN, not an overlay over both: layerlist.js
+ * writes `left` and `width` inline from `#treeTab`'s own box (never computed here, never a breakpoint) and sets this
+ * class, so the tab the engine put in the right column stays visible beside the list. Never set under `?mobile=1`,
+ * where the full-screen overlay above is the layout. */
+#tmt-layerlist.tmt-layerlist-split { right: auto; }
+
+#tmt-layerlist .tmt-layerlist-head {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 8px 12px;
+  border-bottom: 1px solid rgba(127, 127, 127, .45);
+}
+#tmt-layerlist .tmt-layerlist-title { font-size: 18px; font-weight: bold; }
+#tmt-layerlist .tmt-layerlist-close {
+  text-align: center;
+  min-width: 44px;
+  min-height: 44px;
+  background: transparent;
+  border: 0;
+  color: inherit;
+  font-size: 20px;
+  cursor: pointer;
+  transition-duration: 0s;
+}
+
+#tmt-layerlist .tmt-layerlist-body {
+  flex: 1 1 auto;
+  overflow-y: auto;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+  padding: 8px 12px calc(12px + env(safe-area-inset-bottom, 0px));
+  /* ⚠ THE LIST USED TO DRIFT DOWN WHILE YOU READ IT, and this one line is the fix (U4).
+   * The cause is the browser's own SCROLL ANCHORING, not anything this file's JavaScript does. `refresh()` rewrites
+   * a card's live text 20x/s — the prestige button's string, a counter's digits — and a card's content height moves
+   * with it by a few pixels; the browser then adjusts `scrollTop` to keep the anchor element it chose visually
+   * still, and that adjustment IS the drift. MEASURED on `the-yes-tree` at 390px through the card's own reset
+   * button: scrollTop 2275 -> 2272 while scrollHeight 5287 -> 5283 (the list got 4px SHORTER and the offset
+   * followed it). ⚠ It is NOT `rebuildInner`'s `body.textContent = ''`: a reset does not change MEMBERSHIP, so no
+   * rebuild runs, and a forced membership change measures Δ 0 because the wipe and the refill happen inside one
+   * task with no layout between them.
+   * ⚠ WHO CAN WITNESS IT DEPENDS ON THE STATE, so a bare count is not reproducible: 44 of the 171 games at a fresh
+   * save (deep snapshot where one exists, measured at d7cd5c185) and 49 at the state gate M1 reaches them in
+   * (3,000 ticks, a reset press and a purchase past that; CI at ccb0ed08a). The rest cannot — their list does not
+   * scroll at 390x844. `ptr` and `something` are witnesses ONCE THEIR DEEP SNAPSHOT IS LOADED; at a fresh save
+   * ptr's list fits the viewport exactly (737/737).
+   * ⛔ The gate's discriminator is NOT "scrollTop did not move": a build that stopped the content height moving at
+   * all would pass that while proving nothing about anchoring. It asserts Δ scrollTop === 0 WHILE Δ height ≠ 0. */
+  overflow-anchor: none;
+}
+
+#tmt-layerlist .tmt-layerlist-row { margin: 0 0 14px; }
+#tmt-layerlist .tmt-layerlist-rowlabel {
+  margin: 6px 0;
+  font-size: 12px;
+  font-weight: normal;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  opacity: .62;
+}
+
+/* One card per screen width on a phone; as many as fit on a desktop, where the same overlay is wanted.
+ * ⚠ THE MINIMUM IS 380px, NOT U2's 280px, and it is `min(100%, 380px)` so a 366px phone card still gets ONE column
+ * instead of a 380px track overflowing it. MEASURED: at 280px the auto-fill gave a 1280px desktop FOUR columns of
+ * 308px against the phone's single 366px one — a desktop card NARROWER than a phone card, which is the opposite of
+ * what a wider window should buy you, and it made ⚖ "more buttons on a desktop, fewer on a phone" (user,
+ * 2026-09-18) unbuildable however the fit was measured. At 380 the desktop takes three 413px columns and every
+ * viewport above the phone's holds a card at least as wide as the phone's. */
+#tmt-layerlist .tmt-layerlist-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 380px), 1fr));
+  gap: 8px;
+}
+
+#tmt-layerlist .tmt-layerlist-card {
+  border: 1px solid rgba(127, 127, 127, .45);
+  border-radius: 8px;
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0; /* a grid item's default `min-width: auto` is what lets a long readout push a card past the screen */
+  /* (U2c) a card's insides are its own: a re-layout inside one card cannot reach the grid or its neighbours.
+   * ⚠ What this does NOT do, said out loud because the brief's wording invites the stronger reading: it is
+   * `layout`, not `size`, so the card's OWN height still answers to its content, and a card that really grows
+   * still moves the cards below it. That is content changing, not digits — the digits are held still by the
+   * reservation below. MEASURED: adding this moved no box on either reference game, at either width. */
+  contain: layout;
+}
+/* shown but not yet unlocked: the tree draws these too, and the reset button on one of them IS the unlock */
+#tmt-layerlist .tmt-layerlist-card.tmt-layerlist-locked { opacity: .62; }
+
+/* the card's own head: the layer (which fills it) and the expander, which has to be pressable in BOTH states and
+ * so lives in neither of the two rows it toggles between */
+#tmt-layerlist .tmt-layerlist-cardhead { display: flex; align-items: center; gap: 8px; }
+#tmt-layerlist .tmt-layerlist-open {
+  flex: 1 1 auto;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 44px;
+  padding: 2px;
+  background: transparent;
+  border: 0;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+  min-width: 0;
+  transition-duration: 0s;
+}
+#tmt-layerlist .tmt-layerlist-badge {
+  flex: 0 0 auto;
+  text-align: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 15px;
+  font-weight: bold;
+  color: #000;
+  overflow: hidden;
+  border: 1px solid rgba(0, 0, 0, .35);
+}
+/* a long symbol has to fit the 44 px badge: the engines render the same string in a 100 px tree node */
+#tmt-layerlist .tmt-layerlist-badge[data-len="3"],
+#tmt-layerlist .tmt-layerlist-badge[data-len="4"] { font-size: 12px; }
+#tmt-layerlist .tmt-layerlist-badge[data-len="5"],
+#tmt-layerlist .tmt-layerlist-badge[data-len="6"] { font-size: 10px; }
+#tmt-layerlist .tmt-layerlist-badge[data-len="7"],
+#tmt-layerlist .tmt-layerlist-badge[data-len="8"],
+#tmt-layerlist .tmt-layerlist-badge[data-len="9"] { font-size: 8px; line-height: 1.1; word-break: break-all; }
+
+#tmt-layerlist .tmt-layerlist-meta { display: flex; flex-direction: column; min-width: 0; }
+#tmt-layerlist .tmt-layerlist-name {
+  font-size: 13px;
+  opacity: .8;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+/* ⚠ THE AMOUNT RESERVES ITS WIDTH (U2c). Without it the readout is sized by its own string, so the meta column —
+ * the resource name ABOVE it shares that column — is as wide as the number currently is, and every growth in the
+ * number resizes the name's box with it. MEASURED on the deep snapshot at 390 px, injecting nothing but the
+ * readout's string: `0` → `1.111e3,284` moved the meta column on TEN of ptr's ELEVEN cards (`q` 46.97 → 112.59 px,
+ * `a` 10.25 → 112.59), and `something`'s `primitive` 54.8 → 92.13. With the reservation: none of them, at either
+ * width, in either state.
+ * `12ch` because with tabular figures a `ch` is exactly one digit and TMT's `format()` caps the string near 10–12
+ * characters even at e3284 (the widest this slice measured is `1.111e3,284`, 11 characters); the existing ellipsis
+ * takes anything past it, which is what `max-width: 100%` leaves room for on a card too narrow to hold 12. */
+#tmt-layerlist .tmt-layerlist-amount {
+  font-size: 17px;
+  font-weight: bold;
+  width: 12ch;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ⚖ (U7) THE RESET LINE IS ALWAYS TWO LINES (user, 2026-09-19). layerlist.js splits the engine's own string on
+ * its first run of `<br>`s into two spans; this is the half that makes the block occupy two line boxes WHATEVER
+ * those spans hold — including nothing, which is what the `normal` prestige string emits once `resetGain` passes
+ * 100 and what `the-factoree`'s `static` one emits past `1e7`.
+ * ⚠ THE RESERVATION IS DERIVED, NOT A MAGIC PIXEL COUNT: `--tmt-reset-lh` is the button's own line-height, and
+ * each line reserves exactly one of them (`calc(var(--tmt-reset-lh) * 1em)`). Change the line-height and the
+ * reservation follows it. A line that WRAPS still grows the button — that is content, not digits, and the 44 px
+ * tap minimum below is a floor rather than a cap.
+ * ⛔ The reservation is deliberately NOT keyed on the second line being non-empty: a height that collapsed when
+ * the engine dropped the second half would re-introduce exactly the permanent height change this fixes. */
+#tmt-layerlist .tmt-layerlist-reset {
+  --tmt-reset-lh: 1.25;
+  text-align: center;
+  min-height: 44px;
+  padding: 6px 10px;
+  border: 1px solid rgba(127, 127, 127, .55);
+  border-radius: 6px;
+  background: transparent;
+  color: inherit;
+  font-size: 13px;
+  line-height: var(--tmt-reset-lh);
+  cursor: pointer;
+  overflow-wrap: anywhere; /* a prestige string is the game's own prose and can be long */
+  transition-duration: 0s;
+}
+/* ⚠ `text-align: center` is re-stated here rather than inherited: `#tmt-layerlist *` at the top of this file sets
+ * every descendant to `text-align: left`, and it beats inheritance — so the two spans would have left-aligned the
+ * text the button has always centred. */
+#tmt-layerlist .tmt-layerlist-resetline {
+  display: block;
+  text-align: center;
+  line-height: var(--tmt-reset-lh);
+  min-height: calc(var(--tmt-reset-lh) * 1em);
+}
+#tmt-layerlist .tmt-layerlist-reset.can { color: #000; font-weight: bold; }
+#tmt-layerlist .tmt-layerlist-reset.locked { opacity: .55; }
+
+/* ⚖ (U7) A LAYER'S OTHER RESOURCES (user, 2026-09-19) — the quantities a layer reports only inside its own
+ * panel. In BOTH states, because they are readouts of the same kind as the amount in the card's head and not
+ * controls: no tap minimum, and `:empty` hides the row on a layer that has none. The label is the player key
+ * (`power`), which is the certain half — see `resourcesOf` in layerlist.js for why the prose name is not lifted. */
+#tmt-layerlist .tmt-layerlist-resources { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+#tmt-layerlist .tmt-layerlist-resources:empty { display: none; }
+#tmt-layerlist .tmt-layerlist-resource {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 5px;
+  min-height: 26px;
+  padding: 3px 8px;
+  border: 1px dashed rgba(127, 127, 127, .55);   /* dashed: a readout, never a control */
+  border-radius: 6px;
+  font-size: 13px;
+  max-width: 100%;
+}
+#tmt-layerlist .tmt-layerlist-resource-label {
+  font-size: 11px;
+  opacity: .72;
+  letter-spacing: .04em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+/* the same reservation the counters carry, and for the same reason: layerlist.js writes the width in `ch` and only
+ * ever grows it, and the tabular figures at the top of this file are what make a `ch` a fixed column. */
+#tmt-layerlist .tmt-layerlist-resource-value {
+  font-variant-numeric: tabular-nums;
+  font-weight: bold;
+  text-align: right;
+  white-space: nowrap;
+}
+
+/* ⚖ (U7) PER-CATEGORY PROGRESS (user, 2026-09-19) — in the EXPANDED card only, under the reset button, because
+ * the reset line's second half IS the per-layer progress display and these are the per-category ones. One line
+ * each, reserved off the same line-height the reset button uses, so a growing number cannot make a row taller.
+ * The NAME is what gives way when the number grows — it ellipses; the number never wraps. */
+#tmt-layerlist .tmt-layerlist-progress { --tmt-reset-lh: 1.25; display: none; flex-direction: column; gap: 2px; }
+#tmt-layerlist .tmt-layerlist-card.tmt-layerlist-expanded .tmt-layerlist-progress { display: flex; }
+/* ⚠ written with the card in the selector so it MATCHES the expanded rule's specificity and comes after it:
+ * `#tmt-layerlist .tmt-layerlist-progress:empty` alone loses to `…card.…expanded .…progress`, and an empty
+ * flex box would still cost the card one `gap`. */
+#tmt-layerlist .tmt-layerlist-card .tmt-layerlist-progress:empty { display: none; }
+#tmt-layerlist .tmt-layerlist-prog {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  min-height: calc(var(--tmt-reset-lh) * 1em);
+  line-height: var(--tmt-reset-lh);
+  font-size: 13px;
+  opacity: .85;
+}
+#tmt-layerlist .tmt-layerlist-prog-label { flex: 0 0 auto; font-size: 11px; opacity: .72; letter-spacing: .04em; }
+#tmt-layerlist .tmt-layerlist-prog-name { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+#tmt-layerlist .tmt-layerlist-prog-value { flex: 0 0 auto; font-variant-numeric: tabular-nums; font-weight: bold; white-space: nowrap; }
+/* ⚖ (U13) A `?` IS A DELIBERATE ANSWER — "not known" — on nearly a quarter of the roster's buyables, so it is
+ * drawn as one: full weight and full colour like any number, marked only by the dotted underline that says "this
+ * one has an explanation" (its `title`), never greyed or shrunk as if it were an error. */
+#tmt-layerlist .tmt-layerlist-prog-q { text-decoration: underline dotted; text-underline-offset: 2px; cursor: help; }
+/* ⚖ MILESTONES SQUARE, THE REST ROUND is the card's own distinction — there is no milestone progress row at all
+ * (a `requirementDescription` is prose and declares no number), so nothing here needs it. */
+
+/* ---------------------------------------------------------------- U2d: the two views
+ * ⚖ COLLAPSED IS TWO ROWS (user, 2026-09-18) — the counters, then what you can act on — and EXPANDED is exactly
+ * U2b's chip row. Each state hides the other's boxes outright, which is why the gate can assert that a card really
+ * renders something different in the two. `:empty` is what hides a row a layer has nothing to put in. */
+#tmt-layerlist .tmt-layerlist-chips { display: none; flex-wrap: wrap; gap: 6px; }
+#tmt-layerlist .tmt-layerlist-card.tmt-layerlist-expanded .tmt-layerlist-chips { display: flex; }
+#tmt-layerlist .tmt-layerlist-card.tmt-layerlist-expanded .tmt-layerlist-counters,
+#tmt-layerlist .tmt-layerlist-card.tmt-layerlist-expanded .tmt-layerlist-actions { display: none; }
+#tmt-layerlist .tmt-layerlist-counters:empty,
+#tmt-layerlist .tmt-layerlist-actions:empty { display: none; }
+
+/* ROW ONE — the counters. Not buttons: they are readouts, so they carry no tap minimum and the card stays short. */
+#tmt-layerlist .tmt-layerlist-counters { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+#tmt-layerlist .tmt-layerlist-counter {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 5px;
+  min-height: 30px;
+  padding: 4px 8px;
+  border: 1px solid rgba(127, 127, 127, .55);
+  border-radius: 6px;
+  font-size: 13px;
+}
+#tmt-layerlist .tmt-layerlist-counter-label { font-size: 11px; opacity: .72; letter-spacing: .04em; }
+/* ⚠ TABULAR FIGURES AND A RESERVED WIDTH, from the start. `x` changes as you play, and in a proportional face a
+ * `1` is narrower than a `7` — so without these the row would shuffle sideways on a number that did not even
+ * change width. The reservation itself is written by layerlist.js (`chars`), which knows the widest value each
+ * counter can reach; this is the half that makes the reservation mean a fixed number of columns. */
+#tmt-layerlist .tmt-layerlist-counter-value {
+  font-variant-numeric: tabular-nums;
+  font-weight: bold;
+  text-align: right;
+}
+/* ⚖ MILESTONES SQUARE, THE REST ROUND (user, 2026-09-18) — the same distinction their chips carry, so the passive
+ * category reads the same way in both views. */
+#tmt-layerlist .tmt-layerlist-counter[data-kind="milestones"] { border-radius: 0; }
+/* ⚖ AND SINCE U6 A COUNTER WEARS A COLOUR TOO (user, 2026-09-19) — green when the category is finished, red when
+ * there is nothing to do about it, the layer's own colour when there is (docs/mobile.md has the table). As with the
+ * chips, the colour itself is never in this file: layerlist.js writes it INLINE out of the GAME's own stylesheet,
+ * and `data-skin` records which of the three words it is. There is deliberately no rule here — a counter with no
+ * skin keeps the plain box it has always had. */
+
+/* ROW TWO — what you can act on. A box of its own: ⚖ the two rows wrap and fit INDEPENDENTLY (user, 2026-09-18),
+ * so a card with several counters still gives its buttons the whole card width. */
+#tmt-layerlist .tmt-layerlist-actions { display: flex; flex-wrap: wrap; gap: 6px; }
+/* what did not fit on the FIRST line of that row, hidden after layerlist.js has measured where the browser put it.
+ * `display: none` also keeps it out of the geometry probes, as a control the page does not show should be. */
+#tmt-layerlist .tmt-layerlist-act.tmt-layerlist-nofit { display: none; }
+/* ⚖ AFFORDABILITY IS APPEARANCE, NEVER SELECTION (user, 2026-09-18): this pair of rules is the whole of what
+ * `canAffordUpgrade` / `canAfford` decides. Which buttons exist, and where they sit, is decided without it. */
+#tmt-layerlist .tmt-layerlist-act[data-afford="no"] { opacity: .5; }
+#tmt-layerlist .tmt-layerlist-act[data-afford="yes"] { border-color: currentColor; }
+/* ⚠ (U6) AND THE BUTTON ALSO CARRIES `data-skin`, its chip's. The two attributes answer DIFFERENT questions —
+ * lit/grey is "can I press this right now", the skin is "what IS this" — and the collapsed card wants both, which
+ * is why the pair above survived the skin rather than being replaced by it. The colour is inline, like a chip's. */
+
+#tmt-layerlist .tmt-layerlist-chip,
+#tmt-layerlist .tmt-layerlist-act,
+#tmt-layerlist .tmt-layerlist-more {
+  text-align: center;
+  min-width: 44px;
+  min-height: 44px;
+  padding: 4px 8px;
+  border: 1px solid rgba(127, 127, 127, .55);
+  border-radius: 6px;
+  background: transparent;
+  color: inherit;
+  font-size: 13px;
+  font-weight: bold;
+  cursor: pointer;
+  transition-duration: 0s;
+}
+/* ⚖ A CHIP WEARS THE GAME'S OWN COLOURS (user, 2026-09-19) — purchased, affordable, unaffordable. The COLOUR
+ * itself is never here: layerlist.js writes it INLINE, resolved out of the game's own stylesheet (`engineBg`) or
+ * straight off `tmp[l].color`, and `data-skin` says which of the engine's three words it is. Naming the colours in
+ * this file would be wrong on the seven games that do not use the family's `#77bf5f`/`#bf8f8f` and would go stale
+ * on the rest. ⛔ `locked` here is the ENGINE's word and means CANNOT AFFORD, never "not unlocked".
+ * ⚠ The inline background beats this file's own `background: transparent` above, which is what a chip with no
+ * skin (a category the engine gives no colour of its own) keeps. */
+#tmt-layerlist .tmt-layerlist-chip[data-state="active"] { border-color: currentColor; border-width: 2px; }
+/* … and the two states that used to be told apart by DIMMING alone now carry a real colour, so the dimming is kept
+ * only where there is no colour to carry it. A 45%-opaque green is not the green the game paints. */
+#tmt-layerlist .tmt-layerlist-chip[data-state="done"]:not([data-skin]) { opacity: .45; }
+/* the engines' SECOND upgrade button — the teaser you press to unlock an upgrade rather than to buy it. It is a
+ * real control on the tab, so it is a real chip here, and it says so. (There is no `locked` state any more: since
+ * U2b a component the tab does not draw gets no chip at all, rather than a greyed one.) */
+#tmt-layerlist .tmt-layerlist-chip[data-state="pseudo"] { border-style: dashed; }
+#tmt-layerlist .tmt-layerlist-chip[data-state="pseudo"]:not([data-skin]) { opacity: .6; }
+
+/* ⚖ MILESTONES GET SQUARE CORNERS (user, 2026-09-18) — the one thing that tells a passive milestone chip apart
+ * from an upgrade you can press, at a glance and without colour. Round stays for every other category. */
+#tmt-layerlist .tmt-layerlist-chip[data-kind="milestones"] { border-radius: 0; }
+
+/* ⚖ (U10) A BUYABLE SAYS HOW MANY YOU OWN (user, 2026-09-20), in BOTH views — the expanded chip and the
+ * collapsed action button are one object and take one string (layerlist.js, `drawChipText`).
+ * ⚠ TWO SPANS, NOT ONE RUN OF TEXT. The short name can END IN A DIGIT (`nameChips` disambiguates a collision
+ * with one), so a concatenated `N28` + `3` would be genuinely ambiguous. The × is DECORATION and lives here as
+ * a `::before` rather than in the string, which keeps `data-count` — the machine-readable value the gate reads
+ * — the number and nothing else.
+ * ⚠ THE WIDTH IS RESERVED, tabular, and only ever GROWS (⚖ U2c). `min-width` is written INLINE by
+ * layerlist.js, in `ch`, per CARD, so every buyable on a card is the same width and a growing number cannot make
+ * the row reflow under a finger; the tabular figures at the top of this file are what make a `ch` a fixed digit
+ * column. The floor is the widest count the ROSTER renders (docs/mobile.md) — nothing measured there can widen a
+ * chip at all. */
+#tmt-layerlist .tmt-layerlist-chip-name { white-space: nowrap; }
+#tmt-layerlist .tmt-layerlist-chip-count {
+  display: inline-flex;
+  align-items: baseline;
+  margin-left: .3em;
+  font-variant-numeric: tabular-nums;
+  font-weight: normal;
+  opacity: .85;
+  white-space: nowrap;
+}
+/* ⚠ THE RESERVATION IS ON THE DIGITS ALONE. `ch` is ONE DIGIT COLUMN and the × is not a digit — measured at
+ * 13 px: a digit is 7.83 px, the × is 8.5 — so a reservation written across the whole `×36` would be short by
+ * a sign's width and the chip would grow with the number anyway. The sign is constant, so it sits OUTSIDE the
+ * reserved box, as this container's `::before` (a flex item on an inline-flex container). */
+#tmt-layerlist .tmt-layerlist-chip-n { text-align: right; }
+#tmt-layerlist .tmt-layerlist-chip-count::before { content: "\00d7"; opacity: .7; margin-right: .05em; }
+/* ⚠ A buyable whose amount the engine will not give us has `data-count=""` — the box goes away rather than
+ * leaving a bare × standing for nothing. (A buyable AT ZERO is a different case and still prints `×0`: the
+ * engines define `getBuyableAmount` for it, and hiding it would be the one reading that is not honest.) */
+#tmt-layerlist .tmt-layerlist-chip[data-count=""] .tmt-layerlist-chip-count,
+#tmt-layerlist .tmt-layerlist-act[data-count=""] .tmt-layerlist-chip-count { display: none; }
+
+/* ⚖ A DIVIDER BETWEEN THE CATEGORIES (user, 2026-09-18). A flex item like the chips, emitted before the chip whose
+ * category it introduces, so it can never land at either end. `aria-hidden`, because it is a rule, not a control.
+ * A divider takes the visibility of the chip that follows it, so the collapsed card and the expanded one are both
+ * divided correctly by one element per position — which holds because the collapsed card shows a PREFIX of the
+ * chips (see `capVisible`, and the question it records). */
+#tmt-layerlist .tmt-layerlist-divider {
+  display: block;
+  flex: 0 0 auto;
+  align-self: stretch;
+  width: 1px;
+  min-height: 28px;
+  margin: 0 3px;
+  background: currentColor;
+  opacity: .34;
+}
+
+/* the expander itself: a chevron, not U2's `+N`. The counter row states every total the `+N` used to stand for. */
+#tmt-layerlist .tmt-layerlist-more { flex: 0 0 auto; font-size: 17px; }
+
+/* ---------------------------------------------------------------- U2e: the tooltip
+ * ⚖ A chip should say what it COSTS and what it DOES (user, 2026-09-18). ONE overlay for the whole list, placed by
+ * layerlist.js — so "opening one closes any other" is the shape of the thing, and the clamp that keeps it on a
+ * 390 px screen is a measurement rather than a guess.
+ *
+ * ⚠ It does NOT replace the `title` attributes U2d put on every chip, counter and button: those are the accessible
+ * name and the no-JS fallback, and the overlay's FIRST line is read straight off the element's own `title`, so the
+ * two cannot say different things. On a pointer the browser's native tooltip may still appear beside this one after
+ * its own delay, saying the short name where this says the cost and the effect — they are not duplicates.
+ *
+ * ⚠ `position: fixed`, and it is a child of the PANEL and never of a card: `.tmt-layerlist-card` carries
+ * `contain: layout`, which makes the card a containing block for a fixed descendant. Inside a card this could not
+ * be positioned against the screen at all. */
+#tmt-layerlist .tmt-layerlist-tip {
+  position: fixed;
+  left: 0;
+  top: 0;
+  z-index: 1;                 /* inside the panel's own stacking context: over the cards, under nothing else */
+  max-width: min(320px, calc(100vw - 16px));
+  padding: 8px 10px;
+  border: 1px solid rgba(127, 127, 127, .75);
+  border-radius: 6px;
+  background: var(--background, #111);
+  color: var(--color, #ddd);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, .45);
+  font-size: 13px;
+  line-height: 1.35;
+  overflow-wrap: anywhere;    /* the game's own prose, and some of it is one long unbroken token */
+  /* ⚠ IT IS A READOUT, NOT A CONTROL. Without this a tap that landed on the overlay would be swallowed by it
+   * instead of reaching the chip underneath — and a mouse crossing it would fire `pointerout` on the anchor and
+   * close the thing it is reading. It also keeps the overlay out of the gate's tap-target census, as a div with no
+   * behaviour should be. */
+  pointer-events: none;
+}
+#tmt-layerlist .tmt-layerlist-tip[hidden] { display: none; }
+#tmt-layerlist .tmt-layerlist-tip-title { font-weight: bold; }
+/* `pre-line` because the engines render a buyable's `display` that way too, and `tipLine()` deliberately keeps its
+ * newlines while collapsing everything else. `:empty` hides the second line on a control that has no detail — a
+ * counter, whose whole meaning is its name. */
+#tmt-layerlist .tmt-layerlist-tip-body { margin-top: 3px; opacity: .92; white-space: pre-line; }
+#tmt-layerlist .tmt-layerlist-tip-body:empty { display: none; }
+
+/* (U11) THE RESET GLOW — "the circle for that layer … briefly get a glow effect after that layer resets … fade
+ * over a second" (user, 2026-09-20). ⚖ A DECORATION, pre-authorised to be dropped if it costs; see docs/mobile.md.
+ * ⚠ ONLY `opacity` ANIMATES, so the fade is the COMPOSITOR's and repaints nothing: the glow itself is a STATIC
+ * `box-shadow` on a circle laid exactly over the badge, and that circle fades. (Animating the badge's own
+ * `box-shadow` — the first build — repaints it on every frame of the second.) It is the BUTTON's `::before` and not
+ * the badge's because the badge is `overflow: hidden` (a long symbol) and would clip a descendant's shadow. The
+ * geometry is the button's 2 px padding and the badge's 44 px border box (measured: `border-box`, and the circle
+ * lands on the badge to the pixel on ptr), centred the way the button's `align-items: center` centres the badge.
+ * `pointer-events: none`: it is paint, never a target.
+ * ⚠ RESTARTED BY ALTERNATING TWO NAMES, not by the remove-reflow-add trick: an animation whose name CHANGES starts
+ * over, so `layerlist.js` flips `-a` ↔ `-b` on each event and forces no layout. With no `fill-mode` the circle is
+ * back at `opacity: 0` when either ends, so a class left on is invisible.
+ * ⚠ `--tmt-glow` (the layer's own colour) is written only at the EVENT, never on a sync. */
+#tmt-layerlist .tmt-layerlist-open { position: relative; }
+#tmt-layerlist .tmt-layerlist-open::before {
+  content: '';
+  position: absolute;
+  left: 2px;
+  top: 50%;
+  width: 44px;
+  height: 44px;
+  margin-top: -22px;
+  box-sizing: border-box;
+  border-radius: 50%;
+  box-shadow: 0 0 6px 5px var(--tmt-glow, #fff);
+  opacity: 0;
+  pointer-events: none;
+}
+/* …and the SUMMARY CHIPS (the counters) the same way, conditional on the layer half being cheap and measured so
+ * (docs/mobile.md). A counter has no `overflow` of its own, so its `::before` simply covers its border box and
+ * takes its corners (`inherit`: 6 px, or 0 on the milestone counter). */
+#tmt-layerlist .tmt-layerlist-counter { position: relative; }
+#tmt-layerlist .tmt-layerlist-counter::before {
+  content: '';
+  position: absolute;
+  inset: -1px;
+  border-radius: inherit;
+  box-shadow: 0 0 5px 3px var(--tmt-glow, #fff);
+  opacity: 0;
+  pointer-events: none;
+}
+@keyframes tmt-layerlist-glow-a { from { opacity: 1; } to { opacity: 0; } }
+@keyframes tmt-layerlist-glow-b { from { opacity: 1; } to { opacity: 0; } }
+/* (U12) `--tmt-glow-delay` is set NEGATIVE only on a card rebuilt inside its own glow (a reset moves membership, so
+ * the rebuild it causes usually is), which resumes the fade where it was instead of cutting it off or restarting it */
+#tmt-layerlist .tmt-layerlist-glow-a::before { animation: tmt-layerlist-glow-a 1s ease-out var(--tmt-glow-delay, 0s); }
+#tmt-layerlist .tmt-layerlist-glow-b::before { animation: tmt-layerlist-glow-b 1s ease-out var(--tmt-glow-delay, 0s); }
+/* a decoration is exactly the case this preference exists for: no animation at all, and nothing in its place */
+@media (prefers-reduced-motion: reduce) {
+  #tmt-layerlist .tmt-layerlist-glow-a::before,
+  #tmt-layerlist .tmt-layerlist-glow-b::before { animation: none; }
+}

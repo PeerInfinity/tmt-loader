@@ -1,0 +1,130 @@
+{
+  "schema": 1,
+  "id": "plague-tree-vorona-cirus-treesease",
+  "name": "Plague Tree (Vorona Cirus Treesease)",
+  "version": "0.6.25",
+  "author": "Vorona",
+  "upstream": {
+    "repo": "c0v1d-9119361/The-Plague-Tree",
+    "url": "https://github.com/c0v1d-9119361/The-Plague-Tree.git",
+    "branch": "master",
+    "commit": "bbbd3b5ecf72b3bbc219fe2a38921e5e71ff9f3f",
+    "pushed_at": "2024-06-07T01:42:31Z"
+  },
+  "engine": {
+    "tmtNum": "2.6.6.2",
+    "stock_commit": "8cf14c4",
+    "moved": false,
+    "deviation": {
+      "added": 1057,
+      "removed": 270
+    }
+  },
+  "entry": "index.html",
+  "load": {
+    "onload": "load()",
+    "scripts": [
+      "js/vueFile.js",
+      "js/technical/break_eternity.js",
+      "js/technical/layerSupport.js",
+      "js/tree.js",
+      "js/news.js",
+      "js/layers.js",
+      "js/mod.js",
+      "js/technical/loader.js",
+      "js/technical/temp.js",
+      "js/technical/displays.js",
+      "js/game.js",
+      "js/utils.js",
+      "js/math.js",
+      "js/utils/easyAccess.js",
+      "js/technical/systemComponents.js",
+      "js/components.js",
+      "js/technical/canvas.js",
+      "js/technical/particleSystem.js",
+      "js/utils/NumberFormating.js",
+      "js/utils/options.js",
+      "js/utils/save.js",
+      "js/utils/themes.js"
+    ],
+    "renderOnly": [
+      "js/vueFile.js",
+      "js/technical/systemComponents.js",
+      "js/components.js",
+      "js/technical/canvas.js",
+      "js/technical/particleSystem.js"
+    ],
+    "modFilesPrefix": "js/",
+    "modFiles": [],
+    "external": {
+      "https://fonts.googleapis.com/css?family=Inconsolata": "drop"
+    },
+    "vendor": {},
+    "known": {
+      "errorsBeforeReady": "js/news.js:125 sets a setTimeout that starts setInterval(tickNews, 15); tickNews guards with `if (player)`, which THROWS on an undeclared binding instead of reading false, and news.js loads before js/game.js declares player. 6 ReferenceErrors, all before ready, 0 after \u2014 the game's own, raised until load() runs"
+    }
+  },
+  "save": {
+    "keyRule": "modInfo.id",
+    "key": "c0v1d"
+  },
+  "headless": {
+    "prestubs": [],
+    "renderStubs": [
+      "loadVue",
+      "resizeCanvas",
+      "retrieveCanvasData",
+      "drawTree",
+      "drawComponentBranches",
+      "drawTreeBranch",
+      "makeParticles",
+      "makeShinies",
+      "updateParticles",
+      "setDir",
+      "setSpeed",
+      "updateMouse",
+      "getOpacity",
+      "constructParticleStyle",
+      "clearParticles",
+      "sin",
+      "cos",
+      "tan",
+      "asin",
+      "acos",
+      "atan"
+    ],
+    "idleHash": {
+      "ticks": 200,
+      "diff": 0.05,
+      "hash": "bfeb44c826e2a9e1"
+    },
+    "deterministic": false
+  },
+  "license": {
+    "githubSpdx": "NOASSERTION",
+    "files": {
+      "LICENSE": "MIT",
+      "Prestige-tree-license": "MIT"
+    },
+    "verdict": "MIT"
+  },
+  "census": {
+    "full_name": "c0v1d-9119361/The-Plague-Tree",
+    "head": "bbbd3b5",
+    "score": 75.49,
+    "layers": 16,
+    "rows": 5,
+    "milestones": 372,
+    "upgrades": 1131,
+    "buyables": 319,
+    "challenges": 40,
+    "achievements": 169,
+    "trace_fields": 53
+  },
+  "patches": [],
+  "generated": {
+    "by": "tmt-fork-census scripts/manifest.mjs",
+    "commit": "16d69c4",
+    "at": "2026-09-18T01:29:14.331Z"
+  }
+}

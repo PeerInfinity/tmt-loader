@@ -1,0 +1,205 @@
+{
+ "generated": true,
+ "generator": "tools/currency-data.mjs",
+ "generatorVersion": 1,
+ "formatVersion": 1,
+ "game": "collection-of-everything",
+ "upstream": {
+  "repo": "XtremeRusher/The-Modding-Tree",
+  "commit": "f8c385fcdacc30109690a4865a906a2092477074"
+ },
+ "states": [
+  "fresh"
+ ],
+ "seeds": [
+  1
+ ],
+ "summary": {
+  "buyables": 9,
+  "scored": 9,
+  "price": 9,
+  "requirement": 0,
+  "unknown": 0,
+  "own": 0,
+  "foreign": 5,
+  "several": 4,
+  "impure": 0
+ },
+ "buyables": {
+  "s": {
+   "11": {
+    "pays": "player.points",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "trace"
+    ],
+    "scored": true,
+    "pick": [
+     "player.points",
+     "player.st.stShard",
+     "player.w.points"
+    ],
+    "how": "affordable",
+    "from": [
+     "fresh"
+    ]
+   },
+   "12": {
+    "pays": "player.points",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "trace"
+    ],
+    "scored": true,
+    "pick": [
+     "player.points",
+     "player.st.stShard",
+     "player.w.points"
+    ],
+    "how": "affordable",
+    "from": [
+     "fresh"
+    ]
+   },
+   "21": {
+    "pays": "player.points",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "trace"
+    ],
+    "scored": true,
+    "pick": [
+     "player.points",
+     "player.st.stShard",
+     "player.w.points"
+    ],
+    "how": "affordable",
+    "from": [
+     "fresh"
+    ]
+   },
+   "22": {
+    "pays": "player.points",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "trace"
+    ],
+    "scored": true,
+    "pick": [
+     "player.points",
+     "player.st.stShard",
+     "player.w.points"
+    ],
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "a1": {
+    "pays": "player.FoodA.wheat",
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": "player.FoodA.wheat",
+    "how": "lift-1",
+    "from": [
+     "fresh"
+    ]
+   },
+   "a2": {
+    "pays": [
+     "player.FoodA.rice",
+     "player.FoodB.fsh"
+    ],
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": [
+     "player.FoodA.rice",
+     "player.FoodB.fsh"
+    ],
+    "how": "lift-2",
+    "from": [
+     "fresh"
+    ]
+   },
+   "a3": {
+    "pays": [
+     "player.FoodA.banana",
+     "player.FoodB.mlk"
+    ],
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": [
+     "player.FoodA.banana",
+     "player.FoodB.mlk"
+    ],
+    "how": "lift-2",
+    "from": [
+     "fresh"
+    ]
+   },
+   "a4": {
+    "pays": [
+     "player.FoodA.apple",
+     "player.FoodA.cabbage",
+     "player.FoodA.carrot"
+    ],
+    "cost": "price",
+    "by": [
+     "rollback",
+     "regex",
+     "trace"
+    ],
+    "scored": true,
+    "pick": [
+     "player.FoodA.apple",
+     "player.FoodA.cabbage",
+     "player.FoodA.carrot"
+    ],
+    "how": "lift-3",
+    "from": [
+     "fresh"
+    ]
+   },
+   "a5": {
+    "pays": [
+     "player.FoodA.potato",
+     "player.FoodB.pig",
+     "player.s.buyables.a4"
+    ],
+    "cost": "price",
+    "by": [
+     "rollback",
+     "trace"
+    ],
+    "scored": true,
+    "pick": [
+     "player.FoodA.potato",
+     "player.FoodB.pig"
+    ],
+    "how": "lift-3",
+    "from": [
+     "fresh"
+    ]
+   }
+  }
+ }
+}

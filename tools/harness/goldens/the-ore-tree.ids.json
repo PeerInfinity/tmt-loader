@@ -1,0 +1,144 @@
+{
+  "id": "the-ore-tree",
+  "commit": "511718c59ef1e8ed49ae6751f315366e767d7509",
+  "layers": {
+    "info-tab": {
+      "row": "otherside",
+      "type": "none"
+    },
+    "options-tab": {
+      "row": "otherside",
+      "type": "none"
+    },
+    "changelog-tab": {
+      "row": "otherside",
+      "type": "none"
+    },
+    "a": {
+      "row": "side",
+      "type": "none"
+    },
+    "stone": {
+      "row": 0,
+      "type": "normal"
+    },
+    "coal": {
+      "row": 1,
+      "type": "normal"
+    },
+    "mile": {
+      "row": 1,
+      "type": "static"
+    },
+    "iron": {
+      "row": 2,
+      "type": "normal"
+    },
+    "lead": {
+      "row": 2,
+      "type": "normal"
+    },
+    "blank": {
+      "row": null,
+      "type": "none"
+    },
+    "tree-tab": {
+      "row": null,
+      "type": "none"
+    }
+  },
+  "ids": [
+    "a:ach:11",
+    "a:ach:12",
+    "a:ach:13",
+    "a:ach:14",
+    "a:ach:15",
+    "a:ach:16",
+    "a:ach:21",
+    "a:ach:22",
+    "a:ach:23",
+    "a:ach:24",
+    "a:ach:25",
+    "a:ach:26",
+    "a:ach:31",
+    "a:ach:32",
+    "a:ach:33",
+    "a:ach:34",
+    "a:ach:35",
+    "a:ach:36",
+    "stone:upg:11",
+    "stone:upg:12",
+    "stone:upg:13",
+    "stone:upg:14",
+    "stone:upg:15",
+    "stone:upg:21",
+    "stone:upg:22",
+    "stone:upg:23",
+    "stone:upg:24",
+    "stone:upg:25",
+    "stone:upg:31",
+    "stone:upg:32",
+    "stone:upg:33",
+    "stone:upg:34",
+    "stone:upg:35",
+    "stone:upg:41",
+    "stone:upg:42",
+    "stone:upg:43",
+    "stone:upg:44",
+    "stone:upg:45",
+    "stone:upg:51",
+    "stone:upg:52",
+    "stone:upg:53",
+    "stone:upg:54",
+    "stone:upg:55",
+    "stone:buy:11",
+    "stone:buy:12",
+    "stone:buy:21",
+    "stone:buy:22",
+    "coal:upg:11",
+    "coal:upg:12",
+    "coal:upg:13",
+    "coal:upg:14",
+    "coal:upg:15",
+    "coal:upg:21",
+    "coal:upg:22",
+    "coal:upg:23",
+    "coal:upg:24",
+    "coal:upg:25",
+    "coal:upg:31",
+    "coal:upg:32",
+    "coal:upg:33",
+    "coal:upg:34",
+    "coal:upg:35",
+    "coal:upg:41",
+    "coal:upg:42",
+    "coal:upg:43",
+    "coal:upg:44",
+    "coal:upg:45",
+    "coal:buy:11",
+    "coal:buy:12",
+    "coal:buy:21",
+    "mile:ms:1",
+    "mile:ms:2",
+    "mile:ms:3",
+    "mile:ms:4",
+    "mile:ms:5",
+    "mile:ms:6",
+    "mile:ms:7",
+    "mile:ms:8",
+    "mile:ms:9",
+    "mile:upg:11",
+    "mile:upg:12",
+    "mile:upg:13",
+    "mile:upg:14",
+    "mile:ch:11",
+    "mile:ch:12"
+  ],
+  "counts": {
+    "ms": 9,
+    "upg": 49,
+    "buy": 7,
+    "ch": 2,
+    "ach": 18
+  }
+}

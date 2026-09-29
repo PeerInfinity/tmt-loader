@@ -1,0 +1,90 @@
+{
+  "id": "gooby-cat-tree",
+  "commit": "5c11775a49ec3e58237c88a1c012cf1eb18b84b8",
+  "layers": {
+    "info-tab": {
+      "row": "otherside",
+      "type": "none"
+    },
+    "options-tab": {
+      "row": "otherside",
+      "type": "none"
+    },
+    "changelog-tab": {
+      "row": "otherside",
+      "type": "none"
+    },
+    "p": {
+      "row": 0,
+      "type": "normal"
+    },
+    "f": {
+      "row": 0,
+      "type": "normal"
+    },
+    "r": {
+      "row": "side",
+      "type": "static"
+    },
+    "t": {
+      "row": "1",
+      "type": "static"
+    },
+    "Fr": {
+      "row": 0,
+      "type": "normal"
+    },
+    "blank": {
+      "row": null,
+      "type": "none"
+    },
+    "tree-tab": {
+      "row": null,
+      "type": "none"
+    }
+  },
+  "ids": [
+    "p:ms:0",
+    "p:upg:11",
+    "p:upg:12",
+    "p:upg:13",
+    "p:upg:14",
+    "p:upg:21",
+    "p:buy:11",
+    "p:buy:12",
+    "p:buy:13",
+    "f:ms:0",
+    "f:ms:1",
+    "f:ms:2",
+    "f:upg:11",
+    "f:upg:12",
+    "f:upg:13",
+    "f:upg:14",
+    "r:ms:0",
+    "r:upg:11",
+    "r:upg:12",
+    "r:upg:13",
+    "r:upg:14",
+    "t:ms:0",
+    "t:ch:11",
+    "t:ch:21",
+    "t:ch:22",
+    "t:ch:31",
+    "Fr:ms:0",
+    "Fr:upg:11",
+    "Fr:upg:12",
+    "Fr:upg:13",
+    "Fr:upg:14",
+    "Fr:upg:21",
+    "Fr:buy:11",
+    "Fr:buy:12",
+    "Fr:buy:13"
+  ],
+  "counts": {
+    "ms": 7,
+    "upg": 18,
+    "buy": 6,
+    "ch": 4,
+    "ach": 0
+  }
+}

@@ -1,0 +1,113 @@
+{
+  "id": "the-challenge-tree",
+  "commit": "90b1677ed2909f83e81e3afea195c42db1d7941b",
+  "layers": {
+    "info-tab": {
+      "row": "otherside",
+      "type": "none"
+    },
+    "options-tab": {
+      "row": "otherside",
+      "type": "none"
+    },
+    "changelog-tab": {
+      "row": "otherside",
+      "type": "none"
+    },
+    "cp": {
+      "row": 0,
+      "type": "normal"
+    },
+    "dr": {
+      "row": 1,
+      "type": "normal"
+    },
+    "e": {
+      "row": 2,
+      "type": "normal"
+    },
+    "cm": {
+      "row": 3,
+      "type": "static"
+    },
+    "mf": {
+      "row": 4,
+      "type": "normal"
+    },
+    "mg": {
+      "row": 5,
+      "type": "normal"
+    },
+    "i": {
+      "row": 6,
+      "type": "normal"
+    },
+    "ip": {
+      "row": 2,
+      "type": "normal"
+    },
+    "et": {
+      "row": 2,
+      "type": "static"
+    },
+    "tree-tab": {
+      "row": null,
+      "type": "none"
+    }
+  },
+  "ids": [
+    "cp:upg:11",
+    "cp:ch:11",
+    "cp:ch:12",
+    "cp:ch:13",
+    "cp:ch:14",
+    "cp:ch:15",
+    "cp:ch:16",
+    "cp:ch:17",
+    "cp:ch:18",
+    "cp:ch:19",
+    "cp:ch:21",
+    "cp:ch:22",
+    "cp:ch:23",
+    "cp:ch:31",
+    "cp:ch:32",
+    "cp:ch:33",
+    "cp:ch:34",
+    "cp:ch:35",
+    "cp:ch:41",
+    "dr:ch:11",
+    "dr:ch:12",
+    "dr:ch:13",
+    "dr:ch:21",
+    "e:upg:11",
+    "e:ch:11",
+    "e:ch:12",
+    "e:ch:13",
+    "cm:upg:11",
+    "cm:ch:11",
+    "cm:ch:12",
+    "cm:ch:13",
+    "mf:ms:11",
+    "mf:ch:11",
+    "mf:ch:12",
+    "mg:ch:11",
+    "mg:ch:12",
+    "mg:ch:13",
+    "i:ch:11",
+    "i:ch:12",
+    "i:ch:21",
+    "i:ch:22",
+    "ip:upg:11",
+    "ip:upg:12",
+    "ip:upg:13",
+    "ip:ch:11",
+    "et:ch:11"
+  ],
+  "counts": {
+    "ms": 1,
+    "upg": 6,
+    "buy": 0,
+    "ch": 39,
+    "ach": 0
+  }
+}

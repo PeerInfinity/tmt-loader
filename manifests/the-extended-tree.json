@@ -1,0 +1,108 @@
+{
+  "schema": 1,
+  "id": "the-extended-tree",
+  "name": "The Extended Tree",
+  "version": "1.4.1",
+  "author": "Thien",
+  "upstream": {
+    "repo": "skylafalls/Extended-Tree",
+    "url": "https://github.com/skylafalls/Extended-Tree.git",
+    "branch": "master",
+    "commit": "d2e17b8e82a1b887fa9067bd918e9aa909f05e1f",
+    "pushed_at": "2023-05-23T21:03:31Z"
+  },
+  "engine": {
+    "tmtNum": "2.2.1",
+    "stock_commit": "360d8ac",
+    "moved": false,
+    "deviation": {
+      "added": 1172,
+      "removed": 275
+    }
+  },
+  "entry": "index.html",
+  "load": {
+    "onload": "load()",
+    "scripts": [
+      "js/technical/break_eternity.js",
+      "js/technical/layerSupport.js",
+      "js/tree.js",
+      "js/sc.js",
+      "js/help.js",
+      "js/layers.js",
+      "js/mod.js",
+      "js/technical/temp.js",
+      "js/game.js",
+      "js/utils.js",
+      "js/technical/systemComponents.js",
+      "js/components.js",
+      "js/technical/canvas.js"
+    ],
+    "renderOnly": [
+      "js/technical/systemComponents.js",
+      "js/components.js",
+      "js/technical/canvas.js"
+    ],
+    "modFilesPrefix": null,
+    "modFiles": [],
+    "external": {
+      "https://cdn.jsdelivr.net/npm/vue@2.6.12": "vendor",
+      "https://fonts.googleapis.com/css?family=Inconsolata": "drop"
+    },
+    "vendor": {
+      "https://cdn.jsdelivr.net/npm/vue@2.6.12": {
+        "path": "vendor/vue-2.6.12.min.js",
+        "sha256": "29296ccacaa9ed35ed168fc51e36f54fd6f8db9c7786bbf38cc59a27229ba5c2"
+      }
+    }
+  },
+  "save": {
+    "keyRule": "modInfo.id",
+    "key": "tet"
+  },
+  "headless": {
+    "prestubs": [
+      "colors"
+    ],
+    "renderStubs": [
+      "loadVue",
+      "resizeCanvas",
+      "retrieveCanvasData",
+      "drawTree",
+      "drawTreeBranch"
+    ],
+    "idleHash": {
+      "ticks": 200,
+      "diff": 0.05,
+      "hash": "55e28c6b0a0cb41f"
+    },
+    "deterministic": true
+  },
+  "license": {
+    "githubSpdx": "NOASSERTION",
+    "files": {
+      "LICENSE": "MIT",
+      "Prestige-tree-license": "MIT"
+    },
+    "verdict": "MIT"
+  },
+  "census": {
+    "full_name": "skylafalls/Extended-Tree",
+    "head": "d2e17b8",
+    "score": 94.22,
+    "layers": 35,
+    "rows": 9,
+    "milestones": 103,
+    "upgrades": 233,
+    "buyables": 58,
+    "challenges": 12,
+    "achievements": 80,
+    "trace_fields": 26
+  },
+  "patches": [],
+  "generated": {
+    "by": "tmt-fork-census scripts/manifest.mjs",
+    "commit": "27c6654",
+    "at": "2026-09-15T06:28:00.704Z"
+  }
+}

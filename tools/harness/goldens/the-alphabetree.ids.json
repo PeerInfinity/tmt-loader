@@ -1,0 +1,250 @@
+{
+  "id": "the-alphabetree",
+  "commit": "df0edf2b8634d4c4674b15bf14de0404a9573771",
+  "layers": {
+    "info-tab": {
+      "row": "otherside",
+      "type": "none"
+    },
+    "options-tab": {
+      "row": "otherside",
+      "type": "none"
+    },
+    "changelog-tab": {
+      "row": "otherside",
+      "type": "none"
+    },
+    "a": {
+      "row": 0,
+      "type": "normal"
+    },
+    "automation": {
+      "row": 1,
+      "type": "normal"
+    },
+    "b": {
+      "row": 1,
+      "type": "normal"
+    },
+    "bases": {
+      "row": 2,
+      "type": "normal"
+    },
+    "c": {
+      "row": 2,
+      "type": "normal"
+    },
+    "challenges": {
+      "row": 3,
+      "type": "normal"
+    },
+    "clock": {
+      "row": 3,
+      "type": "normal"
+    },
+    "d": {
+      "row": 3,
+      "type": "normal"
+    },
+    "e": {
+      "row": 4,
+      "type": "normal"
+    },
+    "empower": {
+      "row": 5,
+      "type": "normal"
+    },
+    "f": {
+      "row": 5,
+      "type": "normal"
+    },
+    "flux": {
+      "row": 6,
+      "type": "normal"
+    },
+    "g": {
+      "row": 6,
+      "type": "normal"
+    },
+    "h": {
+      "row": 7,
+      "type": "normal"
+    },
+    "hindrances": {
+      "row": 8,
+      "type": "normal"
+    },
+    "i": {
+      "row": 8,
+      "type": "normal"
+    },
+    "inquiry": {
+      "row": 9,
+      "type": "normal"
+    },
+    "irregulations": {
+      "row": 9,
+      "type": "normal"
+    },
+    "j": {
+      "row": 9,
+      "type": "normal"
+    },
+    "juxtapositions": {
+      "row": 10,
+      "type": "normal"
+    },
+    "k": {
+      "row": 10,
+      "type": "normal"
+    },
+    "l": {
+      "row": 11,
+      "type": "normal"
+    },
+    "m": {
+      "row": 12,
+      "type": "normal"
+    },
+    "mastery": {
+      "row": 13,
+      "type": "normal"
+    },
+    "n": {
+      "row": 13,
+      "type": "normal"
+    },
+    "nitrogen": {
+      "row": 14,
+      "type": "normal"
+    },
+    "negativity": {
+      "row": 14,
+      "type": "normal"
+    },
+    "o": {
+      "row": 14,
+      "type": "normal"
+    },
+    "p": {
+      "row": 15,
+      "type": "normal"
+    },
+    "printing": {
+      "row": 16,
+      "type": "normal"
+    },
+    "positivity": {
+      "row": 16,
+      "type": "normal"
+    },
+    "q": {
+      "row": 16,
+      "type": "normal"
+    },
+    "r": {
+      "row": 17,
+      "type": "normal"
+    },
+    "s": {
+      "row": 18,
+      "type": "normal"
+    },
+    "science": {
+      "row": 19,
+      "type": "normal"
+    },
+    "super-mastery": {
+      "row": 19,
+      "type": "normal"
+    },
+    "t": {
+      "row": 19,
+      "type": "normal"
+    },
+    "timeline": {
+      "row": 20,
+      "type": "normal"
+    },
+    "u": {
+      "row": 20,
+      "type": "normal"
+    },
+    "v": {
+      "row": 21,
+      "type": "normal"
+    },
+    "visualise": {
+      "row": 22,
+      "type": "normal"
+    },
+    "w": {
+      "row": 22,
+      "type": "normal"
+    },
+    "x": {
+      "row": 23,
+      "type": "normal"
+    },
+    "y": {
+      "row": 24,
+      "type": "normal"
+    },
+    "z": {
+      "row": 25,
+      "type": "normal"
+    },
+    "zenith": {
+      "row": 26,
+      "type": "normal"
+    },
+    "blank": {
+      "row": null,
+      "type": "none"
+    },
+    "tree-tab": {
+      "row": null,
+      "type": "none"
+    }
+  },
+  "ids": [
+    "a:ms:1",
+    "a:ms:2",
+    "a:ms:3",
+    "a:upg:11",
+    "a:upg:12",
+    "a:upg:13",
+    "a:upg:21",
+    "a:upg:22",
+    "b:ms:1",
+    "b:ms:2",
+    "b:ms:3",
+    "b:ms:4",
+    "b:ms:5",
+    "b:upg:11",
+    "b:upg:12",
+    "b:upg:13",
+    "b:upg:21",
+    "b:upg:22",
+    "b:upg:23",
+    "c:ms:1",
+    "c:ms:2",
+    "c:ms:3",
+    "c:upg:11",
+    "c:upg:12",
+    "c:upg:13",
+    "c:upg:21",
+    "c:upg:22",
+    "c:upg:23",
+    "c:upg:31",
+    "c:upg:32",
+    "c:upg:33"
+  ],
+  "counts": {
+    "ms": 11,
+    "upg": 20,
+    "buy": 0,
+    "ch": 0,
+    "ach": 0
+  }
+}

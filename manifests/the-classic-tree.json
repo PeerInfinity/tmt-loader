@@ -1,0 +1,146 @@
+{
+  "schema": 1,
+  "id": "the-classic-tree",
+  "name": "The Classic+ Tree",
+  "version": "0.9",
+  "author": "You",
+  "upstream": {
+    "repo": "certainjellyfish9204/The-Modding-Tree",
+    "url": "https://github.com/certainjellyfish9204/The-Modding-Tree.git",
+    "branch": "master",
+    "commit": "69a77a0dc7d92f772454236b3fa698692dc93cc2",
+    "pushed_at": "2026-09-11T00:27:24Z"
+  },
+  "engine": {
+    "tmtNum": "2.7",
+    "stock_commit": "a18bfa2",
+    "moved": false,
+    "deviation": {
+      "added": 1579,
+      "removed": 3211
+    }
+  },
+  "entry": "index.html",
+  "load": {
+    "onload": "load()",
+    "scripts": [
+      "js/technical/break_eternity.js",
+      "js/utils/eternal_notations.js",
+      "js/technical/layerSupport.js",
+      "js/mod.js",
+      "js/technical/loader.js",
+      "js/technical/temp.js",
+      "js/technical/displays.js",
+      "js/game.js",
+      "js/utils.js",
+      "js/utils/easyAccess.js",
+      "js/technical/systemComponents.js",
+      "js/components.js",
+      "js/technical/canvas.js",
+      "js/technical/particleSystem.js",
+      "js/utils/NumberFormating.js",
+      "js/utils/options.js",
+      "js/utils/save.js",
+      "js/utils/saveSlots.js",
+      "js/utils/officialSaveBank.js",
+      "js/utils/themes.js",
+      "js/technical/transport.js",
+      "js/technical/multiverse.js"
+    ],
+    "renderOnly": [
+      "js/technical/systemComponents.js",
+      "js/components.js",
+      "js/technical/canvas.js",
+      "js/technical/particleSystem.js"
+    ],
+    "modFilesPrefix": "js/",
+    "modFiles": [
+      "layers.js",
+      "layers/universe.js",
+      "layers/reality.js",
+      "layers/singularity.js",
+      "layers/omniverse.js",
+      "layers/finality.js",
+      "tree.js"
+    ],
+    "external": {
+      "https://unpkg.com/vue@2.7.16/dist/vue.min.js": "vendor",
+      "https://fonts.googleapis.com/css2?family=Audiowide&family=Chakra+Petch:wght@500;700&family=Electrolize&family=Exo+2:wght@600;700&family=Megrim&family=Michroma&family=Orbitron:wght@500;700&family=Quantico:wght@400;700&family=Rajdhani:wght@600;700&family=Russo+One&family=Syncopate:wght@400;700&family=Teko:wght@500;700&display=swap": "drop",
+      "https://fonts.googleapis.com/css2?family=Courier+Prime:wght@400;700&family=Fira+Code:wght@400;700&family=Inconsolata:wght@400;700&family=JetBrains+Mono:wght@400;700&family=Nova+Mono&family=Roboto+Mono:wght@400;700&family=Share+Tech+Mono&family=Space+Mono:wght@400;700&family=Special+Elite&display=swap": "drop",
+      "https://fonts.googleapis.com/css2?family=Black+Ops+One&family=Bungee&family=Bungee+Shade&family=Creepster&family=DotGothic16&family=Faster+One&family=Monoton&family=Press+Start+2P&family=Silkscreen:wght@400;700&family=VT323&display=swap": "drop",
+      "https://fonts.googleapis.com/css2?family=Comfortaa:wght@500;700&family=Fredoka:wght@500;700&family=Inter:wght@400;700&family=Montserrat:wght@400;700&family=Outfit:wght@400;700&family=Poppins:wght@400;700&family=Righteous&family=Rubik:wght@500;700&family=Space+Grotesk:wght@500;700&display=swap": "drop",
+      "https://fonts.googleapis.com/css2?family=Almendra:ital,wght@0,700;1,700&family=Bangers&family=Caesar+Dressing&family=Caveat:wght@600;700&family=Cinzel:wght@700&family=Cinzel+Decorative:wght@700&family=Comic+Neue:wght@400;700&family=Marcellus&family=MedievalSharp&family=Pacifico&family=Permanent+Marker&family=Pirata+One&family=Playfair+Display:ital,wght@0,600;1,600&family=STIX+Two+Text:ital,wght@0,400;0,700;1,400;1,700&family=Uncial+Antiqua&family=UnifrakturMaguntia&family=Noto+Sans+Symbols&family=Noto+Sans+Symbols+2&display=swap": "drop",
+      "https://cdn.jsdelivr.net/npm/katex@0.16.21/dist/katex.min.css": "drop",
+      "https://cdn.jsdelivr.net/gh/aaaakshat/cm-web-fonts@latest/fonts.css": "drop"
+    },
+    "vendor": {
+      "https://unpkg.com/vue@2.7.16/dist/vue.min.js": {
+        "path": "vendor/vue-2.7.16.min.js",
+        "sha256": "3c1d4b0c549e8de9d4a9bafb12ab70b6a1ac747d07293b98c5b25b6632999afd"
+      }
+    }
+  },
+  "save": {
+    "keyRule": "modInfo.id",
+    "key": "classicPlusFull"
+  },
+  "headless": {
+    "prestubs": [],
+    "renderStubs": [
+      "loadVue",
+      "resizeCanvas",
+      "retrieveCanvasData",
+      "drawTree",
+      "drawComponentBranches",
+      "drawTreeBranch",
+      "makeParticles",
+      "makeShinies",
+      "updateParticles",
+      "setDir",
+      "setSpeed",
+      "updateMouse",
+      "getOpacity",
+      "constructParticleStyle",
+      "clearParticles",
+      "sin",
+      "cos",
+      "tan",
+      "asin",
+      "acos",
+      "atan"
+    ],
+    "idleHash": {
+      "ticks": 200,
+      "diff": 0.05,
+      "hash": "99c286e6976dc34d"
+    },
+    "deterministic": true
+  },
+  "license": {
+    "githubSpdx": "NOASSERTION",
+    "files": {
+      "LICENSE": "MIT",
+      "Prestige-tree-license": "MIT"
+    },
+    "verdict": "MIT"
+  },
+  "census": {
+    "full_name": "certainjellyfish9204/The-Modding-Tree",
+    "head": "69a77a0",
+    "score": 74.67,
+    "layers": 14,
+    "rows": 9,
+    "milestones": 105,
+    "upgrades": 223,
+    "buyables": 72,
+    "challenges": 40,
+    "achievements": 164,
+    "trace_fields": 14
+  },
+  "patches": [],
+  "generated": {
+    "by": "tmt-fork-census scripts/manifest.mjs",
+    "commit": "4a63e16",
+    "at": "2026-09-22T19:40:23.358Z"
+  }
+}

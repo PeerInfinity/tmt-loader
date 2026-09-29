@@ -1,0 +1,161 @@
+{
+  "schema": 1,
+  "id": "the-galactic-tree",
+  "name": "The Galactic Tree",
+  "version": "3.0.2",
+  "author": "CoolBoris",
+  "upstream": {
+    "repo": "CoolBoris/The-Galactic-Tree",
+    "url": "https://github.com/CoolBoris/The-Galactic-Tree.git",
+    "branch": "master",
+    "commit": "de6198fbba7f557294ddf75d3110a6ee211c1f55",
+    "pushed_at": "2026-04-28T20:19:21Z"
+  },
+  "engine": {
+    "tmtNum": "2.7",
+    "stock_commit": "a18bfa2",
+    "moved": true,
+    "deviation": {
+      "added": 7613,
+      "removed": 5220
+    }
+  },
+  "entry": "index.html",
+  "load": {
+    "onload": "load()",
+    "scripts": [
+      "js/technical/break_eternity.js",
+      "js/technical/layerSupport.js",
+      "js/mod.js",
+      "js/technical/loader.js",
+      "js/technical/temp.js",
+      "js/technical/displays.js",
+      "js/technical/game.js",
+      "js/technical/utils.js",
+      "js/technical/easyAccess.js",
+      "js/technical/systemComponents.js",
+      "js/technical/components.js",
+      "js/technical/canvas.js",
+      "js/technical/particleSystem.js",
+      "js/technical/NumberFormating.js",
+      "js/technical/options.js",
+      "js/technical/save.js",
+      "js/technical/themes.js"
+    ],
+    "renderOnly": [
+      "js/technical/systemComponents.js",
+      "js/technical/components.js",
+      "js/technical/canvas.js",
+      "js/technical/particleSystem.js"
+    ],
+    "modFilesPrefix": "js/",
+    "modFiles": [
+      "technical/tree.js",
+      "layers/side/achievements.js",
+      "layers/side/secretachievements.js",
+      "layers/side/blob.js",
+      "layers/side/realities.js",
+      "layers/side/savebank.js",
+      "layers/side/extra.js",
+      "layers/side/statistics.js",
+      "layers/side/spacefishing.js",
+      "layers/side/minigames.js",
+      "layers/r1/rocketfuel.js",
+      "layers/r1/rockets.js",
+      "layers/r1/astronauts.js",
+      "layers/r1/space.js",
+      "layers/r1/comets.js",
+      "layers/r1/asteroids.js",
+      "layers/r1/stars.js",
+      "layers/r1/planets.js",
+      "layers/r1/clickergame.js",
+      "layers/r1/x.js",
+      "layers/r1/infinity.js",
+      "layers/r1/oldinfinity.js",
+      "layers/r2/unstablerocketfuel.js",
+      "layers/r2/galaxy.js",
+      "layers/r2/darkmatter.js",
+      "layers/r2/supernova.js",
+      "layers/r2/blackhole.js",
+      "layers/r2/universe.js",
+      "layers/r2/negativeinfinity.js",
+      "layers/r2/oldnegativeinfinity.js"
+    ],
+    "external": {
+      "https://unpkg.com/vue@2.7.16/dist/vue.min.js": "vendor"
+    },
+    "vendor": {
+      "https://unpkg.com/vue@2.7.16/dist/vue.min.js": {
+        "path": "vendor/vue-2.7.16.min.js",
+        "sha256": "3c1d4b0c549e8de9d4a9bafb12ab70b6a1ac747d07293b98c5b25b6632999afd"
+      }
+    },
+    "known": {
+      "externalHosts": [
+        "i.ibb.co"
+      ]
+    }
+  },
+  "save": {
+    "keyRule": "modInfo.id",
+    "key": "galactictree11"
+  },
+  "headless": {
+    "prestubs": [],
+    "renderStubs": [
+      "loadVue",
+      "resizeCanvas",
+      "retrieveCanvasData",
+      "drawTree",
+      "drawComponentBranches",
+      "drawTreeBranch",
+      "makeParticles",
+      "makeShinies",
+      "updateParticles",
+      "setDir",
+      "setSpeed",
+      "updateMouse",
+      "getOpacity",
+      "constructParticleStyle",
+      "clearParticles",
+      "sin",
+      "cos",
+      "tan",
+      "asin",
+      "acos",
+      "atan"
+    ],
+    "idleHash": {
+      "ticks": 200,
+      "diff": 0.05,
+      "hash": "38b6482eec7301e5"
+    },
+    "deterministic": true
+  },
+  "license": {
+    "githubSpdx": "NOASSERTION",
+    "files": {
+      "LICENSE.txt": "MIT"
+    },
+    "verdict": "MIT"
+  },
+  "census": {
+    "full_name": "CoolBoris/The-Galactic-Tree",
+    "head": "de6198f",
+    "score": 76.67,
+    "layers": 39,
+    "rows": 12,
+    "milestones": 214,
+    "upgrades": 421,
+    "buyables": 33,
+    "challenges": 17,
+    "achievements": 177,
+    "trace_fields": 31
+  },
+  "patches": [],
+  "generated": {
+    "by": "tmt-fork-census scripts/manifest.mjs",
+    "commit": "24a9702",
+    "at": "2026-09-18T01:09:29.836Z"
+  }
+}

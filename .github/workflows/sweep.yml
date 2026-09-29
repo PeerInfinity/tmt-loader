@@ -1,0 +1,2153 @@
+# Everything that used to run only when a session remembered to run it.
+#
+# WHY IT IS HERE. Until U2g this workflow held ONE gate — the M1 mobile sweep — and every other check in the repo
+# ran on one box, serially, when whoever was working remembered. U2d is what that costs: `buyUpgrade` turned out to
+# be an alias two games do not define, so a chip press had bought nothing on them for two slices, and it survived
+# because no gate ever drove a chip. When one finally did, NINE of the ten shard checkmarks were green and the id
+# came only from the merge job. ⛔ A check nobody runs is not a check, and a green checkmark is not evidence that
+# anything ran.
+#
+# ⛔ THE FAILURE EVERY JOB HERE IS BUILT AGAINST, and it runs backwards from the usual one: a CI change that runs
+# LESS looks FASTER and GREENER. A shard that dies before running anything, a matrix that never starts, a job that
+# is skipped, a command that silently no-ops — every one of them reads as success. So:
+#   · the M1 matrix records the roster each shard was ASSIGNED and `merge-shards.mjs` refuses a run that does not
+#     put the roster back together (the `merge` job below, driven by `loader/shard.test.mjs`);
+#   · G1 gets the SAME assertion through the same tool, as a run of ONE shard — unsharded is not unasserted;
+#   · the roster FIGURES the docs quote get `tools/census-figures.mjs`, which refuses a game whose sources it could
+#     not read rather than counting it as zero (`loader/census.test.mjs` drives it bounded to `js/`, the bug it
+#     exists to catch);
+#   · `loader/workflows.test.mjs` asserts the shape of these files, including the ⚖ rulings they encode.
+#
+# ⚖ REPORT-ONLY, not a required check, until it has a few green runs behind it (2026-09-18). Nothing in this repo's
+# branch protection references it; a red here is a red X on the commit and blocks nothing.
+#
+# ⚠ THIS WORKFLOW DOES NOT DEPLOY. Publishing is `.github/workflows/pages.yml`, dispatch-only, by ⚖ user ruling.
+# Adding a deploy step here would quietly restore the push-deploys-the-site behaviour that ruling removed.
+name: sweep
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: sweep-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  # Local and CI must agree, because the merge's verdicts are compared against a local full sweep's.
+  NODE_VERSION: '18.20.6'
+  SHARDS: '10'
+
+jobs:
+  # ---------------------------------------------------------------------------------------------------------------
+  # Seconds, no browser, no per-game boot — and EVERYTHING else needs it. If the units are red there is no point
+  # spending fourteen runners to find out that the roster is still the size it was.
+  # ---------------------------------------------------------------------------------------------------------------
+  fast:
+    name: units + repo-wide checks
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      # ⚠ No `npm ci` on purpose. Every file this job runs imports only `node:` builtins and its own relative
+      # neighbours — the one dependency in package.json is Playwright, which nothing here touches. Installing it
+      # would triple this job's wall clock to gate nothing.
+      - name: Unit tests (node --test)
+        run: npm run harness:test
+
+      - name: G6 + G7 — the roster doc and the declined list
+        run: node tools/games-table.mjs --check
+
+      # S1T (⚖ R12/R13): G4's pristine rule reads games-pristine/<id>.json instead of the history. This step is the
+      # records alone — every game has one, none is orphaned, and each listing hashes to the upstream tree it names.
+      - name: Pristine records — every game has one, each hashes to the upstream tree it names (no git history)
+        run: node tools/pristine.mjs --check
+
+      # ⚖ The media exception (user, 2026-09-22; docs/add-a-game.md): every in-scope image of every game is WebP and
+      # every audio file is the silent stub. `git subtree pull` restores the ORIGINAL of every file upstream touched —
+      # the game still works, so nothing else would notice the compression quietly disappearing. `node:` builtins only.
+      - name: Media — every image WebP, every audio file the stub
+        run: node tools/media.mjs
+
+      # C1 (§40-R ruling B): every per-game table validates against the schema the loader itself declares (one schema,
+      # one validator — extracted from `loader/tmt-auto.js`), and the generated currency data's index names exactly
+      # the files it has. No boot and no history; the roster regeneration and the provenance gate are the `c1-data` job.
+      - name: C1 — the tables against their schema; the currency data's index
+        run: |
+          node tools/auto-tables.mjs --check
+          node tools/currency-data.mjs --check-index
+
+      # The figures the docs QUOTE, regenerated from the tree. Three of them shipped wrong in this arc by two
+      # different authors and no gate could have caught any of them, because the sweep drives games and a number in
+      # prose has nothing behind it.
+      - name: Roster figures census
+        run: node tools/census-figures.mjs --json census.json
+
+      # ⚠ This one pipes AND ignores the status on purpose — it is a report, and the step above is the check.
+      # `shell: bash` all the same, so the rule "a piped step declares its shell" has no exception to argue about.
+      - name: Summary
+        if: ${{ !cancelled() }}
+        shell: bash
+        run: |
+          {
+            echo '## Fast checks'
+            echo ''
+            echo '```'
+            node tools/census-figures.mjs 2>&1 | tail -20 || true
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  # ---------------------------------------------------------------------------------------------------------------
+  # M1 — the mobile sweep, the whole roster, sharded ten ways.
+  # ---------------------------------------------------------------------------------------------------------------
+  shard:
+    name: M1 shard ${{ matrix.shard }}/10
+    needs: fast
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      # ⛔ A cancelled sibling would reach the merge as a MISSING SHARD — a correct refusal, but for the wrong
+      # reason, and it would hide the red that actually caused it. Every shard runs to its own end.
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # ~450 MB full; the games tree alone is 235 MB and none of the history is needed to run a gate.
+          fetch-depth: 1
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - run: npm ci
+
+      - name: Cache the Playwright browser
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+
+      - run: npx playwright install --with-deps chromium
+
+      # The harness starts its own `python3 -m http.server` when `--base` is absent, so there is no service, no
+      # container and no side process to manage here.
+      - name: M1 sweep, shard ${{ matrix.shard }}/${{ env.SHARDS }}
+        run: node tools/harness/page.mjs --gate mobile --shard ${{ matrix.shard }}/${{ env.SHARDS }} --json shards/m1-${{ matrix.shard }}.json
+
+      # `always()`: a RED shard still produced rows, and the merge wants them. A shard that produced no file at all
+      # is exactly the case the merge is here to catch, so `if-no-files-found` stays a warning — the merge is the
+      # arbiter of a missing shard, not this step.
+      - name: Upload this shard's result
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: m1-shard-${{ matrix.shard }}
+          path: shards/
+          if-no-files-found: warn
+          retention-days: 7
+
+  merge:
+    name: merge + roster assertion
+    needs: shard
+    # ⚠ NOT `always()`. `always()` is true even when the RUN WAS CANCELLED, and `cancel-in-progress` above cancels
+    # this run whenever a newer push lands. The merge would then run against a matrix whose shards were cancelled
+    # mid-flight, find them missing, and report a RED that means nothing — on a report-only gate whose whole value is
+    # that a red means something. `!cancelled()` still runs the merge when a shard FAILED, which is the property that
+    # matters: a dead shard must never skip the roster assertion.
+    #
+    # ⚠ It is also NOT conditioned on `fast`: `needs: shard` already carries it. A skipped matrix skips this too,
+    # which is the one case where reporting nothing is right — nothing ran, and nothing claims to have run.
+    if: ${{ !cancelled() }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: m1-shard-*
+          path: shards
+          merge-multiple: true
+
+      - name: What arrived
+        if: ${{ !cancelled() }}
+        run: ls -la shards/ || echo 'NO SHARD ARTIFACTS AT ALL'
+
+      # Exits 1, naming the ids, when the shards do not reconstruct the roster — or when any row is RED.
+      # ⛔ `shell: bash` = `bash -eo pipefail`. WITHOUT IT A PIPE SWALLOWS THE VERDICT: the default shell is
+      # `bash -e`, whose exit status is the LAST command of a pipeline — `tee` — so `merge-shards.mjs … | tee` made
+      # this step SUCCEED while the merge was printing "MERGE REFUSED". Measured 2026-09-19 by driving the fast
+      # gate: the matrix was skipped, no shard file existed, the merge refused with exit 1, and the job was GREEN.
+      # The one step whose whole purpose is to refuse a run that covered nothing could not fail.
+      - name: Merge, and assert the shards cover the whole roster
+        shell: bash
+        run: |
+          node tools/harness/merge-shards.mjs shards --expect "$SHARDS" --json shards/merged.json | tee merge.txt
+        env:
+          SHARDS: ${{ env.SHARDS }}
+
+      - name: Summary
+        if: ${{ !cancelled() }}
+        shell: bash
+        run: |
+          {
+            # ⚠ DERIVED, never written: this line said "171 games" and was wrong the day the roster became 175.
+            # A cosmetic count is still a count, and a reader trusts a headline.
+            echo "## M1 mobile sweep — $(node -e 'console.log(JSON.parse(require("fs").readFileSync("manifests/index.json","utf8")).length)') games over $SHARDS shards"
+            echo ''
+            echo '```'
+            cat merge.txt 2>/dev/null || echo 'the merge produced no output — see the step above'
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+        env:
+          SHARDS: ${{ env.SHARDS }}
+
+      - name: Upload the merged result
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: m1-merged
+          path: |
+            shards/merged.json
+            merge.txt
+          if-no-files-found: warn
+          retention-days: 14
+
+  # ---------------------------------------------------------------------------------------------------------------
+  # G1 — "the page loads this game": every game, a browser, no per-game state work.
+  #
+  # ⚠ IT DOES NOT SHARD, and that is a measurement, not an oversight. Serial over the whole roster it is 5 min 00 s
+  # locally (171/171 green, 1.75 s/game, measured 2026-09-18 at 61c7e2ba8) — CI runs this kind of work about 2.3×
+  # faster than that box, so one job is ~2–3 min of sweep against ~90 s of fixed checkout + `npm ci` + Playwright
+  # install. Ten shards would pay that 90 s TEN times to save two minutes of wall clock. A matrix that costs more
+  # setup than it saves is a worse answer that merely looks busier.
+  #
+  # ⛔ Unsharded is not unasserted. It runs as `--shard 1/1`, so it records the roster it was assigned and the SAME
+  # `merge-shards.mjs` refuses it if the rows do not reconstruct the roster — a game dropped from the gate's own
+  # enumeration fails here exactly as it would in the matrix.
+  #
+  # ⚠ TWO DIMENSIONS, TWO JOBS. `--gate load` defaults to the PLAIN page; `gates.mjs` runs G1 with `?automation=1`,
+  # where the loader also installs the automation core. They are different pages and a conflated run could not say
+  # which one broke, so they are separate jobs with separate artifacts.
+  # ---------------------------------------------------------------------------------------------------------------
+  g1:
+    name: G1 load — ${{ matrix.mode }} page
+    needs: fast
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - mode: plain
+            flag: ''
+          - mode: automation
+            flag: '--automation'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - run: npm ci
+
+      - name: Cache the Playwright browser
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+
+      - run: npx playwright install --with-deps chromium
+
+      - name: G1 over the whole roster (${{ matrix.mode }} page)
+        run: node tools/harness/page.mjs --gate load ${{ matrix.flag }} --shard 1/1 --json shards/g1-1.json
+
+      # The same roster assertion the matrix gets. `--expect 1`: one shard, and it must have covered everything.
+      - name: Assert the run covered the roster
+        if: always()
+        shell: bash  # bash -eo pipefail: without it `| tee` reports the pipe's status and the refusal is lost
+        run: |
+          node tools/harness/merge-shards.mjs shards --expect 1 --json shards/merged.json | tee merge.txt
+          {
+            echo '## G1 load — ${{ matrix.mode }} page'
+            echo ''
+            echo '```'
+            cat merge.txt
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload the result
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: g1-${{ matrix.mode }}
+          path: shards/
+          if-no-files-found: warn
+          retention-days: 7
+
+  # ---------------------------------------------------------------------------------------------------------------
+  # O1 — the OPTIONS SECTION (docs/options.md). U3 made the three URL-only opt-ins reachable from inside the game,
+  # which is a SECOND way to switch a mode on and therefore a second way to break the inertness the whole sweep
+  # rests on. The gate re-asks inertness against a stored preference, asserts the URL still overrides one in both
+  # directions, and presses the real button — judging the page that comes back, never the key that was written.
+  #
+  # ⚠ A BOUNDED SET, on purpose, and it is not sharded. Each game costs ~19 page loads (six of the legs draw a fresh
+  # browser context so a preference cannot leak into the next one), so the roster would be an hour. The set is the
+  # two reference engines plus two more: 2.2.1 `ptr`, 2.7 `something` and `a-tree-about-layers`, and
+  # `the-alphabetree`, whose options tab is the busiest on the roster. What the roster-wide check of this feature
+  # actually is: the two ANCHORS it finds the options tab by, censused over all 171 games by census-figures.mjs in
+  # the `fast` job above — a section that never gets built throws nothing, so driving games could not find that.
+  # ---------------------------------------------------------------------------------------------------------------
+  options:
+    name: O1 — the Options section
+    needs: fast
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - run: npm ci
+
+      - name: Cache the Playwright browser
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+
+      - run: npx playwright install --with-deps chromium
+
+      # ⛔ The set is named ONCE, and the run records the roster it was assigned, so the assertion below is the same
+      # one the sharded sweep gets: bounded is not unasserted, and a run that quietly did three of the four games
+      # would otherwise be a green checkmark.
+      - name: O1 on the bounded set
+        shell: bash
+        run: |
+          set -o pipefail
+          SET='ptr something a-tree-about-layers the-alphabetree'
+          echo "O1_SET=${SET// /,}" >> "$GITHUB_ENV"
+          node tools/harness/page.mjs $SET --gate options --shard 1/1 --json shards/o1-1.json | tee o1.txt
+
+      - name: Assert the run covered the set it was given
+        if: always()
+        shell: bash
+        run: |
+          node tools/harness/merge-shards.mjs shards --expect 1 --roster "$O1_SET" | tee merge.txt
+          {
+            echo '## O1 — the Options section'
+            echo ''
+            echo '```'
+            cat o1.txt merge.txt
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload the result
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: o1
+          path: shards/
+          if-no-files-found: warn
+          retention-days: 7
+
+  # ---------------------------------------------------------------------------------------------------------------
+  # A1 part 2 — the `au` TAB ITSELF (`gates-a1.mjs --part 2`). Until V1 this ran NOWHERE in CI: only part 1's half
+  # (the registry with no per-game table) rode inside M1's `both` leg, so every check of the tab the player actually
+  # sees — the toggles' text, `?profile=all` not writing the save, a toggle surviving a reload, the disclosure line,
+  # the whole U4/U6 arming battery — depended on a session remembering to run it. V1 adds a subtab to that tab, which
+  # is exactly the change that would break those rows silently.
+  #
+  # ⛔ THE SET IS DERIVED, NEVER TYPED. The gate's subject is "a game with an automation table", and `games-auto/`
+  # IS that set; a third table added tomorrow joins this job by existing. (`loader/census.test.mjs` asserts that
+  # directory and the manifests' `auto` fields name the same games, so a table the loader never loads cannot slip
+  # in here.) A typed list would quietly stop covering the roster it names — the same failure the merge job exists
+  # to refuse, one level up.
+  #
+  # ⛔ AND THE GATE IS ASKED TO PROVE WHAT IT COVERED. `--assert` refuses a run whose rows do not cover the games it
+  # was given, or where the games did not all run the same battery — a battery that boots one game and throws inside
+  # the second prints `12/24 green`, exits 0 on the half it ran, and reads as a smaller, faster, greener run.
+  # ---------------------------------------------------------------------------------------------------------------
+  a1:
+    name: A1 part 2 — the au tab
+    needs: fast
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # Depth 1 (S1T, 2026-09-29). This was `fetch-depth: 0` because part 2's `check-manifest` row searched the
+          # history for each game's subtree-squash commit (measured RED on a depth-1 checkout, run 35458073272). It now
+          # reads the recorded upstream listing games-pristine/<id>.json against the files (tools/pristine.mjs) —
+          # ⚖ R12/R13: no gate may need the history, the old repository's or this one's.
+          fetch-depth: 1
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - run: npm ci
+
+      - name: Cache the Playwright browser
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+
+      - run: npx playwright install --with-deps chromium
+
+      # `--no-summary`: results/SUMMARY.md is the committed record of runs a person ran and read.
+      # R3c Part 0: Something Tree's table was DELETED (⚖ user 2026-09-21) and it stays in this job as the TABLE-LESS
+      # control — the au tab on a game that runs purely on the derived defaults, and the job's only 2.7 engine. It is
+      # found by its ROLE (`lib.mjs` TABLELESS_CONTROL), not typed here, and `census.test.mjs` refuses it a table.
+      - name: A1 part 2 over the games that have an automation table, plus the table-less control
+        shell: bash  # bash -eo pipefail: without it `| tee` reports the pipe's status and the refusal is lost
+        run: |
+          set -o pipefail
+          SET=$(ls games-auto/*.json | xargs -n 1 basename | sed 's/\.json$//' | tr '\n' ' ')
+          test -n "$SET" || { echo 'games-auto/ named no game at all'; exit 1; }
+          CONTROL=$(node -e "import('./tools/harness/lib.mjs').then((m) => console.log(m.TABLELESS_CONTROL))")
+          test -n "$CONTROL" || { echo 'lib.mjs names no table-less control'; exit 1; }
+          SET="$SET$CONTROL"
+          echo "A1_SET=${SET% }" >> "$GITHUB_ENV"
+          echo "derived set: $SET"
+          node tools/harness/gates-a1.mjs --part 2 $SET --no-summary --assert | tee a1.txt
+
+      - name: Summary
+        if: always()
+        shell: bash
+        run: |
+          {
+            echo '## A1 part 2 — the au tab ('"${A1_SET:-the games-auto set}"')'
+            echo ''
+            echo '```'
+            tail -40 a1.txt 2>/dev/null || echo 'no output — the gate produced nothing'
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload the rows
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: a1-part2
+          path: tools/harness/results/tmp/gates-a1-part2-last.json
+          if-no-files-found: warn
+          retention-days: 14
+
+  # ---------------------------------------------------------------------------------------------------------------
+  # V1 — THE REASONS. `gates-v1.mjs` is what stops the reason vocabulary from rotting, and nothing else in this
+  # workflow can see any of the four ways it does:
+  #   · a code nobody witnesses, or an exit that reaches `unknown` (part 1);
+  #   · a reason that disagrees with the decision it describes (part 2) — the whole design rests on the reason being
+  #     the decision's OWN return value, and the day someone "helpfully" computes one beside it, this is the row;
+  #   · the lazy guard lost, so the Advanced view is rebuilt on every tick of a tab nobody is looking at (part 3p);
+  #   · `player.subtabs.au` leaking back into `hashGame`, which moves every pinned number in the repo (part 4).
+  #
+  # ⚠ TWO JOBS, and it is a measurement rather than tidiness. Parts 1–3 are Node only — they need the `playwright`
+  # PACKAGE (the module imports `chromium` at the top) but never launch it, so they skip the ~30 s browser download
+  # and the ~1 min of `--with-deps`. Parts 3p and 4 need a real page. Run as one job they are ~21 min serial; split,
+  # the wall clock is the longer half (~16 min) for one extra checkout + `npm ci`. ⛔ This is the OPPOSITE call from
+  # G1's above, and for the opposite reason: there the matrix would have paid its setup ten times to save two
+  # minutes; here one extra setup buys five, and the two halves answer different questions with different artifacts.
+  #
+  # ⛔ `--assert` on every part: `gates-v1` already exits 1 on a red row, which does NOT catch the battery that
+  # stopped part-way — it prints fewer rows, and fewer rows is fewer reds. Each part declares the row count it emits.
+  # ---------------------------------------------------------------------------------------------------------------
+  v1-node:
+    name: V1 reasons — headless (parts 1, 2, 3)
+    needs: fast
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      # ⚠ `npm ci` but NO `playwright install`: parts 1–3 import the package and never launch a browser.
+      - run: npm ci
+
+      - name: Part 1 — every reason code witnessed by name
+        shell: bash  # bash -eo pipefail: without it `| tee` reports the pipe's status and a refusal is lost
+        run: |
+          set -o pipefail
+          node tools/harness/gates-v1.mjs --part 1 --no-summary --assert --pool 4 | tee v1-1.txt
+
+      - name: Part 2 — reason ≡ decision, every feature every tick
+        shell: bash
+        run: |
+          set -o pipefail
+          node tools/harness/gates-v1.mjs --part 2 --no-summary --assert --pool 4 | tee v1-2.txt
+
+      - name: Part 3 — inertness and the format counter
+        shell: bash
+        run: |
+          set -o pipefail
+          node tools/harness/gates-v1.mjs --part 3 --no-summary --assert --pool 2 | tee v1-3.txt
+
+      - name: Summary
+        if: always()
+        shell: bash
+        run: |
+          {
+            echo '## V1 reasons — headless'
+            echo ''
+            echo '```'
+            cat v1-1.txt v1-2.txt v1-3.txt 2>/dev/null | grep -E 'VERDICT|REFUSED|^RED|green$' || echo 'no output'
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload the rows
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: v1-node
+          path: tools/harness/results/tmp/gates-v1-part*-last.json
+          if-no-files-found: warn
+          retention-days: 14
+
+  v1-page:
+    name: V1 reasons — in the page (parts 3p, 4)
+    needs: fast
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - run: npm ci
+
+      - name: Cache the Playwright browser
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+
+      - run: npx playwright install --with-deps chromium
+
+      # ⚠ The PAIRED leg: the Advanced content must not run while `Simple` is on screen, AND the same spin with
+      # `Advanced` selected must format — without the second arm the zero means "nothing ever calls it".
+      - name: Part 3p — the lazy guard, where it actually works
+        shell: bash
+        run: |
+          set -o pipefail
+          node tools/harness/gates-v1.mjs --part 3p --no-summary --assert | tee v1-3p.txt
+
+      - name: Part 4 — the subtab is not game state (T1)
+        shell: bash
+        run: |
+          set -o pipefail
+          node tools/harness/gates-v1.mjs --part 4 --no-summary --assert | tee v1-4.txt
+
+      - name: Summary
+        if: always()
+        shell: bash
+        run: |
+          {
+            echo '## V1 reasons — in the page'
+            echo ''
+            echo '```'
+            cat v1-3p.txt v1-4.txt 2>/dev/null | grep -E 'VERDICT|REFUSED|^RED|green$' || echo 'no output'
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload the rows
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: v1-page
+          path: tools/harness/results/tmp/gates-v1-part*-last.json
+          if-no-files-found: warn
+          retention-days: 14
+
+  # ---------------------------------------------------------------------------------------------------------------
+  # V2 — THE STRATEGY TABLE, THE TWO NEW RESET STRATEGIES, AND THE EDITORS. `gates-v2.mjs` is what stops each of
+  # these from rotting, and nothing else in this workflow can see any of them:
+  #   · a strategy row whose pattern, parameter type and implementation have drifted apart, or a declared bound that
+  #     nothing enforces (part 1 — `rate-peak@2/0` validated once, and could never have fired);
+  #   · the stall modifier's memory or `rate-peak`'s hold clock leaving `runtimeState()`, so a resumed run diverges
+  #     from an uninterrupted one (part 3);
+  #   · a run that makes NO edit no longer landing on R1′'s M15 → M16 number, or the new save key going missing from
+  #     `startData`, where Vue 2 cannot observe it (part 5);
+  #   · the editors becoming cosmetic — a picker that writes the save while the decision path reads the table — or
+  #     the game's own HOTKEYS firing while the player types into a field (part 4).
+  #
+  # ⚠ TWO JOBS, for the same measured reason as V1's pair: parts 1, 3 and 5 import the `playwright` package and
+  # never launch it, so they skip the browser download; part 4 needs a real page.
+  #
+  # ⛔ LEFT OUT OF CI, and why: part 2 is the MEASUREMENT (ten 12,000-tick cells twice each from `all/M16.json`,
+  # about an hour) and it decides nothing — ⚖ R2's sweep owns the defaults, so a CI job re-measuring them every push
+  # would be paying an hour to re-print a table. Part 6 opens all 171 games (~20 min unsharded) and would need
+  # sharding plus a merge assertion to be honest; it is the one-off witness that the editors render across the
+  # roster, and the shape is now fixed. Both are run by hand and quoted in the as-built with the head they ran at.
+  #
+  # ⛔ `--assert` on every part: `gates-v2` already exits 1 on a red row, which does NOT catch the battery that
+  # stopped part-way — it prints fewer rows, and fewer rows is fewer reds. Each part declares the row count it emits.
+  # ---------------------------------------------------------------------------------------------------------------
+  v2-node:
+    name: V2 strategies — headless (parts 1, 3, 5)
+    needs: fast
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      # ⚠ `npm ci` but NO `playwright install`: these parts import the package and never launch a browser.
+      - run: npm ci
+
+      - name: Part 1 — schema ≡ behaviour
+        shell: bash  # bash -eo pipefail: without it `| tee` reports the pipe's status and a refusal is lost
+        run: |
+          set -o pipefail
+          node tools/harness/gates-v2.mjs --part 1 --no-summary --assert --pool 3 | tee v2-1.txt
+
+      - name: Part 3 — determinism, and a run cut mid-clock and resumed
+        shell: bash
+        run: |
+          set -o pipefail
+          node tools/harness/gates-v2.mjs --part 3 --no-summary --assert --pool 3 | tee v2-3.txt
+
+      - name: Part 5 — inertness, and the new save key present and empty
+        shell: bash
+        run: |
+          set -o pipefail
+          node tools/harness/gates-v2.mjs --part 5 --no-summary --assert --pool 2 | tee v2-5.txt
+
+      - name: Summary
+        if: always()
+        shell: bash
+        run: |
+          {
+            echo '## V2 strategies — headless'
+            echo ''
+            echo '```'
+            cat v2-1.txt v2-3.txt v2-5.txt 2>/dev/null | grep -E 'VERDICT|REFUSED|^RED|green$' || echo 'no output'
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload the rows
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: v2-node
+          path: tools/harness/results/tmp/gates-v2-part*-last.json
+          if-no-files-found: warn
+          retention-days: 14
+
+  v2-page:
+    name: V2 editors — in the page (part 4)
+    needs: fast
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - run: npm ci
+
+      - name: Cache the Playwright browser
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+
+      - run: npx playwright install --with-deps chromium
+
+      # ⚠ Every arm here is PAIRED against a control it cannot move: the action-count row measures its own two-load
+      # floor first, and the hotkey row sends the SAME key outside the field and requires the game to act.
+      - name: Part 4 — an edit is not cosmetic, and a hotkey typed into a field does not reach the game
+        shell: bash
+        run: |
+          set -o pipefail
+          node tools/harness/gates-v2.mjs --part 4 --no-summary --assert | tee v2-4.txt
+
+      - name: Summary
+        if: always()
+        shell: bash
+        run: |
+          {
+            echo '## V2 editors — in the page'
+            echo ''
+            echo '```'
+            cat v2-4.txt 2>/dev/null | grep -E 'VERDICT|REFUSED|^RED|green$' || echo 'no output'
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload the rows
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: v2-page
+          path: tools/harness/results/tmp/gates-v2-part*-last.json
+          if-no-files-found: warn
+          retention-days: 14
+
+  # ---------------------------------------------------------------------------------------------------------------
+  # R3a — the challenge GIVE-UP rule, its RETRY bar, and what a PAUSE on the `challenges` kind leaves behind (plan §30).
+  #
+  # ⚖ WHAT IS IN CI AND WHAT IS NOT, by V2's, V3's and V4's rule:
+  #   · part 2 is the one whose CLAIM later slices lean on — that `while` / `until` give an ENTRY schedule and
+  #     structurally cannot give an EXIT, and that a stranded pause says so instead of reading as an ordinary gate.
+  #     Its four legs are 4,000 ticks each from `all/M22.json` and it also RUNS the stub battery that constructs the
+  #     two curves a real leg only gives one of. It runs here.
+  #   · part 5 is INERTNESS: the fresh opening and V4's own M15 → M22 rung, unchanged. A slice that adds a modifier
+  #     to a kind must not move a run that never names it, and that is exactly the kind of claim CI has caught four
+  #     slices running. It runs here.
+  #   · part 7 is the PAGE: that V2's generic editors render the new modifier with no new `tmtl-*` family. It runs here.
+  #   · ⛔ parts 1, 3 and q do NOT: they are MEASUREMENT TABLES (V3 part 4's rule) of 12,000-tick legs, four to six
+  #     cells, every cell twice — ~40 minutes each. They are run by hand and quoted in the as-built with their head.
+  #   · ⛔ part 4 WRITES fixtures, and part 6 walks a roster sample. Both by hand, for those reasons.
+  #
+  # ⛔ `--assert` on every part: exiting 1 on a red row does NOT catch a battery that stopped part-way.
+  # ---------------------------------------------------------------------------------------------------------------
+  r3-node:
+    name: R3a challenges — headless (parts 2, 5)
+    needs: fast
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      # ⚠ `npm ci` but NO `playwright install`: these parts import the package and never launch a browser.
+      - run: npm ci
+
+      - name: "Part 2 — what `while` / `until` can and cannot say, and the exit rule on the stub"
+        shell: bash  # bash -eo pipefail: without it `| tee` reports the pipe's status and a refusal is lost
+        run: |
+          set -o pipefail
+          node tools/harness/gates-r3.mjs --part 2 --no-summary --assert --pool 4 | tee r3-2.txt
+
+      - name: "Part 5 — inertness: the fresh opening and M15 → M22"
+        shell: bash
+        run: |
+          set -o pipefail
+          node tools/harness/gates-r3.mjs --part 5 --no-summary --assert --pool 2 | tee r3-5.txt
+
+      - name: Summary
+        if: always()
+        shell: bash
+        run: |
+          {
+            echo '## R3a challenges — headless'
+            echo ''
+            echo '```'
+            cat r3-2.txt r3-5.txt 2>/dev/null | grep -E 'VERDICT|REFUSED|^RED|green$' || echo 'no output'
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload the rows
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: r3-node
+          path: tools/harness/results/tmp/gates-r3-part*-last.json
+          if-no-files-found: warn
+          retention-days: 14
+
+  r3-page:
+    name: R3a challenges — in the page (part 7)
+    needs: fast
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - run: npm ci
+
+      - name: Cache the Playwright browser
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+
+      - run: npx playwright install --with-deps chromium
+
+      # ⚠ The claim is that a modifier on a NEW kind needed no new component: `componentNames` must not move, and
+      # the Advanced view's own source (`tmtLoader.modifiers(kind)`) must carry the row on both reference games.
+      - name: "Part 7 — the new modifier through V2's generic editors, on ptr AND something"
+        shell: bash
+        run: |
+          set -o pipefail
+          node tools/harness/gates-r3.mjs --part 7 --no-summary --assert | tee r3-7.txt
+
+      - name: Summary
+        if: always()
+        shell: bash
+        run: |
+          {
+            echo '## R3a challenges — in the page'
+            echo ''
+            echo '```'
+            cat r3-7.txt 2>/dev/null | grep -E 'VERDICT|REFUSED|^RED|green$' || echo 'no output'
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload the rows
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: r3-page
+          path: tools/harness/results/tmp/gates-r3-part*-last.json
+          if-no-files-found: warn
+          retention-days: 14
+
+  # R3b — the ROW CYCLE: turn-taking between same-row resets, demand-driven (plan §31a/§31b/§32).
+  #
+  # ⚖ WHAT IS IN CI AND WHAT IS NOT, by V2's, V3's, V4's and R3a's rule:
+  #   · part 2 is the one whose CLAIM later slices lean on — the four requirements the planner's nine VOID cells
+  #     taught (bind every member; eager in turn; release the turn; the memory is the LOADER's), each run on BOTH
+  #     ENGINE FAMILIES. ⛔ That last word is the whole point: six of those void cells read
+  #     `player.<layer>.resetTime`, which exists only on the 2.7-style engine, so a leg green on `something` alone
+  #     proves nothing about ptr and vice versa. It runs here.
+  #   · part 5 is INERTNESS: the fresh opening, M15 → M24 and Something Tree, unchanged. A slice that adds two
+  #     modifiers to a kind must not move a run that never names them — the kind of claim CI has caught five
+  #     slices running. It runs here.
+  #   · part 6 is the PAGE: V2's generic editors render the cycle's three parameters, and each modifier ROW gets
+  #     its own button (before this slice ONE button could only reach `mods[0]`). It runs here.
+  #   · ⛔ parts 1 and 3 do NOT: they are MEASUREMENT TABLES of 21,000-tick legs, four to seven cells, every cell
+  #     twice — well over half an hour each. They are run by hand and quoted in the as-built with their head.
+  #   · ⛔ part 4 WRITES fixtures. By hand, for that reason.
+  #
+  # ⛔ `--assert` on every part: exiting 1 on a red row does NOT catch a battery that stopped part-way.
+  # ---------------------------------------------------------------------------------------------------------------
+  r3b-node:
+    name: R3b row cycle — headless (part 2)
+    needs: fast
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      # ⚠ `npm ci` but NO `playwright install`: these parts import the package and never launch a browser.
+      - run: npm ci
+
+      - name: "Part 2 — R1–R4, the four requirements, on BOTH engine families"
+        shell: bash  # bash -eo pipefail: without it `| tee` reports the pipe's status and a refusal is lost
+        run: |
+          set -o pipefail
+          node tools/harness/gates-r3b.mjs --part 2 --no-summary --assert | tee r3b-2.txt
+
+      - name: Summary
+        if: always()
+        shell: bash
+        run: |
+          {
+            echo '## R3b row cycle — headless'
+            echo ''
+            echo '```'
+            cat r3b-2.txt 2>/dev/null | grep -E 'VERDICT|REFUSED|^RED|green$' || echo 'no output'
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload the rows
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: r3b-node
+          path: tools/harness/results/tmp/gates-r3b-part*-last.json
+          if-no-files-found: warn
+          retention-days: 14
+
+  # ⚠ PART 5 IS ITS OWN JOB, and the reason is a measured one: its M15 → M24 leg is ~16,000 ticks and runs TWICE,
+  # which on a CI box is most of an hour by itself. Sharing a runner with part 2 put both inside one 60-minute
+  # timeout, and a battery that is killed by a timeout prints fewer rows — which is fewer reds.
+  r3b-inert:
+    name: R3b row cycle — inertness (part 5)
+    needs: fast
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - run: npm ci
+
+      - name: "Part 5 — inertness: the opening, M15 → M24, and Something Tree"
+        shell: bash
+        run: |
+          set -o pipefail
+          node tools/harness/gates-r3b.mjs --part 5 --no-summary --assert --pool 3 | tee r3b-5.txt
+
+      - name: Summary
+        if: always()
+        shell: bash
+        run: |
+          {
+            echo '## R3b row cycle — inertness'
+            echo ''
+            echo '```'
+            cat r3b-5.txt 2>/dev/null | grep -E 'VERDICT|REFUSED|^RED|green$' || echo 'no output'
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload the rows
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: r3b-inert
+          path: tools/harness/results/tmp/gates-r3b-part*-last.json
+          if-no-files-found: warn
+          retention-days: 14
+
+  r3b-page:
+    name: R3b row cycle — in the page (part 6)
+    needs: fast
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - run: npm ci
+
+      - name: Cache the Playwright browser
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+
+      - run: npx playwright install --with-deps chromium
+
+      # ⚠ The claim is that two more modifiers needed no new component: `componentNames` must not move, the cycle's
+      # three parameter editors must be in the DOM, and there must be ONE BUTTON PER MODIFIER ROW — the single
+      # button this replaced could only ever reach `mods[0]`, so the cycle was unreachable from the tab.
+      - name: "Part 6 — the cycle through V2's generic editors, on ptr AND something"
+        shell: bash
+        run: |
+          set -o pipefail
+          node tools/harness/gates-r3b.mjs --part 6 --no-summary --assert | tee r3b-6.txt
+
+      - name: Summary
+        if: always()
+        shell: bash
+        run: |
+          {
+            echo '## R3b row cycle — in the page'
+            echo ''
+            echo '```'
+            cat r3b-6.txt 2>/dev/null | grep -E 'VERDICT|REFUSED|^RED|green$' || echo 'no output'
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload the rows
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: r3b-page
+          path: tools/harness/results/tmp/gates-r3b-part*-last.json
+          if-no-files-found: warn
+          retention-days: 14
+
+  # ---------------------------------------------------------------------------------------------------------------
+  # R3b-2 — the DEAD-MEMBER rule: a turn releases when its holder stops getting CLOSER (plan §40).
+  # ⚠ Parts 2 and 3 are MEASUREMENT TABLES (ptr's defaults, H12's entry states) and are run by hand; what CI owns is
+  # the two ASSERTIVE parts — the rule on a real engine, and inertness.
+  r3b2-rule:
+    name: R3b-2 the dead-member rule — headless (part 1)
+    needs: fast
+    runs-on: ubuntu-latest
+    timeout-minutes: 150
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - run: npm ci
+
+      - name: "Part 1 — the freeze reproduced and broken, and the ORACLE row with no `exclude=`"
+        shell: bash
+        run: |
+          set -o pipefail
+          node tools/harness/gates-r3b2.mjs --part 1 --no-summary --assert --pool 3 | tee r3b2-1.txt
+
+      - name: Summary
+        if: always()
+        shell: bash
+        run: |
+          {
+            echo '## R3b-2 — the dead-member rule'
+            echo ''
+            echo '```'
+            cat r3b2-1.txt 2>/dev/null | grep -E 'VERDICT|REFUSED|^RED|^GREEN' || echo 'no output'
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload the rows
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: r3b2-rule
+          path: tools/harness/results/gates-r3b2-part*.json
+          if-no-files-found: warn
+          retention-days: 14
+
+  # ---------------------------------------------------------------------------------------------------------------
+  # C1 — THE CURRENCY READER as GENERATED data, and the per-game tables as JSON with a schema.
+  # ⛔ `c1-data` REGENERATES THE WHOLE ROSTER (171 boots, --jobs 4) and fails on any committed `games-data/<id>.json` a
+  # regeneration would change — that is what "fresh by construction" means. Depth 1: the provenance gate checks each
+  # record's commit against the FROZEN list tools/harness/recorded/provenance-commits.json, not against the history
+  # (S1T, ⚖ R12/R13 — it used to ask `git merge-base --is-ancestor`, and needed `fetch-depth: 0`). `--assert` on every part: each
+  # declares the row count it emits, and a battery that stopped part-way prints fewer rows, which is fewer reds.
+  # ---------------------------------------------------------------------------------------------------------------
+  c1-data:
+    name: C1 currency data — freshness, accuracy, coverage, schema (parts 3, 1, 2, 6)
+    needs: fast
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Part 3 — the roster regenerated and compared; the tables' schema; the provenance gate
+        shell: bash
+        run: |
+          set -o pipefail
+          node tools/harness/gates-c1.mjs --part 3 --no-summary --assert --pool 4 | tee c1-3.txt
+
+      - name: Part 1 — the reader's accuracy on the named sample (trace purity, upgrades)
+        shell: bash
+        run: |
+          set -o pipefail
+          node tools/harness/gates-c1.mjs --part 1 --no-summary --assert --pool 4 | tee c1-1.txt
+
+      - name: Part 2 — the roster coverage against the probe's control
+        shell: bash
+        run: |
+          set -o pipefail
+          node tools/harness/gates-c1.mjs --part 2 --no-summary --assert --pool 4 | tee c1-2.txt
+
+      - name: Part 6 — the schema legs (each failure BY NAME)
+        shell: bash
+        run: |
+          set -o pipefail
+          node tools/harness/gates-c1.mjs --part 6 --no-summary --assert | tee c1-6.txt
+
+      - name: Summary
+        if: always()
+        shell: bash
+        run: |
+          {
+            echo '## C1 — the currency data and the tables'
+            echo ''
+            echo '```'
+            cat c1-3.txt c1-1.txt c1-2.txt c1-6.txt 2>/dev/null | grep -E 'VERDICT|REFUSED|^RED|^GREEN' || echo 'no output'
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload the rows
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: c1-data
+          path: tools/harness/results/gates-c1-part*.json
+          if-no-files-found: warn
+          retention-days: 14
+
+  # C1 part 4 — INERTNESS to the hash: the opening and M15 → 37048 under the shipped table, each WITH the generated
+  # data (twice) and with `--no-currency` (the behaviour before C1). Six runs; the two long ones are ~21,000 ticks.
+  c1-inert:
+    name: C1 inertness — headless (part 4)
+    needs: fast
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Part 4 — the opening and M15 → 37048, with and without the data
+        shell: bash
+        run: |
+          set -o pipefail
+          node tools/harness/gates-c1.mjs --part 4 --no-summary --assert --pool 4 | tee c1-4.txt
+
+      - name: Summary
+        if: always()
+        shell: bash
+        run: |
+          {
+            echo '## C1 — inertness'
+            echo ''
+            echo '```'
+            cat c1-4.txt 2>/dev/null | grep -E 'VERDICT|REFUSED|^RED|^GREEN' || echo 'no output'
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload the rows
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: c1-inert
+          path: tools/harness/results/gates-c1-part*.json
+          if-no-files-found: warn
+          retention-days: 14
+
+  # C1c parts 1 and 4 — the planner's number helper by CAPABILITY over every game at boot (each library has every
+  # method each planner operation calls; the battery; the two games with no global `Decimal` regenerated and equal to
+  # the committed data), and the BUTTONS / FACES rows plus the unit tests. Gates: they must HOLD (§49d).
+  c1c-cap:
+    name: C1c capability + buttons — headless (parts 1, 4)
+    needs: fast
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Part 1 — every game's number type, by capability
+        shell: bash
+        run: |
+          set -o pipefail
+          node tools/harness/gates-c1c.mjs --part 1 --no-summary --assert --pool 4 | tee c1c-1.txt
+
+      - name: Part 4 — buttons and faces; the unit tests
+        shell: bash
+        run: |
+          set -o pipefail
+          node tools/harness/gates-c1c.mjs --part 4 --no-summary --assert | tee c1c-4.txt
+
+      - name: Summary
+        if: always()
+        shell: bash
+        run: |
+          {
+            echo '## C1c — capability, buttons'
+            echo ''
+            echo '```'
+            cat c1c-1.txt c1c-4.txt 2>/dev/null | grep -E 'VERDICT|REFUSED|^RED|^GREEN' || echo 'no output'
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload the rows
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: c1c-cap
+          path: tools/harness/results/gates-c1c-part*.json
+          if-no-files-found: warn
+          retention-days: 14
+
+  # C1c part 3 — INERTNESS where every purchase id is numeric: ptr's opening (pinned 6862 / cf8df88462606277),
+  # all/M15 → M25 and Something Tree fresh → S05, at HEAD twice, against the RECORDING of the commit before C1c
+  # (tools/harness/recorded/c1c-before.json — S1T, ⚖ R12/R13: it used to run that commit in a control worktree, and
+  # needed `fetch-depth: 0`; see the gate's header for what that changes).
+  c1c-inert:
+    name: C1c inertness — headless (part 3)
+    needs: fast
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Part 3 — the opening, M15 → M25 and Something Tree, HEAD ≡ the commit before
+        shell: bash
+        run: |
+          set -o pipefail
+          node tools/harness/gates-c1c.mjs --part 3 --no-summary --assert --pool 4 | tee c1c-3.txt
+
+      - name: Summary
+        if: always()
+        shell: bash
+        run: |
+          {
+            echo '## C1c — inertness'
+            echo ''
+            echo '```'
+            cat c1c-3.txt 2>/dev/null | grep -E 'VERDICT|REFUSED|^RED|^GREEN' || echo 'no output'
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload the rows
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: c1c-inert
+          path: tools/harness/results/gates-c1c-part*.json
+          if-no-files-found: warn
+          retention-days: 14
+
+  # C1 parts 5 and 7 — the CONSUMERS (the planner's rows; a booster reserve over all/M10 → M16) and the Something
+  # Tree interval rider (⚖ 13d.2). REPORT, NOT DECIDE: no table entry changes on either row.
+  c1-consumers:
+    name: C1 consumers — headless (part 5; part 7 RETIRED by R3c Part 0)
+    needs: fast
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Part 5 — the planner's buy rows; a booster reserve on buyables:t
+        shell: bash
+        run: |
+          set -o pipefail
+          node tools/harness/gates-c1.mjs --part 5 --no-summary --assert --pool 4 | tee c1-5.txt
+
+      # Part 7 (Something Tree's two interval entries against the target-driven rules) is RETIRED by R3c Part 0: the
+      # table it swept is deleted (⚖ user 2026-09-21), and `gates-c1 --part 7` now REFUSES by name rather than
+      # comparing the derived defaults with themselves.
+
+      - name: Summary
+        if: always()
+        shell: bash
+        run: |
+          {
+            echo '## C1 — consumers'
+            echo ''
+            echo '```'
+            cat c1-5.txt 2>/dev/null | grep -E 'VERDICT|REFUSED|^RED|^GREEN' || echo 'no output'
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload the rows
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: c1-consumers
+          path: tools/harness/results/gates-c1-part*.json
+          if-no-files-found: warn
+          retention-days: 14
+
+  r3b2-inert:
+    name: R3b-2 inertness — headless (part 4)
+    needs: fast
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - run: npm ci
+
+      - name: "Part 4 — the opening, M15 → M24, and the rule OFF at `/0/0`"
+        shell: bash
+        run: |
+          set -o pipefail
+          node tools/harness/gates-r3b2.mjs --part 4 --no-summary --assert --pool 3 | tee r3b2-4.txt
+
+      - name: Summary
+        if: always()
+        shell: bash
+        run: |
+          {
+            echo '## R3b-2 — inertness'
+            echo ''
+            echo '```'
+            cat r3b2-4.txt 2>/dev/null | grep -E 'VERDICT|REFUSED|^RED|^GREEN' || echo 'no output'
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload the rows
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: r3b2-inert
+          path: tools/harness/results/gates-r3b2-part*.json
+          if-no-files-found: warn
+          retention-days: 14
+
+  # ---------------------------------------------------------------------------------------------------------------
+  # R3c Part 1 — the dead-member rule's `mark`: the shipped LAST ANCHOR against a true HIGH-WATER (and the
+  # high-water cleared on the member's own reset), the WHOLE stretch `all/M15.json` → 21,000 ticks, twice per cell.
+  # ⛔ SHARDED BY CELL, because three cells of that leg do not fit a 10-minute local wall side by side (measured at
+  # R3c: seven processes walled every cell at ~33,600 game-s). ONE horizon, GIVEN (`--horizon`), so a shard can never
+  # agree with a horizon it measured itself; the merge refuses a missing cell by name and holds BOTH ends to known
+  # answers: `turnMark=last` = R3b-2's shipped cell (37048 / `6e0e67d4b2836e8e`), the default = the adopted
+  # `high-act` (37048 / `3602cc81c88ebd17`, CI run 35566730632).
+  # ---------------------------------------------------------------------------------------------------------------
+  r3c-mark:
+    name: R3c the dead-member rule's mark — cell ${{ matrix.cell }}
+    needs: fast
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        cell: [0, 1, 2]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - run: npm ci
+
+      - name: "Part 1 — cell ${{ matrix.cell }}, twice"
+        shell: bash
+        run: |
+          set -o pipefail
+          node tools/harness/gates-r3c.mjs --part 1 --cell ${{ matrix.cell }} --horizon 37048 \
+            --no-summary --assert --pool 2 | tee r3c-1-${{ matrix.cell }}.txt
+
+      - name: Summary
+        if: always()
+        shell: bash
+        run: |
+          {
+            echo '## R3c part 1 cell ${{ matrix.cell }}'
+            echo ''
+            echo '```'
+            cat r3c-1-${{ matrix.cell }}.txt 2>/dev/null | grep -E 'VERDICT|REFUSED|^RED|^GREEN' || echo 'no output'
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload the cell
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: r3c-mark-${{ matrix.cell }}
+          path: tools/harness/results/gates-r3c-part1-cell*.json
+          if-no-files-found: warn
+          retention-days: 14
+
+  r3c-mark-merge:
+    name: R3c the dead-member rule's mark — merge + both pinned ends
+    needs: r3c-mark
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - run: npm ci
+
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: r3c-mark-*
+          path: cells
+          merge-multiple: true
+
+      - name: Merge the three cells
+        shell: bash
+        run: |
+          set -o pipefail
+          node tools/harness/gates-r3c.mjs --part 1m --from cells --no-summary --assert | tee r3c-1m.txt
+
+      - name: Summary
+        if: always()
+        shell: bash
+        run: |
+          {
+            echo '## R3c part 1 — merge'
+            echo ''
+            echo '```'
+            cat r3c-1m.txt 2>/dev/null || echo 'no output'
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  # ---------------------------------------------------------------------------------------------------------------
+  # V4 — the per-feature CONTROLS (`while`, `until`, `priority`) and the M21 pause (plan §27).
+  #
+  # ⚖ WHAT IS IN CI AND WHAT IS NOT, by V2's and V3's rule:
+  #   · parts 1, 3, 4 and 5 are CHEAP-ish and each is a claim a later slice will lean on — that a typed predicate
+  #     COMPILES before it is committed and a throw is contained to its feature, that the `until` latch survives a
+  #     RELOAD (it is the only reason it means anything to a player), that `priority` is the kind's place until
+  #     somebody moves it, and that a build carrying all of it is byte-identical when nobody has used it. They run here.
+  #   · parts 6 and 8 are the PAGE, which is where V1's, V2's and V3's real defects were found. It runs here.
+  #   · ⛔ part 2 does NOT: it is two 16,000-tick ladder legs (~25 min), and what it asserts — a table entry and a
+  #     saved edit are the same slot — is also asserted on the stub in part 1, cheaply. It is run by hand and quoted
+  #     in the as-built with the head it ran at.
+  #   · ⛔ parts `m21` / `derived` are MEASUREMENT TABLES, not gates (V3 part 4's rule: a measurement table is not a
+  #     gate), and `fix` WRITES fixtures. All three are run by hand.
+  #   · ⛔ part 7 does NOT, for V2 part 6's and V3 part 6's reason: a 171-game page walk needs sharding and a merge
+  #     assertion to be honest.
+  #
+  # ⛔ `--assert` on every part: exiting 1 on a red row does NOT catch a battery that stopped part-way.
+  # ---------------------------------------------------------------------------------------------------------------
+  r3c-fixtures:
+    name: R3c the rung's fixtures — the shipped leg twice
+    needs: fast
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - run: npm ci
+
+      - name: Part 2f — the shipped leg twice, every mark's snapshot, compared
+        shell: bash
+        run: |
+          set -o pipefail
+          node tools/harness/gates-r3c.mjs --part 2f --no-summary --assert | tee r3c-2f.txt
+
+      - name: Summary
+        if: always()
+        shell: bash
+        run: |
+          {
+            echo '## R3c part 2f — fixtures'
+            echo ''
+            echo '```'
+            cat r3c-2f.txt 2>/dev/null | grep -E 'VERDICT|REFUSED|^RED|^GREEN' || echo 'no output'
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload the fixtures
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: r3c-fixtures
+          path: tools/harness/results/r3c-fixtures/
+          if-no-files-found: warn
+          retention-days: 14
+
+  # The rung CHAINED on from the committed all/M27.json, as every ladder fixture before it was: M26 (q22) arrives past
+  # the 50,000-tick horizon from M15 (a resumed chain put it at ~83,900), so this leg writes its fixture twice.
+  r3c-fixtures-m27:
+    name: R3c the rung's fixtures — chained from all/M27.json (M26)
+    needs: fast
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - run: npm ci
+
+      - name: Part 2f — the shipped leg twice, every mark's snapshot, compared
+        shell: bash
+        run: |
+          set -o pipefail
+          node tools/harness/gates-r3c.mjs --part 2f --fixture tools/harness/snapshots/ptr/all/M27.json --ticks 50000 --no-summary --assert | tee r3c-2f.txt
+
+      - name: Summary
+        if: always()
+        shell: bash
+        run: |
+          {
+            echo '## R3c part 2f — fixtures from M27'
+            echo ''
+            echo '```'
+            cat r3c-2f.txt 2>/dev/null | grep -E 'VERDICT|REFUSED|^RED|^GREEN' || echo 'no output'
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload the fixtures
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: r3c-fixtures-m27
+          path: tools/harness/results/r3c-fixtures/
+          if-no-files-found: warn
+          retention-days: 14
+
+  v4-node:
+    name: V4 controls — headless (parts 1, 3, 4, 5)
+    needs: fast
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      # ⚠ `npm ci` but NO `playwright install`: these parts import the package and never launch a browser.
+      - run: npm ci
+
+      - name: Part 1 — schema ≡ behaviour, and both new codes on a real leg
+        shell: bash  # bash -eo pipefail: without it `| tee` reports the pipe's status and a refusal is lost
+        run: |
+          set -o pipefail
+          node tools/harness/gates-v4.mjs --part 1 --no-summary --assert --pool 2 | tee v4-1.txt
+
+      - name: Part 3 — the `until` latch across a RELOAD, and the re-arm
+        shell: bash
+        run: |
+          set -o pipefail
+          node tools/harness/gates-v4.mjs --part 3 --no-summary --assert --pool 2 | tee v4-3.txt
+
+      - name: Part 4 — priority, the identity and the move
+        shell: bash
+        run: |
+          set -o pipefail
+          node tools/harness/gates-v4.mjs --part 4 --no-summary --assert --pool 3 | tee v4-4.txt
+
+      - name: Part 5 — inertness, the opening and M15 → M20
+        shell: bash
+        run: |
+          set -o pipefail
+          node tools/harness/gates-v4.mjs --part 5 --no-summary --assert --pool 2 | tee v4-5.txt
+
+      - name: Summary
+        if: always()
+        shell: bash
+        run: |
+          {
+            echo '## V4 controls — headless'
+            echo ''
+            echo '```'
+            cat v4-1.txt v4-3.txt v4-4.txt v4-5.txt 2>/dev/null | grep -E 'VERDICT|REFUSED|^RED|green$' || echo 'no output'
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload the rows
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: v4-node
+          path: tools/harness/results/tmp/gates-v4-part*-last.json
+          if-no-files-found: warn
+          retention-days: 14
+
+  v4-page:
+    name: V4 controls — in the page (parts 6, 8)
+    needs: fast
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - run: npm ci
+
+      - name: Cache the Playwright browser
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+
+      - run: npx playwright install --with-deps chromium
+
+      # ⚠ The predicate is TYPED with a real keyboard and it CONTAINS the letters both engines bind as hotkeys, so
+      # the typing leg IS the hotkey leg; and the latch is believed only after a real `save()` and a real reload.
+      - name: Part 6 — a predicate typed, refused, stopped, reloaded, re-armed; a priority edited; markup inert
+        shell: bash
+        run: |
+          set -o pipefail
+          node tools/harness/gates-v4.mjs --part 6 --no-summary --assert | tee v4-6.txt
+
+      # ⚠ The reset is driven with its REAL two presses on a REALISTICALLY configured save, and its specification is
+      # a deep-equal against a fresh boot — never a field list, which would go stale the next time this arc adds one.
+      - name: "Part 8 — the reset: two presses, the save back to a fresh boot's, the runtime with it, the GAME unmoved"
+        shell: bash
+        run: |
+          set -o pipefail
+          node tools/harness/gates-v4.mjs --part 8 --no-summary --assert | tee v4-8.txt
+
+      - name: Summary
+        if: always()
+        shell: bash
+        run: |
+          {
+            echo '## V4 controls — in the page'
+            echo ''
+            echo '```'
+            cat v4-6.txt v4-8.txt 2>/dev/null | grep -E 'VERDICT|REFUSED|^RED|green$' || echo 'no output'
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload the rows
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: v4-page
+          path: tools/harness/results/tmp/gates-v4-part*-last.json
+          if-no-files-found: warn
+          retention-days: 14
+
+  # ---------------------------------------------------------------------------------------------------------------
+  # V3 — the PROGRESS TRACKER, the STALL WATCH and the collapsible Advanced blocks (plan §21).
+  #
+  # ⚖ WHAT IS IN CI AND WHAT IS NOT, and why, for the same reason V2's split has:
+  #   · parts 1, 2 and 3 are CHEAP and every one of them is a claim a later slice will lean on — that the core's
+  #     progress rule IS the harness detector's, that V3 switched off leaves every committed snapshot valid, and that
+  #     the escalation machine does what it says on a CONSTRUCTED state no real fixture reaches. They run here.
+  #   · part 5 is the PAGE, and the page is where V1's and V2's real defects were found (an unwitnessed vocabulary, a
+  #     `null` that killed four engines' `load()`, a stale view — §18.4 item 11). It runs here.
+  #   · ⛔ part 4 does NOT: it is ~40 minutes of ladder legs whose whole point is to REPORT numbers for R2's sweep,
+  #     and a measurement table is not a gate. It is run by hand and quoted in the as-built with the head it ran at.
+  #   · ⛔ part 6 does NOT, for V2 part 6's reason: a 171-game page walk needs sharding and a merge assertion to be
+  #     honest, and it is the one-off witness that the three subtabs open across the roster.
+  #
+  # ⛔ `--assert` on every part: exiting 1 on a red row does NOT catch a battery that stopped part-way — it prints
+  # fewer rows, and fewer rows is fewer reds. Each part declares the row count it emits.
+  # ---------------------------------------------------------------------------------------------------------------
+  v3-node:
+    name: V3 progress + watch — headless (parts 1, 2, 3)
+    needs: fast
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      # ⚠ `npm ci` but NO `playwright install`: these parts import the package and never launch a browser.
+      - run: npm ci
+
+      - name: Part 3 — the machine, constructed on the stub
+        shell: bash  # bash -eo pipefail: without it `| tee` reports the pipe's status and a refusal is lost
+        run: |
+          set -o pipefail
+          node tools/harness/gates-v3.mjs --part 3 --no-summary --assert | tee v3-3.txt
+
+      - name: Part 1 — the core's progress rule ≡ the harness monitor's
+        shell: bash
+        run: |
+          set -o pipefail
+          node tools/harness/gates-v3.mjs --part 1 --no-summary --assert --pool 2 | tee v3-1.txt
+
+      - name: Part 2 — inertness, and no full-hash pin moved
+        shell: bash
+        run: |
+          set -o pipefail
+          node tools/harness/gates-v3.mjs --part 2 --no-summary --assert --pool 2 | tee v3-2.txt
+
+      - name: Summary
+        if: always()
+        shell: bash
+        run: |
+          {
+            echo '## V3 progress + watch — headless'
+            echo ''
+            echo '```'
+            cat v3-3.txt v3-1.txt v3-2.txt 2>/dev/null | grep -E 'VERDICT|REFUSED|^RED|green$' || echo 'no output'
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload the rows
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: v3-node
+          path: tools/harness/results/tmp/gates-v3-part*-last.json
+          if-no-files-found: warn
+          retention-days: 14
+
+  v3-page:
+    name: V3 progress + watch — in the page (part 5)
+    needs: fast
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - run: npm ci
+
+      - name: Cache the Playwright browser
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+
+      - run: npx playwright install --with-deps chromium
+
+      # ⚠ The collapse arm is PAIRED against the thing that breaks it: the tab re-renders every tick, so the leg
+      # ticks, switches subtab and RELOADS before it believes the fold survived.
+      - name: Part 5 — the watch toggles, a list edit persists, Progress renders, every block folds
+        shell: bash
+        run: |
+          set -o pipefail
+          node tools/harness/gates-v3.mjs --part 5 --no-summary --assert | tee v3-5.txt
+
+      - name: Summary
+        if: always()
+        shell: bash
+        run: |
+          {
+            echo '## V3 progress + watch — in the page'
+            echo ''
+            echo '```'
+            cat v3-5.txt 2>/dev/null | grep -E 'VERDICT|REFUSED|^RED|green$' || echo 'no output'
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload the rows
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: v3-page
+          path: tools/harness/results/tmp/gates-v3-part*-last.json
+          if-no-files-found: warn
+          retention-days: 14
+
+  # ---------------------------------------------------------------------------------------------------------------
+  # S1 part 1 — the automation anchors. 52 checks, 197 s locally, and EVERY slice this arc has run it by hand to
+  # prove no anchor moved. That is exactly the check that should not depend on a human remembering.
+  #
+  # ⚠ Its own job, in parallel with the matrix, NOT folded into `fast`: at ~3.3 min it is the second most expensive
+  # thing here, and `fast` is worth having only because it finishes in seconds.
+  #
+  # Depth 1 (S1T, 2026-09-29; ⚖ R12/R13). Each pinned row used to re-run the COMMIT that first recorded it in a
+  # throwaway `git worktree` (3bc12bf, 17260e03, 71da72e), which needed `fetch-depth: 0`. It now compares against a
+  # RECORDING of those runs, tools/harness/recorded/s1-baselines.json — see gates-s1.mjs for what that changes.
+  # ---------------------------------------------------------------------------------------------------------------
+  # ---- V5: the Advanced tab — the WRAP, NO JUMP, the RETRY conditions -----------------------------------------------
+  v5-page:
+    name: V5 Advanced tab — in the page (parts 1, 2)
+    needs: fast
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - run: npm ci
+
+      - name: Cache the Playwright browser
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+
+      - run: npx playwright install --with-deps chromium
+
+      # ⚠ Part 1 judges every interactive element against the viewport AND its pane, at 390 px with and without
+      # `?mobile=1` and at 1280, on ptr and something — and that the tab's root IS its pane's width, because a column
+      # that shrink-wrapped to nothing would pass "nothing past the edge" vacuously (contain:inline-size did, measured).
+      - name: "Part 1 — the WRAP, on ptr AND something"
+        shell: bash
+        run: |
+          set -o pipefail
+          node tools/harness/gates-v5.mjs --part 1 --no-summary --assert | tee v5-1.txt
+
+      # ⚠ Part 2's floors-ON rows are evidence only beside its floors-OFF CONTROL rows, which must see the same
+      # constructed transitions move things.
+      - name: "Part 2 — NO JUMP: constructed transitions, their controls, and real play"
+        shell: bash
+        run: |
+          set -o pipefail
+          node tools/harness/gates-v5.mjs --part 2 --no-summary --assert | tee v5-2.txt
+
+      - name: Summary
+        if: always()
+        shell: bash
+        run: |
+          {
+            echo '## V5 Advanced tab — in the page'
+            echo ''
+            echo '```'
+            cat v5-1.txt 2>/dev/null | grep -E 'VERDICT|REFUSED|^RED|green$' || echo 'no output'
+            cat v5-2.txt 2>/dev/null | grep -E 'VERDICT|REFUSED|^RED|green$' || echo 'no output'
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload the rows
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: v5-page
+          path: tools/harness/results/tmp/gates-v5-part*-last.json
+          if-no-files-found: warn
+          retention-days: 14
+
+  v5-node:
+    name: V5 retry conditions + inertness — headless (parts 3, 5)
+    needs: fast
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - run: npm ci
+
+      - name: "Part 3 — the retry conditions, on the stub and on the real fixture"
+        shell: bash
+        run: |
+          set -o pipefail
+          node tools/harness/gates-v5.mjs --part 3 --no-summary --assert | tee v5-3.txt
+
+      # ⛔ Nothing chosen ⇒ nothing moved: the opening, M15 → M24, R3a's M22 leg and Something Tree, to the HASH.
+      - name: "Part 5 — inertness, to the hash"
+        shell: bash
+        run: |
+          set -o pipefail
+          node tools/harness/gates-v5.mjs --part 5 --no-summary --assert | tee v5-5.txt
+
+      - name: Summary
+        if: always()
+        shell: bash
+        run: |
+          {
+            echo '## V5 retry conditions + inertness — headless'
+            echo ''
+            echo '```'
+            cat v5-3.txt 2>/dev/null | grep -E 'VERDICT|REFUSED|^RED|green$' || echo 'no output'
+            cat v5-5.txt 2>/dev/null | grep -E 'VERDICT|REFUSED|^RED|green$' || echo 'no output'
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload the rows
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: v5-node
+          path: tools/harness/results/tmp/gates-v5-part*-last.json
+          if-no-files-found: warn
+          retention-days: 14
+
+  # ⛔ OWED FROM R3b-1 (plan §35 item 2): the whole-stretch WEIGHT leg had been measured by hand and never run as a
+  # battery. Three 21,000-tick cells — its own job, because a battery killed by a timeout prints fewer rows.
+  r3b-ratio:
+    name: R3b row cycle — the whole-stretch ratio (part 7)
+    needs: fast
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - run: npm ci
+
+      - name: "Part 7 — a weight of W buys W resets a round (W = 5, 20, and 60 at the shipped K)"
+        shell: bash
+        run: |
+          set -o pipefail
+          node tools/harness/gates-r3b.mjs --part 7 --no-summary --assert --repeat7 1 --pool 3 | tee r3b-7.txt
+
+      - name: Summary
+        if: always()
+        shell: bash
+        run: |
+          {
+            echo '## R3b row cycle — the whole-stretch ratio'
+            echo ''
+            echo '```'
+            cat r3b-7.txt 2>/dev/null | grep -E 'VERDICT|REFUSED|^RED|green$' || echo 'no output'
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload the rows
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: r3b-ratio
+          path: tools/harness/results/tmp/gates-r3b-part7-last.json
+          if-no-files-found: warn
+          retention-days: 14
+
+  anchors:
+    name: S1 part 1 — automation anchors
+    needs: fast
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - run: npm ci
+
+      - name: Cache the Playwright browser
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+
+      - run: npx playwright install --with-deps chromium
+
+      # `--no-summary`: results/SUMMARY.md is the committed record of runs a person ran and read. A CI run appending
+      # to a file nobody commits is a write into the void; the JSON below is this run's record.
+      # `--pool`: the child pool is sized for a workstation. A hosted runner has 4 cores.
+      - name: S1 part 1
+        shell: bash  # bash -eo pipefail: without it `| tee` reports the pipe's status and a red row is lost
+        run: node tools/harness/gates-s1.mjs --part 1 --no-summary --pool 4 | tee s1.txt
+
+      - name: Summary
+        if: always()
+        shell: bash
+        run: |
+          {
+            echo '## S1 part 1 — the automation anchors'
+            echo ''
+            echo '```'
+            tail -40 s1.txt 2>/dev/null || echo 'no output'
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload the rows
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: s1-part1
+          path: tools/harness/results/tmp/gates-s1-part1-last.json
+          if-no-files-found: warn
+          retention-days: 14
+
+  # F1-rows: the `maxRow` defect this slice found, held to the PLAIN page over all 171 games (plain boot vs automation
+  # boot, one tick each; the engine's `maxRow` and `TREE_LAYERS` byte-equal; the repair fires on exactly four games).
+  f1-rows:
+    name: F1 rows — maxRow / TREE_LAYERS equal to the plain page, every game
+    needs: fast
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - run: npm ci
+
+      - name: F1 part rows
+        shell: bash
+        run: |
+          set -o pipefail
+          node tools/harness/gates-f1.mjs --part rows --pool 4 --no-summary --assert | tee f1-rows.txt
+
+      - name: Summary
+        if: always()
+        shell: bash
+        run: |
+          {
+            echo '## F1 rows'
+            echo ''
+            echo '```'
+            cat f1-rows.txt 2>/dev/null || echo 'no output'
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  # ---------------------------------------------------------------------------------------------------------------
+  # ---- V6: every feature's toggle in the ADVANCED view, synchronised with the Simple grid (⚖ Q5, brief tmt-auto-20)
+  # ⛔ A GATE, not a table (§49d's rule): every row asserts a constructed behaviour — synchronised both ways with no
+  # reload, the toggle changes what the feature DOES (managed start, counts compared), reload persistence, arming,
+  # the override display, the reset — so it runs on every push. The roster leg (part 7) is a recorded run, not CI.
+  v6-page:
+    name: V6 Advanced toggles — in the page (parts 1–6)
+    needs: fast
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - run: npm ci
+
+      - name: Cache the Playwright browser
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+
+      - run: npx playwright install --with-deps chromium
+
+      # ⚠ `--part page` runs parts 1–6 in one browser and `--assert` requires exactly 18 rows, all green: a battery
+      # that dies part-way prints fewer rows, and fewer rows is fewer reds.
+      - name: "Parts 1–6 — both ways, what it does, reload, arming, overrides, the reset (ptr AND something)"
+        shell: bash
+        run: |
+          set -o pipefail
+          node tools/harness/gates-v6.mjs --part page --no-summary --assert | tee v6.txt
+
+      - name: Summary
+        if: always()
+        shell: bash
+        run: |
+          {
+            echo '## V6 Advanced toggles — in the page'
+            echo ''
+            echo '```'
+            cat v6.txt 2>/dev/null | grep -E 'VERDICT|^RED|^GREEN' | cut -c1-300 || echo 'no output'
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload the rows
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: v6-page
+          path: tools/harness/results/tmp/gates-v6-part*-last.json
+          if-no-files-found: warn
+          retention-days: 14

@@ -1,0 +1,142 @@
+{
+  "id": "coffee-shop",
+  "commit": "0e15311394d45b150cfd4239ffc7569923d8e531",
+  "layers": {
+    "info-tab": {
+      "row": "otherside",
+      "type": "none"
+    },
+    "options-tab": {
+      "row": "otherside",
+      "type": "none"
+    },
+    "changelog-tab": {
+      "row": "otherside",
+      "type": "none"
+    },
+    "c": {
+      "row": 0,
+      "type": "static"
+    },
+    "blank": {
+      "row": null,
+      "type": "none"
+    },
+    "tree-tab": {
+      "row": null,
+      "type": "none"
+    },
+    "p": {
+      "row": 1,
+      "type": "static"
+    },
+    "b": {
+      "row": 1,
+      "type": "static"
+    },
+    "s": {
+      "row": 2,
+      "type": "static"
+    },
+    "l": {
+      "row": 2,
+      "type": "none"
+    },
+    "w": {
+      "row": 2,
+      "type": "static"
+    }
+  },
+  "ids": [
+    "c:upg:11",
+    "c:upg:12",
+    "c:upg:13",
+    "c:upg:14",
+    "c:upg:15",
+    "c:upg:21",
+    "c:upg:22",
+    "c:upg:23",
+    "c:upg:24",
+    "c:upg:25",
+    "c:upg:31",
+    "c:upg:32",
+    "c:upg:33",
+    "c:upg:34",
+    "c:upg:35",
+    "c:upg:41",
+    "c:upg:42",
+    "c:upg:43",
+    "c:upg:44",
+    "c:upg:45",
+    "c:upg:51",
+    "c:upg:52",
+    "c:upg:53",
+    "c:upg:54",
+    "c:upg:55",
+    "c:upg:61",
+    "c:upg:62",
+    "c:upg:63",
+    "c:upg:64",
+    "c:upg:65",
+    "c:upg:71",
+    "c:upg:72",
+    "c:upg:73",
+    "c:upg:74",
+    "c:upg:75",
+    "p:ms:0",
+    "p:ms:1",
+    "p:ms:2",
+    "p:upg:11",
+    "p:upg:12",
+    "p:upg:13",
+    "p:upg:14",
+    "p:upg:15",
+    "p:upg:21",
+    "p:upg:22",
+    "p:upg:23",
+    "p:upg:24",
+    "p:upg:25",
+    "p:upg:31",
+    "p:upg:32",
+    "p:upg:33",
+    "p:upg:34",
+    "p:upg:35",
+    "b:ms:0",
+    "b:ms:1",
+    "b:ms:2",
+    "b:buy:11",
+    "b:buy:12",
+    "b:buy:13",
+    "s:ms:0",
+    "s:ms:1",
+    "s:ms:2",
+    "s:ms:3",
+    "s:ms:4",
+    "l:buy:11",
+    "l:buy:12",
+    "l:buy:21",
+    "l:buy:22",
+    "l:buy:23",
+    "l:buy:24",
+    "l:buy:51",
+    "l:buy:52",
+    "l:buy:53",
+    "w:upg:11",
+    "w:upg:12",
+    "w:upg:13",
+    "w:upg:14",
+    "w:upg:15",
+    "w:upg:21",
+    "w:upg:22",
+    "w:upg:23",
+    "w:upg:24",
+    "w:upg:25"
+  ],
+  "counts": {
+    "ms": 11,
+    "upg": 60,
+    "buy": 12,
+    "ch": 0,
+    "ach": 0
+  }
+}

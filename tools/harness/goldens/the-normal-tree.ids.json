@@ -1,0 +1,230 @@
+{
+  "id": "the-normal-tree",
+  "commit": "9e46e8a36312723afcba7370a0f30f267d5289a7",
+  "layers": {
+    "info-tab": {
+      "row": "otherside",
+      "type": "none"
+    },
+    "options-tab": {
+      "row": "otherside",
+      "type": "none"
+    },
+    "changelog-tab": {
+      "row": "otherside",
+      "type": "none"
+    },
+    "p": {
+      "row": 0,
+      "type": "normal"
+    },
+    "bP": {
+      "row": 1,
+      "type": "normal"
+    },
+    "cP": {
+      "row": 2,
+      "type": "normal"
+    },
+    "dP": {
+      "row": 3,
+      "type": "normal"
+    },
+    "b": {
+      "row": 2,
+      "type": "static"
+    },
+    "bB": {
+      "row": 4,
+      "type": "static"
+    },
+    "At": {
+      "row": "side",
+      "type": "none"
+    },
+    "eP": {
+      "row": 4,
+      "type": "normal"
+    },
+    "fP": {
+      "row": 5,
+      "type": "normal"
+    },
+    "gP": {
+      "row": 6,
+      "type": "normal"
+    },
+    "cB": {
+      "row": 6,
+      "type": "static"
+    },
+    "g": {
+      "row": 6,
+      "type": "static"
+    },
+    "PG": {
+      "row": "side",
+      "type": "none"
+    },
+    "hP": {
+      "row": 7,
+      "type": "normal"
+    },
+    "iP": {
+      "row": 8,
+      "type": "normal"
+    },
+    "dB": {
+      "row": 8,
+      "type": "static"
+    },
+    "jP": {
+      "row": 9,
+      "type": "normal"
+    },
+    "A": {
+      "row": 10,
+      "type": "normal"
+    },
+    "Ab": {
+      "row": 10,
+      "type": "normal"
+    },
+    "kP": {
+      "row": 11,
+      "type": "normal"
+    },
+    "blank": {
+      "row": null,
+      "type": "none"
+    },
+    "tree-tab": {
+      "row": null,
+      "type": "none"
+    }
+  },
+  "ids": [
+    "p:upg:11",
+    "p:upg:12",
+    "p:upg:13",
+    "bP:ms:11",
+    "bP:upg:11",
+    "bP:upg:12",
+    "bP:upg:13",
+    "cP:ms:11",
+    "cP:ms:12",
+    "cP:upg:11",
+    "cP:upg:12",
+    "cP:upg:13",
+    "dP:ms:11",
+    "dP:ms:12",
+    "dP:ms:13",
+    "dP:upg:11",
+    "dP:upg:12",
+    "dP:upg:13",
+    "eP:ms:11",
+    "eP:ms:12",
+    "eP:ms:13",
+    "eP:upg:11",
+    "eP:upg:12",
+    "eP:upg:13",
+    "eP:upg:14",
+    "fP:ms:11",
+    "fP:ms:12",
+    "fP:ms:13",
+    "fP:ms:14",
+    "fP:upg:11",
+    "fP:upg:12",
+    "fP:upg:13",
+    "fP:upg:14",
+    "gP:ms:11",
+    "gP:ms:12",
+    "gP:ms:13",
+    "gP:ms:14",
+    "gP:upg:11",
+    "gP:upg:12",
+    "gP:upg:13",
+    "gP:upg:14",
+    "gP:upg:15",
+    "g:upg:11",
+    "g:upg:12",
+    "g:upg:13",
+    "hP:ms:11",
+    "hP:ms:12",
+    "hP:ms:13",
+    "hP:ms:14",
+    "hP:upg:11",
+    "hP:upg:12",
+    "hP:upg:13",
+    "hP:upg:14",
+    "hP:upg:15",
+    "hP:upg:16",
+    "iP:ms:11",
+    "iP:ms:12",
+    "iP:ms:13",
+    "iP:ms:14",
+    "iP:ms:15",
+    "iP:upg:11",
+    "iP:upg:12",
+    "iP:upg:13",
+    "iP:upg:14",
+    "iP:upg:15",
+    "iP:upg:16",
+    "jP:ms:11",
+    "jP:ms:12",
+    "jP:ms:13",
+    "jP:ms:14",
+    "jP:ms:15",
+    "jP:upg:11",
+    "jP:upg:12",
+    "jP:upg:13",
+    "jP:upg:14",
+    "jP:upg:15",
+    "jP:upg:16",
+    "jP:upg:21",
+    "A:upg:11",
+    "A:upg:12",
+    "A:upg:13",
+    "A:upg:21",
+    "A:upg:22",
+    "A:upg:23",
+    "A:upg:31",
+    "A:upg:32",
+    "A:upg:33",
+    "A:upg:41",
+    "A:upg:42",
+    "A:upg:43",
+    "A:upg:51",
+    "A:upg:61",
+    "Ab:upg:11",
+    "Ab:upg:12",
+    "Ab:upg:13",
+    "Ab:upg:14",
+    "Ab:upg:15",
+    "Ab:upg:16",
+    "Ab:upg:21",
+    "Ab:upg:22",
+    "Ab:upg:23",
+    "Ab:upg:24",
+    "Ab:upg:25",
+    "Ab:upg:26",
+    "Ab:ch:11",
+    "Ab:ch:12",
+    "Ab:ch:21",
+    "kP:ms:11",
+    "kP:ms:12",
+    "kP:ms:13",
+    "kP:upg:11",
+    "kP:upg:12",
+    "kP:upg:13",
+    "kP:upg:14",
+    "kP:upg:15"
+  ],
+  "counts": {
+    "ms": 34,
+    "upg": 78,
+    "buy": 0,
+    "ch": 3,
+    "ach": 0
+  }
+}

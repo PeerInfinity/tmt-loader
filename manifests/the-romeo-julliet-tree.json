@@ -1,0 +1,106 @@
+{
+  "schema": 1,
+  "id": "the-romeo-julliet-tree",
+  "name": "The Romeo & Julliet Tree",
+  "version": "0.1",
+  "author": "keyboardmannow",
+  "upstream": {
+    "repo": "keyboardmannow/Romerium",
+    "url": "https://github.com/keyboardmannow/Romerium.git",
+    "branch": "master",
+    "commit": "4c5dc3c93de5026519a93e237d151f3eac6e5879",
+    "pushed_at": "2021-07-01T07:40:06Z"
+  },
+  "engine": {
+    "tmtNum": "2.3.3.1",
+    "stock_commit": "f521874",
+    "moved": false,
+    "deviation": {
+      "added": 0,
+      "removed": 0
+    }
+  },
+  "entry": "index.html",
+  "load": {
+    "onload": "load()",
+    "scripts": [
+      "js/technical/break_eternity.js",
+      "js/technical/layerSupport.js",
+      "js/tree.js",
+      "js/layers.js",
+      "js/mod.js",
+      "js/technical/temp.js",
+      "js/game.js",
+      "js/utils.js",
+      "js/technical/systemComponents.js",
+      "js/components.js",
+      "js/technical/canvas.js"
+    ],
+    "renderOnly": [
+      "js/technical/systemComponents.js",
+      "js/components.js",
+      "js/technical/canvas.js"
+    ],
+    "modFilesPrefix": null,
+    "modFiles": [],
+    "external": {
+      "https://cdn.jsdelivr.net/npm/vue@2.6.12": "vendor",
+      "https://fonts.googleapis.com/css?family=Inconsolata": "drop"
+    },
+    "vendor": {
+      "https://cdn.jsdelivr.net/npm/vue@2.6.12": {
+        "path": "vendor/vue-2.6.12.min.js",
+        "sha256": "29296ccacaa9ed35ed168fc51e36f54fd6f8db9c7786bbf38cc59a27229ba5c2"
+      }
+    }
+  },
+  "save": {
+    "keyRule": null,
+    "key": ""
+  },
+  "headless": {
+    "prestubs": [
+      "colors"
+    ],
+    "renderStubs": [
+      "loadVue",
+      "resizeCanvas",
+      "retrieveCanvasData",
+      "drawTree",
+      "drawTreeBranch"
+    ],
+    "idleHash": {
+      "ticks": 200,
+      "diff": 0.05,
+      "hash": "be5627c5982a1a6b"
+    },
+    "deterministic": true
+  },
+  "license": {
+    "githubSpdx": "NOASSERTION",
+    "files": {
+      "LICENSE": "MIT",
+      "Prestige-tree-license": "MIT"
+    },
+    "verdict": "MIT"
+  },
+  "census": {
+    "full_name": "keyboardmannow/Romerium",
+    "head": "4c5dc3c",
+    "score": 25.5,
+    "layers": 4,
+    "rows": 3,
+    "milestones": 3,
+    "upgrades": 9,
+    "buyables": 0,
+    "challenges": 0,
+    "achievements": 0,
+    "trace_fields": 2
+  },
+  "patches": [],
+  "generated": {
+    "by": "tmt-fork-census scripts/manifest.mjs",
+    "commit": "b510bb6",
+    "at": "2026-09-18T02:44:51.645Z"
+  }
+}

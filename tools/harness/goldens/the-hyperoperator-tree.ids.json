@@ -1,0 +1,129 @@
+{
+  "id": "the-hyperoperator-tree",
+  "commit": "f24e1c55c096706d587ab55361d9ca7242a43b08",
+  "layers": {
+    "info-tab": {
+      "row": "otherside",
+      "type": "none"
+    },
+    "options-tab": {
+      "row": "otherside",
+      "type": "none"
+    },
+    "changelog-tab": {
+      "row": "otherside",
+      "type": "none"
+    },
+    "blank": {
+      "row": null,
+      "type": "none"
+    },
+    "tree-tab": {
+      "row": null,
+      "type": "none"
+    },
+    "c": {
+      "row": "side",
+      "type": "none"
+    },
+    "st": {
+      "row": "side",
+      "type": "none"
+    },
+    "s": {
+      "row": 0,
+      "type": "none"
+    },
+    "a": {
+      "row": 1,
+      "type": "normal"
+    },
+    "m": {
+      "row": 2,
+      "type": "normal"
+    },
+    "e": {
+      "row": 3,
+      "type": "normal"
+    }
+  },
+  "ids": [
+    "c:ms:0",
+    "c:ms:1",
+    "c:upg:11",
+    "c:upg:12",
+    "c:upg:13",
+    "c:upg:14",
+    "c:upg:15",
+    "c:upg:16",
+    "c:upg:21",
+    "s:upg:11",
+    "s:upg:12",
+    "s:upg:13",
+    "a:ms:0",
+    "a:ms:1",
+    "a:ms:2",
+    "a:upg:11",
+    "a:upg:12",
+    "a:upg:13",
+    "a:upg:14",
+    "a:upg:15",
+    "a:upg:21",
+    "a:upg:22",
+    "a:upg:23",
+    "a:upg:24",
+    "a:upg:25",
+    "m:ms:0",
+    "m:ms:1",
+    "m:ms:2",
+    "m:ms:3",
+    "m:ms:4",
+    "m:upg:11",
+    "m:upg:12",
+    "m:upg:13",
+    "m:upg:14",
+    "m:upg:15",
+    "m:upg:21",
+    "m:upg:22",
+    "m:upg:23",
+    "m:upg:24",
+    "m:upg:25",
+    "e:ms:0",
+    "e:ms:1",
+    "e:ms:2",
+    "e:ms:3",
+    "e:ms:4",
+    "e:ms:5",
+    "e:ms:6",
+    "e:ms:7",
+    "e:ms:8",
+    "e:upg:11",
+    "e:upg:12",
+    "e:upg:13",
+    "e:upg:14",
+    "e:upg:15",
+    "e:upg:21",
+    "e:upg:22",
+    "e:upg:23",
+    "e:upg:24",
+    "e:upg:25",
+    "e:upg:31",
+    "e:upg:32",
+    "e:upg:33",
+    "e:upg:34",
+    "e:upg:35",
+    "e:buy:11",
+    "e:buy:12",
+    "e:buy:13",
+    "e:buy:21",
+    "e:buy:22",
+    "e:buy:23"
+  ],
+  "counts": {
+    "ms": 19,
+    "upg": 45,
+    "buy": 6,
+    "ch": 0,
+    "ach": 0
+  }
+}

@@ -1,0 +1,73 @@
+{
+  "id": "the-world-tree-nordrasil",
+  "commit": "306e3ac43be0747f783ec2b5dc3101229b5604dc",
+  "layers": {
+    "info-tab": {
+      "row": "otherside",
+      "type": "none"
+    },
+    "options-tab": {
+      "row": "otherside",
+      "type": "none"
+    },
+    "changelog-tab": {
+      "row": "otherside",
+      "type": "none"
+    },
+    "Ground": {
+      "row": 0,
+      "type": "normal"
+    },
+    "River": {
+      "row": 0,
+      "type": "normal"
+    },
+    "Grass": {
+      "row": 1,
+      "type": "normal"
+    },
+    "Stream": {
+      "row": 1,
+      "type": "normal"
+    },
+    "Roots": {
+      "row": 2,
+      "type": "custom"
+    },
+    "Energy": {
+      "row": 3,
+      "type": "normal"
+    },
+    "GE": {
+      "row": "side",
+      "type": "normal"
+    },
+    "blank": {
+      "row": null,
+      "type": "none"
+    },
+    "tree-tab": {
+      "row": null,
+      "type": "none"
+    }
+  },
+  "ids": [
+    "Ground:upg:23",
+    "Ground:upg:32",
+    "Ground:upg:33",
+    "Ground:upg:34",
+    "River:upg:23",
+    "River:upg:32",
+    "River:upg:33",
+    "River:upg:34",
+    "River:upg:43",
+    "Grass:ms:1"
+  ],
+  "counts": {
+    "ms": 1,
+    "upg": 9,
+    "buy": 0,
+    "ch": 0,
+    "ach": 0
+  }
+}

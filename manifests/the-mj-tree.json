@@ -1,0 +1,137 @@
+{
+  "schema": 1,
+  "id": "the-mj-tree",
+  "name": "The MJ Tree",
+  "version": "2.4.0",
+  "author": "Askinga",
+  "upstream": {
+    "repo": "Askinga/The-MJ-Tree",
+    "url": "https://github.com/Askinga/The-MJ-Tree.git",
+    "branch": "master",
+    "commit": "d6435f17d0aea5858dad2d7ee9ab31dfc5cb044a",
+    "pushed_at": "2026-09-13T23:27:05Z"
+  },
+  "engine": {
+    "tmtNum": "2.6.6.2",
+    "stock_commit": "8cf14c4",
+    "moved": false,
+    "deviation": {
+      "added": 11,
+      "removed": 6
+    }
+  },
+  "entry": "index.html",
+  "load": {
+    "onload": "load()",
+    "scripts": [
+      "js/technical/break_eternity.js",
+      "js/technical/layerSupport.js",
+      "js/mod.js",
+      "js/technical/loader.js",
+      "js/technical/temp.js",
+      "js/technical/displays.js",
+      "js/game.js",
+      "js/utils.js",
+      "js/utils/easyAccess.js",
+      "js/technical/systemComponents.js",
+      "js/components.js",
+      "js/technical/canvas.js",
+      "js/technical/particleSystem.js",
+      "js/utils/NumberFormating.js",
+      "js/utils/options.js",
+      "js/utils/save.js",
+      "js/utils/themes.js"
+    ],
+    "renderOnly": [
+      "js/technical/systemComponents.js",
+      "js/components.js",
+      "js/technical/canvas.js",
+      "js/technical/particleSystem.js"
+    ],
+    "modFilesPrefix": "js/",
+    "modFiles": [
+      "layers.js",
+      "layerss.js",
+      "tree.js",
+      "event.js"
+    ],
+    "external": {
+      "https://cdn.jsdelivr.net/npm/vue@2.6.12": "vendor",
+      "https://fonts.googleapis.com/css?family=Inconsolata": "drop"
+    },
+    "vendor": {
+      "https://cdn.jsdelivr.net/npm/vue@2.6.12": {
+        "path": "vendor/vue-2.6.12.min.js",
+        "sha256": "29296ccacaa9ed35ed168fc51e36f54fd6f8db9c7786bbf38cc59a27229ba5c2"
+      }
+    },
+    "known": {
+      "externalHosts": [
+        "tempupload.ngfiles.com"
+      ]
+    }
+  },
+  "save": {
+    "keyRule": "modInfo.id",
+    "key": "abc123"
+  },
+  "headless": {
+    "prestubs": [],
+    "renderStubs": [
+      "loadVue",
+      "resizeCanvas",
+      "retrieveCanvasData",
+      "drawTree",
+      "drawComponentBranches",
+      "drawTreeBranch",
+      "makeParticles",
+      "makeShinies",
+      "updateParticles",
+      "setDir",
+      "setSpeed",
+      "updateMouse",
+      "getOpacity",
+      "constructParticleStyle",
+      "clearParticles",
+      "sin",
+      "cos",
+      "tan",
+      "asin",
+      "acos",
+      "atan"
+    ],
+    "idleHash": {
+      "ticks": 200,
+      "diff": 0.05,
+      "hash": "45e3c7aa8a80c464"
+    },
+    "deterministic": true
+  },
+  "license": {
+    "githubSpdx": "NOASSERTION",
+    "files": {
+      "LICENSE": "MIT",
+      "Prestige-tree-license": "MIT"
+    },
+    "verdict": "MIT"
+  },
+  "census": {
+    "full_name": "Askinga/The-MJ-Tree",
+    "head": "d6435f1",
+    "score": 77.67,
+    "layers": 15,
+    "rows": 6,
+    "milestones": 15,
+    "upgrades": 147,
+    "buyables": 2,
+    "challenges": 15,
+    "achievements": 72,
+    "trace_fields": 7
+  },
+  "patches": [],
+  "generated": {
+    "by": "tmt-fork-census scripts/manifest.mjs",
+    "commit": "16d69c4",
+    "at": "2026-09-18T01:29:13.774Z"
+  }
+}

@@ -1,0 +1,106 @@
+{
+  "schema": 1,
+  "id": "the-basic-tree",
+  "name": "The Basic Tree",
+  "version": "1.6.2.1",
+  "author": null,
+  "upstream": {
+    "repo": "gapples2/The-Modding-Tree",
+    "url": "https://github.com/gapples2/The-Modding-Tree.git",
+    "branch": "master",
+    "commit": "49cf19181cf6aca45192a5ac8283290cda7cd289",
+    "pushed_at": "2021-08-19T10:40:04Z"
+  },
+  "engine": {
+    "tmtNum": "2.2.1",
+    "stock_commit": "f0c3942",
+    "moved": false,
+    "deviation": {
+      "added": 1,
+      "removed": 3
+    }
+  },
+  "entry": "index.html",
+  "load": {
+    "onload": "load()",
+    "scripts": [
+      "js/technical/break_eternity.js",
+      "js/technical/layerSupport.js",
+      "js/tree.js",
+      "js/layers.js",
+      "js/mod.js",
+      "js/technical/temp.js",
+      "js/game.js",
+      "js/utils.js",
+      "js/technical/systemComponents.js",
+      "js/components.js",
+      "js/technical/canvas.js"
+    ],
+    "renderOnly": [
+      "js/technical/systemComponents.js",
+      "js/components.js",
+      "js/technical/canvas.js"
+    ],
+    "modFilesPrefix": null,
+    "modFiles": [],
+    "external": {
+      "https://cdn.jsdelivr.net/npm/vue@2.6.12": "vendor",
+      "https://fonts.googleapis.com/css?family=Inconsolata": "drop"
+    },
+    "vendor": {
+      "https://cdn.jsdelivr.net/npm/vue@2.6.12": {
+        "path": "vendor/vue-2.6.12.min.js",
+        "sha256": "29296ccacaa9ed35ed168fc51e36f54fd6f8db9c7786bbf38cc59a27229ba5c2"
+      }
+    }
+  },
+  "save": {
+    "keyRule": "modInfo.id",
+    "key": "gapples2"
+  },
+  "headless": {
+    "prestubs": [
+      "colors"
+    ],
+    "renderStubs": [
+      "loadVue",
+      "resizeCanvas",
+      "retrieveCanvasData",
+      "drawTree",
+      "drawTreeBranch"
+    ],
+    "idleHash": {
+      "ticks": 200,
+      "diff": 0.05,
+      "hash": "9033d1736211e07d"
+    },
+    "deterministic": true
+  },
+  "license": {
+    "githubSpdx": "NOASSERTION",
+    "files": {
+      "LICENSE": "MIT",
+      "Prestige-tree-license": "MIT"
+    },
+    "verdict": "MIT"
+  },
+  "census": {
+    "full_name": "gapples2/The-Modding-Tree",
+    "head": "49cf191",
+    "score": 49.99,
+    "layers": 6,
+    "rows": 3,
+    "milestones": 14,
+    "upgrades": 11,
+    "buyables": 0,
+    "challenges": 0,
+    "achievements": 36,
+    "trace_fields": 4
+  },
+  "patches": [],
+  "generated": {
+    "by": "tmt-fork-census scripts/manifest.mjs",
+    "commit": "24a9702",
+    "at": "2026-09-18T01:09:36.142Z"
+  }
+}

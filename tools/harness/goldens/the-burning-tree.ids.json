@@ -1,0 +1,45 @@
+{
+  "id": "the-burning-tree",
+  "commit": "762f423777c092de770b1adbe11eadf9438a10f5",
+  "layers": {
+    "a": {
+      "row": 0,
+      "type": "normal"
+    },
+    "c": {
+      "row": 1,
+      "type": "static"
+    },
+    "e": {
+      "row": 1,
+      "type": "normal"
+    }
+  },
+  "ids": [
+    "a:upg:11",
+    "a:upg:12",
+    "a:upg:13",
+    "a:upg:14",
+    "a:upg:21",
+    "a:upg:22",
+    "a:upg:23",
+    "a:upg:24",
+    "c:ms:0",
+    "c:ms:1",
+    "c:ms:2",
+    "c:ms:3",
+    "c:upg:11",
+    "c:upg:12",
+    "c:upg:13",
+    "c:upg:14",
+    "e:ms:0",
+    "e:ms:1"
+  ],
+  "counts": {
+    "ms": 6,
+    "upg": 12,
+    "buy": 0,
+    "ch": 0,
+    "ach": 0
+  }
+}
