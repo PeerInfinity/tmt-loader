@@ -1,7 +1,8 @@
 // Gate G5 — "the site serves this tree, at the sub-path, and the games load from it".
 //
 //   node tools/check-pages.mjs [--keep] [--games id1,id2,…]     the CLONE form: clone the committed HEAD
-//                                                               (git clone --depth 1 file://…) into a temp dir, serve
+//                                                               (git clone --depth 1 file://…) WITH its games
+//                                                               submodule into a temp dir, serve
 //                                                               its PARENT with python3 -m http.server so the loader
 //                                                               lives under /tmt-loader/ exactly as on Pages, run G1
 //                                                               against it, assert the home page loads and links the census, and
@@ -25,6 +26,13 @@
 // a check whose per-game part the CI sweep already owns on every push). It used to cover the whole roster through the
 // picker; since U15 the home page is a short text and a link to the census, not a list, so the roster is held by G6
 // (docs/games.md ≡ manifests/index.json) and the sweep, and this gate checks the home page itself.
+//
+// ⚠ SINCE THE SPLIT (2026-09-29) `games/` is the tmt-loader-games SUBMODULE. Both forms follow it:
+//   · a served path under `games/` is compared with the SUBMODULE's HEAD (`git -C games show HEAD:<rest>`) — the outer
+//     `git show HEAD:games/…` fails, because the outer tree holds only a gitlink there;
+//   · the clone form clones the submodule from THIS checkout's `games/` (not from the URL in .gitmodules), at the commit
+//     the gitlink pins, so it certifies the committed pair — including a games commit not yet pushed — and needs no
+//     network; it REFUSES when the submodule is not checked out, or is checked out at another commit than the pin.
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
@@ -49,7 +57,18 @@ const SETTLE_TRIES = Number(a['settle-tries'] ?? 30);
 const SETTLE_MS = Number(a['settle-ms'] ?? 10000);
 const result = { gate: LIVE ? 'G5 live deploy' : 'G5 bare clone', mode: LIVE ? 'live' : 'clone', games: SAMPLE, commit: headCommit(), repoClean: git(REPO, 'status', '--porcelain') === '', steps: [] };
 const step = (name, ok, detail = {}) => { result.steps.push({ name, ok, ...detail }); console.log(`${ok ? 'GREEN' : 'RED  '} ${name} ${JSON.stringify(detail)}`); };
-const headBytes = (f) => execFileSync('git', ['-C', REPO, 'show', `HEAD:${f}`], { encoding: 'buffer', maxBuffer: 64 * 1024 * 1024 });
+/** HEAD's bytes for a served path; a path under `games/` resolves through the submodule (see the header). */
+const headBytes = (f) => {
+  const [cwd, rel] = f.startsWith('games/') ? [path.join(REPO, 'games'), f.slice('games/'.length)] : [REPO, f];
+  return execFileSync('git', ['-C', cwd, 'show', `HEAD:${rel}`], { encoding: 'buffer', maxBuffer: 64 * 1024 * 1024 });
+};
+/** The games commit the outer HEAD pins, and the one checked out in `games/` (null when it is not initialised). */
+const gamesPin = () => git(REPO, 'rev-parse', 'HEAD:games');
+// ⚠ In an UNINITIALISED submodule `git -C games` walks up to the outer repository, so the toplevel is checked first.
+const gamesHead = () => {
+  const dir = path.join(REPO, 'games');
+  try { return fs.realpathSync(git(dir, 'rev-parse', '--show-toplevel')) === fs.realpathSync(dir) ? git(dir, 'rev-parse', 'HEAD') : null; } catch { return null; }
+};
 
 /** GET <base><file> as bytes, or null with the reason. */
 async function fetchServed(base, file) {
@@ -76,6 +95,12 @@ if (LIVE) {
   // ⚠ A deploy reports success before the CDN everywhere is serving it. So we do not assume it settled — we WAIT for
   // the served bytes to be this commit's, and fail loudly (naming the files) if they never become it. A check that
   // ran too early and passed anyway would be worse than no check.
+  // The games path is compared with the submodule's HEAD, so that HEAD must be the one the outer commit pins.
+  const pin = gamesPin(), have = gamesHead();
+  if (have !== pin) {
+    step('games submodule checked out at the pinned commit', false, { pin, checkedOut: have, fix: 'checkout with `submodules: true`' });
+    process.exit(1);
+  }
   const t0 = Date.now();
   let diff = await servedDiff(base), tries = 1;
   while (diff.length && tries < SETTLE_TRIES) {
@@ -92,6 +117,19 @@ if (LIVE) {
   // full SHAs: the short form's length grows with the object count and differs between the repo and a depth-1 clone
   result.cloneHead = git(clone, 'rev-parse', 'HEAD');
   step('clone', result.cloneHead === git(REPO, 'rev-parse', 'HEAD'), { clone, head: result.cloneHead });
+  // The submodule, from this checkout's own `games/` (see the header). `protocol.file.allow` is set for this one
+  // command only: git refuses a local-path submodule by default (CVE-2022-39253), and the source here is our own tree.
+  const pin = gamesPin(), have = gamesHead();
+  if (have !== pin) {
+    step('games submodule checked out at the pinned commit', false, { pin, checkedOut: have, fix: 'git submodule update --init games' });
+    fs.rmSync(parent, { recursive: true, force: true });
+    process.exit(1);
+  }
+  execFileSync('git', ['-C', clone, 'submodule', 'init', 'games']);
+  execFileSync('git', ['-C', clone, 'config', 'submodule.games.url', path.join(REPO, 'games')]);
+  execFileSync('git', ['-c', 'protocol.file.allow=always', '-C', clone, 'submodule', 'update', '-q', 'games']);
+  result.cloneGames = git(path.join(clone, 'games'), 'rev-parse', 'HEAD');
+  step('clone games submodule', result.cloneGames === pin, { pin, head: result.cloneGames });
   server = await startServer(parent);
   base = `${server.url}tmt-loader/`;
   result.serverPid = server.pid;
@@ -137,7 +175,8 @@ if (!LIVE) {
   // `npm ci` in it. ⛔ They are SKIPPED, loudly, rather than silently passing — a step that cannot run is not a step
   // that passed, and this whole file exists because a green thing that ran nothing looks like a green thing.
   const cloneStatus = git(clone, 'status', '--porcelain', '--ignored');
-  step('clone unmodified', cloneStatus === '', { status: cloneStatus });
+  const gamesStatus = git(path.join(clone, 'games'), 'status', '--porcelain', '--ignored');
+  step('clone unmodified', cloneStatus === '' && gamesStatus === '', { status: cloneStatus, games: gamesStatus });
   step('repo clean', git(REPO, 'status', '--porcelain') === '', { status: git(REPO, 'status', '-sb') });
 } else {
   result.notChecked = ['clone unmodified', 'repo clean'];

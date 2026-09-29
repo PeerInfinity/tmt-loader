@@ -7,11 +7,18 @@
 //                                                   image's pixel size unchanged; then the check
 //        [--jobs N] [--python <path>]               N games at once (default: cores - 2)
 //        [--json <out>] [--verbose]                 per game and per type, bytes before and after; every RAW file
+//        [--no-commit]                              leave the re-encoded files uncommitted in games/
+//
+// ⚠ SINCE THE REPOSITORY SPLIT (2026-09-29) games/ is the tmt-loader-games SUBMODULE. `--write` commits what it changed
+// THERE (`media: …`, one commit for the run; games/ must be on a branch with no tracked changes — it refuses before
+// encoding anything otherwise), and then prints the rest of the gitlink rule: push that commit to tmt-loader-games'
+// default branch FIRST, then commit the `games` gitlink in the loader with the skips file (tools/games-repo.mjs).
 //
 // ⚖ THE RULED EXCEPTION (user, 2026-09-22) to "never edit games/<id>/" — media only; docs/add-a-game.md, "Media: the
 // one exception to pristine". What is in scope, what counts as processed and the stubs are tools/media-lib.mjs.
 //
-// ⚠ RE-RUN AFTER EVERY `git subtree pull`: a pull restores the original of every file upstream touched. The check is
+// ⚠ RE-RUN AFTER EVERY RE-PIN (a `git subtree pull` before the split; since it, the directory replaced): a re-pin
+// restores the original of every file upstream touched. The check is
 // what notices (CI `fast` job, and check-manifest's pristine rule, which accepts a media-only difference from the
 // squash only when the file is processed) — an original that comes back is a RED, not a quietly bigger download.
 //
@@ -22,6 +29,7 @@ import crypto from 'node:crypto';
 import { spawn } from 'node:child_process';
 import os from 'node:os';
 import { REPO, GAMES, parseArgs, writeJSON } from './harness/lib.mjs';
+import { assertGamesWritable, commitGames, nextSteps } from './games-repo.mjs';
 import { classify, imageSize, isWebP, stubFor, walk, scanGame, readSkips, webpAnimation, SKIPS_FILE } from './media-lib.mjs';
 
 const sha256 = (b) => crypto.createHash('sha256').update(b).digest('hex');
@@ -158,10 +166,12 @@ export function writeSkips(ids, results, { repo = REPO } = {}) {
 const mb = (n) => (n / 1e6).toFixed(2);
 
 async function main() {
-  const a = parseArgs(process.argv.slice(2), ['write', 'verbose']);
+  const a = parseArgs(process.argv.slice(2), ['write', 'verbose', 'no-commit']);
   const ids = a._.length ? a._ : GAMES();
   let report = null;
   if (a.write) {
+    const commit = !a['no-commit'];
+    if (commit) assertGamesWritable();
     const results = [];
     const failed = [];
     const queue = [...ids];
@@ -180,6 +190,13 @@ async function main() {
     for (const r of results) for (const [e, v] of Object.entries(r.byExt)) { const t = (byExt[e] ??= { files: 0, games: 0, before: 0, after: 0 }); t.files += v.files; t.games++; t.before += v.before; t.after += v.after; }
     for (const [e, v] of Object.entries(byExt).sort()) console.log(`  ${e.padEnd(6)} ${String(v.files).padStart(5)} files in ${String(v.games).padStart(3)} games: ${mb(v.before)} -> ${mb(v.after)} MB`);
     report = { results, byExt, failed };
+    if (commit) {
+      const changed = results.filter((r) => r.image.encoded || r.audio.stubbed).map((r) => r.id);
+      const sha = changed.length ? commitGames(changed, `media: images to WebP at the same pixel size, audio to the silent stub — same filenames (tools/media.mjs --write)\n\n${changed.length} game(s): ${changed.join(', ')}. The media exception to pristine: the loader's docs/add-a-game.md.`) : null;
+      console.log(sha ? `games/: committed ${sha.slice(0, 9)} (${changed.length} game(s))` : 'games/: nothing to commit');
+      const steps = nextSteps(['games-media']);
+      if (steps.length) console.log(`next, IN THIS ORDER (the gitlink moves only after the games commit is on tmt-loader-games' default branch):\n  ${steps.join('\n  ')}`);
+    }
     if (failed.length) { console.log(`media --write: ${failed.length} game(s) FAILED and were restored: ${failed.map((f) => f.id).join(', ')}`); if (a.json) writeJSON(a.json, report); process.exit(1); }
   }
   const c = checkMedia(ids);

@@ -3,19 +3,23 @@
 //                           [--census <tmt-fork-census checkout>] [--json <out>]
 // One JSON line per game at the end: {id, repo, sha, license, added, gates:{…}} (a skipped game: added:false, skipped).
 //
-// Phases, so a batch lands as ONE commit of manifests/goldens/SUMMARY on top of the subtree commits (`git subtree add`
-// refuses a working tree with changes, so every subtree goes in before any manifest is written):
+// Phases, so a batch lands as ONE loader commit of manifests/goldens/SUMMARY + the `games` gitlink, on top of the games
+// commits made inside the games/ SUBMODULE (tmt-loader-games — since the repository split, 2026-09-29; tools/games-repo.mjs):
 //   1. preflight, every target, no git: census row + clone + boot row; id; SHA; LICENSE text check (every license-like
 //      root file must classify MIT, else `skipped: license`); the manifest emitted by the census into a temp file, then
 //      `load.vendor` filled from the vendored files the existing manifests pin (a vendor URL no manifest pins stops the
 //      whole run before any git operation), `patches: []`. --dry-run prints and stops here.
-//   2. subtrees: remote `<id>-upstream` (push URL no-push), `git subtree add --prefix=games/<id> <sha> --squash`, then
-//      `diff -r -x .git games/<id> <clone>` must be empty (else abort and report — never patch). Then the media exception
-//      (tools/media.mjs: images → WebP at the same pixel size, audio → the silent stub, same filenames) as its OWN commit
-//      `media(<id>): …` on top of the squash — the one change to games/<id>/ this repo makes (docs/add-a-game.md).
+//   2. imports, INSIDE games/ (which must be an initialised submodule on a branch with no tracked changes): remote
+//      `<id>-upstream` there (push URL no-push), the upstream commit's TREE read in at `<id>/` (`git read-tree --prefix`,
+//      byte-exact) and committed `add(<id>): …`, then `diff -r -x .git games/<id> <clone>` must be empty (else abort and
+//      report — never patch). The pristine record is read off the disk at that point. Then the media exception
+//      (tools/media.mjs: images → WebP at the same pixel size, audio → the silent stub, same filenames) as its OWN games
+//      commit `media(<id>): …` — the one change to games/<id>/ this repo makes (docs/add-a-game.md).
+//      ⛔ Nothing is pushed and the gitlink is NOT moved: the games commits must reach tmt-loader-games' default branch
+//      first. The run ends by printing those steps (tools/games-repo.mjs nextSteps).
 //   3. manifests/<id>.json + manifests/index.json, then docs/games.md regenerated (gate G6 holds it to the index, so a
 //      game added without it is a red gate), then the generated currency data for the added games (games-data/,
-//      tools/currency-data.mjs --ids; C1's freshness gate), then the gates per game (a red gate keeps the subtree): check-manifest;
+//      tools/currency-data.mjs --ids; C1's freshness gate), then the gates per game (a red gate keeps the import): check-manifest;
 //      Node idle hash (plain page, no automation) = manifest.headless.idleHash; goldens written, counts = manifest.census;
 //      page.mjs --gate load (the plain page). Rows appended to results/SUMMARY.md.
 // The census checkout is a DEV-TIME dependency of this tool only (its license classifier and manifest emitter); the page
@@ -28,6 +32,7 @@ import { REPO, parseArgs, headCommit, treeDirty, sha256hex, writeJSON, readManif
 import { processGame, writeSkips, checkMedia } from './media.mjs';
 import { SKIPS_FILE } from './media-lib.mjs';
 import { writeRecordFromDisk } from './pristine.mjs';
+import { assertGamesWritable, commitGames, nextSteps } from './games-repo.mjs';
 
 const a = parseArgs(process.argv.slice(2), ['dry-run', 'au-check', 'summary']);
 const CENSUS = path.resolve(a.census || process.env.TMT_CENSUS || path.join(REPO, '..', 'tmt-fork-census'));
@@ -40,7 +45,6 @@ const { classifyLicenseText, licenseFilesIn } = await import(path.join(CENSUS, '
 const { readJsonl, latestBy, safeName } = await import(path.join(CENSUS, 'lib/util.mjs'));
 const { CALIBRATION } = await import(path.join(CENSUS, 'lib/calibration.mjs'));
 
-const git = (...args) => execFileSync('git', ['-C', REPO, ...args], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }).trim();
 const gitIn = (dir, ...args) => execFileSync('git', ['-C', dir, ...args], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }).trim();
 const log = (...m) => console.error('[add-game]', ...m);
 
@@ -196,28 +200,36 @@ if (a['dry-run']) {
   process.exit(0);
 }
 
-// ---- phase 2: subtrees -------------------------------------------------------------------------------------------------
-const dirtyTracked = () => git('status', '--porcelain', '--untracked-files=no');
+// ---- phase 2: imports, inside the games submodule ---------------------------------------------------------------------
+const GAMES_DIR = path.join(REPO, 'games');
+const gitG = (...args) => gitIn(GAMES_DIR, ...args);
+let gamesReady = null;
 for (const r of results) {
   if (r.skipped) continue;
   if (r.present) { r.skipped = 'present'; r.detail = `already in the loader as manifests/${r.id}.json`; continue; }
   const L = r._L;
   try {
-    if (fs.existsSync(path.join(REPO, 'games', r.id))) throw new Error(`games/${r.id} already exists`);
-    if (dirtyTracked()) throw new Error(`tracked changes in the working tree; git subtree add refuses them:\n${dirtyTracked()}`);
+    // once, before the first import: games/ can take a commit (tools/games-repo.mjs says why each condition)
+    gamesReady ??= assertGamesWritable();
+    if (fs.existsSync(path.join(GAMES_DIR, r.id))) throw new Error(`games/${r.id} already exists`);
     const remote = `${r.id}-upstream`;
-    const remotes = git('remote').split('\n');
+    const remotes = gitG('remote').split('\n');
     log(`${r.id}: fetch ${L.repo}`);
-    if (!remotes.includes(remote)) execFileSync('git', ['-C', REPO, 'remote', 'add', '-f', remote, `https://github.com/${L.repo}.git`], { stdio: ['ignore', 'ignore', 'pipe'] });
-    else execFileSync('git', ['-C', REPO, 'fetch', remote], { stdio: ['ignore', 'ignore', 'pipe'] });
-    git('remote', 'set-url', '--push', remote, 'no-push');
-    try { git('cat-file', '-e', `${r.sha}^{commit}`); }
-    catch { log(`${r.id}: ${r.sha} not on a fetched branch — fetching it by SHA`); execFileSync('git', ['-C', REPO, 'fetch', remote, r.sha], { stdio: ['ignore', 'ignore', 'pipe'] }); }
-    log(`${r.id}: subtree add ${r.sha.slice(0, 7)}`);
-    execFileSync('git', ['-C', REPO, 'subtree', 'add', '--prefix', `games/${r.id}`, r.sha, '--squash'], { stdio: ['ignore', 'ignore', 'pipe'] });
-    const d = spawnSync('diff', ['-r', '-x', '.git', path.join(REPO, 'games', r.id), L.clone], { encoding: 'utf8', maxBuffer: 64 << 20 });
-    if (d.status !== 0) { r.error = `diff -r games/${r.id} vs the census clone is NOT empty — not patched, subtree left for the planner:\n${(d.stdout + d.stderr).slice(0, 1500)}`; log(r.error); continue; }
-    r.subtree = { remote, squash: git('log', '--format=%h', `--grep=^Squashed 'games/${r.id}/' content from commit`, '-n', '1'), merge: git('rev-parse', '--short', 'HEAD') };
+    if (!remotes.includes(remote)) execFileSync('git', ['-C', GAMES_DIR, 'remote', 'add', '-f', remote, `https://github.com/${L.repo}.git`], { stdio: ['ignore', 'ignore', 'pipe'] });
+    else execFileSync('git', ['-C', GAMES_DIR, 'fetch', remote], { stdio: ['ignore', 'ignore', 'pipe'] });
+    gitG('remote', 'set-url', '--push', remote, 'no-push');
+    try { gitG('cat-file', '-e', `${r.sha}^{commit}`); }
+    catch { log(`${r.id}: ${r.sha} not on a fetched branch — fetching it by SHA`); execFileSync('git', ['-C', GAMES_DIR, 'fetch', remote, r.sha], { stdio: ['ignore', 'ignore', 'pipe'] }); }
+    // The upstream commit's TREE, read in at <id>/ — the same objects `git subtree add` used to write, without the
+    // upstream history (the games repository is history-free by design, R12). `read-tree -u` writes the blobs as they
+    // are; commitGames adds with the byte-exact settings, so HEAD:<id> is upstream's tree id — which the pristine record
+    // below re-derives from the disk and G4 holds from then on.
+    log(`${r.id}: import ${r.sha.slice(0, 7)}`);
+    gitG('read-tree', `--prefix=${r.id}/`, '-u', `${r.sha}^{tree}`);
+    const importCommit = commitGames([r.id], `add(${r.id}): ${L.repo} at ${r.sha} — upstream's files, unchanged\n\nImported by tools/add-game.mjs. The upstream commit and every original file are recorded in the loader's\nmanifests/${r.id}.json and games-pristine/${r.id}.json.`);
+    const d = spawnSync('diff', ['-r', '-x', '.git', path.join(GAMES_DIR, r.id), L.clone], { encoding: 'utf8', maxBuffer: 64 << 20 });
+    if (d.status !== 0) { r.error = `diff -r games/${r.id} vs the census clone is NOT empty — not patched, the import commit left for the planner:\n${(d.stdout + d.stderr).slice(0, 1500)}`; log(r.error); continue; }
+    r.import = { remote, commit: importCommit, tree: gitG('rev-parse', `HEAD:${r.id}`) };
     r.added = true;
     // 2a. the PRISTINE RECORD (R12/R13): games/<id>/ is upstream's bytes right now (the diff above proved it) and the
     // media step below is about to change some of them — so this is the one moment the record can be read off the
@@ -226,19 +238,16 @@ for (const r of results) {
     const pr = writeRecordFromDisk(r.id, r.sha, { root: REPO });
     r.pristine = { record: `games-pristine/${r.id}.json`, tree: pr.upstream.tree };
     // 2b. ⚖ the media exception (user, 2026-09-22): images → WebP at the same pixel size, audio → the silent stub, same
-    // filenames — AFTER the pristine diff above (which compares the originals), and as its OWN commit, so the squash
-    // stays upstream's bytes and the compression is a separate, revertible change. A failure restores every original
+    // filenames — AFTER the pristine diff above (which compares the originals), and as its OWN games commit, so the
+    // import commit stays upstream's bytes and the compression is a separate, revertible change. A failure restores every original
     // and is reported; the game is kept (pristine and licensed) and the media check in CI reds on it until re-run.
     try {
       const mr = await processGame(r.id);
       writeSkips([r.id], [mr]);
       r.media = { images: `${mr.image.encoded}/${mr.image.files}`, skipped: mr.image.skipped, audio: `${mr.audio.stubbed}/${mr.audio.files}`, bytes: [mr.image.before + mr.audio.before, mr.image.after + mr.audio.after] };
-      if (git('status', '--porcelain', '--', `games/${r.id}`, SKIPS_FILE)) {
-        git('add', '--', `games/${r.id}`);
-        if (fs.existsSync(path.join(REPO, SKIPS_FILE))) git('add', '--', SKIPS_FILE);
-        git('commit', '-q', '-m', `media(${r.id}): images to WebP at the same pixel size, audio to the silent stub — same filenames (tools/media.mjs)\n\nimages ${r.media.images} encoded (${mr.image.skipped} skipped), audio ${r.media.audio} stubbed; ${r.media.bytes[0]} -> ${r.media.bytes[1]} bytes. The media exception to pristine: docs/add-a-game.md.`);
-        r.media.commit = git('rev-parse', '--short', 'HEAD');
-      }
+      // the games side commits in games/; the skips file is the LOADER's and goes with the gitlink (phase 3's files)
+      const mc = commitGames([r.id], `media(${r.id}): images to WebP at the same pixel size, audio to the silent stub — same filenames (tools/media.mjs)\n\nimages ${r.media.images} encoded (${mr.image.skipped} skipped), audio ${r.media.audio} stubbed; ${r.media.bytes[0]} -> ${r.media.bytes[1]} bytes. The media exception to pristine: the loader's docs/add-a-game.md.`);
+      if (mc) r.media.commit = mc.slice(0, 9);
       log(`${r.id}: media ${JSON.stringify(r.media)}`);
     } catch (e) { r.media = { error: String(e.message || e).slice(0, 1500) }; log(`${r.id}: media FAILED (originals restored): ${r.media.error}`); }
   } catch (e) {
@@ -382,7 +391,10 @@ if (rows.length && results.some((r) => r.added || r.skipped !== 'present')) {
   const { appendSection } = await import('./harness/summary.mjs');
   const commit = headCommit();
   appendSection({ title: `${TAG} (\`node tools/add-game.mjs ${a._.join(' ')}\`)`, commit, dirty: treeDirty(), rows, slug: `add-game-${TAG.replace(/[^\w-]+/g, '_')}`,
-    reading: 'the subtree commits are in; manifests, index and goldens are uncommitted at the time of the run. idle hash = the plain page\'s Node twin (`--no-automation`, no exclusion) vs manifest.headless.idleHash; goldens counts vs manifest.census; G1 = `page.mjs <id> --gate load` (no flag).' });
+    reading: 'the games commits are in (inside games/, unpushed); the gitlink, manifests, index and goldens are uncommitted at the time of the run. idle hash = the plain page\'s Node twin (`--no-automation`, no exclusion) vs manifest.headless.idleHash; goldens counts vs manifest.census; G1 = `page.mjs <id> --gate load` (no flag).' });
 }
 printLines();
+// Steps 2–3 of the gitlink rule (tools/games-repo.mjs): printed, never run — the push is the operator's.
+const steps = added.length ? nextSteps(['manifests', 'games-pristine', 'games-data', 'docs/games.md', 'tools/harness/goldens', SKIPS_FILE, 'tools/harness/results/SUMMARY.md']) : [];
+if (steps.length) log(`next, IN THIS ORDER (the gitlink moves only after the games commit is on tmt-loader-games' default branch):\n  ${steps.join('\n  ')}`);
 process.exit(results.some((r) => r.error) ? 1 : 0);
