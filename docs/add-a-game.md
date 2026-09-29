@@ -34,7 +34,10 @@ It prints one JSON line per game: `{id, repo, rank, sha, license, added, media, 
      URL no manifest pins **stops the run** before any git operation (vendor it by hand: fetch into
      `vendor/<lib>-<version>.min.js`, check it is JavaScript, record `{path, sha256}` in a manifest); `patches: []`;
      no `auto` (a game without a per-game table still gets the registry and an empty `au` tab under `?automation=1`).
-2. **Subtree** (the working tree must have no tracked changes — `git subtree add` refuses them):
+2. **Subtree** (the working tree must have no tracked changes — `git subtree add` refuses them) — ⚠ **since the
+   repository split (2026-09-29) this step runs INSIDE the `games/` submodule and ends at a games commit; the gitlink
+   moves only after that commit is pushed. The block below is the pre-split form; read the dated note
+   ["The split"](#the-split-2026-09-29) for today's.**
    ```
    git remote add -f <id>-upstream https://github.com/<owner>/<repo>.git
    git remote set-url --push <id>-upstream no-push
@@ -147,6 +150,34 @@ in that document is stale the moment the roster grows, and three of them shipped
 > `node tools/pristine.mjs --write <id> --from <checkout>`, after updating `manifests/<id>.json`'s `upstream.commit`.
 > The media rule below is unchanged; "the squash" in it now reads "the record". docs/harness.md, "No gate reads git
 > history".
+
+### The split (2026-09-29)
+
+> **S1+S2 of the repository split (⚖ R6/R7/R12).** `games/` is no longer part of this repository: it is the SUBMODULE
+> [tmt-loader-games](https://github.com/PeerInfinity/tmt-loader-games), imported history-free at the split. The paths
+> are the same (`games/<id>/`), so reading a game — the page, every gate — is unchanged once the submodule is checked
+> out: `git clone --recurse-submodules`, or `git submodule update --init` in an existing clone. What changed is
+> WRITING one, which now takes two commits in two repositories, in this order (tools/games-repo.mjs says why):
+>
+> 1. **inside `games/`** — `add-game.mjs` phase 2 now: the upstream remote `<id>-upstream` is added to the GAMES
+>    repository (push URL `no-push`), the upstream commit's tree is read in at `<id>/` (`git read-tree --prefix=<id>/
+>    -u <sha>^{tree}` — the objects `git subtree add` used to write, without the upstream history or a squash commit)
+>    and committed `add(<id>): …` with the byte-exact settings (`* -text` in the submodule's `info/attributes`,
+>    `add -f`; without them three games' `.gitattributes` and one's `.gitignore` change what is stored); then the same
+>    `diff -r` against the census clone, the pristine record, and the media step as its own games commit
+>    `media(<id>): …`. `media.mjs --write` also commits in `games/` now (`--no-commit` to leave it). Both refuse
+>    before writing anything unless `games/` is initialised, **on a branch** (`git submodule update` leaves a detached
+>    HEAD: `git -C games switch main` first), has no tracked changes, and is at the pinned commit or ahead of it.
+> 2. **push the games commit(s)** to tmt-loader-games' `main` — by hand; no tool pushes;
+> 3. **then** one loader commit: the `games` gitlink together with what the tool left uncommitted here (`manifests/`,
+>    `games-pristine/`, `games-data/`, `docs/games.md`, `tools/harness/goldens/`, `games-media/skipped.json`,
+>    `SUMMARY.md`). A gitlink to a games commit the remote does not have breaks every clone and every CI checkout.
+>
+> Both tools print steps 2–3 as commands at the end of a run. **A re-pin** is now: update `manifests/<id>.json`'s
+> `upstream.commit`, replace `games/<id>/` with the new upstream tree (inside the submodule; `git -C games rm -r -q <id>
+> && git -C games read-tree --prefix=<id>/ -u <sha>^{tree}` after fetching it), `pristine.mjs --write <id> --from
+> <checkout>`, `media.mjs --write <id>`, then steps 2–3. "Subtree", "squash" and `git subtree pull` elsewhere in this
+> document describe the pre-split repository (tmt-loader-archive).
 
 ## Media: the one exception to pristine
 

@@ -777,3 +777,27 @@ carry code that needs the old history.
 `workflows.test.mjs` refuses a `fetch-depth: 0` in any workflow: one coming back is the first sign a gate reaches for
 history again.
 
+
+## `games/` is a submodule (the repository split, 2026-09-29)
+
+⚖ **R6/R7/R12 (user, 2026-09-29):** the games moved to their own repository,
+[tmt-loader-games](https://github.com/PeerInfinity/tmt-loader-games), included here as the SUBMODULE `games/`; the
+loader was re-imported history-free as a new `tmt-loader`, and the old repository became `tmt-loader-archive`. Every
+path is unchanged (`games/<id>/…`), so a gate that reads a game — from disk or over HTTP from the served root — needs
+nothing but the submodule checked out. What changed:
+
+| where | what | held by |
+|---|---|---|
+| CI checkouts | `submodules: true` on every checkout of a job that reads a game file: 34 in `sweep.yml`, 6 in `measurements.yml`, both in `pages.yml`. The five that read none (sweep `merge`, `r3c-mark-merge`; measurements `f1-merge`, `r3b2-table-merge`, `r3c-rung-merge` — they read shard/cell artifacts and `manifests/`) do not fetch it | `workflows.test.mjs`: every job's checkout carries it unless the job is in the test's declared no-games list — a NEW job gets the games by default, and leaving them out is a named decision |
+| `pages.yml` `deploy` | `git archive HEAD` writes a gitlink as an EMPTY directory, so the staging step archives the submodule's HEAD into `_site/games/` too, after checking it is the commit the gitlink pins, and refuses fewer game directories than `manifests/index.json` lists | the step itself; `workflows.test.mjs` |
+| G5 `check-pages.mjs` | a served path under `games/` is compared with `git -C games show HEAD:<rest>` (the outer `HEAD:games/…` no longer resolves). The clone form clones the submodule from THIS checkout's `games/` at the pinned commit — no network, and it certifies the committed pair even before the games commit is pushed. Both forms refuse a submodule that is not checked out at the pin | its own steps |
+| `add-game.mjs`, `media.mjs --write` | write AND COMMIT inside `games/`; print the rest of the gitlink rule (push the games commit to tmt-loader-games' default branch FIRST, then commit the gitlink with the loader-side files). No tool pushes. `tools/games-repo.mjs` | docs/add-a-game.md, "The split" |
+| `mutants-assets1.sh` | its throwaway worktree gets the games as a plain clone of `games/` at the pin, on a branch; the mutants commit and reset THERE. ⛔ Not `git submodule init` in a worktree — it writes the SHARED config (the R14 trap's cousin) | its own 8 mutants |
+| G4, G6, unit tests | unchanged: G4 already read the files and asked `git -C games status` (S1T), G6 already refused an absent or empty `games/` (P3) | — |
+
+⚠ **An uninitialised submodule is an empty directory, and `git -C games …` there answers for the LOADER** (git walks up
+to the enclosing repository). `tools/games-repo.mjs` and `check-pages.mjs` check `--show-toplevel` before trusting a
+`git -C games` answer; anything new that asks git about `games/` must do the same.
+
+The pre-split history (subtree squash commits, the recorders S1T deleted) is in tmt-loader-archive. ⚖ R13: nothing in
+this repository or the games repository resolves a commit of it.

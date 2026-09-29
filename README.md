@@ -50,8 +50,10 @@ credits.
 
 This is an early, low-priority side project, and it may change a lot or be taken down.
 
-Right now the loader keeps a copy of each game it hosts in this repository, pinned at the commit it was copied from.
-Each copy keeps the game's own license files and credits, and the game list links back to the author's repository.
+Right now the loader keeps a copy of each game it hosts, pinned at the commit it was copied from. The copies live in a
+separate repository, [tmt-loader-games](https://github.com/PeerInfinity/tmt-loader-games), which this one includes as
+a submodule. Each copy keeps the game's own license files and credits, and the game list links back to the author's
+repository.
 
 **If one of these is your game and you'd like it removed, [open an issue](https://github.com/PeerInfinity/tmt-loader/issues)
 and I'll take it down.** No explanation needed.
@@ -64,14 +66,17 @@ including "please don't".
 ## For developers
 
 How the loader works, how to run it locally, the test harness and how to add a game are in
-**[docs/developers.md](docs/developers.md)**. The detailed records:
+**[docs/developers.md](docs/developers.md)**. The games are a submodule, so clone with
+`git clone --recurse-submodules https://github.com/PeerInfinity/tmt-loader.git` (or run `git submodule update --init`
+in an existing clone). The history before the games moved out is in
+[tmt-loader-archive](https://github.com/PeerInfinity/tmt-loader-archive). The detailed records:
 
 | document | what is in it |
 |---|---|
 | [docs/games.md](docs/games.md) | the roster — every game, with play and mobile links |
 | [docs/contract.md](docs/contract.md) | `window.tmtLoader`, the one interface a runner talks to, and the per-engine differences behind it |
 | [docs/manifest.md](docs/manifest.md) | what a `manifests/<id>.json` declares, and which parts are pins the gates check |
-| [docs/add-a-game.md](docs/add-a-game.md) | adding a game: subtree, manifest, vendoring, gates |
+| [docs/add-a-game.md](docs/add-a-game.md) | adding a game: the games submodule, manifest, vendoring, gates |
 | [docs/harness.md](docs/harness.md) | the Node harness and the page runner, ladders and snapshots |
 | [docs/automation.md](docs/automation.md) | `?automation=1` — the feature registry, policies and the per-game tables |
 | [docs/planner.md](docs/planner.md) | the planner built on top of the automation registry |
@@ -81,4 +86,5 @@ How the loader works, how to run it locally, the test harness and how to add a g
 
 ## License
 
-MIT (`LICENSE`) for the loader and harness. The games under `games/` carry their own licenses.
+MIT (`LICENSE`) for the loader and harness. The games under `games/` (the tmt-loader-games submodule) carry their own
+licenses.

@@ -30,6 +30,10 @@ choice made there is remembered in this browser for every game. The URL still an
 anything about a flag, in both directions, and a page with neither a parameter nor a remembered choice is inert.
 
 Games live under `games/<id>/` as **git subtrees**, pristine at the upstream commit their manifest records.
+⚠ **Since the repository split (2026-09-29)** `games/` is the SUBMODULE
+[tmt-loader-games](https://github.com/PeerInfinity/tmt-loader-games) — same paths, no subtrees; the pre-split history
+is in [tmt-loader-archive](https://github.com/PeerInfinity/tmt-loader-archive). Clone with `--recurse-submodules` (or
+`git submodule update --init`): without it `games/` is empty, and the unit tests, G4 and G6 refuse.
 
 The roster is **[docs/games.md](games.md)** — every game, with a `play` and a `mobile` link, its upstream
 repo and pinned commit, its engine version and its license. It is generated from `manifests/` by
@@ -72,7 +76,7 @@ Results are recorded in [`tools/harness/results/SUMMARY.md`](../tools/harness/re
 
 ## Adding a game
 
-See [docs/add-a-game.md](add-a-game.md) (and [docs/manifest.md](manifest.md), [docs/contract.md](contract.md)): `git subtree add --squash` under `games/<id>/`, emit the manifest with the
+See [docs/add-a-game.md](add-a-game.md) (and [docs/manifest.md](manifest.md), [docs/contract.md](contract.md)) — ⚠ since the split the import is a commit inside the `games/` submodule, pushed before the loader's gitlink moves ([add-a-game.md, "The split"](add-a-game.md#the-split-2026-09-29)); before it: `git subtree add --squash` under `games/<id>/`, emit the manifest with the
 [tmt-fork-census](https://github.com/PeerInfinity/tmt-fork-census) `scripts/manifest.mjs`, vendor its CDN libraries,
 run the gates.
 
