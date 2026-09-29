@@ -366,6 +366,48 @@ test('⛔ NO job checks out the history — no gate may need it (⚖ R12/R13, S1
   assert.ok(steps.some((st) => st.includes('node tools/pristine.mjs --check') && !st.includes('GITHUB_STEP_SUMMARY')), 'the fast job no longer checks the pristine records');
 });
 
+// ⚖ The repository split (R6/R7, 2026-09-29): games/ is the tmt-loader-games SUBMODULE, and `actions/checkout` leaves
+// a submodule EMPTY unless told otherwise. A job that reads a game from an empty games/ does not always crash — G6 and
+// the unit tests refuse, but a gate over HTTP could meet 404s it was built to tolerate. So the rule is by default: every
+// checkout carries `submodules: true`, and a job leaves the games out only by being NAMED here, with what it reads.
+const NO_GAMES = {
+  'sweep.yml': {
+    merge: 'the shard JSONs (merge-shards.mjs) and manifests/index.json',
+    'r3c-mark-merge': 'the r3c-mark cells (gates-r3c --from cells)',
+  },
+  'measurements.yml': {
+    'f1-merge': 'the f1 cells (gates-f1 --from cells)',
+    'r3b2-table-merge': 'the r3b2-table shards (inline node)',
+    'r3c-rung-merge': 'the r3c-rung cells (gates-r3c --from cells)',
+  },
+  'pages.yml': {},
+};
+
+test('⛔ every checkout gets the games submodule, unless its job is DECLARED not to read a game (the split)', () => {
+  for (const [f, exempt] of Object.entries(NO_GAMES)) {
+    const j = jobs(wf(f));
+    for (const name of Object.keys(exempt)) assert.ok(j[name], `${f}: NO_GAMES names a job \`${name}\` that no longer exists`);
+    for (const [name, body] of Object.entries(j)) {
+      const live = body.split('\n').filter((l) => !/^\s*#/.test(l)).join('\n');
+      const checkouts = live.split(/^ {6}- /m).filter((st) => /uses:\s*actions\/checkout@/.test(st));
+      for (const st of checkouts) {
+        const has = /^\s*submodules:\s*true\b/m.test(st);
+        if (name in exempt) assert.ok(!has, `${f} ${name}: declared to read no game (${exempt[name]}) but checks out the submodule — drop one or the other`);
+        else assert.ok(has, `${f} ${name}: checks out without \`submodules: true\` — games/ would be EMPTY. If the job really reads no game file, name it in NO_GAMES with what it reads`);
+      }
+    }
+  }
+});
+
+test('⛔ the Pages deploy stages the games SUBMODULE, not only `git archive HEAD` (an empty games/ would deploy green)', () => {
+  const steps = jobs(wf('pages.yml')).deploy.split(/^ {6}- /m);
+  const stage = steps.find((st) => st.includes('git archive --format=tar HEAD'));
+  assert.ok(stage, 'the deploy no longer stages with git archive');
+  assert.match(stage, /git -C games archive --format=tar HEAD \| tar -x -C _site\/games/, 'the staging step does not archive the games submodule into _site/games');
+  assert.match(stage, /git -C games rev-parse HEAD\)" = "\$\(git rev-parse HEAD:games\)/, 'the staging step does not check the submodule is at the pinned commit');
+  assert.match(stage, /test "\$have" -ge "\$want"/, 'the staging step does not refuse a games/ with fewer games than the roster');
+});
+
 test('⛔ the a1 job asks the gate to prove what it COVERED, not just that nothing failed', () => {
   // `gates-a1` already exits 1 on a red row. That is the half that does not catch a battery which booted one game
   // and threw inside the second: it prints `12/24 green`, every row it produced is green, and it is smaller,

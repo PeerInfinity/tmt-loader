@@ -45,6 +45,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
+          submodules: true   # games/ is the tmt-loader-games submodule; this job reads game files
           fetch-depth: 1
 
       # `git archive HEAD` is the tracked tree and nothing else: no .git (210 MB), no node_modules, no
@@ -53,13 +54,25 @@ jobs:
       # status: a `git archive` that failed would leave a partial `_site` and this step would go green — and the
       # next steps would PUBLISH it. It cannot change what a successful archive contains; it decides whether a
       # failed one gets served. Found 2026-09-19 by the rule in loader/workflows.test.mjs, not by a run.
+      #
+      # ⚠ SINCE THE SPLIT (2026-09-29) `games/` is a SUBMODULE (tmt-loader-games), and `git archive HEAD` writes a
+      # gitlink as an EMPTY directory — the site would deploy with no games and the deploy would go green. So the
+      # submodule's own tree is archived into `_site/games/` as a second step, at the commit the gitlink pins (the
+      # checkout's `submodules: true` put it there), and the step REFUSES a `_site/games/` with fewer game directories
+      # than `manifests/index.json` lists.
       - name: Stage the tracked tree
         shell: bash
         run: |
           mkdir _site
           git archive --format=tar HEAD | tar -x -C _site
-          echo "artifact staged: $(du -sh _site | cut -f1) over $(find _site -type f | wc -l) file(s)"
+          test "$(git -C games rev-parse HEAD)" = "$(git rev-parse HEAD:games)"
+          git -C games archive --format=tar HEAD | tar -x -C _site/games
+          want=$(node -e 'console.log(JSON.parse(require("fs").readFileSync("manifests/index.json","utf8")).length)')
+          have=$(find _site/games -mindepth 1 -maxdepth 1 -type d | wc -l)
+          echo "artifact staged: $(du -sh _site | cut -f1) over $(find _site -type f | wc -l) file(s); $have game dir(s), $want listed"
+          test "$have" -ge "$want"
           test ! -e _site/.git
+          test ! -e _site/games/.git
           test ! -e _site/node_modules
 
       - uses: actions/configure-pages@v5
@@ -89,7 +102,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          # `git show HEAD:<path>` only needs HEAD, which is what the deploy staged with `git archive HEAD`.
+          submodules: true   # games/ is the tmt-loader-games submodule; this job reads game files
+          # `git show HEAD:<path>` only needs HEAD, which is what the deploy staged with `git archive HEAD`. A path
+          # under `games/` is read from the submodule's HEAD (`git -C games show HEAD:<rest>`), so it is checked out too.
           fetch-depth: 1
 
       - uses: actions/setup-node@v4

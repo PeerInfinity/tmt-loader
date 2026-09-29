@@ -73,6 +73,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
+          submodules: true   # games/ is the tmt-loader-games submodule; this job reads game files
           fetch-depth: 1
 
       - uses: actions/setup-node@v4
@@ -124,6 +125,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
+          submodules: true   # games/ is the tmt-loader-games submodule; this job reads game files
           fetch-depth: 1
 
       - uses: actions/setup-node@v4
@@ -181,6 +183,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
+          submodules: true   # games/ is the tmt-loader-games submodule; this job reads game files
           fetch-depth: 1
 
       - uses: actions/setup-node@v4
@@ -282,6 +285,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
+          submodules: true   # games/ is the tmt-loader-games submodule; this job reads game files
           fetch-depth: 1
 
       - uses: actions/setup-node@v4
@@ -419,6 +423,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
+          submodules: true   # games/ is the tmt-loader-games submodule; this job reads game files
           fetch-depth: 1
 
       - uses: actions/setup-node@v4
@@ -513,6 +518,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
+          submodules: true   # games/ is the tmt-loader-games submodule; this job reads game files
           fetch-depth: 1
 
       - uses: actions/setup-node@v4
