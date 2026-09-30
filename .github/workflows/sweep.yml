@@ -511,6 +511,73 @@ jobs:
           retention-days: 7
 
   # ---------------------------------------------------------------------------------------------------------------
+  # log-1 — THE STATE LOG (`gates-log1.mjs`, docs/log.md). Headless: the log OFF is inert (ptr's opening lands on the
+  # pin gates-c1c holds; no recorder, no link, no tracker block), the log ON is transparent (the game hash equal to the
+  # run without it, or to the pin) and REPLAYS EXACTLY on four legs, each asserting it reached what it is about (the
+  # challenge entries and give-ups of M22 → M25, the ladder marks, the refused calls it counts). Then the page: no
+  # request until the switch is pressed, the switch, the download, `?autoOpt=log=1`, the plain page with no door.
+  # ⛔ `--assert` holds each part to its exact row count, all green — a battery that dies part-way prints fewer rows.
+  # ---------------------------------------------------------------------------------------------------------------
+  log1:
+    name: log-1 — the state log
+    needs: fast
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true   # games/ is the tmt-loader-games submodule; every leg boots a game
+          fetch-depth: 1
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - run: npm ci
+
+      - name: Cache the Playwright browser
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+
+      - run: npx playwright install --with-deps chromium
+
+      - name: Parts 1 + 2 — inert when off, transparent when on, the replay exact (four legs)
+        shell: bash
+        run: |
+          set -o pipefail
+          node tools/harness/gates-log1.mjs --part all --no-summary --assert | tee log1.txt
+
+      - name: Part page — the switch, the download, no request until pressed
+        shell: bash
+        run: |
+          set -o pipefail
+          node tools/harness/gates-log1.mjs --part page --no-summary --assert | tee log1-page.txt
+
+      - name: Summary
+        if: always()
+        shell: bash
+        run: |
+          {
+            echo '## log-1 — the state log'
+            echo ''
+            echo '```'
+            cat log1.txt log1-page.txt 2>/dev/null | grep -aE '^(GREEN|RED|VERDICT)' | cut -c1-300 || echo 'no output'
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload the rows
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: log1
+          path: tools/harness/results/tmp/gates-log1-part*-last.json
+          if-no-files-found: warn
+          retention-days: 14
+
+  # ---------------------------------------------------------------------------------------------------------------
   # A1 part 2 — the `au` TAB ITSELF (`gates-a1.mjs --part 2`). Until V1 this ran NOWHERE in CI: only part 1's half
   # (the registry with no per-game table) rode inside M1's `both` leg, so every check of the tab the player actually
   # sees — the toggles' text, `?profile=all` not writing the save, a toggle surviving a reload, the disclosure line,

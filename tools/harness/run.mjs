@@ -21,6 +21,8 @@
 //   restore its runtime; ticks / gameSeconds CONTINUE from the snapshot's counts; --from defaults to the snapshot's mark
 //   and --diff to its diff. --no-runtime (a control): restore the counters only, not the memory outside player.
 //   --until-all: stop when every mark of the slice holds, not when --to does.
+//   --log <file.jsonl> [--log-every <game-s>]: the STATE LOG (docs/log.md) of this run — every action, the state it
+//   acted on, checkpoints; written by the boot child itself. `tools/harness/replay.mjs <file>` replays it exactly.
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
@@ -171,6 +173,14 @@ function runNodeRaw(id, o) {
   for (const k of ['planner-ladder', 'planner-script', 'ladder-labels'] ) if (o[k] != null) args.push(`--${k}`, path.resolve(String(o[k])));
   if (o['planner-k'] != null) args.push('--planner-k', String(o['planner-k']));
   if (o['random-seed'] != null) args.push('--random-seed', String(o['random-seed']));
+  // (log-1) the state log: the header names what a replay must boot — the commit, the snapshot, the ladder — as
+  // paths relative to the repository, so a log replays on another checkout of the same tree
+  if (o.log) {
+    const rel = (f) => (f == null ? null : path.relative(REPO, path.resolve(String(f))));
+    args.push('--log', path.resolve(String(o.log)), '--log-meta', JSON.stringify({ loader: headCommit(), dirty: snapshotTreeDirty(), snapshot: rel(o['from-snapshot']), ladder: rel(o['ladder-labels']) }));
+    if (o['log-every'] != null) args.push('--log-every', String(o['log-every']));
+  }
+  if (o.replay) args.push('--replay', path.resolve(String(o.replay)));
   // the child runs with cwd = os.tmpdir(): every file argument is made absolute here
   for (const k of ['state-out', 'player-out', 'ids-out', 'save-storage', 'knowledge-out', 'goals-out', 'rounds-out']) if (o[k] != null) args.push(`--${k}`, path.resolve(String(o[k])));
   if (o.save) args.push('--save');
@@ -222,6 +232,8 @@ async function main() {
   if (res.knowledge_counts) { line.knowledge_counts = res.knowledge_counts; line.knowledge_ms = res.knowledge_ms; line.goals_ms = res.goals_ms; }
   if (!res.ok) Object.assign(line, { failed_at: res.failed_at, error: res.error });
   if (res.steps) line.steps = res.steps;
+  if (res.log) line.log = res.log;
+  if (res.replay) line.replay = res.replay;
   console.log(JSON.stringify(line));
   if (a.json) writeJSON(a.json, res);
   process.exit(res.ok ? 0 : 1);

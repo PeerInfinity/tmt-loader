@@ -181,6 +181,35 @@ export async function attachScripts(ctx) {
     await insertScript({ src: abs('loader/tmt-auto.js') }, 'loader/tmt-auto.js');
     T.loaded.push('loader/tmt-auto.js');
   }
+  if (AUTOMATION) {
+    // ---- (log-1) THE STATE LOG, on demand (docs/log.md) -------------------------------------------------------------
+    // ⚖ user, 2026-09-30: in memory, a size cap, a download; OFF unless switched on. ⛔ LAZY IS THE ASSERTION, as the
+    // ladder's and the layer list's data are: a page that never switches it on requests neither `loader/log-hooks.json`
+    // nor `loader/tmt-log.js`, stores nothing and runs none of it (G1 judges every request an automation page makes).
+    // Two doors: the switch in the automation tab's developer details calls `T.fetchStateLog()`; `?autoOpt=log=1`
+    // (the gates' lever, and a player's bookmark) loads it here and starts it once the game is ready.
+    T.fetchStateLog = (function () {
+      let asked = null;
+      return function () {
+        if (asked) return asked;
+        asked = (async () => {
+          T.logHooks = JSON.parse(await fetchText(abs('loader/log-hooks.json'), 'loader/log-hooks.json'));
+          await insertScript({ src: abs('loader/tmt-log.js') }, 'loader/tmt-log.js');
+          T.loaded.push('loader/tmt-log.js');
+          return T.stateLog || null;
+        })();
+        asked.catch(() => { asked = null; });   // a failed fetch may be retried by the next press
+        return asked;
+      };
+    })();
+    const logOpt = T.options && T.options.log;
+    if (logOpt !== undefined && logOpt !== '0' && logOpt !== 'false' && logOpt !== '') {
+      step('script loader/tmt-log.js');
+      await T.fetchStateLog();
+      const go = () => { try { T.stateLog.setPage(true); } catch (e) { console.warn('tmt-loader: the state log did not start', e); } };
+      if (T.ready) go(); else window.addEventListener('tmt-loader:ready', go, { once: true });
+    }
+  }
   // the OPTIONS SECTION (docs/options.md) — the only file here with no flag in front of it, and it has to be:
   // it is how a page that carries none of the flags offers them. It adds nothing to <head>, nothing to `player`
   // and no timer; its one element lives inside the game's own options tab, while that tab is open.

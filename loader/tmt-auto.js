@@ -962,6 +962,18 @@
   var ranAt = {};          // layer → loopNo it last ran in
   var stats = { calls: {}, viaSlot: {}, viaFallback: {}, doubles: 0, loops: 0, actions: {}, challenges: {} };
   var lastReset = {};      // feature id → player.timePlayed of its last reset (interval policy; runtime only)
+  // ---- (log-1) THE STATE LOG'S SLOT: four points this file calls out to, and all four are NULL unless the log runs ----
+  // The recorder is `loader/tmt-log.js` (docs/log.md). It is loaded ONLY when the log is switched on, and it fills
+  // these in; with the log off every one stays null and each call site below is one comparison that does nothing, so a
+  // page or a run that never switches it on executes exactly what it executed before (the inertness gate says so).
+  //   · `exec`     {begin(f, layer, via), end(f, r), set(layer, field, value)} — around the ONE dispatch (`EXEC`), so
+  //                every call a feature makes is attributed to it with the reason code its decision returned; `set` is
+  //                the `toggles` kind's field write, the one action of this file that is not a call.
+  //   · `replay`   (layer, via) — at the top of `runLayer`, BEFORE the profile check: where a replay re-applies the
+  //                recorded automation calls, in the same slot of the same tick (the automation acts INSIDE gameLoop).
+  //   · `progress` (event) — every event the progress tracker pushes (ONE definition of progress: the log subscribes).
+  //   · `track`    true while the log wants the tracker armed.
+  var logLink = T.logLink = { exec: null, replay: null, progress: null, track: false };
 
   // Predicate strings (table gates, clickable `when`) compiled ONCE in the engine's global scope — the same scope as the
   // harness's --until / --marks (vm.runInThisContext of `function(){ return (<src>); }`), so a gate and a ladder mark
@@ -2073,6 +2085,7 @@
     // `?autoOpt=track=1` / `--auto-opt track=1` is the harness's and a gate's lever, and it OUTRANKS the save the way
     // every other autoOpt does. The watch needs the tracker, so turning the watch on arms it.
     var o = T.autoOptions || {};
+    if (logLink.track) return true;   // (log-1) the state log records the tracker's events
     if (watchArmed()) return true;
     if (o.track !== undefined) return truthy(o.track);
     var w = watchSettings();
@@ -2202,6 +2215,7 @@
     var ev = { at: Math.round(now * 1e6) / 1e6, kind: kind, layer: l, id: id === null || id === undefined ? null : String(id), key: key, tick: T.ticks, marks: ladderMarksNow() };
     prog.events.push(ev);
     if (prog.events.length > eventCap()) { prog.events.shift(); prog.dropped++; }
+    if (logLink.progress !== null) logLink.progress(ev);
   }
   /** How many gaps the median is over — the watch's own `n`, so the two cannot disagree. */
   function gapWindow() { var n = Math.round(Number(watchParam('n'))); return isFinite(n) && n >= 1 ? n : 5; }
@@ -2832,7 +2846,7 @@
       for (var i = 0; i < f.toggleList.length; i++) {
         var t = f.toggleList[i];
         if (!hasMilestone(f.layer, t.ms)) { if (pending === null) pending = t; continue; }
-        if (player[t.layer] && player[t.layer][t.field] === false) { player[t.layer][t.field] = true; n++; }
+        if (player[t.layer] && player[t.layer][t.field] === false) { player[t.layer][t.field] = true; n++; if (logLink.exec !== null) logLink.exec.set(t.layer, t.field, true); }
       }
       if (n) return { act: true, n: n, code: 'acted:toggles', values: { n: n } };
       // a milestone that is not held yet is the reason the toggle it grants is not on; otherwise every toggle the
@@ -3013,6 +3027,7 @@
     ranAt[l] = loopNo;
     stats.calls[l] = (stats.calls[l] || 0) + 1;
     (via === 'slot' ? stats.viaSlot : stats.viaFallback)[l] = ((via === 'slot' ? stats.viaSlot : stats.viaFallback)[l] || 0) + 1;
+    if (logLink.replay !== null) logLink.replay(l, via);
     if (T.profileName === 'off') return;
     // ⛔ ONCE PER `gameLoop`, AHEAD OF THE FIRST FEATURE OF THAT LOOP (V3). `runLayer` is called from each layer's own
     // `automate` wrapper and from the `au` layer's fallback, so this is the earliest point that is guaranteed to come
@@ -3039,7 +3054,9 @@
       // who mistypes one predicate needs: one dead feature, not a dead tick).
       var stop = untilStep(f) || whileStep(f);
       if (stop) { var strand = strandedBy(f, stop); say(f, strand ? 'paused:in-challenge' : stop.code, strand || stop.values); continue; }
-      var r = EXEC[f.kind](f);
+      var lx = logLink.exec, r;
+      if (lx === null) r = EXEC[f.kind](f);
+      else { lx.begin(f, l, via); try { r = EXEC[f.kind](f); } finally { lx.end(f, r); } }
       say(f, r.code, r.values);
       if (r.n) {
         stats.actions[f.id] = (stats.actions[f.id] || 0) + r.n;
@@ -5069,7 +5086,7 @@
       // fold state held in the rendered HTML string is gone on the next one. It lives HERE, component-side, keyed by
       // feature id, surviving every re-render the way `tmtl-number` holds its draft — and it is SEEDED from
       // `T.storage.raw` once, at `created`, so a reload comes back where the player left it.
-      data: function () { return { fold: Object.create(null), gen: 0 }; },
+      data: function () { return { fold: Object.create(null), gen: 0, logBusy: false, logFailed: false }; },
       created: function () {
         // ⛔ V5: THE NO-JUMP FLOORS, held HERE and deliberately NOT in `data` — a reactive object written during a
         // render would re-trigger it. One per instance: they go when the Advanced subtab does (see `numHTML`).
@@ -5096,6 +5113,17 @@
         pressAll: function () { T.pressAll(); this.gen++; },
         // U16: the developer-details switch — page-side, never saved (see DEV)
         setDev: function () { T.setDevDetails(!T.devDetails()); this.gen++; },
+        // (log-1) the STATE LOG's switch and download (docs/log.md). `loader/tmt-log.js` is fetched on the FIRST press,
+        // never before — a page that never presses it requests nothing new (the host's `fetchStateLog` door).
+        logToggle: function () {
+          var self = this;
+          if (T.stateLog) { T.stateLog.setPage(!T.stateLog.status().on); self.gen++; return; }
+          if (typeof T.fetchStateLog !== 'function') return;
+          self.logBusy = true;
+          T.fetchStateLog().then(function () { self.logBusy = false; if (T.stateLog) T.stateLog.setPage(true); self.gen++; },
+            function () { self.logBusy = false; self.logFailed = true; self.gen++; });
+        },
+        logDownload: function () { if (T.stateLog) T.stateLog.download(); },
         isFolded: function (id) {
           if (this.fold[id] !== undefined) return this.fold[id];
           var c = T.collapsed(id);
@@ -5129,6 +5157,18 @@
         folded: function () { var b = this.blocks, n = 0; for (var i = 0; i < b.length; i++) if (b[i].collapsed) n++; return n; },
         allText: function () { void this.blocks; return T.allFeaturesDisplay(); },
         dev: function () { void this.gen; return T.devDetails(); },
+        // (log-1) re-read on every redraw (the `blocks` dependency moves each tick), so the counts are live
+        logState: function () {
+          void this.blocks; void this.gen;
+          var st = T.stateLog ? T.stateLog.status() : null;
+          if (this.logBusy) return { on: false, text: 'loading the recorder…' };
+          if (this.logFailed && !st) return { on: false, text: 'the recorder could not be loaded — try again' };
+          if (!st || (!st.on && !st.records.header)) return { on: false, has: false, text: 'Off. Records every action on the game — yours, the automation’s and the game’s own — with the state it acted on, in this tab’s memory only (the oldest records go first past ' + Math.round(((T.options && Number(T.options.logCap)) || 4194304) / 1048576 * 10) / 10 + ' MB). Nothing is saved.' };
+          var m = st.memory || { kept: 0, dropped: 0, bytes: 0 };
+          var t = (st.on ? 'Recording' : 'Stopped') + ': ' + (st.records.action || 0) + ' actions, ' + (st.records.event || 0) + ' progress events, ' + (st.records.checkpoint || 0) + ' checkpoints'
+            + (m.dropped ? ' — ' + m.dropped + ' older records dropped to stay under the cap' : '');
+          return { on: st.on, has: true, text: t };
+        },
       },
       template: '<div class="tmtl-root" style="' + ROOT_STYLE + '">'
         // ⚖ U16: how the tab works, collapsed — and the developer-details switch beside it
@@ -5143,6 +5183,12 @@
         + '<div style="text-align:left;margin-bottom:6px">'
         +   '<button type="button" class="tmtl-dev-toggle" :data-on="dev ? 1 : 0" style="' + BTN_STYLE + '" @click="setDev" @keydown.stop>{{ dev ? \'hide developer details\' : \'show developer details\' }}</button>'
         +   '<span style="opacity:.6;margin-left:6px;font-size:.85em">rule codes, ids and the measurements behind each default</span>'
+        + '</div>'
+        // (log-1) THE STATE LOG — a developer detail: shown only while developer details are on
+        + '<div v-if="dev" class="tmtl-statelog" style="text-align:left;margin-bottom:6px;font-size:.9em">'
+        +   '<button type="button" class="tmtl-log-toggle" :data-on="logState.on ? 1 : 0" style="' + BTN_STYLE + '" @click="logToggle" @keydown.stop>{{ logState.on ? \'stop the state log\' : \'record a state log\' }}</button>'
+        +   '<button type="button" class="tmtl-log-download" v-if="logState.has" style="' + BTN_STYLE + '" @click="logDownload" @keydown.stop>download log</button>'
+        +   '<span class="tmtl-log-read" style="opacity:.7;margin-left:6px">{{ logState.text }}</span>'
         + '</div>'
         // ⚖ Q1's second half: expand all / collapse all, and they set EVERY block including the ones whose default is
         // the other way — `collapse all` then `expand all` has to be reachable from any state.
