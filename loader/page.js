@@ -3,6 +3,9 @@ import { interpret, executionOrder, modFilePaths } from './interpret.mjs';
 import { installSavePrefix } from './shims/save-prefix.js';
 import { installTimers } from './shims/timers.js';
 import { FLAGS, PREF_KEY, parsePrefs, serializePrefs, resolveFlags } from './flags.mjs';
+// (S4) the loader's extras live in attach.mjs, shared with an author's own page (loader/embed.mjs, docs/embed.md);
+// this file is BOOT — it builds the page from the game's index.html — and calls attach where it always did.
+import { makeInsertScript, attachStyles, attachScripts } from './attach.mjs';
 
 // 1. absolute URLs captured before any <base> exists (Pages serves under /tmt-loader/, so nothing is /-rooted)
 const SELF = new URL('.', location.href);
@@ -85,36 +88,8 @@ async function fetchText(url, what) {
 // (`skippable`: static game scripts and modFiles). The loader's own inputs (vendored files, tmt-auto.js, the per-game
 // automation table) still fail the load. Only an error raised BY the inserted script (`ev.filename` = its resolved src;
 // an inline script: the document URL) is attributed to it; errors from a game's timers, earlier scripts or Vue reach
-// `window` and are recorded in tmtLoader.pageErrors, but do not fail the load.
-function insertScript(attrs, file, { skippable = false } = {}) {
-  return new Promise((resolve, reject) => {
-    const s = document.createElement('script');
-    s.async = false; // the IDL property: insertion order is execution order
-    let execError = null;
-    let own = null; // the URL the script's own errors carry in ev.filename
-    const onErr = (ev) => { if (!execError && own != null && ev.filename === own) execError = ev.error || new Error(ev.message); };
-    window.addEventListener('error', onErr);
-    const done = (err) => { window.removeEventListener('error', onErr); err ? reject(err) : resolve(); };
-    const fail = () => execError && Object.assign(new Error(`${file}: ${execError.message}`), { cause: execError });
-    if (attrs.inline != null) {
-      own = location.href;
-      s.text = attrs.inline;
-      document.head.appendChild(s); // inline scripts execute synchronously on insertion
-      done(fail());
-      return;
-    }
-    s.addEventListener('load', () => done(fail()));
-    s.addEventListener('error', () => {
-      if (!skippable) return done(new Error(`${file}: failed to load ${s.src}`));
-      T.skipped.push(file);
-      console.warn(`tmt-loader: skipped ${file} (failed to load ${s.src}), as a browser skips a failed <script src>`);
-      done();
-    });
-    s.src = attrs.src;
-    own = s.src; // resolved against <base>
-    document.head.appendChild(s);
-  });
-}
+// `window` and are recorded in tmtLoader.pageErrors, but do not fail the load. (S4: the function is in attach.mjs.)
+const insertScript = makeInsertScript(T);
 
 async function boot(id) {
   const step = (name) => { T.step = name; };
@@ -154,10 +129,8 @@ async function boot(id) {
     link.href = l.external ? abs(l.path) : l.href; // local hrefs resolve against <base>
     document.head.appendChild(link);
   }
-  // both after the fork's own sheets: equal specificity is broken by source order
-  const sheet = (elId, file) => { const st = document.createElement('link'); st.rel = 'stylesheet'; st.id = elId; st.href = abs(file); document.head.appendChild(st); };
-  if (MOBILE) sheet('tmt-loader-mobile-css', 'loader/mobile.css');
-  if (NAVBAR) { sheet('tmt-loader-navbar-css', 'loader/navbar.css'); sheet('tmt-loader-layerlist-css', 'loader/layerlist.css'); }
+  // both after the fork's own sheets: equal specificity is broken by source order (attach.mjs)
+  attachStyles({ T, abs });
   if (plan.title) document.title = plan.title;
   document.body.removeAttribute('class');
   document.body.innerHTML = plan.body.html;
@@ -176,108 +149,10 @@ async function boot(id) {
     T.modFiles = files;
     for (const f of files) { step(`modFile ${f}`); await insertScript({ src: f }, f, { skippable: true }); if (!T.skipped.includes(f)) T.loaded.push(f); }
   }
-  if (AUTOMATION && manifest.auto) {
-    // the per-game automation table (games-auto/<id>.json, C1): a JSON DOCUMENT, fetched and parsed into
-    // tmtLoader.autoTable BEFORE tmt-auto.js runs, which validates it against its own schema when it derives the
-    // features — before onload, so load() picks up the hooks and the au layer. ⛔ ORDER MATTERS and is unchanged from
-    // the script it replaces; a table that does not parse fails the load here, by name, as a bad script did.
-    step(`table ${manifest.auto}`);
-    const text = await fetchText(abs(manifest.auto), manifest.auto);
-    try { T.autoTable = JSON.parse(text); } catch (e) { throw new Error(`${manifest.auto}: not JSON — ${e.message}`); }
-    T.loaded.push(manifest.auto);
-  }
-  if (AUTOMATION) {
-    // ---- the GENERATED currency data (C1, games-data/<id>.json) -------------------------------------------------------
-    // Which field each buyable really pays in, scored harness-side by a rollback (tools/currency-data.mjs). EAGER here
-    // — ⛔ a plain page fetches it only when its layer list is first OPENED (U13, the branch below), never at boot. EAGER, unlike the ladder, because tmt-auto.js reads it in its
-    // decisions from the first tick, and node ≡ page parity needs the page to decide with exactly what the harness
-    // reads. The INDEX says which games have a file (103 of 171), so a game without one makes no request that fails.
-    step('currency data games-data/index.json');
-    const cIndex = JSON.parse(await fetchText(abs('games-data/index.json'), 'games-data/index.json'));
-    T.currencyData = null;
-    if (cIndex && Array.isArray(cIndex.games) && cIndex.games.indexOf(id) >= 0) {
-      step(`currency data games-data/${id}.json`);
-      T.currencyData = JSON.parse(await fetchText(abs(`games-data/${id}.json`), `games-data/${id}.json`));
-    }
-    // (U13) the layer list asks through the same door on both pages; here the answer is already in hand
-    T.currencyAsked = Promise.resolve(T.currencyData);
-    T.fetchCurrencyData = () => T.currencyAsked;
-  } else if (NAVBAR) {
-    // ---- (U13) THE SAME DATA FOR THE LAYER LIST, on a page without automation -----------------------------------
-    // ⚖ user, 2026-09-20: fetched in layer-list mode too, LAZILY, on the Layers view's FIRST OPEN (layerlist.js
-    // `show()` is the only caller). ⛔ LAZY IS THE ASSERTION, not a description: a page that never opens the list
-    // makes exactly the requests it made before U13 — gate M1 counts `games-data/` requests on its never-opened
-    // page, and G1's plain-page row still asserts none. The INDEX first, as automation does, so a game without a
-    // file makes no request that can fail. `T.currencyData` stays UNDEFINED until the answer arrives (the list
-    // abstains, `? / ?`), then holds the file or null; a failed fetch leaves null and costs the page nothing.
-    // `T.currencyAsked` is the promise once asked, and null before — read by the gate, which must not trigger it.
-    T.currencyAsked = null;
-    T.fetchCurrencyData = () => {
-      if (T.currencyAsked) return T.currencyAsked;
-      T.currencyAsked = (async () => {
-        const r = await fetch(abs('games-data/index.json'), { cache: 'no-cache' });
-        if (!r.ok) return (T.currencyData = null);
-        const index = JSON.parse(await r.text());
-        if (!index || !Array.isArray(index.games) || index.games.indexOf(id) < 0) return (T.currencyData = null);
-        const g = await fetch(abs(`games-data/${id}.json`), { cache: 'no-cache' });
-        return (T.currencyData = g.ok ? JSON.parse(await g.text()) : null);
-      })().catch(() => (T.currencyData = null));
-      return T.currencyAsked;
-    };
-  }
-  if (AUTOMATION) {
-    // ---- the LADDER, where this game has one (V3) ------------------------------------------------------------------
-    // ⚠ TWO OF THE 171 GAMES HAVE A LADDER (`tools/harness/ladder/<id>.json`, ptr and something), and the Progress
-    // timeline uses its mark NAMES as labels on the events that satisfy them. ⛔ `loader/tmt-auto.js` fetches nothing
-    // itself — it never touches the DOM or the network, which is what `docs/contract.md` says — so the HOST hands it
-    // the file, exactly as the host hands it the manifest and the options.
-    //
-    // ⛔⛔ AND IT IS LAZY, AND IT ASKS AN INDEX FIRST — BOTH MEASURED, by CI, on the first cut that did neither.
-    // The first cut fetched `tools/harness/ladder/<id>.json` on every automation boot and pushed a note to
-    // `T.skipped` on a 404. `G1 load — automation page` judges EVERY request a page makes: a failed request the
-    // manifest does not declare is a RED, and `tmtLoader.skipped` must equal the manifest's declared list exactly.
-    // Result: **169 of 171 games RED**, for a file 169 of them were never going to have. So the ladder is asked for
-    // only when something actually wants it (the `Progress` subtab, or a progress event with the tracker armed),
-    // and the INDEX says which games have one, so there is never a 404 to judge.
-    T.fetchLadder = (function () {
-      let asked = null;
-      return function () {
-        if (asked) return asked;
-        asked = (async () => {
-          const r = await fetch(abs('tools/harness/ladder/index.json'), { cache: 'no-cache' });
-          if (!r.ok) return null;
-          const index = JSON.parse(await r.text());
-          if (!index || !Array.isArray(index.games) || index.games.indexOf(id) < 0) { T.ladder = null; return null; }
-          const g = await fetch(abs(`tools/harness/ladder/${id}.json`), { cache: 'no-cache' });
-          if (!g.ok) return null;
-          const L = JSON.parse(await g.text());
-          if (L && Array.isArray(L.marks)) { T.ladder = L; return L; }
-          return null;
-        })().catch(() => null);
-        return asked;
-      };
-    })();
-  }
-  step('script loader/tmt-auto.js');
-  await insertScript({ src: abs('loader/tmt-auto.js') }, 'loader/tmt-auto.js');
-  T.loaded.push('loader/tmt-auto.js');
-  // the OPTIONS SECTION (docs/options.md) — the only file here with no flag in front of it, and it has to be:
-  // it is how a page that carries none of the flags offers them. It adds nothing to <head>, nothing to `player`
-  // and no timer; its one element lives inside the game's own options tab, while that tab is open.
-  step('script loader/options.js');
-  await insertScript({ src: abs('loader/options.js') }, 'loader/options.js');
-  T.loaded.push('loader/options.js');
-  if (NAVBAR) {
-    step('script loader/navbar.js');
-    await insertScript({ src: abs('loader/navbar.js') }, 'loader/navbar.js');
-    T.loaded.push('loader/navbar.js');
-    document.documentElement.classList.add('tmt-navbar'); // the bar is installed; navbar.css hides the corner controls
-    // the LAYER LIST (docs/mobile.md) — the bar's Layers button opens it. After navbar.js, which owns the button:
-    // the entry stays hidden until `tmtLoader.layerListUI` exists, so a bar without this file is still a whole bar.
-    step('script loader/layerlist.js');
-    await insertScript({ src: abs('loader/layerlist.js') }, 'loader/layerlist.js');
-    T.loaded.push('loader/layerlist.js');
-  }
+  // (S4) ATTACH: the automation table, the currency data, the ladder door, tmt-auto.js, options.js, and — with the bar —
+  // navbar.js and layerlist.js. Moved verbatim to attach.mjs; the order is the one this function always used.
+  await attachScripts({ T, id, abs, fetchText, insertScript, contract: true,
+    table: manifest.auto ? { url: abs(manifest.auto), name: manifest.auto } : null });
 
   // body attributes (onmousemove, …) once the functions they name exist; onload is run explicitly below
   for (const [k, v] of Object.entries(plan.body.attrs)) document.body.setAttribute(k, v);

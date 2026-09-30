@@ -309,7 +309,7 @@ const DIGITS_PROBE = `(${function () {
 }})()`;
 
 /** Everything the mobile layout promises, measured in the page. Geometry only — it asserts nothing about the game. */
-const MOBILE_PROBE = `(${function () {
+export const MOBILE_PROBE = `(${function () {
   const vw = document.documentElement.clientWidth;
   const vis = (el) => { const cs = getComputedStyle(el); return cs.display !== 'none' && cs.visibility !== 'hidden' && Number(cs.opacity) !== 0; };
   const desc = (el) => `${el.tagName}.${String(el.className || '').slice(0, 34)}`;

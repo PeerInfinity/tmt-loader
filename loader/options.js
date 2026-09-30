@@ -27,11 +27,16 @@
   if (!T || !T.prefs) return;
 
   var ID = 'tmt-loader-options';
-  var ENTRIES = [
-    { flag: 'mobile', label: 'Mobile layout' },
-    { flag: 'navbar', label: 'Nav bar' },
-    { flag: 'automation', label: 'Automation tools' }
+  var ALL = [
+    { flag: 'mobile', label: 'Mobile layout', what: 'Mobile layout: one column with large buttons, for a phone.' },
+    { flag: 'navbar', label: 'Nav bar', what: 'Nav bar: a bar along the bottom, with a Layers view listing every layer.' },
+    { flag: 'automation', label: 'Automation tools', what: 'Automation tools: an AU tab that can reset and buy things for you, each feature off until you turn it on.' }
   ];
+  // (S4) ON AN AUTHOR'S PAGE only the features the author LOADED have a button (docs/embed.md) — `tmtLoader.flagsLoaded`,
+  // written by loader/embed.mjs. The hosted page loads all three and does not write it.
+  var EMBED = !!T.embed;
+  var ENTRIES = ALL.filter(function (e) { return !T.flagsLoaded || T.flagsLoaded[e.flag]; });
+  if (!ENTRIES.length) return;   // an author's page that loaded nothing offers nothing: no section at all
 
   var section = null;
   var buttons = Object.create(null);
@@ -116,7 +121,9 @@
         if (on && typeof save === 'function') save();
       } catch (e) { /* leave anyway */ }
     });
-    section.append(head, table, noteEl, home);
+    // (S4, ⚖ R15) the way back to the census is the HOSTED page's: on an author's own page there is no list to go back to
+    if (EMBED) section.append(head, table, noteEl);
+    else section.append(head, table, noteEl, home);
     label();
   }
 
@@ -136,13 +143,14 @@
       if (b.classList.contains('locked') !== locked) b.classList.toggle('locked', locked);
       var title = locked
         ? 'The mobile layout always shows the bar. Turn the mobile layout off to get this button back.'
-        : 'Press to turn this ' + (on ? 'off' : 'on') + ' and reload. Remembered in this browser, for every game.';
+        : 'Press to turn this ' + (on ? 'off' : 'on') + ' and reload. Remembered in this browser, for every game'
+          + (EMBED ? ' on this site.' : '.');
       if (b.title !== title) b.title = title;
       if (src === 'url') overridden.push('?' + e.flag + '=' + (on ? '1' : '0'));
     });
     // (U15) the first sentence says what each button IS, for a player who has never read docs/options.md; gate O1
     // reads this note for "reloads the page", so that phrase stays.
-    var note = 'Added by tmt-loader, not by the game. Mobile layout: one column with large buttons, for a phone. '
+    var note = EMBED ? embedNote(overridden) : 'Added by tmt-loader, not by the game. Mobile layout: one column with large buttons, for a phone. '
       + 'Nav bar: a bar along the bottom, with a Layers view listing every layer. Automation tools: an AU tab that '
       + 'can reset and buy things for you, each feature off until you turn it on. '
       + 'Pressing one of these reloads the page. The choice is remembered in this browser for every game, '
@@ -152,6 +160,19 @@
           + ' parameter so the remembered choice applies.'
         : ' A link that carries ?mobile=, ?navbar= or ?automation= overrides what is remembered.');
     if (noteEl.textContent !== note) noteEl.textContent = note;
+  }
+
+  /** (S4) The note on an AUTHOR'S page: only the features it offers, and "this site" rather than "every game" — the
+   *  remembered choice lives on the author's origin. "reloads the page" stays, for the same reader as above. */
+  function embedNote(overridden) {
+    return 'Added by tmt-loader, not by the game. '
+      + ENTRIES.map(function (e) { return e.what; }).join(' ') + ' '
+      + 'Pressing one of these reloads the page. The choice is remembered in this browser for every game on this site, '
+      + 'and is not part of the game’s save.'
+      + (overridden.length
+        ? ' The address is answering for ' + overridden.join(' and ') + ' right now; pressing that button drops the'
+          + ' parameter so the remembered choice applies.'
+        : '');
   }
 
   // ---------------------------------------------------------------- the press
