@@ -206,7 +206,27 @@ async function gameRow(browser, S, id) {
   const hostedPage = async (q) => (hosted[q] ??= await draw(`hosted ${q || 'plain'}`, { hosted: q }));
   const leg = (name, ok, detail) => { row.legs[name] = { ok: !!ok, ...detail }; };
 
+  // a leg that THROWS is RED by name, never a row that dies: one broken leg must not hide what the others measured
+  const guard = async (name, fn) => { try { await fn(); } catch (e) { leg(name, false, { exception: String((e && e.message) || e).slice(0, 300) }); } };
+  // the gate's own affordance for the options tab where it does not need the section (e.g. there should be none)
+  const openTab = async (p) => { const bar = await p.$('#tmt-navbar button[data-key="options"]'); if (bar && await bar.isVisible()) await bar.click(); else await p.click('#optionWheel'); };
+  const press = async (p, flag) => {
+    await openOptions(p);
+    await Promise.all([p.waitForNavigation({ waitUntil: 'load', timeout: 30000 }), p.click(`${OPT} button[data-flag="${flag}"]`)]);
+    const r = await waitReady(p);
+    if (!r.ready) throw new Error(`not ready after the press: ${JSON.stringify(r.error)}`);
+    await settle(p);
+    return p.evaluate(FP);
+  };
+  const reload = async (p) => { await p.reload({ waitUntil: 'load' }); const r = await waitReady(p); if (!r.ready) throw new Error('not ready after reload'); await settle(p); return p.evaluate(FP); };
+  // the hosted twins every leg compares against — the CONTROLS; if one of these fails, the row fails outright
+  const hPlain = await hostedPage('');
+  const hNavbar = await hostedPage('navbar=1');
+  const hAuto = await hostedPage('automation=1');
+  const hMobile = await hostedPage('mobile=1');
+
   // ---- i: INERT — the tag, everything loaded, nothing on, is the game's own page -------------------------------------
+  await guard('i-inert', async () => {
   const bare = await draw('bare (no tag)', { id, noTag: true }, { bare: true });
   const inert = await draw('i inert', { id, attrs: {} });
   const inertReq = row.requests.find((r) => r.label === 'i inert');
@@ -221,6 +241,8 @@ async function gameRow(browser, S, id) {
   { flags: inert.flags, htmlClasses: inert.htmlClasses, loaderFiles: inert.loaderFiles, layerNodes: [inert.layerNodes, bare.layerNodes],
     stylesheets: [inert.stylesheets, bare.stylesheets], playerKeysEqual: inert.playerKeys === bare.playerKeys, loaderAsked: inertReq && inertReq.loaderAsked });
 
+  });
+  await guard('ii-author-defaults', async () => {
   // ---- ii: each author default, alone and in combination → exactly those on, and the hosted page's twin ------------
   const subsets = [['mobile'], ['navbar'], ['automation'], ['mobile', 'navbar'], ['mobile', 'automation'], ['navbar', 'automation'], ['mobile', 'navbar', 'automation']];
   const ii = [];
@@ -234,6 +256,8 @@ async function gameRow(browser, S, id) {
   }
   leg('ii-author-defaults', ii.every((x) => x.ok), { rows: ii });
 
+  });
+  await guard('iii-not-loaded', async () => {
   // ---- iii: NOT LOADED — no button, a URL parameter does nothing, and the combination mobile-without-navbar ------------
   const iii = {};
   iii.urlIgnored = await draw('iii load=mobile ?navbar=1&automation=1', { id, attrs: { load: 'mobile' } }, { query: 'navbar=1&automation=1', act: async (p) => {
@@ -255,10 +279,9 @@ async function gameRow(browser, S, id) {
     const btns = await p.$$eval(`${OPT} button[data-flag]`, (b) => b.map((x) => x.dataset.flag));
     return { f, buttons: btns };
   } });
-  const hMobile = await hostedPage('mobile=1');
   const noneLoaded = await draw('iii load=""', { id, attrs: { load: '' } }, { query: 'mobile=1&navbar=1&automation=1', act: async (p) => {
     const f = await p.evaluate(FP);
-    await p.click('#optionWheel'); await settle(p);
+    await openTab(p); await settle(p);
     return { f, section: (await p.$(OPT)) !== null };
   } });
   const u = iii.urlIgnored, m = iii.mobileIgnored, mn = iii.mobileNoNavbar;
@@ -271,19 +294,9 @@ async function gameRow(browser, S, id) {
   { urlIgnored: u, mobileIgnored: m, mobileNoNavbar: { flags: mn.f.flags, source: mn.f.source, buttons: mn.buttons, equalHosted: same(mn.f, hMobile) },
     noneLoaded: { flags: noneLoaded.f.flags, section: noneLoaded.section } });
 
+  });
   // ---- iv: a PLAYER PRESS overrides the author's default, and is remembered across a reload ------------------------
-  const press = async (p, flag) => {
-    await openOptions(p);
-    await Promise.all([p.waitForNavigation({ waitUntil: 'load', timeout: 30000 }), p.click(`${OPT} button[data-flag="${flag}"]`)]);
-    const r = await waitReady(p);
-    if (!r.ready) throw new Error(`not ready after the press: ${JSON.stringify(r.error)}`);
-    await settle(p);
-    return p.evaluate(FP);
-  };
-  const reload = async (p) => { await p.reload({ waitUntil: 'load' }); const r = await waitReady(p); if (!r.ready) throw new Error('not ready after reload'); await settle(p); return p.evaluate(FP); };
-  const hPlain = await hostedPage('');
-  const hNavbar = await hostedPage('navbar=1');
-  const hAuto = await hostedPage('automation=1');
+  await guard('iv-press-remembered', async () => {
   const iv = await draw('iv on=navbar, press', { id, attrs: { on: 'navbar' } }, { act: async (p) => {
     const start = await p.evaluate(FP);
     const off = await press(p, 'navbar');            // the author said ON; the player says OFF
@@ -300,6 +313,8 @@ async function gameRow(browser, S, id) {
     && iv.back.flags.navbar && iv.back.source.navbar === 'stored' && iv.back.stored.navbar === true,
   { steps: Object.fromEntries(Object.entries(iv).map(([k, f]) => [k, { flags: f.flags, source: f.source, stored: f.stored }])) });
 
+  });
+  await guard('v-url-first', async () => {
   // ---- v: the URL overrides the remembered choice AND the author's default --------------------------------------------
   const v = {};
   v.onOverStoredOff = await draw('v on=navbar stored navbar:false ?navbar=1', { id, attrs: { on: 'navbar' } }, { prefs: JSON.stringify({ navbar: false }), query: 'navbar=1' });
@@ -312,6 +327,8 @@ async function gameRow(browser, S, id) {
     && !v.storedOverAuthor.flags.automation && v.storedOverAuthor.source.automation === 'stored' && same(v.storedOverAuthor, hPlain),
   Object.fromEntries(Object.entries(v).map(([k, f]) => [k, { flags: f.flags, source: f.source }])));
 
+  });
+  await guard('vi-settings-file', async () => {
   // ---- vi: tmt-loader.json — per field over the tag; its autoTable is the one in force ------------------------------
   // The author's table is distinctive by construction: the generic kind order REVERSED, which no game's table uses.
   const authorTable = { formatVersion: 1, kindOrder: ['clickables', 'challenges', 'buyables', 'upgrades', 'reset', 'toggles'] };
@@ -345,6 +362,8 @@ async function gameRow(browser, S, id) {
   // the broken page's own pageerror/console is the point of that leg — it is not an error of the gate's
   for (let k = errors.length - 1; k >= 0; k--) if (errors[k].startsWith('vi a broken table: ') && !/REQUESTS|BLOCKED/.test(errors[k])) errors.splice(k, 1);
 
+  });
+  await guard('M-layout', async () => {
   // ---- M: M1's layout legs — the phone page and the desktop nav-bar page, against their hosted twins -----------------
   const probe = (p) => p.evaluate(MOBILE_PROBE);
   const phone = await draw('M phone on=mobile', { id, attrs: { on: 'mobile' } }, { ctx: PHONE_CONTEXT, act: probe });
@@ -363,6 +382,8 @@ async function gameRow(browser, S, id) {
   { phone: { escaping: phone.escaping.length, tooSmall: [phone.tooSmall.length, phoneHosted.tooSmall.length], nav: phone.navButtons, hostedNav: phoneHosted.navButtons, cols: [phone.cols, phoneHosted.cols], overlay: [phone.overlayPos, phoneHosted.overlayPos] },
     desktop: { nav: desk.navButtons, hostedNav: deskHosted.navButtons, cols: [desk.cols, deskPlain.cols], overlay: [desk.overlayPos, deskPlain.overlayPos] } });
 
+  });
+  await guard('O-options', async () => {
   // ---- O: O1's options legs on the embed page -------------------------------------------------------------------------
   const O = {};
   O.section = await draw('O section', { id, attrs: {} }, { act: async (p) => {
@@ -395,6 +416,8 @@ async function gameRow(browser, S, id) {
     && same(O.pressOverUrl, hPlain) && !/mobile=/.test(O.pressOverUrl.search) && O.pressOverUrl.stored.mobile === false
     && O.locked.label.locked && /with the mobile layout/.test(O.locked.label.text) && O.locked.same && Object.keys(O.locked.stored).length === 0,
   { section: Os, pressOverUrl: { flags: O.pressOverUrl.flags, search: O.pressOverUrl.search, stored: O.pressOverUrl.stored }, locked: O.locked });
+
+  });
 
   // ---- vii: the requests of every embed page above ------------------------------------------------------------------
   leg('vii-requests', row.requests.length > 0 && row.requests.every((r) => r.ok), { pages: row.requests.length, red: row.requests.filter((r) => !r.ok).map((r) => r.label) });

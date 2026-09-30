@@ -32,7 +32,8 @@ mutant() {  # mutant <name> <game> <python> <required red legs…>
   for leg in $LEGS; do grep -q -- " $leg=ok" <<<"$line" || red+=("$leg"); done
   local miss=() want
   for want in "$@"; do [[ " ${red[*]:-} " == *" $want "* ]] || miss+=("$want"); done
-  if [ -z "$line" ] || [[ "$line" == *EXCEPTION* ]]; then red=("(the row threw)"); fi
+  # a row that THREW is not a kill: the legs fail by name (embed.mjs `guard`), so an exception means the gate itself broke
+  if [ -z "$line" ] || [[ "$line" == *EXCEPTION* ]]; then echo "THREW    $name — $line"; SURVIVED=$((SURVIVED+1)); return; fi
   if [ ${#miss[@]} -eq 0 ] && [[ "$line" == *RED* ]]; then echo "KILLED   $name — red: [${red[*]}] (required: $*)"; KILLED=$((KILLED+1))
   else echo "SURVIVED $name — red: [${red[*]:-none}], required [$*]"; echo "         $line"; SURVIVED=$((SURVIVED+1)); fi
 }
