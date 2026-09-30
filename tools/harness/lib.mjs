@@ -6,6 +6,20 @@ import crypto from 'node:crypto';
 import { spawn, execFileSync } from 'node:child_process';
 
 export const REPO = path.resolve(new URL('../..', import.meta.url).pathname);
+
+// ⚖ R8 — THE SEAM, Node side (docs/harness.md, "The seam"). Every path to a game file goes through these; nothing else
+// in loader/, tools/ or .github/ spells the games directory (loader/seam.test.mjs holds that). The page's twin is
+// `gameBase(id)` in loader/page.js, and the two must name the same directory — the same test checks that too. Moving
+// the games (link mode, or no copies at all) is then these four lines and that one function, not a hunt for paths.
+/** The games root, relative to the repository — and to the served root, which is the repository (the submodule's path). */
+export const GAMES_PATH = 'games';
+/** The directory that holds every game's copy. */
+export const gamesRoot = (root = REPO) => path.join(root, GAMES_PATH);
+/** One game's copy on disk. */
+export const gameDir = (id, root = REPO) => path.join(root, GAMES_PATH, id);
+/** A game path relative to the repository root, `/`-separated — for messages, records and served URLs (the page serves the repo root). */
+export const gamePath = (id, ...rest) => [GAMES_PATH, id, ...rest].join('/');
+
 export const GAMES = () => JSON.parse(fs.readFileSync(path.join(REPO, 'manifests/index.json'), 'utf8')).map((g) => g.id);
 export const readManifest = (id, root = REPO) => JSON.parse(fs.readFileSync(path.join(root, `manifests/${id}.json`), 'utf8'));
 export const sha256hex = (s) => crypto.createHash('sha256').update(s).digest('hex');
@@ -319,3 +333,9 @@ export const SOMETHING_OLD_TABLE = [
   'policy:buyables:fundamental=buyMax',
   PRE_F1,   // F1: the table was deleted before the yield existed, so the configuration it names has none
 ].join(';');
+
+// The seam for shell and workflow steps: `G=$(node tools/harness/lib.mjs --games-path)` — so a script names the games
+// directory from the one place that does (R8), never by spelling it.
+if (process.argv[1] && path.resolve(process.argv[1]) === path.resolve(fileURLToPath(import.meta.url)) && process.argv[2] === '--games-path') {
+  process.stdout.write(`${GAMES_PATH}\n`);
+}

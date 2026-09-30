@@ -1,10 +1,11 @@
-// The LOAD verdict, alone in its own module and importing NOTHING.
+// The LOAD verdict, alone in its own module and importing nothing but the seam (`./lib.mjs`: `node:` builtins only).
 //
 // ⛔ WHY IT IS NOT IN `page.mjs`: the CI `units + repo-wide checks` job runs with **no `npm ci`**, on purpose
 // (`.github/workflows/sweep.yml`: *"Every file this job runs imports only `node:` builtins and its own relative
 // neighbours — the one dependency in package.json is Playwright, which nothing here touches"*). `page.mjs`
 // imports Playwright, so a unit test that reached `judgeLoad` through it failed in CI while passing locally,
 // where `node_modules` exists. A pure function that a browser-free job must test belongs in a browser-free file.
+import { gamePath } from './lib.mjs';
 
 export function judgeLoad(manifest, base, pw, loader) {
   const known = (manifest.load && manifest.load.known) || null;
@@ -14,8 +15,9 @@ export function judgeLoad(manifest, base, pw, loader) {
   // is the loader's record of SCRIPTS it skipped.
   const assets = new Set((known && known.missingAssets) || []);
   const hosts = new Set((known && known.externalHosts) || []);
-  const gamePath = new URL(`games/${manifest.id}/`, base).pathname;
-  const pathOf = (u) => { try { const p = new URL(u.split(' ')[0]).pathname; return p.startsWith(gamePath) ? p.slice(gamePath.length) : null; } catch { return null; } };
+  // the page's `gameBase(id)`, as a path under `base` (the page serves the repository root)
+  const gameUrlPath = new URL(gamePath(manifest.id, ''), base).pathname;
+  const pathOf = (u) => { try { const p = new URL(u.split(' ')[0]).pathname; return p.startsWith(gameUrlPath) ? p.slice(gameUrlPath.length) : null; } catch { return null; } };
   const hostOf = (u) => { try { return new URL(u).hostname; } catch { return null; } };
   // ⛔ AN UNPAIRED `net::ERR_ABORTED` IS A TEARDOWN ARTEFACT, NOT A LOAD FAILURE (2026-09-21).
   // Playwright records a request the browser CANCELLED the same way it records one that failed, so the two arrive

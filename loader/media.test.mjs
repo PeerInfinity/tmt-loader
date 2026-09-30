@@ -9,7 +9,7 @@ import path from 'node:path';
 import crypto from 'node:crypto';
 import { classify, imageSize, isWebP, wavStub, mp3Stub, stubFor, STUB_SECONDS, SKIPS_FILE } from '../tools/media-lib.mjs';
 import { checkMedia, assertSameSize } from '../tools/media.mjs';
-import { GAMES } from '../tools/harness/lib.mjs';
+import { GAMES, gameDir } from '../tools/harness/lib.mjs';
 
 // minimal headers — enough for imageSize, which never decodes pixels
 const png = (w, h) => { const b = Buffer.alloc(33); b.writeUInt32BE(0x89504e47, 0); b.writeUInt32BE(0x0d0a1a0a, 4); b.writeUInt32BE(13, 8); b.write('IHDR', 12, 'latin1'); b.writeUInt32BE(w, 16); b.writeUInt32BE(h, 20); return b; };
@@ -67,7 +67,7 @@ test('the stubs: a silent 8 kHz mono 8-bit WAV and silent MPEG-1 Layer III frame
 test('the check: raw reds, processed greens, a declared skip greens only with the same bytes, a stale skip reds', () => {
   const repo = fs.mkdtempSync(path.join(os.tmpdir(), 'media-test-'));
   try {
-    const g = path.join(repo, 'games/g');
+    const g = gameDir('g', repo);
     fs.mkdirSync(path.join(g, 'img'), { recursive: true });
     fs.writeFileSync(path.join(g, 'img/a.png'), webpX(4, 4));
     fs.writeFileSync(path.join(g, 'b.gif'), webpX(8, 8));

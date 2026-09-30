@@ -38,7 +38,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { execFileSync, spawnSync } from 'node:child_process';
 import { chromium } from 'playwright';
-import { REPO, GAMES, parseArgs, startServer, headCommit } from './harness/lib.mjs';
+import { REPO, GAMES, parseArgs, startServer, headCommit, GAMES_PATH, gamesRoot, gamePath } from './harness/lib.mjs';
 import { openContext, waitReady } from './harness/page.mjs';
 
 const a = parseArgs(process.argv.slice(2), ['keep']);
@@ -52,21 +52,21 @@ const LIVE_SAMPLE = ['ptr', 'sorbet-s-convolution-mainframe', 'the-modding-tree'
 const SAMPLE = a.games ? String(a.games).split(',').filter(Boolean) : LIVE ? LIVE_SAMPLE : GAMES();
 // Served bytes vs `git show HEAD:<path>`. The loader's own inputs, the roster, and one file from the odd game's tree
 // — enough to tell "serving this commit" from "serving the previous one", which is the failure a green deploy hides.
-const SERVED = ['index.html', 'loader/page.js', 'loader/layerlist.js', 'manifests/index.json', 'games/sorbet-s-convolution-mainframe/Javascript/Mod.js'];
+const SERVED = ['index.html', 'loader/page.js', 'loader/layerlist.js', 'manifests/index.json', gamePath('sorbet-s-convolution-mainframe', 'Javascript/Mod.js')];
 const SETTLE_TRIES = Number(a['settle-tries'] ?? 30);
 const SETTLE_MS = Number(a['settle-ms'] ?? 10000);
 const result = { gate: LIVE ? 'G5 live deploy' : 'G5 bare clone', mode: LIVE ? 'live' : 'clone', games: SAMPLE, commit: headCommit(), repoClean: git(REPO, 'status', '--porcelain') === '', steps: [] };
 const step = (name, ok, detail = {}) => { result.steps.push({ name, ok, ...detail }); console.log(`${ok ? 'GREEN' : 'RED  '} ${name} ${JSON.stringify(detail)}`); };
 /** HEAD's bytes for a served path; a path under `games/` resolves through the submodule (see the header). */
 const headBytes = (f) => {
-  const [cwd, rel] = f.startsWith('games/') ? [path.join(REPO, 'games'), f.slice('games/'.length)] : [REPO, f];
+  const [cwd, rel] = f.startsWith(`${GAMES_PATH}/`) ? [gamesRoot(), f.slice(`${GAMES_PATH}/`.length)] : [REPO, f];
   return execFileSync('git', ['-C', cwd, 'show', `HEAD:${rel}`], { encoding: 'buffer', maxBuffer: 64 * 1024 * 1024 });
 };
 /** The games commit the outer HEAD pins, and the one checked out in `games/` (null when it is not initialised). */
-const gamesPin = () => git(REPO, 'rev-parse', 'HEAD:games');
+const gamesPin = () => git(REPO, 'rev-parse', `HEAD:${GAMES_PATH}`);
 // ⚠ In an UNINITIALISED submodule `git -C games` walks up to the outer repository, so the toplevel is checked first.
 const gamesHead = () => {
-  const dir = path.join(REPO, 'games');
+  const dir = gamesRoot();
   try { return fs.realpathSync(git(dir, 'rev-parse', '--show-toplevel')) === fs.realpathSync(dir) ? git(dir, 'rev-parse', 'HEAD') : null; } catch { return null; }
 };
 
@@ -121,14 +121,14 @@ if (LIVE) {
   // command only: git refuses a local-path submodule by default (CVE-2022-39253), and the source here is our own tree.
   const pin = gamesPin(), have = gamesHead();
   if (have !== pin) {
-    step('games submodule checked out at the pinned commit', false, { pin, checkedOut: have, fix: 'git submodule update --init games' });
+    step('games submodule checked out at the pinned commit', false, { pin, checkedOut: have, fix: `git submodule update --init ${GAMES_PATH}` });
     fs.rmSync(parent, { recursive: true, force: true });
     process.exit(1);
   }
-  execFileSync('git', ['-C', clone, 'submodule', 'init', 'games']);
-  execFileSync('git', ['-C', clone, 'config', 'submodule.games.url', path.join(REPO, 'games')]);
-  execFileSync('git', ['-c', 'protocol.file.allow=always', '-C', clone, 'submodule', 'update', '-q', 'games']);
-  result.cloneGames = git(path.join(clone, 'games'), 'rev-parse', 'HEAD');
+  execFileSync('git', ['-C', clone, 'submodule', 'init', GAMES_PATH]);
+  execFileSync('git', ['-C', clone, 'config', `submodule.${GAMES_PATH}.url`, gamesRoot()]);
+  execFileSync('git', ['-c', 'protocol.file.allow=always', '-C', clone, 'submodule', 'update', '-q', GAMES_PATH]);
+  result.cloneGames = git(gamesRoot(clone), 'rev-parse', 'HEAD');
   step('clone games submodule', result.cloneGames === pin, { pin, head: result.cloneGames });
   server = await startServer(parent);
   base = `${server.url}tmt-loader/`;
@@ -175,7 +175,7 @@ if (!LIVE) {
   // `npm ci` in it. ⛔ They are SKIPPED, loudly, rather than silently passing — a step that cannot run is not a step
   // that passed, and this whole file exists because a green thing that ran nothing looks like a green thing.
   const cloneStatus = git(clone, 'status', '--porcelain', '--ignored');
-  const gamesStatus = git(path.join(clone, 'games'), 'status', '--porcelain', '--ignored');
+  const gamesStatus = git(gamesRoot(clone), 'status', '--porcelain', '--ignored');
   step('clone unmodified', cloneStatus === '' && gamesStatus === '', { status: cloneStatus, games: gamesStatus });
   step('repo clean', git(REPO, 'status', '--porcelain') === '', { status: git(REPO, 'status', '-sb') });
 } else {

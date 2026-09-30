@@ -14,16 +14,14 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { execFileSync } from 'node:child_process';
-import { REPO } from './harness/lib.mjs';
-
-export const GAMES_PATH = 'games';
+import { REPO, GAMES_PATH, gamesRoot } from './harness/lib.mjs';
 
 const run = (cwd, args) => execFileSync('git', ['-C', cwd, ...args], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }).trim();
 const tryRun = (cwd, args) => { try { return run(cwd, args); } catch { return null; } };
 
 /** Where the games live, and what state that checkout is in. */
 export function gamesState({ repo = REPO } = {}) {
-  const dir = path.join(repo, GAMES_PATH);
+  const dir = gamesRoot(repo);
   const top = fs.existsSync(dir) ? tryRun(dir, ['rev-parse', '--show-toplevel']) : null;
   const initialised = !!top && fs.realpathSync(top) === fs.realpathSync(dir);
   const pin = tryRun(repo, ['rev-parse', `HEAD:${GAMES_PATH}`]);
@@ -59,7 +57,7 @@ export function assertGamesWritable({ repo = REPO } = {}) {
  * (measured by the split's import gate: without them the tree id differs). Idempotent.
  */
 export function ensureByteExact({ repo = REPO } = {}) {
-  const dir = path.join(repo, GAMES_PATH);
+  const dir = gamesRoot(repo);
   const f = path.resolve(dir, run(dir, ['rev-parse', '--git-path', 'info/attributes']));
   const have = fs.existsSync(f) ? fs.readFileSync(f, 'utf8') : '';
   if (!/^\* -text$/m.test(have)) { fs.mkdirSync(path.dirname(f), { recursive: true }); fs.writeFileSync(f, have + (have && !have.endsWith('\n') ? '\n' : '') + '* -text\n'); }
@@ -67,7 +65,7 @@ export function ensureByteExact({ repo = REPO } = {}) {
 
 /** Stages `rels` (paths inside games/, or '.' for everything) byte-exact and commits them in games/. Returns the full sha, or null when nothing changed. */
 export function commitGames(rels, message, { repo = REPO } = {}) {
-  const dir = path.join(repo, GAMES_PATH);
+  const dir = gamesRoot(repo);
   ensureByteExact({ repo });
   run(dir, ['add', '-A', '-f', '--', ...rels]);
   if (!run(dir, ['diff', '--cached', '--name-only'])) return null;

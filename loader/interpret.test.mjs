@@ -2,6 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import { interpret, scriptNames, InterpretError, executionOrder, modFilePaths, loaderPrefixOf } from './interpret.mjs';
+import { gamePath } from '../tools/harness/lib.mjs';
 
 const ROOT = new URL('..', import.meta.url).pathname;
 const read = (p) => fs.readFileSync(ROOT + p, 'utf8');
@@ -12,7 +13,7 @@ for (const id of ['ptr', 'something']) {
   test(`${id}: script list = manifest.load.scripts with loader.js replaced by the modFiles slot`, () => {
     const m = manifest(id);
     const loader = m.load.scripts.find((s) => /(^|\/)loader\.js$/i.test(s));
-    const plan = interpret(read(`games/${id}/index.html`), m, { loaderSource: loader ? read(`games/${id}/${loader}`) : undefined });
+    const plan = interpret(read(gamePath(id, 'index.html')), m, { loaderSource: loader ? read(gamePath(id, loader)) : undefined });
     const want = m.load.scripts.map((s) => (s === loader ? '<modFiles>' : s));
     assert.deepEqual(scriptNames(plan), want);
     assert.deepEqual(plan.dropped, [FONT]);
@@ -26,21 +27,21 @@ for (const id of ['ptr', 'something']) {
     const { slot } = executionOrder(plan);
     if (loader) {
       assert.equal(slot.prefix, m.load.modFilesPrefix);
-      assert.equal(loaderPrefixOf(read(`games/${id}/${loader}`)), m.load.modFilesPrefix);
+      assert.equal(loaderPrefixOf(read(gamePath(id, loader))), m.load.modFilesPrefix);
       assert.equal(modFilePaths(slot, m.load.modFiles)[0], m.load.modFilesPrefix + m.load.modFiles[0]);
     } else assert.equal(slot, null);
   });
 }
 
 test('ptr: stylesheets in order, local kept with their attributes, font dropped', () => {
-  const plan = interpret(read('games/ptr/index.html'), manifest('ptr'));
+  const plan = interpret(read(gamePath('ptr', 'index.html')), manifest('ptr'));
   assert.deepEqual(plan.links.map((l) => l.href || l.external), ['style.css', 'notification.css', FONT]);
   assert.equal(plan.links[0].attrs.id, 'styleStuff');
   assert.deepEqual(plan.body.attrs, {});
 });
 
 test('something: body attributes besides onload; slot sits right after js/mod.js', () => {
-  const plan = interpret(read('games/something/index.html'), manifest('something'));
+  const plan = interpret(read(gamePath('something', 'index.html')), manifest('something'));
   assert.deepEqual(plan.body.attrs, { onmousemove: 'updateMouse(event)' });
   const names = scriptNames(plan);
   assert.equal(names[names.indexOf('js/mod.js') + 1], '<modFiles>');

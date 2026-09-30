@@ -16,7 +16,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { missingAssetsOf } from '../tools/harness/check-manifest.mjs';
 import { judgeLoad } from '../tools/harness/loadverdict.mjs';
-import { GAMES, readManifest, REPO } from '../tools/harness/lib.mjs';
+import { GAMES, readManifest, gameDir, gamePath } from '../tools/harness/lib.mjs';
 
 function tree(files, html) {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'missingassets-'));
@@ -48,16 +48,16 @@ test('G1 allows a failed request ONLY for a declared asset path', () => {
   const m = { id: 'g', load: { known: { missingAssets: ['resources/mNote.png'] } } };
   const pw = (failed) => ({ failed, blocked: [], pageErrors: [] });
   const loader = { skipped: [], pageErrors: [] };
-  const ok = judgeLoad(m, BASE, pw([`${BASE}games/g/resources/mNote.png HTTP 404`]), loader);
+  const ok = judgeLoad(m, BASE, pw([`${BASE}${gamePath('g', 'resources')}/mNote.png HTTP 404`]), loader);
   assert.equal(ok.ok, true);
   assert.equal(ok.allowed.missingAssets, 1);
-  const other = judgeLoad(m, BASE, pw([`${BASE}games/g/resources/other.png HTTP 404`]), loader);
+  const other = judgeLoad(m, BASE, pw([`${BASE}${gamePath('g', 'resources')}/other.png HTTP 404`]), loader);
   assert.equal(other.ok, false, 'an undeclared asset 404 still reds the load');
   // …and an asset declaration never excuses a SCRIPT being skipped: `skipped` is still held to missingScripts
   const skip = judgeLoad(m, BASE, pw([]), { skipped: ['resources/mNote.png'], pageErrors: [] });
   assert.equal(skip.ok, false);
   // and an undeclared manifest is judged exactly as before
-  assert.equal(judgeLoad({ id: 'g', load: {} }, BASE, pw([`${BASE}games/g/resources/mNote.png HTTP 404`]), loader).ok, false);
+  assert.equal(judgeLoad({ id: 'g', load: {} }, BASE, pw([`${BASE}${gamePath('g', 'resources')}/mNote.png HTTP 404`]), loader).ok, false);
 });
 
 test('⛔ over the roster, the derivation EQUALS the declarations, game by game', () => {
@@ -65,7 +65,7 @@ test('⛔ over the roster, the derivation EQUALS the declarations, game by game'
   let nonEmpty = 0;
   for (const id of GAMES()) {
     const m = readManifest(id);
-    const derived = missingAssetsOf(path.join(REPO, 'games', id), m.entry || 'index.html');
+    const derived = missingAssetsOf(gameDir(id), m.entry || 'index.html');
     const declared = [...(m.load.known?.missingAssets || [])].sort();
     if (derived.length) nonEmpty++;
     if (JSON.stringify(derived) !== JSON.stringify(declared)) bad.push(`${id}: derived ${JSON.stringify(derived)}, declared ${JSON.stringify(declared)}`);

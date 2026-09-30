@@ -60,19 +60,22 @@ jobs:
       # submodule's own tree is archived into `_site/games/` as a second step, at the commit the gitlink pins (the
       # checkout's `submodules: true` put it there), and the step REFUSES a `_site/games/` with fewer game directories
       # than `manifests/index.json` lists.
+      # The directory's name is read from the seam (R8: `tools/harness/lib.mjs` GAMES_PATH), never spelled here.
       - name: Stage the tracked tree
         shell: bash
         run: |
+          G=$(node tools/harness/lib.mjs --games-path)
+          test -n "$G"
           mkdir _site
           git archive --format=tar HEAD | tar -x -C _site
-          test "$(git -C games rev-parse HEAD)" = "$(git rev-parse HEAD:games)"
-          git -C games archive --format=tar HEAD | tar -x -C _site/games
+          test "$(git -C "$G" rev-parse HEAD)" = "$(git rev-parse "HEAD:$G")"
+          git -C "$G" archive --format=tar HEAD | tar -x -C "_site/$G"
           want=$(node -e 'console.log(JSON.parse(require("fs").readFileSync("manifests/index.json","utf8")).length)')
-          have=$(find _site/games -mindepth 1 -maxdepth 1 -type d | wc -l)
+          have=$(find "_site/$G" -mindepth 1 -maxdepth 1 -type d | wc -l)
           echo "artifact staged: $(du -sh _site | cut -f1) over $(find _site -type f | wc -l) file(s); $have game dir(s), $want listed"
           test "$have" -ge "$want"
           test ! -e _site/.git
-          test ! -e _site/games/.git
+          test ! -e "_site/$G/.git"
           test ! -e _site/node_modules
 
       - uses: actions/configure-pages@v5

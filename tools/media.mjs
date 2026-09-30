@@ -28,7 +28,7 @@ import path from 'node:path';
 import crypto from 'node:crypto';
 import { spawn } from 'node:child_process';
 import os from 'node:os';
-import { REPO, GAMES, parseArgs, writeJSON } from './harness/lib.mjs';
+import { REPO, GAMES, parseArgs, writeJSON, gameDir, gamePath, GAMES_PATH } from './harness/lib.mjs';
 import { assertGamesWritable, commitGames, nextSteps } from './games-repo.mjs';
 import { classify, imageSize, isWebP, stubFor, walk, scanGame, readSkips, webpAnimation, SKIPS_FILE } from './media-lib.mjs';
 
@@ -53,9 +53,9 @@ export function checkMedia(ids = GAMES(), { repo = REPO } = {}) {
   const problems = [];
   const seen = new Set();
   for (const id of ids) {
-    const dir = path.join(repo, 'games', id);
+    const dir = gameDir(id, repo);
     // a game whose directory cannot be found is a REFUSAL, never a zero — a zero is how a dropped game hides
-    if (!fs.existsSync(dir)) { problems.push({ id, why: `games/${id} does not exist` }); continue; }
+    if (!fs.existsSync(dir)) { problems.push({ id, why: `${gamePath(id)} does not exist` }); continue; }
     const files = scanGame(dir, id, { skips: Object.fromEntries(Object.entries(skips).map(([k, v]) => [k, v.sha256])), sha256 });
     const r = { id, images: 0, webp: 0, skipped: 0, audio: 0, stub: 0, raw: [] };
     for (const f of files) {
@@ -96,8 +96,8 @@ function pythonPath(repo, explicit) {
  * an image whose pixel size moved, so a bad encoder can never leave a changed layout behind.
  */
 export async function processGame(id, { repo = REPO, python } = {}) {
-  const dir = path.join(repo, 'games', id);
-  if (!fs.existsSync(dir)) throw new Error(`games/${id} does not exist`);
+  const dir = gameDir(id, repo);
+  if (!fs.existsSync(dir)) throw new Error(`${gamePath(id)} does not exist`);
   const out = { id, image: { files: 0, encoded: 0, skipped: 0, before: 0, after: 0, lossless: 0 }, audio: { files: 0, stubbed: 0, before: 0, after: 0 }, byExt: {}, skips: {} };
   const ext = (rel) => path.extname(rel).toLowerCase();
   const bump = (rel, before, after) => { const e = (out.byExt[ext(rel)] ??= { files: 0, before: 0, after: 0 }); e.files++; e.before += before; e.after += after; };
@@ -193,7 +193,7 @@ async function main() {
     if (commit) {
       const changed = results.filter((r) => r.image.encoded || r.audio.stubbed).map((r) => r.id);
       const sha = changed.length ? commitGames(changed, `media: images to WebP at the same pixel size, audio to the silent stub — same filenames (tools/media.mjs --write)\n\n${changed.length} game(s): ${changed.join(', ')}. The media exception to pristine: the loader's docs/add-a-game.md.`) : null;
-      console.log(sha ? `games/: committed ${sha.slice(0, 9)} (${changed.length} game(s))` : 'games/: nothing to commit');
+      console.log(sha ? `${GAMES_PATH}/: committed ${sha.slice(0, 9)} (${changed.length} game(s))` : `${GAMES_PATH}/: nothing to commit`);
       const steps = nextSteps(['games-media']);
       if (steps.length) console.log(`next, IN THIS ORDER (the gitlink moves only after the games commit is on tmt-loader-games' default branch):\n  ${steps.join('\n  ')}`);
     }
