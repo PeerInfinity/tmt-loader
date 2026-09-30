@@ -45,8 +45,11 @@ run "B the URL no longer overrides" override
 
 echo "mutant C — the preference is read but the stylesheet is not linked:"
 python3 - <<'PY'
-p='loader/page.js';s=open(p).read()
-s=s.replace("  if (MOBILE) sheet('tmt-loader-mobile-css', 'loader/mobile.css');","  if (MOBILE && RESOLVED.source.mobile === 'url') sheet('tmt-loader-mobile-css', 'loader/mobile.css');")
+# (S4, 2026-09-29: the stylesheet moved from page.js into loader/attach.mjs; the assert refuses a mutant that no longer applies)
+p='loader/attach.mjs';s=open(p).read()
+o="    sheet('tmt-loader-mobile-css', 'loader/mobile.css');"
+assert o in s
+s=s.replace(o,"    if (T.flagSource.mobile === 'url') sheet('tmt-loader-mobile-css', 'loader/mobile.css');")
 open(p,'w').write(s)
 PY
 run "C the stylesheet is not linked" same press

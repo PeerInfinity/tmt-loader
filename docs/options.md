@@ -176,3 +176,21 @@ absolute URL because the page runs under `<base href="games/<id>/">`. Before lea
 Two statements above describe the picker as it was and are left as the record: the "clear this game's save" button
 (under *Where the preference lives*) no longer exists — a game's own HARD RESET is what remains — and *What is not in
 it* no longer has a picker page to be absent from.
+
+## S4 — the section on an author's own page (2026-09-29)
+
+Embed mode (docs/embed.md) runs `loader/options.js` unchanged in shape on an author's page, with three differences,
+all read from `tmtLoader`:
+
+- **Only the offered extras have a button** (`tmtLoader.flagsLoaded`, the author's `data-load`). An author who
+  offers nothing gets no section at all. ⚖ R15.
+- **No "← All games" link** — there is no list to go back to from an author's site. ⚖ R15.
+- **The note** lists only the offered extras and says the choice is remembered "for every game on this site" — the
+  key is the same `tmt-loader:ui.flags`, on the AUTHOR's origin (⛔ never a second store, never `player`).
+
+And one difference in what a press stores: on an author's page a feature can be **on by default** (`data-on`), so
+"nothing remembered" no longer means "off". A press there stores the player's answer either way — a `false` too
+(`serializePrefs(prefs, {keepFalse: true})`) — and the order at load is URL → remembered → author's default → off. The
+hosted page is unchanged: every default is off there, so it still never writes a `false`, and O1's "the store is
+empty again after the second press" still holds. Gate E1 (`tools/harness/embed.mjs`) re-asks O1's legs on the embed
+page: the section, a press over a parameter, the locked Nav bar under the mobile layout.

@@ -52,7 +52,9 @@ const LIVE_SAMPLE = ['ptr', 'sorbet-s-convolution-mainframe', 'the-modding-tree'
 const SAMPLE = a.games ? String(a.games).split(',').filter(Boolean) : LIVE ? LIVE_SAMPLE : GAMES();
 // Served bytes vs `git show HEAD:<path>`. The loader's own inputs, the roster, and one file from the odd game's tree
 // — enough to tell "serving this commit" from "serving the previous one", which is the failure a green deploy hides.
-const SERVED = ['index.html', 'loader/page.js', 'loader/layerlist.js', 'manifests/index.json', gamePath('sorbet-s-convolution-mainframe', 'Javascript/Mod.js')];
+// (S4) + the embed tag and the module it loads: `/v1/embed.js` is what every author's page names (docs/embed.md), so a
+// deploy that does not serve THIS commit's copy is the one an author would see first.
+const SERVED = ['index.html', 'loader/page.js', 'loader/layerlist.js', 'v1/embed.js', 'loader/embed.mjs', 'manifests/index.json', gamePath('sorbet-s-convolution-mainframe', 'Javascript/Mod.js')];
 const SETTLE_TRIES = Number(a['settle-tries'] ?? 30);
 const SETTLE_MS = Number(a['settle-ms'] ?? 10000);
 const result = { gate: LIVE ? 'G5 live deploy' : 'G5 bare clone', mode: LIVE ? 'live' : 'clone', games: SAMPLE, commit: headCommit(), repoClean: git(REPO, 'status', '--porcelain') === '', steps: [] };

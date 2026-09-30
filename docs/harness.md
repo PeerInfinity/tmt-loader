@@ -821,3 +821,36 @@ two places rather than a hunt for paths:
 directory and that `.gitmodules` declares it. Comments and docs may say `games/` freely; JSON records are data. The
 patterns are a net for the forms this tree has used, not a parser. Behaviour is unchanged: every output (messages,
 records, the generated docs, the staged site) is byte-identical at `GAMES_PATH = 'games'`.
+
+## Gate E1 — embed mode: the game's own page, the loader on another origin (S4, 2026-09-29)
+
+```
+node tools/harness/embed.mjs [<id>...] [--json out.json]      # default: ptr something (2.2.1 and 2.7)
+```
+
+The fixture is what an AUTHOR has (docs/embed.md): the game's own `index.html` with the one-line `v1` tag added after
+its last `</script>`, served by an in-process `node:http` server on one origin (`/f/<fixture>/…`, straight from
+`gameDir(id)` — the seam), and the loader served from the repository root on a DIFFERENT origin with
+`access-control-allow-origin: *` (what Pages and jsDelivr send). The game's own internet — the vue it loads from a CDN,
+a web font — is routed to the vendored copy or an empty stylesheet, only for URLs its manifest's `load.external`
+lists; everything else is blocked and counted as in `page.mjs`. Every page is its own browser context.
+
+⛔ Every verdict is the RENDERED page, as in O1, and a feature that is on is compared against the HOSTED page with the
+same parameter — never against a written expectation.
+
+| leg | asserts |
+|---|---|
+| i inert | the tag, everything offered, nothing on: flags all off, no `tmt-*` class, no loader stylesheet, no bar, no `au` node, no `player.au`, only `loader/options.js` executed, the store empty — and the page equals the game's page WITHOUT the tag (tree nodes, `player` keys, stylesheets, title). The loader was asked for exactly five files |
+| ii author defaults | each of the 7 non-empty `data-on` sets: exactly those features on (the bar `implied` by the layout), source `author`, and the page equal to the hosted twin |
+| iii not offered | `data-load="mobile"` + `?navbar=1&automation=1`: both off (`absent`), one button, no bar/automation file; `data-load="navbar automation"` + `?mobile=1`: no layout; ⚖ `data-load="mobile" data-on="mobile"`: the layout brings its bar, equal to the hosted `?mobile=1` page, one button; `data-load=""`: no section at all |
+| iv the press | `data-on="navbar"`: press → off (stored `false`), remembered across a reload; automation pressed on, remembered; the bar pressed back on — each page equal to its hosted twin |
+| v URL first | `?navbar=1` over stored `false`; `?navbar=0` over the author's default; `?automation=0` over stored `true`; stored `false` over the author's default |
+| vi the file | `tmt-loader.json` replaces the tag per field (`load`, `on`) and its `autoTable` is the one in force (a distinctive table: the generic kind order reversed), over the loader's own for a named game; `data-settings` with no file → the tag's settings; `data-game` alone → the loader's table (or derived); neither → derived; a broken table → `error` names it, and the game still draws its tree and runs |
+| M layout | the phone page (layout on) against the hosted `?mobile=1` page: no escaping control, no more small targets, the same bar buttons and columns; the desktop page (bar on) against the hosted `?navbar=1` page's buttons and the plain page's columns |
+| O options | the section: absent until the tab opens, one button per offered extra, the note ("reloads the page", "this site"), no "All games" link, removed when the tab closes; a press over `?mobile=1` drops the parameter and stores `false`; the Nav bar locked under the layout, a press on it changes nothing |
+| vii requests | every embed page above judged by `embedverdict.mjs`: the loader was asked only for the files the resolved features need (`declaredLoaderFiles`), never for a hosted game file; the game's origin asked for `tmt-loader.json` only with `data-settings`; no external URL the manifest does not list; no failed request the manifest does not declare |
+
+`embedverdict.mjs` is dependency-free so `loader/embed.test.mjs` (the `fast` job) tests it; the same test file holds
+the flag order (every cell), the settings precedence, and that `attach.mjs` / `embed.mjs` / `v1/embed.js` never build a
+game URL. CI: the `embed` job of `sweep.yml` (after `fast`), which asserts `E1 embed: 2/2 GREEN`. The mutants that show
+each leg can fail are `tools/harness/mutants-s4.sh`.

@@ -384,6 +384,70 @@ jobs:
           retention-days: 7
 
   # ---------------------------------------------------------------------------------------------------------------
+  # E1 — EMBED MODE (S4, docs/embed.md): the loader's extras on an author's OWN page. The game's own index.html plus
+  # the one-line tag, on one local origin; the loader on another, with CORS. One game per engine family: ptr (2.2.1)
+  # and something (2.7 — whose mod files load ASYNC, the case that decides when the extras may go in). Legs i–vii,
+  # M (layout against the hosted twin) and O (the options section) — tools/harness/embed.mjs says what each asserts.
+  # ⛔ The set is named once and the gate prints `E1 embed: N/M GREEN`; the assertion below refuses a run that
+  # covered fewer games than it was given.
+  # ---------------------------------------------------------------------------------------------------------------
+  embed:
+    name: E1 — embed mode
+    needs: fast
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true   # games/ is the tmt-loader-games submodule; this job reads game files
+          fetch-depth: 1
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - run: npm ci
+
+      - name: Cache the Playwright browser
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+
+      - run: npx playwright install --with-deps chromium
+
+      - name: E1 on one game per engine family
+        shell: bash
+        run: |
+          set -o pipefail
+          SET='ptr something'
+          echo "E1_N=$(echo $SET | wc -w)" >> "$GITHUB_ENV"
+          node tools/harness/embed.mjs $SET --json e1.json | tee e1.txt
+
+      - name: Assert the run covered the set it was given
+        if: always()
+        shell: bash
+        run: |
+          {
+            echo '## E1 — embed mode'
+            echo ''
+            echo '```'
+            grep -a '^E1 ' e1.txt || echo 'NO E1 OUTPUT'
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+          grep -aqx "E1 embed: ${E1_N}/${E1_N} GREEN" e1.txt
+
+      - name: Upload the result
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e1
+          path: e1.json
+          if-no-files-found: warn
+          retention-days: 7
+
+  # ---------------------------------------------------------------------------------------------------------------
   # A1 part 2 — the `au` TAB ITSELF (`gates-a1.mjs --part 2`). Until V1 this ran NOWHERE in CI: only part 1's half
   # (the registry with no per-game table) rode inside M1's `both` leg, so every check of the tab the player actually
   # sees — the toggles' text, `?profile=all` not writing the save, a toggle surviving a reload, the disclosure line,

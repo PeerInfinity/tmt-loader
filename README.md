@@ -58,10 +58,13 @@ repository.
 **If one of these is your game and you'd like it removed, [open an issue](https://github.com/PeerInfinity/tmt-loader/issues)
 and I'll take it down.** No explanation needed.
 
-I'm considering a few changes. One option is to rework this so it stores no copies at all: the loader would load
-each game straight from its author's own repository. I also plan to let authors add the optional extras (mobile
-layout, automation tools) to their own game's page with a script tag. Feedback on either is welcome in the issues,
-including "please don't".
+**You can also add the extras to your own game's page**, with one `<script>` line after your game's scripts. Your
+players get the mobile layout, the nav bar and the automation tools as buttons in your options tab, all off until
+someone turns them on, and their saves stay where they are. You choose which extras are offered and which are on by
+default. How: **[docs/embed.md](docs/embed.md)**.
+
+I'm also considering reworking this so it stores no copies at all: the loader would load each game straight from its
+author's own repository. Feedback is welcome in the issues, including "please don't".
 
 ## For developers
 
@@ -82,6 +85,7 @@ in an existing clone). The history before the games moved out is in
 | [docs/planner.md](docs/planner.md) | the planner built on top of the automation registry |
 | [docs/mobile.md](docs/mobile.md) | `?mobile=1` and `?navbar=1` — the mobile layout, the nav bar, the layer list, and their gate |
 | [docs/options.md](docs/options.md) | the Options section — the three opt-ins as buttons, the remembered preference, and gate O1 |
+| [docs/embed.md](docs/embed.md) | embed mode `v1` — the extras on an author's own page: the tag, `tmt-loader.json`, and gate E1 (at the end) |
 | [`tools/harness/results/SUMMARY.md`](tools/harness/results/SUMMARY.md) | every gate run, with the state hashes it measured |
 
 ## License

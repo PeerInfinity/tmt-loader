@@ -122,3 +122,22 @@ import a save you would not run a script from. The loader adds these guards and 
 | `automate()` per `gameLoop` | once per layer, but **skipped for a layer not unlocked** (`unl(layer)`); never from `updateTemp` | once per layer, every tree layer; never from `updateTemp` |
 | side layers | no reset (`rowReset("side")` skips `layerDataReset`) | no reset (`!isNaN(row)` guard); `gameLoop` writes `player[side].best` from `points` every tick |
 | headless prestubs | `colors` (declared only in the skipped `canvas.js`) | none |
+
+## On an AUTHOR'S page — embed mode (S4, 2026-09-29)
+
+`loader/embed.mjs` creates `window.tmtLoader` on an author's own page (docs/embed.md) — **after** the game's scripts,
+not before them, because the page was not built by the loader. What differs from the table above:
+
+| Member | On an author's page |
+|---|---|
+| `embed` | `true` (absent on the hosted page) |
+| `id`, `manifest` | the tag's / file's `game` (a loader id), or `null`; `manifest` is fetched only with automation on and an id |
+| `flagsLoaded` | `{mobile, navbar, automation}` — which extras the author OFFERS (`data-load`). The Options section draws a button for these only; absent on the hosted page, which offers all three |
+| `flagSource` | gains `author` (the author's `data-on` answered) and `absent` (not offered: off, and a URL parameter is ignored) |
+| `settings` | `{load, on, game, table, from}` — the author's settings as read (`loader/flags.mjs` `readSettings`); `from` says which of `tag` \| `file` \| `default` answered each field |
+| `tableFrom` | `author` (the file's `autoTable`, R2) \| `loader` (`games-auto/<id>.json` for a named game) \| `derived` |
+| `prefs.write` | stores the player's answer either way — `false` too — because an author can make a feature on by default (`serializePrefs(…, {keepFalse: true})`) |
+| `storage` | `{prefix: 'tmt-loader:@<page directory>:', raw, list(), embed: true}` — the loader's OWN per-page keys only. **No save prefix is installed**: the game's keys are its own, and `list()` never shows them |
+| `managed`, `pause()`/`resume()`, `timers`, `plan`, `modFiles` | absent / `false` — there is no timer shim on a page the loader did not build |
+| `tick`, `stateJSON`, `hash`, `save`, `loadFrom`, `ids`, `profile` | only with automation on: `loader/tmt-auto.js` (which defines them) is inserted on an author's page only when the automation tools are on — the contract is the harness's (`attach.mjs`, `contract: false`). With automation on, `profile('saved')` is applied after the game's `onload`, as on an unmanaged hosted page |
+| `ready`, `error` | as above, except that a failure shows **no overlay**: it is logged, recorded in `error`, and the game runs without the extras |

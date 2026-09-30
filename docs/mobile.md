@@ -3002,3 +3002,21 @@ still be green on the other legs, and the summary names every game that abstaine
   controls sit outside it, unreachable. Measured on the mutant run (the layout rules removed): 11 of 18 views red
   on escaping controls and tap size, `docScrollWidth` 390 throughout. The escaping-element check is what carries
   this gate; the `scrollWidth` assertion is a cheap second opinion.
+
+## S4 — on an author's own page: the layout and the bar as two offered extras (2026-09-29)
+
+Embed mode (docs/embed.md) offers the mobile layout and the nav bar as SEPARATE extras (⚖ R15: offered, and on by
+default, each on its own). The rule that `mobile` implies the bar is kept, and decided once for both pages in
+`loader/flags.mjs`:
+
+- both offered: exactly the hosted behaviour — the layout brings the bar, and the Nav bar button is drawn locked;
+- ⚖ **the layout offered, the bar NOT offered**: the layout STILL brings its bar (source `implied`) — the mobile page is
+  the same page everywhere, and its master-detail navigation is the bar — and there is simply **no Nav bar button**.
+  A player cannot have the bar without the layout on such a page. Nothing is refused and nothing is warned about.
+  (Listed for the user in the plan's S4 as-built, since it decides what a player sees.)
+
+The files are the same files: `attach.mjs` links `loader/mobile.css` (and, with the bar, `navbar.css`, `layerlist.css`,
+`navbar.js`, `layerlist.js`) after the game's own stylesheets, as boot always did. On an author's page the `tmt-mobile`
+class goes on `<html>` when the settings are known (the page is still loading), not before the markup — the hosted
+page's "no unstyled flash" is as good as the author's page allows. Gate E1's `M-layout` leg holds the embed phone page
+and the embed desktop nav-bar page to their hosted twins' geometry.
