@@ -119,6 +119,8 @@ test('every record is attributed: auto (feature, slot, reason code), game (insid
     assert.ok(r.why && /^acted:/.test(r.why.code), `and the reason code its decision returned (${r.why && r.why.code})`);
     assert.equal(r.did, true, 'a refused automation call is counted, not written');
   }
+  const rs = auto.find((r) => r.why.code === 'acted:reset');
+  assert.ok(rs && rs.why.values && rs.why.values.layer === 'p' && typeof rs.why.values.gain === 'string', `a reset carries its decision's values, plain (${JSON.stringify(rs && rs.why)})`);
   assert.ok(A.some((r) => r.source === 'game' && r.call === 'doReset' && r.did === true), 'the game\'s own reset inside gameLoop is a `game` record');
   const pl = A.filter((r) => r.source === 'player');
   assert.equal(pl.length, 1); assert.equal(pl[0].call, 'buyUpgrade'); assert.deepEqual(pl[0].args, ['p', 12]); assert.equal(pl[0].did, false, 'a refused press is written, marked did:false');

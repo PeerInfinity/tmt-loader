@@ -36,15 +36,17 @@ kinds of record.
  "config":{"diff":1,"profile":"all","autoOpt":…,"noCurrency":false,"noAuto":false,"ladder":"tools/harness/ladder/ptr.json","every":600},
  "hooks":{"family":"ptr","globals":[…],"layer":[…],"gameLoop":true}}
 {"type":"action","tick":…,"gs":…,"source":"auto","by":"reset:q","at":["q","slot"],"call":"doReset","args":["q"],
- "did":true,"state":{"q.p":"12","points":"1.2e345"},"hash":"…","why":{"code":"acted:reset"}}
+ "did":true,"state":{"q.p":"12","points":"1.2e345"},"hash":"…","why":{"code":"acted:reset","values":{"layer":"q","gain":"3","rule":"…"}}}
 {"type":"event","tick":…,"gs":…,"kind":"upg","layer":"q","id":"22","key":"q:upg:22","marks":["M26 — …"]}
 {"type":"checkpoint","tick":…,"gs":…,"why":"start|interval|mark|stop","mark":"M12","hash":"…",
  "summary":{…},"player":"<the whole save as JSON>","runtime":{…}}
 ```
 
 - **`source`** — who acted. `player`: you (a button, a hotkey). `auto`: the automation, with **`by`** (the feature),
-  **`at`** (the layer and the point in the tick it acted in) and **`why.code`** (the reason code its decision returned —
-  the same codes as the Advanced view; `docs/automation.md`, "The reason vocabulary"). `game`: the game's own
+  **`at`** (the layer and the point in the tick it acted in), **`why.code`** (the reason code its decision returned —
+  the same codes as the Advanced view; `docs/automation.md`, "The reason vocabulary") and **`why.values`** (that
+  decision's own numbers, one level deep: a reset's gain and the rule that fired, a give-up's progress against its
+  bar, the ids an upgrade run bought). `game`: the game's own
   automation (its auto-prestige, an autobuyer) — a call made inside the game's tick with no automation feature acting.
   `queue` is reserved for the action queues that come next; nothing writes it yet.
 - **`call`, `args`** — the engine function and its arguments, exactly as called: `doReset`, `buyUpgrade`, `buyBuyable`,

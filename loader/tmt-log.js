@@ -139,7 +139,9 @@
   }
 
   // ---- arguments: JSON, with the few values JSON cannot carry tagged --------------------------------------------------
-  function isBig(v) { return v && typeof v === 'object' && typeof v.mag === 'number' && 'sign' in v && typeof v.toString === 'function'; }
+  // a big number, whichever library the game ships (break_eternity, OmegaNum, ExpantaNum, decimal.js …): an object
+  // with a toString of its own — generic on purpose, as every other reading of these types in the loader is
+  function isBig(v) { return !!v && typeof v === 'object' && !Array.isArray(v) && typeof v.toString === 'function' && v.toString !== Object.prototype.toString; }
   function enc(v) {
     if (v === undefined) return { $: 'u' };
     if (typeof v === 'function') return { $: 'f' };
@@ -220,12 +222,30 @@
       call: 'set', args: [l, field, enc(value)], did: true, state: delta(summary()), hash: hash16(json) };
     if (auto) auto.buf.push(rec); else emit(rec);
   }
+  // the decision's own `values` (the reset's gain and rule, a give-up's progress against its bar, the ids bought), made
+  // plain: numbers and strings as they are, a big number as its string, one level deep — what `say()` was told
+  function plainValues(v) {
+    if (!v || typeof v !== 'object') return undefined;
+    var o = {}, k, x;
+    for (k in v) {
+      x = v[k];
+      if (x === undefined || typeof x === 'function') continue;
+      if (x === null || typeof x === 'string' || typeof x === 'boolean') o[k] = x;
+      else if (typeof x === 'number') o[k] = isFinite(x) ? x : String(x);
+      else if (isBig(x)) o[k] = String(x);
+      else if (Array.isArray(x)) o[k] = x.map(function (y) { return y === null || typeof y === 'string' || typeof y === 'boolean' || (typeof y === 'number' && isFinite(y)) ? y : String(y); });
+      else o[k] = enc(x);
+    }
+    return o;
+  }
   var execLink = {
     begin: function (f, l, via) { auto = { id: f.id, layer: l, via: via, buf: [] }; },
-    end: function (f, r) {
+    // `given` (a replay): the original record's reason, carried over as it was
+    end: function (f, r, given) {
       var a = auto; auto = null;
       if (!a || !a.buf.length) return;
-      var why = r && r.code ? { code: String(r.code) } : { code: 'threw' };
+      var why = given || (r && r.code ? { code: String(r.code) } : { code: 'threw' });
+      if (!given && r && r.values) { try { var pv = plainValues(r.values); if (pv) why.values = pv; } catch (e) { counts.errors++; } }
       for (var i = 0; i < a.buf.length; i++) { a.buf[i].why = why; emit(a.buf[i]); }
     },
     set: function (l, field, value) { if (on) { try { recordSet(l, field, value); } catch (e) { counts.errors++; } } },
@@ -469,7 +489,7 @@
             ti++; applied++;
             apply(q);
           }
-        } finally { execLink.end({ id: r.by }, { code: code }); }
+        } finally { execLink.end({ id: r.by }, null, r.why || { code: code }); }
       }
     }
     function between() {
