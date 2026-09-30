@@ -13,7 +13,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { interpret, executionOrder, scriptNames, modFilePaths, LOADER_RE } from '../../loader/interpret.mjs';
-import { REPO, GAMES, parseArgs, readManifest, sha256hex, writeJSON } from './lib.mjs';
+import { REPO, GAMES, parseArgs, readManifest, sha256hex, writeJSON, gameDir, gamesRoot } from './lib.mjs';
 import { runNode } from './run.mjs';
 import { classify } from '../media-lib.mjs';
 import { checkMedia } from '../media.mjs';
@@ -64,7 +64,7 @@ export function missingAssetsOf(root, entry = 'index.html') {
 
 /** What load.known must equal, measured from the tree: {missingScripts, missingAssets, externalHosts, hostFiles}. */
 export function knownFromTree(id, m, plan, modFiles) {
-  const root = path.join(REPO, 'games', id);
+  const root = gameDir(id);
   const { static: statics, slot } = executionOrder(plan);
   // loader.js is not in the list: the loader fetches its source (a loader input, never skipped)
   const named = [...statics.filter((x) => x.src != null && !x.vendor).map((x) => x.src), ...modFilePaths(slot, modFiles)];
@@ -85,7 +85,7 @@ export function knownFromTree(id, m, plan, modFiles) {
 
 export function checkManifest(id, { boot = true } = {}) {
   const m = readManifest(id);
-  const root = path.join(REPO, 'games', id);
+  const root = gameDir(id);
   const problems = [];
   const html = fs.readFileSync(path.join(root, m.entry || 'index.html'), 'utf8');
   let plan = interpret(html, m);
@@ -174,7 +174,7 @@ export function checkManifest(id, { boot = true } = {}) {
   // the working tree against its own commit — in whichever repository holds games/ (`git -C games`: the outer repo while
   // games/ is a directory, the submodule once it is one). Skipped, and said so, where there is no git at all.
   let dirty = null;
-  try { dirty = execFileSync('git', ['-C', path.join(REPO, 'games'), 'status', '--porcelain', '--', id], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }).trim(); } catch { dirty = null; }
+  try { dirty = execFileSync('git', ['-C', gamesRoot(), 'status', '--porcelain', '--', id], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }).trim(); } catch { dirty = null; }
   if (dirty) problems.push({ field: 'games pristine (working tree)', dirty });
   // headless.idleHash.census — RETIRED with Q6 (2026-09-22). It recorded the census's hash beside ours where the two
   // disagreed; its one instance (the-collab-tree-lun4-r, `cheese.cycle`) was the census boot pre-clearing

@@ -13,13 +13,14 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { judgeLoad } from '../tools/harness/loadverdict.mjs';
+import { gamePath } from '../tools/harness/lib.mjs';
 
 const BASE = 'http://127.0.0.1:9999/';
 const manifest = { id: 'g', load: { known: { missingScripts: [], externalHosts: [], errorsBeforeReady: 0 } } };
 const loader = { skipped: [], pageErrors: [] };
 const judge = (failed) => judgeLoad(manifest, BASE, { failed, blocked: [], pageErrors: [] }, loader);
-const MEDIA = `${BASE}games/g/audio/elevatorMusic1.mp3`;
-const SCRIPT = `${BASE}games/g/js/layers.js`;
+const MEDIA = `${BASE}${gamePath('g', 'audio/elevatorMusic1.mp3')}`;
+const SCRIPT = `${BASE}${gamePath('g', 'js/layers.js')}`;
 
 test('an UNPAIRED abort does not fail the load, and is still reported', () => {
   const v = judge([`${MEDIA} net::ERR_ABORTED`]);

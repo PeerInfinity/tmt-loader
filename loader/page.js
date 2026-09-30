@@ -48,6 +48,11 @@ function parseOptions(s) {
   return o;
 }
 const abs = (p) => new URL(p, SELF).href;
+// ⚖ R8 — THE SEAM, page side: the one place a game's URL is built. Its fetches (index.html, the loader slot) resolve
+// against it, and it becomes the <base href> every other game file resolves against. The Node twin is
+// tools/harness/lib.mjs (`GAMES_PATH`, `gameDir`); loader/seam.test.mjs holds that both name the same directory and
+// that nothing else in loader/, tools/ or .github/ spells it.
+const gameBase = (id) => abs(`games/${id}/`);
 
 const T = (window.tmtLoader = { id: MOD, manifest: null, ready: false, error: null, managed: MANAGED, automation: AUTOMATION, mobile: MOBILE, navbar: NAVBAR, options: OPTIONS, step: 'init', loaded: [], skipped: [], pageErrors: [] });
 // what each opt-in is, and WHO said so — `url` | `stored` | `implied` | `default` (docs/options.md). The Options
@@ -116,14 +121,14 @@ async function boot(id) {
   step('fetch manifest');
   const manifest = JSON.parse(await fetchText(abs(`manifests/${id}.json`), 'manifest'));
   T.manifest = manifest;
-  const gameBase = abs(`games/${id}/`);
+  const gameHref = gameBase(id);
   step('fetch index.html');
-  const html = await fetchText(new URL(manifest.entry || 'index.html', gameBase).href, 'index.html');
+  const html = await fetchText(new URL(manifest.entry || 'index.html', gameHref).href, 'index.html');
 
   step('interpret');
   let plan = interpret(html, manifest);
   const slot0 = executionOrder(plan).slot;
-  if (slot0) plan = interpret(html, manifest, { loaderSource: await fetchText(new URL(slot0.loader, gameBase).href, 'loader.js') });
+  if (slot0) plan = interpret(html, manifest, { loaderSource: await fetchText(new URL(slot0.loader, gameHref).href, 'loader.js') });
   T.plan = plan;
 
   // 4. pre-engine shims, in order: save prefix, timer recorder, then <base>
@@ -135,7 +140,7 @@ async function boot(id) {
   T.pause = () => timers.pause();
   T.resume = () => timers.resume();
   const base = document.createElement('base');
-  base.href = gameBase;
+  base.href = gameHref;
   document.head.appendChild(base);
 
   // 5. stylesheets, then the fork's markup (so #app exists before Vue)

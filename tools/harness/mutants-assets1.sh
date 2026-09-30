@@ -16,10 +16,12 @@ git -C "$REPO" worktree add --detach -q "$WT" HEAD
 # gitlink directory. The games come from THIS checkout's games/, as a plain clone at the pinned commit, ON A BRANCH (the
 # mutants commit there, and media.mjs --write refuses a detached HEAD). ⛔ Not `git submodule init`/`update --init`: in
 # a worktree those write submodule.games.* into the SHARED config — the same trap as the identity below.
-PIN=$(git -C "$REPO" rev-parse HEAD:games)
-rmdir "$WT/games" 2>/dev/null
-git clone -q --no-checkout "$REPO/games" "$WT/games"
-git -C "$WT/games" checkout -q -B mutants "$PIN"
+# The directory's name comes from the seam (R8, tools/harness/lib.mjs GAMES_PATH), never spelled here.
+G=$(node "$REPO/tools/harness/lib.mjs" --games-path); [ -n "$G" ] || { echo "no games path from tools/harness/lib.mjs"; exit 2; }
+PIN=$(git -C "$REPO" rev-parse "HEAD:$G")
+rmdir "$WT/$G" 2>/dev/null
+git clone -q --no-checkout "$REPO/$G" "$WT/$G"
+git -C "$WT/$G" checkout -q -B mutants "$PIN"
 ln -s "$REPO/node_modules" "$WT/node_modules"
 export TMT_PYTHON="${TMT_PYTHON:-$REPO/.venv/bin/python3}"
 cd "$WT"
@@ -35,7 +37,7 @@ original() { # <id> <rel> → an UNPROCESSED stand-in for upstream's original: a
   # format at its own pixel size (Pillow), an audio file that is not the stub. ⚖ R12/R13 (2026-09-29): this read the
   # original bytes out of the git-subtree squash commit, which a history-free import does not have. What M1 and M2 need
   # is a RAW file where a processed one was — not upstream's exact bytes — so the stand-in tests the same thing.
-  "$TMT_PYTHON" - "games/$1/$2" <<'PY'
+  "$TMT_PYTHON" - "$G/$1/$2" <<'PY'
 import sys
 from PIL import Image
 p = sys.argv[1]
@@ -53,32 +55,32 @@ PY
 for f in discord.png options_wheel.png remove.png resources/genericParticle.png; do original the-danus-tree "$f"; done
 # --no-commit: the four stand-ins above are tracked changes in games/, which the committing form refuses by design
 out=$(TMT_MEDIA_MUTANT=downscale node tools/media.mjs --write --no-commit --jobs 1 the-danus-tree 2>&1); st=$?
-restored=$(git -C games status --porcelain the-danus-tree | wc -l)
+restored=$(git -C "$G" status --porcelain the-danus-tree | wc -l)
 if [ $st -ne 0 ] && grep -q "DIMENSIONS CHANGED" <<<"$out" && [ "$restored" = 4 ]; then verdict "M1 downscale (exit $st, 4 originals left in place, not a halved WebP)" red; else verdict M1 green "exit $st, $restored files differ: $out"; fi
-git -C games checkout -q HEAD -- the-danus-tree
+git -C "$G" checkout -q HEAD -- the-danus-tree
 
 # M2 — a re-pin restores originals (COMMITTED in games/, as a re-pin would)
 original ptr images/achs/11.png; original the-jax-tree resources/song/layer1.ogg
-git -C games commit -qam "mutant: a re-pin restored two originals"
+git -C "$G" commit -qam "mutant: a re-pin restored two originals"
 node tools/media.mjs ptr the-jax-tree > m2.txt 2>&1; st=$?
 cm=$(node tools/harness/check-manifest.mjs ptr 2>&1 | tail -1)
 if [ $st -ne 0 ] && grep -q "ptr/images/achs/11.png" m2.txt && grep -q "the-jax-tree/resources/song/layer1.ogg" m2.txt; then verdict "M2a media check names both restored originals (exit $st)" red; else verdict M2a green "$(tail -3 m2.txt)"; fi
 if grep -q "ptr=RED" <<<"$cm" && node tools/harness/check-manifest.mjs ptr 2>/dev/null | grep -q '"games pristine (media)"'; then verdict "M2b check-manifest ptr RED on games pristine (media)" red; else verdict M2b green "$cm"; fi
-git -C games reset -q --hard HEAD~1
+git -C "$G" reset -q --hard HEAD~1
 
 # M3 — a stub that is a 404 (sorbet requests its only sound at load: `let sounds = [new Audio("Sounds/TouchGoop.ogg")]`)
-git -C games rm -q sorbet-s-convolution-mainframe/Sounds/TouchGoop.ogg
+git -C "$G" rm -q sorbet-s-convolution-mainframe/Sounds/TouchGoop.ogg
 node tools/harness/page.mjs sorbet-s-convolution-mainframe --gate load > m3.txt 2>&1; st=$?
 if [ $st -ne 0 ] && grep -qi "TouchGoop" m3.txt; then verdict "M3 G1 RED on the 404 (exit $st)" red; else verdict M3 green "exit $st: $(tail -3 m3.txt)"; fi
-git -C games reset -q --hard HEAD
+git -C "$G" reset -q --hard HEAD
 
 # M4 — the exception is MEDIA ONLY: a code edit and a licence edit are each `games pristine`
-echo "// mutant" >> games/ptr/js/mod.js; git -C games commit -qam "mutant: a code edit"
+echo "// mutant" >> "$G"/ptr/js/mod.js; git -C "$G" commit -qam "mutant: a code edit"
 if node tools/harness/check-manifest.mjs ptr 2>/dev/null | grep -q '"notMedia":\[{"status":"M","rel":"js/mod.js"}'; then verdict "M4a code edit → games pristine (notMedia js/mod.js)" red; else verdict M4a green "$(node tools/harness/check-manifest.mjs ptr 2>&1 | tail -2)"; fi
-git -C games reset -q --hard HEAD~1
-echo "mutant" >> games/ptr/LICENSE; git -C games commit -qam "mutant: a licence edit"
+git -C "$G" reset -q --hard HEAD~1
+echo "mutant" >> "$G"/ptr/LICENSE; git -C "$G" commit -qam "mutant: a licence edit"
 if node tools/harness/check-manifest.mjs ptr 2>/dev/null | grep -q '"rel":"LICENSE"'; then verdict "M4b licence edit → games pristine (notMedia LICENSE)" red; else verdict M4b green "$(node tools/harness/check-manifest.mjs ptr 2>&1 | tail -2)"; fi
-git -C games reset -q --hard HEAD~1
+git -C "$G" reset -q --hard HEAD~1
 
 # M6 — the record is edited: one file's blob id changed (to the id of the processed bytes, the likeliest "fix")
 python3 - <<'PY'
@@ -101,7 +103,7 @@ git checkout -q HEAD -- .github
 
 cd "$REPO"
 # the games clone goes first, so the worktree removal never has to decide what to do with a nested repository
-rm -rf "$WT/games"
+rm -rf "$WT/$G"
 git worktree remove --force "$WT"
 echo "mutants-assets1: $pass killed, $fail survived"
 [ $fail -eq 0 ]

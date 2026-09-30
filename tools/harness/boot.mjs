@@ -40,6 +40,7 @@ import crypto from 'node:crypto';
 import { interpret, executionOrder, modFilePaths } from '../../loader/interpret.mjs';
 import { installSavePrefix } from '../../loader/shims/save-prefix.js';
 import { DRIVE_SRC, MONITOR_SRC } from './policy.mjs';
+import { gameDir } from './lib.mjs';
 
 const proc = process;
 const REPO = path.resolve(new URL('../..', import.meta.url).pathname);
@@ -68,7 +69,7 @@ const ID = A._[0];
 const ticks = Number(A.ticks ?? 200), diff = Number(A.diff ?? 0.05), LEG = A.leg || 'idle';
 const writeOut = (f, s) => { fs.mkdirSync(path.dirname(path.resolve(f)), { recursive: true }); fs.writeFileSync(f, s); };
 const manifest = JSON.parse(fs.readFileSync(path.join(REPO, `manifests/${ID}.json`), 'utf8'));
-const ROOT = path.join(REPO, 'games', ID);
+const ROOT = gameDir(ID, REPO);
 const realConsole = console;
 const R = { id: ID, runner: 'node', files_loaded: [], files_skipped: [], file_errors: [], stubs_hit: {}, console_lines: 0 };
 

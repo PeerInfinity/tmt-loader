@@ -14,7 +14,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { execFileSync } from 'node:child_process';
-import { REPO, GAMES, parseArgs, readManifest, writeJSON, startServer } from './lib.mjs';
+import { REPO, GAMES, parseArgs, readManifest, writeJSON, startServer, gameDir, gamePath, GAMES_PATH } from './lib.mjs';
 
 const a = parseArgs(process.argv.slice(2), []);
 const ids = a._.length ? a._ : GAMES();
@@ -38,7 +38,7 @@ function namedByTheGame(id, p) {
   const inManifest = (m.load.modFiles || []).some((f) => f != null && (String(f) === base || String(f) === p))
     || (m.load.scripts || []).some((s) => s === p);
   if (inManifest) return true;
-  const index = path.join(REPO, 'games', id, m.entry || 'index.html');
+  const index = path.join(gameDir(id), m.entry || 'index.html');
   try { return fs.readFileSync(index, 'utf8').includes(base); } catch { return false; }
 }
 
@@ -63,7 +63,7 @@ if (wantErrors.length) {
       await page.goto(`${srv.url}?mod=${encodeURIComponent(id)}&managed=1`, { waitUntil: 'load' });
       await page.waitForFunction(() => window.tmtLoader && (window.tmtLoader.ready || window.tmtLoader.error), null, { timeout: 30000 });
       await page.waitForTimeout(700);
-      pageErrors[id] = await page.evaluate(() => window.tmtLoader.pageErrors.map((e) => ({ when: e.when, message: e.message, file: (e.filename || '').replace(/^.*\/games\/[^/]+\//, '') || '(inline)' })));
+      pageErrors[id] = await page.evaluate((G) => window.tmtLoader.pageErrors.map((e) => ({ when: e.when, message: e.message, file: (e.filename || '').replace(new RegExp(`^.*/${G}/[^/]+/`), '') || '(inline)' })), GAMES_PATH);
     } catch (e) { pageErrors[id] = [{ when: 'probe-failed', message: String(e.message || e).slice(0, 200), file: '' }]; }
     await ctx.close();
   }
@@ -84,11 +84,11 @@ for (const id of ids) {
     if (p.field === 'load.known.missingScripts') {
       const suspect = (p.inTreeNotDeclared || []).filter((x) => !namedByTheGame(id, x));
       findings.push({ kind: 'declarable', key: 'missingScripts', suggest: p.inTreeNotDeclared,
-        evidence: `the index names these and games/${id}/ does not have them`,
+        evidence: `the index names these and ${gamePath(id)}/ does not have them`,
         warn: suspect.length ? `⚠ ${JSON.stringify(suspect)} appears in NEITHER the index nor modFiles — a path WE derived, not one the game asks for. Fix the derivation; do not declare it.` : null });
     } else if (p.field === 'load.known.missingAssets') {
       findings.push({ kind: 'declarable', key: 'missingAssets', suggest: p.inTreeNotDeclared,
-        evidence: `the entry document names these assets and games/${id}/ does not have them (case-sensitive)`, warn: null });
+        evidence: `the entry document names these assets and ${gamePath(id)}/ does not have them (case-sensitive)`, warn: null });
     } else if (p.field === 'load.known.externalHosts') {
       findings.push({ kind: 'declarable', key: 'externalHosts', suggest: p.inTreeNotDeclared,
         evidence: `absolute asset URLs in the tree: ${j(p.files || {}, 300)}`, warn: null });

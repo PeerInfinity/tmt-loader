@@ -30,7 +30,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { spawn, execFileSync } from 'node:child_process';
-import { REPO, parseArgs, headCommit, treeDirty, writeJSON, readLadder, writeLadder, firstDivergence, maskedPlayer, entryOnly, withPreF1, PRE_F1 } from './lib.mjs';
+import { REPO, gameDir, gamePath, parseArgs, headCommit, treeDirty, writeJSON, readLadder, writeLadder, firstDivergence, maskedPlayer, entryOnly, withPreF1, PRE_F1 } from './lib.mjs';
 import { appendSection } from './summary.mjs';
 import { ladderSlice } from './run.mjs';
 entryOnly(import.meta.url);  // a battery, not a library — see lib.mjs
@@ -127,7 +127,7 @@ async function part1() {
     notes: `eval ${JSON.stringify(u.eval)} (a throwing predicate reads false in the monitor and in table gates)` });
   const helperRows = Object.entries(L.helpers).map(([h, where]) => {
     const [file, line] = where.split(' ')[0].split(':');
-    const src = fs.readFileSync(path.join(REPO, 'games/ptr', file.replace(/^games\/ptr\//, '')), 'utf8').split('\n');
+    const src = fs.readFileSync(path.join(gameDir('ptr'), file.startsWith(gamePath('ptr', '')) ? file.slice(gamePath('ptr', '').length) : file), 'utf8').split('\n');
     const atLine = line ? new RegExp(`^function ${h}\\s*\\(`).test(src[Number(line) - 1] || '') : /Decimal/.test(src.join('\n'));
     return [h, where, atLine, b.eval?.[h]];
   });

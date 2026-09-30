@@ -11,7 +11,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { chromium } from 'playwright';
-import { REPO, GAMES, parseArgs, startServer, readManifest, headCommit, treeDirty, writeJSON, entryOnly, gateCoverage, coverageLine } from './lib.mjs';
+import { REPO, gamePath, GAMES, parseArgs, startServer, readManifest, headCommit, treeDirty, writeJSON, entryOnly, gateCoverage, coverageLine } from './lib.mjs';
 import { runNode } from './run.mjs';
 import { openContext, openGame, pageTick } from './page.mjs';
 import { parity } from './parity.mjs';
@@ -94,7 +94,7 @@ try {
       const c = compareIds(golden, live);
       row({ gate: `${tag} check-goldens unchanged`, id, ok: c.ok, ticks: 0, gameSeconds: 0, diff: null, hash: null, notes: `${live.ids.length} ids, ${Object.keys(live.layers).length} layers${c.ok ? '' : ' ' + JSON.stringify(c).slice(0, 300)}` });
       const cm = checkManifest(id);
-      row({ gate: `${tag} check-manifest`, id, ok: cm.ok, ticks: 0, gameSeconds: 0, diff: null, hash: null, notes: cm.ok ? `${cm.scripts} scripts, ${cm.modFiles} modFiles, games/${id} pristine${cm.mediaFiles ? ` up to ${cm.mediaFiles} processed media files` : ''}${m.auto ? `, auto ${m.auto}` : ''}` : JSON.stringify(cm.problems).slice(0, 300) });
+      row({ gate: `${tag} check-manifest`, id, ok: cm.ok, ticks: 0, gameSeconds: 0, diff: null, hash: null, notes: cm.ok ? `${cm.scripts} scripts, ${cm.modFiles} modFiles, ${gamePath(id)} pristine${cm.mediaFiles ? ` up to ${cm.mediaFiles} processed media files` : ''}${m.auto ? `, auto ${m.auto}` : ''}` : JSON.stringify(cm.problems).slice(0, 300) });
     }
     // the au layer in the page: tmp.au, player.au shape, node rendered, 0 errors
     {

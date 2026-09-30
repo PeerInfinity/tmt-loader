@@ -8,7 +8,7 @@
 // same property from the headers on every write, and loader/media.test.mjs drives that assertion.
 import fs from 'node:fs';
 import path from 'node:path';
-import { REPO, GAMES, parseArgs, startServer, writeJSON } from './lib.mjs';
+import { REPO, GAMES, parseArgs, startServer, writeJSON, gameDir, gamePath } from './lib.mjs';
 import { classify, walk } from '../media-lib.mjs';
 
 const a = parseArgs(process.argv.slice(2));
@@ -26,7 +26,7 @@ const root = path.resolve(a.root || REPO);
 const which = a.browser || 'chromium';
 const ids = a.only ? a.only.split(',') : GAMES();
 const pw = await import('playwright');
-const files = ids.flatMap((id) => walk(path.join(root, 'games', id)).filter((r) => classify(r) === 'image').map((r) => `games/${id}/${r}`));
+const files = ids.flatMap((id) => walk(gameDir(id, root)).filter((r) => classify(r) === 'image').map((r) => gamePath(id, r)));
 const server = await startServer(root);
 const browser = await pw[which].launch();
 const images = {};

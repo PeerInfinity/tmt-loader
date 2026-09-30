@@ -28,7 +28,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { spawn } from 'node:child_process';
 import { chromium } from 'playwright';
-import { REPO, parseArgs, startServer, readManifest, headCommit, treeDirty, writeJSON, entryOnly, SOMETHING_OLD_TABLE, withPreF1, PRE_F1 } from './lib.mjs';
+import { REPO, gamePath, parseArgs, startServer, readManifest, headCommit, treeDirty, writeJSON, entryOnly, SOMETHING_OLD_TABLE, withPreF1, PRE_F1 } from './lib.mjs';
 import { runPage } from './page.mjs';
 import { checkManifest } from './check-manifest.mjs';
 import { nodeIds, compareIds } from './check-goldens.mjs';
@@ -153,7 +153,7 @@ async function offAnchors(tag, id) {
   const c = compareIds(golden, live);
   row({ gate: `${tag} check-goldens unchanged`, id, ok: c.ok, ticks: 0, gameSeconds: 0, diff: null, hash: null, notes: `${live.ids.length} ids, ${Object.keys(live.layers).length} layers${c.ok ? '' : ' ' + JSON.stringify(c).slice(0, 300)}` });
   const cm = checkManifest(id);
-  row({ gate: `${tag} check-manifest`, id, ok: cm.ok, ticks: 0, gameSeconds: 0, diff: null, hash: null, notes: cm.ok ? `${cm.scripts} scripts, ${cm.modFiles} modFiles, games/${id} pristine${m.auto ? `, auto ${m.auto}` : ''}` : JSON.stringify(cm.problems).slice(0, 300) });
+  row({ gate: `${tag} check-manifest`, id, ok: cm.ok, ticks: 0, gameSeconds: 0, diff: null, hash: null, notes: cm.ok ? `${cm.scripts} scripts, ${cm.modFiles} modFiles, ${gamePath(id)} pristine${m.auto ? `, auto ${m.auto}` : ''}` : JSON.stringify(cm.problems).slice(0, 300) });
 }
 
 // ---- Part 1 ----------------------------------------------------------------------------------------------------------

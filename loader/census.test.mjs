@@ -12,6 +12,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
+import { gameDir } from '../tools/harness/lib.mjs';
 import { check, measure, sourcesOf, tooltipsByKind, hasHardResetOptButton, toggleAutoBodies, startDataExtras } from '../tools/census-figures.mjs';
 
 const REPO = path.resolve(new URL('..', import.meta.url).pathname);
@@ -271,7 +272,7 @@ test('every manifest name, author and version IS the game’s own declaration', 
 
 test('the reader is not bounded to mod.js — it finds modInfo wherever the game declares it', () => {
   // `the-modding-tree` (TMT 2.0.5.1) has no mod.js at all. This is the exact case the emitter missed.
-  assert.equal(fs.existsSync(path.join(REPO, 'games/the-modding-tree/js/mod.js')), false, 'the premise of this test is that this game has no mod.js');
+  assert.equal(fs.existsSync(path.join(gameDir('the-modding-tree'), 'js/mod.js')), false, 'the premise of this test is that this game has no mod.js');
   assert.deepEqual(selfDeclared('the-modding-tree'), { name: 'The Modding Tree', author: null, version: '2.0.5.1' });
   assert.equal(selfDeclared('the-burning-tree').name, 'The Burning Tree');
   // …and a game that DOES keep it in mod.js still reads the same

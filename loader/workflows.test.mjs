@@ -17,6 +17,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
+import { GAMES_PATH } from '../tools/harness/lib.mjs';
 
 const REPO = path.resolve(new URL('..', import.meta.url).pathname);
 const wf = (n) => fs.readFileSync(path.join(REPO, '.github/workflows', n), 'utf8');
@@ -393,19 +394,21 @@ test('⛔ every checkout gets the games submodule, unless its job is DECLARED no
       for (const st of checkouts) {
         const has = /^\s*submodules:\s*true\b/m.test(st);
         if (name in exempt) assert.ok(!has, `${f} ${name}: declared to read no game (${exempt[name]}) but checks out the submodule — drop one or the other`);
-        else assert.ok(has, `${f} ${name}: checks out without \`submodules: true\` — games/ would be EMPTY. If the job really reads no game file, name it in NO_GAMES with what it reads`);
+        else assert.ok(has, `${f} ${name}: checks out without \`submodules: true\` — ${GAMES_PATH}/ would be EMPTY. If the job really reads no game file, name it in NO_GAMES with what it reads`);
       }
     }
   }
 });
 
-test('⛔ the Pages deploy stages the games SUBMODULE, not only `git archive HEAD` (an empty games/ would deploy green)', () => {
+test(`⛔ the Pages deploy stages the games SUBMODULE, not only \`git archive HEAD\` (an empty ${GAMES_PATH}/ would deploy green)`, () => {
   const steps = jobs(wf('pages.yml')).deploy.split(/^ {6}- /m);
   const stage = steps.find((st) => st.includes('git archive --format=tar HEAD'));
   assert.ok(stage, 'the deploy no longer stages with git archive');
-  assert.match(stage, /git -C games archive --format=tar HEAD \| tar -x -C _site\/games/, 'the staging step does not archive the games submodule into _site/games');
-  assert.match(stage, /git -C games rev-parse HEAD\)" = "\$\(git rev-parse HEAD:games\)/, 'the staging step does not check the submodule is at the pinned commit');
-  assert.match(stage, /test "\$have" -ge "\$want"/, 'the staging step does not refuse a games/ with fewer games than the roster');
+  // the directory's name comes from the seam (R8), so the step reads it rather than spelling it
+  assert.match(stage, /G=\$\(node tools\/harness\/lib\.mjs --games-path\)\n\s*test -n "\$G"/, 'the staging step does not read the games directory from the seam (tools/harness/lib.mjs --games-path)');
+  assert.match(stage, /git -C "\$G" archive --format=tar HEAD \| tar -x -C "_site\/\$G"/, 'the staging step does not archive the games submodule into the site');
+  assert.match(stage, /git -C "\$G" rev-parse HEAD\)" = "\$\(git rev-parse "HEAD:\$G"\)/, 'the staging step does not check the submodule is at the pinned commit');
+  assert.match(stage, /test "\$have" -ge "\$want"/, 'the staging step does not refuse a games directory with fewer games than the roster');
 });
 
 test('⛔ the a1 job asks the gate to prove what it COVERED, not just that nothing failed', () => {

@@ -32,7 +32,7 @@
 //   · `js`      — the historical bug. Present only so it can be driven.
 import fs from 'node:fs';
 import path from 'node:path';
-import { REPO, GAMES, readManifest, parseArgs, writeJSON } from './harness/lib.mjs';
+import { REPO, GAMES, readManifest, parseArgs, writeJSON, gameDir, gamePath } from './harness/lib.mjs';
 
 export const BOUNDS = ['subtree', 'loaded', 'js'];
 
@@ -50,17 +50,17 @@ const walkExt = (dir, re) => (fs.existsSync(dir)
   : []);
 /** Every stylesheet in one game's subtree. */
 export function stylesOf(id, root = REPO) {
-  const dir = path.join(root, 'games', id);
-  if (!fs.existsSync(dir)) return { files: [], missing: `games/${id}/ does not exist` };
+  const dir = gameDir(id, root);
+  if (!fs.existsSync(dir)) return { files: [], missing: `${gamePath(id)}/ does not exist` };
   const files = walkExt(dir, /\.css$/i);
-  return { files, missing: files.length ? null : `games/${id}/ holds no .css file at all` };
+  return { files, missing: files.length ? null : `${gamePath(id)}/ holds no .css file at all` };
 }
 /** Every document and script in one game's subtree — the back control is written in both. */
 export function markupOf(id, root = REPO) {
-  const dir = path.join(root, 'games', id);
-  if (!fs.existsSync(dir)) return { files: [], missing: `games/${id}/ does not exist` };
+  const dir = gameDir(id, root);
+  if (!fs.existsSync(dir)) return { files: [], missing: `${gamePath(id)}/ does not exist` };
   const files = walkExt(dir, /\.(html?|js)$/i);
-  return { files, missing: files.length ? null : `games/${id}/ holds no .html or .js file at all` };
+  return { files, missing: files.length ? null : `${gamePath(id)}/ holds no .html or .js file at all` };
 }
 
 /**
@@ -68,15 +68,15 @@ export function markupOf(id, root = REPO) {
  * ⛔ `missing` is what keeps a dropped game from reading as a zero.
  */
 export function sourcesOf(id, bound = 'subtree', root = REPO) {
-  const dir = path.join(root, 'games', id);
-  if (!fs.existsSync(dir)) return { files: [], missing: `games/${id}/ does not exist` };
+  const dir = gameDir(id, root);
+  if (!fs.existsSync(dir)) return { files: [], missing: `${gamePath(id)}/ does not exist` };
   if (bound === 'js') {
     const files = walkJS(path.join(dir, 'js'));
-    return { files, missing: files.length ? null : `games/${id}/js/ holds no .js file — this game does not keep its engine under js/` };
+    return { files, missing: files.length ? null : `${gamePath(id)}/js/ holds no .js file — this game does not keep its engine under js/` };
   }
   if (bound === 'subtree') {
     const files = walkJS(dir);
-    return { files, missing: files.length ? null : `games/${id}/ holds no .js file at all` };
+    return { files, missing: files.length ? null : `${gamePath(id)}/ holds no .js file at all` };
   }
   // `loaded`: the manifest's own list — the loader's inputs, in the loader's order.
   const m = readManifest(id, root);
@@ -295,7 +295,7 @@ export function measure({ bound = 'subtree', root = REPO } = {}) {
     const g = { files: files.length, optButton: false, hardResetOpt: false, optionWheel: false, buyUpg: false, buyUpgrade: false, tabArray: 0, tabObject: 0, purchaseLimit: false, purchaseLimitInLayerSupport: false, tabButtons: false, colComponent: false, textInput: false, sliderComponent: false, dropDown: false, pseudoUnlGlobal: false, pseudoUnlComponent: false, tooltipAny: false, tooltipChipped: 0, tooltipAchievement: 0, boughtBare: false, lockedBare: false, boughtValue: null, lockedValue: null, backClass: false, backGoBack: false, toggleAutoDecl: false, toggleAutoVueSet: false, toggleAutoInData: false, prestigeGlobal: false, prestigeGlobalBr: null, prestigeGlobalShape: null, prestigeLayerBr: [], startBlocks: 0, startWithExtra: 0, startPairs: 0 };
     // the ENTRY DOCUMENT, which no `bound` covers: it is not a `.js` file and it is where 2.2.1 keeps both anchors.
     // ⛔ A game whose entry cannot be read is a PROBLEM, never a false — the same rule the bounds are under.
-    const entry = path.join(root, 'games', id, (readManifest(id, root).entry) || 'index.html');
+    const entry = path.join(gameDir(id, root), (readManifest(id, root).entry) || 'index.html');
     if (!fs.existsSync(entry)) problems.push(`${id}: the manifest's entry document is not in the tree (${path.relative(root, entry)})`);
     for (const f of [...files, ...(fs.existsSync(entry) ? [entry] : [])]) {
       // latin1: these are third-party trees and some are not valid UTF-8; every pattern here is ASCII.

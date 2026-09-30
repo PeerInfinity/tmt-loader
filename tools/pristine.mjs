@@ -26,6 +26,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import crypto from 'node:crypto';
 import { fileURLToPath } from 'node:url';
+import { gamesRoot, gamePath } from './harness/lib.mjs';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 export const ROOT = path.resolve(HERE, '..');
@@ -127,9 +128,9 @@ export function recordText(rec) {
 }
 
 /** Records games/<id>/ from disk. The caller vouches that the directory is upstream's `commit`, byte for byte. */
-export function writeRecordFromDisk(id, commit, { root = ROOT, gamesDir = path.join(root, 'games'), dirName = id, from, date = new Date().toISOString().slice(0, 10) } = {}) {
+export function writeRecordFromDisk(id, commit, { root = ROOT, gamesDir = gamesRoot(root), dirName = id, from, date = new Date().toISOString().slice(0, 10) } = {}) {
   const files = listDisk(path.join(gamesDir, dirName));
-  const rec = { id, upstream: { commit, tree: treeIdOf(files) }, recorded: { from: from || `games/${id}/ on disk right after its import, before tools/media.mjs (tools/pristine.mjs --write)`, date } };
+  const rec = { id, upstream: { commit, tree: treeIdOf(files) }, recorded: { from: from || `${gamePath(id)}/ on disk right after its import, before tools/media.mjs (tools/pristine.mjs --write)`, date } };
   fs.mkdirSync(path.join(root, PRISTINE_DIR), { recursive: true });
   fs.writeFileSync(recordPath(id, root), recordText({ ...rec, files }));
   return rec;

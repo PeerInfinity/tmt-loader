@@ -10,7 +10,7 @@
 // `checkGamesTable()` is the same check as a value, for gate G6 in gates.mjs.
 import fs from 'node:fs';
 import path from 'node:path';
-import { REPO, GAMES, readManifest } from './harness/lib.mjs';
+import { REPO, GAMES, readManifest, gamesRoot, GAMES_PATH } from './harness/lib.mjs';
 import { sourcesOf } from './census-figures.mjs';
 
 export const OUT = 'docs/games.md';
@@ -39,7 +39,7 @@ export function render(rows) {
     '[tmt-fork-census](https://github.com/PeerInfinity/tmt-fork-census) top 100, choosing games whose own play page',
     'no longer works.',
     '',
-    'Each game lives under `games/<id>/` — the [tmt-loader-games](https://github.com/PeerInfinity/tmt-loader-games)',
+    `Each game lives under \`${GAMES_PATH}/<id>/\` — the [tmt-loader-games](https://github.com/PeerInfinity/tmt-loader-games)`,
     'submodule — pristine at the upstream commit its manifest records, and keeps its own license files and credits',
     'inside its directory. `play` opens it on the published loader;',
     '`mobile` opens the same game in the [mobile layout](mobile.md).',
@@ -171,8 +171,8 @@ export function checkSelfDeclared({ manifest = readManifest } = {}) {
   // check read zero files per game, counted all 175 as undeclared, and exited GREEN — which is exactly what an
   // uninitialised submodule (S2) looks like. So: games/ must exist and hold something, and each game must have at
   // least one of the files its manifest says the loader loads.
-  const gamesDir = path.join(REPO, 'games');
-  if (!fs.existsSync(gamesDir) || !fs.readdirSync(gamesDir).some((x) => x !== '.git')) return { ok: false, checked: 0, undeclared: 0, problems: ['games/ is absent or empty — nothing to read the games\' own declarations from (an uninitialised submodule?)'] };
+  const gamesDir = gamesRoot();
+  if (!fs.existsSync(gamesDir) || !fs.readdirSync(gamesDir).some((x) => x !== '.git')) return { ok: false, checked: 0, undeclared: 0, problems: [`${GAMES_PATH}/ is absent or empty — nothing to read the games' own declarations from (an uninitialised submodule?)`] };
   for (const id of GAMES()) {
     const src = sourcesOf(id, 'loaded');
     if (!src.files.length) { problems.push(`${id}: none of the game's loaded files can be read (${src.missing}) — its own declaration is unreadable, which is not the same as "declares nothing"`); continue; }

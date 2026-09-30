@@ -28,7 +28,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { execFileSync, spawnSync } from 'node:child_process';
-import { REPO, parseArgs, headCommit, treeDirty, sha256hex, writeJSON, readManifest } from './harness/lib.mjs';
+import { REPO, parseArgs, headCommit, treeDirty, sha256hex, writeJSON, readManifest, gamesRoot, gameDir, gamePath, GAMES_PATH } from './harness/lib.mjs';
 import { processGame, writeSkips, checkMedia } from './media.mjs';
 import { SKIPS_FILE } from './media-lib.mjs';
 import { writeRecordFromDisk } from './pristine.mjs';
@@ -201,7 +201,7 @@ if (a['dry-run']) {
 }
 
 // ---- phase 2: imports, inside the games submodule ---------------------------------------------------------------------
-const GAMES_DIR = path.join(REPO, 'games');
+const GAMES_DIR = gamesRoot();
 const gitG = (...args) => gitIn(GAMES_DIR, ...args);
 let gamesReady = null;
 for (const r of results) {
@@ -211,7 +211,7 @@ for (const r of results) {
   try {
     // once, before the first import: games/ can take a commit (tools/games-repo.mjs says why each condition)
     gamesReady ??= assertGamesWritable();
-    if (fs.existsSync(path.join(GAMES_DIR, r.id))) throw new Error(`games/${r.id} already exists`);
+    if (fs.existsSync(gameDir(r.id))) throw new Error(`${gamePath(r.id)} already exists`);
     const remote = `${r.id}-upstream`;
     const remotes = gitG('remote').split('\n');
     log(`${r.id}: fetch ${L.repo}`);
@@ -227,8 +227,8 @@ for (const r of results) {
     log(`${r.id}: import ${r.sha.slice(0, 7)}`);
     gitG('read-tree', `--prefix=${r.id}/`, '-u', `${r.sha}^{tree}`);
     const importCommit = commitGames([r.id], `add(${r.id}): ${L.repo} at ${r.sha} — upstream's files, unchanged\n\nImported by tools/add-game.mjs. The upstream commit and every original file are recorded in the loader's\nmanifests/${r.id}.json and games-pristine/${r.id}.json.`);
-    const d = spawnSync('diff', ['-r', '-x', '.git', path.join(GAMES_DIR, r.id), L.clone], { encoding: 'utf8', maxBuffer: 64 << 20 });
-    if (d.status !== 0) { r.error = `diff -r games/${r.id} vs the census clone is NOT empty — not patched, the import commit left for the planner:\n${(d.stdout + d.stderr).slice(0, 1500)}`; log(r.error); continue; }
+    const d = spawnSync('diff', ['-r', '-x', '.git', gameDir(r.id), L.clone], { encoding: 'utf8', maxBuffer: 64 << 20 });
+    if (d.status !== 0) { r.error = `diff -r ${gamePath(r.id)} vs the census clone is NOT empty — not patched, the import commit left for the planner:\n${(d.stdout + d.stderr).slice(0, 1500)}`; log(r.error); continue; }
     r.import = { remote, commit: importCommit, tree: gitG('rev-parse', `HEAD:${r.id}`) };
     r.added = true;
     // 2a. the PRISTINE RECORD (R12/R13): games/<id>/ is upstream's bytes right now (the diff above proved it) and the
@@ -320,7 +320,7 @@ if (added.length) {
     try {
       const cm = checkManifest(id);
       r.gates.checkManifest = cm.ok ? 'GREEN' : RED(JSON.stringify(cm.problems));
-      row('check-manifest', cm.ok, { ticks: 0, gameSeconds: 0, notes: cm.ok ? `${cm.scripts} scripts, ${cm.modFiles} modFiles, upstream ${cm.upstreamCommit?.slice(0, 7)}, games/${id} pristine${cm.mediaFiles ? ` up to ${cm.mediaFiles} processed media files` : ''}` : JSON.stringify(cm.problems).slice(0, 400) });
+      row('check-manifest', cm.ok, { ticks: 0, gameSeconds: 0, notes: cm.ok ? `${cm.scripts} scripts, ${cm.modFiles} modFiles, upstream ${cm.upstreamCommit?.slice(0, 7)}, ${gamePath(id)} pristine${cm.mediaFiles ? ` up to ${cm.mediaFiles} processed media files` : ''}` : JSON.stringify(cm.problems).slice(0, 400) });
     } catch (e) { r.gates.checkManifest = RED(e.message); row('check-manifest', false, { notes: String(e.message).slice(0, 400) }); }
     // the media check (the gate CI's fast job runs over the roster): every image WebP, every audio file the stub
     try {
@@ -391,7 +391,7 @@ if (rows.length && results.some((r) => r.added || r.skipped !== 'present')) {
   const { appendSection } = await import('./harness/summary.mjs');
   const commit = headCommit();
   appendSection({ title: `${TAG} (\`node tools/add-game.mjs ${a._.join(' ')}\`)`, commit, dirty: treeDirty(), rows, slug: `add-game-${TAG.replace(/[^\w-]+/g, '_')}`,
-    reading: 'the games commits are in (inside games/, unpushed); the gitlink, manifests, index and goldens are uncommitted at the time of the run. idle hash = the plain page\'s Node twin (`--no-automation`, no exclusion) vs manifest.headless.idleHash; goldens counts vs manifest.census; G1 = `page.mjs <id> --gate load` (no flag).' });
+    reading: `the games commits are in (inside ${GAMES_PATH}/, unpushed); the gitlink, manifests, index and goldens are uncommitted at the time of the run. idle hash = the plain page's Node twin (\`--no-automation\`, no exclusion) vs manifest.headless.idleHash; goldens counts vs manifest.census; G1 = \`page.mjs <id> --gate load\` (no flag).` });
 }
 printLines();
 // Steps 2–3 of the gitlink rule (tools/games-repo.mjs): printed, never run — the push is the operator's.

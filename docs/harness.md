@@ -801,3 +801,23 @@ to the enclosing repository). `tools/games-repo.mjs` and `check-pages.mjs` check
 
 The pre-split history (subtree squash commits, the recorders S1T deleted) is in tmt-loader-archive. ⚖ R13: nothing in
 this repository or the games repository resolves a commit of it.
+
+## The seam: one place per side names the games directory (S3, 2026-09-29)
+
+⚖ **R8 (user, 2026-09-29): make the games repository easy to remove later.** Every path to a game file now goes
+through ONE function per side, so moving the games — link mode's sources, or no copies at all — is a change to those
+two places rather than a hunt for paths:
+
+| side | the seam | used by |
+|---|---|---|
+| page | `gameBase(id)` in `loader/page.js` — the URL the entry document and the loader slot are fetched from, and the `<base href>` every other game file resolves against | the page; every browser gate reaches the games only through it |
+| Node | `tools/harness/lib.mjs`: `GAMES_PATH` (the directory, relative to the repository and to the served root — also the submodule's name in `.gitmodules`), `gamesRoot(root)`, `gameDir(id, root)`, `gamePath(id, …rest)` (the `/`-separated repo-relative form: messages, records, served URLs) | `boot.mjs`, `check-manifest.mjs`, `triage.mjs` (and its in-page file-name trim, passed `GAMES_PATH`), `gates-h1.mjs`, `media-dims.mjs`, `loadverdict.mjs` (the page's URL shape, as `gamePath(id, '')` under the base), `gates.mjs`/`-a1`/`-s1` (row notes), `census-figures.mjs`, `games-table.mjs` (and the `docs/games.md` text it generates), `media.mjs`, `pristine.mjs`, `add-game.mjs`, `games-repo.mjs`, `check-pages.mjs` (G5's served-path list, the submodule reads, the clone form), and the unit tests that read real game files or build synthetic game URLs |
+| shell, workflows | `G=$(node tools/harness/lib.mjs --games-path)` | `mutants-assets1.sh`; `pages.yml`'s staging step |
+
+**Held by `loader/seam.test.mjs`** (the `fast` job; `node:` builtins only): it scans every code file under `loader/`,
+`tools/` and `.github/` with its comments removed and fails on any spelling of the directory used as a path —
+`games/…` in a string, template, regex or shell line, a `'games'` path segment, `HEAD:games`, `-C games`,
+`submodule.games.` — outside the two definitions; it checks that the page's `gameBase` and `GAMES_PATH` name the same
+directory and that `.gitmodules` declares it. Comments and docs may say `games/` freely; JSON records are data. The
+patterns are a net for the forms this tree has used, not a parser. Behaviour is unchanged: every output (messages,
+records, the generated docs, the staged site) is byte-identical at `GAMES_PATH = 'games'`.
