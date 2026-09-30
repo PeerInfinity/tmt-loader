@@ -29,6 +29,14 @@ All three opt-ins are also **buttons in the game's own options tab** ([docs/opti
 choice made there is remembered in this browser for every game. The URL still answers first whenever it says
 anything about a flag, in both directions, and a page with neither a parameter nor a remembered choice is inert.
 
+**Embed mode (S4, 2026-09-29).** The same three extras can go onto an **author's own page** with one tag,
+`<script src="…/v1/embed.js">` ([docs/embed.md](embed.md) — written for authors). `loader/page.js` is now **boot**
+(build the page from the game's `index.html`: interpret, vendor swap, save prefix, `<base href>` via `gameBase`) plus
+**attach** (`loader/attach.mjs`: the loader's stylesheets and scripts, in the order boot always used); an author's
+page runs attach only (`loader/embed.mjs`), with no save prefix and no game URL. On that page each extra has two
+author settings — offered, and on by default — and whether it is on at load is URL → the player's remembered choice →
+the author's default → off. Gate E1: `tools/harness/embed.mjs`.
+
 Games live under `games/<id>/` as **git subtrees**, pristine at the upstream commit their manifest records.
 ⚠ **Since the repository split (2026-09-29)** `games/` is the SUBMODULE
 [tmt-loader-games](https://github.com/PeerInfinity/tmt-loader-games) — same paths, no subtrees; the pre-split history
@@ -61,6 +69,7 @@ It works from any sub-path (GitHub Pages serves under `/tmt-loader/`); nothing i
 | `node tools/harness/run.mjs <id> --ticks N --diff d [--until "<js>"]` | Node boot (one game per process), prints `{ticks, gameSeconds, diff, hash}` |
 | `node tools/harness/page.mjs <id> --ticks N --diff d` / `--gate load` / `--gate mobile` | the same in headless Chromium; `--gate load` = gate G1, `--gate mobile` = gate M1, the layout, the nav bar **and** the layer list ([docs/mobile.md](mobile.md)) |
 | `node tools/harness/page.mjs <id>... --gate options` | gate O1 — the Options section, the remembered preference and the URL override ([docs/options.md](options.md)) |
+| `node tools/harness/embed.mjs [<id>...]` | gate E1 — embed mode: the game's own page + the `v1` tag on one origin, the loader on another ([docs/embed.md](embed.md), [docs/harness.md](harness.md)) |
 | `node tools/harness/parity.mjs <id> --ticks N --diff d` | Node ≡ page `stateJSON()` |
 | `node tools/harness/check-goldens.mjs` / `check-manifest.mjs` | frozen `tmtLoader.ids()` / manifest pin vs the live `index.html` |
 | `node tools/harness/upstream-export.mjs <id> --upstream <clone>` | a save exported from the upstream page imports equal |

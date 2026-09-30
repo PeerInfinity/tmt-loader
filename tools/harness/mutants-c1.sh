@@ -18,7 +18,7 @@ OUT="${1:?usage: mutants-c1.sh <out-dir> [name-filter]}"
 ONLY="${2:-}"
 mkdir -p "$OUT"
 if [ -n "$(git status --porcelain)" ]; then echo "REFUSING: the tree is dirty. Commit first — a mutant round restores over whatever is here."; exit 1; fi
-FILES="loader/tmt-auto.js loader/tmt-planner.js loader/page.js tools/auto-tables.mjs"
+FILES="loader/tmt-auto.js loader/tmt-planner.js loader/page.js loader/attach.mjs tools/auto-tables.mjs"
 for f in $FILES; do cp "$f" "$OUT/$(basename "$f").orig"; done
 restore() { for f in $FILES; do cp "$OUT/$(basename "$f").orig" "$f"; done; }
 trap restore EXIT
@@ -94,7 +94,7 @@ mutant m11-no-alias-pattern \
   $CHECK
 
 # ---- the PAGE -----------------------------------------------------------------------------------------------------
-# the PLAIN page fetches the generated data too (the opt-in lost)
+# the PLAIN page fetches the generated data too (the opt-in lost). (S4, 2026-09-29: the block moved to loader/attach.mjs.)
 mutant m12-the-plain-page-fetches-games-data \
-  "p='loader/page.js';s=open(p).read();o=\"  if (AUTOMATION) {\n    // ---- the GENERATED currency data\"; assert o in s; s=s.replace(o,\"  if (true) {\n    // ---- the GENERATED currency data\"); open(p,'w').write(s)" \
+  "p='loader/attach.mjs';s=open(p).read();o=\"  if (AUTOMATION) {\n    // ---- the GENERATED currency data\"; assert o in s; s=s.replace(o,\"  if (true) {\n    // ---- the GENERATED currency data\"); open(p,'w').write(s)" \
   $G1
