@@ -6,6 +6,10 @@ feature only calls the engine's own functions (`doReset`, `buyUpgrade`, `buyBuya
 `startChallenge`, `clickClickable`, or the field write a toggle button makes) at the point in the tick where the engine
 calls each layer's `automate()`.
 
+**What it did, and why, can be recorded:** the state log (`docs/log.md`) — every action by you, the automation and the
+game, with the feature, its reason code and the state it acted on; switched on from the developer details of this
+tab (or `?autoOpt=log=1`), and replayed exactly on the harness (`tools/harness/replay.mjs`).
+
 Since S1 the features are **derived from what each layer declares** — every Modding Tree game gets them with no per-game
 code — and a per-game **data table** (`games-auto/<id>.json`) holds only what the game's authors did not declare: orders,
 measured policy constants, exclusions with a reason, gates.
@@ -2195,6 +2199,7 @@ moot today (the derivation note above); on the-factoree `f` 21 is now bought to 
 
 ## Harness levers
 
+- `--log <file>` / `tools/harness/replay.mjs <file>` — the state log of a run and its exact replay (`docs/log.md`).
 - `--profile off|all|saved`, `--exclude au` (hash without the `au` layer), `--no-auto` (no table: derived defaults only).
 - `--no-currency` (C1): no generated currency data — every buyable's currency unknown, i.e. the behaviour before C1 (the
   control gate C1-4 measures inertness against). `--random-seed N`: a seeded `Math.random` counting its calls
