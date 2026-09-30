@@ -63,6 +63,9 @@ commit the census tested, so they keep opening the version that was tested.
   jsDelivr and uses its own copy when it has one; otherwise it loads from jsDelivr and says which files will not load.
   The list for the loader's games is `link/cdn-over-limit.json`; for any other commit the loader asks jsDelivr's
   listing (`data.jsdelivr.com`), which answers for repositories up to 50 MB.
+- **An author's site on its own domain** cannot be read through GitHub Pages: GitHub answers the `github.io` address
+  with a redirect that browsers will not let another site follow (it carries no CORS header). The loader then moves
+  on to jsDelivr, and says so. (Prestige Tree Rewritten is one: `jacorb90.github.io` redirects to `jacorb90.me`.)
 - **Files from other sites.** Like the hosted games, a game opened by link never loads code from another website: the
   Vue library is replaced with the loader's copy (the same minor version, 2.6 or 2.7), and anything else a game's
   page names from another site (web fonts, analytics, other libraries) is left out — the page's *details* list says

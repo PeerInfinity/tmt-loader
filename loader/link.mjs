@@ -263,7 +263,11 @@ async function resolveInner(deps, holder) {
   holder.link = link;
   const getText = async (url, what) => {
     let r;
-    try { r = await fetch(url, { cache: 'no-cache' }); } catch (e) { throw new LinkError(`${what}: no answer (${e && e.message})`); }
+    // A fetch that REJECTS is no answer the browser will let the page read: the site is down or offline — or it
+    // redirects without CORS, which is what a GitHub Pages site moved to its own domain does (measured, S5 live check:
+    // jacorb90.github.io → 301 → http://jacorb90.me/, with no access-control-allow-origin on the 301)
+    try { r = await fetch(url, { cache: 'no-cache' }); }
+    catch (e) { throw new LinkError(`${what}: no answer the browser could read — the site may be down, or moved to its own domain (${e && e.message})`); }
     if (!r.ok) throw new LinkError(`${what}: HTTP ${r.status}`);
     return { text: await r.text(), url: r.url || url };
   };

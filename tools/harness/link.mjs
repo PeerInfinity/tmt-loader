@@ -424,8 +424,11 @@ async function run(browser, S, only) {
 // ---------------------------------------------------------------- LIVE (not the gate): one real game from each real source
 async function live(browser, S) {
   const out = {};
-  const m = readManifest('ptr');
+  // ⚠ ptr's author site (jacorb90.github.io) redirects to its own domain with no CORS header, so no browser can read
+  // it through Pages (measured 2026-09-29): the Pages leg uses `something`, whose site is a plain github.io one
+  const GAME = { pages: 'something', cdn: 'ptr', hosted: 'ptr' };
   for (const src of ['pages', 'cdn', 'hosted']) {
+    const m = readManifest(GAME[src]);
     const { context: c, stats } = await openContext(browser, { contextOptions: DESKTOP_CONTEXT, allowExternal: true });
     try {
       const p = await c.newPage();
@@ -433,9 +436,9 @@ async function live(browser, S) {
       const r = await waitReady(p, Date.now(), 60000).catch((e) => ({ ready: false, error: String(e) }));
       const fp = await p.evaluate(FP);
       const hosts = [...new Set(stats.of(p).urls.map((u) => { try { return new URL(u).hostname; } catch { return u; } }))];
-      out[src] = { ok: !!(r.ready && fp.link && fp.link.source === src && fp.layerNodes > 0), source: fp.link && fp.link.source, base: fp.base, requests: stats.of(p).urls.length, hosts, error: fp.error };
+      out[src] = { ok: !!(r.ready && fp.link && fp.link.source === src && fp.layerNodes > 0), game: GAME[src], source: fp.link && fp.link.source, base: fp.base, requests: stats.of(p).urls.length, hosts, error: fp.error };
     } finally { await c.close(); }
-    console.log(`L1 LIVE ${src}: ${out[src].ok ? 'up' : 'DOWN'} (${out[src].requests} requests; hosts ${out[src].hosts.join(' ')})${out[src].error ? ` ${JSON.stringify(out[src].error)}` : ''}`);
+    console.log(`L1 LIVE ${src} (${GAME[src]}): ${out[src].ok ? 'up' : 'DOWN'} (${out[src].requests} requests; hosts ${out[src].hosts.join(' ')})${out[src].error ? ` ${JSON.stringify(out[src].error)}` : ''}`);
   }
   return out;
 }
