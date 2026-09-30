@@ -448,6 +448,69 @@ jobs:
           retention-days: 7
 
   # ---------------------------------------------------------------------------------------------------------------
+  # L1 — LINK MODE (S5, docs/link.md): ?repo=<owner>/<name>[@<commit>] — a game from its author's repository. The
+  # network is FAKED inside the browser (the author's Pages site, jsDelivr and its listing, GitHub's API), so this job
+  # depends on none of them being up; the files are the games' own, under whatever repository name a leg registers.
+  # Legs: each source alone, the fallback order, a file over 20 MB, the API accounting, a listed game's id and save,
+  # an unlisted repository, a declined one, the author's tmt-loader.json, attach's flags against the hosted twin, the
+  # error words, and every request of every page — tools/harness/link.mjs says what each asserts.
+  # ⛔ The gate prints `L1 link: N/M legs GREEN`; the assertion below also pins M, so a leg that disappears is a RED.
+  # ---------------------------------------------------------------------------------------------------------------
+  link:
+    name: L1 — link mode
+    needs: fast
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true   # games/ is the tmt-loader-games submodule; the fakes serve its files
+          fetch-depth: 1
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - run: npm ci
+
+      - name: Cache the Playwright browser
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+
+      - run: npx playwright install --with-deps chromium
+
+      - name: L1, with the network faked
+        shell: bash
+        run: |
+          set -o pipefail
+          node tools/harness/link.mjs --json l1.json | tee l1.txt
+
+      - name: Assert every leg ran and held
+        if: always()
+        shell: bash
+        run: |
+          {
+            echo '## L1 — link mode'
+            echo ''
+            echo '```'
+            grep -a '^L1 ' l1.txt || echo 'NO L1 OUTPUT'
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+          grep -aqx "L1 link: 13/13 legs GREEN" l1.txt
+
+      - name: Upload the result
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: l1
+          path: l1.json
+          if-no-files-found: warn
+          retention-days: 7
+
+  # ---------------------------------------------------------------------------------------------------------------
   # A1 part 2 — the `au` TAB ITSELF (`gates-a1.mjs --part 2`). Until V1 this ran NOWHERE in CI: only part 1's half
   # (the registry with no per-game table) rode inside M1's `both` leg, so every check of the tab the player actually
   # sees — the toggles' text, `?profile=all` not writing the save, a toggle surviving a reload, the disclosure line,

@@ -111,7 +111,7 @@ const PATTERNS = [
 // The two definitions — the seam itself. Each must match EXACTLY one hit, so an entry that goes stale fails too.
 const ALLOWED = [
   { file: 'tools/harness/lib.mjs', text: "export const GAMES_PATH = 'games';", why: 'the Node side of the seam' },
-  { file: 'loader/page.js', text: 'const gameBase = (id) => abs(`games/${id}/`);', why: 'the page side of the seam' },
+  { file: 'loader/page.js', text: 'const gameBase = (id, source = null) => (source ? LINK.linkBase(source) : abs(`games/${id}/`));', why: 'the page side of the seam (S5: a link-mode source moves it)' },
 ];
 
 function* walk(dir) {
@@ -156,8 +156,9 @@ test('⚖ R8: nothing in loader/, tools/ or .github/ spells the games directory 
 
 test('the two sides of the seam name the same directory, and it is the submodule .gitmodules declares', () => {
   const page = fs.readFileSync(path.join(REPO, 'loader/page.js'), 'utf8');
-  const m = page.match(/^const gameBase = \(id\) => abs\(`([^`$]*)\/\$\{id\}\/`\);$/m);
-  assert.ok(m, 'loader/page.js no longer defines `const gameBase = (id) => abs(`<dir>/${id}/`)` — the page side of the seam');
+  // (S5) the hosted branch of the page seam; a link-mode source (link.mjs `linkBase`) is the other branch
+  const m = page.match(/^const gameBase = \(id, source = null\) => \(source \? LINK\.linkBase\(source\) : abs\(`([^`$]*)\/\$\{id\}\/`\)\);$/m);
+  assert.ok(m, 'loader/page.js no longer defines `const gameBase = (id, source = null) => (source ? LINK.linkBase(source) : abs(`<dir>/${id}/`))` — the page side of the seam');
   assert.equal(m[1], GAMES_PATH, `the page serves games from ${m[1]}/ but the Node seam reads ${GAMES_PATH}/`);
   const mods = fs.readFileSync(path.join(REPO, '.gitmodules'), 'utf8');
   assert.match(mods, new RegExp(`^\\[submodule "${GAMES_PATH}"\\]\\s*\\n\\s*path = ${GAMES_PATH}\\s*$`, 'm'),

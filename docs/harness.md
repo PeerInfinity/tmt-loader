@@ -854,3 +854,40 @@ same parameter — never against a written expectation.
 the flag order (every cell), the settings precedence, and that `attach.mjs` / `embed.mjs` / `v1/embed.js` never build a
 game URL. CI: the `embed` job of `sweep.yml` (after `fast`), which asserts `E1 embed: 2/2 GREEN`. The mutants that show
 each leg can fail are `tools/harness/mutants-s4.sh`.
+
+## Gate L1 — link mode: the game's own repository, with the network faked (S5, 2026-09-29)
+
+```
+node tools/harness/link.mjs [--json out.json] [--only <leg-prefix>,…]     # the gate (~30 s, 13 legs)
+node tools/harness/link.mjs --live                                        # NOT the gate: one real game per real source
+```
+
+Link mode (docs/link.md) reaches three services the gate must not depend on: an author's GitHub Pages site
+(`<owner>.github.io`), jsDelivr (`cdn.jsdelivr.net`, and its listing API `data.jsdelivr.com`) and GitHub's API
+(`api.github.com`). L1 answers all three INSIDE the browser context (Playwright routes by host), each in the shape the
+real one has — CORS `*`; jsDelivr sends `index.html` as `text/plain`, a file over 20 MB as HTTP 403 `File size exceeded
+the configured limit of 20 MB.`, a repository over 50 MB's listing as HTTP 403; GitHub's `commits/HEAD` a bare sha.
+The files are the games' own (`gameDir(id)`, the seam) under whatever repository name a leg registers, so an "unknown"
+repository is a real game under a name the loader does not list. The loader is a local `node:http` server; every other
+host is blocked and counted. Every leg is its own context (a session cache or a remembered choice never leaks).
+
+| leg | asserts |
+|---|---|
+| S-pages / S-cdn / S-hosted | `&source=` alone: the game comes up from that source (its `<base href>` is that source's), nothing else was tried, no API request |
+| F-order | unpinned, Pages down → jsDelivr at the latest commit; pinned, jsDelivr down → hosted; unpinned, both down → hosted, and the page's notice says why it moved on |
+| F-oversize | the-wall-tree at its tested commit → hosted from the RECORD (`link/cdn-over-limit.json`), with no jsDelivr request for a game file or the listing; a commit the record does not cover with a 25 MB file in jsDelivr's listing → hosted; a small listing → jsDelivr |
+| A-api | a pinned link makes no API request; "latest" makes one, and a reload in the tab none (session cache); a working Pages site makes none even for "latest" |
+| K-save | a save written on the hosted `?mod=ptr` page is the save the link page loads (`tmt-loader:ptr:`) — D1 |
+| U-unknown | an unlisted repository (ptr's files = 2.2.1 from jsDelivr; something's = 2.7 from Pages) derives its manifest, gets `gh--<owner>--<name>`, boots with no page error; the 2.7 page draws as many tree nodes as its hosted twin |
+| D-declined | a declined repository (`manifests/declined.json`) loads, and its short reason and its reason are shown |
+| J-settings | the author's `tmt-loader.json` read through Pages and through jsDelivr: its `autoTable` (a distinctive kind order) is the one in force, `id` filled; no file → the loader's own table |
+| X-attach | `?mobile=1`, `?navbar=1`, `?automation=1`, a stored `navbar`, and `?navbar=0` over a stored choice: the link page's flags, sources, classes, stylesheets, bar buttons, `au` node, loader files and tree nodes equal the hosted twin's (and the stored cases really resolved from the store) |
+| E-errors | not a repository, not a commit, not a source, and nothing works: the page says "this game could not be opened" and why, per source |
+| R-requests | every link page above (25): the loader asked only for the loader's files, its own data for a LISTED game, and `games/<id>/` only when the source is hosted; the game's files only from the chosen source (plus the index of each source tried first); the API only where the leg allows; jsDelivr's listing only where expected; no failed request but a source that did not work, a missing `tmt-loader.json`, or a declined listing; nothing blocked |
+
+⚖ D2 (user, 2026-09-29): **no licence check in link mode** — so there is no licence leg.
+
+`loader/link.test.mjs` (the `fast` job) holds the browser-free half: the link grammar, the ids, the source order, the
+derived manifest, the session cache, the 20 MB rule, that `vendor/index.json` IS the union of the manifests' vendored
+entries, and `resolveLink` against a fake network. CI: the `link` job of `sweep.yml` (after `fast`), which asserts
+`L1 link: 13/13 legs GREEN`. The mutants that show each leg can fail are `tools/harness/mutants-s5.sh`.

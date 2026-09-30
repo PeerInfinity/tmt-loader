@@ -54,7 +54,9 @@ const SAMPLE = a.games ? String(a.games).split(',').filter(Boolean) : LIVE ? LIV
 // — enough to tell "serving this commit" from "serving the previous one", which is the failure a green deploy hides.
 // (S4) + the embed tag and the module it loads: `/v1/embed.js` is what every author's page names (docs/embed.md), so a
 // deploy that does not serve THIS commit's copy is the one an author would see first.
-const SERVED = ['index.html', 'loader/page.js', 'loader/layerlist.js', 'v1/embed.js', 'loader/embed.mjs', 'manifests/index.json', gamePath('sorbet-s-convolution-mainframe', 'Javascript/Mod.js')];
+// (S5) + link mode's module and the two data files it reads (docs/link.md).
+const SERVED = ['index.html', 'loader/page.js', 'loader/layerlist.js', 'v1/embed.js', 'loader/embed.mjs', 'loader/link.mjs', 'vendor/index.json',
+  'link/cdn-over-limit.json', 'manifests/index.json', gamePath('sorbet-s-convolution-mainframe', 'Javascript/Mod.js')];
 const SETTLE_TRIES = Number(a['settle-tries'] ?? 30);
 const SETTLE_MS = Number(a['settle-ms'] ?? 10000);
 const result = { gate: LIVE ? 'G5 live deploy' : 'G5 bare clone', mode: LIVE ? 'live' : 'clone', games: SAMPLE, commit: headCommit(), repoClean: git(REPO, 'status', '--porcelain') === '', steps: [] };
@@ -179,6 +181,27 @@ try {
   }
   step('embed tag served (v1/embed.js + loader/embed.mjs, as JavaScript' + (LIVE ? ', CORS *)' : '; CORS is checked live only)'),
     embedFiles.every((x) => x.status === 200 && /javascript/.test(x.type || '') && (!LIVE || x.cors === '*')), { files: embedFiles });
+
+  // (S5) LINK MODE at the sub-path, from the site's OWN copy (`&source=hosted`): the link form, the module it imports
+  // and the data it reads are all served, and the page comes up — with no request to any third party (Pages,
+  // jsDelivr, GitHub's API), so this step depends on nothing but the site under test. The other sources are gate L1's
+  // (faked) and `link.mjs --live`'s.
+  {
+    const ptr = JSON.parse(fs.readFileSync(path.join(REPO, 'manifests/ptr.json'), 'utf8'));
+    const { context, stats } = await openContext(browser, { allowHosts: LIVE ? [new URL(base).hostname] : [] });
+    try {
+      const page = await context.newPage();
+      const t0 = Date.now();
+      await page.goto(`${base}index.html?repo=${ptr.upstream.repo}@${ptr.upstream.commit}&source=hosted&managed=1`, { waitUntil: 'load' });
+      const r = await waitReady(page, t0);
+      const link = await page.evaluate(() => { const T = window.tmtLoader; return { id: T.id, source: T.link && T.link.source, nodes: document.querySelectorAll('#app .treeNode').length }; });
+      // the one request allowed to fail: the author's tmt-loader.json, which ptr's repository does not have (docs/link.md)
+      const failed = stats.failed.filter((f) => !/\/tmt-loader\.json HTTP 404$/.test(f));
+      step('link mode (?repo=…&source=hosted) ready at the sub-path, no third-party request',
+        r.ready && !r.error && link.id === 'ptr' && link.source === 'hosted' && link.nodes > 0 && stats.blocked.length === 0 && failed.length === 0 && stats.pageErrors.length === 0,
+        { ready: r.ready, error: r.error || null, ...link, blocked: stats.blocked, failed, pageErrors: stats.pageErrors });
+    } finally { await context.close(); }
+  }
 } finally {
   if (browser) await browser.close();
   if (server) server.stop();

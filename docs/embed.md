@@ -4,6 +4,10 @@ If you made a game with The Modding Tree, you can give your players tmt-loader's
 page**, without the loader hosting a copy of your game. Your players keep playing on your site, with their saves
 where they have always been.
 
+**Only want to try your game in the loader, without editing your page?** Open
+`https://peerinfinity.github.io/tmt-loader/?repo=<you>/<your-repository>` — that is [link mode](link.md), and it
+needs nothing from you.
+
 There are three extras. Each one is a button in your game's own options tab, and each is **off until a player turns
 it on** (or until you choose to turn it on by default):
 

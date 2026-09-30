@@ -1,0 +1,8 @@
+{
+  "about": "Files jsDelivr refuses (over 20 MB: HTTP 403 'File size exceeded the configured limit of 20 MB.'), per repository@commit. Measured by S0 item 3 (2026-09-29) over the upstream trees of every listed game at its manifest's upstream.commit — so for those commits a repository NOT named here has no such file. loader/link.mjs cdnOverLimit reads it; any other commit is asked of jsDelivr's listing API.",
+  "limit": 20971520,
+  "files": {
+    "hanlaosan1/The-Wall-Tree@051f8532e69f8b248923d434706b197e06139128": ["discord.png", "remove.png"],
+    "qcy00hou12/The-Periodic-Table-Tree@33487105ff61e61e863584f42206f9085cc3f2ac": ["resources/Nitrogen.gif"]
+  }
+}

@@ -40,6 +40,13 @@ at the bottom. The page reloads, and the choice is remembered in this browser fo
 <https://peerinfinity.github.io/tmt-loader/?mod=ptr&mobile=1>. A link always wins over the remembered choice, so it is
 the way to share a game with an option on (or, with `=0`, off).
 
+## Playing a game from any repository
+
+You can also open a TMT game **straight from its author's GitHub repository**, whether or not the loader hosts it:
+`https://peerinfinity.github.io/tmt-loader/?repo=<owner>/<name>` (add `@<commit>` to open one exact version). The
+loader reads the game from the author's own site, from jsDelivr, or from its own copy, whichever works first, and says
+which. ⚠ A game opened this way is not tested the way the hosted games are. Details: **[docs/link.md](docs/link.md)**.
+
 ## Where the games come from
 
 The games were chosen with the **[TMT fork census](https://peerinfinity.github.io/tmt-fork-census/)** — see it for
@@ -64,7 +71,8 @@ someone turns them on, and their saves stay where they are. You choose which ext
 default. How: **[docs/embed.md](docs/embed.md)**.
 
 I'm also considering reworking this so it stores no copies at all: the loader would load each game straight from its
-author's own repository. Feedback is welcome in the issues, including "please don't".
+author's own repository — which it can already do for any repository ([link mode](docs/link.md)). Feedback is welcome
+in the issues, including "please don't".
 
 ## For developers
 
@@ -86,6 +94,7 @@ in an existing clone). The history before the games moved out is in
 | [docs/mobile.md](docs/mobile.md) | `?mobile=1` and `?navbar=1` — the mobile layout, the nav bar, the layer list, and their gate |
 | [docs/options.md](docs/options.md) | the Options section — the three opt-ins as buttons, the remembered preference, and gate O1 |
 | [docs/embed.md](docs/embed.md) | embed mode `v1` — the extras on an author's own page: the tag, `tmt-loader.json`, and gate E1 (at the end) |
+| [docs/link.md](docs/link.md) | link mode — `?repo=<owner>/<name>[@<commit>]`: the sources and their order, `&source=`, pinning, the limits; gate L1 is in harness.md |
 | [`tools/harness/results/SUMMARY.md`](tools/harness/results/SUMMARY.md) | every gate run, with the state hashes it measured |
 
 ## License
