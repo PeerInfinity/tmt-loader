@@ -10,6 +10,10 @@
 //                      [--planner | --planner=auto|suggest] [--planner-mode auto|suggest|off] [--planner-opt "k=v;k2=v2"]
 //                      [--planner-ladder ladder.json] [--planner-script f.js] [--knowledge-out f] [--goals-out f] [--rounds-out f]
 //                      [--stop-snapshot] [--explain] [--random-seed N]
+//                      [--log <file.jsonl> [--log-meta <json>] [--log-every <game-s>]] [--replay <file.jsonl>]
+//   --log: the STATE LOG (log-1, docs/log.md) — loader/tmt-log.js records every action from here to the stop, and THIS
+//   process writes the file itself with writeSync (never through BOOTRESULT: R3c's >64 KB truncation). --replay: the
+//   log's header start is already booted (run.mjs); tmt-log.js re-applies its calls and compares every record (R.replay).
 //   --explain: `tmtLoader.explain()` at the stop (R.explain) — one row per feature with the reason its last decision
 //   returned (docs/automation.md). R.explain_stats is recorded on EVERY automation run and BEFORE that dump, because
 //   `formats` must be 0 for a run that never opened the tab.
@@ -337,6 +341,38 @@ if (A.census) {
 }
 if (A['ids-out']) writeOut(A['ids-out'], JSON.stringify(run('tmtLoader.ids()', 'ids'), null, 1) + '\n');
 
+// ---- the STATE LOG (log-1, docs/log.md): --log records, --replay re-applies and compares -------------------------------
+// ⛔ loader/tmt-log.js is RUN ONLY HERE, only with one of the two flags: a run without them executes exactly what it
+// executed before this slice (the automation core's four link slots stay null).
+let LOGFD = null;
+if (A.log || A.replay) {
+  if (!AUTOMATION) fail('log', new Error('--log / --replay need the automation core (its link slot); drop --no-automation'));
+  if (A.planner && PLANNER_MODE !== 'off') fail('log', new Error('--log / --replay with a DRIVEN planner is not supported: its excursions tick the game and roll it back'));
+  try {
+    globalThis.tmtLoader.logHooks = JSON.parse(fs.readFileSync(path.join(REPO, 'loader/log-hooks.json'), 'utf8'));
+    // the ladder's marks are where a checkpoint is taken (and the tracker's labels); the planner block sets it otherwise
+    if (A['ladder-labels'] && globalThis.tmtLoader.ladder === undefined) globalThis.tmtLoader.ladder = JSON.parse(fs.readFileSync(A['ladder-labels'], 'utf8'));
+    run(fs.readFileSync(path.join(REPO, 'loader/tmt-log.js'), 'utf8'), 'loader/tmt-log.js');
+    if (run('typeof tmtLoader.stateLog', 'x') !== 'object') throw new Error('loader/tmt-log.js did not define tmtLoader.stateLog');
+  } catch (e) { fail('log', e); }
+}
+if (A.log) {
+  try {
+    LOGFD = fs.openSync(path.resolve(A.log), 'w');
+    globalThis.__tmtLogSink = (line) => writeAllSync(LOGFD, line + '\n');
+    globalThis.__tmtLogOpts = { origin: 'harness', every: Number(A['log-every'] || 600), diff, profile: PROFILE, autoOpt: A['auto-opt'] || null,
+      noCurrency: !!A['no-currency'], noAuto: !!A['no-auto'], ...(A['log-meta'] ? JSON.parse(A['log-meta']) : {}) };
+    run('tmtLoader.stateLog.start(globalThis.__tmtLogOpts, globalThis.__tmtLogSink)', 'log');
+    delete globalThis.__tmtLogSink; delete globalThis.__tmtLogOpts;
+  } catch (e) { fail('log', e); }
+}
+if (A.replay) {
+  try {
+    globalThis.__tmtReplayLines = fs.readFileSync(path.resolve(A.replay), 'utf8').split('\n');
+    run('globalThis.__tmtReplay = tmtLoader.stateLog.replayer(globalThis.__tmtReplayLines); delete globalThis.__tmtReplayLines; __tmtReplay.start({})', 'replay');
+  } catch (e) { fail('replay', e); }
+}
+
 // ---- ticks ---------------------------------------------------------------------------------------
 // Leg "idle": no input. Leg "policy": the census's generic policy before each tick (tools/harness/policy.mjs, the same
 // source the page runs). --until stops after the first tick whose predicate is true.
@@ -348,7 +384,11 @@ try {
   const untilSrc = monitored ? `function(){ ${A.until ? `if (${A.until}) return true;` : ''} return __tmtMonitor.check(); }` : A.until ? `function(){ return (${A.until}); }` : 'null';
   // the planner runs BETWEEN ticks (never inside gameLoop): beforeTick() re-plans at an epoch's end or on an event
   const planSrc = A.planner && PLANNER_MODE !== 'off' ? 'function(){ return tmtLoader.planner.beforeTick(); }' : 'null';
-  const r = run(`${DRIVE_SRC}(${ticks}, ${diff}, ${LEG === 'policy'}, ${untilSrc}, ${planSrc})`, 'ticks-' + LEG);
+  // --replay drives its own loop: to the original's stop, re-applying its calls between and inside the ticks
+  const r = A.replay ? {} : run(`${DRIVE_SRC}(${ticks}, ${diff}, ${LEG === 'policy'}, ${untilSrc}, ${planSrc})`, 'ticks-' + LEG);
+  if (A.replay) R.replay = run(`__tmtReplay.run(function (d) { tmtLoader.tick(d); }, ${diff}, ${Number(A['wall-ms'] || 0)})`, 'replay');
+  // the log's STOP checkpoint: the same state every hash below is taken of
+  if (A.log) { R.log = run('tmtLoader.stateLog.stop()', 'log'); fs.closeSync(LOGFD); LOGFD = null; R.log.file = path.resolve(A.log); R.log.fileBytes = fs.statSync(path.resolve(A.log)).size; }
   if (planSrc !== 'null') { R.planner = Object.assign(R.planner || {}, { rounds: r.planCalls, error: r.planError }); if (r.planError) { R.ok = false; R.failed_at = 'planner'; R.error = r.planError; out(R); proc.exit(0); } }
   if (monitored) {
     const m = run('__tmtMonitor.result()', 'monitor');

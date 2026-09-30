@@ -1,0 +1,26 @@
+{
+  "format": "tmt-log-hooks/1",
+  "about": "The state log's entry points (docs/log.md), per ENGINE FAMILY. `globals` are top-level functions (hooked as properties of the global object, where the game declares them as functions); `layer` paths are relative to EVERY layer — `layers[<l>]` and its `tmp[<l>]` copy — with `*` matching any key, so a path matches nothing in a game that does not have it. A family `extends` another and adds to both lists; a game belongs to the family whose `members` name it, else to `default`. Census (log-1, 2026-09-30, every game on the roster): the globals are writable functions in 175/175 games (buyUpgrade 172: 2 absent, 1 a lexical `let`; unlockUpg 4; clickGrid 158; resetRow where declared); the non-global click targets are from a `v-on:click` / `@click` / `onclick` census over each game's components.js, systemComponents.js and index.html.",
+  "default": "tmt",
+  "families": {
+    "tmt": {
+      "about": "Every engine. `run(tmp[layer].buyables[data].sellOne, …)` on 2.6+ (163 games) and `tmp[layer].buyables[data].sellOne()` on the 2.2.1 PTR engines call the same function; the master button likewise.",
+      "globals": ["doReset", "buyUpg", "buyUpgrade", "buyBuyable", "buyMaxBuyable", "startChallenge", "completeChallenge", "respecBuyables", "clickClickable", "clickGrid", "toggleAuto", "resetRow"],
+      "layer": ["buyables.*.sellOne", "buyables.*.sellAll", "clickables.masterButtonPress"]
+    },
+    "ptr": {
+      "about": "Prestige Tree Rewritten's 2.2.1 engine and the games built on it: pseudo-upgrades (`unlockUpg`, a global), Mastery (`layers.ma.startMastery(layer)` from a tree node, `layers.ma.completeMastery(layer)` from a button) and a tree node's own `layers[layer].onClick()`.",
+      "extends": "tmt",
+      "members": ["ptr", "the-extended-tree", "prestige-tree-ng", "prestige-tree-rewritten-unsoftcapped4", "the-classic-tree", "the-basic-tree", "the-factoree"],
+      "globals": ["unlockUpg"],
+      "layer": ["startMastery", "completeMastery", "onClick"]
+    },
+    "arctree": {
+      "about": "Arc Tree's Awakening buttons (`layers.awaken.startAwake(layer)`, `layers.awaken.completeAwake(layer)`), the same shape as PTR's Mastery.",
+      "extends": "tmt",
+      "members": ["arctree"],
+      "globals": [],
+      "layer": ["startAwake", "completeAwake"]
+    }
+  }
+}
