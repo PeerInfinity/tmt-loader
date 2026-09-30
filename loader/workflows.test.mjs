@@ -95,7 +95,7 @@ const MEASUREMENT_JOBS = ['f1-cells', 'f1-fixtures', 'f1-groups', 'f1-merge',
   'r3b2-table', 'r3b2-table-merge', 'r3c-rung', 'r3c-rung-merge', 'c1c-buy'];
 // ⛔ The GATES that must stay on every push, named so a later move has to argue with this list rather than slip
 // past it: the assertive halves of the same arcs (a pinned mark, a hash, an inertness), and the cheap F1 gate.
-const PUSH_GATES = ['f1-rows', 'r3b2-rule', 'r3b2-inert', 'r3c-mark', 'r3c-mark-merge', 'r3c-fixtures', 'r3c-fixtures-m27', 'v6-page', 'c1c-cap', 'c1c-inert', 'embed'];
+const PUSH_GATES = ['f1-rows', 'r3b2-rule', 'r3b2-inert', 'r3c-mark', 'r3c-mark-merge', 'r3c-fixtures', 'r3c-fixtures-m27', 'v6-page', 'c1c-cap', 'c1c-inert', 'embed', 'link'];
 
 test('every measurement job lives ONLY in measurements.yml', () => {
   const inSweep = Object.keys(jobs(wf('sweep.yml')));
@@ -174,7 +174,7 @@ test('every expensive job in the sweep is GATED by the fast one', () => {
   // and nothing about the resulting run would look wrong.
   const j = jobs(wf('sweep.yml'));
   assert.ok(j.fast, 'sweep.yml has no `fast` job at all');
-  for (const name of ['shard', 'g1', 'anchors', 'options', 'embed']) {
+  for (const name of ['shard', 'g1', 'anchors', 'options', 'embed', 'link']) {
     assert.ok(j[name], `sweep.yml has no \`${name}\` job`);
     assert.deepEqual(needs(j[name]), ['fast'], `the ${name} job does not wait for the fast checks`);
   }

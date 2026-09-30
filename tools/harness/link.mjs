@@ -244,7 +244,7 @@ async function run(browser, S, only) {
         const r = await waitReady(p, t0, 45000).catch((e) => ({ ready: false, error: { message: String(e.message || e) } }));
         await p.evaluate(() => new Promise((res) => requestAnimationFrame(() => requestAnimationFrame(res))));
         const fp = await p.evaluate(FP);
-        const act = s.act ? await s.act(p) : undefined;
+        const act = s.act ? await s.act(p).catch((e) => ({ threw: String((e && e.message) || e).slice(0, 200) })) : undefined;
         const pw = stats.of(p);
         const urls = pw.urls.slice(before.urls), failed = pw.failed.slice(before.failed), blocked = pw.blocked.slice(before.blocked);
         let req = null;
@@ -338,7 +338,7 @@ async function run(browser, S, only) {
     const r = await session('K-save', W, [
       { q: 'mod=ptr&managed=1', act: (p) => p.evaluate(() => { player.points = new Decimal(424242); save(); return String(player.points); }) },
       { q: `repo=jacorb90/prestige-tree@${PTR.upstream.commit}&source=cdn&managed=1`, expect: ex('ptr', true, 'cdn'),
-        act: (p) => p.evaluate(() => player.points.gte(424242)) },
+        act: (p) => p.evaluate(() => typeof player !== 'undefined' && !!player.points && player.points.gte(424242)) },
     ]);
     leg('K-save', r[0].act === '424242' && up(r[1].fp, 'cdn', 'ptr') && r[1].fp.storagePrefix === 'tmt-loader:ptr:' && r[1].act === true,
       { id: r[1].fp.id, prefix: r[1].fp.storagePrefix, carried: r[1].act, points: r[1].fp.points });
@@ -374,7 +374,7 @@ async function run(browser, S, only) {
     for (const src of ['pages', 'cdn']) {
       const W = makeWorld().repo('Jacorb90/Prestige-Tree', { id: 'ptr', settings: { autoTable: authorTable } });
       [r[src]] = await session(`J ${src}`, W, [{ q: `repo=Jacorb90/Prestige-Tree@${PTR.upstream.commit}&source=${src}&managed=1&automation=1`, expect: ex('ptr', true, src),
-        act: (p) => p.evaluate(() => ({ order: tmtLoader.autoTable && tmtLoader.autoTable.kindOrder, id: tmtLoader.autoTable && tmtLoader.autoTable.id })) }]);
+        act: (p) => p.evaluate(() => ({ order: window.tmtLoader && tmtLoader.autoTable && tmtLoader.autoTable.kindOrder, id: window.tmtLoader && tmtLoader.autoTable && tmtLoader.autoTable.id })) }]);
     }
     // no file → the loader's own table (games-auto/ptr.json), as on the hosted page
     const W0 = makeWorld().repo('Jacorb90/Prestige-Tree', { id: 'ptr' });
