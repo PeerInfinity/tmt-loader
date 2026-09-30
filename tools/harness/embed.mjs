@@ -89,6 +89,9 @@ export async function startEmbedServers() {
     }
     const f = inside(gameDir(fx.id), rest);
     if (!f) { res.writeHead(403); return res.end(); }
+    // a SLOW author site, for leg T: the game's scripts that its index.html does NOT name (the mod files a 2.7
+    // loader.js inserts as async scripts) arrive late
+    if (fx.delay && /\.js$/.test(rest) && !fx.delay.static.has(rest)) return setTimeout(() => sendFile(res, f), fx.delay.ms);
     sendFile(res, f);
   });
   const listen = (srv) => new Promise((resolve, reject) => { const p = freePort(); srv.once('error', reject); srv.listen(p, '127.0.0.1', () => resolve(p)); });
@@ -101,7 +104,7 @@ export async function startEmbedServers() {
     /** Registers a fixture; returns its page URL (the directory, as an author's Pages site serves it). */
     fixture(def) {
       const key = `${def.id}-${++n}`;
-      fixtures.set(key, { id: def.id, tag: def.noTag ? null : embedTag(loaderBase, def.attrs || {}), file: def.file });
+      fixtures.set(key, { id: def.id, tag: def.noTag ? null : embedTag(loaderBase, def.attrs || {}), file: def.file, delay: def.delay || null });
       return `http://127.0.0.1:${sp}/f/${key}/`;
     },
     stop: () => Promise.all([new Promise((r) => loader.close(r)), new Promise((r) => site.close(r))]),
@@ -417,6 +420,20 @@ async function gameRow(browser, S, id) {
     && O.locked.label.locked && /with the mobile layout/.test(O.locked.label.text) && O.locked.same && Object.keys(O.locked.stored).length === 0,
   { section: Os, pressOverUrl: { flags: O.pressOverUrl.flags, search: O.pressOverUrl.search, stored: O.pressOverUrl.stored }, locked: O.locked });
 
+  });
+
+  // ---- T: THE TIMING — the extras go in when the page's own `load` fires, not when the tag runs. A 2.7 game's
+  // js/technical/loader.js inserts its mod files as ASYNC scripts; on a slow site they arrive after the tag's modules
+  // and, had attach run early, tmt-auto.js would derive its features from a half-built `layers`. The site delays those
+  // files; the automation page must still equal its hosted twin, feature count included. A game with no such files
+  // (2.2.1 names every script in its index.html) cannot show this and ABSTAINS, by name.
+  await guard('T-timing', async () => {
+    const statics = new Set((man.load && man.load.scripts) || []);
+    const dynamic = ((man.load && man.load.modFiles) || []).length;
+    if (!dynamic) { leg('T-timing', true, { verdict: 'abstains: every script is named in index.html (no async mod files)' }); return; }
+    const t = await draw('T slow mod files, on=automation', { id, attrs: { on: 'automation' }, delay: { ms: 1500, static: statics } });
+    leg('T-timing', t.flags.automation && !t.error && t.features === hAuto.features && t.features > 0 && same(t, hAuto),
+      { features: [t.features, hAuto.features], delayed: dynamic, verdict: t.features === hAuto.features ? 'the extras waited for the late mod files' : 'THE EXTRAS RAN BEFORE THE GAME HAD LOADED' });
   });
 
   // ---- vii: the requests of every embed page above ------------------------------------------------------------------

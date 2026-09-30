@@ -168,6 +168,17 @@ try {
     step('home page fetches only the page and the loader modules', stray.length === 0, { requests: urls.length, stray });
     step('home page links the census', census.length > 0, { census });
   } finally { await context.close(); }
+
+  // (S4) THE EMBED TAG is served at the sub-path: `v1/embed.js` and the module it imports, as JavaScript. On the live
+  // site also with `access-control-allow-origin: *` — an author's page is another origin, and without it the browser
+  // refuses the module import (the local server sends no CORS header, so that half is live-only, and says so).
+  const embedFiles = [];
+  for (const f of ['v1/embed.js', 'loader/embed.mjs']) {
+    const res = await fetch(`${base}${f}`, { cache: 'no-store' });
+    embedFiles.push({ f, status: res.status, type: res.headers.get('content-type'), cors: res.headers.get('access-control-allow-origin') });
+  }
+  step('embed tag served (v1/embed.js + loader/embed.mjs, as JavaScript' + (LIVE ? ', CORS *)' : '; CORS is checked live only)'),
+    embedFiles.every((x) => x.status === 200 && /javascript/.test(x.type || '') && (!LIVE || x.cors === '*')), { files: embedFiles });
 } finally {
   if (browser) await browser.close();
   if (server) server.stop();

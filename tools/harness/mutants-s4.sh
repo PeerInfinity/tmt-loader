@@ -18,7 +18,7 @@ FILES="loader/flags.mjs loader/embed.mjs loader/attach.mjs loader/options.js"
 for f in $FILES; do cp "$f" "$OUT/$(basename "$f").orig"; done
 restore() { for f in $FILES; do cp "$OUT/$(basename "$f").orig" "$f"; done; }
 trap restore EXIT
-LEGS="i-inert ii-author-defaults iii-not-loaded iv-press-remembered v-url-first vi-settings-file M-layout O-options vii-requests"
+LEGS="i-inert ii-author-defaults iii-not-loaded iv-press-remembered v-url-first vi-settings-file M-layout O-options T-timing vii-requests"
 KILLED=0; SURVIVED=0
 
 mutant() {  # mutant <name> <game> <python> <required red legs…>
@@ -51,8 +51,9 @@ mutant I-every-button-drawn ptr "$(rep loader/options.js "'var ENTRIES = ALL.fil
 mutant J-home-link-on-author-page ptr "$(rep loader/options.js "'if (EMBED) section.append(head, table, noteEl);'" "'if (false) section.append(head, table, noteEl);'")" O-options
 mutant K-no-mobile-class-on-embed ptr "$(rep loader/attach.mjs "\"    document.documentElement.classList.add('tmt-mobile');\n\"" "''")" ii-author-defaults M-layout
 # the TIMING: the extras inserted when the tag runs, not when the page's own load fires — on the 2.7 game, whose mod
-# files load ASYNC (js/technical/loader.js). Which legs this reddens is measured, not predicted: the row must be RED.
-mutant L-attach-before-the-page-loaded something "$(rep loader/embed.mjs "'    await entry.loaded();\n'" "''")"
+# files load ASYNC (js/technical/loader.js). ⚠ MEASURED: without leg T this mutant SURVIVED all nine legs — on a local
+# server the mod files always beat the tag's own modules — so leg T delays them, as a slow author site would.
+mutant L-attach-before-the-page-loaded something "$(rep loader/embed.mjs "'    await entry.loaded();\n'" "''")" T-timing
 
 echo "S4 mutants: $KILLED killed, $SURVIVED survived"
 [ "$SURVIVED" -eq 0 ]
