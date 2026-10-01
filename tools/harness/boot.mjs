@@ -228,7 +228,14 @@ globalThis.tmtLoader = {
 // the per-game automation table (manifest.auto = games-auto/<id>.json, C1): a JSON DOCUMENT, parsed into
 // tmtLoader.autoTable before tmt-auto.js runs, as the page does (tmt-auto.js validates it and derives the features from
 // it); --no-auto = no table (derived defaults only)
-if (AUTOMATION && manifest.auto && !A['no-auto']) {
+// (stages-1) --auto-table <file>: hand in THAT table document instead of the manifest's — how a whole alternative table
+// (the losing stage order, a mutant) is measured as a table rather than as a harness configuration. Absolute or
+// relative to the repository; a file that is not there or not JSON fails the boot by name.
+if (AUTOMATION && A['auto-table'] && !A['no-auto']) {
+  const tf = path.isAbsolute(A['auto-table']) ? A['auto-table'] : path.join(REPO, A['auto-table']);
+  try { globalThis.tmtLoader.autoTable = JSON.parse(fs.readFileSync(tf, 'utf8')); R.auto = path.relative(REPO, tf); }
+  catch (e) { R.file_errors.push({ file: A['auto-table'], error: String(e.message).slice(0, 200) }); out({ ...R, ok: false, failed_at: 'auto-table', error: String(e.message).slice(0, 200) }); proc.exit(1); }
+} else if (AUTOMATION && manifest.auto && !A['no-auto']) {
   try { globalThis.tmtLoader.autoTable = JSON.parse(fs.readFileSync(path.join(REPO, manifest.auto), 'utf8')); R.auto = manifest.auto; }
   catch (e) { R.file_errors.push({ file: manifest.auto, error: String(e.message).slice(0, 200) }); }
 }

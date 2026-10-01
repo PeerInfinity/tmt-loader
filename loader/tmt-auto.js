@@ -740,6 +740,8 @@
     // game's table, the player's own `while`, a runtime override) and "Blocked — the gate X is false" could not tell
     // a player whether they had typed X themselves. `owner` is an enumerated word this file owns, not free text.
     'blocked:gate':       { text: 'Blocked — the gate {gate} ({owner}) is false',                 values: ['gate', 'owner'] },
+    // stages-1: the same pause when a STAGE of the game's table supplied the gate, and it names the stage
+    'blocked:stage':      { text: 'Blocked — stage {stage} pauses it while {gate} is false',     values: ['stage', 'gate'] },
     // ⛔ V4: A PREDICATE THAT THROWS IS NOT A PREDICATE THAT IS FALSE, and a silent `false` is the trap this code
     // exists to avoid: a player types `player.q.pionts` and the feature pauses for ever with a reason that reads
     // exactly like a condition legitimately not met. ⚠ NO ERROR TEXT IN THE VALUES — "no free-text value" is this
@@ -896,7 +898,12 @@
   function codeText(code, values) { return joinParts(codeParts(code, values)); }
   function joinParts(ps) { var t = ''; for (var i = 0; i < ps.length; i++) t += ps[i].s; return t; }
   function plain(v) { return Array.isArray(v) ? v.join(', ') : String(v); }
-  T.reasonText = function (last) { return last ? codeText(last.code, last.values) : ''; };
+  T.reasonText = function (last) { return last ? codeText(last.code, last.values) + stageSuffix(last.stage) : ''; };
+  /** stages-1: the reason line's tail when a stage made (or failed to make) the decision; '' otherwise. */
+  function stageSuffix(st) {
+    if (!st) return '';
+    return (st.id ? ' — stage ' + st.id : '') + (st.error ? ' — ⚠ stage ' + st.error.stage + ' could not be evaluated (' + st.error.message + '), so it is not in force' : '');
+  }
 
   // `f.last` — the last decision. OUTSIDE `player` (it is not the player's game) and OUTSIDE `runtimeState()` (it
   // is a READOUT, recomputed on the next tick; recording it there would change the `runtime` block of every
@@ -905,6 +912,8 @@
     explainStats.decisions++;
     explainStats.codes[code] = (explainStats.codes[code] || 0) + 1;
     f.last = { code: code, values: values === undefined ? null : values, tick: T.ticks, at: Number(player.timePlayed) || 0 };
+    // stages-1: a decision made under a STAGE says which (the reason line names it); absent when no stage is involved
+    if (stagesNow.length) { var sn = stageNoteOf(f); if (sn) f.last.stage = sn; }
     return f.last;
   }
   // HTML escaping for every string the au tab renders through `display-text` (which is `v-html` in both engines):
@@ -978,7 +987,7 @@
   //   · `track`    true while the log wants the tracker armed.
   //   · `queueSlot` () — (tpl1) in the QUEUE's slot of the tick (below): where a replay re-applies the recorded queue
   //                calls, exactly as `replay` re-applies the automation's in theirs.
-  var logLink = T.logLink = { exec: null, replay: null, progress: null, track: false, queueSlot: null };
+  var logLink = T.logLink = { exec: null, replay: null, progress: null, track: false, queueSlot: null, stage: null };
 
   // ---- (tpl1) THE QUEUE RUNNER'S SLOT (docs/queues.md): four points, all NULL unless a queue is loaded ---------------
   // The runner is `loader/tmt-queue.js`, loaded only when a queue is (harness `--queue`, the page's `?autoOpt=queue=`
@@ -2449,7 +2458,9 @@
     return out;
   }
   /** The base policy: everything V2's precedence resolves to BELOW the watch. The rung is derived FROM this. */
-  function basePolicy(f) { return savedPolicyOf(f) || f.policy0; }
+  // stages-1: derived < table < a STAGE in force < `--auto-opt policy:<id>=` < the player's saved choice. With no stage
+  // in force this is `savedPolicyOf(f) || f.policy0`, exactly as it was.
+  function basePolicy(f) { return savedPolicyOf(f) || (f.policyOpt !== null ? f.policy0 : (stagePolicyOf(f) || f.policy0)); }
   function escalationList(f) {
     var saved = savedEscalationOf(f);
     if (saved) return saved;
@@ -2497,6 +2508,106 @@
   };
   /** ⛔ A HAND EDIT RETURNS THAT FEATURE TO ITS PRIMARY — the player just said what they want. */
   function handEdited(id) { if (escRung[id]) { delete escRung[id]; delete escSince[id]; } }
+
+  // ---- stages-1: the table's STAGES, evaluated ONCE per gameLoop ---------------------------------------------------
+  // ⚖ design notes §19-R.2, "planner finds, data records": the harness finds a stage-specific winner, and the table
+  // records it as an entry that is in force only while its `when` holds. ONE evaluation per stage per loop, at the
+  // same point the watch runs (before the first feature of the loop decides), so every feature of a loop decides under
+  // the same answer and a predicate that becomes true INSIDE loop N first acts in loop N+1 — the tick a state log can
+  // predict. Per feature and per slot (`policy`, `while`) the FIRST holding stage that names it wins.
+  // ⛔ A `when` THAT THROWS READS AS FALSE — the stage is not in force — and it is NOT silent: the error is kept per
+  // stage (`T.stages()`), every feature the stage names says so in its readout, and the state log records it. A
+  // throw that read as TRUE would switch a policy on by accident; one that read as false and said nothing would be
+  // V4's mistyped predicate again.
+  // ⚠ Nothing here is in `player` or in `runtimeState()`: the answer is recomputed from the game every loop, so a
+  // snapshot, a restore and a planner's excursion need no memory of it.
+  var stagesNow = [], stagesOff = false;
+  var stagePol = {}, stageGate = {}, stageOn = {}, stageErr = {}, stageSeen = false, stageHist = [];
+  var stageStats = { loops: 0, evals: 0 };
+  var STAGE_HIST = 64;
+  function stageTick() {
+    if (!stagesNow.length || stagesOff) return;
+    stageStats.loops++;
+    var pol = {}, gat = {}, on = {}, err = {};
+    for (var i = 0; i < stagesNow.length; i++) {
+      var S = stagesNow[i], v = false;
+      stageStats.evals++;
+      try { v = !!T.predicate(S.when)(); } catch (e) { v = false; err[S.id] = String((e && e.message) || e); }
+      if (!v) continue;
+      on[S.id] = i;
+      for (var fp in S.policies) if (pol[fp] === undefined) pol[fp] = i;
+      for (var fg in S.gates) if (gat[fg] === undefined) gat[fg] = i;
+    }
+    // a TRANSITION (on, off, or a `when` that started or stopped throwing) is a record: the readout's history and the
+    // state log's `stage` line. The first evaluation of a process records the stages it finds in force (`first`).
+    for (var j = 0; j < stagesNow.length; j++) {
+      var id = stagesNow[j].id, was = stageOn[id] !== undefined, is = on[id] !== undefined;
+      var errWas = stageErr[id] || null, errIs = err[id] || null;
+      if (stageSeen ? (was === is && errWas === errIs) : (!is && !errIs)) continue;
+      var rec = { stage: id, on: is, tick: T.ticks, gs: Math.round((Number(player.timePlayed) || 0) * 1e6) / 1e6 };
+      if (!stageSeen) rec.first = true;
+      if (errIs) rec.error = errIs;
+      stageHist.push(rec);
+      if (stageHist.length > STAGE_HIST) stageHist.shift();
+      if (logLink.stage !== null) logLink.stage(rec);
+    }
+    stageSeen = true;
+    stagePol = pol; stageGate = gat; stageOn = on; stageErr = err;
+  }
+  function stagePolicyOf(f) { var i = stagePol[f.id]; return i === undefined ? null : stagesNow[i].policies[f.id]; }
+  function stageGateOf(f) { var i = stageGate[f.id]; return i === undefined ? null : stagesNow[i].gates[f.id]; }
+  function stageIdOf(f, slot) { var i = (slot === 'while' ? stageGate : stagePol)[f.id]; return i === undefined ? null : stagesNow[i].id; }
+  /** Whether the POLICY in force is the stage's (nothing above it — option, save, watch, runtime — has its own). */
+  function policyFromStage(f) {
+    return stagePol[f.id] !== undefined && f.policyRuntime === null && f.policyOpt === null && !savedPolicyOf(f) && !watchPolicy(f);
+  }
+  /** The readout's view of a feature's stages, or null when no stage names it: which stage supplies its policy and its
+   *  gate, which stage is in force for it but SHADOWED by something above it, and which stage's `when` threw. */
+  function stageViewOf(f) {
+    if (!stagesNow.length) return null;
+    var named = [], errs = [];
+    for (var i = 0; i < stagesNow.length; i++) {
+      var S = stagesNow[i];
+      if (S.policies[f.id] === undefined && S.gates[f.id] === undefined) continue;
+      named.push(S.id);
+      if (stageErr[S.id]) errs.push({ stage: S.id, message: stageErr[S.id] });
+    }
+    if (!named.length) return null;
+    var pol = policyFromStage(f) ? stageIdOf(f, 'policy') : null;
+    var gate = controlOwner(f, 'while') === 'stage' ? stageIdOf(f, 'while') : null;
+    var shadow = null;
+    if (stagePol[f.id] !== undefined && !pol) shadow = f.policyRuntime !== null ? 'runtime' : watchPolicy(f) ? 'watch' : savedPolicyOf(f) ? 'you' : f.policyOpt !== null ? 'option' : null;
+    return { named: named, policy: pol, 'while': gate, shadowedBy: shadow, off: stagesOff, errors: errs };
+  }
+  /** What `say()` attaches to a decision: the stage(s) it was made under, and a stage whose `when` threw. */
+  function stageNoteOf(f) {
+    var p = policyFromStage(f) ? stageIdOf(f, 'policy') : null;
+    var g = stageGate[f.id] !== undefined && controlOwner(f, 'while') === 'stage' ? stageIdOf(f, 'while') : null;
+    var e = null;
+    for (var k in stageErr) {
+      var S = null;
+      for (var i = 0; i < stagesNow.length; i++) if (stagesNow[i].id === k) S = stagesNow[i];
+      if (S && (S.policies[f.id] !== undefined || S.gates[f.id] !== undefined)) { e = { stage: k, message: stageErr[k] }; break; }
+    }
+    if (!p && !g && !e) return null;
+    var o = { id: p || g };
+    if (p && g && p !== g) o.id = p + ', ' + g;
+    if (e) o.error = e;
+    return o;
+  }
+  /** The stages as data: each with its `when`, whether it is in force, since when, and the error its `when` threw. */
+  T.stages = function () {
+    var out = [];
+    for (var i = 0; i < stagesNow.length; i++) {
+      var S = stagesNow[i], since = null;
+      for (var h = stageHist.length - 1; h >= 0; h--) if (stageHist[h].stage === S.id) { since = stageHist[h]; break; }
+      out.push({ id: S.id, when: S.when, policies: Object.assign({}, S.policies), gates: Object.assign({}, S.gates), active: stageOn[S.id] !== undefined,
+        error: stageErr[S.id] || null, since: since && since.on ? { tick: since.tick, gs: since.gs } : null, off: stagesOff });
+    }
+    return out;
+  };
+  T.stageHistory = function () { return stageHist.map(function (r) { return Object.assign({}, r); }); };
+  T.stageStats = function () { return { stages: stagesNow.length, off: stagesOff, loops: stageStats.loops, evals: stageStats.evals }; };
 
   // ---- the tick: poll the tracker, then decide whether to escalate -------------------------------------------------
   // ⛔ ONCE PER `gameLoop`, BEFORE ANY FEATURE OF THAT LOOP DECIDES — `runLayer` calls it, so it runs ahead of the
@@ -2986,7 +3097,10 @@
     var v = evalPredicate(c);
     if (v.error) return { code: 'blocked:predicate', values: { which: 'while', src: c.src } };
     if (v.value) return null;
-    return { code: 'blocked:gate', values: { gate: c.src, owner: controlOwner(f, 'while') } };
+    var who = controlOwner(f, 'while');
+    // stages-1: a STAGE's pause names the stage — a silent switch is the `paused:in-challenge` defect again
+    if (who === 'stage') return { code: 'blocked:stage', values: { stage: stageIdOf(f, 'while'), gate: c.src } };
+    return { code: 'blocked:gate', values: { gate: c.src, owner: who } };
   }
   // ---- R3a: what a PAUSE on this kind LEAVES BEHIND --------------------------------------------------------------
   // ⚖ THE DECISION, AND THE REASON IT GOES THIS WAY. A `while` that goes false while the game is inside a challenge
@@ -3008,7 +3122,7 @@
   /** The `paused:in-challenge` values, or null when this pause strands nothing. */
   function strandedBy(f, stop) {
     if (!STRANDED[f.kind]) return null;
-    var which = stop.code === 'stopped:until' ? 'until' : stop.code === 'blocked:gate' ? 'while' : null;
+    var which = stop.code === 'stopped:until' ? 'until' : stop.code === 'blocked:gate' || stop.code === 'blocked:stage' ? 'while' : null;
     if (!which) return null;             // a predicate that THREW keeps its own code — that is the bigger news
     var id = STRANDED[f.kind](f);
     if (id === null) return null;
@@ -3056,7 +3170,8 @@
     // rung the stall it is part of just bought.
     // ⚠ R3b: THE CYCLE STEPS BESIDE THE WATCH, and AFTER it on purpose — the watch may change a feature's policy
     // this tick, and whether a feature CARRIES the cycle modifier is read from the policy in force.
-    if (watchLoop !== loopNo) { watchLoop = loopNo; watchTick(); orderLoop = -1; cycleTick(); }
+    // stages-1: the STAGES first — the watch's escalation list and the cycle both read the policy in force
+    if (watchLoop !== loopNo) { watchLoop = loopNo; stageTick(); watchTick(); orderLoop = -1; cycleTick(); }
     var list = layerOrder(l);
     for (var i = 0; i < list.length; i++) {
       var f = list[i];
@@ -3409,6 +3524,8 @@
     }
     var f = {
       id: def.id, layer: def.layer, kind: def.kind, policy0: ov !== undefined ? ov : def.policy, policyRuntime: null, title: def.title || def.id,
+      // stages-1: whether `policy0` came from `--auto-opt policy:<id>=`, because a STAGE sits between it and the table
+      policyOpt: ov !== undefined ? ov : null, gateOpt: !!def.gateOpt,
       unlocked: typeof def.unlocked === 'function' ? def.unlocked : function () { return true; },
       default: false,
       policies: Array.isArray(def.policies) ? def.policies.slice() : [def.policy],
@@ -3534,15 +3651,18 @@
     if (r !== null && r !== undefined) return r;
     var s = savedControl(f, name);
     if (s !== null) return s;
+    // stages-1: a stage's gate sits between the table's and `--auto-opt while:<id>=` (which pins it for the whole run)
+    if (name === 'while' && !f.gateOpt) { var sg = stageGateOf(f); if (sg !== null) return sg; }
     var t = f[CTL_BASE[name]];
     if (t !== null && t !== undefined) return t;
     var d = CTL_DERIVED[name] ? f[CTL_DERIVED[name]] : null;
     return d === undefined ? null : d;
   }
-  /** WHOSE value is in force — `runtime` | `you` | `table` | `derived`, or null when nothing set one. */
+  /** WHOSE value is in force — `runtime` | `you` | `stage` | `table` | `derived`, or null when nothing set one. */
   function controlOwner(f, name) {
     if (f.controls && f.controls[name] !== null && f.controls[name] !== undefined) return 'runtime';
     if (savedControl(f, name) !== null) return 'you';
+    if (name === 'while' && !f.gateOpt && stageGateOf(f) !== null) return 'stage';
     var t = f[CTL_BASE[name]];
     if (t !== null && t !== undefined) return 'table';
     var d = CTL_DERIVED[name] ? f[CTL_DERIVED[name]] : null;
@@ -3654,6 +3774,7 @@
         var c = predicateOf(f, name), v = c.fn ? evalPredicate(c) : { value: null, error: c.error };
         out[name] = { value: controlOf(f, name), owner: controlOwner(f, name), holds: v.value, error: c.error || v.error,
           table: f[CTL_BASE[name]], derived: CTL_DERIVED[name] ? f[CTL_DERIVED[name]] : null, saved: T.savedControl(id, name) };
+        if (name === 'while' && out[name].owner === 'stage') out[name].stage = stageIdOf(f, 'while');   // stages-1
       } else {
         out[name] = { value: controlOf(f, name), owner: controlOwner(f, name), effective: priorityOf(f), kindPlace: f.kindIndex,
           table: f[CTL_BASE[name]], derived: null, saved: T.savedControl(id, name) };
@@ -4080,7 +4201,11 @@
   }
   // ⚠ V5: `parts` is the sentence's own parts (`codeParts`), so the view can box each number; `text` is them joined
   // — the same string, formatted once.
-  function lastRow(L) { var ps = codeParts(L.code, L.values); return { code: L.code, text: joinParts(ps), values: jsonValues(L.values), tick: L.tick, at: L.at, parts: ps }; }
+  function lastRow(L) {
+    var ps = codeParts(L.code, L.values), o = { code: L.code, text: joinParts(ps), values: jsonValues(L.values), tick: L.tick, at: L.at, parts: ps };
+    if (L.stage) { o.stage = { id: L.stage.id || null, error: L.stage.error ? { stage: L.stage.error.stage, message: L.stage.error.message } : null }; o.text += stageSuffix(L.stage); }
+    return o;
+  }
   T.explain = function () {
     var out = [], now = Number(player.timePlayed) || 0, limit = neverFiredLimit();
     for (var i = 0; i < features.length; i++) {
@@ -4093,7 +4218,7 @@
         // V2: `saved` is the PLAYER's own choice (null when they have not made one), and `strategy` / `params` are
         // what `inForce` parses to — so the tab renders the editors from `explain()` like everything else.
         policy: { inForce: f.policy, table: f.policyTable, derived: f.policyDerived, alternatives: f.policies.slice(1),
-          saved: savedPolicyOf(f), runtime: f.policyRuntime, base: f.policy0, escalated: watchPolicy(f),
+          saved: savedPolicyOf(f), runtime: f.policyRuntime, base: f.policyOpt !== null ? f.policy0 : (stagePolicyOf(f) || f.policy0), escalated: watchPolicy(f),
           strategy: pp ? pp.id : null, params: pp ? Object.assign({}, pp.params) : null,
           modifier: pp && pp.modifier ? { id: pp.modifier.id, params: Object.assign({}, pp.modifier.params, sideArgsOf(f, byStrategyId(f.kind, pp.modifier.id))) } : null },
         stall: T.stallState(f.id),
@@ -4119,6 +4244,8 @@
         gate: f.gateSrc, after: f.after.slice(), control: T.controlState(f.id),
         provenance: (T.autoProvenance && T.autoProvenance[f.id]) || null,
       });
+      // stages-1: only a game whose table HAS stages grows the key, so every other row is byte-identical
+      if (stagesNow.length) out[out.length - 1].stage = stageViewOf(f);
     }
     for (var id in (T.autoExcluded || {})) {
       var c = id.indexOf(':');
@@ -4284,7 +4411,7 @@
     if (tv.by === 'runtime') return chip('OVERRIDDEN', '#8a6d3b') + ' switched ' + (tv.override ? 'on' : 'off') + ' by a runtime setting — ' + mine + '; a press changes your saved choice, not this';
     return chip('OVERRIDDEN', '#8a6d3b') + ' — the page’s address sets profile “' + esc(tv.profile) + '”, which ' + (tv.profile === 'off' ? 'runs nothing' : 'runs every unlocked feature') + '; ' + mine;
   };
-  var CTL_WORD = { runtime: 'a runtime setting', you: 'yours', table: 'the game’s table', derived: 'derived' };
+  var CTL_WORD = { runtime: 'a runtime setting', you: 'yours', table: 'the game’s table', derived: 'derived', stage: 'a stage of the game’s table' };
   var STATE_BG = { on: '#4f9a6a', off: '#3d6f91', armed: '#8a6d3b', locked: '#666666', excluded: '#5a4a4a' };
   // A feature that cannot run yet is ONE LINE. There are 78 of them on ptr at a fresh save and 3 that are doing
   // anything; a full block each would bury the three.
@@ -4405,7 +4532,13 @@
     // U16: the id is a developer detail, and a reason that only repeats the state word ("LOCKED … Locked") is dropped
     var echo = r.last && !r.last.parts && String(r.last.text).toLowerCase() === r.state;
     return line(F, r.id, 'col', '<div class="tmtl-collapsed" style="opacity:' + (r.state === 'on' ? '.85' : '.6') + ';padding:2px 0;text-align:left">' + esc(r.title) + (DEV ? ' <span style="opacity:.6;font-size:.85em">' + esc(r.id) + '</span>' : '') + ' — '
-      + chip(r.state.toUpperCase(), STATE_BG[r.state]) + bits + (echo && !DEV ? '' : ' <span style="font-size:.9em">' + lastHTML(F, r.id + '|col', r.last) + '</span>') + '</div>');
+      + chip(r.state.toUpperCase(), STATE_BG[r.state]) + bits + (echo && !DEV ? '' : ' <span style="font-size:.9em">' + lastHTML(F, r.id + '|col', r.last) + stageNowHTML(r.last) + '</span>') + '</div>');
+  }
+  /** stages-1: the reason line's stage tail — the stage this decision was made under, and a stage that threw. */
+  function stageNowHTML(L) {
+    if (!L || !L.stage) return '';
+    return (L.stage.id ? ' <span style="opacity:.8">· stage <b>' + esc(L.stage.id) + '</b></span>' : '')
+      + (L.stage.error ? ' <span style="color:#d07a7a">· ⚠ stage ' + esc(L.stage.error.stage) + ' could not be evaluated — not in force</span>' : '');
   }
   function featureBlock(r, F) {
     var p = r.policy, bits = [], id = r.id;
@@ -4417,6 +4550,11 @@
     if (p.runtime) bits.push(chip('OVERRIDDEN', '#8a6d3b') + ' by a runtime setting');
     // V3: an ESCALATED feature is visibly different from an EDITED one and from an OVERRIDDEN one.
     if (p.escalated) bits.push(chip('ESCALATED', '#a06a3e') + ' by the stall watch · its own rule is ' + esc(r.escalation ? r.escalation.primary : '?'));
+    // stages-1: a STAGE that set this strategy is named on the strategy line — and so is one that is in force but
+    // SHADOWED (the player's edit, an option or the runtime beat it), so nobody wonders why the table's stage "did nothing"
+    if (r.stage && r.stage.policy) bits.push(chip('STAGE', '#5f8f6a') + ' ' + esc(r.stage.policy) + ' sets this');
+    else if (r.stage && r.stage.shadowedBy) bits.push('stage ' + esc(r.stage.named.join(', ')) + ' is in force, but ' + esc(r.stage.shadowedBy === 'you' ? 'your choice' : r.stage.shadowedBy === 'option' ? 'a run option' : r.stage.shadowedBy === 'watch' ? 'the stall watch' : 'a runtime setting') + ' beats it');
+    if (r.stage && r.stage.errors.length) bits.push('<span style="color:#d07a7a">⚠ stage ' + esc(r.stage.errors[0].stage) + ' could not be evaluated (' + esc(r.stage.errors[0].message) + ') — not in force</span>');
     // ⚠ the table's entry and the generic derivation's shown BESIDE what is in force, and only when they DIFFER —
     // survey §4.5. Developer details since U16.
     var dev = [];
@@ -4450,7 +4588,8 @@
     // where the difference has to be visible. The message is the ENGINE's; it is escaped like every other string.
     var ctl = r.control;
     var wl = '';
-    if (ctl && ctl['while'].value) wl = '<div style="text-align:left;font-size:.9em;opacity:.85">acts only while <code>' + esc(ctl['while'].value) + '</code> <span style="opacity:.7">(' + esc(CTL_WORD[ctl['while'].owner] || ctl['while'].owner) + ')</span>'
+    var wword = ctl && ctl['while'].owner === 'stage' && ctl['while'].stage ? 'stage ' + ctl['while'].stage : ctl ? CTL_WORD[ctl['while'].owner] || ctl['while'].owner : '';
+    if (ctl && ctl['while'].value) wl = '<div style="text-align:left;font-size:.9em;opacity:.85">acts only while <code>' + esc(ctl['while'].value) + '</code> <span style="opacity:.7">(' + esc(wword) + ')</span>'
       + (ctl['while'].error ? ' <span style="color:#d07a7a">⚠ ' + esc(ctl['while'].error) + '</span>' : ctl['while'].holds === false ? ' <span style="color:#c08a3e">— false now</span>' : '') + '</div>';
     else if (r.gate) wl = '<div style="text-align:left;font-size:.9em;opacity:.85">waits for <code>' + esc(r.gate) + '</code> <span style="opacity:.7">(the game’s table)</span></div>';
     o.push(line(F, id, 'while', wl));
@@ -4459,7 +4598,7 @@
     o.push(line(F, id, 'prio', ctl && ctl.priority.owner ? '<div style="text-align:left;font-size:.9em;opacity:.85">priority <b>' + esc(ctl.priority.effective) + '</b> <span style="opacity:.7">(' + esc(CTL_WORD[ctl.priority.owner] || ctl.priority.owner) + (DEV ? '; its kind’s place is ' + esc(ctl.priority.kindPlace) : '') + ') — within this layer only</span></div>' : ''));
     // `after` is the table's unlockOrder: this reset waits until those sibling layers are unlocked (`blocked:after`)
     o.push(line(F, id, 'after', r.after && r.after.length ? '<div style="text-align:left;font-size:.9em;opacity:.85">waits until ' + r.after.map(function (l) { return esc(layerName(l)) + (DEV ? ' <span style="opacity:.6">' + esc(l) + '</span>' : ''); }).join(', ') + (r.after.length > 1 ? ' are' : ' is') + ' unlocked</div>' : ''));
-    o.push(line(F, id, 'now', '<div style="text-align:left;margin-top:3px"><b>now:</b> ' + (r.last ? lastHTML(F, id + '|now', r.last) : 'nothing decided yet') + '</div>'));
+    o.push(line(F, id, 'now', '<div style="text-align:left;margin-top:3px"><b>now:</b> ' + (r.last ? lastHTML(F, id + '|now', r.last) : 'nothing decided yet') + stageNowHTML(r.last) + '</div>'));
     // ⚠ V5: `last at` IS ROUNDED TO A TENTH. It printed the raw float (`115100.98603999999 s`), whose length changed
     // with the float noise from one act to the next — a line that re-wrapped for no reason a player could see.
     o.push(line(F, id, 'acted', '<div style="text-align:left;font-size:.9em;opacity:.7">acted ' + numHTML(F, id + '|acted', r.acted) + ' time(s)'
@@ -5355,7 +5494,7 @@
     title: 'tmt-loader per-game automation table (games-auto/<id>.json)',
     description: 'DATA only: what a game does not declare to the engine. Every key is documented in docs/automation.md, "The table (measured defaults)".',
     type: 'object', required: ['formatVersion', 'id'], additionalProperties: false,
-    'x-experimental': ['the `|turn@…` and `|give-up@…` modifiers inside a `policies` / `alternatives` string (R3b, R3a)', 'every `challenges:*` entry of `policies`, `alternatives`, `order` and `gates`', 'whether a table may state `until` / `priority` — today only `while` has a table form, `gates` (unanswered, left open)'],
+    'x-experimental': ['the `|turn@…` and `|give-up@…` modifiers inside a `policies` / `alternatives` string (R3b, R3a)', 'every `challenges:*` entry of `policies`, `alternatives`, `order` and `gates`', 'whether a table may state `until` / `priority` — today only `while` has a table form, `gates` (unanswered, left open)', 'the `stages` list (stages-1): its shape, and whether a stage may carry more than `policies` / `gates`'],
     properties: {
       formatVersion: { enum: TABLE_FORMAT_VERSIONS, description: 'the loader refuses a version it does not know, by name' },
       id: { type: 'string', pattern: '^[a-z0-9-]+$' },
@@ -5370,6 +5509,17 @@
       clickables: { type: 'object', additionalProperties: { type: 'array', items: { type: 'object', required: ['id', 'when'], additionalProperties: false, properties: { id: { type: ['integer', 'string'] }, when: { type: 'string' } } } } },
       options: { type: 'object', additionalProperties: { type: ['string', 'number', 'boolean'] } },
       provenance: { type: 'object', description: 'keyed by feature id, `unlockOrder:<i>` or `kindOrder`; a record or a list of records', additionalProperties: { oneOf: [PROVENANCE_RECORD, { type: 'array', minItems: 1, items: PROVENANCE_RECORD }] } },
+      // ⚖ stages-1 (design notes §19-R.2, "planner finds, data records"): a STAGE is a `policies` / `gates` overlay
+      // that is in force only while its `when` predicate holds. The list is evaluated in order, once per tick, and per
+      // feature and per slot the FIRST stage that holds and names it wins. Its provenance is REQUIRED and inline: an
+      // entry that switches itself on mid-run without a measured row behind it is the thing this list must not carry.
+      stages: { type: 'array', description: 'stage-gated entries: while `when` holds, its `policies` / `gates` replace the table\'s own (first holding stage wins per feature and slot; below `--auto-opt` and the player\'s edit)',
+        items: { type: 'object', required: ['id', 'when', 'provenance'], additionalProperties: false, properties: {
+          id: { type: 'string', pattern: '^[a-z0-9][a-z0-9-]*$' },
+          when: { type: 'string', pattern: '^\\S', description: 'a JavaScript expression over the engine\'s globals (the `gates` language); a throw reads as FALSE' },
+          policies: { type: 'object', additionalProperties: { type: 'string', pattern: '^\\S' } },
+          gates: { type: 'object', additionalProperties: { type: 'string', pattern: '^\\S' } },
+          provenance: { oneOf: [PROVENANCE_RECORD, { type: 'array', minItems: 1, items: PROVENANCE_RECORD }] } } } },
     },
   };
   function schemaType(v) { return v === null ? 'null' : Array.isArray(v) ? 'array' : typeof v === 'number' ? (Math.floor(v) === v ? 'integer' : 'number') : typeof v; }
@@ -5531,6 +5681,36 @@
     // them (the schema above) — so "every literal has a measurement behind it" is a GATE (`tools/auto-tables.mjs`), not
     // something a reader looks for. The tab still shows ONE line per feature, rendered here from the records;
     // `autoProvenanceRecords` keeps the records themselves.
+    // ---- stages-1: the STAGE list (schema above), checked at load like every other entry -------------------------
+    // ⛔ A MISTAKE IS A HARD FAIL OF THE LOAD, by name, exactly as a `policies` / `gates` entry: an id used twice, a
+    // feature the derivation does not produce, a policy the kind cannot run, a predicate that does not compile, or a
+    // stage that sets nothing (a `when` with nothing behind it would be a switch that switches nothing).
+    // `--auto-opt stages=off` is the lever that measures the table WITHOUT them — what every pin recorded before the
+    // first stage measured (docs/automation.md, "Stages"); `on` (or absent) is the default. Anything else throws.
+    var so = T.autoOptions.stages;
+    if (so !== undefined && so !== '' && so !== 'on' && so !== 'off') throw new Error(src + ': option stages must be "on" or "off" (got "' + so + '")');
+    stagesNow = [];
+    var sids = {};
+    (table.stages || []).forEach(function (s, si) {
+      var at = src + ': stages[' + si + '] "' + s.id + '"';
+      if (sids[s.id]) throw new Error(at + ': the id is used twice');
+      sids[s.id] = true;
+      var w = checkPredicate(s.when);
+      if (w) throw new Error(at + ': when — ' + w);
+      if (!Object.keys(s.policies || {}).length && !Object.keys(s.gates || {}).length) throw new Error(at + ': sets nothing (no policies, no gates)');
+      for (var sp in (s.policies || {})) {
+        known('stages[' + si + '].policies', sp);
+        if (!policyOk(candById[sp].kind, s.policies[sp])) throw new Error(at + ': policy "' + s.policies[sp] + '" is not a ' + candById[sp].kind + ' policy (' + sp + ')');
+      }
+      for (var sg in (s.gates || {})) {
+        known('stages[' + si + '].gates', sg);
+        var gw = checkPredicate(s.gates[sg]);
+        if (gw) throw new Error(at + ': gate ' + sg + ' — ' + gw);
+      }
+      stagesNow.push({ id: s.id, when: s.when, policies: Object.assign({}, s.policies || {}), gates: Object.assign({}, s.gates || {}), provenance: [].concat(s.provenance) });
+    });
+    T.autoStages = stagesNow.map(function (s) { return { id: s.id, when: s.when, policies: Object.assign({}, s.policies), gates: Object.assign({}, s.gates) }; });
+    stagesOff = so === 'off';
     T.autoProvenance = {};
     T.autoProvenanceRecords = {};
     for (var pk in (table.provenance || {})) {
@@ -5629,6 +5809,9 @@
         // table (⚖ every entry in a table carries provenance, and a sweep is where provenance comes from). An
         // EMPTY value clears the table's own entry, which is how a control leg measures the game without it.
         gate: ctlOpt('while', id, table.gates && table.gates[id]),
+        // stages-1: a stage's gate sits BELOW `--auto-opt while:<id>=` (a leg that pins a configuration pins it whatever
+        // the table's stages say), so the derivation says which of the two filled `gate`
+        gateOpt: !!(T.options && T.options['while:' + id] !== undefined),
         until: ctlOpt('until', id, undefined),
         priority: ctlOpt('priority', id, undefined),
         toggleList: c.toggleList, multiSkipped: c.multiSkipped,

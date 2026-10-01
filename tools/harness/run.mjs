@@ -1,7 +1,8 @@
 // The Node CLI (plan §4). Spawns boot.mjs — ONE game per child process — and re-spawns with a pre-stub on a
 // ReferenceError in load() (≤ 12, the census's scripts/3-boot.mjs loop). EVERY state claim carries ticks + gameSeconds.
 //   node run.mjs <id> [--ticks N] [--diff d] [--leg idle|policy] [--until "<js>"] [--profile off|all|saved] [--json out]
-//                     [--exclude au] [--auto-opt "k=v;k2=v2"] [--no-auto] [--no-currency] [--no-automation | --automation 0]
+//                     [--exclude au] [--auto-opt "k=v;k2=v2"] [--auto-table f.json] [--no-auto] [--no-currency] [--no-automation | --automation 0]
+//   --auto-table (stages-1): hand in that table document instead of the manifest's `auto` (a whole alternative table)
 //   automation (the page's ?automation=1) is ON by default here; --no-automation boots the plain page's contract-only mode
 //                     [--storage in.json] [--load-from player.json] [--save --save-storage out.json]
 //                     [--state-out f] [--player-out f] [--ids-out f]
@@ -118,7 +119,7 @@ export function runNode(id, o = {}) {
     const name = String(o['stop-snapshot-name'] || 'STOP');
     const file = path.join(dir, `${name}.json`);
     const body = { mark: name, commit: headCommit(), dirty: snapshotTreeDirty(), ticks: res.ticks, gameSeconds: res.gameSeconds, diff: Number(o.diff ?? 0.05),
-      hash: res.hash, hashGame: res.hashGame, config: { profile: o.profile || 'off', 'auto-opt': o['auto-opt'] || null, from: snap ? res.fromSnapshot.file : null, why: res.stall?.stalled ? 'stalled' : res.stall?.walled ? 'walled' : 'ticks' },
+      hash: res.hash, hashGame: res.hashGame, config: { profile: o.profile || 'off', 'auto-opt': o['auto-opt'] || null, from: snap ? res.fromSnapshot.file : null, why: res.stall?.stalled ? 'stalled' : res.stall?.walled ? 'walled' : 'ticks', ...(o['auto-table'] ? { 'auto-table': path.relative(REPO, path.resolve(String(o['auto-table']))) } : {}) },
       player: res.stopSnapshot.player, runtime: res.stopSnapshot.runtime };
     // (m28) a run that loaded queues says so: the stop is not reproducible from `auto-opt` alone (absent otherwise)
     if (o.queue != null) body.config.queue = (Array.isArray(o.queue) ? o.queue : [o.queue]).map((f) => path.relative(REPO, path.resolve(String(f))));
@@ -137,7 +138,7 @@ export function runNode(id, o = {}) {
         const mk = res.marks[m];
         const file = path.join(dir, `${m}.json`);
         const body = { mark: m, commit, dirty, ticks: mk.ticks, gameSeconds: mk.gameSeconds, diff: Number(o.diff ?? 0.05), hash: mk.hash, hashGame: mk.hashGame,
-          config: { profile: o.profile || 'off', 'auto-opt': o['auto-opt'] || null, from: snap ? res.fromSnapshot.file : null }, player: s.player, runtime: s.runtime };
+          config: { profile: o.profile || 'off', 'auto-opt': o['auto-opt'] || null, from: snap ? res.fromSnapshot.file : null, ...(o['auto-table'] ? { 'auto-table': path.relative(REPO, path.resolve(String(o['auto-table']))) } : {}) }, player: s.player, runtime: s.runtime };
         fs.writeFileSync(file, JSON.stringify(body, null, 1) + '\n');
         written.push({ mark: m, file: path.relative(REPO, file), bytes: fs.statSync(file).size, playerBytes: s.player.length });
       }
@@ -158,6 +159,7 @@ function runNodeRaw(id, o) {
   if (o.profile) args.push('--profile', String(o.profile));
   if (o.exclude) args.push('--exclude', String(o.exclude));
   if (o['auto-opt']) args.push('--auto-opt', String(o['auto-opt']));
+  if (o['auto-table']) args.push('--auto-table', path.resolve(String(o['auto-table'])));
   if (o['no-auto']) args.push('--no-auto');
   if (o['no-currency']) args.push('--no-currency');
   if (!automationOn(o)) args.push('--no-automation');
@@ -206,6 +208,7 @@ function runNodeRaw(id, o) {
     // au button, into the storage the run boots on — H1-2: without these the resumed full hash differs in au only)
     const impArgs = ['--import', path.resolve(o['load-from']), '--save-storage', st];
     if (o['auto-opt']) impArgs.push('--auto-opt', String(o['auto-opt']));
+    if (o['auto-table']) impArgs.push('--auto-table', path.resolve(String(o['auto-table'])));
     if (o['no-auto']) impArgs.push('--no-auto');
     if (!automationOn(o)) impArgs.push('--no-automation');
     const imp = bootChild(id, impArgs);

@@ -38,6 +38,7 @@ kinds of record.
 {"type":"action","tick":…,"gs":…,"source":"auto","by":"reset:q","at":["q","slot"],"call":"doReset","args":["q"],
  "did":true,"state":{"q.p":"12","points":"1.2e345"},"hash":"…","why":{"code":"acted:reset","values":{"layer":"q","gain":"3","rule":"…"}}}
 {"type":"event","tick":…,"gs":…,"kind":"upg","layer":"q","id":"22","key":"q:upg:22","marks":["M26 — …"]}
+{"type":"stage","tick":…,"gs":…,"stage":"ql5-quirk-rate","on":true}
 {"type":"checkpoint","tick":…,"gs":…,"why":"start|interval|mark|stop","mark":"M12","hash":"…",
  "summary":{…},"player":"<the whole save as JSON>","runtime":{…}}
 ```
@@ -67,6 +68,11 @@ kinds of record.
 - **`event`** — something held for the FIRST time (a layer unlocked, an upgrade, a milestone, a challenge completion, a
   buyable above its best), from the Progress tracker (`docs/automation.md`, "Progress") — the log subscribes to it
   rather than having a second idea of what progress is. `marks` names any ladder mark the event satisfied.
+- **`stage`** — (stages-1) a stage of the game's table switched ON or OFF, or its `when` started or stopped THROWING
+  (`error`), at the tick the automation's actions of the same loop carry — the loop in which the stage first decides.
+  The first evaluation of a process records the stages it finds in force (`first: true`). A reading like `event` and
+  `queue`: not re-applied and not compared by the replay (the decisions a stage changes ARE actions, and those are
+  compared). `docs/automation.md`, "Stages".
 - **Checkpoints** are taken only at the END of a tick: at the start, every `every` game-seconds, the first tick each
   ladder mark holds (the same test the harness's ladder uses), and at the stop. On the page they also carry `wall`
   (milliseconds since the log started) on every record.
