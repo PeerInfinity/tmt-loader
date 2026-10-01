@@ -58,6 +58,7 @@ behaviour are unchanged (the core only gained `tmtLoader.runtimeState()` / `rest
 | `--planner-ladder <file>` | the ladder JSON becomes `tmtLoader.plannerLadder`, the sticky goal source |
 | `--planner-k <n>` / `--knowledge-out` / `--goals-out` | P1a: the producer window, and the dumps written at the stop |
 | `--ladder-labels <file>` | (V3, set for you by `--ladder`) the ladder JSON becomes `tmtLoader.ladder`, the PROGRESS TRACKER's label source — an event carries the names of any marks it satisfied. Read by nothing unless the tracker is armed, so a run without `track=1` / `watch=1` is byte-identical |
+| `--auto-table <file>` | (stages-1) hand in THAT table document instead of the manifest's `auto` file — a whole alternative table (a stage order, a mutant) measured as a table rather than as a configuration. A fixture written under it says so (`config['auto-table']`) |
 | `--no-currency` | (C1) boot WITHOUT the generated currency data (`games-data/<id>.json`): every buyable's currency unknown, which is the behaviour before C1 — the control gate C1-4 measures inertness against |
 | `--random-seed <n>` | (C1) replace `Math.random` with a SEEDED generator before any game file runs, counting its calls into `R.randomCalls`. The currency generator reads every game under seed 1, and a game that drew any randomness under seeds 1–3 |
 | `--rounds-out <file>` | the planner's report at the stop: mode, options, reached / abandoned marks, clocks, divergences and the full round log (`docs/planner.md`, "reading a round log") |

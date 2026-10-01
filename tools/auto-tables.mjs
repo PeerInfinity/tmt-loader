@@ -10,7 +10,8 @@
 //                 Also: the set of tables equals the set of manifests whose `auto` field names one, and each table's
 //                 `id` is its file name. No git history needed: the fast CI job runs this.
 //   --write       regenerate the schema file from the loader (after changing TABLE_SCHEMA).
-//   --provenance  THE PROVENANCE GATE: every `policies` / `gates` / `keep` entry, and every `unlockOrder` list, has a
+//   --provenance  THE PROVENANCE GATE: every `policies` / `gates` / `keep` entry, every `unlockOrder` list and every
+//                 `stages` entry (stages-1: its records are inline, checked as `stage:<id>`) has a
 //                 provenance record; every measured record's `commit` is in the FROZEN COMMIT LIST
 //                 (`tools/harness/recorded/provenance-commits.json`) and its `gate` appears in
 //                 `tools/harness/results/SUMMARY.md` (a row whose first cell begins with the id) — or the record
@@ -121,9 +122,12 @@ export function checkProvenance(table, { labels, known }) {
   const need = new Set([...Object.keys(table.policies || {}), ...Object.keys(table.gates || {}), ...Object.keys(table.keep || {})]);
   (table.unlockOrder || []).forEach((_, i) => need.add(`unlockOrder:${i}`));
   const missing = [...need].filter((k) => !prov[k]).sort();
+  // stages-1: each STAGE carries its records inline (the schema requires them); they are checked as `stage:<id>`
+  const stageProv = (table.stages || []).map((st) => [`stage:${st.id}`, st.provenance]);
+  for (const [k, v] of stageProv) if (v === undefined || v === null || (Array.isArray(v) && !v.length)) missing.push(k);
   const bad = [], unverified = [];
   let records = 0;
-  for (const [k, v] of Object.entries(prov)) {
+  for (const [k, v] of [...Object.entries(prov), ...stageProv.filter(([, v]) => v)]) {
     for (const r of [].concat(v)) {
       records++;
       if (r.unverified) { unverified.push(`${k}: ${r.note}`); continue; }

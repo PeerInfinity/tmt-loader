@@ -12,6 +12,11 @@
 # TO RUN IT:  gh workflow run qrate1.yml -R PeerInfinity/tmt-loader --ref <branch>               (qrate1's cells)
 #             gh workflow run qrate1.yml -R PeerInfinity/tmt-loader --ref <branch> -f part=m28  (m28's legs, below)
 #             gh workflow run qrate1.yml -R PeerInfinity/tmt-loader --ref <branch> -f part=h22  (h22's legs, below)
+#             gh workflow run qrate1.yml -R PeerInfinity/tmt-loader --ref <branch> -f part=stages  (stages-1's legs, below)
+# stages (tmt-stages-1, `gates-stages.mjs --part leg`): the whole stretch from all/M26 under the SHIPPED TABLE ALONE — the
+# shipped stage order (A: H22 first) at diff 1 (on to M30 or its bound: the next stall; it writes the all/M28 + all/M29
+# fixtures) and at the page's diff 0.05, and the other order (B: q31/q32 first, the table with its QL6 stages swapped,
+# handed in with --auto-table) at diff 1 — each twice; the merge adds the order verdict.
 # h22 (tmt-h22-1, `gates-h22.mjs --part leg`): M29 from m28/QL6 — the challenge-attempt template's verdict on H22 at that
 # tick size (a check at diff 0.05 ticks ~40,000 copy-side ticks: past run.mjs's default 600-s boot limit, hence CI), then
 # the queue it emitted played live until H22 is completed — twice.
@@ -32,12 +37,12 @@ on:
   workflow_dispatch:
     inputs:
       part:
-        description: 'qrate1 (the quirk-rate cells, the default), m28 (the legs toward q32; design notes §18) or h22 (M29 at diff 1 and 0.05; §20)'
+        description: 'qrate1 (the quirk-rate cells, the default), m28 (the legs toward q32; design notes §18), h22 (M29 at diff 1 and 0.05; §20) or stages (M28 + M29 from all/M26 under the table alone; §21)'
         type: choice
-        options: [qrate1, m28, h22]
+        options: [qrate1, m28, h22, stages]
         default: qrate1
       leg:
-        description: 'm28 / h22 only: run just this leg (a key of gates-m28.mjs / gates-h22.mjs LEGS); empty = every leg'
+        description: 'm28 / h22 / stages only: run just this leg (a key of gates-m28.mjs / gates-h22.mjs / gates-stages.mjs LEGS); empty = every leg'
         type: string
         default: ''
 
@@ -339,3 +344,78 @@ jobs:
         shell: bash
         run: |
           { echo '## h22 — merge'; echo ''; echo '```'; grep -aE '^(GREEN|RED|VERDICT)' merge.txt | cut -c1-1500 || echo 'no output'; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
+
+  stages-legs:
+    name: stages — leg ${{ matrix.leg }}
+    if: ${{ inputs.part == 'stages' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 340
+    strategy:
+      fail-fast: false
+      matrix:
+        leg: ['A@1', 'B@1', 'A@0.05']
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+          fetch-depth: 1
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+      - run: npm ci
+      - name: The leg, twice
+        shell: bash
+        run: |
+          set -o pipefail
+          if [ -n '${{ inputs.leg }}' ] && [ '${{ inputs.leg }}' != '${{ matrix.leg }}' ]; then echo 'SKIPPED: not the requested leg' | tee leg.txt; exit 0; fi
+          s=$(date +%s)
+          node tools/harness/gates-stages.mjs --part leg --leg '${{ matrix.leg }}' --assert | tee leg.txt
+          echo "TIME leg ${{ matrix.leg }}: $(( $(date +%s) - s )) s" | tee -a leg.txt
+      - name: Summary
+        if: always()
+        shell: bash
+        run: |
+          { echo '## stages — ${{ matrix.leg }}'; echo ''; echo '```'; grep -aE '^(GREEN|RED|VERDICT|TIME)' leg.txt | cut -c1-3000 || echo 'no output'; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
+      - name: Name the artifact
+        if: always()
+        shell: bash
+        run: echo "ART=stages-leg-$(echo '${{ matrix.leg }}' | tr -c 'A-Za-z0-9.-' '_')" >> "$GITHUB_ENV"
+      - name: Upload the leg (its row file and the snapshots it wrote)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ env.ART }}
+          path: |
+            tools/harness/results/tmp/stages-leg-*.json
+            tools/harness/results/tmp/stages-leg-*/
+          if-no-files-found: warn
+          retention-days: 14
+
+  stages-merge:
+    name: stages — merge (refuses a missing leg)
+    needs: stages-legs
+    if: ${{ always() && inputs.part == 'stages' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: stages-leg-*
+          path: legs
+      - name: Merge
+        shell: bash
+        run: |
+          set -o pipefail
+          node tools/harness/gates-stages.mjs --part merge --dir legs ${{ inputs.leg != '' && format('--only ''{0}''', inputs.leg) || '' }} --assert | tee merge.txt
+      - name: Summary
+        if: always()
+        shell: bash
+        run: |
+          { echo '## stages — merge'; echo ''; echo '```'; grep -aE '^(GREEN|RED|VERDICT)' merge.txt | cut -c1-1500 || echo 'no output'; echo '```'; } >> "$GITHUB_STEP_SUMMARY"

@@ -12,7 +12,8 @@
   "x-experimental": [
     "the `|turn@…` and `|give-up@…` modifiers inside a `policies` / `alternatives` string (R3b, R3a)",
     "every `challenges:*` entry of `policies`, `alternatives`, `order` and `gates`",
-    "whether a table may state `until` / `priority` — today only `while` has a table form, `gates` (unanswered, left open)"
+    "whether a table may state `until` / `priority` — today only `while` has a table form, `gates` (unanswered, left open)",
+    "the `stages` list (stages-1): its shape, and whether a stage may carry more than `policies` / `gates`"
   ],
   "properties": {
     "formatVersion": {
@@ -262,6 +263,160 @@
             }
           }
         ]
+      }
+    },
+    "stages": {
+      "type": "array",
+      "description": "stage-gated entries: while `when` holds, its `policies` / `gates` replace the table's own (first holding stage wins per feature and slot; below `--auto-opt` and the player's edit)",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "when",
+          "provenance"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[a-z0-9][a-z0-9-]*$"
+          },
+          "when": {
+            "type": "string",
+            "pattern": "^\\S",
+            "description": "a JavaScript expression over the engine's globals (the `gates` language); a throw reads as FALSE"
+          },
+          "policies": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string",
+              "pattern": "^\\S"
+            }
+          },
+          "gates": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string",
+              "pattern": "^\\S"
+            }
+          },
+          "provenance": {
+            "oneOf": [
+              {
+                "oneOf": [
+                  {
+                    "type": "object",
+                    "required": [
+                      "gate",
+                      "commit",
+                      "note"
+                    ],
+                    "additionalProperties": false,
+                    "description": "A measured entry: the SUMMARY gate id that measured it (or, for a gate that ran only in CI, `run`), the commit it was measured at (must be an ancestor of HEAD), the digest step where there is one, and one line of text.",
+                    "properties": {
+                      "gate": {
+                        "type": "string",
+                        "pattern": "^\\S.*$"
+                      },
+                      "commit": {
+                        "type": "string",
+                        "pattern": "^[0-9a-f]{7,40}$"
+                      },
+                      "digest": {
+                        "type": "string"
+                      },
+                      "run": {
+                        "type": "string",
+                        "pattern": "^[0-9]+$",
+                        "description": "the CI run whose job output holds the rows, for a gate that writes none to results/SUMMARY.md"
+                      },
+                      "note": {
+                        "type": "string",
+                        "pattern": "^\\S"
+                      }
+                    }
+                  },
+                  {
+                    "type": "object",
+                    "required": [
+                      "unverified",
+                      "note"
+                    ],
+                    "additionalProperties": false,
+                    "description": "An entry that predates provenance and has no measured row behind it — listed, never given an invented gate id.",
+                    "properties": {
+                      "unverified": {
+                        "const": true
+                      },
+                      "note": {
+                        "type": "string",
+                        "pattern": "^\\S"
+                      }
+                    }
+                  }
+                ]
+              },
+              {
+                "type": "array",
+                "minItems": 1,
+                "items": {
+                  "oneOf": [
+                    {
+                      "type": "object",
+                      "required": [
+                        "gate",
+                        "commit",
+                        "note"
+                      ],
+                      "additionalProperties": false,
+                      "description": "A measured entry: the SUMMARY gate id that measured it (or, for a gate that ran only in CI, `run`), the commit it was measured at (must be an ancestor of HEAD), the digest step where there is one, and one line of text.",
+                      "properties": {
+                        "gate": {
+                          "type": "string",
+                          "pattern": "^\\S.*$"
+                        },
+                        "commit": {
+                          "type": "string",
+                          "pattern": "^[0-9a-f]{7,40}$"
+                        },
+                        "digest": {
+                          "type": "string"
+                        },
+                        "run": {
+                          "type": "string",
+                          "pattern": "^[0-9]+$",
+                          "description": "the CI run whose job output holds the rows, for a gate that writes none to results/SUMMARY.md"
+                        },
+                        "note": {
+                          "type": "string",
+                          "pattern": "^\\S"
+                        }
+                      }
+                    },
+                    {
+                      "type": "object",
+                      "required": [
+                        "unverified",
+                        "note"
+                      ],
+                      "additionalProperties": false,
+                      "description": "An entry that predates provenance and has no measured row behind it — listed, never given an invented gate id.",
+                      "properties": {
+                        "unverified": {
+                          "const": true
+                        },
+                        "note": {
+                          "type": "string",
+                          "pattern": "^\\S"
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+        }
       }
     }
   }

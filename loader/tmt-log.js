@@ -270,6 +270,18 @@
       } catch (e) { counts.errors++; }
     },
   };
+  // stages-1: a `stage` record — a stage of the game's table switched on or off (or its `when` started or stopped
+  // throwing), at the tick the automation's actions of the same loop carry. A READING like `event` and `queue`: not
+  // re-applied and not compared by the replay (the decisions a stage changes ARE actions, and those are compared).
+  function onStage(r) {
+    if (!on) return;
+    try {
+      var rec = { type: 'stage', tick: tick, gs: gs, stage: r.stage, on: !!r.on };
+      if (r.first) rec.first = true;
+      if (r.error) rec.error = r.error;
+      emit(rec);
+    } catch (e) { counts.errors++; }
+  }
   function onEvent(ev) {
     if (!on) return;
     try { emit({ type: 'event', tick: tick, gs: gs, kind: ev.kind, layer: ev.layer, id: ev.id, key: ev.key, marks: ev.marks || null }); } catch (e) { counts.errors++; }
@@ -406,13 +418,14 @@
     try { if (typeof T.progressArm === 'function') T.progressArm(); } catch (e) { counts.errors++; }
     link.progress = onEvent;
     link.exec = execLink;
+    link.stage = onStage;
     return status();
   }
   function stop() {
     if (!on) return status();
     try { checkpoint('stop'); } catch (e) { counts.errors++; }
     on = false;
-    link.exec = null; link.progress = null; link.track = false; link.replay = null; link.queueSlot = null;
+    link.exec = null; link.progress = null; link.track = false; link.replay = null; link.queueSlot = null; link.stage = null;
     auto = null; qact = null;
     return status();
   }

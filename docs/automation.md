@@ -517,6 +517,7 @@ declares one is a new demand signal with no change to the cycle at all.
 | `off:policy` | the kind's policy is literally `off` (`challenges`, `clickables`) |
 | `off:excluded` | the table's `off` map — the feature is never registered; this code appears only on `explain()`'s own row for it |
 | `blocked:gate` | the `while` predicate in force is false — a PAUSE, not a stop. The text names the OWNER (the game's table / yours / derived / a runtime setting), because the slot has four possible sources |
+| `blocked:stage` | (stages-1) the same pause when a STAGE of the game's table supplied the `while` in force — the text names the stage (`Blocked — stage ql6-h22-attempt pauses it while !player.h.activeChallenge is false`). See "Stages" |
 | `blocked:predicate` | (V4) a `while` or `until` predicate could not be EVALUATED — it did not compile, or it threw. ⛔ A separate code on purpose: `holds()` turns a throw into `false`, which reads exactly like a condition legitimately not met. The message itself is in the feature's block (`controlState(id)`), because this table takes no free-text value |
 | `stopped:until` | (V4) the feature's `until` predicate has held; it stays stopped until the player re-arms it, with the game-second it latched |
 | `blocked:after` | an `unlockOrder` sibling is not unlocked yet |
@@ -761,7 +762,8 @@ field, and `hashGame` is unmoved.
 |---|---|---|
 | the generic derivation | — | `defaultPolicy(kind, layer)` |
 | the game's table | the derivation | `autoTable.policies[<id>]` |
-| `--auto-opt policy:<id>=` | the table | how a harness leg or a sweep pins a configuration for a whole run (applied at registration) |
+| **a stage in force** (stages-1) | the table | `autoTable.stages[i].policies[<id>]`, while that stage's `when` holds — see "Stages" |
+| `--auto-opt policy:<id>=` | the table and its stages | how a harness leg or a sweep pins a configuration for a whole run (applied at registration) |
 | **the player's saved choice** | all of the above | `player.au.edits[<id>].policy` |
 | **a runtime override** | everything | `tmtLoader.setPolicy(id, policy)` — the A/B lever and the planner's committed epoch. `setPolicy(id, null)` gives the feature back to the save |
 
@@ -808,6 +810,7 @@ mechanisms that would eventually disagree:
 |---|---|---|
 | the generic derivation | — | nothing derives one today — plan §27 records the rule that was measured and why it is not a default |
 | the game's table | the derivation | `autoTable.gates[<id>]` (`while` only), and `--auto-opt while:/until:/priority:<id>=` for a harness leg or a sweep |
+| **a stage in force** (stages-1) | the table's gate — but NOT `--auto-opt while:<id>=`, which pins the slot for the whole run | `autoTable.stages[i].gates[<id>]` (`while` only), while the stage's `when` holds |
 | **the player's saved edit** | the table | `player.au.edits[<id>].while / .until / .priority` |
 | **a runtime override** | everything | `tmtLoader.setControl(id, name, value)` — never saved, rides in `runtimeState()` |
 
@@ -884,6 +887,89 @@ Read and write them: `tmtLoader.controls()` (the table as data), `controlState(i
 `predicateHelpers(id)`. Each write returns `{ok, value, error}`. ⚠ Clearing `until` disarms its latch, and CHANGING
 it re-arms — a stop belongs to the condition that set it.
 
+
+## Stages — stage-gated table entries (stages-1)
+
+⚖ **"Planner finds, data records"** (user, 2026-10-01; ptr-strategy design notes §19-R.2). The planner and the
+templates discover a winning setting on the harness — but only for a STAGE of the game (PTR's reset rule that wins at 5
+Quirk Layers lost as a whole-game default from M15, §17.7). The winner is written into the table as a **stage**: an
+overlay of `policies` and `gates` that is in force only while its `when` predicate holds, with its measured rows as
+provenance — so the page plays it with no planner, no queue and no harness configuration.
+
+```json
+"stages": [
+  { "id": "ql6-h22-attempt",
+    "when": "player.q.buyables[11].plus(tmp.q.freeLayers).gte(6) && tmp.h.challenges[22].unlocked && !hasChallenge('h',22)",
+    "policies": { "challenges:h": "sequential" },
+    "gates": { "reset:q": "!player.h.activeChallenge", "reset:h": "!player.h.activeChallenge", … },
+    "provenance": [ { "gate": "…", "commit": "…", "run": "…", "note": "…" } ] },
+  …
+]
+```
+
+**The shape, and why a list.** One ordered list of `{id, when, policies?, gates?, provenance}`. The other shape — a
+conditional inside each feature's entry — would scatter one decision ("at QL6, attempt H22 with the row-3 resets
+paused") over five features' entries, each with its own copy of the predicate and its own provenance, and give no
+place to say which of two overlapping conditions wins. A list states the stage once, carries its evidence once, and
+its ORDER is the precedence between stages:
+
+- **Per feature and per slot (`policy`, `while`), the FIRST stage whose `when` holds and that names it wins.** Two
+  stages may both hold (PTR's `ql6-h22-attempt` and `ql6-hold-for-q32` do, from QL6 until H22 is completed) and each
+  still fills the slots only it names.
+- **No latch.** A stage is in force exactly while its `when` holds; when it goes false the table's own entry (or the
+  next stage) is back on the next loop. A stage's `when` is the stage's boundary, so it is written from STATE —
+  `player.q.buyables[11].plus(tmp.q.freeLayers)` is the game's own Quirk Layer count (`enGainExp` + 1), never a tick.
+- **Only `policies` and `gates`.** Everything the PTR candidates needed is one of the two (holding challenge attempts is
+  the `challenges` kind's own `off` policy); `off` (an exclusion), `order`, `keep` and `alternatives` stay table-wide.
+  `x-experimental` says so.
+
+**Precedence.** A stage sits directly ABOVE the table entry it replaces and BELOW everything else:
+
+| | wins over |
+|---|---|
+| the derivation < the table < **a stage in force** | |
+| `--auto-opt policy:<id>=` / `while:<id>=` | the stage — a leg that pins a configuration pins it whatever the stages say |
+| the player's saved edit (`player.au.edits[<id>]`) | the stage, for that feature and slot — the player's choice always wins |
+| the stall watch's rung, a runtime override (`setPolicy`, `setControl`) | as before |
+| a queue's HOLD | everything: a held feature does not decide at all (`held:queue`) |
+
+**When it is evaluated, and what it costs.** ONCE per gameLoop, at the point the stall watch runs (before the first
+feature of the loop decides): every feature of a loop decides under the same answer, and a `when` that becomes true
+INSIDE loop N (PTR's 5th Quirk Layer is bought in loop 77,196) first acts in loop N+1. Each `when` is compiled once
+(the predicate cache) and called once per loop: **evaluations = loops × stages**, and reading the policy or the readout
+evaluates nothing (`tmtLoader.stageStats()`; gate V4 and `loader/stages.test.mjs`). Nothing is in `player` or in
+`runtimeState()`: the answer is recomputed from the game every loop, so a snapshot, a restore and a planner's excursion
+need no memory of it.
+
+⛔ **A `when` THAT THROWS READS AS FALSE, AND SAYS SO.** A throw that read as TRUE would switch a policy on by accident.
+The stage is not in force; `tmtLoader.stages()` carries the error; every feature the stage names says it on its
+strategy line and its reason line (`… — ⚠ stage X could not be evaluated (…), so it is not in force`); the state log
+records it once (a transition, not one record per tick).
+
+**The readout names the stage** — a silent switch is the `paused:in-challenge` defect again. The Advanced view's
+strategy line shows a `STAGE <id> sets this` chip; a pause the stage supplies reads `blocked:stage` and the `while` line
+says `(stage <id>)`; the reason line ends `· stage <id>`; a stage in force but beaten by the player's edit, an option or
+a runtime setting says which. `explain()` rows of a game whose table HAS stages carry `stage: {named, policy, while,
+shadowedBy, errors}` (no other game's rows change); `tmtLoader.stages()`, `stageHistory()` and `stageStats()` read them
+as data; the state log writes a `stage` record at every switch (`docs/log.md`).
+
+**Load-time checks** (a failure fails the load by name, like every other table entry): an id used twice, a feature the
+derivation does not produce, a policy the kind cannot run, a `when` or a gate that does not compile, a stage that sets
+nothing; the SCHEMA requires `provenance` on every stage, and `tools/auto-tables.mjs --provenance` checks each stage's
+records as `stage:<id>`. `--auto-opt stages=off` measures the table WITHOUT its stages (`on`, or absent, is the default);
+`--auto-table <file>` (harness) hands in a whole other table — how the losing stage ORDER was measured as a table rather
+than as a configuration.
+
+**PTR's three** (gate rows: `tools/harness/gates-stages.mjs`; the measurement and the order decision: design notes §21):
+
+| stage | when (state) | sets | why this boundary |
+|---|---|---|---|
+| `ql6-h22-attempt` | 6 Quirk Layers, H22 open and not completed | `challenges:h` = `sequential` (no give-up); the row-3 resets (`reset:q`, `reset:h`, `reset:o`, `reset:ss`) paused while an h challenge is active | the h22 measurement (§20): from QL6 ONE uncut attempt completes H22 in ~1,000 game-s; every exiting reset (h22's `exits-challenge` facts: h, o, q, ss) is held by the pause, and the table's give-up would concede the attempt at 211 s |
+| `ql6-hold-for-q32` | 6 Quirk Layers, q32 not owned (M28) | `challenges:h` = `off` (attempts held) | the m28 measurement (§18): past QL6 the challenge reflex re-entered H22 after every q reset and the quirk rate collapsed; with attempts held q31 and q32 are bought |
+| `ql5-quirk-rate` | 5 Quirk Layers | `reset:q` = `rate-peak@0/0\|turn@10/30x/5/0/100` | the qrate1 measurement (§17): at QL5 the rate-peak reset reaches the q23 threshold ×38 sooner than the table's `gain>=2`; as a WHOLE-GAME default it loses from M15 (§17.7), so it is a stage |
+
+Listed in that order: at QL6 the H22 attempt wins `challenges:h` over the hold until H22 is completed — the order the
+whole-stretch measurement chose (§21).
 
 ## Derivation
 
@@ -1737,7 +1823,8 @@ author-written text rendered through `v-html`, and the loader escapes it.
 
 **What the schema deliberately leaves EXPERIMENTAL** (`x-experimental`: accepted, not frozen — the next rungs may still
 move them): the `|turn@…` and `|give-up@…` modifiers inside a `policies` / `alternatives` string, every `challenges:*`
-entry of `policies`, `alternatives`, `order` and `gates`, and — unanswered, and left so — whether a table may state
+entry of `policies`, `alternatives`, `order` and `gates`, the `stages` list (its shape, and whether a stage may carry
+more than `policies` / `gates` — see "Stages"), and — unanswered, and left so — whether a table may state
 `until` / `priority` (today only `while` has a table form, `gates`).
 
 **Predicates** (`gates`, clickable `when`) are JavaScript expressions over the engine's globals, compiled once with
@@ -1767,7 +1854,15 @@ table, verbatim.
 | ptr | `reset:h` | `always\|turn@1/30x/5/0/100` | R3b-2 (R3b2-2, CI run 35553187707): `always` inside its turn; on its own it is the starvation the user hit by hand |
 | ptr | `challenges:h` | `sequential\|give-up@0.1/30/2x` + gate `hasMilestone('q',5)` | R3a (R3a-1): the EXIT rule, and the digest's own advice (L3.9) minus the half measurement showed to be wrong |
 
-Everything else in ptr is derived.
+| ptr | stage `ql6-h22-attempt` (6 Quirk Layers, H22 open and not completed) | `challenges:h` = `sequential`; `reset:q` / `reset:h` / `reset:o` / `reset:ss` paused while an h challenge is active | h22 (CI run 36895219233): ONE uncut H22 attempt from m28/QL6 at +984 game-s; stages-1 (CI run 36905262237): listed first, the whole stretch from all/M26 reaches M29 +4,848 and M28 +8,348 (diff 1), +3,592.85 / +5,489.65 (diff 0.05); the other order +59,230 for both |
+| ptr | stage `ql6-hold-for-q32` (6 Quirk Layers, q32 not owned) | `challenges:h` = `off` | m28 (CI run 36822076088): attempts held, q31 +2,696 / q32 +54,688 from m28/QL6, never with them allowed; stages-1: after H22, q32 +3,500 game-s |
+| ptr | stage `ql5-quirk-rate` (5 Quirk Layers) | `reset:q` = `rate-peak@0/0\|turn@10/30x/5/0/100` | qrate1 (CI run 36812038216): 308,372 total quirks at +2,872 vs `gain>=2`'s +109,590 (diff 1), +1,223.65 at diff 0.05; a whole-game default loses from all/M15 (R2-S1) |
+
+Everything else in ptr is derived. The three stages are the ONLY entries past QL5. The fixtures they wrote are
+`snapshots/ptr/stages/M29.json` and `stages/M28.json` (gates-stages F1/F2), deliberately NOT in `all/` (⚖ user,
+2026-10-01): an `all/` mark enrols in the facts and currency state lists and in `deepestSnapshot()`, and the first
+committed state with H31 unlocked fires two facts-1 oracles that find generator gaps (design notes §21). Every pin
+measured before the stages names `--auto-opt stages=off` (⚖ user, 2026-10-01).
 
 ### Something Tree — the table-less control (R3c Part 0)
 
