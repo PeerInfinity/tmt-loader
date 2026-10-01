@@ -1,6 +1,15 @@
 // The P1a gates (the advanced planner's foundation: rollback, the knowledge walk, the two goal sources —
 // tmt-automation-plan §12 P1a; docs/planner.md). Appends one section to results/SUMMARY.md.
-//   node gates-p1a.mjs --part 0|1|2|3 [--no-summary] [--pool N] [--write-goldens]
+//   node gates-p1a.mjs --part 0|1|2|3 [--no-summary] [--pool N] [--write-goldens] [--assert]
+// ⛔ EVERY FLAG IS DECLARED (an unknown one is refused); `--assert` requires the part's exact row count, all green — a part
+// that died early has fewer rows and therefore fewer reds (qrate1, the CI job `p1a`).
+//
+// ⚖ RULING (A), user 2026-09-30 (qrate1 Part 0; ptr-strategy design notes §16.1): the nine reds that went stale while
+// this gate ran in no CI job were EXPECTED DRIFT, each reproduced under a named older configuration. So the rows NAME the
+// configuration they measure instead of being re-recorded: something's four (knowledge + goals at S03 / S04) under
+// `SOMETHING_OLD_TABLE` (R3c deleted Something's table, ⚖ 2026-09-21), the Time-Energy row under `PIN_A2` (R1′ lifted
+// `exclude=buyables:t`, so under today's table the energy MOVES). ONLY ptr's four goals() goldens were re-recorded
+// (2026-09-30, today's table + ladder): the ladder's M12/M13 edits and C1's currency rows cannot be named.
 //
 // Part 0 (P1a-0): the FRONTIER fixture — from snapshots/ptr/all/M09 at diff 1 to the stall, written as
 //   snapshots/ptr/frontier/STALL.json (--stop-snapshot), and required to reproduce S1 §10a.4 exactly (14131 ticks,
@@ -24,11 +33,13 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { spawn, execFileSync } from 'node:child_process';
-import { REPO, parseArgs, headCommit, treeDirty, writeJSON, entryOnly, withPreF1, PRE_F1 } from './lib.mjs';
+import { REPO, parseArgs, headCommit, treeDirty, writeJSON, entryOnly, withPreF1, PRE_F1, SOMETHING_OLD_TABLE } from './lib.mjs';
 import { appendSection } from './summary.mjs';
 entryOnly(import.meta.url);  // a battery, not a library — see lib.mjs
 
-const a = parseArgs(process.argv.slice(2), ['no-summary', 'write-goldens']);
+const a = parseArgs(process.argv.slice(2), ['no-summary', 'write-goldens', 'assert']);
+const KNOWN = new Set(['_', 'part', 'pool', 'no-summary', 'write-goldens', 'assert']);
+for (const k of Object.keys(a)) if (!KNOWN.has(k)) { console.error(`REFUSED: unknown flag --${k}`); process.exit(2); }
 const PART = String(a.part || '1');
 const commit = headCommit(), dirty = treeDirty();
 const rows = [];
@@ -116,8 +127,9 @@ const STATES = () => [
   { key: 'ptr-M05', id: 'ptr', from: SNAP.M05, ladder: PTR_LADDER, note: 'all/M05' },
   { key: 'ptr-M09', id: 'ptr', from: SNAP.M09, ladder: PTR_LADDER, note: 'all/M09' },
   { key: 'ptr-frontier', id: 'ptr', from: FRONTIER, ladder: PTR_LADDER, note: 'frontier (all/M09 + 6096 ticks, the S1 stall)' },
-  { key: 'something-S03', id: 'something', from: `${ST_DIR}/S03.json`, ladder: ST_LADDER, note: 'A2-1 (i) — the first primitive reset' },
-  { key: 'something-S04', id: 'something', from: `${ST_DIR}/S04.json`, ladder: ST_LADDER, note: 'A2-1 (ii) — primitive milestone 1' },
+  // ⚖ (A): Something's goldens were recorded under the table R3c deleted — the rows NAME it (byte-equal, measured qrate1)
+  { key: 'something-S03', id: 'something', from: `${ST_DIR}/S03.json`, ladder: ST_LADDER, opt: SOMETHING_OLD_TABLE, note: 'A2-1 (i) — the first primitive reset, under SOMETHING_OLD_TABLE' },
+  { key: 'something-S04', id: 'something', from: `${ST_DIR}/S04.json`, ladder: ST_LADDER, opt: SOMETHING_OLD_TABLE, note: 'A2-1 (ii) — primitive milestone 1, under SOMETHING_OLD_TABLE' },
 ];
 // R1′ (2026-09-17): the ptr table's `reset:p` moved from `interval>=10` to `gain>=2x`. Every number and fixture in this
 // file was measured under the interval, so the runs name it explicitly; a pin is a measurement of a POLICY, not of which
@@ -128,7 +140,7 @@ const STATES = () => [
 // §14d.2 item 14 — which is where it should have been copied from at the time.
 const PIN_RESET_P = 'policy:reset:p=interval>=10;' + PRE_F1;   // F1: named, see lib.mjs
 const PIN_A2 = 'policy:reset:p=interval>=10;policy:reset:t=interval>=5;policy:reset:e=interval>=5;policy:reset:s=interval>=5;policy:buyables:e=buy;exclude=buyables:t;' + PRE_F1;
-const stateOpts = (s, extra = {}) => ({ profile: 'all', ...(s.from ? { 'from-snapshot': s.from, ticks: 0, diff: 1 } : { ticks: s.ticks, diff: s.diff }), ...extra });
+const stateOpts = (s, extra = {}) => ({ profile: 'all', ...(s.from ? { 'from-snapshot': s.from, ticks: 0, diff: 1 } : { ticks: s.ticks, diff: s.diff }), ...(s.opt ? { 'auto-opt': s.opt } : {}), ...extra });
 
 // ---- Part 0: the frontier fixture -------------------------------------------------------------------------------------
 async function part0() {
@@ -381,13 +393,19 @@ async function part2() {
     row({ gate: 'P1a-2 goal counts vs the census (172 upgrades, 85 milestones, 80 achievements, 52 buyables, 9 challenges)', id: 'ptr', leg: 'all/M09', ok, ticks: K9.ticks, gameSeconds: K9.gameSeconds, diff: 1, hash: null,
       notes: `${parts.join('; ')} — "held/out" is what the walk excluded (already held, or a layer whose content it does not offer)` });
   }
-  // the Time Energy cap, SEEN by measurement rather than read from layers.js:975
-  const KF = out['ptr-frontier'];
+  // the Time Energy cap, SEEN by measurement rather than read from layers.js:975.
+  // ⚖ (A): a claim about the A2 CONFIGURATION, so its walk NAMES it (`PIN_A2`: no Extra Time Capsules, the cap holds).
+  // Under today's table R1′ lifted `exclude=buyables:t` and the energy MOVES (159,272/s, measured tpl1 §16.1) — the
+  // frontier golden above stays today's walk; this row walks the same fixture again under the configuration it is about.
+  const tA2 = path.join(tmpDir('k'), 'kA2.json');
+  const rA2 = await job('ptr', stateOpts(STATES().find((s) => s.key === 'ptr-frontier'), { planner: true, 'knowledge-out': tA2, 'auto-opt': PIN_A2 }));
+  const KF = rA2.ok && fs.existsSync(tA2) ? readJSON(tA2) : null;
+  if (!KF) row({ gate: 'P1a-2 the Time Energy cap is SEEN BY MEASUREMENT (no producer moved it over the wait window) — under PIN_A2', id: 'ptr', leg: 'frontier', ok: false, notes: `the PIN_A2 walk wrote nothing: ${rA2.error || ''}` });
   if (KF) {
     const chain = KF.chains.find((c) => c.goal === 'upg:t:12');
     const hop = chain?.hops?.find((h) => h.dimension === 'player.t.energy');
     const ok = !!hop?.impossible && !KF.producers.wait.rates['player.t.energy'];
-    row({ gate: 'P1a-2 the Time Energy cap is SEEN BY MEASUREMENT (no producer moved it over the wait window)', id: 'ptr', leg: 'frontier', ok, ticks: KF.ticks, gameSeconds: KF.gameSeconds, diff: 1, hash: null,
+    row({ gate: 'P1a-2 the Time Energy cap is SEEN BY MEASUREMENT (no producer moved it over the wait window) — under PIN_A2', id: 'ptr', leg: 'frontier', ok, ticks: KF.ticks, gameSeconds: KF.gameSeconds, diff: 1, hash: null,
       notes: `player.t.energy held ${hop?.held}, threshold ${hop?.threshold}; in the ${KF.producers.k}-game-second wait it is ${KF.producers.wait.rates['player.t.energy'] ? 'MOVING: ' + JSON.stringify(KF.producers.wait.rates['player.t.energy']) : 'absent from the moved set (max === min)'}; first impossible hop ${JSON.stringify(chain?.firstImpossible)}` });
   }
   // The WAIT WINDOW is a knob, and the gate prices it: the same dimension's measured rate against the window length.
@@ -473,5 +491,9 @@ else throw new Error(`no part ${PART}`);
 
 if (!a['no-summary']) appendSection({ title: TITLES[PART] || `P1a part ${PART}`, commit, dirty, rows, reading: READING[PART] || '', slug: `gates-p1a-part${PART}` });
 else writeJSON(path.join(REPO, `tools/harness/results/tmp/gates-p1a-part${PART}-last.json`), { commit, dirty, rows });
+// the rows each part writes (a part that died early writes fewer, so fewer reds — `--assert` refuses that)
+const EXPECT = { 0: 4, 1: 22, 2: 10, 3: 9 };
+const verdict = rows.length === EXPECT[PART] && rows.every((r) => r.ok);
 console.log(`gates-p1a part ${PART}: ${rows.filter((r) => r.ok).length}/${rows.length} green`);
-process.exit(rows.every((r) => r.ok) ? 0 : 1);
+console.log(`VERDICT p1a part ${PART}: rows ${rows.length}/${EXPECT[PART]}; ${rows.filter((r) => !r.ok).length} RED${rows.length !== EXPECT[PART] ? ' — ROW COUNT WRONG (a part died or a row went missing)' : ''}`);
+process.exit(a.assert ? (verdict ? 0 : 1) : (rows.every((r) => r.ok) ? 0 : 1));

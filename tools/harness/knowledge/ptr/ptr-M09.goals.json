@@ -44,15 +44,15 @@
         "wait",
         "reset:b"
        ],
-       "rate": "0.1",
+       "rate": "0.4",
        "windowMin": "0",
-       "windowMax": "1",
+       "windowMax": "4",
        "pending": {
         "why": "canReset is false at this instant, but the requirement was reached inside the wait window",
         "layer": "b",
         "resetAt": "200",
         "baseAmount": "10",
-        "windowMax": "5504635833.465364",
+        "windowMax": "97738038475208.8",
         "window": 10
        }
       },
@@ -63,9 +63,9 @@
        "producers": [
         "wait"
        ],
-       "rate": "0",
+       "rate": "9773803847519.88",
        "windowMin": "0",
-       "windowMax": "5504635833.465364"
+       "windowMax": "97738038475208.8"
       }
      ],
      "firstImpossible": null,
@@ -87,7 +87,7 @@
         "layer": "g",
         "resetAt": "200",
         "baseAmount": "10",
-        "windowMax": "5504635833.465364",
+        "windowMax": "97738038475208.8",
         "window": 10
        }
       },
@@ -98,9 +98,9 @@
        "producers": [
         "wait"
        ],
-       "rate": "0",
+       "rate": "9773803847519.88",
        "windowMin": "0",
-       "windowMax": "5504635833.465364"
+       "windowMax": "97738038475208.8"
       }
      ],
      "firstImpossible": null,
@@ -141,7 +141,7 @@
         "layer": "g",
         "resetAt": "200",
         "baseAmount": "10",
-        "windowMax": "5504635833.465364",
+        "windowMax": "97738038475208.8",
         "window": 10
        }
       },
@@ -152,9 +152,9 @@
        "producers": [
         "wait"
        ],
-       "rate": "0",
+       "rate": "9773803847519.88",
        "windowMin": "0",
-       "windowMax": "5504635833.465364"
+       "windowMax": "97738038475208.8"
       }
      ],
      "firstImpossible": null,
@@ -198,15 +198,15 @@
         "wait",
         "reset:b"
        ],
-       "rate": "0.1",
+       "rate": "0.4",
        "windowMin": "0",
-       "windowMax": "1",
+       "windowMax": "4",
        "pending": {
         "why": "canReset is false at this instant, but the requirement was reached inside the wait window",
         "layer": "b",
         "resetAt": "200",
         "baseAmount": "10",
-        "windowMax": "5504635833.465364",
+        "windowMax": "97738038475208.8",
         "window": 10
        }
       },
@@ -217,9 +217,9 @@
        "producers": [
         "wait"
        ],
-       "rate": "0",
+       "rate": "9773803847519.88",
        "windowMin": "0",
-       "windowMax": "5504635833.465364"
+       "windowMax": "97738038475208.8"
       }
      ],
      "firstImpossible": null,
@@ -241,7 +241,7 @@
         "layer": "g",
         "resetAt": "200",
         "baseAmount": "10",
-        "windowMax": "5504635833.465364",
+        "windowMax": "97738038475208.8",
         "window": 10
        }
       },
@@ -252,9 +252,9 @@
        "producers": [
         "wait"
        ],
-       "rate": "0",
+       "rate": "9773803847519.88",
        "windowMin": "0",
-       "windowMax": "5504635833.465364"
+       "windowMax": "97738038475208.8"
       }
      ],
      "firstImpossible": null,
@@ -289,9 +289,9 @@
        "producers": [
         "wait"
        ],
-       "rate": "0",
+       "rate": "9773803847519.88",
        "windowMin": "0",
-       "windowMax": "5504635833.465364"
+       "windowMax": "97738038475208.8"
       }
      ],
      "firstImpossible": null,
@@ -335,7 +335,7 @@
         "nextAt": "1.000383673412286e600",
         "baseAmount": "10",
         "requiresDimension": "player.points",
-        "windowMax": "5504635833.465364"
+        "windowMax": "97738038475208.8"
        }
       },
       {
@@ -345,9 +345,9 @@
        "producers": [
         "wait"
        ],
-       "rate": "0",
+       "rate": "9773803847519.88",
        "windowMin": "0",
-       "windowMax": "5504635833.465364"
+       "windowMax": "97738038475208.8"
       }
      ],
      "firstImpossible": {
@@ -361,7 +361,7 @@
        "nextAt": "1.000383673412286e600",
        "baseAmount": "10",
        "requiresDimension": "player.points",
-       "windowMax": "5504635833.465364"
+       "windowMax": "97738038475208.8"
       }
      },
      "depth": 2
@@ -371,127 +371,16 @@
   {
    "mark": "M12",
    "name": "tax refunded",
-   "predicate": "hasUpgrade('t',23) && hasUpgrade('e',22)",
+   "predicate": "player.t.unlockOrder === 0 && player.e.unlockOrder === 0",
    "predicateError": null,
-   "resolved": [
-    {
-     "id": "upg:t:23",
-     "offered": false,
-     "dimension": null,
-     "threshold": null,
-     "held": null
-    },
-    {
-     "id": "upg:e:22",
-     "offered": false,
-     "dimension": null,
-     "threshold": null,
-     "held": null
-    }
-   ],
+   "resolved": [],
    "values": [],
-   "unresolved": [],
-   "chains": [
-    {
-     "goal": "upg:t:23",
-     "hidden": true,
-     "hops": [
-      {
-       "gate": "upg:t:23",
-       "needs": [
-        "upg:t:13"
-       ]
-      },
-      {
-       "gate": "upg:t:13",
-       "needs": [
-        "upg:t:12"
-       ]
-      },
-      {
-       "dimension": "player.t.energy",
-       "held": "6299.999999999998",
-       "threshold": "200000",
-       "producers": [],
-       "impossible": {
-        "why": "no measured producer moves this dimension: it did not move at all over the 10-game-second wait (capped or inert)",
-        "window": 10
-       }
-      }
-     ],
-     "firstImpossible": {
-      "at": 2,
-      "dimension": "player.t.energy",
-      "impossible": {
-       "why": "no measured producer moves this dimension: it did not move at all over the 10-game-second wait (capped or inert)",
-       "window": 10
-      }
-     },
-     "depth": 3
-    },
-    {
-     "goal": "upg:e:22",
-     "hidden": true,
-     "hops": [
-      {
-       "gate": "upg:e:22",
-       "needs": [
-        "upg:e:12"
-       ]
-      },
-      {
-       "gate": "upg:e:12",
-       "needs": [
-        "upg:e:11"
-       ]
-      },
-      {
-       "dimension": "player.e.points",
-       "held": "0",
-       "threshold": "25",
-       "producers": [
-        "reset:e"
-       ],
-       "impossible": {
-        "why": "canReset is false: the requirement is above the base amount",
-        "layer": "e",
-        "resetAt": "1.000383673412286e600",
-        "requires": "1.000383673412286e600",
-        "nextAt": "1.000383673412286e600",
-        "baseAmount": "10",
-        "requiresDimension": "player.points",
-        "windowMax": "5504635833.465364"
-       }
-      },
-      {
-       "dimension": "player.points",
-       "held": "10",
-       "threshold": "1.000383673412286e600",
-       "producers": [
-        "wait"
-       ],
-       "rate": "0",
-       "windowMin": "0",
-       "windowMax": "5504635833.465364"
-      }
-     ],
-     "firstImpossible": {
-      "at": 2,
-      "dimension": "player.e.points",
-      "impossible": {
-       "why": "canReset is false: the requirement is above the base amount",
-       "layer": "e",
-       "resetAt": "1.000383673412286e600",
-       "requires": "1.000383673412286e600",
-       "nextAt": "1.000383673412286e600",
-       "baseAmount": "10",
-       "requiresDimension": "player.points",
-       "windowMax": "5504635833.465364"
-      }
-     },
-     "depth": 4
-    }
-   ]
+   "unresolved": [
+    "player.t.unlockOrder === 0",
+    "player.e.unlockOrder === 0"
+   ],
+   "chains": [],
+   "kind": "predicate-only"
   },
   {
    "mark": "M14",
@@ -568,7 +457,7 @@
         "nextAt": "5.429812322315167e712",
         "baseAmount": "10",
         "requiresDimension": "player.points",
-        "windowMax": "5504635833.465364"
+        "windowMax": "97738038475208.8"
        }
       },
       {
@@ -578,9 +467,9 @@
        "producers": [
         "wait"
        ],
-       "rate": "0",
+       "rate": "9773803847519.88",
        "windowMin": "0",
-       "windowMax": "5504635833.465364"
+       "windowMax": "97738038475208.8"
       }
      ],
      "firstImpossible": {
@@ -594,7 +483,7 @@
        "nextAt": "5.429812322315167e712",
        "baseAmount": "10",
        "requiresDimension": "player.points",
-       "windowMax": "5504635833.465364"
+       "windowMax": "97738038475208.8"
       }
      },
      "depth": 2
@@ -618,7 +507,7 @@
         "nextAt": "8.652916260697836e668",
         "baseAmount": "10",
         "requiresDimension": "player.points",
-        "windowMax": "5504635833.465364"
+        "windowMax": "97738038475208.8"
        }
       },
       {
@@ -628,9 +517,9 @@
        "producers": [
         "wait"
        ],
-       "rate": "0",
+       "rate": "9773803847519.88",
        "windowMin": "0",
-       "windowMax": "5504635833.465364"
+       "windowMax": "97738038475208.8"
       }
      ],
      "firstImpossible": {
@@ -644,7 +533,7 @@
        "nextAt": "8.652916260697836e668",
        "baseAmount": "10",
        "requiresDimension": "player.points",
-       "windowMax": "5504635833.465364"
+       "windowMax": "97738038475208.8"
       }
      },
      "depth": 2
@@ -680,15 +569,15 @@
         "wait",
         "reset:b"
        ],
-       "rate": "0.1",
+       "rate": "0.4",
        "windowMin": "0",
-       "windowMax": "1",
+       "windowMax": "4",
        "pending": {
         "why": "canReset is false at this instant, but the requirement was reached inside the wait window",
         "layer": "b",
         "resetAt": "200",
         "baseAmount": "10",
-        "windowMax": "5504635833.465364",
+        "windowMax": "97738038475208.8",
         "window": 10
        }
       },
@@ -699,9 +588,9 @@
        "producers": [
         "wait"
        ],
-       "rate": "0",
+       "rate": "9773803847519.88",
        "windowMin": "0",
-       "windowMax": "5504635833.465364"
+       "windowMax": "97738038475208.8"
       }
      ],
      "firstImpossible": null,
@@ -756,7 +645,7 @@
         "nextAt": "100",
         "baseAmount": "0",
         "requiresDimension": "player.b.points",
-        "windowMax": "1"
+        "windowMax": "4"
        }
       },
       {
@@ -767,15 +656,15 @@
         "wait",
         "reset:b"
        ],
-       "rate": "0.1",
+       "rate": "0.4",
        "windowMin": "0",
-       "windowMax": "1",
+       "windowMax": "4",
        "pending": {
         "why": "canReset is false at this instant, but the requirement was reached inside the wait window",
         "layer": "b",
         "resetAt": "200",
         "baseAmount": "10",
-        "windowMax": "5504635833.465364",
+        "windowMax": "97738038475208.8",
         "window": 10
        }
       },
@@ -786,9 +675,9 @@
        "producers": [
         "wait"
        ],
-       "rate": "0",
+       "rate": "9773803847519.88",
        "windowMin": "0",
-       "windowMax": "5504635833.465364"
+       "windowMax": "97738038475208.8"
       }
      ],
      "firstImpossible": {
@@ -802,7 +691,7 @@
        "nextAt": "100",
        "baseAmount": "0",
        "requiresDimension": "player.b.points",
-       "windowMax": "1"
+       "windowMax": "4"
       }
      },
      "depth": 3
@@ -826,7 +715,7 @@
         "nextAt": "5.429812322315167e712",
         "baseAmount": "10",
         "requiresDimension": "player.points",
-        "windowMax": "5504635833.465364"
+        "windowMax": "97738038475208.8"
        }
       },
       {
@@ -836,9 +725,9 @@
        "producers": [
         "wait"
        ],
-       "rate": "0",
+       "rate": "9773803847519.88",
        "windowMin": "0",
-       "windowMax": "5504635833.465364"
+       "windowMax": "97738038475208.8"
       }
      ],
      "firstImpossible": {
@@ -852,7 +741,7 @@
        "nextAt": "5.429812322315167e712",
        "baseAmount": "10",
        "requiresDimension": "player.points",
-       "windowMax": "5504635833.465364"
+       "windowMax": "97738038475208.8"
       }
      },
      "depth": 2
@@ -876,7 +765,7 @@
         "nextAt": "8.652916260697836e668",
         "baseAmount": "10",
         "requiresDimension": "player.points",
-        "windowMax": "5504635833.465364"
+        "windowMax": "97738038475208.8"
        }
       },
       {
@@ -886,9 +775,9 @@
        "producers": [
         "wait"
        ],
-       "rate": "0",
+       "rate": "9773803847519.88",
        "windowMin": "0",
-       "windowMax": "5504635833.465364"
+       "windowMax": "97738038475208.8"
       }
      ],
      "firstImpossible": {
@@ -902,7 +791,7 @@
        "nextAt": "8.652916260697836e668",
        "baseAmount": "10",
        "requiresDimension": "player.points",
-       "windowMax": "5504635833.465364"
+       "windowMax": "97738038475208.8"
       }
      },
      "depth": 2
@@ -2209,9 +2098,9 @@
        "producers": [
         "wait"
        ],
-       "rate": "0",
+       "rate": "9773803847519.88",
        "windowMin": "0",
-       "windowMax": "5504635833.465364"
+       "windowMax": "97738038475208.8"
       }
      ],
      "firstImpossible": null,
@@ -2246,9 +2135,9 @@
        "producers": [
         "wait"
        ],
-       "rate": "0",
+       "rate": "9773803847519.88",
        "windowMin": "0",
-       "windowMax": "5504635833.465364"
+       "windowMax": "97738038475208.8"
       }
      ],
      "firstImpossible": null,
@@ -2265,8 +2154,44 @@
    "dimension": "player.points",
    "threshold": "10.000000000053175",
    "held": "10",
-   "rate": "0",
-   "distanceLog10": 2.3092638912203256e-12,
+   "rate": "9773803847519.88",
+   "distanceLog10": -11.990063618832446,
+   "why": null,
+   "firstImpossible": null
+  },
+  {
+   "id": "upg:p:11",
+   "kind": "upg",
+   "layer": "p",
+   "dimension": "player.p.points",
+   "threshold": "1",
+   "held": "0",
+   "rate": "967920289505.8",
+   "distanceLog10": -11.9858395936171,
+   "why": null,
+   "firstImpossible": null
+  },
+  {
+   "id": "layer-next:b",
+   "kind": "layer-next",
+   "layer": "b",
+   "dimension": "player.points",
+   "threshold": "200",
+   "held": "10",
+   "rate": "9773803847519.88",
+   "distanceLog10": -10.689033623170774,
+   "why": null,
+   "firstImpossible": null
+  },
+  {
+   "id": "layer-next:g",
+   "kind": "layer-next",
+   "layer": "g",
+   "dimension": "player.points",
+   "threshold": "200",
+   "held": "10",
+   "rate": "9773803847519.88",
+   "distanceLog10": -10.689033623170774,
    "why": null,
    "firstImpossible": null
   },
@@ -2291,7 +2216,7 @@
      "nextAt": "8.652916260697836e668",
      "baseAmount": "10",
      "requiresDimension": "player.points",
-     "windowMax": "5504635833.465364"
+     "windowMax": "97738038475208.8"
     }
    }
   },
@@ -2316,7 +2241,7 @@
      "nextAt": "5.429812322315167e712",
      "baseAmount": "10",
      "requiresDimension": "player.points",
-     "windowMax": "5504635833.465364"
+     "windowMax": "97738038475208.8"
     }
    }
   },
@@ -2341,32 +2266,7 @@
      "nextAt": "5.429812322315167e712",
      "baseAmount": "10",
      "requiresDimension": "player.points",
-     "windowMax": "5504635833.465364"
-    }
-   }
-  },
-  {
-   "id": "buy:t:11",
-   "kind": "buy",
-   "layer": "t",
-   "dimension": "player.t.points",
-   "threshold": "10",
-   "held": "6",
-   "rate": "0",
-   "distanceLog10": 0.22184874961635637,
-   "why": null,
-   "firstImpossible": {
-    "at": 0,
-    "dimension": "player.t.points",
-    "impossible": {
-     "why": "canReset is false: the requirement is above the base amount",
-     "layer": "t",
-     "resetAt": "5.429812322315167e712",
-     "requires": "1e300",
-     "nextAt": "5.429812322315167e712",
-     "baseAmount": "10",
-     "requiresDimension": "player.points",
-     "windowMax": "5504635833.465364"
+     "windowMax": "97738038475208.8"
     }
    }
   },
@@ -2391,7 +2291,7 @@
      "nextAt": "8.652916260697836e668",
      "baseAmount": "10",
      "requiresDimension": "player.points",
-     "windowMax": "5504635833.465364"
+     "windowMax": "97738038475208.8"
     }
    }
   },
@@ -2435,7 +2335,7 @@
      "nextAt": "5.429812322315167e712",
      "baseAmount": "10",
      "requiresDimension": "player.points",
-     "windowMax": "5504635833.465364"
+     "windowMax": "97738038475208.8"
     }
    }
   },
@@ -2459,26 +2359,26 @@
    }
   },
   {
-   "id": "layer-next:b",
-   "kind": "layer-next",
+   "id": "ms:b:0",
+   "kind": "ms",
    "layer": "b",
-   "dimension": "player.points",
-   "threshold": "200",
-   "held": "10",
-   "rate": "0",
+   "dimension": "player.b.best",
+   "threshold": "8",
+   "held": "0",
+   "rate": "0.4",
    "distanceLog10": 1.3010299956639813,
    "why": null,
    "firstImpossible": null
   },
   {
-   "id": "layer-next:g",
-   "kind": "layer-next",
-   "layer": "g",
-   "dimension": "player.points",
-   "threshold": "200",
-   "held": "10",
-   "rate": "0",
-   "distanceLog10": 1.3010299956639813,
+   "id": "buy:t:11",
+   "kind": "buy",
+   "layer": "t",
+   "dimension": "player.b.points",
+   "threshold": "10",
+   "held": "0",
+   "rate": "0.4",
+   "distanceLog10": 1.3979400086720375,
    "why": null,
    "firstImpossible": null
   },
@@ -2521,26 +2421,14 @@
    }
   },
   {
-   "id": "ms:b:0",
-   "kind": "ms",
-   "layer": "b",
-   "dimension": "player.b.best",
-   "threshold": "8",
-   "held": "0",
-   "rate": "0.1",
-   "distanceLog10": 1.9030899869919435,
-   "why": null,
-   "firstImpossible": null
-  },
-  {
    "id": "ms:b:1",
    "kind": "ms",
    "layer": "b",
    "dimension": "player.b.best",
    "threshold": "15",
    "held": "0",
-   "rate": "0.1",
-   "distanceLog10": 2.1760912590556813,
+   "rate": "0.4",
+   "distanceLog10": 1.5740312677277188,
    "why": null,
    "firstImpossible": null
   },
@@ -2551,8 +2439,8 @@
    "dimension": "player.b.points",
    "threshold": "100",
    "held": "0",
-   "rate": "0.1",
-   "distanceLog10": 3,
+   "rate": "0.4",
+   "distanceLog10": 2.3979400086720375,
    "why": null,
    "firstImpossible": null
   },
@@ -2595,114 +2483,14 @@
    }
   },
   {
-   "id": "buy:s:11",
-   "kind": "buy",
-   "layer": "s",
-   "dimension": "player.s.points",
-   "threshold": "5.993712761512212e108",
-   "held": "7",
-   "rate": "0",
-   "distanceLog10": 107.93259788626983,
-   "why": null,
-   "firstImpossible": {
-    "at": 0,
-    "dimension": "player.s.points",
-    "impossible": {
-     "why": "canReset is false: the requirement is above the base amount",
-     "layer": "s",
-     "resetAt": "8.652916260697836e668",
-     "requires": "1e120",
-     "nextAt": "8.652916260697836e668",
-     "baseAmount": "10",
-     "requiresDimension": "player.points",
-     "windowMax": "5504635833.465364"
-    }
-   }
-  },
-  {
-   "id": "buy:s:14",
-   "kind": "buy",
-   "layer": "s",
-   "dimension": "player.s.points",
-   "threshold": "9.296227291088373e119",
-   "held": "7",
-   "rate": "0",
-   "distanceLog10": 119.12320869358393,
-   "why": null,
-   "firstImpossible": {
-    "at": 0,
-    "dimension": "player.s.points",
-    "impossible": {
-     "why": "canReset is false: the requirement is above the base amount",
-     "layer": "s",
-     "resetAt": "8.652916260697836e668",
-     "requires": "1e120",
-     "nextAt": "8.652916260697836e668",
-     "baseAmount": "10",
-     "requiresDimension": "player.points",
-     "windowMax": "5504635833.465364"
-    }
-   }
-  },
-  {
-   "id": "buy:s:12",
-   "kind": "buy",
-   "layer": "s",
-   "dimension": "player.s.points",
-   "threshold": "2.148721906226448e122",
-   "held": "7",
-   "rate": "0",
-   "distanceLog10": 121.48708217147232,
-   "why": null,
-   "firstImpossible": {
-    "at": 0,
-    "dimension": "player.s.points",
-    "impossible": {
-     "why": "canReset is false: the requirement is above the base amount",
-     "layer": "s",
-     "resetAt": "8.652916260697836e668",
-     "requires": "1e120",
-     "nextAt": "8.652916260697836e668",
-     "baseAmount": "10",
-     "requiresDimension": "player.points",
-     "windowMax": "5504635833.465364"
-    }
-   }
-  },
-  {
-   "id": "buy:s:13",
-   "kind": "buy",
-   "layer": "s",
-   "dimension": "player.s.points",
-   "threshold": "1.4707973713202898e135",
-   "held": "7",
-   "rate": "0",
-   "distanceLog10": 134.3224548049913,
-   "why": null,
-   "firstImpossible": {
-    "at": 0,
-    "dimension": "player.s.points",
-    "impossible": {
-     "why": "canReset is false: the requirement is above the base amount",
-     "layer": "s",
-     "resetAt": "8.652916260697836e668",
-     "requires": "1e120",
-     "nextAt": "8.652916260697836e668",
-     "baseAmount": "10",
-     "requiresDimension": "player.points",
-     "windowMax": "5504635833.465364"
-    }
-   }
-  },
-  {
    "id": "ach:a:34",
    "kind": "ach",
    "layer": "a",
    "dimension": "player.points",
    "threshold": "1.0000000000005236e525",
    "held": "10",
-   "rate": "0",
-   "distanceLog10": 524.0000000000002,
+   "rate": "9773803847519.88",
+   "distanceLog10": 512.0099363811655,
    "why": null,
    "firstImpossible": null
   },
@@ -2713,8 +2501,8 @@
    "dimension": "player.points",
    "threshold": "1.000383673412286e600",
    "held": "10",
-   "rate": "0",
-   "distanceLog10": 599.0001665952888,
+   "rate": "9773803847519.88",
+   "distanceLog10": 587.010102976454,
    "why": null,
    "firstImpossible": null
   },
@@ -2725,8 +2513,8 @@
    "dimension": "player.points",
    "threshold": "8.652916260697836e668",
    "held": "10",
-   "rate": "0",
-   "distanceLog10": 667.9371625008151,
+   "rate": "9773803847519.88",
+   "distanceLog10": 655.9470988819804,
    "why": null,
    "firstImpossible": null
   },
@@ -2737,8 +2525,8 @@
    "dimension": "player.points",
    "threshold": "5.429812322315167e712",
    "held": "10",
-   "rate": "0",
-   "distanceLog10": 711.7347848187617,
+   "rate": "9773803847519.88",
+   "distanceLog10": 699.744721199927,
    "why": null,
    "firstImpossible": null
   },
@@ -2749,8 +2537,8 @@
    "dimension": "player.points",
    "threshold": "1.0000000000293185e15500",
    "held": "10",
-   "rate": "0",
-   "distanceLog10": 15499.000000000013,
+   "rate": "9773803847519.88",
+   "distanceLog10": 15487.009936381179,
    "why": null,
    "firstImpossible": null
   },
@@ -2794,7 +2582,7 @@
      "nextAt": "1.000383673412286e600",
      "baseAmount": "10",
      "requiresDimension": "player.points",
-     "windowMax": "5504635833.465364"
+     "windowMax": "97738038475208.8"
     }
    }
   },
@@ -2819,7 +2607,7 @@
      "nextAt": "1.000383673412286e600",
      "baseAmount": "10",
      "requiresDimension": "player.points",
-     "windowMax": "5504635833.465364"
+     "windowMax": "97738038475208.8"
     }
    }
   },
@@ -2844,7 +2632,7 @@
      "nextAt": "1.000383673412286e600",
      "baseAmount": "10",
      "requiresDimension": "player.points",
-     "windowMax": "5504635833.465364"
+     "windowMax": "97738038475208.8"
     }
    }
   },
@@ -2869,21 +2657,9 @@
      "nextAt": "1.000383673412286e600",
      "baseAmount": "10",
      "requiresDimension": "player.points",
-     "windowMax": "5504635833.465364"
+     "windowMax": "97738038475208.8"
     }
    }
-  },
-  {
-   "id": "upg:p:11",
-   "kind": "upg",
-   "layer": "p",
-   "dimension": "player.p.points",
-   "threshold": "1",
-   "held": "0",
-   "rate": "0",
-   "distanceLog10": null,
-   "why": "nothing held and no measured rate",
-   "firstImpossible": null
   },
   {
    "id": "upg:s:22",
@@ -2982,7 +2758,83 @@
      "nextAt": "1.000383673412286e600",
      "baseAmount": "10",
      "requiresDimension": "player.points",
-     "windowMax": "5504635833.465364"
+     "windowMax": "97738038475208.8"
+    }
+   }
+  },
+  {
+   "id": "buy:s:11",
+   "kind": "buy",
+   "layer": "s",
+   "dimension": "player.g.power",
+   "threshold": "5.993712761512212e108",
+   "held": "0",
+   "rate": "0",
+   "distanceLog10": null,
+   "why": "nothing held and no measured rate",
+   "firstImpossible": {
+    "at": 0,
+    "dimension": "player.g.power",
+    "impossible": {
+     "why": "no measured producer moves this dimension: it did not move at all over the 10-game-second wait (capped or inert)",
+     "window": 10
+    }
+   }
+  },
+  {
+   "id": "buy:s:12",
+   "kind": "buy",
+   "layer": "s",
+   "dimension": "player.g.power",
+   "threshold": "2.148721906226448e122",
+   "held": "0",
+   "rate": "0",
+   "distanceLog10": null,
+   "why": "nothing held and no measured rate",
+   "firstImpossible": {
+    "at": 0,
+    "dimension": "player.g.power",
+    "impossible": {
+     "why": "no measured producer moves this dimension: it did not move at all over the 10-game-second wait (capped or inert)",
+     "window": 10
+    }
+   }
+  },
+  {
+   "id": "buy:s:13",
+   "kind": "buy",
+   "layer": "s",
+   "dimension": "player.g.power",
+   "threshold": "1.4707973713202898e135",
+   "held": "0",
+   "rate": "0",
+   "distanceLog10": null,
+   "why": "nothing held and no measured rate",
+   "firstImpossible": {
+    "at": 0,
+    "dimension": "player.g.power",
+    "impossible": {
+     "why": "no measured producer moves this dimension: it did not move at all over the 10-game-second wait (capped or inert)",
+     "window": 10
+    }
+   }
+  },
+  {
+   "id": "buy:s:14",
+   "kind": "buy",
+   "layer": "s",
+   "dimension": "player.g.power",
+   "threshold": "9.296227291088373e119",
+   "held": "0",
+   "rate": "0",
+   "distanceLog10": null,
+   "why": "nothing held and no measured rate",
+   "firstImpossible": {
+    "at": 0,
+    "dimension": "player.g.power",
+    "impossible": {
+     "why": "no measured producer moves this dimension: it did not move at all over the 10-game-second wait (capped or inert)",
+     "window": 10
     }
    }
   },
@@ -4857,7 +4709,7 @@
      "nextAt": "1.000383673412286e600",
      "baseAmount": "10",
      "requiresDimension": "player.points",
-     "windowMax": "5504635833.465364"
+     "windowMax": "97738038475208.8"
     }
    }
   },
@@ -5191,6 +5043,6 @@
  "counts": {
   "sticky": 46,
   "discovered": 175,
-  "predicateOnly": 1
+  "predicateOnly": 2
  }
 }
