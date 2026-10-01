@@ -1,0 +1,4617 @@
+{
+ "generated": true,
+ "generator": "tools/harness/facts.mjs",
+ "generatorVersion": 1,
+ "format": "tmt-facts/1",
+ "game": "collection-of-everything",
+ "base": null,
+ "engine": "2.6.6.2",
+ "upstream": {
+  "repo": "XtremeRusher/The-Modding-Tree",
+  "commit": "f8c385fcdacc30109690a4865a906a2092477074"
+ },
+ "states": [
+  "fresh"
+ ],
+ "seeds": [
+  1
+ ],
+ "summary": {
+  "price": {
+   "facts": 27,
+   "abstained": 0,
+   "variants": 0
+  },
+  "zeroed-by": {
+   "facts": 126,
+   "abstained": 0,
+   "variants": 0
+  },
+  "production": {
+   "facts": 19,
+   "abstained": 0,
+   "variants": 0
+  },
+  "multiplier-reads": {
+   "facts": 46,
+   "abstained": 0,
+   "variants": 0
+  },
+  "challenge-inputs": {
+   "facts": 1,
+   "abstained": 0,
+   "variants": 0
+  },
+  "purchase-budget": {
+   "facts": 0,
+   "abstained": 0,
+   "variants": 0
+  }
+ },
+ "thrown": [],
+ "facts": [
+  {
+   "id": "price:bam:upgrade:11",
+   "kind": "price",
+   "item": {
+    "layer": "bam",
+    "upgrade": 11
+   },
+   "currency": "player.bam.points",
+   "currencyHow": "the layer's own points",
+   "reads": [],
+   "shapes": {},
+   "constant": true,
+   "from": {
+    "how": "declaration: a constant cost",
+    "state": "fresh",
+    "seen": [
+     "fresh"
+    ],
+    "loader": "facts.mjs v1"
+   }
+  },
+  {
+   "id": "price:bam:upgrade:12",
+   "kind": "price",
+   "item": {
+    "layer": "bam",
+    "upgrade": 12
+   },
+   "currency": "player.bam.points",
+   "currencyHow": "the layer's own points",
+   "reads": [],
+   "shapes": {},
+   "constant": true,
+   "from": {
+    "how": "declaration: a constant cost",
+    "state": "fresh",
+    "seen": [
+     "fresh"
+    ],
+    "loader": "facts.mjs v1"
+   }
+  },
+  {
+   "id": "price:bam:upgrade:13",
+   "kind": "price",
+   "item": {
+    "layer": "bam",
+    "upgrade": 13
+   },
+   "currency": "player.bam.points",
+   "currencyHow": "the layer's own points",
+   "reads": [],
+   "shapes": {},
+   "constant": true,
+   "from": {
+    "how": "declaration: a constant cost",
+    "state": "fresh",
+    "seen": [
+     "fresh"
+    ],
+    "loader": "facts.mjs v1"
+   }
+  },
+  {
+   "id": "price:bam:upgrade:14",
+   "kind": "price",
+   "item": {
+    "layer": "bam",
+    "upgrade": 14
+   },
+   "currency": "player.bam.points",
+   "currencyHow": "the layer's own points",
+   "reads": [],
+   "shapes": {},
+   "constant": true,
+   "from": {
+    "how": "declaration: a constant cost",
+    "state": "fresh",
+    "seen": [
+     "fresh"
+    ],
+    "loader": "facts.mjs v1"
+   }
+  },
+  {
+   "id": "price:s:buyable:11",
+   "kind": "price",
+   "item": {
+    "layer": "s",
+    "buyable": 11
+   },
+   "currency": "player.points",
+   "currencyHow": "the generated currency data (C1)",
+   "parts": [
+    "knw",
+    "drw"
+   ],
+   "reads": [
+    "player.s.buyables.11",
+    "player.s.upgrades"
+   ],
+   "tmpReads": [],
+   "shapes": {
+    "player.s.buyables.11": {
+     "knw": {
+      "type": "exponential",
+      "log10Base": 0.90309,
+      "base": "8e0",
+      "at0": "1e0"
+     },
+     "drw": {
+      "type": "power",
+      "exponent": 2,
+      "offset": 0,
+      "coef": "1e2"
+     }
+    }
+   },
+   "from": {
+    "how": "traceReads + probe:exponent",
+    "state": "fresh",
+    "seen": [
+     "fresh"
+    ],
+    "loader": "facts.mjs v1"
+   }
+  },
+  {
+   "id": "price:s:buyable:12",
+   "kind": "price",
+   "item": {
+    "layer": "s",
+    "buyable": 12
+   },
+   "currency": "player.points",
+   "currencyHow": "the generated currency data (C1)",
+   "parts": [
+    "knw",
+    "drw"
+   ],
+   "reads": [
+    "player.s.buyables.12",
+    "player.s.upgrades"
+   ],
+   "tmpReads": [],
+   "shapes": {
+    "player.s.buyables.12": {
+     "knw": {
+      "type": "exponential",
+      "log10Base": 1.69897,
+      "base": "5e1",
+      "at0": "1e0"
+     },
+     "drw": {
+      "type": "power",
+      "exponent": 2.5,
+      "offset": 0,
+      "coef": "3.16228e2"
+     }
+    }
+   },
+   "from": {
+    "how": "traceReads + probe:exponent",
+    "state": "fresh",
+    "seen": [
+     "fresh"
+    ],
+    "loader": "facts.mjs v1"
+   }
+  },
+  {
+   "id": "price:s:buyable:21",
+   "kind": "price",
+   "item": {
+    "layer": "s",
+    "buyable": 21
+   },
+   "currency": "player.points",
+   "currencyHow": "the generated currency data (C1)",
+   "parts": [
+    "knw",
+    "drw"
+   ],
+   "reads": [
+    "player.s.buyables.21",
+    "player.s.upgrades"
+   ],
+   "tmpReads": [],
+   "shapes": {
+    "player.s.buyables.21": {
+     "knw": {
+      "type": "exponential",
+      "log10Base": 1.69897,
+      "base": "5e1",
+      "at0": "1e0"
+     },
+     "drw": {
+      "type": "power",
+      "exponent": 1.5,
+      "offset": 0,
+      "coef": "3.16228e1"
+     }
+    }
+   },
+   "from": {
+    "how": "traceReads + probe:exponent",
+    "state": "fresh",
+    "seen": [
+     "fresh"
+    ],
+    "loader": "facts.mjs v1"
+   }
+  },
+  {
+   "id": "price:s:buyable:22",
+   "kind": "price",
+   "item": {
+    "layer": "s",
+    "buyable": 22
+   },
+   "currency": "player.points",
+   "currencyHow": "the generated currency data (C1)",
+   "parts": [
+    "knw",
+    "drw"
+   ],
+   "reads": [
+    "player.s.buyables.22",
+    "player.s.upgrades"
+   ],
+   "tmpReads": [],
+   "shapes": {
+    "player.s.buyables.22": {
+     "knw": {
+      "type": "exponential",
+      "log10Base": 3,
+      "base": "1e3",
+      "at0": "1e3"
+     },
+     "drw": {
+      "type": "power",
+      "exponent": 2.5,
+      "offset": 0,
+      "coef": "3.16228e2"
+     }
+    }
+   },
+   "from": {
+    "how": "traceReads + probe:exponent",
+    "state": "fresh",
+    "seen": [
+     "fresh"
+    ],
+    "loader": "facts.mjs v1"
+   }
+  },
+  {
+   "id": "price:s:buyable:a1",
+   "kind": "price",
+   "item": {
+    "layer": "s",
+    "buyable": "a1"
+   },
+   "currency": "player.FoodA.wheat",
+   "currencyHow": "the generated currency data (C1)",
+   "reads": [
+    "player.s.buyables.a1"
+   ],
+   "tmpReads": [],
+   "shapes": {
+    "player.s.buyables.a1": {
+     "type": "flat"
+    }
+   },
+   "from": {
+    "how": "traceReads + probe:exponent",
+    "state": "fresh",
+    "seen": [
+     "fresh"
+    ],
+    "loader": "facts.mjs v1"
+   }
+  },
+  {
+   "id": "price:s:buyable:a2",
+   "kind": "price",
+   "item": {
+    "layer": "s",
+    "buyable": "a2"
+   },
+   "currency": [
+    "player.FoodA.rice",
+    "player.FoodB.fsh"
+   ],
+   "currencyHow": "the generated currency data (C1)",
+   "parts": [
+    "one",
+    "two"
+   ],
+   "reads": [
+    "player.s.buyables.a2"
+   ],
+   "tmpReads": [],
+   "shapes": {
+    "player.s.buyables.a2": {
+     "one": {
+      "type": "flat"
+     },
+     "two": {
+      "type": "flat"
+     }
+    }
+   },
+   "from": {
+    "how": "traceReads + probe:exponent",
+    "state": "fresh",
+    "seen": [
+     "fresh"
+    ],
+    "loader": "facts.mjs v1"
+   }
+  },
+  {
+   "id": "price:s:buyable:a3",
+   "kind": "price",
+   "item": {
+    "layer": "s",
+    "buyable": "a3"
+   },
+   "currency": [
+    "player.FoodA.banana",
+    "player.FoodB.mlk"
+   ],
+   "currencyHow": "the generated currency data (C1)",
+   "parts": [
+    "one",
+    "two"
+   ],
+   "reads": [
+    "player.s.buyables.a3"
+   ],
+   "tmpReads": [],
+   "shapes": {
+    "player.s.buyables.a3": {
+     "one": {
+      "type": "flat"
+     },
+     "two": {
+      "type": "flat"
+     }
+    }
+   },
+   "from": {
+    "how": "traceReads + probe:exponent",
+    "state": "fresh",
+    "seen": [
+     "fresh"
+    ],
+    "loader": "facts.mjs v1"
+   }
+  },
+  {
+   "id": "price:s:buyable:a4",
+   "kind": "price",
+   "item": {
+    "layer": "s",
+    "buyable": "a4"
+   },
+   "currency": [
+    "player.FoodA.apple",
+    "player.FoodA.cabbage",
+    "player.FoodA.carrot"
+   ],
+   "currencyHow": "the generated currency data (C1)",
+   "parts": [
+    "one",
+    "two",
+    "three"
+   ],
+   "reads": [
+    "player.s.buyables.a4"
+   ],
+   "tmpReads": [],
+   "shapes": {
+    "player.s.buyables.a4": {
+     "one": {
+      "type": "flat"
+     },
+     "two": {
+      "type": "flat"
+     },
+     "three": {
+      "type": "flat"
+     }
+    }
+   },
+   "from": {
+    "how": "traceReads + probe:exponent",
+    "state": "fresh",
+    "seen": [
+     "fresh"
+    ],
+    "loader": "facts.mjs v1"
+   }
+  },
+  {
+   "id": "price:s:buyable:a5",
+   "kind": "price",
+   "item": {
+    "layer": "s",
+    "buyable": "a5"
+   },
+   "currency": [
+    "player.FoodA.potato",
+    "player.FoodB.pig",
+    "player.s.buyables.a4"
+   ],
+   "currencyHow": "the generated currency data (C1)",
+   "parts": [
+    "one",
+    "two",
+    "three"
+   ],
+   "reads": [
+    "player.s.buyables.a5"
+   ],
+   "tmpReads": [],
+   "shapes": {
+    "player.s.buyables.a5": {
+     "one": {
+      "type": "flat"
+     },
+     "two": {
+      "type": "flat"
+     },
+     "three": {
+      "type": "flat"
+     }
+    }
+   },
+   "from": {
+    "how": "traceReads + probe:exponent",
+    "state": "fresh",
+    "seen": [
+     "fresh"
+    ],
+    "loader": "facts.mjs v1"
+   }
+  },
+  {
+   "id": "price:s:upgrade:11",
+   "kind": "price",
+   "item": {
+    "layer": "s",
+    "upgrade": 11
+   },
+   "currency": null,
+   "currencyHow": "currencyLocation is not reachable from player",
+   "reads": [],
+   "shapes": {},
+   "constant": true,
+   "from": {
+    "how": "declaration: a constant cost",
+    "state": "fresh",
+    "seen": [
+     "fresh"
+    ],
+    "loader": "facts.mjs v1"
+   }
+  },
+  {
+   "id": "price:s:upgrade:21",
+   "kind": "price",
+   "item": {
+    "layer": "s",
+    "upgrade": 21
+   },
+   "currency": "player.w.points",
+   "currencyHow": "currencyLayer + currencyInternalName",
+   "reads": [],
+   "shapes": {},
+   "constant": true,
+   "from": {
+    "how": "declaration: a constant cost",
+    "state": "fresh",
+    "seen": [
+     "fresh"
+    ],
+    "loader": "facts.mjs v1"
+   }
+  },
+  {
+   "id": "price:s:upgrade:22",
+   "kind": "price",
+   "item": {
+    "layer": "s",
+    "upgrade": 22
+   },
+   "currency": "player.w.points",
+   "currencyHow": "currencyLayer + currencyInternalName",
+   "reads": [],
+   "shapes": {},
+   "constant": true,
+   "from": {
+    "how": "declaration: a constant cost",
+    "state": "fresh",
+    "seen": [
+     "fresh"
+    ],
+    "loader": "facts.mjs v1"
+   }
+  },
+  {
+   "id": "price:s:upgrade:23",
+   "kind": "price",
+   "item": {
+    "layer": "s",
+    "upgrade": 23
+   },
+   "currency": "player.w.points",
+   "currencyHow": "currencyLayer + currencyInternalName",
+   "reads": [],
+   "shapes": {},
+   "constant": true,
+   "from": {
+    "how": "declaration: a constant cost",
+    "state": "fresh",
+    "seen": [
+     "fresh"
+    ],
+    "loader": "facts.mjs v1"
+   }
+  },
+  {
+   "id": "price:s:upgrade:24",
+   "kind": "price",
+   "item": {
+    "layer": "s",
+    "upgrade": 24
+   },
+   "currency": "player.w.points",
+   "currencyHow": "currencyLayer + currencyInternalName",
+   "reads": [],
+   "shapes": {},
+   "constant": true,
+   "from": {
+    "how": "declaration: a constant cost",
+    "state": "fresh",
+    "seen": [
+     "fresh"
+    ],
+    "loader": "facts.mjs v1"
+   }
+  },
+  {
+   "id": "price:s:upgrade:25",
+   "kind": "price",
+   "item": {
+    "layer": "s",
+    "upgrade": 25
+   },
+   "currency": "player.w.points",
+   "currencyHow": "currencyLayer + currencyInternalName",
+   "reads": [],
+   "shapes": {},
+   "constant": true,
+   "from": {
+    "how": "declaration: a constant cost",
+    "state": "fresh",
+    "seen": [
+     "fresh"
+    ],
+    "loader": "facts.mjs v1"
+   }
+  },
+  {
+   "id": "price:s:upgrade:31",
+   "kind": "price",
+   "item": {
+    "layer": "s",
+    "upgrade": 31
+   },
+   "currency": "player.w.points",
+   "currencyHow": "currencyLayer + currencyInternalName",
+   "reads": [],
+   "shapes": {},
+   "constant": true,
+   "from": {
+    "how": "declaration: a constant cost",
+    "state": "fresh",
+    "seen": [
+     "fresh"
+    ],
+    "loader": "facts.mjs v1"
+   }
+  },
+  {
+   "id": "price:w:upgrade:11",
+   "kind": "price",
+   "item": {
+    "layer": "w",
+    "upgrade": 11
+   },
+   "currency": "player.w.points",
+   "currencyHow": "the layer's own points",
+   "reads": [],
+   "shapes": {},
+   "constant": true,
+   "from": {
+    "how": "declaration: a constant cost",
+    "state": "fresh",
+    "seen": [
+     "fresh"
+    ],
+    "loader": "facts.mjs v1"
+   }
+  },
+  {
+   "id": "price:w:upgrade:12",
+   "kind": "price",
+   "item": {
+    "layer": "w",
+    "upgrade": 12
+   },
+   "currency": "player.w.points",
+   "currencyHow": "the layer's own points",
+   "reads": [],
+   "shapes": {},
+   "constant": true,
+   "from": {
+    "how": "declaration: a constant cost",
+    "state": "fresh",
+    "seen": [
+     "fresh"
+    ],
+    "loader": "facts.mjs v1"
+   }
+  },
+  {
+   "id": "price:w:upgrade:13",
+   "kind": "price",
+   "item": {
+    "layer": "w",
+    "upgrade": 13
+   },
+   "currency": "player.w.points",
+   "currencyHow": "the layer's own points",
+   "reads": [],
+   "shapes": {},
+   "constant": true,
+   "from": {
+    "how": "declaration: a constant cost",
+    "state": "fresh",
+    "seen": [
+     "fresh"
+    ],
+    "loader": "facts.mjs v1"
+   }
+  },
+  {
+   "id": "price:w:upgrade:14",
+   "kind": "price",
+   "item": {
+    "layer": "w",
+    "upgrade": 14
+   },
+   "currency": "player.w.points",
+   "currencyHow": "the layer's own points",
+   "reads": [],
+   "shapes": {},
+   "constant": true,
+   "from": {
+    "how": "declaration: a constant cost",
+    "state": "fresh",
+    "seen": [
+     "fresh"
+    ],
+    "loader": "facts.mjs v1"
+   }
+  },
+  {
+   "id": "price:w:upgrade:15",
+   "kind": "price",
+   "item": {
+    "layer": "w",
+    "upgrade": 15
+   },
+   "currency": "player.w.points",
+   "currencyHow": "the layer's own points",
+   "reads": [],
+   "shapes": {},
+   "constant": true,
+   "from": {
+    "how": "declaration: a constant cost",
+    "state": "fresh",
+    "seen": [
+     "fresh"
+    ],
+    "loader": "facts.mjs v1"
+   }
+  },
+  {
+   "id": "price:w:upgrade:21",
+   "kind": "price",
+   "item": {
+    "layer": "w",
+    "upgrade": 21
+   },
+   "currency": "player.w.points",
+   "currencyHow": "the layer's own points",
+   "reads": [],
+   "shapes": {},
+   "constant": true,
+   "from": {
+    "how": "declaration: a constant cost",
+    "state": "fresh",
+    "seen": [
+     "fresh"
+    ],
+    "loader": "facts.mjs v1"
+   }
+  },
+  {
+   "id": "price:w:upgrade:22",
+   "kind": "price",
+   "item": {
+    "layer": "w",
+    "upgrade": 22
+   },
+   "currency": "player.w.points",
+   "currencyHow": "the layer's own points",
+   "reads": [],
+   "shapes": {},
+   "constant": true,
+   "from": {
+    "how": "declaration: a constant cost",
+    "state": "fresh",
+    "seen": [
+     "fresh"
+    ],
+    "loader": "facts.mjs v1"
+   }
+  },
+  {
+   "id": "zeroed-by:auto:player.auto.resetTime",
+   "kind": "zeroed-by",
+   "reset": "auto",
+   "field": "player.auto.resetTime",
+   "effect": "zeroes",
+   "via": [
+    "(engine)"
+   ],
+   "from": {
+    "how": "probe:reset-writes",
+    "state": "fresh",
+    "seen": [
+     "fresh"
+    ],
+    "loader": "facts.mjs v1",
+    "probeState": "requirement injected; field seeded to x·10+1"
+   }
+  },
+  {
+   "id": "zeroed-by:auto:player.points",
+   "kind": "zeroed-by",
+   "reset": "auto",
+   "field": "player.points",
+   "effect": "zeroes",
+   "via": [
+    "(engine)"
+   ],
+   "from": {
+    "how": "probe:reset-writes",
+    "state": "fresh",
+    "seen": [
+     "fresh"
+    ],
+    "loader": "facts.mjs v1",
+    "probeState": "requirement injected"
+   }
+  },
+  {
+   "id": "zeroed-by:auto:player.s.PickPow",
+   "kind": "zeroed-by",
+   "reset": "auto",
+   "field": "player.s.PickPow",
+   "effect": "zeroes",
+   "via": [
+    "s"
+   ],
+   "from": {
+    "how": "probe:reset-writes",
+    "state": "fresh",
+    "seen": [
+     "fresh"
+    ],
+    "loader": "facts.mjs v1",
+    "probeState": "requirement injected; field seeded to x·10+1"
+   }
+  },
+  {
+   "id": "zeroed-by:auto:player.s.best",
+   "kind": "zeroed-by",
+   "reset": "auto",
+   "field": "player.s.best",
+   "effect": "zeroes",
+   "via": [
+    "s"
+   ],
+   "from": {
+    "how": "probe:reset-writes",
+    "state": "fresh",
+    "seen": [
+     "fresh"
+    ],
+    "loader": "facts.mjs v1",
+    "probeState": "requirement injected; field seeded to x·10+1"
+   }
+  },
+  {
+   "id": "zeroed-by:auto:player.s.resetTime",
+   "kind": "zeroed-by",
+   "reset": "auto",
+   "field": "player.s.resetTime",
+   "effect": "zeroes",
+   "via": [
+    "s"
+   ],
+   "from": {
+    "how": "probe:reset-writes",
+    "state": "fresh",
+    "seen": [
+     "fresh"
+    ],
+    "loader": "facts.mjs v1",
+    "probeState": "requirement injected; field seeded to x·10+1"
+   }
+  },
+  {
+   "id": "zeroed-by:auto:player.s.spentOnBuyables",
+   "kind": "zeroed-by",
+   "reset": "auto",
+   "field": "player.s.spentOnBuyables",
+   "effect": "zeroes",
+   "via": [
+    "s"
+   ],
+   "from": {
+    "how": "probe:reset-writes",
+    "state": "fresh",
+    "seen": [
+     "fresh"
+    ],
+    "loader": "facts.mjs v1",
+    "probeState": "requirement injected; field seeded to x·10+1"
+   }
+  },
+  {
+   "id": "zeroed-by:auto:player.s.stor",
+   "kind": "zeroed-by",
+   "reset": "auto",
+   "field": "player.s.stor",
+   "effect": "zeroes",
+   "via": [
+    "s"
+   ],
+   "from": {
+    "how": "probe:reset-writes",
+    "state": "fresh",
+    "seen": [
+     "fresh"
+    ],
+    "loader": "facts.mjs v1",
+    "probeState": "requirement injected; field seeded to x·10+1"
+   }
+  },
+  {
+   "id": "zeroed-by:auto:player.s.storMax",
+   "kind": "zeroed-by",
+   "reset": "auto",
+   "field": "player.s.storMax",
+   "effect": "zeroes",
+   "via": [
+    "s"
+   ],
+   "from": {
+    "how": "probe:reset-writes",
+    "state": "fresh",
+    "seen": [
+     "fresh"
+    ],
+    "loader": "facts.mjs v1",
+    "probeState": "requirement injected; field seeded to x·10+1"
+   }
+  },
+  {
+   "id": "zeroed-by:auto:player.s.total",
+   "kind": "zeroed-by",
+   "reset": "auto",
+   "field": "player.s.total",
+   "effect": "zeroes",
+   "via": [
+    "s"
+   ],
+   "from": {
+    "how": "probe:reset-writes",
+    "state": "fresh",
+    "seen": [
+     "fresh"
+    ],
+    "loader": "facts.mjs v1",
+    "probeState": "requirement injected; field seeded to x·10+1"
+   }
+  },
+  {
+   "id": "zeroed-by:met11:player.FoodA.apple",
+   "kind": "zeroed-by",
+   "reset": "met11",
+   "field": "player.FoodA.apple",
+   "effect": "zeroes",
+   "via": [
+    "(engine)"
+   ],
+   "from": {
+    "how": "probe:reset-writes",
+    "state": "fresh",
+    "seen": [
+     "fresh"
+    ],
+    "loader": "facts.mjs v1",
+    "probeState": "doReset forced (the requirement could not be injected); field seeded to x·10+1"
+   }
+  },
+  {
+   "id": "zeroed-by:met11:player.FoodA.banana",
+   "kind": "zeroed-by",
+   "reset": "met11",
+   "field": "player.FoodA.banana",
+   "effect": "zeroes",
+   "via": [
+    "(engine)"
+   ],
+   "from": {
+    "how": "probe:reset-writes",
+    "state": "fresh",
+    "seen": [
+     "fresh"
+    ],
+    "loader": "facts.mjs v1",
+    "probeState": "doReset forced (the requirement could not be injected); field seeded to x·10+1"
+   }
+  },
+  {
+   "id": "zeroed-by:met11:player.FoodA.best",
+   "kind": "zeroed-by",
+   "reset": "met11",
+   "field": "player.FoodA.best",
+   "effect": "zeroes",
+   "via": [
+    "(engine)"
+   ],
+   "from": {
+    "how": "probe:reset-writes",
+    "state": "fresh",
+    "seen": [
+     "fresh"
+    ],
+    "loader": "facts.mjs v1",
+    "probeState": "doReset forced (the requirement could not be injected); field seeded to x·10+1"
+   }
+  },
+  {
+   "id": "zeroed-by:met11:player.FoodA.cabbage",
+   "kind": "zeroed-by",
+   "reset": "met11",
+   "field": "player.FoodA.cabbage",
+   "effect": "zeroes",
+   "via": [
+    "(engine)"
+   ],
+   "from": {
+    "how": "probe:reset-writes",
+    "state": "fresh",
+    "seen": [
+     "fresh"
+    ],
+    "loader": "facts.mjs v1",
+    "probeState": "doReset forced (the requirement could not be injected); field seeded to x·10+1"
+   }
+  },
+  {
+   "id": "zeroed-by:met11:player.FoodA.carrot",
+   "kind": "zeroed-by",
+   "reset": "met11",
+   "field": "player.FoodA.carrot",
+   "effect": "zeroes",
+   "via": [
+    "(engine)"
+   ],
+   "from": {
+    "how": "probe:reset-writes",
+    "state": "fresh",
+    "seen": [
+     "fresh"
+    ],
+    "loader": "facts.mjs v1",
+    "probeState": "doReset forced (the requirement could not be injected); field seeded to x·10+1"
+   }
+  },
+  {
+   "id": "zeroed-by:met11:player.FoodA.corn",
+   "kind": "zeroed-by",
+   "reset": "met11",
+   "field": "player.FoodA.corn",
+   "effect": "zeroes",
+   "via": [
+    "(engine)"
+   ],
+   "from": {
+    "how": "probe:reset-writes",
+    "state": "fresh",
+    "seen": [
+     "fresh"
+    ],
+    "loader": "facts.mjs v1",
+    "probeState": "doReset forced (the requirement could not be injected); field seeded to x·10+1"
+   }
+  },
+  {
+   "id": "zeroed-by:met11:player.FoodA.grapes",
+   "kind": "zeroed-by",
+   "reset": "met11",
+   "field": "player.FoodA.grapes",
+   "effect": "zeroes",
+   "via": [
+    "(engine)"
+   ],
+   "from": {
+    "how": "probe:reset-writes",
+    "state": "fresh",
+    "seen": [
+     "fresh"
+    ],
+    "loader": "facts.mjs v1",
+    "probeState": "doReset forced (the requirement could not be injected); field seeded to x·10+1"
+   }
+  },
+  {
+   "id": "zeroed-by:met11:player.FoodA.onion",
+   "kind": "zeroed-by",
+   "reset": "met11",
+   "field": "player.FoodA.onion",
+   "effect": "zeroes",
+   "via": [
+    "(engine)"
+   ],
+   "from": {
+    "how": "probe:reset-writes",
+    "state": "fresh",
+    "seen": [
+     "fresh"
+    ],
+    "loader": "facts.mjs v1",
+    "probeState": "doReset forced (the requirement could not be injected); field seeded to x·10+1"
+   }
+  },
+  {
+   "id": "zeroed-by:met11:player.FoodA.points",
+   "kind": "zeroed-by",
+   "reset": "met11",
+   "field": "player.FoodA.points",
+   "effect": "zeroes",
+   "via": [
+    "(engine)"
+   ],
+   "from": {
+    "how": "probe:reset-writes",
+    "state": "fresh",
+    "seen": [
+     "fresh"
+    ],
+    "loader": "facts.mjs v1",
+    "probeState": "doReset forced (the requirement could not be injected); field seeded to x·10+1"
+   }
+  },
+  {
+   "id": "zeroed-by:met11:player.FoodA.potato",
+   "kind": "zeroed-by",
+   "reset": "met11",
+   "field": "player.FoodA.potato",
+   "effect": "zeroes",
+   "via": [
+    "(engine)"
+   ],
+   "from": {
+    "how": "probe:reset-writes",
+    "state": "fresh",
+    "seen": [
+     "fresh"
+    ],
+    "loader": "facts.mjs v1",
+    "probeState": "doReset forced (the requirement could not be injected); field seeded to x·10+1"
+   }
+  },
+  {
+   "id": "zeroed-by:met11:player.FoodA.resetTime",
+   "kind": "zeroed-by",
+   "reset": "met11",
+   "field": "player.FoodA.resetTime",
+   "effect": "zeroes",
+   "via": [
+    "(engine)"
+   ],
+   "from": {
+    "how": "probe:reset-writes",
+    "state": "fresh",
+    "seen": [
+     "fresh"
+    ],
+    "loader": "facts.mjs v1",
+    "probeState": "doReset forced (the requirement could not be injected); field seeded to x·10+1"
+   }
+  },
+  {
+   "id": "zeroed-by:met11:player.FoodA.rice",
+   "kind": "zeroed-by",
+   "reset": "met11",
+   "field": "player.FoodA.rice",
+   "effect": "zeroes",
+   "via": [
+    "(engine)"
+   ],
+   "from": {
+    "how": "probe:reset-writes",
+    "state": "fresh",
+    "seen": [
+     "fresh"
+    ],
+    "loader": "facts.mjs v1",
+    "probeState": "doReset forced (the requirement could not be injected); field seeded to x·10+1"
+   }
+  },
+  {
+   "id": "zeroed-by:met11:player.FoodA.spentOnBuyables",
+   "kind": "zeroed-by",
+   "reset": "met11",
+   "field": "player.FoodA.spentOnBuyables",
+   "effect": "zeroes",
+   "via": [
+    "(engine)"
+   ],
+   "from": {
+    "how": "probe:reset-writes",
+    "state": "fresh",
+    "seen": [
+     "fresh"
+    ],
+    "loader": "facts.mjs v1",
+    "probeState": "doReset forced (the requirement could not be injected); field seeded to x·10+1"
+   }
+  },
+  {
+   "id": "zeroed-by:met11:player.FoodA.total",
+   "kind": "zeroed-by",
+   "reset": "met11",
+   "field": "player.FoodA.total",
+   "effect": "zeroes",
+   "via": [
+    "(engine)"
+   ],
+   "from": {
+    "how": "probe:reset-writes",
+    "state": "fresh",
+    "seen": [
+     "fresh"
+    ],
+    "loader": "facts.mjs v1",
+    "probeState": "doReset forced (the requirement could not be injected); field seeded to x·10+1"
+   }
+  },
+  {
+   "id": "zeroed-by:met11:player.FoodA.wheat",
+   "kind": "zeroed-by",
+   "reset": "met11",
+   "field": "player.FoodA.wheat",
+   "effect": "zeroes",
+   "via": [
+    "(engine)"
+   ],
+   "from": {
+    "how": "probe:reset-writes",
+    "state": "fresh",
+    "seen": [
+     "fresh"
+    ],
+    "loader": "facts.mjs v1",
+    "probeState": "doReset forced (the requirement could not be injected); field seeded to x·10+1"
+   }
+  },
+  {
+   "id": "zeroed-by:met11:player.FoodB.best",
+   "kind": "zeroed-by",
+   "reset": "met11",
+   "field": "player.FoodB.best",
+   "effect": "zeroes",
+   "via": [
+    "(engine)"
+   ],
+   "from": {
+    "how": "probe:reset-writes",
+    "state": "fresh",
+    "seen": [
+     "fresh"
+    ],
+    "loader": "facts.mjs v1",
+    "probeState": "doReset forced (the requirement could not be injected); field seeded to x·10+1"
+   }
+  },
+  {
+   "id": "zeroed-by:met11:player.FoodB.chk",
+   "kind": "zeroed-by",
+   "reset": "met11",
+   "field": "player.FoodB.chk",
+   "effect": "zeroes",
+   "via": [
+    "(engine)"
+   ],
+   "from": {
+    "how": "probe:reset-writes",
+    "state": "fresh",
+    "seen": [
+     "fresh"
+    ],
+    "loader": "facts.mjs v1",
+    "probeState": "doReset forced (the requirement could not be injected); field seeded to x·10+1"
+   }
+  },
+  {
+   "id": "zeroed-by:met11:player.FoodB.cow",
+   "kind": "zeroed-by",
+   "reset": "met11",
+   "field": "player.FoodB.cow",
+   "effect": "zeroes",
+   "via": [
+    "(engine)"
+   ],
+   "from": {
+    "how": "probe:reset-writes",
+    "state": "fresh",
+    "seen": [
+     "fresh"
+    ],
+    "loader": "facts.mjs v1",
+    "probeState": "doReset forced (the requirement could not be injected); field seeded to x·10+1"
+   }
+  },
+  {
+   "id": "zeroed-by:met11:player.FoodB.egg",
+   "kind": "zeroed-by",
+   "reset": "met11",
+   "field": "player.FoodB.egg",
+   "effect": "zeroes",
+   "via": [
+    "(engine)"
+   ],
+   "from": {
+    "how": "probe:reset-writes",
+    "state": "fresh",
+    "seen": [
+     "fresh"
+    ],
+    "loader": "facts.mjs v1",
+    "probeState": "doReset forced (the requirement could not be injected); field seeded to x·10+1"
+   }
+  },
+  {
+   "id": "zeroed-by:met11:player.FoodB.fsh",
+   "kind": "zeroed-by",
+   "reset": "met11",
+   "field": "player.FoodB.fsh",
+   "effect": "zeroes",
+   "via": [
+    "(engine)"
+   ],
+   "from": {
+    "how": "probe:reset-writes",
+    "state": "fresh",
+    "seen": [
+     "fresh"
+    ],
+    "loader": "facts.mjs v1",
+    "probeState": "doReset forced (the requirement could not be injected); field seeded to x·10+1"
+   }
+  },
+  {
+   "id": "zeroed-by:met11:player.FoodB.mlk",
+   "kind": "zeroed-by",
+   "reset": "met11",
+   "field": "player.FoodB.mlk",
+   "effect": "zeroes",
+   "via": [
+    "(engine)"
+   ],
+   "from": {
+    "how": "probe:reset-writes",
+    "state": "fresh",
+    "seen": [
+     "fresh"
+    ],
+    "loader": "facts.mjs v1",
+    "probeState": "doReset forced (the requirement could not be injected); field seeded to x·10+1"
+   }
+  },
+  {
+   "id": "zeroed-by:met11:player.FoodB.pig",
+   "kind": "zeroed-by",
+   "reset": "met11",
+   "field": "player.FoodB.pig",
+   "effect": "zeroes",
+   "via": [
+    "(engine)"
+   ],
+   "from": {
+    "how": "probe:reset-writes",
+    "state": "fresh",
+    "seen": [
+     "fresh"
+    ],
+    "loader": "facts.mjs v1",
+    "probeState": "doReset forced (the requirement could not be injected); field seeded to x·10+1"
+   }
+  },
+  {
+   "id": "zeroed-by:met11:player.FoodB.points",
+   "kind": "zeroed-by",
+   "reset": "met11",
+   "field": "player.FoodB.points",
+   "effect": "zeroes",
+   "via": [
+    "(engine)"
+   ],
+   "from": {
+    "how": "probe:reset-writes",
+    "state": "fresh",
+    "seen": [
+     "fresh"
+    ],
+    "loader": "facts.mjs v1",
+    "probeState": "doReset forced (the requirement could not be injected); field seeded to x·10+1"
+   }
+  },
+  {
+   "id": "zeroed-by:met11:player.FoodB.resetTime",
+   "kind": "zeroed-by",
+   "reset": "met11",
+   "field": "player.FoodB.resetTime",
+   "effect": "zeroes",
+   "via": [
+    "(engine)"
+   ],
+   "from": {
+    "how": "probe:reset-writes",
+    "state": "fresh",
+    "seen": [
+     "fresh"
+    ],
+    "loader": "facts.mjs v1",
+    "probeState": "doReset forced (the requirement could not be injected); field seeded to x·10+1"
+   }
+  },
+  {
+   "id": "zeroed-by:met11:player.FoodB.shp",
+   "kind": "zeroed-by",
+   "reset": "met11",
+   "field": "player.FoodB.shp",
+   "effect": "zeroes",
+   "via": [
+    "(engine)"
+   ],
+   "from": {
+    "how": "probe:reset-writes",
+    "state": "fresh",
+    "seen": [
+     "fresh"
+    ],
+    "loader": "facts.mjs v1",
+    "probeState": "doReset forced (the requirement could not be injected); field seeded to x·10+1"
+   }
+  },
+  {
+   "id": "zeroed-by:met11:player.FoodB.spentOnBuyables",
+   "kind": "zeroed-by",
+   "reset": "met11",
+   "field": "player.FoodB.spentOnBuyables",
+   "effect": "zeroes",
+   "via": [
+    "(engine)"
+   ],
+   "from": {
+    "how": "probe:reset-writes",
+    "state": "fresh",
+    "seen": [
+     "fresh"
+    ],
+    "loader": "facts.mjs v1",
+    "probeState": "doReset forced (the requirement could not be injected); field seeded to x·10+1"
+   }
+  },
+  {
+   "id": "zeroed-by:met11:player.FoodB.total",
+   "kind": "zeroed-by",
+   "reset": "met11",
+   "field": "player.FoodB.total",
+   "effect": "zeroes",
+   "via": [
+    "(engine)"
+   ],
+   "from": {
+    "how": "probe:reset-writes",
+    "state": "fresh",
+    "seen": [
+     "fresh"
+    ],
+    "loader": "facts.mjs v1",
+    "probeState": "doReset forced (the requirement could not be injected); field seeded to x·10+1"
+   }
+  },
+  {
+   "id": "zeroed-by:met11:player.FoodB.wol",
+   "kind": "zeroed-by",
+   "reset": "met11",
+   "field": "player.FoodB.wol",
+   "effect": "zeroes",
+   "via": [
+    "(engine)"
+   ],
+   "from": {
+    "how": "probe:reset-writes",
+    "state": "fresh",
+    "seen": [
+     "fresh"
+    ],
+    "loader": "facts.mjs v1",
+    "probeState": "doReset forced (the requirement could not be injected); field seeded to x·10+1"
+   }
+  },
+  {
+   "id": "zeroed-by:met11:player.auto.best",
+   "kind": "zeroed-by",
+   "reset": "met11",
+   "field": "player.auto.best",
+   "effect": "zeroes",
+   "via": [
+    "(engine)"
+   ],
+   "from": {
+    "how": "probe:reset-writes",
+    "state": "fresh",
+    "seen": [
+     "fresh"
+    ],
+    "loader": "facts.mjs v1",
+    "probeState": "doReset forced (the requirement could not be injected); field seeded to x·10+1"
+   }
+  },
+  {
+   "id": "zeroed-by:met11:player.auto.points",
+   "kind": "zeroed-by",
+   "reset": "met11",
+   "field": "player.auto.points",
+   "effect": "zeroes",
+   "via": [
+    "(engine)"
+   ],
+   "from": {
+    "how": "probe:reset-writes",
+    "state": "fresh",
+    "seen": [
+     "fresh"
+    ],
+    "loader": "facts.mjs v1",
+    "probeState": "doReset forced (the requirement could not be injected); field seeded to x·10+1"
+   }
+  },
+  {
+   "id": "zeroed-by:met11:player.auto.resetTime",
+   "kind": "zeroed-by",
+   "reset": "met11",
+   "field": "player.auto.resetTime",
+   "effect": "zeroes",
+   "via": [
+    "(engine)"
+   ],
+   "from": {
+    "how": "probe:reset-writes",
+    "state": "fresh",
+    "seen": [
+     "fresh"
+    ],
+    "loader": "facts.mjs v1",
+    "probeState": "doReset forced (the requirement could not be injected); field seeded to x·10+1"
+   }
+  },
+  {
+   "id": "zeroed-by:met11:player.auto.spentOnBuyables",
+   "kind": "zeroed-by",
+   "reset": "met11",
+   "field": "player.auto.spentOnBuyables",
+   "effect": "zeroes",
+   "via": [
+    "(engine)"
+   ],
+   "from": {
+    "how": "probe:reset-writes",
+    "state": "fresh",
+    "seen": [
+     "fresh"
+    ],
+    "loader": "facts.mjs v1",
+    "probeState": "doReset forced (the requirement could not be injected); field seeded to x·10+1"
+   }
+  },
+  {
+   "id": "zeroed-by:met11:player.auto.total",
+   "kind": "zeroed-by",
+   "reset": "met11",
+   "field": "player.auto.total",
+   "effect": "zeroes",
+   "via": [
+    "(engine)"
+   ],
+   "from": {
+    "how": "probe:reset-writes",
+    "state": "fresh",
+    "seen": [
+     "fresh"
+    ],
+    "loader": "facts.mjs v1",
+    "probeState": "doReset forced (the requirement could not be injected); field seeded to x·10+1"
+   }
+  },
+  {
+   "id": "zeroed-by:met11:player.bam.best",
+   "kind": "zeroed-by",
+   "reset": "met11",
+   "field": "player.bam.best",
+   "effect": "zeroes",
+   "via": [
+    "(engine)"
+   ],
+   "from": {
+    "how": "probe:reset-writes",
+    "state": "fresh",
+    "seen": [
+     "fresh"
+    ],
+    "loader": "facts.mjs v1",
+    "probeState": "doReset forced (the requirement could not be injected); field seeded to x·10+1"
+   }
+  },
+  {
+   "id": "zeroed-by:met11:player.bam.pHarMax",
+   "kind": "zeroed-by",
+   "reset": "met11",
+   "field": "player.bam.pHarMax",
+   "effect": "lowers",
+   "via": [
+    "(engine)"
+   ],
+   "from": {
+    "how": "probe:reset-writes",
+    "state": "fresh",
+    "seen": [
+     "fresh"
+    ],
+    "loader": "facts.mjs v1",
+    "probeState": "doReset forced (the requirement could not be injected); field seeded to x·10+1"
+   }
+  },
+  {
+   "id": "zeroed-by:met11:player.bam.pHarvest",
+   "kind": "zeroed-by",
+   "reset": "met11",
+   "field": "player.bam.pHarvest",
+   "effect": "lowers",
+   "via": [
+    "(engine)"
+   ],
+   "from": {
+    "how": "probe:reset-writes",
+    "state": "fresh",
+    "seen": [
+     "fresh"
+    ],
+    "loader": "facts.mjs v1",
+    "probeState": "doReset forced (the requirement could not be injected); field seeded to x·10+1"
+   }
+  },
+  {
+   "id": "zeroed-by:met11:player.bam.points",
+   "kind": "zeroed-by",
+   "reset": "met11",
+   "field": "player.bam.points",
+   "effect": "zeroes",
+   "via": [
+    "(engine)"
+   ],
+   "from": {
+    "how": "probe:reset-writes",
+    "state": "fresh",
+    "seen": [
+     "fresh"
+    ],
+    "loader": "facts.mjs v1",
+    "probeState": "doReset forced (the requirement could not be injected); field seeded to x·10+1"
+   }
+  },
+  {
+   "id": "zeroed-by:met11:player.bam.resetTime",
+   "kind": "zeroed-by",
+   "reset": "met11",
+   "field": "player.bam.resetTime",
+   "effect": "zeroes",
+   "via": [
+    "(engine)"
+   ],
+   "from": {
+    "how": "probe:reset-writes",
+    "state": "fresh",
+    "seen": [
+     "fresh"
+    ],
+    "loader": "facts.mjs v1",
+    "probeState": "doReset forced (the requirement could not be injected); field seeded to x·10+1"
+   }
+  },
+  {
+   "id": "zeroed-by:met11:player.bam.spentOnBuyables",
+   "kind": "zeroed-by",
+   "reset": "met11",
+   "field": "player.bam.spentOnBuyables",
+   "effect": "zeroes",
+   "via": [
+    "(engine)"
+   ],
+   "from": {
+    "how": "probe:reset-writes",
+    "state": "fresh",
+    "seen": [
+     "fresh"
+    ],
+    "loader": "facts.mjs v1",
+    "probeState": "doReset forced (the requirement could not be injected); field seeded to x·10+1"
+   }
+  },
+  {
+   "id": "zeroed-by:met11:player.bam.total",
+   "kind": "zeroed-by",
+   "reset": "met11",
+   "field": "player.bam.total",
+   "effect": "zeroes",
+   "via": [
+    "(engine)"
+   ],
+   "from": {
+    "how": "probe:reset-writes",
+    "state": "fresh",
+    "seen": [
+     "fresh"
+    ],
+    "loader": "facts.mjs v1",
+    "probeState": "doReset forced (the requirement could not be injected); field seeded to x·10+1"
+   }
+  },
+  {
+   "id": "zeroed-by:met11:player.met11.resetTime",
+   "kind": "zeroed-by",
+   "reset": "met11",
+   "field": "player.met11.resetTime",
+   "effect": "zeroes",
+   "via": [
+    "(engine)"
+   ],
+   "from": {
+    "how": "probe:reset-writes",
+    "state": "fresh",
+    "seen": [
+     "fresh"
+    ],
+    "loader": "facts.mjs v1",
+    "probeState": "doReset forced (the requirement could not be injected); field seeded to x·10+1"
+   }
+  },
+  {
+   "id": "zeroed-by:met11:player.mush.best",
+   "kind": "zeroed-by",
+   "reset": "met11",
+   "field": "player.mush.best",
+   "effect": "zeroes",
+   "via": [
+    "(engine)"
+   ],
+   "from": {
+    "how": "probe:reset-writes",
+    "state": "fresh",
+    "seen": [
+     "fresh"
+    ],
+    "loader": "facts.mjs v1",
+    "probeState": "doReset forced (the requirement could not be injected); field seeded to x·10+1"
+   }
+  },
+  {
+   "id": "zeroed-by:met11:player.mush.mushA",
+   "kind": "zeroed-by",
+   "reset": "met11",
+   "field": "player.mush.mushA",
+   "effect": "zeroes",
+   "via": [
+    "(engine)"
+   ],
+   "from": {
+    "how": "probe:reset-writes",
+    "state": "fresh",
+    "seen": [
+     "fresh"
+    ],
+    "loader": "facts.mjs v1",
+    "probeState": "doReset forced (the requirement could not be injected); field seeded to x·10+1"
+   }
+  },
+  {
+   "id": "zeroed-by:met11:player.mush.mushB",
+   "kind": "zeroed-by",
+   "reset": "met11",
+   "field": "player.mush.mushB",
+   "effect": "zeroes",
+   "via": [
+    "(engine)"
+   ],
+   "from": {
+    "how": "probe:reset-writes",
+    "state": "fresh",
+    "seen": [
+     "fresh"
+    ],
+    "loader": "facts.mjs v1",
+    "probeState": "doReset forced (the requirement could not be injected); field seeded to x·10+1"
+   }
+  },
+  {
+   "id": "zeroed-by:met11:player.mush.mushC",
+   "kind": "zeroed-by",
+   "reset": "met11",
+   "field": "player.mush.mushC",
+   "effect": "zeroes",
+   "via": [
+    "(engine)"
+   ],
+   "from": {
+    "how": "probe:reset-writes",
+    "state": "fresh",
+    "seen": [
+     "fresh"
+    ],
+    "loader": "facts.mjs v1",
+    "probeState": "doReset forced (the requirement could not be injected); field seeded to x·10+1"
+   }
+  },
+  {
+   "id": "zeroed-by:met11:player.mush.points",
+   "kind": "zeroed-by",
+   "reset": "met11",
+   "field": "player.mush.points",
+   "effect": "zeroes",
+   "via": [
+    "(engine)"
+   ],
+   "from": {
+    "how": "probe:reset-writes",
+    "state": "fresh",
+    "seen": [
+     "fresh"
+    ],
+    "loader": "facts.mjs v1",
+    "probeState": "doReset forced (the requirement could not be injected); field seeded to x·10+1"
+   }
+  },
+  {
+   "id": "zeroed-by:met11:player.mush.resetTime",
+   "kind": "zeroed-by",
+   "reset": "met11",
+   "field": "player.mush.resetTime",
+   "effect": "zeroes",
+   "via": [
+    "(engine)"
+   ],
+   "from": {
+    "how": "probe:reset-writes",
+    "state": "fresh",
+    "seen": [
+     "fresh"
+    ],
+    "loader": "facts.mjs v1",
+    "probeState": "doReset forced (the requirement could not be injected); field seeded to x·10+1"
+   }
+  },
+  {
+   "id": "zeroed-by:met11:player.mush.spentOnBuyables",
+   "kind": "zeroed-by",
+   "reset": "met11",
+   "field": "player.mush.spentOnBuyables",
+   "effect": "zeroes",
+   "via": [
+    "(engine)"
+   ],
+   "from": {
+    "how": "probe:reset-writes",
+    "state": "fresh",
+    "seen": [
+     "fresh"
+    ],
+    "loader": "facts.mjs v1",
+    "probeState": "doReset forced (the requirement could not be injected); field seeded to x·10+1"
+   }
+  },
+  {
+   "id": "zeroed-by:met11:player.mush.total",
+   "kind": "zeroed-by",
+   "reset": "met11",
+   "field": "player.mush.total",
+   "effect": "zeroes",
+   "via": [
+    "(engine)"
+   ],
+   "from": {
+    "how": "probe:reset-writes",
+    "state": "fresh",
+    "seen": [
+     "fresh"
+    ],
+    "loader": "facts.mjs v1",
+    "probeState": "doReset forced (the requirement could not be injected); field seeded to x·10+1"
+   }
+  },
+  {
+   "id": "zeroed-by:met11:player.points",
+   "kind": "zeroed-by",
+   "reset": "met11",
+   "field": "player.points",
+   "effect": "lowers",
+   "via": [
+    "(engine)"
+   ],
+   "from": {
+    "how": "probe:reset-writes",
+    "state": "fresh",
+    "seen": [
+     "fresh"
+    ],
+    "loader": "facts.mjs v1",
+    "probeState": "doReset forced (the requirement could not be injected)"
+   }
+  },
+  {
+   "id": "zeroed-by:met11:player.s.PickPow",
+   "kind": "zeroed-by",
+   "reset": "met11",
+   "field": "player.s.PickPow",
+   "effect": "zeroes",
+   "via": [
+    "s"
+   ],
+   "from": {
+    "how": "probe:reset-writes",
+    "state": "fresh",
+    "seen": [
+     "fresh"
+    ],
+    "loader": "facts.mjs v1",
+    "probeState": "doReset forced (the requirement could not be injected); field seeded to x·10+1"
+   }
+  },
+  {
+   "id": "zeroed-by:met11:player.s.best",
+   "kind": "zeroed-by",
+   "reset": "met11",
+   "field": "player.s.best",
+   "effect": "zeroes",
+   "via": [
+    "s"
+   ],
+   "from": {
+    "how": "probe:reset-writes",
+    "state": "fresh",
+    "seen": [
+     "fresh"
+    ],
+    "loader": "facts.mjs v1",
+    "probeState": "doReset forced (the requirement could not be injected); field seeded to x·10+1"
+   }
+  },
+  {
+   "id": "zeroed-by:met11:player.s.resetTime",
+   "kind": "zeroed-by",
+   "reset": "met11",
+   "field": "player.s.resetTime",
+   "effect": "zeroes",
+   "via": [
+    "s"
+   ],
+   "from": {
+    "how": "probe:reset-writes",
+    "state": "fresh",
+    "seen": [
+     "fresh"
+    ],
+    "loader": "facts.mjs v1",
+    "probeState": "doReset forced (the requirement could not be injected); field seeded to x·10+1"
+   }
+  },
+  {
+   "id": "zeroed-by:met11:player.s.spentOnBuyables",
+   "kind": "zeroed-by",
+   "reset": "met11",
+   "field": "player.s.spentOnBuyables",
+   "effect": "zeroes",
+   "via": [
+    "s"
+   ],
+   "from": {
+    "how": "probe:reset-writes",
+    "state": "fresh",
+    "seen": [
+     "fresh"
+    ],
+    "loader": "facts.mjs v1",
+    "probeState": "doReset forced (the requirement could not be injected); field seeded to x·10+1"
+   }
+  },
+  {
+   "id": "zeroed-by:met11:player.s.stor",
+   "kind": "zeroed-by",
+   "reset": "met11",
+   "field": "player.s.stor",
+   "effect": "zeroes",
+   "via": [
+    "s"
+   ],
+   "from": {
+    "how": "probe:reset-writes",
+    "state": "fresh",
+    "seen": [
+     "fresh"
+    ],
+    "loader": "facts.mjs v1",
+    "probeState": "doReset forced (the requirement could not be injected); field seeded to x·10+1"
+   }
+  },
+  {
+   "id": "zeroed-by:met11:player.s.storMax",
+   "kind": "zeroed-by",
+   "reset": "met11",
+   "field": "player.s.storMax",
+   "effect": "zeroes",
+   "via": [
+    "s"
+   ],
+   "from": {
+    "how": "probe:reset-writes",
+    "state": "fresh",
+    "seen": [
+     "fresh"
+    ],
+    "loader": "facts.mjs v1",
+    "probeState": "doReset forced (the requirement could not be injected); field seeded to x·10+1"
+   }
+  },
+  {
+   "id": "zeroed-by:met11:player.s.total",
+   "kind": "zeroed-by",
+   "reset": "met11",
+   "field": "player.s.total",
+   "effect": "zeroes",
+   "via": [
+    "s"
+   ],
+   "from": {
+    "how": "probe:reset-writes",
+    "state": "fresh",
+    "seen": [
+     "fresh"
+    ],
+    "loader": "facts.mjs v1",
+    "probeState": "doReset forced (the requirement could not be injected); field seeded to x·10+1"
+   }
+  },
+  {
+   "id": "zeroed-by:met11:player.st.best",
+   "kind": "zeroed-by",
+   "reset": "met11",
+   "field": "player.st.best",
+   "effect": "zeroes",
+   "via": [
+    "(engine)"
+   ],
+   "from": {
+    "how": "probe:reset-writes",
+    "state": "fresh",
+    "seen": [
+     "fresh"
+    ],
+    "loader": "facts.mjs v1",
+    "probeState": "doReset forced (the requirement could not be injected); field seeded to x·10+1"
+   }
+  },
+  {
+   "id": "zeroed-by:met11:player.st.chall1Mult",
+   "kind": "zeroed-by",
+   "reset": "met11",
+   "field": "player.st.chall1Mult",
+   "effect": "zeroes",
+   "via": [
+    "(engine)"
+   ],
+   "from": {
+    "how": "probe:reset-writes",
+    "state": "fresh",
+    "seen": [
+     "fresh"
+    ],
+    "loader": "facts.mjs v1",
+    "probeState": "doReset forced (the requirement could not be injected); field seeded to x·10+1"
+   }
+  },
+  {
+   "id": "zeroed-by:met11:player.st.chall2Mult",
+   "kind": "zeroed-by",
+   "reset": "met11",
+   "field": "player.st.chall2Mult",
+   "effect": "zeroes",
+   "via": [
+    "(engine)"
+   ],
+   "from": {
+    "how": "probe:reset-writes",
+    "state": "fresh",
+    "seen": [
+     "fresh"
+    ],
+    "loader": "facts.mjs v1",
+    "probeState": "doReset forced (the requirement could not be injected); field seeded to x·10+1"
+   }
+  },
+  {
+   "id": "zeroed-by:met11:player.st.chall3Mult",
+   "kind": "zeroed-by",
+   "reset": "met11",
+   "field": "player.st.chall3Mult",
+   "effect": "zeroes",
+   "via": [
+    "(engine)"
+   ],
+   "from": {
+    "how": "probe:reset-writes",
+    "state": "fresh",
+    "seen": [
+     "fresh"
+    ],
+    "loader": "facts.mjs v1",
+    "probeState": "doReset forced (the requirement could not be injected); field seeded to x·10+1"
+   }
+  },
+  {
+   "id": "zeroed-by:met11:player.st.challenges.11",
+   "kind": "zeroed-by",
+   "reset": "met11",
+   "field": "player.st.challenges.11",
+   "effect": "zeroes",
+   "via": [
+    "(engine)"
+   ],
+   "from": {
+    "how": "probe:reset-writes",
+    "state": "fresh",
+    "seen": [
+     "fresh"
+    ],
+    "loader": "facts.mjs v1",
+    "probeState": "doReset forced (the requirement could not be injected); field seeded to x·10+1"
+   }
+  },
+  {
+   "id": "zeroed-by:met11:player.st.challenges.12",
+   "kind": "zeroed-by",
+   "reset": "met11",
+   "field": "player.st.challenges.12",
+   "effect": "zeroes",
+   "via": [
+    "(engine)"
+   ],
+   "from": {
+    "how": "probe:reset-writes",
+    "state": "fresh",
+    "seen": [
+     "fresh"
+    ],
+    "loader": "facts.mjs v1",
+    "probeState": "doReset forced (the requirement could not be injected); field seeded to x·10+1"
+   }
+  },
+  {
+   "id": "zeroed-by:met11:player.st.challenges.21",
+   "kind": "zeroed-by",
+   "reset": "met11",
+   "field": "player.st.challenges.21",
+   "effect": "zeroes",
+   "via": [
+    "(engine)"
+   ],
+   "from": {
+    "how": "probe:reset-writes",
+    "state": "fresh",
+    "seen": [
+     "fresh"
+    ],
+    "loader": "facts.mjs v1",
+    "probeState": "doReset forced (the requirement could not be injected); field seeded to x·10+1"
+   }
+  },
+  {
+   "id": "zeroed-by:met11:player.st.challenges.22",
+   "kind": "zeroed-by",
+   "reset": "met11",
+   "field": "player.st.challenges.22",
+   "effect": "zeroes",
+   "via": [
+    "(engine)"
+   ],
+   "from": {
+    "how": "probe:reset-writes",
+    "state": "fresh",
+    "seen": [
+     "fresh"
+    ],
+    "loader": "facts.mjs v1",
+    "probeState": "doReset forced (the requirement could not be injected); field seeded to x·10+1"
+   }
+  },
+  {
+   "id": "zeroed-by:met11:player.st.clay",
+   "kind": "zeroed-by",
+   "reset": "met11",
+   "field": "player.st.clay",
+   "effect": "zeroes",
+   "via": [
+    "(engine)"
+   ],
+   "from": {
+    "how": "probe:reset-writes",
+    "state": "fresh",
+    "seen": [
+     "fresh"
+    ],
+    "loader": "facts.mjs v1",
+    "probeState": "doReset forced (the requirement could not be injected); field seeded to x·10+1"
+   }
+  },
+  {
+   "id": "zeroed-by:met11:player.st.points",
+   "kind": "zeroed-by",
+   "reset": "met11",
+   "field": "player.st.points",
+   "effect": "zeroes",
+   "via": [
+    "(engine)"
+   ],
+   "from": {
+    "how": "probe:reset-writes",
+    "state": "fresh",
+    "seen": [
+     "fresh"
+    ],
+    "loader": "facts.mjs v1",
+    "probeState": "doReset forced (the requirement could not be injected); field seeded to x·10+1"
+   }
+  },
+  {
+   "id": "zeroed-by:met11:player.st.randRes",
+   "kind": "zeroed-by",
+   "reset": "met11",
+   "field": "player.st.randRes",
+   "effect": "zeroes",
+   "via": [
+    "(engine)"
+   ],
+   "from": {
+    "how": "probe:reset-writes",
+    "state": "fresh",
+    "seen": [
+     "fresh"
+    ],
+    "loader": "facts.mjs v1",
+    "probeState": "doReset forced (the requirement could not be injected); field seeded to x·10+1"
+   }
+  },
+  {
+   "id": "zeroed-by:met11:player.st.resType",
+   "kind": "zeroed-by",
+   "reset": "met11",
+   "field": "player.st.resType",
+   "effect": "zeroes",
+   "via": [
+    "(engine)"
+   ],
+   "from": {
+    "how": "probe:reset-writes",
+    "state": "fresh",
+    "seen": [
+     "fresh"
+    ],
+    "loader": "facts.mjs v1",
+    "probeState": "doReset forced (the requirement could not be injected); field seeded to x·10+1"
+   }
+  },
+  {
+   "id": "zeroed-by:met11:player.st.resetTime",
+   "kind": "zeroed-by",
+   "reset": "met11",
+   "field": "player.st.resetTime",
+   "effect": "zeroes",
+   "via": [
+    "(engine)"
+   ],
+   "from": {
+    "how": "probe:reset-writes",
+    "state": "fresh",
+    "seen": [
+     "fresh"
+    ],
+    "loader": "facts.mjs v1",
+    "probeState": "doReset forced (the requirement could not be injected); field seeded to x·10+1"
+   }
+  },
+  {
+   "id": "zeroed-by:met11:player.st.sand",
+   "kind": "zeroed-by",
+   "reset": "met11",
+   "field": "player.st.sand",
+   "effect": "zeroes",
+   "via": [
+    "(engine)"
+   ],
+   "from": {
+    "how": "probe:reset-writes",
+    "state": "fresh",
+    "seen": [
+     "fresh"
+    ],
+    "loader": "facts.mjs v1",
+    "probeState": "doReset forced (the requirement could not be injected); field seeded to x·10+1"
+   }
+  },
+  {
+   "id": "zeroed-by:met11:player.st.spentOnBuyables",
+   "kind": "zeroed-by",
+   "reset": "met11",
+   "field": "player.st.spentOnBuyables",
+   "effect": "zeroes",
+   "via": [
+    "(engine)"
+   ],
+   "from": {
+    "how": "probe:reset-writes",
+    "state": "fresh",
+    "seen": [
+     "fresh"
+    ],
+    "loader": "facts.mjs v1",
+    "probeState": "doReset forced (the requirement could not be injected); field seeded to x·10+1"
+   }
+  },
+  {
+   "id": "zeroed-by:met11:player.st.stShard",
+   "kind": "zeroed-by",
+   "reset": "met11",
+   "field": "player.st.stShard",
+   "effect": "zeroes",
+   "via": [
+    "(engine)"
+   ],
+   "from": {
+    "how": "probe:reset-writes",
+    "state": "fresh",
+    "seen": [
+     "fresh"
+    ],
+    "loader": "facts.mjs v1",
+    "probeState": "doReset forced (the requirement could not be injected); field seeded to x·10+1"
+   }
+  },
+  {
+   "id": "zeroed-by:met11:player.st.total",
+   "kind": "zeroed-by",
+   "reset": "met11",
+   "field": "player.st.total",
+   "effect": "zeroes",
+   "via": [
+    "(engine)"
+   ],
+   "from": {
+    "how": "probe:reset-writes",
+    "state": "fresh",
+    "seen": [
+     "fresh"
+    ],
+    "loader": "facts.mjs v1",
+    "probeState": "doReset forced (the requirement could not be injected); field seeded to x·10+1"
+   }
+  },
+  {
+   "id": "zeroed-by:met11:player.switch.best",
+   "kind": "zeroed-by",
+   "reset": "met11",
+   "field": "player.switch.best",
+   "effect": "zeroes",
+   "via": [
+    "(engine)"
+   ],
+   "from": {
+    "how": "probe:reset-writes",
+    "state": "fresh",
+    "seen": [
+     "fresh"
+    ],
+    "loader": "facts.mjs v1",
+    "probeState": "doReset forced (the requirement could not be injected); field seeded to x·10+1"
+   }
+  },
+  {
+   "id": "zeroed-by:met11:player.switch.points",
+   "kind": "zeroed-by",
+   "reset": "met11",
+   "field": "player.switch.points",
+   "effect": "zeroes",
+   "via": [
+    "(engine)"
+   ],
+   "from": {
+    "how": "probe:reset-writes",
+    "state": "fresh",
+    "seen": [
+     "fresh"
+    ],
+    "loader": "facts.mjs v1",
+    "probeState": "doReset forced (the requirement could not be injected); field seeded to x·10+1"
+   }
+  },
+  {
+   "id": "zeroed-by:met11:player.switch.resetTime",
+   "kind": "zeroed-by",
+   "reset": "met11",
+   "field": "player.switch.resetTime",
+   "effect": "zeroes",
+   "via": [
+    "(engine)"
+   ],
+   "from": {
+    "how": "probe:reset-writes",
+    "state": "fresh",
+    "seen": [
+     "fresh"
+    ],
+    "loader": "facts.mjs v1",
+    "probeState": "doReset forced (the requirement could not be injected); field seeded to x·10+1"
+   }
+  },
+  {
+   "id": "zeroed-by:met11:player.switch.spentOnBuyables",
+   "kind": "zeroed-by",
+   "reset": "met11",
+   "field": "player.switch.spentOnBuyables",
+   "effect": "zeroes",
+   "via": [
+    "(engine)"
+   ],
+   "from": {
+    "how": "probe:reset-writes",
+    "state": "fresh",
+    "seen": [
+     "fresh"
+    ],
+    "loader": "facts.mjs v1",
+    "probeState": "doReset forced (the requirement could not be injected); field seeded to x·10+1"
+   }
+  },
+  {
+   "id": "zeroed-by:met11:player.switch.total",
+   "kind": "zeroed-by",
+   "reset": "met11",
+   "field": "player.switch.total",
+   "effect": "zeroes",
+   "via": [
+    "(engine)"
+   ],
+   "from": {
+    "how": "probe:reset-writes",
+    "state": "fresh",
+    "seen": [
+     "fresh"
+    ],
+    "loader": "facts.mjs v1",
+    "probeState": "doReset forced (the requirement could not be injected); field seeded to x·10+1"
+   }
+  },
+  {
+   "id": "zeroed-by:met11:player.switch.treeMax",
+   "kind": "zeroed-by",
+   "reset": "met11",
+   "field": "player.switch.treeMax",
+   "effect": "lowers",
+   "via": [
+    "(engine)"
+   ],
+   "from": {
+    "how": "probe:reset-writes",
+    "state": "fresh",
+    "seen": [
+     "fresh"
+    ],
+    "loader": "facts.mjs v1",
+    "probeState": "doReset forced (the requirement could not be injected); field seeded to x·10+1"
+   }
+  },
+  {
+   "id": "zeroed-by:met11:player.switch.treeSelect",
+   "kind": "zeroed-by",
+   "reset": "met11",
+   "field": "player.switch.treeSelect",
+   "effect": "lowers",
+   "via": [
+    "(engine)"
+   ],
+   "from": {
+    "how": "probe:reset-writes",
+    "state": "fresh",
+    "seen": [
+     "fresh"
+    ],
+    "loader": "facts.mjs v1",
+    "probeState": "doReset forced (the requirement could not be injected); field seeded to x·10+1"
+   }
+  },
+  {
+   "id": "zeroed-by:met11:player.w.best",
+   "kind": "zeroed-by",
+   "reset": "met11",
+   "field": "player.w.best",
+   "effect": "zeroes",
+   "via": [
+    "(engine)"
+   ],
+   "from": {
+    "how": "probe:reset-writes",
+    "state": "fresh",
+    "seen": [
+     "fresh"
+    ],
+    "loader": "facts.mjs v1",
+    "probeState": "doReset forced (the requirement could not be injected); field seeded to x·10+1"
+   }
+  },
+  {
+   "id": "zeroed-by:met11:player.w.points",
+   "kind": "zeroed-by",
+   "reset": "met11",
+   "field": "player.w.points",
+   "effect": "zeroes",
+   "via": [
+    "(engine)"
+   ],
+   "from": {
+    "how": "probe:reset-writes",
+    "state": "fresh",
+    "seen": [
+     "fresh"
+    ],
+    "loader": "facts.mjs v1",
+    "probeState": "doReset forced (the requirement could not be injected); field seeded to x·10+1"
+   }
+  },
+  {
+   "id": "zeroed-by:met11:player.w.resetTime",
+   "kind": "zeroed-by",
+   "reset": "met11",
+   "field": "player.w.resetTime",
+   "effect": "zeroes",
+   "via": [
+    "(engine)"
+   ],
+   "from": {
+    "how": "probe:reset-writes",
+    "state": "fresh",
+    "seen": [
+     "fresh"
+    ],
+    "loader": "facts.mjs v1",
+    "probeState": "doReset forced (the requirement could not be injected); field seeded to x·10+1"
+   }
+  },
+  {
+   "id": "zeroed-by:met11:player.w.spentOnBuyables",
+   "kind": "zeroed-by",
+   "reset": "met11",
+   "field": "player.w.spentOnBuyables",
+   "effect": "zeroes",
+   "via": [
+    "(engine)"
+   ],
+   "from": {
+    "how": "probe:reset-writes",
+    "state": "fresh",
+    "seen": [
+     "fresh"
+    ],
+    "loader": "facts.mjs v1",
+    "probeState": "doReset forced (the requirement could not be injected); field seeded to x·10+1"
+   }
+  },
+  {
+   "id": "zeroed-by:met11:player.w.total",
+   "kind": "zeroed-by",
+   "reset": "met11",
+   "field": "player.w.total",
+   "effect": "zeroes",
+   "via": [
+    "(engine)"
+   ],
+   "from": {
+    "how": "probe:reset-writes",
+    "state": "fresh",
+    "seen": [
+     "fresh"
+    ],
+    "loader": "facts.mjs v1",
+    "probeState": "doReset forced (the requirement could not be injected); field seeded to x·10+1"
+   }
+  },
+  {
+   "id": "zeroed-by:mush:player.auto.best",
+   "kind": "zeroed-by",
+   "reset": "mush",
+   "field": "player.auto.best",
+   "effect": "zeroes",
+   "via": [
+    "(engine)"
+   ],
+   "from": {
+    "how": "probe:reset-writes",
+    "state": "fresh",
+    "seen": [
+     "fresh"
+    ],
+    "loader": "facts.mjs v1",
+    "probeState": "requirement injected; field seeded to x·10+1"
+   }
+  },
+  {
+   "id": "zeroed-by:mush:player.auto.points",
+   "kind": "zeroed-by",
+   "reset": "mush",
+   "field": "player.auto.points",
+   "effect": "zeroes",
+   "via": [
+    "(engine)"
+   ],
+   "from": {
+    "how": "probe:reset-writes",
+    "state": "fresh",
+    "seen": [
+     "fresh"
+    ],
+    "loader": "facts.mjs v1",
+    "probeState": "requirement injected; field seeded to x·10+1"
+   }
+  },
+  {
+   "id": "zeroed-by:mush:player.auto.resetTime",
+   "kind": "zeroed-by",
+   "reset": "mush",
+   "field": "player.auto.resetTime",
+   "effect": "zeroes",
+   "via": [
+    "(engine)"
+   ],
+   "from": {
+    "how": "probe:reset-writes",
+    "state": "fresh",
+    "seen": [
+     "fresh"
+    ],
+    "loader": "facts.mjs v1",
+    "probeState": "requirement injected; field seeded to x·10+1"
+   }
+  },
+  {
+   "id": "zeroed-by:mush:player.auto.spentOnBuyables",
+   "kind": "zeroed-by",
+   "reset": "mush",
+   "field": "player.auto.spentOnBuyables",
+   "effect": "zeroes",
+   "via": [
+    "(engine)"
+   ],
+   "from": {
+    "how": "probe:reset-writes",
+    "state": "fresh",
+    "seen": [
+     "fresh"
+    ],
+    "loader": "facts.mjs v1",
+    "probeState": "requirement injected; field seeded to x·10+1"
+   }
+  },
+  {
+   "id": "zeroed-by:mush:player.auto.total",
+   "kind": "zeroed-by",
+   "reset": "mush",
+   "field": "player.auto.total",
+   "effect": "zeroes",
+   "via": [
+    "(engine)"
+   ],
+   "from": {
+    "how": "probe:reset-writes",
+    "state": "fresh",
+    "seen": [
+     "fresh"
+    ],
+    "loader": "facts.mjs v1",
+    "probeState": "requirement injected; field seeded to x·10+1"
+   }
+  },
+  {
+   "id": "zeroed-by:mush:player.mush.resetTime",
+   "kind": "zeroed-by",
+   "reset": "mush",
+   "field": "player.mush.resetTime",
+   "effect": "zeroes",
+   "via": [
+    "(engine)"
+   ],
+   "from": {
+    "how": "probe:reset-writes",
+    "state": "fresh",
+    "seen": [
+     "fresh"
+    ],
+    "loader": "facts.mjs v1",
+    "probeState": "requirement injected; field seeded to x·10+1"
+   }
+  },
+  {
+   "id": "zeroed-by:mush:player.points",
+   "kind": "zeroed-by",
+   "reset": "mush",
+   "field": "player.points",
+   "effect": "lowers",
+   "via": [
+    "(engine)"
+   ],
+   "from": {
+    "how": "probe:reset-writes",
+    "state": "fresh",
+    "seen": [
+     "fresh"
+    ],
+    "loader": "facts.mjs v1",
+    "probeState": "requirement injected"
+   }
+  },
+  {
+   "id": "zeroed-by:mush:player.s.PickPow",
+   "kind": "zeroed-by",
+   "reset": "mush",
+   "field": "player.s.PickPow",
+   "effect": "zeroes",
+   "via": [
+    "s"
+   ],
+   "from": {
+    "how": "probe:reset-writes",
+    "state": "fresh",
+    "seen": [
+     "fresh"
+    ],
+    "loader": "facts.mjs v1",
+    "probeState": "requirement injected; field seeded to x·10+1"
+   }
+  },
+  {
+   "id": "zeroed-by:mush:player.s.best",
+   "kind": "zeroed-by",
+   "reset": "mush",
+   "field": "player.s.best",
+   "effect": "zeroes",
+   "via": [
+    "s"
+   ],
+   "from": {
+    "how": "probe:reset-writes",
+    "state": "fresh",
+    "seen": [
+     "fresh"
+    ],
+    "loader": "facts.mjs v1",
+    "probeState": "requirement injected; field seeded to x·10+1"
+   }
+  },
+  {
+   "id": "zeroed-by:mush:player.s.resetTime",
+   "kind": "zeroed-by",
+   "reset": "mush",
+   "field": "player.s.resetTime",
+   "effect": "zeroes",
+   "via": [
+    "s"
+   ],
+   "from": {
+    "how": "probe:reset-writes",
+    "state": "fresh",
+    "seen": [
+     "fresh"
+    ],
+    "loader": "facts.mjs v1",
+    "probeState": "requirement injected; field seeded to x·10+1"
+   }
+  },
+  {
+   "id": "zeroed-by:mush:player.s.spentOnBuyables",
+   "kind": "zeroed-by",
+   "reset": "mush",
+   "field": "player.s.spentOnBuyables",
+   "effect": "zeroes",
+   "via": [
+    "s"
+   ],
+   "from": {
+    "how": "probe:reset-writes",
+    "state": "fresh",
+    "seen": [
+     "fresh"
+    ],
+    "loader": "facts.mjs v1",
+    "probeState": "requirement injected; field seeded to x·10+1"
+   }
+  },
+  {
+   "id": "zeroed-by:mush:player.s.stor",
+   "kind": "zeroed-by",
+   "reset": "mush",
+   "field": "player.s.stor",
+   "effect": "zeroes",
+   "via": [
+    "s"
+   ],
+   "from": {
+    "how": "probe:reset-writes",
+    "state": "fresh",
+    "seen": [
+     "fresh"
+    ],
+    "loader": "facts.mjs v1",
+    "probeState": "requirement injected; field seeded to x·10+1"
+   }
+  },
+  {
+   "id": "zeroed-by:mush:player.s.storMax",
+   "kind": "zeroed-by",
+   "reset": "mush",
+   "field": "player.s.storMax",
+   "effect": "zeroes",
+   "via": [
+    "s"
+   ],
+   "from": {
+    "how": "probe:reset-writes",
+    "state": "fresh",
+    "seen": [
+     "fresh"
+    ],
+    "loader": "facts.mjs v1",
+    "probeState": "requirement injected; field seeded to x·10+1"
+   }
+  },
+  {
+   "id": "zeroed-by:mush:player.s.total",
+   "kind": "zeroed-by",
+   "reset": "mush",
+   "field": "player.s.total",
+   "effect": "zeroes",
+   "via": [
+    "s"
+   ],
+   "from": {
+    "how": "probe:reset-writes",
+    "state": "fresh",
+    "seen": [
+     "fresh"
+    ],
+    "loader": "facts.mjs v1",
+    "probeState": "requirement injected; field seeded to x·10+1"
+   }
+  },
+  {
+   "id": "zeroed-by:mush:player.switch.best",
+   "kind": "zeroed-by",
+   "reset": "mush",
+   "field": "player.switch.best",
+   "effect": "zeroes",
+   "via": [
+    "(engine)"
+   ],
+   "from": {
+    "how": "probe:reset-writes",
+    "state": "fresh",
+    "seen": [
+     "fresh"
+    ],
+    "loader": "facts.mjs v1",
+    "probeState": "requirement injected; field seeded to x·10+1"
+   }
+  },
+  {
+   "id": "zeroed-by:mush:player.switch.points",
+   "kind": "zeroed-by",
+   "reset": "mush",
+   "field": "player.switch.points",
+   "effect": "zeroes",
+   "via": [
+    "(engine)"
+   ],
+   "from": {
+    "how": "probe:reset-writes",
+    "state": "fresh",
+    "seen": [
+     "fresh"
+    ],
+    "loader": "facts.mjs v1",
+    "probeState": "requirement injected; field seeded to x·10+1"
+   }
+  },
+  {
+   "id": "zeroed-by:mush:player.switch.resetTime",
+   "kind": "zeroed-by",
+   "reset": "mush",
+   "field": "player.switch.resetTime",
+   "effect": "zeroes",
+   "via": [
+    "(engine)"
+   ],
+   "from": {
+    "how": "probe:reset-writes",
+    "state": "fresh",
+    "seen": [
+     "fresh"
+    ],
+    "loader": "facts.mjs v1",
+    "probeState": "requirement injected; field seeded to x·10+1"
+   }
+  },
+  {
+   "id": "zeroed-by:mush:player.switch.spentOnBuyables",
+   "kind": "zeroed-by",
+   "reset": "mush",
+   "field": "player.switch.spentOnBuyables",
+   "effect": "zeroes",
+   "via": [
+    "(engine)"
+   ],
+   "from": {
+    "how": "probe:reset-writes",
+    "state": "fresh",
+    "seen": [
+     "fresh"
+    ],
+    "loader": "facts.mjs v1",
+    "probeState": "requirement injected; field seeded to x·10+1"
+   }
+  },
+  {
+   "id": "zeroed-by:mush:player.switch.total",
+   "kind": "zeroed-by",
+   "reset": "mush",
+   "field": "player.switch.total",
+   "effect": "zeroes",
+   "via": [
+    "(engine)"
+   ],
+   "from": {
+    "how": "probe:reset-writes",
+    "state": "fresh",
+    "seen": [
+     "fresh"
+    ],
+    "loader": "facts.mjs v1",
+    "probeState": "requirement injected; field seeded to x·10+1"
+   }
+  },
+  {
+   "id": "zeroed-by:mush:player.switch.treeMax",
+   "kind": "zeroed-by",
+   "reset": "mush",
+   "field": "player.switch.treeMax",
+   "effect": "lowers",
+   "via": [
+    "(engine)"
+   ],
+   "from": {
+    "how": "probe:reset-writes",
+    "state": "fresh",
+    "seen": [
+     "fresh"
+    ],
+    "loader": "facts.mjs v1",
+    "probeState": "requirement injected; field seeded to x·10+1"
+   }
+  },
+  {
+   "id": "zeroed-by:mush:player.switch.treeSelect",
+   "kind": "zeroed-by",
+   "reset": "mush",
+   "field": "player.switch.treeSelect",
+   "effect": "lowers",
+   "via": [
+    "(engine)"
+   ],
+   "from": {
+    "how": "probe:reset-writes",
+    "state": "fresh",
+    "seen": [
+     "fresh"
+    ],
+    "loader": "facts.mjs v1",
+    "probeState": "requirement injected; field seeded to x·10+1"
+   }
+  },
+  {
+   "id": "zeroed-by:st:player.st.randRes",
+   "kind": "zeroed-by",
+   "reset": "st",
+   "field": "player.st.randRes",
+   "effect": "lowers",
+   "via": [
+    "(engine)"
+   ],
+   "from": {
+    "how": "probe:reset-writes",
+    "state": "fresh",
+    "seen": [
+     "fresh"
+    ],
+    "loader": "facts.mjs v1",
+    "probeState": "requirement injected"
+   }
+  },
+  {
+   "id": "zeroed-by:switch:player.points",
+   "kind": "zeroed-by",
+   "reset": "switch",
+   "field": "player.points",
+   "effect": "zeroes",
+   "via": [
+    "(engine)"
+   ],
+   "from": {
+    "how": "probe:reset-writes",
+    "state": "fresh",
+    "seen": [
+     "fresh"
+    ],
+    "loader": "facts.mjs v1",
+    "probeState": "requirement injected"
+   }
+  },
+  {
+   "id": "zeroed-by:switch:player.s.PickPow",
+   "kind": "zeroed-by",
+   "reset": "switch",
+   "field": "player.s.PickPow",
+   "effect": "zeroes",
+   "via": [
+    "s"
+   ],
+   "from": {
+    "how": "probe:reset-writes",
+    "state": "fresh",
+    "seen": [
+     "fresh"
+    ],
+    "loader": "facts.mjs v1",
+    "probeState": "requirement injected; field seeded to x·10+1"
+   }
+  },
+  {
+   "id": "zeroed-by:switch:player.s.best",
+   "kind": "zeroed-by",
+   "reset": "switch",
+   "field": "player.s.best",
+   "effect": "zeroes",
+   "via": [
+    "s"
+   ],
+   "from": {
+    "how": "probe:reset-writes",
+    "state": "fresh",
+    "seen": [
+     "fresh"
+    ],
+    "loader": "facts.mjs v1",
+    "probeState": "requirement injected; field seeded to x·10+1"
+   }
+  },
+  {
+   "id": "zeroed-by:switch:player.s.resetTime",
+   "kind": "zeroed-by",
+   "reset": "switch",
+   "field": "player.s.resetTime",
+   "effect": "zeroes",
+   "via": [
+    "s"
+   ],
+   "from": {
+    "how": "probe:reset-writes",
+    "state": "fresh",
+    "seen": [
+     "fresh"
+    ],
+    "loader": "facts.mjs v1",
+    "probeState": "requirement injected; field seeded to x·10+1"
+   }
+  },
+  {
+   "id": "zeroed-by:switch:player.s.spentOnBuyables",
+   "kind": "zeroed-by",
+   "reset": "switch",
+   "field": "player.s.spentOnBuyables",
+   "effect": "zeroes",
+   "via": [
+    "s"
+   ],
+   "from": {
+    "how": "probe:reset-writes",
+    "state": "fresh",
+    "seen": [
+     "fresh"
+    ],
+    "loader": "facts.mjs v1",
+    "probeState": "requirement injected; field seeded to x·10+1"
+   }
+  },
+  {
+   "id": "zeroed-by:switch:player.s.stor",
+   "kind": "zeroed-by",
+   "reset": "switch",
+   "field": "player.s.stor",
+   "effect": "zeroes",
+   "via": [
+    "s"
+   ],
+   "from": {
+    "how": "probe:reset-writes",
+    "state": "fresh",
+    "seen": [
+     "fresh"
+    ],
+    "loader": "facts.mjs v1",
+    "probeState": "requirement injected; field seeded to x·10+1"
+   }
+  },
+  {
+   "id": "zeroed-by:switch:player.s.storMax",
+   "kind": "zeroed-by",
+   "reset": "switch",
+   "field": "player.s.storMax",
+   "effect": "zeroes",
+   "via": [
+    "s"
+   ],
+   "from": {
+    "how": "probe:reset-writes",
+    "state": "fresh",
+    "seen": [
+     "fresh"
+    ],
+    "loader": "facts.mjs v1",
+    "probeState": "requirement injected; field seeded to x·10+1"
+   }
+  },
+  {
+   "id": "zeroed-by:switch:player.s.total",
+   "kind": "zeroed-by",
+   "reset": "switch",
+   "field": "player.s.total",
+   "effect": "zeroes",
+   "via": [
+    "s"
+   ],
+   "from": {
+    "how": "probe:reset-writes",
+    "state": "fresh",
+    "seen": [
+     "fresh"
+    ],
+    "loader": "facts.mjs v1",
+    "probeState": "requirement injected; field seeded to x·10+1"
+   }
+  },
+  {
+   "id": "zeroed-by:switch:player.switch.resetTime",
+   "kind": "zeroed-by",
+   "reset": "switch",
+   "field": "player.switch.resetTime",
+   "effect": "zeroes",
+   "via": [
+    "(engine)"
+   ],
+   "from": {
+    "how": "probe:reset-writes",
+    "state": "fresh",
+    "seen": [
+     "fresh"
+    ],
+    "loader": "facts.mjs v1",
+    "probeState": "requirement injected; field seeded to x·10+1"
+   }
+  },
+  {
+   "id": "production:player.FoodA.resetTime",
+   "kind": "production",
+   "field": "player.FoodA.resetTime",
+   "clock": true,
+   "over": {
+    "ticks": 10,
+    "diff": 1,
+    "moves": "rises"
+   },
+   "drivenBy": [],
+   "from": {
+    "how": "producer:wait (automation off)",
+    "state": "fresh",
+    "seen": [
+     "fresh"
+    ],
+    "loader": "facts.mjs v1"
+   }
+  },
+  {
+   "id": "production:player.FoodB.resetTime",
+   "kind": "production",
+   "field": "player.FoodB.resetTime",
+   "clock": true,
+   "over": {
+    "ticks": 10,
+    "diff": 1,
+    "moves": "rises"
+   },
+   "drivenBy": [],
+   "from": {
+    "how": "producer:wait (automation off)",
+    "state": "fresh",
+    "seen": [
+     "fresh"
+    ],
+    "loader": "facts.mjs v1"
+   }
+  },
+  {
+   "id": "production:player.a.resetTime",
+   "kind": "production",
+   "field": "player.a.resetTime",
+   "clock": true,
+   "over": {
+    "ticks": 10,
+    "diff": 1,
+    "moves": "rises"
+   },
+   "drivenBy": [],
+   "from": {
+    "how": "producer:wait (automation off)",
+    "state": "fresh",
+    "seen": [
+     "fresh"
+    ],
+    "loader": "facts.mjs v1"
+   }
+  },
+  {
+   "id": "production:player.auto.resetTime",
+   "kind": "production",
+   "field": "player.auto.resetTime",
+   "clock": true,
+   "over": {
+    "ticks": 10,
+    "diff": 1,
+    "moves": "rises"
+   },
+   "drivenBy": [],
+   "from": {
+    "how": "producer:wait (automation off)",
+    "state": "fresh",
+    "seen": [
+     "fresh"
+    ],
+    "loader": "facts.mjs v1"
+   }
+  },
+  {
+   "id": "production:player.bam.pHarvest",
+   "kind": "production",
+   "field": "player.bam.pHarvest",
+   "clock": true,
+   "over": {
+    "ticks": 10,
+    "diff": 1,
+    "moves": "rises"
+   },
+   "drivenBy": [],
+   "from": {
+    "how": "producer:wait (automation off)",
+    "state": "fresh",
+    "seen": [
+     "fresh"
+    ],
+    "loader": "facts.mjs v1"
+   }
+  },
+  {
+   "id": "production:player.bam.resetTime",
+   "kind": "production",
+   "field": "player.bam.resetTime",
+   "clock": true,
+   "over": {
+    "ticks": 10,
+    "diff": 1,
+    "moves": "rises"
+   },
+   "drivenBy": [],
+   "from": {
+    "how": "producer:wait (automation off)",
+    "state": "fresh",
+    "seen": [
+     "fresh"
+    ],
+    "loader": "facts.mjs v1"
+   }
+  },
+  {
+   "id": "production:player.blank.resetTime",
+   "kind": "production",
+   "field": "player.blank.resetTime",
+   "clock": true,
+   "over": {
+    "ticks": 10,
+    "diff": 1,
+    "moves": "rises"
+   },
+   "drivenBy": [],
+   "from": {
+    "how": "producer:wait (automation off)",
+    "state": "fresh",
+    "seen": [
+     "fresh"
+    ],
+    "loader": "facts.mjs v1"
+   }
+  },
+  {
+   "id": "production:player.changelog-tab.resetTime",
+   "kind": "production",
+   "field": "player.changelog-tab.resetTime",
+   "clock": true,
+   "over": {
+    "ticks": 10,
+    "diff": 1,
+    "moves": "rises"
+   },
+   "drivenBy": [],
+   "from": {
+    "how": "producer:wait (automation off)",
+    "state": "fresh",
+    "seen": [
+     "fresh"
+    ],
+    "loader": "facts.mjs v1"
+   }
+  },
+  {
+   "id": "production:player.f.resetTime",
+   "kind": "production",
+   "field": "player.f.resetTime",
+   "clock": true,
+   "over": {
+    "ticks": 10,
+    "diff": 1,
+    "moves": "rises"
+   },
+   "drivenBy": [],
+   "from": {
+    "how": "producer:wait (automation off)",
+    "state": "fresh",
+    "seen": [
+     "fresh"
+    ],
+    "loader": "facts.mjs v1"
+   }
+  },
+  {
+   "id": "production:player.info-tab.resetTime",
+   "kind": "production",
+   "field": "player.info-tab.resetTime",
+   "clock": true,
+   "over": {
+    "ticks": 10,
+    "diff": 1,
+    "moves": "rises"
+   },
+   "drivenBy": [],
+   "from": {
+    "how": "producer:wait (automation off)",
+    "state": "fresh",
+    "seen": [
+     "fresh"
+    ],
+    "loader": "facts.mjs v1"
+   }
+  },
+  {
+   "id": "production:player.met11.resetTime",
+   "kind": "production",
+   "field": "player.met11.resetTime",
+   "clock": true,
+   "over": {
+    "ticks": 10,
+    "diff": 1,
+    "moves": "rises"
+   },
+   "drivenBy": [],
+   "from": {
+    "how": "producer:wait (automation off)",
+    "state": "fresh",
+    "seen": [
+     "fresh"
+    ],
+    "loader": "facts.mjs v1"
+   }
+  },
+  {
+   "id": "production:player.mush.resetTime",
+   "kind": "production",
+   "field": "player.mush.resetTime",
+   "clock": true,
+   "over": {
+    "ticks": 10,
+    "diff": 1,
+    "moves": "rises"
+   },
+   "drivenBy": [],
+   "from": {
+    "how": "producer:wait (automation off)",
+    "state": "fresh",
+    "seen": [
+     "fresh"
+    ],
+    "loader": "facts.mjs v1"
+   }
+  },
+  {
+   "id": "production:player.options-tab.resetTime",
+   "kind": "production",
+   "field": "player.options-tab.resetTime",
+   "clock": true,
+   "over": {
+    "ticks": 10,
+    "diff": 1,
+    "moves": "rises"
+   },
+   "drivenBy": [],
+   "from": {
+    "how": "producer:wait (automation off)",
+    "state": "fresh",
+    "seen": [
+     "fresh"
+    ],
+    "loader": "facts.mjs v1"
+   }
+  },
+  {
+   "id": "production:player.s.resetTime",
+   "kind": "production",
+   "field": "player.s.resetTime",
+   "clock": true,
+   "over": {
+    "ticks": 10,
+    "diff": 1,
+    "moves": "rises"
+   },
+   "drivenBy": [],
+   "from": {
+    "how": "producer:wait (automation off)",
+    "state": "fresh",
+    "seen": [
+     "fresh"
+    ],
+    "loader": "facts.mjs v1"
+   }
+  },
+  {
+   "id": "production:player.st.resetTime",
+   "kind": "production",
+   "field": "player.st.resetTime",
+   "clock": true,
+   "over": {
+    "ticks": 10,
+    "diff": 1,
+    "moves": "rises"
+   },
+   "drivenBy": [],
+   "from": {
+    "how": "producer:wait (automation off)",
+    "state": "fresh",
+    "seen": [
+     "fresh"
+    ],
+    "loader": "facts.mjs v1"
+   }
+  },
+  {
+   "id": "production:player.switch.resetTime",
+   "kind": "production",
+   "field": "player.switch.resetTime",
+   "clock": true,
+   "over": {
+    "ticks": 10,
+    "diff": 1,
+    "moves": "rises"
+   },
+   "drivenBy": [],
+   "from": {
+    "how": "producer:wait (automation off)",
+    "state": "fresh",
+    "seen": [
+     "fresh"
+    ],
+    "loader": "facts.mjs v1"
+   }
+  },
+  {
+   "id": "production:player.timePlayed",
+   "kind": "production",
+   "field": "player.timePlayed",
+   "clock": true,
+   "over": {
+    "ticks": 10,
+    "diff": 1,
+    "moves": "rises"
+   },
+   "drivenBy": [],
+   "from": {
+    "how": "producer:wait (automation off)",
+    "state": "fresh",
+    "seen": [
+     "fresh"
+    ],
+    "loader": "facts.mjs v1"
+   }
+  },
+  {
+   "id": "production:player.tree-tab.resetTime",
+   "kind": "production",
+   "field": "player.tree-tab.resetTime",
+   "clock": true,
+   "over": {
+    "ticks": 10,
+    "diff": 1,
+    "moves": "rises"
+   },
+   "drivenBy": [],
+   "from": {
+    "how": "producer:wait (automation off)",
+    "state": "fresh",
+    "seen": [
+     "fresh"
+    ],
+    "loader": "facts.mjs v1"
+   }
+  },
+  {
+   "id": "production:player.w.resetTime",
+   "kind": "production",
+   "field": "player.w.resetTime",
+   "clock": true,
+   "over": {
+    "ticks": 10,
+    "diff": 1,
+    "moves": "rises"
+   },
+   "drivenBy": [],
+   "from": {
+    "how": "producer:wait (automation off)",
+    "state": "fresh",
+    "seen": [
+     "fresh"
+    ],
+    "loader": "facts.mjs v1"
+   }
+  },
+  {
+   "id": "reads:FoodA:baseAmount",
+   "kind": "multiplier-reads",
+   "fn": {
+    "layer": "FoodA",
+    "fn": "baseAmount"
+   },
+   "reads": [
+    "player.points"
+   ],
+   "tmpReads": [],
+   "members": [],
+   "from": {
+    "how": "traceReads(player + tmp) + membership toggles + boolean widening",
+    "state": "fresh",
+    "seen": [
+     "fresh"
+    ],
+    "loader": "facts.mjs v1"
+   }
+  },
+  {
+   "id": "reads:FoodA:gainExp",
+   "kind": "multiplier-reads",
+   "fn": {
+    "layer": "FoodA",
+    "fn": "gainExp"
+   },
+   "reads": [],
+   "tmpReads": [],
+   "members": [],
+   "from": {
+    "how": "traceReads(player + tmp) + membership toggles + boolean widening",
+    "state": "fresh",
+    "seen": [
+     "fresh"
+    ],
+    "loader": "facts.mjs v1"
+   }
+  },
+  {
+   "id": "reads:FoodA:gainMult",
+   "kind": "multiplier-reads",
+   "fn": {
+    "layer": "FoodA",
+    "fn": "gainMult"
+   },
+   "reads": [],
+   "tmpReads": [],
+   "members": [],
+   "from": {
+    "how": "traceReads(player + tmp) + membership toggles + boolean widening",
+    "state": "fresh",
+    "seen": [
+     "fresh"
+    ],
+    "loader": "facts.mjs v1"
+   }
+  },
+  {
+   "id": "reads:FoodB:baseAmount",
+   "kind": "multiplier-reads",
+   "fn": {
+    "layer": "FoodB",
+    "fn": "baseAmount"
+   },
+   "reads": [
+    "player.points"
+   ],
+   "tmpReads": [],
+   "members": [],
+   "from": {
+    "how": "traceReads(player + tmp) + membership toggles + boolean widening",
+    "state": "fresh",
+    "seen": [
+     "fresh"
+    ],
+    "loader": "facts.mjs v1"
+   }
+  },
+  {
+   "id": "reads:FoodB:gainExp",
+   "kind": "multiplier-reads",
+   "fn": {
+    "layer": "FoodB",
+    "fn": "gainExp"
+   },
+   "reads": [],
+   "tmpReads": [],
+   "members": [],
+   "from": {
+    "how": "traceReads(player + tmp) + membership toggles + boolean widening",
+    "state": "fresh",
+    "seen": [
+     "fresh"
+    ],
+    "loader": "facts.mjs v1"
+   }
+  },
+  {
+   "id": "reads:FoodB:gainMult",
+   "kind": "multiplier-reads",
+   "fn": {
+    "layer": "FoodB",
+    "fn": "gainMult"
+   },
+   "reads": [],
+   "tmpReads": [],
+   "members": [],
+   "from": {
+    "how": "traceReads(player + tmp) + membership toggles + boolean widening",
+    "state": "fresh",
+    "seen": [
+     "fresh"
+    ],
+    "loader": "facts.mjs v1"
+   }
+  },
+  {
+   "id": "reads:auto:baseAmount",
+   "kind": "multiplier-reads",
+   "fn": {
+    "layer": "auto",
+    "fn": "baseAmount"
+   },
+   "reads": [
+    "player.points"
+   ],
+   "tmpReads": [],
+   "members": [],
+   "from": {
+    "how": "traceReads(player + tmp) + membership toggles + boolean widening",
+    "state": "fresh",
+    "seen": [
+     "fresh"
+    ],
+    "loader": "facts.mjs v1"
+   }
+  },
+  {
+   "id": "reads:auto:gainExp",
+   "kind": "multiplier-reads",
+   "fn": {
+    "layer": "auto",
+    "fn": "gainExp"
+   },
+   "reads": [],
+   "tmpReads": [],
+   "members": [],
+   "from": {
+    "how": "traceReads(player + tmp) + membership toggles + boolean widening",
+    "state": "fresh",
+    "seen": [
+     "fresh"
+    ],
+    "loader": "facts.mjs v1"
+   }
+  },
+  {
+   "id": "reads:auto:gainMult",
+   "kind": "multiplier-reads",
+   "fn": {
+    "layer": "auto",
+    "fn": "gainMult"
+   },
+   "reads": [],
+   "tmpReads": [],
+   "members": [],
+   "from": {
+    "how": "traceReads(player + tmp) + membership toggles + boolean widening",
+    "state": "fresh",
+    "seen": [
+     "fresh"
+    ],
+    "loader": "facts.mjs v1"
+   }
+  },
+  {
+   "id": "reads:bam:baseAmount",
+   "kind": "multiplier-reads",
+   "fn": {
+    "layer": "bam",
+    "fn": "baseAmount"
+   },
+   "reads": [
+    "player.points"
+   ],
+   "tmpReads": [],
+   "members": [],
+   "from": {
+    "how": "traceReads(player + tmp) + membership toggles + boolean widening",
+    "state": "fresh",
+    "seen": [
+     "fresh"
+    ],
+    "loader": "facts.mjs v1"
+   }
+  },
+  {
+   "id": "reads:bam:effect",
+   "kind": "multiplier-reads",
+   "fn": {
+    "layer": "bam",
+    "fn": "effect"
+   },
+   "reads": [
+    "player.bam.milestones",
+    "player.bam.points"
+   ],
+   "tmpReads": [],
+   "members": [],
+   "from": {
+    "how": "traceReads(player + tmp) + membership toggles + boolean widening",
+    "state": "fresh",
+    "seen": [
+     "fresh"
+    ],
+    "loader": "facts.mjs v1"
+   }
+  },
+  {
+   "id": "reads:bam:effectSoft",
+   "kind": "multiplier-reads",
+   "fn": {
+    "layer": "bam",
+    "fn": "effectSoft"
+   },
+   "reads": [
+    "player.bam.points"
+   ],
+   "tmpReads": [],
+   "members": [],
+   "from": {
+    "how": "traceReads(player + tmp) + membership toggles + boolean widening",
+    "state": "fresh",
+    "seen": [
+     "fresh"
+    ],
+    "loader": "facts.mjs v1"
+   }
+  },
+  {
+   "id": "reads:bam:gainExp",
+   "kind": "multiplier-reads",
+   "fn": {
+    "layer": "bam",
+    "fn": "gainExp"
+   },
+   "reads": [],
+   "tmpReads": [],
+   "members": [],
+   "from": {
+    "how": "traceReads(player + tmp) + membership toggles + boolean widening",
+    "state": "fresh",
+    "seen": [
+     "fresh"
+    ],
+    "loader": "facts.mjs v1"
+   }
+  },
+  {
+   "id": "reads:bam:gainMult",
+   "kind": "multiplier-reads",
+   "fn": {
+    "layer": "bam",
+    "fn": "gainMult"
+   },
+   "reads": [
+    "player.bam.milestones",
+    "player.bam.pHarvest",
+    "player.mush.mushB",
+    "player.s.buyables.21"
+   ],
+   "tmpReads": [
+    "tmp.st.effect.st3"
+   ],
+   "members": [
+    "ms:bam:2"
+   ],
+   "widened": [
+    {
+     "when": "ms:bam:2 added",
+     "reads": [
+      "tmp.bam.deactivated"
+     ]
+    }
+   ],
+   "from": {
+    "how": "traceReads(player + tmp) + membership toggles + boolean widening",
+    "state": "fresh",
+    "seen": [
+     "fresh"
+    ],
+    "loader": "facts.mjs v1"
+   }
+  },
+  {
+   "id": "reads:bam:milestones.1.effect",
+   "kind": "multiplier-reads",
+   "fn": {
+    "layer": "bam",
+    "group": "milestones",
+    "item": 1,
+    "fn": "effect"
+   },
+   "reads": [
+    "player.bam.points"
+   ],
+   "tmpReads": [],
+   "members": [],
+   "from": {
+    "how": "traceReads(player + tmp) + membership toggles + boolean widening",
+    "state": "fresh",
+    "seen": [
+     "fresh"
+    ],
+    "loader": "facts.mjs v1"
+   }
+  },
+  {
+   "id": "reads:bam:milestones.3.effect",
+   "kind": "multiplier-reads",
+   "fn": {
+    "layer": "bam",
+    "group": "milestones",
+    "item": 3,
+    "fn": "effect"
+   },
+   "reads": [
+    "player.bam.points"
+   ],
+   "tmpReads": [],
+   "members": [],
+   "from": {
+    "how": "traceReads(player + tmp) + membership toggles + boolean widening",
+    "state": "fresh",
+    "seen": [
+     "fresh"
+    ],
+    "loader": "facts.mjs v1"
+   }
+  },
+  {
+   "id": "reads:bam:upgrades.13.effect",
+   "kind": "multiplier-reads",
+   "fn": {
+    "layer": "bam",
+    "group": "upgrades",
+    "item": 13,
+    "fn": "effect"
+   },
+   "reads": [
+    "player.bam.pHarvest"
+   ],
+   "tmpReads": [],
+   "members": [],
+   "from": {
+    "how": "traceReads(player + tmp) + membership toggles + boolean widening",
+    "state": "fresh",
+    "seen": [
+     "fresh"
+    ],
+    "loader": "facts.mjs v1"
+   }
+  },
+  {
+   "id": "reads:bam:upgrades.14.effect",
+   "kind": "multiplier-reads",
+   "fn": {
+    "layer": "bam",
+    "group": "upgrades",
+    "item": 14,
+    "fn": "effect"
+   },
+   "reads": [],
+   "tmpReads": [
+    "tmp.bam.effect"
+   ],
+   "members": [],
+   "from": {
+    "how": "traceReads(player + tmp) + membership toggles + boolean widening",
+    "state": "fresh",
+    "seen": [
+     "fresh"
+    ],
+    "loader": "facts.mjs v1"
+   }
+  },
+  {
+   "id": "reads:met11:baseAmount",
+   "kind": "multiplier-reads",
+   "fn": {
+    "layer": "met11",
+    "fn": "baseAmount"
+   },
+   "reads": [
+    "player.points"
+   ],
+   "tmpReads": [],
+   "members": [],
+   "from": {
+    "how": "traceReads(player + tmp) + membership toggles + boolean widening",
+    "state": "fresh",
+    "seen": [
+     "fresh"
+    ],
+    "loader": "facts.mjs v1"
+   }
+  },
+  {
+   "id": "reads:met11:gainExp",
+   "kind": "multiplier-reads",
+   "fn": {
+    "layer": "met11",
+    "fn": "gainExp"
+   },
+   "reads": [],
+   "tmpReads": [],
+   "members": [],
+   "from": {
+    "how": "traceReads(player + tmp) + membership toggles + boolean widening",
+    "state": "fresh",
+    "seen": [
+     "fresh"
+    ],
+    "loader": "facts.mjs v1"
+   }
+  },
+  {
+   "id": "reads:met11:gainMult",
+   "kind": "multiplier-reads",
+   "fn": {
+    "layer": "met11",
+    "fn": "gainMult"
+   },
+   "reads": [
+    "player.met11.gauge"
+   ],
+   "tmpReads": [],
+   "members": [],
+   "from": {
+    "how": "traceReads(player + tmp) + membership toggles + boolean widening",
+    "state": "fresh",
+    "seen": [
+     "fresh"
+    ],
+    "loader": "facts.mjs v1"
+   }
+  },
+  {
+   "id": "reads:mush:baseAmount",
+   "kind": "multiplier-reads",
+   "fn": {
+    "layer": "mush",
+    "fn": "baseAmount"
+   },
+   "reads": [
+    "player.points"
+   ],
+   "tmpReads": [],
+   "members": [],
+   "from": {
+    "how": "traceReads(player + tmp) + membership toggles + boolean widening",
+    "state": "fresh",
+    "seen": [
+     "fresh"
+    ],
+    "loader": "facts.mjs v1"
+   }
+  },
+  {
+   "id": "reads:mush:gainExp",
+   "kind": "multiplier-reads",
+   "fn": {
+    "layer": "mush",
+    "fn": "gainExp"
+   },
+   "reads": [
+    "player.mush.points"
+   ],
+   "tmpReads": [],
+   "members": [],
+   "from": {
+    "how": "traceReads(player + tmp) + membership toggles + boolean widening",
+    "state": "fresh",
+    "seen": [
+     "fresh"
+    ],
+    "loader": "facts.mjs v1"
+   }
+  },
+  {
+   "id": "reads:mush:gainMult",
+   "kind": "multiplier-reads",
+   "fn": {
+    "layer": "mush",
+    "fn": "gainMult"
+   },
+   "reads": [
+    "player.mush.points"
+   ],
+   "tmpReads": [
+    "tmp.st.effect.st3"
+   ],
+   "members": [],
+   "from": {
+    "how": "traceReads(player + tmp) + membership toggles + boolean widening",
+    "state": "fresh",
+    "seen": [
+     "fresh"
+    ],
+    "loader": "facts.mjs v1"
+   }
+  },
+  {
+   "id": "reads:s:baseAmount",
+   "kind": "multiplier-reads",
+   "fn": {
+    "layer": "s",
+    "fn": "baseAmount"
+   },
+   "reads": [
+    "player.points"
+   ],
+   "tmpReads": [],
+   "members": [],
+   "from": {
+    "how": "traceReads(player + tmp) + membership toggles + boolean widening",
+    "state": "fresh",
+    "seen": [
+     "fresh"
+    ],
+    "loader": "facts.mjs v1"
+   }
+  },
+  {
+   "id": "reads:s:buyables.11.effect",
+   "kind": "multiplier-reads",
+   "fn": {
+    "layer": "s",
+    "group": "buyables",
+    "item": 11,
+    "fn": "effect"
+   },
+   "reads": [
+    "player.s.buyables.11",
+    "player.s.upgrades"
+   ],
+   "tmpReads": [],
+   "members": [],
+   "from": {
+    "how": "traceReads(player + tmp) + membership toggles + boolean widening",
+    "state": "fresh",
+    "seen": [
+     "fresh"
+    ],
+    "loader": "facts.mjs v1"
+   }
+  },
+  {
+   "id": "reads:s:buyables.12.effect",
+   "kind": "multiplier-reads",
+   "fn": {
+    "layer": "s",
+    "group": "buyables",
+    "item": 12,
+    "fn": "effect"
+   },
+   "reads": [
+    "player.s.buyables.12",
+    "player.s.upgrades"
+   ],
+   "tmpReads": [],
+   "members": [],
+   "from": {
+    "how": "traceReads(player + tmp) + membership toggles + boolean widening",
+    "state": "fresh",
+    "seen": [
+     "fresh"
+    ],
+    "loader": "facts.mjs v1"
+   }
+  },
+  {
+   "id": "reads:s:buyables.21.effect",
+   "kind": "multiplier-reads",
+   "fn": {
+    "layer": "s",
+    "group": "buyables",
+    "item": 21,
+    "fn": "effect"
+   },
+   "reads": [
+    "player.s.buyables.21",
+    "player.s.upgrades"
+   ],
+   "tmpReads": [],
+   "members": [],
+   "from": {
+    "how": "traceReads(player + tmp) + membership toggles + boolean widening",
+    "state": "fresh",
+    "seen": [
+     "fresh"
+    ],
+    "loader": "facts.mjs v1"
+   }
+  },
+  {
+   "id": "reads:s:buyables.22.effect",
+   "kind": "multiplier-reads",
+   "fn": {
+    "layer": "s",
+    "group": "buyables",
+    "item": 22,
+    "fn": "effect"
+   },
+   "reads": [
+    "player.s.buyables.22",
+    "player.s.upgrades"
+   ],
+   "tmpReads": [],
+   "members": [],
+   "from": {
+    "how": "traceReads(player + tmp) + membership toggles + boolean widening",
+    "state": "fresh",
+    "seen": [
+     "fresh"
+    ],
+    "loader": "facts.mjs v1"
+   }
+  },
+  {
+   "id": "reads:s:effect",
+   "kind": "multiplier-reads",
+   "fn": {
+    "layer": "s",
+    "fn": "effect"
+   },
+   "reads": [
+    "player.st.clay",
+    "player.s.eat1",
+    "player.s.eat2",
+    "player.s.eat3",
+    "player.s.eat4",
+    "player.s.eatHap"
+   ],
+   "tmpReads": [],
+   "members": [],
+   "from": {
+    "how": "traceReads(player + tmp) + membership toggles + boolean widening",
+    "state": "fresh",
+    "seen": [
+     "fresh"
+    ],
+    "loader": "facts.mjs v1"
+   }
+  },
+  {
+   "id": "reads:s:gainExp",
+   "kind": "multiplier-reads",
+   "fn": {
+    "layer": "s",
+    "fn": "gainExp"
+   },
+   "reads": [],
+   "tmpReads": [],
+   "members": [],
+   "from": {
+    "how": "traceReads(player + tmp) + membership toggles + boolean widening",
+    "state": "fresh",
+    "seen": [
+     "fresh"
+    ],
+    "loader": "facts.mjs v1"
+   }
+  },
+  {
+   "id": "reads:s:gainMult",
+   "kind": "multiplier-reads",
+   "fn": {
+    "layer": "s",
+    "fn": "gainMult"
+   },
+   "reads": [],
+   "tmpReads": [],
+   "members": [],
+   "from": {
+    "how": "traceReads(player + tmp) + membership toggles + boolean widening",
+    "state": "fresh",
+    "seen": [
+     "fresh"
+    ],
+    "loader": "facts.mjs v1"
+   }
+  },
+  {
+   "id": "reads:s:upgrades.13.effect",
+   "kind": "multiplier-reads",
+   "fn": {
+    "layer": "s",
+    "group": "upgrades",
+    "item": 13,
+    "fn": "effect"
+   },
+   "reads": [
+    "player.points"
+   ],
+   "tmpReads": [],
+   "members": [],
+   "from": {
+    "how": "traceReads(player + tmp) + membership toggles + boolean widening",
+    "state": "fresh",
+    "seen": [
+     "fresh"
+    ],
+    "loader": "facts.mjs v1"
+   }
+  },
+  {
+   "id": "reads:st:baseAmount",
+   "kind": "multiplier-reads",
+   "fn": {
+    "layer": "st",
+    "fn": "baseAmount"
+   },
+   "reads": [
+    "player.s.PickPow"
+   ],
+   "tmpReads": [],
+   "members": [],
+   "from": {
+    "how": "traceReads(player + tmp) + membership toggles + boolean widening",
+    "state": "fresh",
+    "seen": [
+     "fresh"
+    ],
+    "loader": "facts.mjs v1"
+   }
+  },
+  {
+   "id": "reads:st:gainExp",
+   "kind": "multiplier-reads",
+   "fn": {
+    "layer": "st",
+    "fn": "gainExp"
+   },
+   "reads": [],
+   "tmpReads": [],
+   "members": [],
+   "from": {
+    "how": "traceReads(player + tmp) + membership toggles + boolean widening",
+    "state": "fresh",
+    "seen": [
+     "fresh"
+    ],
+    "loader": "facts.mjs v1"
+   }
+  },
+  {
+   "id": "reads:st:gainMult",
+   "kind": "multiplier-reads",
+   "fn": {
+    "layer": "st",
+    "fn": "gainMult"
+   },
+   "reads": [
+    "player.w.upgrades"
+   ],
+   "tmpReads": [],
+   "members": [
+    "upg:w:21"
+   ],
+   "widened": [
+    {
+     "when": "upg:w:21 added",
+     "reads": [
+      "tmp.w.deactivated",
+      "tmp.w.upgrades.21.effect"
+     ]
+    }
+   ],
+   "from": {
+    "how": "traceReads(player + tmp) + membership toggles + boolean widening",
+    "state": "fresh",
+    "seen": [
+     "fresh"
+    ],
+    "loader": "facts.mjs v1"
+   }
+  },
+  {
+   "id": "reads:switch:baseAmount",
+   "kind": "multiplier-reads",
+   "fn": {
+    "layer": "switch",
+    "fn": "baseAmount"
+   },
+   "reads": [
+    "player.points"
+   ],
+   "tmpReads": [],
+   "members": [],
+   "from": {
+    "how": "traceReads(player + tmp) + membership toggles + boolean widening",
+    "state": "fresh",
+    "seen": [
+     "fresh"
+    ],
+    "loader": "facts.mjs v1"
+   }
+  },
+  {
+   "id": "reads:switch:gainExp",
+   "kind": "multiplier-reads",
+   "fn": {
+    "layer": "switch",
+    "fn": "gainExp"
+   },
+   "reads": [],
+   "tmpReads": [],
+   "members": [],
+   "from": {
+    "how": "traceReads(player + tmp) + membership toggles + boolean widening",
+    "state": "fresh",
+    "seen": [
+     "fresh"
+    ],
+    "loader": "facts.mjs v1"
+   }
+  },
+  {
+   "id": "reads:switch:gainMult",
+   "kind": "multiplier-reads",
+   "fn": {
+    "layer": "switch",
+    "fn": "gainMult"
+   },
+   "reads": [],
+   "tmpReads": [],
+   "members": [],
+   "from": {
+    "how": "traceReads(player + tmp) + membership toggles + boolean widening",
+    "state": "fresh",
+    "seen": [
+     "fresh"
+    ],
+    "loader": "facts.mjs v1"
+   }
+  },
+  {
+   "id": "reads:w:baseAmount",
+   "kind": "multiplier-reads",
+   "fn": {
+    "layer": "w",
+    "fn": "baseAmount"
+   },
+   "reads": [
+    "player.points"
+   ],
+   "tmpReads": [],
+   "members": [],
+   "from": {
+    "how": "traceReads(player + tmp) + membership toggles + boolean widening",
+    "state": "fresh",
+    "seen": [
+     "fresh"
+    ],
+    "loader": "facts.mjs v1"
+   }
+  },
+  {
+   "id": "reads:w:effect",
+   "kind": "multiplier-reads",
+   "fn": {
+    "layer": "w",
+    "fn": "effect"
+   },
+   "reads": [
+    "player.w.upgrades",
+    "player.bam.upgrades",
+    "player.w.points"
+   ],
+   "tmpReads": [],
+   "members": [
+    "upg:w:22",
+    "upg:bam:14"
+   ],
+   "widened": [
+    {
+     "when": "upg:w:22 added",
+     "reads": [
+      "tmp.w.deactivated",
+      "tmp.bam.upgrades.14.effect",
+      "tmp.w.effectSoft"
+     ]
+    },
+    {
+     "when": "upg:bam:14 added",
+     "reads": [
+      "tmp.bam.deactivated",
+      "tmp.bam.upgrades.14.effect"
+     ]
+    }
+   ],
+   "from": {
+    "how": "traceReads(player + tmp) + membership toggles + boolean widening",
+    "state": "fresh",
+    "seen": [
+     "fresh"
+    ],
+    "loader": "facts.mjs v1"
+   }
+  },
+  {
+   "id": "reads:w:effectSoft",
+   "kind": "multiplier-reads",
+   "fn": {
+    "layer": "w",
+    "fn": "effectSoft"
+   },
+   "reads": [
+    "player.bam.points"
+   ],
+   "tmpReads": [],
+   "members": [],
+   "from": {
+    "how": "traceReads(player + tmp) + membership toggles + boolean widening",
+    "state": "fresh",
+    "seen": [
+     "fresh"
+    ],
+    "loader": "facts.mjs v1"
+   }
+  },
+  {
+   "id": "reads:w:exponent",
+   "kind": "multiplier-reads",
+   "fn": {
+    "layer": "w",
+    "fn": "exponent"
+   },
+   "reads": [],
+   "tmpReads": [],
+   "members": [],
+   "from": {
+    "how": "traceReads(player + tmp) + membership toggles + boolean widening",
+    "state": "fresh",
+    "seen": [
+     "fresh"
+    ],
+    "loader": "facts.mjs v1"
+   }
+  },
+  {
+   "id": "reads:w:gainExp",
+   "kind": "multiplier-reads",
+   "fn": {
+    "layer": "w",
+    "fn": "gainExp"
+   },
+   "reads": [],
+   "tmpReads": [],
+   "members": [],
+   "from": {
+    "how": "traceReads(player + tmp) + membership toggles + boolean widening",
+    "state": "fresh",
+    "seen": [
+     "fresh"
+    ],
+    "loader": "facts.mjs v1"
+   }
+  },
+  {
+   "id": "reads:w:gainMult",
+   "kind": "multiplier-reads",
+   "fn": {
+    "layer": "w",
+    "fn": "gainMult"
+   },
+   "reads": [
+    "player.mush.mushC",
+    "player.st.sand",
+    "player.s.buyables.11"
+   ],
+   "tmpReads": [],
+   "members": [],
+   "from": {
+    "how": "traceReads(player + tmp) + membership toggles + boolean widening",
+    "state": "fresh",
+    "seen": [
+     "fresh"
+    ],
+    "loader": "facts.mjs v1"
+   }
+  },
+  {
+   "id": "reads:w:upgrades.21.effect",
+   "kind": "multiplier-reads",
+   "fn": {
+    "layer": "w",
+    "group": "upgrades",
+    "item": 21,
+    "fn": "effect"
+   },
+   "reads": [
+    "player.w.points"
+   ],
+   "tmpReads": [],
+   "members": [],
+   "from": {
+    "how": "traceReads(player + tmp) + membership toggles + boolean widening",
+    "state": "fresh",
+    "seen": [
+     "fresh"
+    ],
+    "loader": "facts.mjs v1"
+   }
+  },
+  {
+   "id": "challenge-inputs:st:11",
+   "kind": "challenge-inputs",
+   "inside": {
+    "layer": "st",
+    "challenge": 11
+   },
+   "goalCurrency": "player.points",
+   "gain": "getPointGen()",
+   "entered": true,
+   "moves": [
+    "upg:s:11 (added)"
+   ],
+   "movesOutside": [
+    "upg:s:11 (added)"
+   ],
+   "nerfed": [],
+   "candidates": 31,
+   "from": {
+    "how": "probe:in-challenge-sensitivity (×10+1 per number, toggle per member; each in its own excursion, 3 updateTemps; getPointGen())",
+    "state": "fresh",
+    "seen": [
+     "fresh"
+    ],
+    "loader": "facts.mjs v1",
+    "probeState": "the challenge entered on the copy through startChallenge"
+   }
+  }
+ ]
+}
