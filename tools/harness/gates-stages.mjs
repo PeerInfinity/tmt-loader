@@ -360,7 +360,9 @@ async function partPage() {
   const t = (out && out.text) || '';
   const checks = {
     loaded: !!out && out.profile === 'all' && /automation=1/.test(out.url) && out.gs < fixture(M29F).gameSeconds + 60,
-    stagesInForce: !!out && JSON.stringify(out.stages) === JSON.stringify([[C3, false], [C2, true], [C1, true]]),
+    // (m30) only the three stages this row is about: a later stage the table lists (q33-sg-unlock) is not in force at M29
+    stagesInForce: !!out && JSON.stringify(out.stages.filter(([id]) => [C1, C2, C3].includes(id))) === JSON.stringify([[C3, false], [C2, true], [C1, true]]) &&
+      out.stages.filter(([id]) => ![C1, C2, C3].includes(id)).every(([, on]) => on === false),
     viewNamesThem: new RegExp(`STAGE\\s*${C1}`).test(t) && new RegExp(`STAGE\\s*${C2}`).test(t) && new RegExp(`stage ${C2}`).test(t),
     noPageError: !errs.length,
   };
