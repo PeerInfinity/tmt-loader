@@ -1,0 +1,8 @@
+{"format":"tmt-queue/1","id":"tpl1-hold-wait-call","source":"authored","trigger":{"on":"start"},
+ "comment":"tpl1 gate leg R1 (ptr, fresh): hold the prestige reset, let points build, prestige once from the queue, end — and every hold is released at the end.",
+ "steps":[
+  {"do":"hold","features":["reset:p"],"comment":"keep the points"},
+  {"do":"wait","until":"player.points.gte(20)","timeout":{"gs":120},"onTimeout":"abort","comment":"20 points"},
+  {"do":"call","fn":"doReset","args":["p"],"comment":"prestige once, from the queue"},
+  {"do":"comment","text":"done: the hold is released when the queue ends"}
+ ]}

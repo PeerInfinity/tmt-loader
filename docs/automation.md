@@ -10,6 +10,10 @@ calls each layer's `automate()`.
 game, with the feature, its reason code and the state it acted on; switched on from the developer details of this
 tab (or `?autoOpt=log=1`), and replayed exactly on the harness (`tools/harness/replay.mjs`).
 
+**A queue can hold features and act at a chosen moment:** an action queue (`docs/queues.md`) plays engine actions in order, holds
+chosen features while it waits, and releases them when it ends; a held feature's reason names the queue. Queues are written by
+the strategy templates (`docs/templates.md`) or by hand.
+
 Since S1 the features are **derived from what each layer declares** — every Modding Tree game gets them with no per-game
 code — and a per-game **data table** (`games-auto/<id>.json`) holds only what the game's authors did not declare: orders,
 measured policy constants, exclusions with a reason, gates.
@@ -528,6 +532,7 @@ declares one is a new demand signal with no change to the cycle at all.
 | `waiting:retry-clock` | (V5) a `…/Ts` wait: the game-seconds since the give-up, of `T` |
 | `waiting:retry-when` | (V5) a `…/when` wait: the predicate it is waiting on |
 | `blocked:retry-when` | (V5) the `…/when` predicate could not be EVALUATED — V4's rule: a throw is not a false |
+| `held:queue` | (tpl1) a loaded action QUEUE holds this feature; it names the queue and the step that placed the hold, which is released when the queue ends, aborts or is unloaded (`docs/queues.md`) |
 | `paused:in-challenge` | (R3a) a `while` or an `until` is stopping this feature while the game is INSIDE a challenge it entered. It names the challenge and which of the two controls did it, because a pause does not leave a challenge and the run is stranded until the player clears the condition |
 | `waiting:gain` / `waiting:gain-x` | the `gain>=N` / `gain>=Nx` threshold, with the gain and what it needs |
 | `waiting:gain-unit` | `gain>=Nx-unit` while the layer holds **less than one** of its own resource: the bar is N of the resource, not N× nothing. A SEPARATE code, because the two bars are different questions and a reader has to be able to tell which one is refusing |
@@ -2200,6 +2205,7 @@ moot today (the derivation note above); on the-factoree `f` 21 is now bought to 
 ## Harness levers
 
 - `--log <file>` / `tools/harness/replay.mjs <file>` — the state log of a run and its exact replay (`docs/log.md`).
+- `--queue <file>` (repeatable) / `--queue-runner` — play an action queue (engine actions, holds on these features, waits) inside the tick (`docs/queues.md`); `tools/harness/strategize.mjs` — the strategy templates that write queues from a game's facts (`docs/templates.md`).
 - `--profile off|all|saved`, `--exclude au` (hash without the `au` layer), `--no-auto` (no table: derived defaults only).
 - `--no-currency` (C1): no generated currency data — every buyable's currency unknown, i.e. the behaviour before C1 (the
   control gate C1-4 measures inertness against). `--random-seed N`: a seeded `Math.random` counting its calls

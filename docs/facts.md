@@ -180,3 +180,8 @@ classes on known formulas; the probe returns the same object it perturbed).
   items: no committed state unlocks them, so they abstain by name. A fact needs a state; a state is never faked.
 - **Games beyond the three committed** (ptr, something, collection-of-everything). The tool runs on any roster game;
   adding one is `facts.mjs <id>` and a vacuity declaration for any kind it has none of.
+
+## Who reads them
+
+The strategy templates (`docs/templates.md`, tpl1): `time-priced-purchase` matches `price` + `production` + `zeroed-by`
+facts and walks `multiplier-reads` when waiting cannot help. `tools/harness/strategize.mjs <game>` runs them.

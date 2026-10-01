@@ -638,6 +638,60 @@ jobs:
           retention-days: 14
 
   # ---------------------------------------------------------------------------------------------------------------
+  # tpl1 — THE QUEUE RUNNER and THE FIRST STRATEGY TEMPLATE (`gates-tpl1.mjs`, docs/queues.md, docs/templates.md).
+  # Inert: no queue loaded moves nothing (ptr's opening lands on gates-c1c's pin O with the runner loaded and empty).
+  # Runner: hold → wait → call → end, a timeout aborting, an unload mid-queue — every hold released, the held reason
+  # naming the queue, every log replaying EQUAL. Oracle: q23 at QL5 says WAITING CANNOT HELP with its levers ranked
+  # against the source; q22 says BUY AT t*, and its queue played live buys it on the copy's tick; two other games run
+  # without a throw; the verdicts are counted. Grep: no game id in the runner or the template.
+  # ⛔ `--assert` holds each part to its exact row count, all green.
+  # ---------------------------------------------------------------------------------------------------------------
+  tpl1:
+    name: tpl1 — queues and the first template
+    needs: fast
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true   # games/ is the tmt-loader-games submodule
+          fetch-depth: 1
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - run: npm ci
+
+      - name: The battery — inert, runner, oracle, grep
+        shell: bash
+        run: |
+          set -o pipefail
+          for p in inert runner oracle grep; do node tools/harness/gates-tpl1.mjs --part $p --pool 4 --no-summary --assert | tee -a tpl1.txt; done
+
+      - name: Summary
+        if: always()
+        shell: bash
+        run: |
+          {
+            echo '## tpl1 — queues and the first template'
+            echo ''
+            echo '```'
+            cat tpl1.txt 2>/dev/null | grep -aE '^(GREEN|RED|VERDICT)' | cut -c1-400 || echo 'no output'
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload the rows
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: tpl1
+          path: tools/harness/results/tmp/gates-tpl1-part-*-last.json
+          if-no-files-found: warn
+          retention-days: 14
+
+  # ---------------------------------------------------------------------------------------------------------------
   # A1 part 2 — the `au` TAB ITSELF (`gates-a1.mjs --part 2`). Until V1 this ran NOWHERE in CI: only part 1's half
   # (the registry with no per-game table) rode inside M1's `both` leg, so every check of the tab the player actually
   # sees — the toggles' text, `?profile=all` not writing the save, a toggle surviving a reload, the disclosure line,

@@ -1,0 +1,7 @@
+{"format":"tmt-queue/1","id":"tpl1-timeout-abort","source":"authored","trigger":{"on":"start"},
+ "comment":"tpl1 gate leg R2 (ptr, fresh): a wait that can never be met times out after 10 game-seconds and aborts — and the abort releases the hold.",
+ "steps":[
+  {"do":"hold","features":["reset:p"],"comment":"held until the abort"},
+  {"do":"wait","until":"player.points.gte('1e1000')","timeout":{"gs":10},"onTimeout":"abort","comment":"never met"},
+  {"do":"comment","text":"never reached"}
+ ]}

@@ -173,6 +173,9 @@ const LEGS = [
   // Prestige Points 100 %/s passive — so from its first tick `reset:p` yields to the game's own generation. Before F1
   // the same leg reset `p` 62 times in 600 ticks (plan §46a). A fixture witness beats a construction (§18.4's rule).
   { key: 'ptr all/M04 + 200×1 (F1: the reset yields to passive generation)', id: 'ptr', o: { profile: 'all', diff: 1, ticks: 200, 'from-snapshot': SNAP('ptr', 'M04'), explain: true } },
+  // ⛔ tpl1's `held:queue`, on a REAL GAME: an authored queue (tools/harness/queues/tpl1/unload-mid.json) holds `reset:p`
+  // and waits, so from its second tick the held feature says which queue holds it. A fixture witness beats a construction.
+  { key: 'ptr fresh 40×1, --queue tpl1/unload-mid.json (tpl1: a queue holds reset:p)', id: 'ptr', o: { profile: 'all', diff: 1, ticks: 40, queue: 'tools/harness/queues/tpl1/unload-mid.json', explain: true } },
   { key: 'something fresh 600×1 (profile all), --auto-opt policy:reset:fundamental=interval>=5 (the interval witness, named)', id: 'something', o: { profile: 'all', diff: 1, ticks: 600, 'auto-opt': 'policy:reset:fundamental=interval>=5', explain: true } },
 ];
 
