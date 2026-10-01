@@ -4,7 +4,9 @@
 // table, `q33-sg-unlock`, so the table alone reaches M30.
 //   node tools/harness/gates-m30.mjs --part fixture|verdict|stage|grep|push [--pool N] [--no-write] [--assert]
 //   node tools/harness/gates-m30.mjs --part leg --leg <key> [--assert]      (one CI job per leg: qrate1.yml -f part=m30)
-//   node tools/harness/gates-m30.mjs --part merge --dir <artifacts> [--only <key>] [--assert]
+//   node tools/harness/gates-m30.mjs --part merge --dir <artifacts> [--only <key>] [--summary] [--assert]
+//   --summary (merge only): append the merged rows to results/SUMMARY.md — the rows the stage's provenance cites
+//   (gate ids `m30-<leg>`), so a measurement made outside CI is still a committed row.
 //
 // GATES (`push`, on every push in sweep.yml's `m30` job):
 // Part fixture  F0 the WALL state m30/W226931 = stages/M28 under the table BEFORE this slice (m30/table-before-m30.json,
@@ -32,11 +34,12 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { spawn } from 'node:child_process';
-import { REPO, parseArgs, headCommit, treeDirty, entryOnly } from './lib.mjs';
+import { REPO, parseArgs, headCommit, treeDirty, entryOnly, gameDir } from './lib.mjs';
+import { appendSection } from './summary.mjs';
 entryOnly(import.meta.url);
 
-const a = parseArgs(process.argv.slice(2), ['no-write', 'assert']);
-const KNOWN = new Set(['_', 'part', 'pool', 'no-write', 'assert', 'leg', 'dir', 'only']);
+const a = parseArgs(process.argv.slice(2), ['no-write', 'assert', 'summary']);
+const KNOWN = new Set(['_', 'part', 'pool', 'no-write', 'assert', 'leg', 'dir', 'only', 'summary']);
 for (const k of Object.keys(a)) if (!KNOWN.has(k)) { console.error(`REFUSED: unknown flag --${k}`); process.exit(2); }
 const GATE_PARTS = ['fixture', 'verdict', 'stage', 'grep'];
 const PART = String(a.part || 'push');
@@ -59,10 +62,10 @@ const WALL = 'tools/harness/snapshots/ptr/m30/W226931.json';
 const QUEUE = 'tools/harness/queues/m30/rr-reset-sg-from-W226931.json';
 const STAGE = 'q33-sg-unlock';
 const GOAL = 'reset:sg';
-const PIN_W = { ticks: 226931, hashGame: '__PIN_W__' };                     // stages/M28 + 141,652 ticks under PRE_TABLE
+const PIN_W = { ticks: 226931, hashGame: 'e09f367518a8fb2d' };                     // stages/M28 + 141,652 ticks under PRE_TABLE
 const PIN_M30 = { ticks: 94521, hashGame: '132127d4d5573106' };            // stages/M28 under the shipped table → M30 (diff 1)
 const PIN_Q33 = 93879;                                                     // the loop q33 is bought in, on that path
-const PIN_RESET = { ticks: '__PIN_RESET__' };                              // the queue's reset tick from the wall (diff 1)
+const PIN_RESET = { ticks: 226986 };                                  // the queue's reset tick from the wall (diff 1)
 // The SOURCE (games/ptr/js/layers.js:2526-2560): sg is a STATIC row-2 layer, `requires: new Decimal(200)`, `base()` 1.05
 // and `exponent()` 1.25 (1.04 / 1.225 only when mastered), `baseAmount() { return player.g.points }`, `layerShown` q33.
 // TMT's static cost at 0 points is requires × base^(0^exponent) = 200 (gainMult 1 without ss21; it divides the AMOUNT,
@@ -202,7 +205,7 @@ async function partVerdict() {
   // O1 — RESET-AT from the wall, the requirement read against the source
   const v1 = rr(o1)[0];
   {
-    const e = src && src.eval, srcText = fs.readFileSync(path.join(REPO, 'games/ptr/js/layers.js'), 'utf8');
+    const e = src && src.eval, srcText = fs.readFileSync(path.join(gameDir('ptr'), 'js/layers.js'), 'utf8');
     const blk = srcText.slice(srcText.indexOf('addLayer("sg"'), srcText.indexOf('addLayer("h"'));
     const declared = /requires:\s*new Decimal\(200\)/.test(blk) && /type:\s*"static"/.test(blk) && /baseAmount\(\)\s*\{return player\.g\.points\}/.test(blk) && /\?1\.04:1\.05/.test(blk) && /\?1\.225:1\.25/.test(blk);
     const formula = SRC.requires * Math.pow(SRC.base, Math.pow(0, SRC.exponent));
@@ -366,12 +369,14 @@ function partMerge() {
   const J = (k) => got[`m30-leg-${k.replace(/[^\w.-]/g, '_')}.json`];
   for (const k of MERGED) {
     const j = J(k);
-    row({ gate: `M-merge ${k}`, id: 'ptr', ok: !!j && j.twiceEqual && j.m30 !== null,
+    const r30 = j && j.legs[0].reached.M30;
+    row({ gate: `m30-${k} M-merge`, id: 'ptr', leg: j ? `${j.table} from ${path.basename(path.dirname(j.from))}/${path.basename(j.from, '.json')}` : null, ticks: r30 ? r30.ticks : null, gameSeconds: r30 ? r30.gameSeconds : null, diff: j ? j.diff : null, hash: r30 ? r30.hashGame : null,
+      ok: !!j && j.twiceEqual && j.m30 !== null,
       notes: j ? `M30 ${j.m30 === null ? 'NOT reached' : '+' + j.m30} game-s from ${path.basename(j.from)} (diff ${j.diff}); M31 ${j.m31} · M32 ${j.m32} · M33 ${j.m33}; commit ${j.commit}; twice equal ${j.twiceEqual}` : 'MISSING — the leg did not run or its artifact was not found' });
   }
   if (!a.only) {
     const F = J('first@1'), Lt = J('last@1'), A1 = J('A@1');
-    row({ gate: `M-order ${STAGE} FIRST (shipped) reaches M30 no later than LAST, from all/M26 at diff 1 — and the shipped path's M30 = the acceptance's`, id: 'ptr', ok: !!F && !!Lt && !!A1 && F.m30 !== null && (Lt.m30 === null || F.m30 <= Lt.m30) &&
+    row({ gate: `m30-order ${STAGE} FIRST (shipped) reaches M30 no later than LAST, from all/M26 at diff 1 — and the shipped path's M30 = the acceptance's`, id: 'ptr', ok: !!F && !!Lt && !!A1 && F.m30 !== null && (Lt.m30 === null || F.m30 <= Lt.m30) &&
       F.legs[0].reached.M30.hashGame === A1.legs[0].reached.M30.hashGame && F.legs[0].reached.M30.ticks === A1.legs[0].reached.M30.ticks,
       notes: F && Lt ? `first: M30 tick ${F.legs[0].reached.M30 && F.legs[0].reached.M30.ticks} (${F.legs[0].reached.M30 && F.legs[0].reached.M30.hashGame}); last: ${Lt.m30 === null ? 'never' : `tick ${Lt.legs[0].reached.M30.ticks} (${Lt.legs[0].reached.M30.hashGame})`}; acceptance ${A1 && A1.legs[0].reached.M30 && A1.legs[0].reached.M30.ticks}` : 'MISSING a leg' });
   }
@@ -385,6 +390,8 @@ for (const p of RUN) { expected += EXPECT[p]; await FN[p](); }
 const red = rows.filter((r) => !r.ok).length;
 const verdict = rows.length === expected && red === 0;
 console.log(`VERDICT m30 ${RUN.join('+')}: rows ${rows.length}/${expected}; ${red} RED${rows.length !== expected ? ' — ROW COUNT WRONG (a part died or a row went missing)' : ''}`);
+if (PART === 'merge' && a.summary) appendSection({ title: `Gate m30 merge — the stage ${STAGE} measured (\`node tools/harness/gates-m30.mjs --part merge --summary\`)`, commit, dirty, rows,
+  reading: 'each leg ran TWICE (equal or RED); gameSeconds is the game clock at M30; the merged legs\' own commit is in each row\'s notes.' });
 if (!a['no-write']) { fs.mkdirSync(path.join(REPO, 'tools/harness/results/tmp'), { recursive: true }); fs.writeFileSync(path.join(REPO, `tools/harness/results/tmp/gates-m30-part-${PART}${a.leg ? '-' + a.leg.replace(/[^\w.-]/g, '_') : ''}-last.json`), JSON.stringify({ commit, dirty, rows }, null, 1) + '\n'); }
 fs.rmSync(TMP, { recursive: true, force: true });
 process.exit(a.assert && !verdict ? 1 : 0);

@@ -978,6 +978,64 @@ jobs:
           if-no-files-found: warn
           retention-days: 14
 
+  # m30 — Super Generators (`gates-m30.mjs --part push`; docs/templates.md "reset-requirement", docs/automation.md
+  # "Stages"). Fixture: the wall (stages/M28 under the table before this slice, 141,652 ticks: q33 owned, sg never reset)
+  # and stages/M30 (stages/M28 under the shipped table alone) rebuild to their pins. Verdict: from the wall the
+  # reset-requirement template says RESET-AT against the source's requirement and its queue, played live, unlocks sg on
+  # the copy's tick and replays equal; with a 30-s window it says SHORT; a hold with the row siblings free is cut; the
+  # state-log evidence equals an independent count; something / collection-of-everything run with no throw. Stage: the
+  # stage switches on at q33 and no zeroing reset fires until reset:sg makes the reset; its gates are the template's
+  # hold and read the engine's requirement, never its number. Grep.
+  # The MEASUREMENT (M30 at diff 1 and 0.05, both stage orders) is `qrate1.yml -f part=m30`, dispatch-only.
+  # ⛔ `--assert` holds the run to its exact row count (11), all green.
+  # ---------------------------------------------------------------------------------------------------------------
+  m30:
+    name: m30 — Super Generators (M30)
+    needs: fast
+    runs-on: ubuntu-latest
+    timeout-minutes: 75
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true   # games/ is the tmt-loader-games submodule
+          fetch-depth: 1
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - run: npm ci
+
+      - name: The battery — fixture, verdict, stage, grep
+        shell: bash
+        run: |
+          set -o pipefail
+          s=$(date +%s)
+          node tools/harness/gates-m30.mjs --part push --pool 4 --assert | tee m30.txt
+          echo "TIME m30 push: $(( $(date +%s) - s )) s" | tee -a m30.txt
+
+      - name: Summary
+        if: always()
+        shell: bash
+        run: |
+          {
+            echo '## m30 — Super Generators (M30)'
+            echo ''
+            echo '```'
+            cat m30.txt 2>/dev/null | grep -aE '^(GREEN|RED|VERDICT|TIME)' | cut -c1-600 || echo 'no output'
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload the rows
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: m30
+          path: tools/harness/results/tmp/gates-m30-part-*-last.json
+          if-no-files-found: warn
+          retention-days: 14
+
   # ---------------------------------------------------------------------------------------------------------------
   # A1 part 2 — the `au` TAB ITSELF (`gates-a1.mjs --part 2`). Until V1 this ran NOWHERE in CI: only part 1's half
   # (the registry with no per-game table) rode inside M1's `both` leg, so every check of the tab the player actually
