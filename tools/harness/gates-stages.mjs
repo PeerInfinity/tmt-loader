@@ -205,7 +205,7 @@ async function partSwitch() {
     () => run('ptr', { 'from-snapshot': QL5F, profile: 'all', ticks: 600, 'auto-opt': 'stages=off', eval: EV_Q }),
     () => run('ptr', { 'from-snapshot': QL5F, profile: 'all', ticks: 600, eval: EV_Q }),
     () => run('ptr', { 'from-snapshot': QL5F, profile: 'all', ticks: 30, queue: fQueue, eval: EV_Q }),
-    () => run('ptr', { 'from-snapshot': QL5F, profile: 'all', ticks: 200, queue: fQueue, log: logQ }),
+    () => run('ptr', { 'from-snapshot': QL5F, profile: 'all', ticks: 200, queue: fQueue, log: logQ, eval: EV_Q }),
     () => run('ptr', { 'from-snapshot': QL5F, profile: 'all', ticks: 200, log: logC }),
   ]);
   // S1
@@ -286,11 +286,14 @@ async function partSwitch() {
       ran: !!qmid.ok && !!qrun.ok && !!qctl.ok,
       heldWhileStageInForce: !!qmid.eval && qmid.eval.last === 'held:queue' && qmid.eval.inForce === WINNER && !!qmid.eval.stage && qmid.eval.stage.policy === C1,
       noResetWhileHeld: relTick !== null && qResets.every(([t]) => t >= relTick),
-      actsAfterRelease: qResets.length > 0 && qResets.every(([, r]) => r === 'rate-peak@B/H'),
+      // after the release the feature decides again, under the STAGE's policy (rate-peak may still be WAITING: a 45-s hold
+      // leaves a quirk rate that is still rising — measured: no reset in the next 159 ticks — so the row asks for the
+      // decision, not for an act); any reset it does make is the stage's rule
+      backUnderTheStageAfterRelease: !!qrun.eval && qrun.eval.held === null && qrun.eval.last !== 'held:queue' && qrun.eval.inForce === WINNER && !!qrun.eval.stage && qrun.eval.stage.policy === C1 && qResets.every(([, r]) => r === 'rate-peak@B/H'),
       controlActsDuringTheHold: relTick !== null && cResets.some(([t]) => t < relTick),
     };
     row({ gate: 'S5 a QUEUE HOLD beats a stage: held (and named) while the stage is in force, the stage\'s rule after the release', id: 'ptr', ok: Object.values(checks).every(Boolean),
-      notes: `${ck(checks)} — mid-hold ${JSON.stringify(qmid.eval)}; queue released at ${relTick}; reset:q with the queue ${JSON.stringify(qResets.slice(0, 3))}; without ${JSON.stringify(cResets.slice(0, 3))}` });
+      notes: `${ck(checks)} — mid-hold ${JSON.stringify(qmid.eval)}; queue released at ${relTick}; at the end ${JSON.stringify(qrun.eval && { last: qrun.eval.last, inForce: qrun.eval.inForce, stage: qrun.eval.stage && qrun.eval.stage.policy, held: qrun.eval.held })}; reset:q with the queue ${JSON.stringify(qResets.slice(0, 3))}; without ${JSON.stringify(cResets.slice(0, 3))}` });
   }
 }
 
