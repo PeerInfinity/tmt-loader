@@ -417,7 +417,293 @@
       steps: steps };
   };
 
-  var TEMPLATES = { 'time-priced-purchase': TPP };
+  // ---- challenge-attempt (h22) ---------------------------------------------------------------------------------------
+  // The pattern: an unlocked, incomplete challenge whose attempts are ENDED by resets the automation makes — the
+  // `exits-challenge` facts name every reset that leaves it (the engine's rowReset: any reset of a row ≥ the challenge
+  // layer's, its siblings included), and at least one of them is an automation feature. On PTR that is every `h`
+  // challenge: q, o and ss reset row 3 too, and a `rate-peak` q reset every 30–90 s ended all 125 H22 attempts of
+  // §18.5 before any of them could finish or be given up.
+  // The question the check answers: with every exiting reset HELD, does an attempt finish — and if not, how far short is
+  // it at its best, and which input the facts name would close that?
+  var CA = { id: 'challenge-attempt', needs: ['exits-challenge', 'challenge-inputs', 'zeroed-by'] };
+  // A measurement bound, not a strategy literal: the longest attempt a check plays on the copy (game-s) unless the
+  // caller states a window — the same cap time-priced-purchase's held run uses.
+  var CA_HORIZON_CAP = 3600;
+
+  function chalOf(f) { var x = f.inside || (lastVariant(f) || {}).inside; return x ? { layer: x.layer, id: x.challenge } : null; }
+  function chalDecl(c) { var L = G.layers[c.layer]; return L && L.challenges ? L.challenges[c.id] : null; }
+  function chalUnlockedLive(c) {
+    var d = chalDecl(c); if (!d) return false;
+    if (!player[c.layer] || !player[c.layer].unlocked) return false;
+    if (d.unlocked === undefined) return true;
+    try { return !!(typeof d.unlocked === 'function' ? d.unlocked.call(d) : d.unlocked); } catch (e) { return false; }
+  }
+  function completions(c) { return Number(player[c.layer].challenges && player[c.layer].challenges[c.id] || 0); }
+  function completionLimit(c) { var t = G.tmp[c.layer] && G.tmp[c.layer].challenges && G.tmp[c.layer].challenges[c.id]; return t && t.completionLimit !== undefined ? Number(t.completionLimit) : 1; }
+  function chalGoal(c) { var t = G.tmp[c.layer] && G.tmp[c.layer].challenges && G.tmp[c.layer].challenges[c.id]; var d = chalDecl(c); return t && t.goal !== undefined ? t.goal : d && d.goal; }
+  function activeIs(c) { return String(player[c.layer].activeChallenge) === String(c.id); }
+  // R3a's progress reading, on the engine's own goal: p = log(amount) / log(goal), 0 below one unit of the currency
+  function progress(amount, goal) { var a = lg(amount), g = lg(goal); if (!isFinite(a) || a <= 0 || !isFinite(g) || g <= 0) return 0; return a / g; }
+  function chalExpr(c) { return { l: JSON.stringify(c.layer), id: JSON.stringify(argId(c.id)), path: 'player[' + JSON.stringify(c.layer) + ']' }; }
+
+  /** Every feature that ENDS an attempt: each exiting reset's layer's `reset` and `challenges` features (entering or
+   *  leaving any challenge of those layers is a reset of that layer). The challenge's own `challenges` feature is one of
+   *  them: while the queue holds the attempt, no reflex enters, leaves or gives it up — the queue finishes it. */
+  function caHoldSet(exits) {
+    var out = [];
+    for (var i = 0; i < (T.features || []).length; i++) {
+      var f = T.features[i];
+      if (exits.indexOf(f.layer) >= 0 && (f.kind === 'reset' || f.kind === 'challenges')) out.push(f.id);
+    }
+    return out;
+  }
+
+  // The state log as EVIDENCE (optional, `opts.log`: the records of a tmt-state-log/1 file): per challenge, how its
+  // attempts ended — completed, given up by the automation, or left by a call that was neither (a reset).
+  function logEvidence(records, c) {
+    if (!records) return null;
+    var key = c.layer + '.ac', ckey = c.layer + '.c.' + c.id, ac = null, ev = { attempts: 0, completed: 0, givenUp: 0, exitedBy: {}, open: false };
+    for (var i = 0; i < records.length; i++) {
+      var r = records[i];
+      if (r.type === 'checkpoint' && r.summary) { ac = r.summary[key] === undefined ? null : String(r.summary[key]); continue; }
+      if (r.type !== 'action' || !r.state || !(key in r.state)) continue;
+      var now = r.state[key] === null ? null : String(r.state[key]);
+      if (now === String(c.id) && ac !== String(c.id)) ev.attempts++;
+      if (ac === String(c.id) && now !== String(c.id)) {
+        if (ckey in r.state) ev.completed++;
+        else if (r.why && r.why.code === 'acted:challenge-give-up') ev.givenUp++;
+        else { var by = (r.by || r.source) + ' ' + r.call + '(' + (r.args || []).join(',') + ')'; ev.exitedBy[by] = (ev.exitedBy[by] || 0) + 1; }
+      }
+      ac = now;
+    }
+    ev.open = ac === String(c.id);
+    ev.cutByResets = Object.keys(ev.exitedBy).reduce(function (s, k) { return s + ev.exitedBy[k]; }, 0);
+    return ev;
+  }
+
+  CA.match = function (facts, opts) {
+    opts = opts || {};
+    var fun = opts.funnel || {}, out = [];
+    var ex = byKind(facts, 'exits-challenge'), by = {}, order = [];
+    for (var i = 0; i < ex.length; i++) {
+      var c = chalOf(ex[i]); if (!c) continue;
+      var k = 'ch:' + c.layer + ':' + c.id;
+      if (opts.goal && k !== opts.goal) continue;
+      if (!by[k]) { by[k] = { c: c, facts: [], exits: [], onGoal: {} }; order.push(k); }
+      var r = ex[i].reset || (lastVariant(ex[i]) || {}).reset;
+      by[k].facts.push(ex[i].id); by[k].exits.push(r); by[k].onGoal[r] = ex[i].onGoal || (lastVariant(ex[i]) || {}).onGoal;
+    }
+    fun.challengesWithExits = order.length; fun.cutByAutomation = 0; fun.withInputs = 0;
+    for (var j = 0; j < order.length; j++) {
+      var g = by[order[j]], cc = g.c;
+      var hold = caHoldSet(g.exits);
+      // "cut by resets": at least one exiting reset is something the automation PRESSES (a `reset` feature)
+      var cutters = (T.features || []).filter(function (f) { return f.kind === 'reset' && g.exits.indexOf(f.layer) >= 0; }).map(function (f) { return f.id; });
+      if (!cutters.length) continue;
+      fun.cutByAutomation++;
+      var inp = factById(facts, 'challenge-inputs:' + cc.layer + ':' + cc.id);
+      if (!inp) continue;
+      fun.withInputs++;
+      var iv = lastVariant(inp) || {};
+      var live = chalUnlockedLive(cc), done = live ? completions(cc) : 0, lim = live ? completionLimit(cc) : 1, inside = live && activeIs(cc);
+      var b = { template: CA.id, goal: order[j], challenge: cc, currency: iv.goalCurrency || null, exits: g.exits.slice(), onGoal: g.onGoal, cutters: cutters, hold: hold,
+        facts: { exits: g.facts, inputs: inp.id }, open: live && done < lim && !inside,
+        why: !live ? 'the challenge is not unlocked here' : done >= lim ? 'the challenge is complete here (' + done + '/' + lim + ')' : inside ? 'an attempt is in progress here (the state is inside the challenge; entering again would leave it)' : null };
+      if (opts.logRecords) b.evidence = logEvidence(opts.logRecords, cc);
+      out.push(b);
+    }
+    return out;
+  };
+
+  /** The measurement plan: the queue the template would emit, with the window as the wait's timeout. */
+  function caQueue(b, id, waitGs, n0, purpose) {
+    var x = chalExpr(b.challenge);
+    var steps = [
+      { 'do': 'hold', features: b.hold.slice(), comment: 'these end an attempt at ' + b.goal + ' (' + b.facts.exits.join(', ') + '); the queue owns the attempt' },
+      { 'do': 'call', fn: 'startChallenge', args: [b.challenge.layer, argId(b.challenge.id)], 'if': 'String(' + x.path + '.activeChallenge) !== ' + JSON.stringify(String(b.challenge.id)),
+        comment: 'enter ' + b.goal + ' — unless a reflex already did in the tick before the hold bound (pressed inside, startChallenge LEAVES)' },
+      { 'do': 'wait', until: 'String(' + x.path + '.activeChallenge) === ' + JSON.stringify(String(b.challenge.id)), timeout: { gs: 2 }, onTimeout: 'abort', comment: 'the engine entered it' },
+      { 'do': 'wait', until: 'canCompleteChallenge(' + x.l + ', ' + x.id + ')', timeout: { gs: waitGs }, onTimeout: 'skip', comment: purpose },
+      { 'do': 'call', fn: 'startChallenge', args: [b.challenge.layer, argId(b.challenge.id)], 'if': 'String(' + x.path + '.activeChallenge) === ' + JSON.stringify(String(b.challenge.id)),
+        comment: 'finish it (the engine completes a challenge whose goal is met as it leaves; otherwise this only leaves) — only while inside: pressed outside, it would ENTER again' },
+      { 'do': 'release', comment: 'the reflexes resume' },
+      { 'do': 'wait', until: 'Number(' + x.path + '.challenges[' + x.id + '] || 0) > ' + n0, timeout: { gs: 2 }, onTimeout: 'abort', comment: 'a completion was recorded' },
+    ];
+    return { format: 'tmt-queue/1', id: id, trigger: { on: 'start' }, source: { template: CA.id, goal: b.goal, facts: b.facts.exits.concat([b.facts.inputs]) }, steps: steps };
+  }
+  /** Play the attempt on the copy: every tick, the goal currency against the engine's goal. */
+  function attemptRun(b, window) {
+    return P.excursion(function () {
+      var n0 = completions(b.challenge), q = caQueue(b, 'ca-measure', window, n0, 'measurement on the copy: the stated window');
+      var r = T.queues.load(q);
+      if (!r.ok) throw new Error('the measurement queue was refused: ' + r.errors.join('; '));
+      var s = [], peak = null, done = null, entered = null, n = Math.round(window / DIFF) + Math.round(5 / DIFF);
+      for (var k = 1; k <= n; k++) {
+        T.tick(DIFF, 1);
+        var inside = activeIs(b.challenge);
+        if (inside && entered === null) entered = { k: k, tick: T.ticks };
+        if (completions(b.challenge) > n0) { done = { k: k, tick: T.ticks, gameSeconds: entered ? r4((k - entered.k + 1) * DIFF) : null }; break; }
+        if (!inside) { if (entered !== null) break; continue; }
+        var amt = getPath(b.currency), goal = chalGoal(b.challenge), p = progress(amt, goal);
+        // the peak is the AMOUNT's (p is 0 for anything below one unit, so a climb from 0.1 to 0.9 would read as nothing)
+        var al = lg(amt), row = { k: k, tick: T.ticks, t: r4((k - entered.k + 1) * DIFF), p: Number(p.toFixed(6)), amountLog10: isFinite(al) ? r4(al) : null, shortLog10: isFinite(al) && goal !== undefined && goal !== null && isFinite(lg(goal)) ? r4(lg(goal) - al) : null };
+        s.push(row);
+        if (peak === null || (row.amountLog10 !== null && (peak.amountLog10 === null || row.amountLog10 > peak.amountLog10))) peak = row;
+      }
+      return { samples: s, peak: peak, completed: done, entered: entered, n0: n0 };
+    });
+  }
+  // Where the table's own exit rule would have conceded this attempt, read off the measured trace: R3a's give-up@B/H —
+  // a window of H game-s that closes no more than B of the distance left at its start (docs/automation.md). B and H are
+  // the policy's own parameters (data), so this reports the table, it does not tune it.
+  function tableGiveUp(b, samples) {
+    var f = (T.features || []).filter(function (x) { return x.layer === b.challenge.layer && x.kind === 'challenges'; })[0];
+    if (!f || !T.parsePolicy) return null;
+    var str = null; try { str = f.policy || null; } catch (e) { str = null; }   // the policy IN FORCE (a getter)
+    var P1 = str ? T.parsePolicy(f.kind, str) : null, m = P1 && P1.modifier && /^give-up/.test(P1.modifier.id) ? P1.modifier : null;
+    if (!m) return { feature: f.id, policy: str, giveUp: null };
+    var B = Number(m.params.b), H = Number(m.params.h);
+    if (!isFinite(B) || !isFinite(H) || !samples.length) return { feature: f.id, policy: str, giveUp: null };
+    var a = 0;
+    for (var i = 0; i < samples.length; i++) {
+      var s0 = samples[a], s1 = samples[i];
+      if (s1.t - s0.t < H) continue;
+      if (s1.p - s0.p > B * (1 - s0.p)) { a = i; continue; }
+      return { feature: f.id, policy: str, B: B, H: H, concedesAt: { t: s1.t, p: s1.p, tick: s1.tick } };
+    }
+    return { feature: f.id, policy: str, B: B, H: H, concedesAt: null };
+  }
+
+  // The LEVERS of a short attempt (§18.5 → the challenge-inputs facts): replay the attempt to its PEAK on the copy and,
+  // for each numeric input the facts say moves the goal currency's gain INSIDE, read how much one step moves the gain and
+  // the value at which the gain rises by the shortfall X. Ranked by log10 distance; never a sub-goal: an input that is 0 at
+  // the peak (m28's rule), or one the ENTRY zeroes (`zeroed-by:<challenge layer>:<input>` — entering is that layer's
+  // reset, so the attempt spends it: m28's "no sub-goal on a currency the purchase spends").
+  function caLevers(facts, b, peakK, shortLog10) {
+    var X = Math.pow(10, shortLog10);    // for the text only: a shortfall can be 10^3000, so the arithmetic stays in log10
+    return P.excursion(function () {
+      var n0 = completions(b.challenge);
+      T.queues.load(caQueue(b, 'ca-peak', peakK * DIFF + 10, n0, 'replay to the peak'));
+      T.tick(DIFF, peakK);
+      T.queues.unload('ca-peak');
+      settle();
+      var reader = P.facts.gainReader(b.currency), g0 = reader.read(), lg0 = lg(g0);
+      var iv = lastVariant(factById(facts, b.facts.inputs)) || {}, levers = [], members = [];
+      (iv.moves || []).forEach(function (mv) {
+        if (!/^player\./.test(mv)) { members.push(mv); return; }
+        var held = getPath(mv);
+        if (!isNum(held)) return;
+        var L = { input: mv, held: String(held) };
+        var asNum = typeof held === 'number';
+        function gainAt(v) { return P.excursion(function () { setPath(mv, asNum ? v : N(v)); settle(); return lg(reader.read()); }); }
+        var hl = Math.max(lg(held), 0);
+        L.stepLog10 = r4(gainAt(asNum ? held * 10 + 1 : N(held).times(10).plus(1)) - lg0);
+        if (/\.buyables\./.test(mv)) L.plusOneLog10 = r4(gainAt(asNum ? held + 1 : N(held).plus(1)) - lg0);
+        // the smallest value at which the gain is ×X: a log-space bracket, then bisection
+        var tgt = lg0 + shortLog10, lo = hl, step = 0.25, hi = lo + step, nn = 0, ok = true;
+        while (gainAt(asNum ? Math.pow(10, hi) : N(10).pow(hi)) < tgt) { lo = hi; step *= 2; hi = lo + step; if (++nn > 14 || hi > 4000) { ok = false; break; } }
+        if (!ok) { L.reachable = false; L.why = 'the gain does not reach ×10^' + r4(shortLog10) + ' by moving ' + mv + ' alone (tried to 10^' + r4(hi) + ')'; }
+        else {
+          for (var i = 0; i < 40; i++) { var mid = (lo + hi) / 2; if (gainAt(asNum ? Math.pow(10, mid) : N(10).pow(mid)) >= tgt) hi = mid; else lo = mid; }
+          L.need = hi < 300 ? sig(Math.pow(10, hi)) : String(N(10).pow(r4(hi))); L.distanceLog10 = r4(hi - hl);
+        }
+        var z = factById(facts, 'zeroed-by:' + b.challenge.layer + ':' + mv);
+        if (z && (z.effect || (lastVariant(z) || {}).effect) === 'zeroes') L.spentByEntry = 'entering is a ' + b.challenge.layer + ' reset, and it zeroes ' + mv + ' (' + z.id + '): the attempt builds it from 0';
+        var zero = false; try { zero = N(held).lte(0); } catch (e) { zero = false; }
+        if (zero) L.zeroedAtPeak = 'still 0 at the peak';
+        levers.push(L);
+      });
+      levers.sort(function (a, c) {
+        var ea = !!(a.spentByEntry || a.zeroedAtPeak), ec = !!(c.spentByEntry || c.zeroedAtPeak);
+        if (ea !== ec) return ea ? 1 : -1;
+        var da = a.distanceLog10, dc = c.distanceLog10;
+        if (da === undefined) return 1; if (dc === undefined) return -1;
+        return da - dc;
+      });
+      return { levers: levers, members: members, gain: { reader: reader.name, log10: r4(lg0) }, at: { tick: T.ticks } };
+    });
+  }
+
+  CA.check = function (b, opts) {
+    opts = opts || {};
+    needRunner();
+    DIFF = Number(opts.diff) || 1;
+    var why = [], hash0 = P.hashes().hashGame;
+    if (!b.open) return { template: CA.id, goal: b.goal, verdict: 'abstain', reasoning: [b.why], queue: null };
+    if (!b.currency) return { template: CA.id, goal: b.goal, verdict: 'abstain', reasoning: ['the challenge-inputs fact names no goal currency'], queue: null };
+    var window = Number(opts.window) || Number(opts.horizon) || CA_HORIZON_CAP;
+    why.push('the exits-challenge facts: ' + b.goal + ' is left by a reset of ' + b.exits.join(', ') + ' (pressed by ' + b.cutters.join(', ') + '); holding ' + b.hold.join(', '));
+    if (b.evidence) why.push('the state log: ' + b.evidence.attempts + ' attempt(s), ' + b.evidence.completed + ' completed, ' + b.evidence.givenUp + ' given up, ' + b.evidence.cutByResets + ' ended by a call that was neither' + (Object.keys(b.evidence.exitedBy).length ? ' (' + Object.keys(b.evidence.exitedBy).map(function (k) { return k + ' ×' + b.evidence.exitedBy[k]; }).join(', ') + ')' : '') + (b.evidence.open ? '; one still open at the log\'s end' : ''));
+    var run = attemptRun(b, window);
+    var out = { template: CA.id, goal: b.goal, binding: b, window: window, reasoning: why, queue: null, subgoal: null, levers: null,
+      rollback: { samples: run.samples.length, entered: run.entered, peak: run.peak, completed: run.completed,
+        trace: run.samples.filter(function (s, i) { return i < 5 || i % 50 === 49 || s === run.peak; }) } };
+    if (DIFF !== 1) { out.diff = DIFF; why.push('every copy-side tick ran at diff ' + DIFF + ' (not the default 1)'); }
+    if (!run.entered) { out.verdict = 'unconfirmed'; why.push('the engine did not enter ' + b.goal + ' on the copy'); out.neutral = P.hashes().hashGame === hash0; return out; }
+    out.tableGiveUp = tableGiveUp(b, run.samples);
+    if (out.tableGiveUp && out.tableGiveUp.concedesAt) why.push('the table\'s own ' + out.tableGiveUp.feature + ' (' + out.tableGiveUp.policy + ') would concede this attempt at t = ' + out.tableGiveUp.concedesAt.t + ' s (p = ' + out.tableGiveUp.concedesAt.p + ')' + (run.completed ? ', before it completes' : ''));
+    if (run.completed) {
+      // ---- COMPLETE: plan at the measured moment, and CONFIRM by playing the plan on the copy ------------------------
+      out.verdict = 'complete';
+      out.tStar = { tick: run.completed.tick, afterTicks: run.completed.k, gameSeconds: run.completed.gameSeconds, peakP: run.peak ? run.peak.p : null };
+      why.push('rollback: with the exits held the attempt completes ' + run.completed.gameSeconds + ' game-s after entry (tick ' + run.completed.tick + ')');
+      var q = CA.plan(b, out);
+      var c = P.excursion(function () {
+        var r = T.queues.load(q); if (!r.ok) return { played: false, refused: r.errors };
+        var at = null, st = null, n0 = completions(b.challenge), lim = run.completed.k + Math.round(20 / DIFF);
+        for (var k = 1; k <= lim; k++) {
+          T.tick(DIFF, 1);
+          if (at === null && completions(b.challenge) > n0) at = { tick: T.ticks };
+          st = T.queues.status().queues.filter(function (x) { return x.id === q.id; })[0];
+          if (st && st.state !== 'armed' && st.state !== 'running') break;
+        }
+        return { played: true, completed: at !== null, at: at, state: st ? st.state : null, outcome: st ? st.outcome : null, holds: st ? st.holds : null };
+      });
+      out.confirm = c;
+      if (c.played && c.completed && c.state === 'done') { out.queue = q; why.push('confirmed on the copy: the queue completed ' + b.goal + ' on tick ' + c.at.tick + ' and released its holds'); }
+      else { out.verdict = 'unconfirmed'; why.push('NOT confirmed: the queue played on the copy ' + (c.played ? 'ended ' + c.state + ' (' + c.outcome + ') without the completion' : 'was refused: ' + (c.refused || []).join('; ')) + ' — no queue is emitted'); }
+    } else {
+      var first = run.samples[0], last = run.samples[run.samples.length - 1], pk = run.peak;
+      var moved = !!(pk && first && pk.amountLog10 !== null && (first.amountLog10 === null || pk.amountLog10 > first.amountLog10));
+      if (!moved) {
+        out.verdict = 'cannot-progress';
+        why.push('rollback: in ' + window + ' game-s inside, ' + b.currency + ' never rose above its reading on entry (' + (first ? (first.amountLog10 === null ? '0' : '10^' + first.amountLog10) : '—') + ') — nothing the attempt does moves the goal currency');
+      } else {
+        // ---- SHORT by X: name the levers the challenge-inputs facts rank, and emit the nearest as a sub-goal ------------
+        out.verdict = 'short';
+        out.short = { log10: pk.shortLog10, atP: pk.p, atT: pk.t, lastP: last.p, amountLog10: pk.amountLog10 };
+        if (pk.shortLog10 === null) {
+          // a challenge whose completion is a FUNCTION (`canComplete`) declares no goal value: the engine's own question
+          // says "not yet", but how far is not readable — the shortfall is not priced, and no lever is ranked
+          why.push('rollback: ' + b.currency + ' rose to 10^' + pk.amountLog10 + ' (t = ' + pk.t + ' s) and the engine never said the goal was met; the challenge declares no goal VALUE (a canComplete function), so the shortfall is not priced');
+          out.neutral = P.hashes().hashGame === hash0;
+          return out;
+        }
+        why.push('rollback: the attempt peaks at p = ' + pk.p + ' (t = ' + pk.t + ' s), 10^' + pk.shortLog10 + ' short of the goal in ' + b.currency);
+        var lw = caLevers(opts.facts, b, pk.k, pk.shortLog10);
+        out.levers = lw.levers; out.leverWalk = { members: lw.members, gain: lw.gain, at: lw.at };
+        var best = lw.levers.filter(function (l) { return l.distanceLog10 !== undefined && !l.spentByEntry && !l.zeroedAtPeak; })[0] || null;
+        if (best) {
+          out.subgoal = { kind: 'value', dimension: best.input, threshold: best.need, why: 'raises ' + lw.gain.reader + ' inside ' + b.goal + ' ×10^' + pk.shortLog10 + ' — enough to close the attempt\'s shortfall at its peak' };
+          why.push('the nearest lever: ' + best.input + ' ' + best.held + ' → ' + best.need + ' (10^' + best.distanceLog10 + ') — emitted as the sub-goal, no queue');
+        } else if (lw.levers.some(function (l) { return l.distanceLog10 !== undefined; })) why.push('every priced lever is built inside the attempt (zeroed by the entry, or 0 at the peak): no sub-goal');
+        else { out.verdict = 'cannot-progress'; why.push('no input the facts name moves the gain enough: cannot progress by a lever'); }
+      }
+    }
+    out.neutral = P.hashes().hashGame === hash0;
+    return out;
+  };
+
+  CA.plan = function (b, v) {
+    if (!v || v.verdict !== 'complete' || !v.tStar) return null;
+    var id = 'ca-' + b.goal.replace(/[^A-Za-z0-9_.-]/g, '-');
+    var q = caQueue(b, id, sig(v.tStar.gameSeconds) + 10, completions(b.challenge),
+      'the rollback measured the goal met ' + v.tStar.gameSeconds + ' game-s after entry (diff ' + DIFF + ')');
+    q.comment = b.goal + ' is ended by a reset of ' + b.exits.join(', ') + ' (the exits-challenge facts). Hold every one, enter, wait for the goal, finish, release.';
+    return q;
+  };
+
+  var TEMPLATES = { 'time-priced-purchase': TPP, 'challenge-attempt': CA };
   /** run(facts, {goal?, horizon?}) — every template's matches, each checked; what `strategize.mjs` prints. */
   function run(facts, opts) {
     opts = Object.assign({}, opts || {}, { facts: facts });

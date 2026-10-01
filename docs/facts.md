@@ -176,6 +176,27 @@ perturbation threw, by name). `probeState: the challenge entered on the copy thr
   moving H22's point gain. Three clean passes show they do not; gate O6 pins that.
 - Abstains: the engine did not enter; the gain reader throws.
 
+### `exits-challenge` — which resets END an attempt (h22)
+For every challenge open at the state, and every shown layer with a reset type: enter the challenge on the copy (a state
+already INSIDE it is probed as it is — `startChallenge` would leave it), then that layer's `doReset` in its own
+excursion, prepared exactly as `zeroed-by` prepares it (at the injected requirement, forced only when injection fails),
+and read whether the challenge is still active. For each reset that exits, a second excursion sets the goal currency to
+the goal first and reads whether the exit COMPLETES it (`onGoal: completes | exits | stays | unread` — unread when the
+challenge declares no goal value). One fact per (challenge, reset): `exits-challenge:<l>:<id>:<reset>`
+`{inside: {layer, challenge}, reset, exits: true, onGoal}`; a reset that does not exit writes nothing.
+- **Why it is measured and not assumed**: 2.2.1's `rowReset` (game.js:126-136) sets `activeChallenge = null` on every
+  layer of a row it resets, and `doReset` (:222-224) first runs `completeChallenge` on every layer of a row ≤ its own —
+  so an attempt is ended by ANY reset of a row ≥ the challenge layer's, its SIBLINGS included. That is one engine's
+  rule; a later engine may differ, and the probe reads whichever one runs.
+- ptr: **20 facts** — h11, h12, h21, h22 and h32 are each left by exactly h, o, q and ss (the shown resets of row 3),
+  each completing the challenge with the goal met (gate O8). The q reset is the one that ended §18.5's 125 H22 attempts.
+  Cost: ~5–9 s for two states; ptr's full regeneration 218 s (was 211 s).
+- ⚠ **Found here, not fixed (facts-1's `itemUnlocked`)**: an `unlocked()` that RETURNS `undefined` reads as unlocked
+  (`v !== false`). PTR's H32 "Option D" is `tmp.ps.buyables[11].effects.hindr` — undefined while Pseudo-Boosters are
+  locked — so the challenge probes enter H32 in states where the engine hides it (`challenge-inputs:h:32`,
+  `exits-challenge:h:32:*`). The template reads `unlocked` strictly (`!!`) and calls H32 not unlocked at m28/QL6.
+- Abstains: the engine did not enter the challenge; `doReset` throws.
+
 ### `purchase-budget` — a counter a purchase raises by one, and its limit
 Outside any challenge and inside each open one (entered on the copy): for each unlocked buyable / unowned upgrade with
 a `canAfford`, trace it; make it affordable; buy it through the engine; a numeric read that ROSE BY EXACTLY ONE is a
@@ -188,8 +209,8 @@ only an exact limit equal in both probes is a fact. Items sharing a counter are 
 
 | part | what it holds |
 |---|---|
-| `oracle` | ptr's §7 rows against the file, each value from the design notes and the game SOURCE (cited per row), never from a probe; state readings from a separate `--eval` boot of every state. q11–q32 prices (exponent, offset 1, coefficient, currency; q31/q32 at the declared m28/QL6) · q33 and H31's goal ABSTAIN (locked in every state — measured) · `q.time` / `q.energy` zeroed by exactly the shown resets of row ≥ 3, writers h, q, o · quirk energy's increment `(q.time·M)^E`, E = Quirk Layers + free − 1, M = `enGainMult` per state · `enGainMult` / q11 / q21 read sets = the source · H22: inside, only Space buildings 11 and 15 among buyables (15 only where the probe's one-building step moves its FLOORED effect — read per state with the source's own effect inside H22; not at m28/QL6), achievements 21/31 and prestige upgrades; b and h nerfed · H31's budget ABSTAINS (locked) |
-| `vacuity` | facts per kind per game; a kind with ZERO facts is RED unless declared, and each declaration is measured (ptr budget: H31 locked in every state; something: no challenge unlocked in any state; collection-of-everything budget: its layer sources increment nothing); nothing threw |
+| `oracle` | ptr's §7 rows against the file, each value from the design notes and the game SOURCE (cited per row), never from a probe; state readings from a separate `--eval` boot of every state. q11–q32 prices (exponent, offset 1, coefficient, currency; q31/q32 at the declared m28/QL6) · q33 and H31's goal ABSTAIN (locked in every state — measured) · `q.time` / `q.energy` zeroed by exactly the shown resets of row ≥ 3, writers h, q, o · quirk energy's increment `(q.time·M)^E`, E = Quirk Layers + free − 1, M = `enGainMult` per state · `enGainMult` / q11 / q21 read sets = the source · H22: inside, only Space buildings 11 and 15 among buyables (15 only where the probe's one-building step moves its FLOORED effect — read per state with the source's own effect inside H22; not at m28/QL6), achievements 21/31 and prestige upgrades; b and h nerfed · H31's budget ABSTAINS (locked) · (h22) O8: every h challenge is exited by exactly the shown resets of row ≥ h's (rowReset), each completing it with the goal met, and H22 is covered wherever it is open |
+| `vacuity` | facts per kind per game; a kind with ZERO facts is RED unless declared, and each declaration is measured (ptr budget: H31 locked in every state; something: no challenge unlocked in any state — its challenge-inputs, purchase-budget and (h22) exits-challenge; collection-of-everything budget: its layer sources increment nothing); nothing threw |
 | `neutral` | the live hash after the whole extraction = a run extracting nothing, and every kind neutral: ptr fresh / all/M25 / all/M27, something all/S05, collection-of-everything fresh |
 | `determinism` | two regenerations byte-identical to each other and to the committed file |
 | `grep` | no game id and no ptr layer id in the extractor (string literals; `layers` / `player` / `tmp` member access outside comments) |
@@ -214,4 +235,5 @@ classes on known formulas; the probe returns the same object it perturbed).
 ## Who reads them
 
 The strategy templates (`docs/templates.md`, tpl1): `time-priced-purchase` matches `price` + `production` + `zeroed-by`
-facts and walks `multiplier-reads` when waiting cannot help. `tools/harness/strategize.mjs <game>` runs them.
+facts and walks `multiplier-reads` when waiting cannot help; (h22) `challenge-attempt` matches `exits-challenge` +
+`challenge-inputs` facts and reads `zeroed-by:<challenge layer>:*` to know which inputs the entry spends. `tools/harness/strategize.mjs <game>` runs them.

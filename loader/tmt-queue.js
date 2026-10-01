@@ -94,6 +94,9 @@
         var t = target(s.fn, s.self);
         if (t.error) errs.push(at + t.error);
         if (s.args !== undefined && !Array.isArray(s.args)) errs.push(at + '"args" must be an array');
+        // (h22) `if`: the call is made only when this holds — `startChallenge` LEAVES the challenge it is pressed inside,
+        // so a plan that enters one must not press it when a reflex already entered in the tick before the hold bound
+        if (s['if'] !== undefined) { var ie = typeof s['if'] === 'string' && s['if'] ? compiles(s['if']) : '"if" must be a non-empty predicate'; if (ie) errs.push(at + 'if: ' + ie); }
       } else if (s.do === 'comment') {
         if (typeof s.text !== 'string' && typeof s.comment !== 'string') errs.push(at + 'a comment step carries "text"');
       }
@@ -174,6 +177,12 @@
         syncLink();
         Q.pc++;
       } else if (s.do === 'call') {
+        if (s['if'] !== undefined) {
+          var cv, ce = null;
+          try { cv = !!T.predicate(s['if'])(); } catch (e) { ce = String(e && e.message || e).slice(0, 160); }
+          if (ce !== null) { finish(Q, 'aborted', 'step ' + (Q.pc + 1) + ': the call\'s "if" threw: ' + ce); return; }
+          if (!cv) { note(Q, 'call-skipped', { fn: s.fn, 'if': s['if'] }); setLast(Q, 'did not call ' + s.fn + ': ' + s['if'] + ' is false'); Q.pc++; continue; }
+        }
         var r = callStep(Q, s);
         if (r.threw) { setLast(Q, 'call ' + s.fn + ' threw: ' + r.threw); finish(Q, 'aborted', 'step ' + (Q.pc + 1) + ': the call ' + s.fn + ' threw: ' + r.threw); return; }
         setLast(Q, 'called ' + s.fn + '(' + (s.args || []).map(function (a) { return JSON.stringify(a); }).join(', ') + ') — ' + (r.did ? 'it changed the game' : 'it changed nothing'));

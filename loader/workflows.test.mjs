@@ -477,6 +477,24 @@ test('m28: the gates on every push, the legs dispatch-only behind part=m28', () 
   const m = wf('qrate1.yml'), q = jobs(m);
   assert.match(m, /inputs:\n\s+part:\n[\s\S]*?type: choice[\s\S]*?default: qrate1/, 'qrate1.yml has no `part` choice defaulting to qrate1');
   for (const k of ['m28-legs', 'm28-merge']) assert.match(q[k] || '', /if: \$\{\{[^}]*inputs\.part == 'm28'/, `${k} is not gated on part=m28`);
-  for (const k of ['screen', 'cells', 'planner', 'merge']) assert.match(q[k] || '', /if: \$\{\{[^}]*inputs\.part != 'm28'/, `${k} would also run on a part=m28 dispatch`);
+  // (h22) the qrate1 cells run ONLY on part=qrate1 — `!= 'm28'` would also have run them on a part=h22 dispatch
+  for (const k of ['screen', 'cells', 'planner', 'merge']) assert.match(q[k] || '', /if: \$\{\{[^}]*inputs\.part == 'qrate1'/, `${k} would also run on another part's dispatch`);
   assert.match(q['m28-legs'], /gates-m28\.mjs --part leg[^\n]*--assert/);
+});
+
+// ---------------------------------------------------------------------------------------------------------------
+// h22: the slice's gates on every push; its legs (M29 at diff 1 and 0.05) in qrate1.yml behind `-f part=h22`.
+// ---------------------------------------------------------------------------------------------------------------
+test('h22: the gates on every push, the legs dispatch-only behind part=h22', () => {
+  const j = jobs(wf('sweep.yml'));
+  assert.ok(j.h22, 'sweep.yml has no `h22` job');
+  assert.deepEqual(needs(j.h22), ['fast']);
+  assert.match(j.h22, /gates-h22\.mjs --part push[^\n]*--assert/);
+  assert.doesNotMatch(j.h22, /--part (leg|merge)/, 'an h22 MEASUREMENT part is in the sweep — it would run on every push');
+  assert.doesNotMatch(j.h22, /^\s{4}if:/m, 'the h22 job is gated: it must run on every push');
+  const m = wf('qrate1.yml'), q = jobs(m);
+  assert.match(m, /options: \[[^\]]*\bh22\b[^\]]*\]/, 'qrate1.yml offers no part=h22');
+  for (const k of ['h22-legs', 'h22-merge']) assert.match(q[k] || '', /if: \$\{\{[^}]*inputs\.part == 'h22'/, `${k} is not gated on part=h22`);
+  for (const k of ['m28-legs', 'm28-merge']) assert.doesNotMatch(q[k] || '', /inputs\.part == 'h22'/, `${k} would run on a part=h22 dispatch`);
+  assert.match(q['h22-legs'], /gates-h22\.mjs --part leg[^\n]*--assert/);
 });

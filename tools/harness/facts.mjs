@@ -29,7 +29,7 @@ const DATA = path.join(REPO, 'games-facts');
 const SCRIPT = path.join(REPO, 'tools/harness/facts-read.js');
 export const GENERATOR_VERSION = 1;
 export const FORMAT = 'tmt-facts/1';
-export const KINDS = ['price', 'zeroed-by', 'production', 'multiplier-reads', 'challenge-inputs', 'purchase-budget'];
+export const KINDS = ['price', 'zeroed-by', 'production', 'multiplier-reads', 'challenge-inputs', 'purchase-budget', 'exits-challenge'];
 
 const BOOL = new Set(['write', 'check', 'check-index', 'help']);
 const VALUED = new Set(['from', 'jobs', 'out', 'json', 'kinds']);

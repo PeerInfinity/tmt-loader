@@ -51,7 +51,7 @@ hand is the escape hatch and says so (`"source": "authored"`). Either way a queu
 
 | `do` | fields | what it does |
 |---|---|---|
-| `call` | `fn`, `args`, (`self`) | calls an engine function: a global (`buyUpgrade`, `doReset`, `startChallenge`, `buyBuyable`, …) or a layer path in the state log's form (`layers.s.buyables.11.sellOne`; `self: "layers"` calls it on the declaration rather than its `tmp` copy). A call that changes nothing is not an error — the next `wait` is where a queue checks; a call that THROWS aborts the queue |
+| `call` | `fn`, `args`, (`self`), (`if`) | calls an engine function: a global (`buyUpgrade`, `doReset`, `startChallenge`, `buyBuyable`, …) or a layer path in the state log's form (`layers.s.buyables.11.sellOne`; `self: "layers"` calls it on the declaration rather than its `tmp` copy). A call that changes nothing is not an error — the next `wait` is where a queue checks; a call that THROWS aborts the queue. (h22) **`if`**: an expression; the call is made only when it holds — otherwise the step is skipped and recorded (`call-skipped`), and an `if` that throws aborts the queue by name. It exists for TOGGLES: `startChallenge` pressed inside the challenge LEAVES it, so a plan that enters one says `"if": "String(player[\"h\"].activeChallenge) !== \"22\""` (a reflex may have entered it in the tick before the hold bound) |
 | `hold` | `features` | holds those automation features (ids as the Advanced view shows them: `reset:q`, `upgrades:q`, …) until released |
 | `release` | (`features`) | releases those, or every hold of this queue when `features` is left out |
 | `wait` | `until`, `timeout: {gs}`, `onTimeout: abort \| skip` | waits until the expression holds, at most `gs` game-seconds; then aborts the queue or skips to the next step. A wait with no timeout is refused (a queue that can wait forever is a silent stall with its holds in force). An expression that throws aborts the queue, by name (a throw is not a false) |
@@ -88,7 +88,8 @@ With the state log on (`docs/log.md`), every runner action is recorded:
 - a queue's **call** is an `action` record with `source: "queue"`, `queue: {id, step, comment}` and
   `at: ["au", "queue"]` — written even when it changed nothing (the queue did press it);
 - the runner's own actions are `queue` records (`do`: `load`, `trigger`, `hold`, `release`, `wait-met`, `wait-timeout`,
-  `comment`, `end`, `abort`, `unload`), with the queue, the step and its comment.
+  `call-skipped`, `comment`, `end`, `abort`, `unload`), with the queue, the step and its comment. A skipped call makes no
+  `action` record, so the replay has nothing to re-apply for it.
 
 The replay re-applies queue calls in the queue's slot exactly as it re-applies the automation's calls in theirs, and
 compares them like every other action. `queue` records are readings, like progress events: not re-applied, not
@@ -109,7 +110,7 @@ node tools/harness/run.mjs <game> … --queue-runner                      the ru
 ```
 
 The result carries `queueStatus` (every queue's state, step, holds and last action). The queues are loaded after the
-state log starts, so `--log` records the `load`. Committed test queues: `tools/harness/queues/tpl1/`.
+state log starts, so `--log` records the `load`. Committed test queues: `tools/harness/queues/tpl1/`; template-emitted fixtures: `tools/harness/queues/m28/`, `queues/h22/`.
 
 Gates: `tools/harness/gates-tpl1.mjs` — part `inert` (no queue moves nothing: the opening pin with the runner loaded,
 two other games ticked with and without it), part `runner` (hold → wait → call → end; a timeout aborting; an unload

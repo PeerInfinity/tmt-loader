@@ -1583,6 +1583,13 @@ guide mentions it".
   buildings while `spent` stays. ⚠ A second engine trap on the way: the PTR family's `updateTempData` skips a layer
   whose tab is closed, so a `buyMax()` issued with the Space tab closed reads a STALE cost and buys nothing — any
   future `prepare` step that buys must open the tab or refresh that layer's `tmp` first.
+  ⚠ **(h22, 2026-10-01) past QL6 the wall was never the economy alone — it was the RESETS.** Every H22 attempt from
+  qrate1's winner was ended by the next q reset (`rowReset` clears h's challenge on any row-3 reset — the
+  `exits-challenge` facts, docs/facts.md), 125 of 125, before progress could be read. With h, q, o, ss and
+  `challenges:h` HELD, an attempt from m28/QL6 completes in 984 game-s (the `challenge-attempt` template,
+  docs/templates.md) — and this table's own `give-up@0.1/30/2x` would have conceded it at 211 s (p = 0.9998): inside
+  H22 points grow linearly, which the window rule reads as a crawl. Neither default moved (design notes §19-R.2: such a
+  setting becomes a stage-gated table entry in a later slice, with its rows).
 - **M26 (q22) is a MULTIPLIER wall, not a price that runs away — and it falls by itself.** q22 costs `2e11·(q.time+1)^4.2` quirk energy and
   energy accrues as `(t·M)^(QL−1)`: at 4 Quirk Layers, energy ÷ price ∝ `M³·t^−0.2`, so waiting in a q-run never
   pays and the reset cadence is not the lever (the best moment in a run is t ≈ 20, derived and measured). The gap is

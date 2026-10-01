@@ -215,7 +215,9 @@ function runNodeRaw(id, o) {
   }
   if (storage) args.push('--storage', path.resolve(storage));
   // the child's own --wall-ms bounds the tick loop; the spawn timeout must outlast it (boot + result write)
-  const res = bootChild(id, args, { timeoutMs: Math.max(600e3, Number(o['wall-ms'] || 0) + 120e3) });
+  // (h22) `timeoutMs` (a caller's option, never a boot flag): a planner-script that ticks a long copy-side run — a
+  // template checked at the page's diff 0.05 — needs more than the default 10 minutes and has no tick loop to wall
+  const res = bootChild(id, args, { timeoutMs: Math.max(600e3, Number(o['wall-ms'] || 0) + 120e3, Number(o.timeoutMs || 0)) });
   if (steps.length) res.steps = steps;
   return res;
 }

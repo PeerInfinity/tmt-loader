@@ -11,6 +11,10 @@
 #
 # TO RUN IT:  gh workflow run qrate1.yml -R PeerInfinity/tmt-loader --ref <branch>               (qrate1's cells)
 #             gh workflow run qrate1.yml -R PeerInfinity/tmt-loader --ref <branch> -f part=m28  (m28's legs, below)
+#             gh workflow run qrate1.yml -R PeerInfinity/tmt-loader --ref <branch> -f part=h22  (h22's legs, below)
+# h22 (tmt-h22-1, `gates-h22.mjs --part leg`): M29 from m28/QL6 — the challenge-attempt template's verdict on H22 at that
+# tick size (a check at diff 0.05 ticks ~40,000 copy-side ticks: past run.mjs's default 600-s boot limit, hence CI), then
+# the queue it emitted played live until H22 is completed — twice.
 # m28 (tmt-m28-1, `gates-m28.mjs --part leg`): each leg runs from m28/QL6 in stages — q31 bought, then q32 bought (M28)
 # — twice; the qrate1 winner as it is, with challenge attempts held, at diff 1 and 0.05, and the planner on the
 # template's sub-goal (q31 widened, q32 at the default options; with and without the challenge-hold candidate). It lives in THIS file because a new
@@ -28,12 +32,12 @@ on:
   workflow_dispatch:
     inputs:
       part:
-        description: 'qrate1 (the quirk-rate cells, the default) or m28 (the legs toward q32; design notes §18)'
+        description: 'qrate1 (the quirk-rate cells, the default), m28 (the legs toward q32; design notes §18) or h22 (M29 at diff 1 and 0.05; §20)'
         type: choice
-        options: [qrate1, m28]
+        options: [qrate1, m28, h22]
         default: qrate1
       leg:
-        description: 'm28 only: run just this leg (a key of gates-m28.mjs LEGS); empty = every leg'
+        description: 'm28 / h22 only: run just this leg (a key of gates-m28.mjs / gates-h22.mjs LEGS); empty = every leg'
         type: string
         default: ''
 
@@ -50,7 +54,7 @@ env:
 jobs:
   screen:
     name: qrate1 — the screen (every candidate cell, 5,000 game-s, twice)
-    if: ${{ inputs.part != 'm28' }}
+    if: ${{ inputs.part == 'qrate1' }}
     runs-on: ubuntu-latest
     timeout-minutes: 90
     steps:
@@ -84,7 +88,7 @@ jobs:
 
   cells:
     name: qrate1 — cell ${{ matrix.cell }}
-    if: ${{ inputs.part != 'm28' }}
+    if: ${{ inputs.part == 'qrate1' }}
     runs-on: ubuntu-latest
     timeout-minutes: 330
     strategy:
@@ -128,7 +132,7 @@ jobs:
 
   planner:
     name: qrate1 — the planner on the sub-goal
-    if: ${{ inputs.part != 'm28' }}
+    if: ${{ inputs.part == 'qrate1' }}
     runs-on: ubuntu-latest
     timeout-minutes: 330
     steps:
@@ -165,7 +169,7 @@ jobs:
   merge:
     name: qrate1 — merge (refuses a missing cell)
     needs: cells
-    if: ${{ always() && inputs.part != 'm28' }}
+    if: ${{ always() && inputs.part == 'qrate1' }}
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -262,3 +266,76 @@ jobs:
         shell: bash
         run: |
           { echo '## m28 — merge'; echo ''; echo '```'; grep -aE '^(GREEN|RED|VERDICT)' merge.txt | cut -c1-1500 || echo 'no output'; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
+
+  h22-legs:
+    name: h22 — leg ${{ matrix.leg }}
+    if: ${{ inputs.part == 'h22' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 240
+    strategy:
+      fail-fast: false
+      matrix:
+        leg: ['m29@1', 'm29@0.05', 'table@1', 'table@0.05']
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+          fetch-depth: 1
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+      - run: npm ci
+      - name: The leg, twice
+        shell: bash
+        run: |
+          set -o pipefail
+          if [ -n '${{ inputs.leg }}' ] && [ '${{ inputs.leg }}' != '${{ matrix.leg }}' ]; then echo 'SKIPPED: not the requested leg' | tee leg.txt; exit 0; fi
+          s=$(date +%s)
+          node tools/harness/gates-h22.mjs --part leg --leg '${{ matrix.leg }}' --assert | tee leg.txt
+          echo "TIME leg ${{ matrix.leg }}: $(( $(date +%s) - s )) s" | tee -a leg.txt
+      - name: Summary
+        if: always()
+        shell: bash
+        run: |
+          { echo '## h22 — ${{ matrix.leg }}'; echo ''; echo '```'; grep -aE '^(GREEN|RED|VERDICT|TIME)' leg.txt | cut -c1-3000 || echo 'no output'; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
+      - name: Name the artifact
+        if: always()
+        shell: bash
+        run: echo "ART=h22-leg-$(echo '${{ matrix.leg }}' | tr -c 'A-Za-z0-9.-' '_')" >> "$GITHUB_ENV"
+      - name: Upload the leg
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ env.ART }}
+          path: tools/harness/results/tmp/h22-leg-*.json
+          if-no-files-found: warn
+          retention-days: 14
+
+  h22-merge:
+    name: h22 — merge (refuses a missing leg)
+    needs: h22-legs
+    if: ${{ always() && inputs.part == 'h22' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: h22-leg-*
+          path: legs
+      - name: Merge
+        shell: bash
+        run: |
+          set -o pipefail
+          node tools/harness/gates-h22.mjs --part merge --dir legs ${{ inputs.leg != '' && format('--only ''{0}''', inputs.leg) || '' }} --assert | tee merge.txt
+      - name: Summary
+        if: always()
+        shell: bash
+        run: |
+          { echo '## h22 — merge'; echo ''; echo '```'; grep -aE '^(GREEN|RED|VERDICT)' merge.txt | cut -c1-1500 || echo 'no output'; echo '```'; } >> "$GITHUB_STEP_SUMMARY"

@@ -857,6 +857,63 @@ jobs:
           retention-days: 14
 
   # ---------------------------------------------------------------------------------------------------------------
+  # h22 — H22 "Descension" / M29 (`gates-h22.mjs --part push`; docs/templates.md, docs/facts.md; design notes §20).
+  # Fixture: M29 (QL6 playing the challenge-attempt template's queue) rebuilds to its pin. Verdict: from QL6 the template
+  # says COMPLETE and its queue, played live, completes H22 on the copy's tick and replays equal; with a 25-s window it
+  # says SHORT and names the Primary Space Building (the source's mod.js:50), never an input the entry zeroes; under
+  # the shipped table the table's own give-up would concede first; the hold was applied (a sibling-free hold is cut);
+  # the state-log evidence equals an independent count; something / collection-of-everything run with no throw. Grep.
+  # The MEASUREMENT (M29 at diff 1 and 0.05) is `qrate1.yml -f part=h22`, dispatch-only.
+  # ⛔ `--assert` holds the run to its exact row count (9), all green.
+  # ---------------------------------------------------------------------------------------------------------------
+  h22:
+    name: h22 — H22 Descension (M29)
+    needs: fast
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true   # games/ is the tmt-loader-games submodule
+          fetch-depth: 1
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - run: npm ci
+
+      - name: The battery — fixture, verdict, grep
+        shell: bash
+        run: |
+          set -o pipefail
+          s=$(date +%s)
+          node tools/harness/gates-h22.mjs --part push --pool 4 --assert | tee h22.txt
+          echo "TIME h22 push: $(( $(date +%s) - s )) s" | tee -a h22.txt
+
+      - name: Summary
+        if: always()
+        shell: bash
+        run: |
+          {
+            echo '## h22 — H22 Descension (M29)'
+            echo ''
+            echo '```'
+            cat h22.txt 2>/dev/null | grep -aE '^(GREEN|RED|VERDICT|TIME)' | cut -c1-600 || echo 'no output'
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload the rows
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: h22
+          path: tools/harness/results/tmp/gates-h22-part-*-last.json
+          if-no-files-found: warn
+          retention-days: 14
+
+  # ---------------------------------------------------------------------------------------------------------------
   # A1 part 2 — the `au` TAB ITSELF (`gates-a1.mjs --part 2`). Until V1 this ran NOWHERE in CI: only part 1's half
   # (the registry with no per-game table) rode inside M1's `both` leg, so every check of the tab the player actually
   # sees — the toggles' text, `?profile=all` not writing the save, a toggle surviving a reload, the disclosure line,
