@@ -9,6 +9,8 @@
 //                     [--predicates list.json] [--eval "<js>"] [--explain] [--random-seed N]
 //                     [--planner | --planner=auto|suggest] [--planner-mode m] [--planner-opt "k=v"] [--planner-ladder ladder.json]
 //                     [--planner-script f.js] [--knowledge-out f] [--goals-out f] [--rounds-out f]
+//                     [--planner-goal goal.json]  — (qrate1) a template's sub-goal ({kind:'value', dimension, threshold}, or a
+//                     strategize --json file carrying exactly one) becomes the planner round's ACTIVE goal until reached
 //                     [--stop-snapshot <dir> [--stop-snapshot-name <name>]]  — a snapshot of the STOP (stall / wall /
 //                     --ticks), in the same shape as a mark's, for a run that ends nowhere near a ladder mark
 //   --planner loads loader/tmt-planner.js after tmt-auto.js (docs/planner.md); --planner-script drives it before the
@@ -172,7 +174,7 @@ function runNodeRaw(id, o) {
   if (o.planner) args.push(o.planner === true ? '--planner' : `--planner=${o.planner}`);
   for (const k of ['planner-mode', 'planner-opt']) if (o[k] != null) args.push(`--${k}`, String(o[k]));
   if (o['stop-snapshot']) args.push('--stop-snapshot');
-  for (const k of ['planner-ladder', 'planner-script', 'ladder-labels'] ) if (o[k] != null) args.push(`--${k}`, path.resolve(String(o[k])));
+  for (const k of ['planner-ladder', 'planner-script', 'ladder-labels', 'planner-goal'] ) if (o[k] != null) args.push(`--${k}`, path.resolve(String(o[k])));
   if (o['planner-k'] != null) args.push('--planner-k', String(o['planner-k']));
   if (o['random-seed'] != null) args.push('--random-seed', String(o['random-seed']));
   // (log-1) the state log: the header names what a replay must boot — the commit, the snapshot, the ladder — as

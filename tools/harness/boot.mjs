@@ -9,6 +9,7 @@
 //                      [--stop-mark <name>] [--snapshots] [--runtime runtime.json] [--predicates list.json] [--eval "<js>"]
 //                      [--planner | --planner=auto|suggest] [--planner-mode auto|suggest|off] [--planner-opt "k=v;k2=v2"]
 //                      [--planner-ladder ladder.json] [--planner-script f.js] [--knowledge-out f] [--goals-out f] [--rounds-out f]
+//                      [--planner-goal goal.json]  (qrate1: a template's sub-goal as the round's active goal)
 //                      [--stop-snapshot] [--explain] [--random-seed N]
 //                      [--log <file.jsonl> [--log-meta <json>] [--log-every <game-s>]] [--replay <file.jsonl>]
 //                      [--queues <json array of queue files>] [--queue-runner] [--templates]
@@ -327,6 +328,21 @@ if (A.predicates) {
     try { o.value = !!run('globalThis.__tmtPred()', 'predicate'); o.evaluates = true; } catch (e) { o.error = errText(e); }
     return o;
   });
+}
+
+// ---- (qrate1) --planner-goal <file>: a TEMPLATE'S SUB-GOAL becomes the round's active goal (docs/templates.md) ------
+// The file is the sub-goal itself ({kind: 'value', dimension, threshold}), or anything that carries exactly one:
+// `{subgoal: …}`, or a strategize `--json` verdicts file whose results carry exactly one sub-goal. Set AFTER the runtime
+// restore — a snapshot's planner state would otherwise overwrite it. Several, or none, is refused by name.
+if (A['planner-goal']) {
+  try {
+    if (!R.planner || !R.planner.loaded) throw new Error('--planner-goal needs the planner (--planner=auto|suggest)');
+    const J = JSON.parse(fs.readFileSync(A['planner-goal'], 'utf8'));
+    const found = J && J.kind ? [J] : J && J.subgoal ? [J.subgoal] : Array.isArray(J && J.results) ? J.results.filter((v) => v && v.subgoal).map((v) => Object.assign({ source: `${v.template} ${v.goal}` }, v.subgoal)) : [];
+    if (found.length !== 1) throw new Error(`--planner-goal ${path.basename(A['planner-goal'])}: ${found.length} sub-goals in the file — exactly one is needed`);
+    globalThis.__tmtSubgoal = found[0];
+    R.planner.subgoal = run('tmtLoader.planner.setSubgoal(globalThis.__tmtSubgoal)', 'planner-goal');
+  } catch (e) { fail('planner-goal', e); }
 }
 
 // ---- the planner drive (--planner-script): excursions and measurements BEFORE the tick loop ------------------------

@@ -438,3 +438,27 @@ test('⛔ C1: the fast job checks the tables\' schema and the currency index as 
   // (the provenance gate used to need the whole history here — `merge-base --is-ancestor`; it reads the frozen commit
   // list now, and the history-free test above holds every job to depth 1)
 });
+
+// ---------------------------------------------------------------------------------------------------------------
+// qrate1: P1a back in CI (it ran nowhere, and its goldens went stale unseen — design notes §16.1), the slice's own
+// gates on every push, and its MEASUREMENT in a workflow of its own that a push can neither start nor cancel.
+// ---------------------------------------------------------------------------------------------------------------
+test('p1a parts 2 and 3 run on every push, held to their exact row counts', () => {
+  const j = jobs(wf('sweep.yml'));
+  assert.ok(j.p1a, 'sweep.yml has no `p1a` job — gates-p1a is back to running nowhere');
+  assert.deepEqual(needs(j.p1a), ['fast']);
+  assert.match(j.p1a, /for p in 2 3; do[^\n]*gates-p1a\.mjs --part \$p[^\n]*--assert/, 'the p1a job does not run parts 2 and 3 with --assert');
+  assert.doesNotMatch(j.p1a, /^\s{4}if:/m, 'the p1a job is gated: it must run on every push');
+});
+
+test('qrate1: the gates on every push, the measurement dispatch-only in its own group', () => {
+  const j = jobs(wf('sweep.yml'));
+  assert.ok(j.qrate1, 'sweep.yml has no `qrate1` job');
+  assert.match(j.qrate1, /gates-qrate1\.mjs --part push[^\n]*--assert/);
+  assert.doesNotMatch(j.qrate1, /--part (screen|cell|planner)/, 'a qrate1 MEASUREMENT part is in the sweep — it would run on every push');
+  const m = wf('qrate1.yml');
+  assert.deepEqual(triggers(m), ['workflow_dispatch'], 'qrate1.yml must never run on a push — its cells are runner-hours');
+  const g = /^concurrency:\n\s+group:\s*(\S.*)$/m.exec(m);
+  assert.ok(g, 'qrate1.yml declares no concurrency group');
+  assert.doesNotMatch(g[1], /^sweep-/, 'it must NOT share the sweep group — a push would cancel its cells');
+});

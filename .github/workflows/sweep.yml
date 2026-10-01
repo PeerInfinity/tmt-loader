@@ -744,6 +744,62 @@ jobs:
           retention-days: 14
 
   # ---------------------------------------------------------------------------------------------------------------
+  # qrate1 — THE QUIRK-RATE SUB-GOAL'S GATES (`gates-qrate1.mjs --part push`; docs/templates.md, docs/planner.md).
+  # Fixture: QL5 and Q308K rebuild byte-for-byte to the committed states. Sub-goal: the template's verdict, fed through
+  # `run.mjs --planner-goal`, IS the round's active goal (read from the round log); with none the planner decides exactly
+  # as before (a pin from 8b30434); the scorer reads the window MAX on a sawtooth. Flip: q23 says WAITING CANNOT HELP at
+  # QL5 and BUY AT t* at the threshold, and its queue played live buys it on the copy's tick. Grep: no game id.
+  # The MEASUREMENT (the rate cells, the planner legs) is `qrate1.yml`, dispatch-only.
+  # ⛔ `--assert` holds the run to its exact row count (9), all green.
+  # ---------------------------------------------------------------------------------------------------------------
+  qrate1:
+    name: qrate1 — the quirk-rate sub-goal
+    needs: fast
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true   # games/ is the tmt-loader-games submodule
+          fetch-depth: 1
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - run: npm ci
+
+      - name: The battery — fixture, subgoal, flip, grep
+        shell: bash
+        run: |
+          set -o pipefail
+          s=$(date +%s)
+          node tools/harness/gates-qrate1.mjs --part push --pool 4 --assert | tee qrate1.txt
+          echo "TIME qrate1 push: $(( $(date +%s) - s )) s" | tee -a qrate1.txt
+
+      - name: Summary
+        if: always()
+        shell: bash
+        run: |
+          {
+            echo '## qrate1 — the quirk-rate sub-goal'
+            echo ''
+            echo '```'
+            cat qrate1.txt 2>/dev/null | grep -aE '^(GREEN|RED|VERDICT|TIME)' | cut -c1-600 || echo 'no output'
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload the rows
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: qrate1
+          path: tools/harness/results/tmp/gates-qrate1-part-*-last.json
+          if-no-files-found: warn
+          retention-days: 14
+
+  # ---------------------------------------------------------------------------------------------------------------
   # A1 part 2 — the `au` TAB ITSELF (`gates-a1.mjs --part 2`). Until V1 this ran NOWHERE in CI: only part 1's half
   # (the registry with no per-game table) rode inside M1's `both` leg, so every check of the tab the player actually
   # sees — the toggles' text, `?profile=all` not writing the save, a toggle surviving a reload, the disclosure line,

@@ -1,0 +1,173 @@
+# THE QUIRK-RATE MEASUREMENT (qrate1; ptr-strategy design notes §17, `tools/harness/gates-qrate1.mjs`).
+#
+# A MEASUREMENT, not a gate: its rows are decision inputs — "the cell completed, twice equal" — and its verdict is a
+# report. The gates of the same slice (the fixtures, the sub-goal seam, the q23 flip, the grep) run on every push in
+# `sweep.yml`'s `qrate1` job.
+#
+# ⛔ DISPATCH-ONLY, with its OWN concurrency group (F1's ruling, 2026-09-21: measurement jobs never run on push; and
+# measurements.yml's lesson: a group shared with the sweep lets a push cancel a campaign in flight). It is NOT in
+# `measurements.yml` because that file holds the standing tables and costs ~5.5 runner-hours a dispatch; this one is
+# a slice's own cells, run once to answer one question.
+#
+# TO RUN IT:  gh workflow run qrate1.yml -R PeerInfinity/tmt-loader --ref <branch>
+#
+# The cells (each one job, each leg TWICE in parallel, the state log written and read back by rate.mjs):
+#   control@1, q-w20@1                 the shipped table and the best non-rate-peak screen cell, QL5 → 308,372 total
+#                                      quirks at diff 1 over a 150,000 game-s horizon (or how far by then)
+#   q-rate-peak@1, q-rate-peak-bare@1  the winner (rate-peak@0/0 keeping the row cycle) and the table's bare alternative
+#   control@0.05, q-rate-peak@0.05     the control and the winner at the PAGE's tick over 6,000 game-s (F1: no default
+#                                      moves without a row at diff 0.05)
+name: qrate1
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: qrate1-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  NODE_VERSION: '18.20.6'
+
+jobs:
+  screen:
+    name: qrate1 — the screen (every candidate cell, 5,000 game-s, twice)
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+          fetch-depth: 1
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+      - run: npm ci
+      - name: The screen
+        shell: bash
+        run: |
+          set -o pipefail
+          node tools/harness/gates-qrate1.mjs --part screen --pool 4 --assert | tee screen.txt
+      - name: Summary
+        if: always()
+        shell: bash
+        run: |
+          { echo '## qrate1 — the screen'; echo ''; echo '```'; grep -aE '^(GREEN|RED|VERDICT)' screen.txt | cut -c1-700 || echo 'no output'; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
+      - name: Upload the rows
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: qrate1-screen
+          path: tools/harness/results/tmp/gates-qrate1-part-screen-last.json
+          if-no-files-found: warn
+          retention-days: 14
+
+  cells:
+    name: qrate1 — cell ${{ matrix.cell }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 330
+    strategy:
+      fail-fast: false
+      matrix:
+        cell: ['control@1', 'q-w20@1', 'q-rate-peak@1', 'q-rate-peak-bare@1', 'control@0.05', 'q-rate-peak@0.05']
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+          fetch-depth: 1
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+      - run: npm ci
+      - name: The cell, twice
+        shell: bash
+        run: |
+          set -o pipefail
+          s=$(date +%s)
+          node tools/harness/gates-qrate1.mjs --part cell --cell '${{ matrix.cell }}' --assert | tee cell.txt
+          echo "TIME cell ${{ matrix.cell }}: $(( $(date +%s) - s )) s" | tee -a cell.txt
+      - name: Summary
+        if: always()
+        shell: bash
+        run: |
+          { echo '## qrate1 — ${{ matrix.cell }}'; echo ''; echo '```'; grep -aE '^(GREEN|RED|VERDICT|TIME)' cell.txt | cut -c1-900 || echo 'no output'; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
+      - name: Name the artifact
+        if: always()
+        shell: bash
+        run: echo "ART=qrate1-cell-$(echo '${{ matrix.cell }}' | tr -c 'A-Za-z0-9.-' '_')" >> "$GITHUB_ENV"
+      - name: Upload the cell
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ env.ART }}
+          path: tools/harness/results/tmp/qrate1-cell-*.json
+          if-no-files-found: warn
+          retention-days: 14
+
+  planner:
+    name: qrate1 — the planner on the sub-goal
+    runs-on: ubuntu-latest
+    timeout-minutes: 330
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+          fetch-depth: 1
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+      - run: npm ci
+      - name: The planner legs
+        shell: bash
+        run: |
+          set -o pipefail
+          s=$(date +%s)
+          node tools/harness/gates-qrate1.mjs --part planner --assert | tee planner.txt
+          echo "TIME planner: $(( $(date +%s) - s )) s" | tee -a planner.txt
+      - name: Summary
+        if: always()
+        shell: bash
+        run: |
+          { echo '## qrate1 — the planner'; echo ''; echo '```'; grep -aE '^(GREEN|RED|VERDICT|TIME)' planner.txt | cut -c1-2000 || echo 'no output'; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
+      - name: Upload the rows
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: qrate1-planner
+          path: tools/harness/results/tmp/gates-qrate1-part-planner-last.json
+          if-no-files-found: warn
+          retention-days: 14
+
+  merge:
+    name: qrate1 — merge (refuses a missing cell)
+    needs: cells
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: qrate1-cell-*
+          path: cells
+      - name: Merge
+        shell: bash
+        run: |
+          set -o pipefail
+          node tools/harness/gates-qrate1.mjs --part merge --dir cells --assert | tee merge.txt
+      - name: Summary
+        if: always()
+        shell: bash
+        run: |
+          { echo '## qrate1 — merge'; echo ''; echo '```'; grep -aE '^(GREEN|RED|VERDICT)' merge.txt | cut -c1-700 || echo 'no output'; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
