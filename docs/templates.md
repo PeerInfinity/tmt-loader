@@ -26,7 +26,9 @@ node tools/harness/strategize.mjs <game> [--from <snapshot.json>] [--goal <goal 
 (h22) `--auto-opt`: the automation configuration the checks run under (a stage's winning policy — the copy's reflexes
 are the configuration's). `--window` / `--log`: `challenge-attempt`'s stated window and its evidence (below).
 `--timeout-s`: the boot child's limit (run.mjs's default 600 s; a check at diff 0.05 ticks 20× as many copy-side ticks).
-Goal ids: `upg:<l>:<id>`, `buy:<l>:<id>`, `ch:<l>:<id>`.
+Goal ids: `upg:<l>:<id>`, `buy:<l>:<id>`, `ch:<l>:<id>`, `reset:<l>` (m30). (m30) `--auto-table <file>`: a whole
+other table (run.mjs's) — the table BEFORE a stage that already records the verdict's answer, so the copy's reflexes are
+the ones the template has to hold.
 
 It boots the game at the state (`--from`, else a fresh game) with the planner, the templates and the queue runner,
 matches every template against `games-facts/<game>.json`, checks each match that is OPEN at that state (the item is
@@ -188,6 +190,58 @@ attempt was cut, the finish must not re-enter (the vacuity control's second atte
 | the state log, QL6 under the winner, 600 game-s | 13 attempts: 0 completed, 0 given up, 12 ended by a reset (q ×11, h ×1), one open at the end |
 | something (fresh, all/S05) / collection-of-everything | 0 matches (no challenge has exits facts) / 1 match, SHORT with the shortfall unpriced (a `canComplete` function) |
 
+## `reset-requirement` (m30, 2026-10-01)
+
+**The pattern** — a layer's RESET whose engine requirement (static: `tmp[l].nextAt`; normal: `tmp[l].requires`; a custom
+layer has none the template can state) is read off ONE base field — the `multiplier-reads` fact of the layer's own
+`baseAmount` (`reads:<l>:baseAmount`) — that OTHER resets zero (`zeroed-by:<z>:<base>`), at least one of them pressed by
+the automation (a `reset` feature). On PTR that is Super Generators: `sg` is a static row-2 layer that needs 200
+Generators (`player.g.points`), and eight resets the automation presses zero them — `e`, `s`, `sb`, `t` (its row
+siblings: rowReset of row 2 resets row 1) and `h`, `o`, `q`, `ss` (row 3). It is challenge-attempt's hold, for a reset.
+Open: the layer is shown and has never been reset (`player[l].unlocked` false) — a layer that has reset before is not
+walled by its requirement; `--goal reset:<l>` names one.
+
+**What it holds** — every `reset` and `challenges` feature of every zeroing layer (entering or leaving a challenge resets
+the layer), and the layer's OWN `reset` feature: the reset is the queue's, at the moment the rollback measured.
+
+⚠ **The order inside a tick.** The row siblings act EARLIER in the same tick (layers order: t, e, s, sb, then sg), and
+a reset calls `updateTemp`, so a sibling reset in the tick the base reaches the requirement wipes it before sg decides
+— the wall itself (a 3,000-tick leg from the wall state: Generators touch 200 and a sibling resets them). The queue's
+hold binds from the next tick's first decision (docs/queues.md), so it is placed before the base can reach the
+requirement, and the reset is the queue's own call in its slot: hold → `wait canReset(l)` → `call doReset(l)` → `wait
+player[l].unlocked` → `release`. `canReset` reads `tmp`, which is the tick's START: the wait is met in the tick AFTER
+the base reached the requirement, with the siblings still held.
+
+**The check** — the hold is played on the copy, every tick reading the base against the engine's requirement, until the
+engine's `canReset` or the window ends (`--window`, default 3,600 game-s, the same cap as the other templates). Three
+verdicts:
+- **reset-at** — `canReset` holds inside the window. The plan is played on the copy again; only a plan that made the
+  reset and released its holds is emitted (else `unconfirmed`).
+- **short** — the base rose but stayed below: X = requirement ÷ the best base. The sub-goal is the base at the
+  requirement (a VALUE goal the planner's round chases, docs/planner.md Part 4), with the planner's knowledge walk of
+  that value goal as the lever's binding hop. ⚠ That walk is thin: on PTR the base IS a layer's currency, so the chain
+  is "g 199 → 200" — no producer or multiplier below it is priced (the next slice's input, if a short verdict ever binds).
+- **cannot** — the base never rose above its first reading.
+Optional evidence (`--log`): every zeroing reset the automation pressed, with the base just before it (the summary's
+`<layer>.p`, so only a base that is a layer's points is readable), how often it had touched the requirement, and how
+many resets of the layer itself were made.
+
+**Measured (m30, ptr, diff 1)** — the wall: stages/M28 under the table BEFORE this slice (`snapshots/ptr/m30/
+table-before-m30.json`, main 68383aa's) for 141,652 ticks → `m30/W226931` (226,931 / `e09f367518a8fb2d`; q11–q33,
+7 Quirk Layers, 196 Generators, Super Generators never reset):
+| | |
+|---|---|
+| from the wall, the table before this slice | **RESET-AT: 55 game-s into the hold**, Generators 200 = the requirement (layers.js: `requires` 200, `base` 1.05, `exponent` 1.25 → 200 at 0 Super Generators); confirmed on the copy, the reset on tick **226,986**; the queue played LIVE resets sg on the same tick (Generators 200 — q milestone 6 makes sg's reset reset nothing), holds released, its log replays equal |
+| the same, `--window 30` | **SHORT**: Generators 199 of 200 (10^0.0022); the sub-goal Generators ≥ 200 |
+| the same queue with the row SIBLINGS free | never resets: the siblings wipe Generators (gates-m30 VAC) |
+| from the q33 tick on the table's path (93,879; Generators 0) | RESET-AT 642 game-s into the hold (tick 94,521) — the tick the stage below reaches M30 on |
+| something (fresh, all/S05) / collection-of-everything | 2 / 9 matches, none open (the funnel and each `not-open` line say why: not shown, or already reset) |
+
+**Recorded as a stage** — `q33-sg-unlock` (docs/automation.md, "Stages"): from q33 until Super Generators are unlocked,
+the template's hold minus the reset it makes, as `while` gates that read the engine's requirement
+(`player.g.points.gte(tmp.sg.nextAt)` — never its number). The table alone then reaches M30 from stages/M28 on tick
+94,521 (+9,242 game-s, diff 1), the template's own tick from the q33 state.
+
 ## How a sub-goal reaches the planner (qrate1, 2026-09-30)
 
 A `waiting cannot help` verdict ends in a **sub-goal** — `{kind: 'value', dimension, threshold, why}` — and no queue.
@@ -221,6 +275,10 @@ FLIPS: q23 says **buy at t\***, and its queue played live buys it on the copy's 
 
 ## Gates
 
+`tools/harness/gates-m30.mjs --part push` (reset-requirement: the wall and the M30 fixture, O1 reset-at against the
+source / O1s short / O2 live + replay / the hold's vacuity / the log evidence / O3 generality, the stage's switch and its
+data, the grep) and `tools/harness/mutants-m30.sh` (a hold that misses the row siblings, a literal requirement in the
+stage, a game id); its measurement, M30 at diff 1 and 0.05 and both stage orders, is `qrate1.yml -f part=m30`.
 `tools/harness/gates-h22.mjs --part push` (challenge-attempt: the M29 fixture, O1 complete / O1s short with the source's
 lever / O2 live + replay / O2s the shipped table / the hold's vacuity / the log evidence / O3 generality, the grep) and
 `tools/harness/mutants-h22.sh` (exits that miss rowReset's same-row case, a hold that misses a sibling, a spent lever
