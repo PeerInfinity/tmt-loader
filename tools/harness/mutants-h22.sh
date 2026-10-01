@@ -61,8 +61,11 @@ mutant() {
 }
 # B — the hold covers only the challenge's OWN layer, not a sibling of the same row (q, o, ss): the attempt is cut
 mutant B-hold-misses-a-sibling "$(rep loader/tmt-templates.js "'      var hold = caHoldSet(g.exits);'" "'      var hold = caHoldSet([cc.layer]);'")" verdict 'O1 ch:h:22'
-# C — a lever the attempt rebuilds from zero (zeroed by the entry, or 0 at the peak) is emitted as the sub-goal
-mutant C-spent-lever-emitted "$(rep loader/tmt-templates.js "'return l.distanceLog10 !== undefined && !l.spentByEntry && !l.zeroedAtPeak; })[0]'" "'return l.distanceLog10 !== undefined; })[0]'")" verdict 'O1s ch:h:22'
+# C — the spent-by-entry rule dropped: an input the ENTRY zeroes (the attempt rebuilds it from 0) is no longer flagged,
+#     so it ranks by distance and becomes the sub-goal (g.points, 10^0.05). ⚠ The rule is enforced twice (the ranking puts
+#     flagged levers last, the pick skips them), so dropping only the pick's filter is NOT a mutant of it — measured: it
+#     survived. The rule is the flag.
+mutant C-spent-lever-emitted "$(rep loader/tmt-templates.js "'        if (z && (z.effect || (lastVariant(z) || {}).effect) === '" "'        if (false && z && (z.effect || (lastVariant(z) || {}).effect) === '")" verdict 'O1s ch:h:22'
 # D — a game id in the template's new generic code
 mutant D-game-id-in-template "$(rep loader/tmt-templates.js "'  function caHoldSet(exits) {'" "'  function caHoldSet(exits) {\n    var FAVOURITE = \\'ptr\\';'")" grep 'X1 no game or layer id'
 
