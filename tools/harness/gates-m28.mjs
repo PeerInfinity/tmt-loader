@@ -252,7 +252,7 @@ async function partVerdict() {
       if (r.ticks !== V1.rollback.peak.tick) probs.push(`tick ${r.ticks} ≠ ${V1.rollback.peak.tick}`);
       if (!near(e.charged, V1.rollback.peak.ratioLog10, 2e-4)) probs.push(`charged 10^${e.charged} ≠ the verdict's 10^${V1.rollback.peak.ratioLog10}`);
       if (!(Math.abs(e.live - e.charged) > 0.5)) probs.push(`live 10^${e.live} too close to charged — the row cannot tell them apart`);
-      notes = `independent boot at tick ${r.ticks} (q.time ${e.qt}): charged 10^${e.charged && e.charged.toFixed(4)} = the verdict's 10^${V1.rollback.peak.ratioLog10}; live 10^${e.live && e.live.toFixed(4)} (the price at q.time ${e.qt} — one tick later than the engine charges) ${r.error || ''}`;
+      notes = `independent boot at tick ${r.ticks} (q.time ${e.qt}): charged 10^${e.charged && e.charged.toFixed(4)} ${near(e.charged, V1.rollback.peak.ratioLog10, 2e-4) ? '=' : '≠'} the verdict's 10^${V1.rollback.peak.ratioLog10}; live 10^${e.live && e.live.toFixed(4)} (the price at q.time ${e.qt} — one tick later than the engine charges) ${r.error || ''}`;
     }
     row({ gate: 'V3 the verdict is judged against the CHARGED price (tick-start tmp, §16): an independent boot under the same hold reads the same peak, and the live price would not', id: 'ptr', ok: !probs.length, notes: probs.length ? probs.join('; ') + ' — ' + notes : notes });
   }
