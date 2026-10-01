@@ -73,7 +73,7 @@ const GOAL = 'reset:sg';
 const PIN_W = { ticks: 226931, hashGame: 'e09f367518a8fb2d' };                     // stages/M28 + 141,652 ticks under PRE_TABLE
 const PIN_M30 = { ticks: 94521, hashGame: '132127d4d5573106' };            // stages/M28 under the shipped table → M30 (diff 1)
 const PIN_Q33 = 93879;                                                     // the loop q33 is bought in, on that path
-const PIN_Q33_HASH = '__PIN_Q33_HASH__';
+const PIN_Q33_HASH = '4ec900b2e95d5403';
 const PIN_RESET = { ticks: 226986 };                                  // the queue's reset tick from the wall (diff 1)
 // The SOURCE (games/ptr/js/layers.js:2526-2560): sg is a STATIC row-2 layer, `requires: new Decimal(200)`, `base()` 1.05
 // and `exponent()` 1.25 (1.04 / 1.225 only when mastered), `baseAmount() { return player.g.points }`, `layerShown` q33.
