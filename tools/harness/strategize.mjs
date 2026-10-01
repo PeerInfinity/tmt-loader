@@ -7,8 +7,11 @@
 //                                     [--window <game-s>] [--log <state-log.jsonl>]
 //   --diff: the tick every copy-side measurement runs at (default 1; the page's is 0.05 — docs/harness.md THE TICK POLICY)
 //   --window (h22): the longest attempt challenge-attempt plays on the copy (default its cap); --log: a state log whose
-//   records are the challenge-attempt template's EVIDENCE (how the attempts in it ended). Goal ids: upg:/buy:/ch:<l>:<id>.
+//   records are the challenge-attempt template's EVIDENCE (how the attempts in it ended), and (m30) reset-requirement's
+//   (the zeroing resets it pressed, and the base before each). Goal ids: upg:/buy:/ch:<l>:<id>, reset:<l> (m30).
 //   --auto-opt "k=v;…": the automation configuration the checks run under (run.mjs's; e.g. a stage's winning policy).
+//   --auto-table <file> (m30): a whole other table document (run.mjs's) — e.g. the table BEFORE a stage that already
+//   records the verdict's answer, so the copy's reflexes are the ones the template has to hold.
 //   --timeout-s: the boot child's limit (default run.mjs's 600 s) — a check at diff 0.05 ticks 20× as many copy-side ticks.
 // ⛔ Every flag is declared; an unknown one exits 2. The live game is never touched: every measurement is an excursion,
 // and each verdict reports `neutral` (the live hashGame before and after its check). Exit 0 = it ran (whatever the
@@ -20,7 +23,7 @@ import { REPO, entryOnly } from './lib.mjs';
 import { runNode } from './run.mjs';
 entryOnly(import.meta.url);
 
-const FLAGS = { from: 1, goal: 1, facts: 1, horizon: 1, 'lever-k': 1, out: 1, json: 1, all: 0, diff: 1, window: 1, log: 1, 'auto-opt': 1, 'timeout-s': 1 };
+const FLAGS = { from: 1, goal: 1, facts: 1, horizon: 1, 'lever-k': 1, out: 1, json: 1, all: 0, diff: 1, window: 1, log: 1, 'auto-opt': 1, 'auto-table': 1, 'timeout-s': 1 };
 const argv = process.argv.slice(2), a = { _: [] };
 for (let i = 0; i < argv.length; i++) {
   const x = argv[i];
@@ -51,6 +54,7 @@ fs.writeFileSync(drive, `var FACTS = ${facts};\nvar OPTS = ${JSON.stringify(opts
 const o = { profile: 'all', diff: opts.diff || 1, ticks: 0, planner: true, templates: true, 'queue-runner': true, 'planner-script': drive };
 if (a.from) o['from-snapshot'] = a.from;
 if (a['auto-opt']) o['auto-opt'] = a['auto-opt'];
+if (a['auto-table']) { if (!fs.existsSync(a['auto-table'])) { console.error(`strategize: no table ${a['auto-table']}`); process.exit(2); } o['auto-table'] = a['auto-table']; }
 if (a['timeout-s'] !== undefined) { if (!(Number(a['timeout-s']) > 0)) { console.error('strategize: --timeout-s needs a number > 0'); process.exit(2); } o.timeoutMs = Number(a['timeout-s']) * 1000; }
 const res = runNode(game, o);
 if (!res.ok || !res.plannerScript || res.plannerScript.error) {
@@ -64,12 +68,14 @@ for (const v of R.results) {
   console.log(`\n${v.template}  ${v.goal}  →  ${String(v.verdict).toUpperCase()}`);
   for (const line of v.reasoning || []) console.log(`  · ${line}`);
   if (v.levers) for (const l of v.levers) console.log(`    lever ${l.input} (${l.kind || 'input'}${l.getter ? ' via ' + l.getter : ''}): ${l.distanceLog10 === null || l.distanceLog10 === undefined ? (l.why || 'unpriced') : '10^' + l.distanceLog10 + ' away — ' + (l.binding || `${l.held} → ${l.need}`)}${l.stepLog10 !== undefined ? ` (×10+1 moves the gain 10^${l.stepLog10}${l.plusOneLog10 !== undefined ? `, +1 moves it 10^${l.plusOneLog10}` : ''})` : ''}${l.zeroedAtPeak ? ' — NOT a sub-goal: ' + l.zeroedAtPeak : ''}${l.spentByEntry ? ' — NOT a sub-goal: ' + l.spentByEntry : ''}`);
+  if (v.confirm && v.confirm.at && v.template === 'reset-requirement') console.log(`  confirmed: tick ${v.confirm.at.tick}, base ${v.confirm.at.base} after the reset, ${v.confirm.at.points} ${v.goal} points`);
   if (v.subgoal) console.log(`  sub-goal: ${v.subgoal.dimension} ≥ ${v.subgoal.threshold} (${v.subgoal.why})`);
   if (v.neutral === false) console.log('  ⛔ NOT NEUTRAL: the live state moved during this check');
 }
 const FUNNEL = {
   'time-priced-purchase': (f) => `${f.prices} price facts → ${f.shapedInAField} shaped in a non-currency field → ${f.withProduction} with a production of the currency in it → ${f.withZeroingReset} with a reset that zeroes it`,
   'challenge-attempt': (f) => `${f.challengesWithExits} challenge(s) with exits-challenge facts → ${f.cutByAutomation} left by a reset the automation presses → ${f.withInputs} with challenge-inputs facts`,
+  'reset-requirement': (f) => `${f.resetFeatures} layer(s) with a reset feature → ${f.withRequirement} with an engine requirement (static/normal) → ${f.withBase} with one base field (reads:<l>:baseAmount) → ${f.baseZeroed} whose base another reset zeroes → ${f.zeroedByAutomation} zeroed by a reset the automation presses`,
 };
 const summary = Object.entries(R.counts).map(([t, c]) => `${t}: ${c.matches} match(es), ${c.open} open; ${Object.entries(c.verdicts).map(([k, n]) => `${k} ${n}`).join(', ') || 'no verdict'}` +
   (c.funnel && FUNNEL[t] ? ` (funnel: ${FUNNEL[t](c.funnel)})` : '')).join(' | ');

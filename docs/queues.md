@@ -110,7 +110,7 @@ node tools/harness/run.mjs <game> … --queue-runner                      the ru
 ```
 
 The result carries `queueStatus` (every queue's state, step, holds and last action). The queues are loaded after the
-state log starts, so `--log` records the `load`. Committed test queues: `tools/harness/queues/tpl1/`; template-emitted fixtures: `tools/harness/queues/m28/`, `queues/h22/`.
+state log starts, so `--log` records the `load`. Committed test queues: `tools/harness/queues/tpl1/`; template-emitted fixtures: `tools/harness/queues/m28/`, `queues/h22/`, `queues/m30/`.
 
 Gates: `tools/harness/gates-tpl1.mjs` — part `inert` (no queue moves nothing: the opening pin with the runner loaded,
 two other games ticked with and without it), part `runner` (hold → wait → call → end; a timeout aborting; an unload

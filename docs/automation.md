@@ -960,15 +960,16 @@ records as `stage:<id>`. `--auto-opt stages=off` measures the table WITHOUT its 
 `--auto-table <file>` (harness) hands in a whole other table — how the losing stage ORDER was measured as a table rather
 than as a configuration.
 
-**PTR's three** (gate rows: `tools/harness/gates-stages.mjs`; the measurement and the order decision: design notes §21):
+**PTR's four** (gate rows: `tools/harness/gates-stages.mjs`, and `tools/harness/gates-m30.mjs` for the first; the measurement and the order decision: design notes §21, and the m30 slice's report `cloud-reports/tmt-m30-1.md`):
 
 | stage | when (state) | sets | why this boundary |
 |---|---|---|---|
+| `q33-sg-unlock` | q33 owned, Super Generators not yet unlocked (M30) | the eight resets that zero Generators (`reset:e`, `reset:s`, `reset:sb`, `reset:t` — sg's row siblings — and `reset:h`, `reset:o`, `reset:q`, `reset:ss`) and `challenges:h` act only while `player.g.points.gte(tmp.sg.nextAt)` | the `reset-requirement` template (docs/templates.md): sg's requirement (200 Generators at 0 Super Generators) sits on a base those resets zero, and a never-reset layer is decided in the automation's fallback pass, after every one of them; held, the base reaches it 642 game-s after q33 and `reset:sg` makes the reset (M30 at +9,242 from stages/M28). The gate is the engine's requirement, never its number. ⚠ Past q milestone 6 it cannot: reset:sg yields to an auto-reset the engine skips for a locked layer (gates-m30 S3) |
 | `ql6-h22-attempt` | 6 Quirk Layers, H22 open and not completed | `challenges:h` = `sequential` (no give-up); the row-3 resets (`reset:q`, `reset:h`, `reset:o`, `reset:ss`) paused while an h challenge is active | the h22 measurement (§20): from QL6 ONE uncut attempt completes H22 in ~1,000 game-s; every exiting reset (h22's `exits-challenge` facts: h, o, q, ss) is held by the pause, and the table's give-up would concede the attempt at 211 s |
 | `ql6-hold-for-q32` | 6 Quirk Layers, q32 not owned (M28) | `challenges:h` = `off` (attempts held) | the m28 measurement (§18): past QL6 the challenge reflex re-entered H22 after every q reset and the quirk rate collapsed; with attempts held q31 and q32 are bought |
 | `ql5-quirk-rate` | 5 Quirk Layers | `reset:q` = `rate-peak@0/0\|turn@10/30x/5/0/100` | the qrate1 measurement (§17): at QL5 the rate-peak reset reaches the q23 threshold ×38 sooner than the table's `gain>=2`; as a WHOLE-GAME default it loses from M15 (§17.7), so it is a stage |
 
-Listed in that order: at QL6 the H22 attempt wins `challenges:h` over the hold until H22 is completed — the order the
+`q33-sg-unlock` is listed first and its order does not matter: while it holds, no other stage holds that names its slots (C2 and C3 end at q32 and H22, C1 names `reset:q`'s POLICY, it names the `while`) — both orders measured equal (gates-m30 M-order). The other three are listed in that order: at QL6 the H22 attempt wins `challenges:h` over the hold until H22 is completed — the order the
 whole-stretch measurement chose (§21).
 
 ## Derivation
