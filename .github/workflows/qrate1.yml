@@ -11,9 +11,9 @@
 #
 # TO RUN IT:  gh workflow run qrate1.yml -R PeerInfinity/tmt-loader --ref <branch>               (qrate1's cells)
 #             gh workflow run qrate1.yml -R PeerInfinity/tmt-loader --ref <branch> -f part=m28  (m28's legs, below)
-# m28 (tmt-m28-1, `gates-m28.mjs --part leg`): each leg runs from m28/QL6 in stages — q31 bought, the 7th Quirk Layer,
-# q32 bought — twice; the qrate1 winner as it is, with challenge attempts held, at diff 1 and 0.05, and the planner on
-# the template's sub-goal (widened, with and without the challenge-hold candidate). It lives in THIS file because a new
+# m28 (tmt-m28-1, `gates-m28.mjs --part leg`): each leg runs from m28/QL6 in stages — q31 bought, then q32 bought (M28)
+# — twice; the qrate1 winner as it is, with challenge attempts held, at diff 1 and 0.05, and the planner on the
+# template's sub-goal (q31 widened, q32 at the default options; with and without the challenge-hold candidate). It lives in THIS file because a new
 # workflow cannot be dispatched before it exists on the default branch (qrate1's 404).
 #
 # The cells (each one job, each leg TWICE in parallel, the state log written and read back by rate.mjs):

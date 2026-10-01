@@ -24,7 +24,7 @@
 // Part subgoal  S1 the q31 verdict's sub-goal, fed through `run.mjs --planner-goal`, IS round 0's active goal.
 // Part grep     X1 no game id and no ptr layer id in the code this slice changed (templates, planner, facts.mjs, strategize).
 // MEASUREMENTS (report; `.github/workflows/qrate1.yml` with `-f part=m28`, dispatch-only):
-// Part leg      a stretch from QL6 in STAGES (q31 bought → the 7th Quirk Layer → q32 bought), each stage a run with a stop
+// Part leg      a stretch from QL6 in STAGES (q31 bought → q32 bought), each stage a run with a stop
 //               snapshot the next resumes from, the whole leg TWICE (equal or RED): a fixed configuration, or the planner
 //               driven by the template's sub-goal.
 // ⛔ EVERY FLAG IS DECLARED; `--assert` requires the exact row count, all green (fewer rows is fewer reds).
@@ -296,9 +296,11 @@ function partGrep() {
 // ---- Part leg (measurement, one per CI job) ---------------------------------------------------------------------------
 // A leg = STAGES from QL6, each a run to its `until` (or its horizon) with a stop snapshot the next stage resumes from.
 // `planner` stages drive `--planner=auto` with the template's sub-goal (strategize at the stage's start state).
+// ⚠ q31 → q32 directly, NOT through the 7th Quirk Layer the q32 verdict at QL6 names: buying q31 raises q11's POWER
+// (the upgrade count, 8 → 9), which the lever walk cannot price (an array is not a numeric input), and a local chained
+// leg bought q32 at 6 Quirk Layers (tick 140,759). A stage named after the template's lever would never complete.
 const STAGES = [
   { k: 'q31', until: "hasUpgrade('q',31)" },
-  { k: 'ql7', until: 'player.q.buyables[11].gte(7)' },
   { k: 'q32', until: "hasUpgrade('q',32)" },
 ];
 const WIDE = 'keepModifiers=1;maxCandidates=999;screenK=999';
@@ -306,32 +308,38 @@ const LEGS = {
   // the qrate1 winner as it is: the H22 give-up reflex re-enters H22 hundreds of times (the control)
   'winner@1': { diff: 1, opt: WINNER, horizons: [30000] },
   // the winner with challenge ATTEMPTS held (exclude=challenges:h — the registered alternative qrate1 screened as ch-off)
-  'winner-choff@1': { diff: 1, opt: `${WINNER};exclude=challenges:h`, horizons: [20000, 120000, 60000] },
+  'winner-choff@1': { diff: 1, opt: `${WINNER};exclude=challenges:h`, horizons: [20000, 120000] },
   // the page's tick: is q31 reached, and when (the template's diff-0.05 verdict asks for ~23× more quirks)
   'winner-choff@0.05': { diff: 0.05, opt: `${WINNER};exclude=challenges:h`, horizons: [8000] },
   'winner@0.05': { diff: 0.05, opt: WINNER, horizons: [8000] },
-  // the PIPELINE: the planner on the template's sub-goal, widened (qrate1's configuration) — without and with the
-  // challenge-hold candidate; from the shipped table (no auto-opt)
-  'planner-wide@1': { diff: 1, opt: '', planner: `${WIDE};maxRounds=12`, horizons: [3600] },
-  'planner-wide-ch@1': { diff: 1, opt: '', planner: `${WIDE};challengeCandidates=1;maxRounds=12`, horizons: [3600] },
+  // the PIPELINE: the planner on the template's sub-goal at each stage's start, from the shipped table (no auto-opt):
+  // stage q31 WIDENED (qrate1's configuration: the pool that can confirm a reset:q policy, ~4 min a round), without and
+  // with the challenge-hold candidate; stage q32 at the DEFAULT options (a round ~15 s — 170 rounds of widening would
+  // be ~12 runner-hours) keeping whatever stage q31 committed, which rides in the stop snapshot's planner state
+  'planner-wide@1': { diff: 1, opt: '', planner: [`${WIDE};maxRounds=12`, ''], horizons: [3600, 120000] },
+  'planner-wide-ch@1': { diff: 1, opt: '', planner: [`${WIDE};challengeCandidates=1;maxRounds=12`, 'challengeCandidates=1'], horizons: [3600, 120000] },
 };
-async function stageRun(L, st, from, outDir, i) {
+async function stageRun(L, st, from, outDir, i) {   // eslint-disable-line max-params
   const ticks = Math.round(L.horizons[i] / L.diff);
   const flags = { 'from-snapshot': from, profile: 'all', diff: L.diff, ticks, until: st.until, 'auto-opt': L.opt, eval: EV, 'wall-ms': 5 * 3600e3, 'stop-snapshot': outDir, 'stop-snapshot-name': st.k };
   let verdict = null;
+  const popt = L.planner ? L.planner[i] : null;
   if (L.planner) {
     const goal = st.k === 'q31' ? 'upg:q:31' : 'upg:q:32';
     const v = await strategize('ptr', ['--from', from, '--goal', goal, ...(L.diff !== 1 ? ['--diff', String(L.diff)] : [])]);
     const r0 = v.results && v.results[0];
     verdict = r0 ? { verdict: r0.verdict, subgoal: r0.subgoal, peak: r0.rollback && r0.rollback.peak } : { error: v.error };
     if (!r0 || !r0.subgoal) return { ok: false, verdict, error: 'no sub-goal to hand the planner' };
-    Object.assign(flags, { planner: true, 'planner-mode': 'auto', 'planner-ladder': LADDER, 'planner-goal': v.file, 'planner-opt': L.planner, 'rounds-out': path.join(outDir, st.k + '.rounds.json') });
+    Object.assign(flags, { planner: true, 'planner-mode': 'auto', 'planner-ladder': LADDER, 'planner-goal': v.file, 'planner-opt': popt || undefined, 'rounds-out': path.join(outDir, st.k + '.rounds.json') });
   }
   const r = await run('ptr', flags);
   r.verdict = verdict;
   if (L.planner && fs.existsSync(flags['rounds-out'])) {
     const R = JSON.parse(fs.readFileSync(flags['rounds-out'], 'utf8'));
-    r.rounds = (R.log || []).map((x) => ({ round: x.round, source: x.goal && x.goal.source, target: x.target && x.target.dimension, winner: x.winner && x.winner.id, confirmed: x.candidates.filter((c) => c.confirm).length, of: x.candidates.length, refused: x.candidates.filter((c) => c.refused).length, wallS: Math.round((x.cost && x.cost.wallMs || 0) / 1000) }));
+    r.roundsTotal = (R.log || []).length;
+    r.winners = {};
+    for (const x of R.log || []) { const w = x.winner && x.winner.id; r.winners[w] = (r.winners[w] || 0) + 1; }
+    r.rounds = (R.log || []).slice(0, 12).map((x) => ({ round: x.round, source: x.goal && x.goal.source, target: x.target && x.target.dimension, winner: x.winner && x.winner.id, confirmed: x.candidates.filter((c) => c.confirm).length, of: x.candidates.length, refused: x.candidates.filter((c) => c.refused).length, wallS: Math.round((x.cost && x.cost.wallMs || 0) / 1000) }));
   }
   return r;
 }
@@ -349,7 +357,7 @@ async function partLeg() {
       // read off the END STATE, never off the stop's reason: a leg that ran out of horizon reads like one that stopped
       const reached = !!r.eval && (st.k === 'q31' ? /\b31\b/.test(r.eval.upg) : st.k === 'ql7' ? r.eval.ql >= 7 : /\b32\b/.test(r.eval.upg));
       stages.push({ stage: st.k, ok: !!r.ok, reached: !!reached, ticks: r.ticks, gameSeconds: r.gameSeconds, sinceQL6: r.gameSeconds !== undefined ? Math.round((r.gameSeconds - PIN_QL6.ticks) * 1000) / 1000 : null,
-        hashGame: r.hashGame, eval: r.eval, walled: !!(r.stall && r.stall.walled), verdict: r.verdict, rounds: r.rounds, wallMs: r.wallMs, error: r.error });
+        hashGame: r.hashGame, eval: r.eval, walled: !!(r.stall && r.stall.walled), verdict: r.verdict, rounds: r.rounds, roundsTotal: r.roundsTotal, winners: r.winners, wallMs: r.wallMs, error: r.error });
       if (!reached || !r.ok) break;
       from = path.join(out, st.k + '.json');
     }
@@ -358,8 +366,8 @@ async function partLeg() {
   const [x, y] = legs;
   const eq = x.length === y.length && x.every((s, i) => s.ticks === y[i].ticks && s.hashGame === y[i].hashGame);
   const out = { key: a.leg, ...L, commit, dirty, twiceEqual: eq, stages: x, wallMs: legs.map((s) => s.reduce((t, q) => t + (q.wallMs || 0), 0)) };
-  row({ gate: `M-leg ${a.leg} — QL6 → q31 → the 7th Quirk Layer → q32 at diff ${L.diff}, twice equal`, id: 'ptr', ok: eq && x.every((s) => s.ok && !s.walled),
-    notes: x.map((s) => `${s.stage} ${s.reached ? 'REACHED' : 'not reached'} at +${s.sinceQL6} game-s (tick ${s.ticks}; total ${s.eval && s.eval.total}, QL ${s.eval && s.eval.ql}, H22 ${s.eval && JSON.parse(s.eval.hc || '{}')[22]})${s.verdict ? ` [verdict ${s.verdict.verdict}, sub-goal ${s.verdict.subgoal && s.verdict.subgoal.dimension} ≥ ${s.verdict.subgoal && s.verdict.subgoal.threshold}]` : ''}${s.rounds ? ` [rounds: ${s.rounds.map((q) => `r${q.round} ${q.winner} (${q.confirmed}/${q.of}, ${q.wallS} s)`).join('; ')}]` : ''}`).join(' → ') + `; ${x.map((s) => s.hashGame).join('/')} vs ${y.map((s) => s.hashGame).join('/')}; wall ${out.wallMs.map((w) => Math.round(w / 1000)).join(' / ')} s` });
+  row({ gate: `M-leg ${a.leg} — QL6 → q31 → q32 (M28) at diff ${L.diff}, twice equal`, id: 'ptr', ok: eq && x.every((s) => s.ok && !s.walled),
+    notes: x.map((s) => `${s.stage} ${s.reached ? 'REACHED' : 'not reached'} at +${s.sinceQL6} game-s (tick ${s.ticks}; total ${s.eval && s.eval.total}, QL ${s.eval && s.eval.ql}, H22 ${s.eval && JSON.parse(s.eval.hc || '{}')[22]})${s.verdict ? ` [verdict ${s.verdict.verdict}, sub-goal ${s.verdict.subgoal && s.verdict.subgoal.dimension} ≥ ${s.verdict.subgoal && s.verdict.subgoal.threshold}]` : ''}${s.rounds ? ` [${s.roundsTotal} rounds; first: ${s.rounds.map((q) => `r${q.round} ${q.winner} (${q.confirmed}/${q.of}, ${q.wallS} s)`).join('; ')}; winners ${JSON.stringify(s.winners)}]` : ''}`).join(' → ') + `; ${x.map((s) => s.hashGame).join('/')} vs ${y.map((s) => s.hashGame).join('/')}; wall ${out.wallMs.map((w) => Math.round(w / 1000)).join(' / ')} s` });
   fs.mkdirSync(path.join(REPO, 'tools/harness/results/tmp'), { recursive: true });
   fs.writeFileSync(path.join(REPO, 'tools/harness/results/tmp', `m28-leg-${a.leg.replace(/[^\w.-]/g, '_')}.json`), JSON.stringify(out, null, 1) + '\n');
 }
