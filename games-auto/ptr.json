@@ -180,5 +180,46 @@
       "commit": "245ed3b2bbe841774552e787956797464ec151ea",
       "note": "Every A1/A2 number was measured with a layer's reset BEFORE its purchases; S1-2k measured the generic order faster (ptr A1-3 at 1322 / 2321 / 2893 against 1361 / 2360 / 2936) and the table keeps reset-first so those pinned numbers stay reproducible."
     }
-  }
+  },
+  "stages": [
+    {
+      "id": "ql6-h22-attempt",
+      "when": "player.q.buyables[11].plus(tmp.q.freeLayers).gte(6) && tmp.h.challenges[22].unlocked && !hasChallenge('h',22)",
+      "policies": {
+        "challenges:h": "sequential"
+      },
+      "gates": {
+        "reset:q": "!player.h.activeChallenge",
+        "reset:h": "!player.h.activeChallenge",
+        "reset:o": "!player.h.activeChallenge",
+        "reset:ss": "!player.h.activeChallenge"
+      },
+      "provenance": {
+        "unverified": true,
+        "note": "scratch: under measurement"
+      }
+    },
+    {
+      "id": "ql6-hold-for-q32",
+      "when": "player.q.buyables[11].plus(tmp.q.freeLayers).gte(6) && !hasUpgrade('q',32)",
+      "policies": {
+        "challenges:h": "off"
+      },
+      "provenance": {
+        "unverified": true,
+        "note": "scratch: under measurement"
+      }
+    },
+    {
+      "id": "ql5-quirk-rate",
+      "when": "player.q.buyables[11].plus(tmp.q.freeLayers).gte(5)",
+      "policies": {
+        "reset:q": "rate-peak@0/0|turn@10/30x/5/0/100"
+      },
+      "provenance": {
+        "unverified": true,
+        "note": "scratch: under measurement"
+      }
+    }
+  ]
 }

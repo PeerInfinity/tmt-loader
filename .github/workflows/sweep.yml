@@ -913,6 +913,57 @@ jobs:
           if-no-files-found: warn
           retention-days: 14
 
+  # stages-1 (ptr-strategy design notes §19-R.2, "planner finds, data records"): the table's STAGE-GATED entries —
+  # the vocabulary, each stage switching at its predicted tick (from the state log), the readout naming it, a player's
+  # edit and a queue hold beating it, the pins it must not move, the all/M29 fixture, and the grep. The whole-stretch
+  # legs (M28 + M29 under the table alone, both orders, diff 1 and 0.05) are in qrate1.yml behind `-f part=stages`.
+  stages:
+    name: stages — the table's stage-gated entries
+    needs: fast
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true   # games/ is the tmt-loader-games submodule
+          fetch-depth: 1
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - run: npm ci
+
+      - name: The battery — vocab, switch, pins, fixture, grep
+        shell: bash
+        run: |
+          set -o pipefail
+          s=$(date +%s)
+          node tools/harness/gates-stages.mjs --part push --pool 4 --assert | tee stages.txt
+          echo "TIME stages push: $(( $(date +%s) - s )) s" | tee -a stages.txt
+
+      - name: Summary
+        if: always()
+        shell: bash
+        run: |
+          {
+            echo '## stages — the table'"'"'s stage-gated entries'
+            echo ''
+            echo '```'
+            cat stages.txt 2>/dev/null | grep -aE '^(GREEN|RED|VERDICT|TIME)' | cut -c1-600 || echo 'no output'
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload the rows
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: stages
+          path: tools/harness/results/tmp/gates-stages-part-*-last.json
+          if-no-files-found: warn
+          retention-days: 14
+
   # ---------------------------------------------------------------------------------------------------------------
   # A1 part 2 — the `au` TAB ITSELF (`gates-a1.mjs --part 2`). Until V1 this ran NOWHERE in CI: only part 1's half
   # (the registry with no per-game table) rode inside M1's `both` leg, so every check of the tab the player actually

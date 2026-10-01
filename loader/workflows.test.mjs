@@ -498,3 +498,20 @@ test('h22: the gates on every push, the legs dispatch-only behind part=h22', () 
   for (const k of ['m28-legs', 'm28-merge']) assert.doesNotMatch(q[k] || '', /inputs\.part == 'h22'/, `${k} would run on a part=h22 dispatch`);
   assert.match(q['h22-legs'], /gates-h22\.mjs --part leg[^\n]*--assert/);
 });
+
+// ---------------------------------------------------------------------------------------------------------------
+// stages-1: the slice's gates on every push; its whole-stretch legs in qrate1.yml behind `-f part=stages`.
+// ---------------------------------------------------------------------------------------------------------------
+test('stages: the gates on every push, the legs dispatch-only behind part=stages', () => {
+  const j = jobs(wf('sweep.yml'));
+  assert.ok(j.stages, 'sweep.yml has no `stages` job');
+  assert.deepEqual(needs(j.stages), ['fast']);
+  assert.match(j.stages, /gates-stages\.mjs --part push[^\n]*--assert/);
+  assert.doesNotMatch(j.stages, /--part (leg|merge)/, 'a stages MEASUREMENT part is in the sweep — it would run on every push');
+  assert.doesNotMatch(j.stages, /^\s{4}if:/m, 'the stages job is gated: it must run on every push');
+  const m = wf('qrate1.yml'), q = jobs(m);
+  assert.match(m, /options: \[[^\]]*\bstages\b[^\]]*\]/, 'qrate1.yml offers no part=stages');
+  for (const k of ['stages-legs', 'stages-merge']) assert.match(q[k] || '', /if: \$\{\{[^}]*inputs\.part == 'stages'/, `${k} is not gated on part=stages`);
+  for (const k of ['m28-legs', 'm28-merge', 'h22-legs', 'h22-merge']) assert.doesNotMatch(q[k] || '', /inputs\.part == 'stages'/, `${k} would run on a part=stages dispatch`);
+  assert.match(q['stages-legs'], /gates-stages\.mjs --part leg[^\n]*--assert/);
+});
