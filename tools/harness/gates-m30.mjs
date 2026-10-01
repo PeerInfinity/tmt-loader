@@ -12,19 +12,26 @@
 // Part fixture  F0 the WALL state m30/W226931 = stages/M28 under the table BEFORE this slice (m30/table-before-m30.json,
 //               byte-equal to main 68383aa's games-auto/ptr.json) for 141,652 ticks: q33 owned, Super Generators never
 //               reset. F1 stages/M30 = stages/M28 under the SHIPPED TABLE ALONE, through the ladder = the committed fixture.
+//               FQ m30/Q33 = stages/M28 under the shipped table until q33 is bought (the stage's first loop).
 // Part verdict  O1 from the wall under the table before this slice: RESET-AT, confirmed on the copy; the requirement the
 //               template reads = the SOURCE's (layers.js: sg requires 200, base 1.05, exponent 1.25 → 200 at 0 Super
-//               Generators); the hold covers every zeroing reset the source names, the row siblings included; the queue
-//               emitted = the committed one. O1s the same with a stated 30-s window: SHORT, the sub-goal is the base at the
-//               requirement. O2 the queue played LIVE from the wall unlocks sg on the copy's tick, releases its holds, and
-//               its log replays EQUAL. VAC the hold was applied: no zeroing reset fires in the held leg before the reset;
-//               the same queue with the row SIBLINGS left free is cut and never resets. EV the state-log evidence (from a
-//               3,000-tick leg at the wall: Generators touch 200 and a zeroing reset wipes them) = an independent count.
-//               O3 generality: something and collection-of-everything run with no throw; the funnel says why.
-// Part stage    S1 the acceptance run's state log: `q33-sg-unlock` switches ON at the q33 tick and OFF at the M30 tick;
-//               between them no zeroing reset fires and `reset:sg` makes the reset. S2 the stage is the template's answer
+//               Generators); the hold covers every zeroing reset the source names; sg is decided in the automation's
+//               FALLBACK pass; without the queue's own call nobody resets sg (reset:sg yields to an autoPrestige the
+//               engine skips for a locked layer); the queue emitted = the committed one. OQ the same from m30/Q33: RESET-AT
+//               on the stage's own M30 tick, and there reset:sg DOES make it once the zeroers are held (why a stage works on
+//               the table's path). O1s a stated 30-s window: SHORT, the sub-goal the base at the requirement. O2 the queue
+//               played LIVE from the wall unlocks sg on the copy's tick, releases its holds, its log replays EQUAL.
+//               VAC the hold was applied: no zeroing reset in the held leg; with the ROW-3 zeroers free (h, o, q, ss) q
+//               and h wipe Generators and sg never resets. SIB the brief's mechanism, measured: with the row SIBLINGS free
+//               (e, s, sb, t) the leg is the held leg to the tick and hash — they do not cut Generators on this path.
+//               EV the state-log evidence (a 3,000-tick leg at the wall: Generators touch 200 and q/h wipe them) = an
+//               independent count. O3 generality: something and collection-of-everything run with no throw; the funnel.
+// Part stage    S1 the acceptance run's state log: `q33-sg-unlock` switches ON at the q33 loop; while it is in force no
+//               zeroing reset fires, and `reset:sg` makes the reset on the M30 tick. S2 the stage is the template's answer
 //               as DATA: its gates are exactly the template's hold minus the reset it makes, each predicate states the
-//               engine's requirement expression, and no predicate carries the requirement's number.
+//               engine's requirement expression, and no predicate carries the requirement's number. S3 the stage's
+//               LIMIT: from the wall (past q milestone 6) the shipped table does not reset sg in 3,000 ticks — reset:sg
+//               yields, the gate opens at 200 and q/h wipe Generators (the next slice's input, not a defect of the data).
 // Part grep     X1 no game id and no ptr layer id in the generic code this slice changed.
 // MEASUREMENTS (`.github/workflows/qrate1.yml -f part=m30`, dispatch-only): the acceptance from stages/M28 under the table
 // alone at diff 1 and 0.05, and the whole stretch from all/M26 in both stage orders at diff 1 — each leg TWICE (equal
@@ -60,11 +67,13 @@ const M26 = 'tools/harness/snapshots/ptr/all/M26.json', M28F = 'tools/harness/sn
 const M30F = 'tools/harness/snapshots/ptr/stages/M30.json';
 const WALL = 'tools/harness/snapshots/ptr/m30/W226931.json';
 const QUEUE = 'tools/harness/queues/m30/rr-reset-sg-from-W226931.json';
+const Q33F = 'tools/harness/snapshots/ptr/m30/Q33.json';
 const STAGE = 'q33-sg-unlock';
 const GOAL = 'reset:sg';
 const PIN_W = { ticks: 226931, hashGame: 'e09f367518a8fb2d' };                     // stages/M28 + 141,652 ticks under PRE_TABLE
 const PIN_M30 = { ticks: 94521, hashGame: '132127d4d5573106' };            // stages/M28 under the shipped table → M30 (diff 1)
 const PIN_Q33 = 93879;                                                     // the loop q33 is bought in, on that path
+const PIN_Q33_HASH = '__PIN_Q33_HASH__';
 const PIN_RESET = { ticks: 226986 };                                  // the queue's reset tick from the wall (diff 1)
 // The SOURCE (games/ptr/js/layers.js:2526-2560): sg is a STATIC row-2 layer, `requires: new Decimal(200)`, `base()` 1.05
 // and `exponent()` 1.25 (1.04 / 1.225 only when mastered), `baseAmount() { return player.g.points }`, `layerShown` q33.
@@ -75,6 +84,7 @@ const PIN_RESET = { ticks: 226986 };                                  // the que
 const SRC = { requires: 200, base: 1.05, exponent: 1.25 };
 const ZEROERS = ['e', 's', 'sb', 't', 'h', 'q', 'o', 'ss'];
 const SIBLINGS = ['e', 's', 'sb', 't'];
+const ROW3 = ['h', 'o', 'q', 'ss'];   // and challenges:h — entering an h challenge is an h reset
 const WINDOW_SHORT = 30;
 const EV_TICKS = 3000;
 
@@ -159,10 +169,12 @@ function stageLastTable() {
 async function partFixture() {
   const m28 = fixture(M28F);
   const dW = path.join(TMP, 'fw'), dA = path.join(TMP, 'fa');
-  const [w, x] = await pool([
+  const dQ = path.join(TMP, 'fq');
+  const [w, x, q] = await pool([
     () => run('ptr', { 'from-snapshot': M28F, profile: 'all', 'auto-table': PRE_TABLE, ticks: PIN_W.ticks - m28.ticks, 'wall-ms': 3 * 3600e3, 'stop-snapshot': dW, 'stop-snapshot-name': 'W226931',
       eval: "({q33: hasUpgrade('q',33), sg: !!player.sg.unlocked, g: String(player.g.points), next: String(tmp.sg.nextAt)})" }),
     () => run('ptr', { 'from-snapshot': M28F, profile: 'all', ticks: PIN_M30.ticks - m28.ticks + 50, ladder: LADDER, to: 'M30', 'until-all': true, 'marks-continue': true, snapshots: dA }),
+    () => run('ptr', { 'from-snapshot': M28F, profile: 'all', ticks: PIN_Q33 - m28.ticks + 50, until: "hasUpgrade('q',33)", 'stop-snapshot': dQ, 'stop-snapshot-name': 'Q33', eval: "({sg: !!player.sg.unlocked, g: String(player.g.points), ms6: hasMilestone('q',6)})" }),
   ]);
   {
     const c = fixture(WALL), built = fs.existsSync(path.join(dW, 'W226931.json')) ? JSON.parse(fs.readFileSync(path.join(dW, 'W226931.json'), 'utf8')) : null;
@@ -179,6 +191,13 @@ async function partFixture() {
     row({ gate: 'F1 stages/M30 = stages/M28 under the SHIPPED TABLE ALONE, through the ladder = the committed fixture', id: 'ptr', ok: Object.values(checks).every(Boolean),
       notes: `${ck(checks)} — ${r ? `${r.ticks} / ${r.hashGame} (full ${r.hash})` : 'not reached'} (committed ${c.ticks} / ${c.hashGame}; +${c.ticks - m28.ticks} game-s from stages/M28) ${x.error || ''}` });
   }
+  {
+    const c = fixture(Q33F), built = fs.existsSync(path.join(dQ, 'Q33.json')) ? JSON.parse(fs.readFileSync(path.join(dQ, 'Q33.json'), 'utf8')) : null;
+    const checks = { ran: !!q.ok, pin: q.ticks === PIN_Q33 && q.hashGame === PIN_Q33_HASH, committed: c.ticks === PIN_Q33 && c.hashGame === PIN_Q33_HASH, rebuilt: !!built && built.hashGame === c.hashGame,
+      beforeMilestone6: !!q.eval && q.eval.ms6 === false && q.eval.sg === false, configNamed: c.config.from === M28F && c.config['auto-opt'] === null && !c.config['auto-table'] };
+    row({ gate: 'FQ m30/Q33 = stages/M28 under the shipped table until q33 is bought (q milestone 6 not yet held)', id: 'ptr', ok: Object.values(checks).every(Boolean),
+      notes: `${ck(checks)} — ${q.ticks} / ${q.hashGame} (pin ${PIN_Q33} / ${PIN_Q33_HASH}); ${JSON.stringify(q.eval)} ${q.error || ''}` });
+  }
 }
 
 // ---- Part verdict ----------------------------------------------------------------------------------------------------
@@ -186,13 +205,20 @@ async function partVerdict() {
   const log = path.join(TMP, 'o2.jsonl'), clog = path.join(TMP, 'control.jsonl'), elog = path.join(TMP, 'evidence.jsonl');
   const Q = fixture(QUEUE);
   // the control: the same queue with the row SIBLINGS free (only the row-3 zeroers and the reset itself held)
-  const C = JSON.parse(JSON.stringify(Q)); C.id = 'rr-reset-sg-siblings-free';
-  C.steps[0].features = C.steps[0].features.filter((f) => !SIBLINGS.some((s) => f === `reset:${s}`));
+  // the controls: the same queue with the ROW-3 zeroers free (VAC), and with the row SIBLINGS free (SIB)
+  const C = JSON.parse(JSON.stringify(Q)); C.id = 'rr-reset-sg-row3-free';
+  C.steps[0].features = C.steps[0].features.filter((f) => !ROW3.some((s) => f === `reset:${s}`) && f !== 'challenges:h');
   const cfile = path.join(TMP, 'control.queue.json'); fs.writeFileSync(cfile, JSON.stringify(C));
+  const B = JSON.parse(JSON.stringify(Q)); B.id = Q.id;   // the same id: the leg must be the held leg to the hash
+  B.steps[0].features = B.steps[0].features.filter((f) => !SIBLINGS.some((s) => f === `reset:${s}`));
+  const bfile = path.join(TMP, 'siblings.queue.json'); fs.writeFileSync(bfile, JSON.stringify(B));
+  const slog = path.join(TMP, 'sib.jsonl');
   const T = { 'auto-table': PRE_TABLE };
   const jobs = [
     () => strategize('ptr', ['--from', WALL, '--goal', GOAL, '--auto-table', PRE_TABLE]),
     () => strategize('ptr', ['--from', WALL, '--goal', GOAL, '--auto-table', PRE_TABLE, '--window', String(WINDOW_SHORT)]),
+    () => strategize('ptr', ['--from', Q33F, '--goal', GOAL, '--auto-table', PRE_TABLE]),
+    () => run('ptr', { 'from-snapshot': WALL, profile: 'all', ...T, queue: bfile, ticks: 3000, until: 'player.sg.unlocked', log: slog, eval: "({sg: !!player.sg.unlocked})" }),
     () => run('ptr', { 'from-snapshot': WALL, profile: 'all', ...T, queue: QUEUE, ticks: 3000, until: 'player.sg.unlocked', log, eval: "({sg: !!player.sg.unlocked, sgp: String(player.sg.points), g: String(player.g.points)})" }),
     () => run('ptr', { 'from-snapshot': WALL, profile: 'all', ...T, queue: cfile, ticks: 3000, until: 'player.sg.unlocked', log: clog, eval: "({sg: !!player.sg.unlocked})" }),
     () => run('ptr', { 'from-snapshot': WALL, profile: 'all', ...T, ticks: EV_TICKS, log: elog, eval: "({sg: !!player.sg.unlocked, g: String(player.g.points)})" }),
@@ -200,7 +226,7 @@ async function partVerdict() {
     () => strategize('something', []), () => strategize('something', ['--from', 'tools/harness/snapshots/something/all/S05.json']), () => strategize('collection-of-everything', []),
     () => strategize('ptr', []),
   ];
-  const [o1, o1s, live, ctl, ev0, src, s0, s5, coe, pfresh] = await pool(jobs);
+  const [o1, o1s, oq, sib, live, ctl, ev0, src, s0, s5, coe, pfresh] = await pool(jobs);
 
   // O1 — RESET-AT from the wall, the requirement read against the source
   const v1 = rr(o1)[0];
@@ -218,11 +244,21 @@ async function partVerdict() {
       generatorsAtTheReset: !!v1 && num(v1.tStar.base) >= formula,
       holdCoversEveryZeroer: !!v1 && ZEROERS.every((z) => v1.binding.hold.includes(`reset:${z}`)) && v1.binding.hold.includes('challenges:h') && v1.binding.hold.includes('reset:sg') &&
         JSON.stringify([...v1.binding.siblings].sort()) === JSON.stringify([...SIBLINGS].sort()) && JSON.stringify([...v1.binding.zeroers].sort()) === JSON.stringify([...ZEROERS].sort()),
+      decidedInTheFallback: !!v1 && v1.decidedIn === 'fallback',
+      onlyTheQueueResetsIt: !!v1 && !!v1.afterReach && v1.afterReach.reset === false && v1.afterReach.autoPrestige === true,
       queueIsTheCommittedOne: !!v1 && !!v1.queue && JSON.stringify(v1.queue) === JSON.stringify(Q),
       neutral: !!v1 && v1.neutral === true,
     };
     row({ gate: 'O1 reset:sg from the wall under the table before this slice: RESET-AT, confirmed on the copy; the requirement = layers.js (200 at 0 SG); the hold covers every zeroer, the siblings included', id: 'ptr', ok: Object.values(checks).every(Boolean),
-      notes: `${ck(checks)} — ${v1 ? `verdict ${v1.verdict}, t* ${JSON.stringify(v1.tStar)}, confirmed ${JSON.stringify(at)}, hold ${v1.binding.hold.join(',')}, siblings ${v1.binding.siblings.join(',')}` : o1.error}; engine ${JSON.stringify(e)}; source declared ${declared}, formula ${formula}` });
+      notes: `${ck(checks)} — ${v1 ? `verdict ${v1.verdict}, t* ${JSON.stringify(v1.tStar)}, confirmed ${JSON.stringify(at)}, decided in ${v1.decidedIn}, after the reach ${JSON.stringify(v1.afterReach)}, hold ${v1.binding.hold.join(',')}, siblings ${v1.binding.siblings.join(',')}` : o1.error}; engine ${JSON.stringify(e)}; source declared ${declared}, formula ${formula}` });
+  }
+  // OQ — from the q33 loop on the table's path: RESET-AT on the stage's own tick, and a stage would do
+  {
+    const v = rr(oq)[0];
+    const checks = { verdict: !!v && v.verdict === 'reset-at', onTheStagesTick: !!v && v.confirm && v.confirm.at && v.confirm.at.tick === PIN_M30.ticks && v.tStar.tick === PIN_M30.ticks,
+      theReflexMakesIt: !!v && !!v.afterReach && v.afterReach.reset === true && v.afterReach.autoPrestige === false, neutral: !!v && v.neutral === true };
+    row({ gate: 'OQ reset:sg from m30/Q33 (the stage\'s first loop): RESET-AT on the stage\'s M30 tick; there the zeroers held are enough — reset:sg makes the reset itself', id: 'ptr', ok: Object.values(checks).every(Boolean),
+      notes: `${ck(checks)} — ${v ? `t* ${JSON.stringify(v.tStar)}; confirmed ${JSON.stringify(v.confirm && v.confirm.at)}; after the reach ${JSON.stringify(v.afterReach)}` : oq.error}` });
   }
   // O1s — SHORT at a 30-s window
   {
@@ -249,10 +285,17 @@ async function partVerdict() {
   // VAC — the hold was applied: count the zeroings it prevented
   {
     const H = zeroingsFromLog(logRecords(log)), K = zeroingsFromLog(logRecords(clog));
-    const sibCut = Object.entries(K.by).filter(([b]) => SIBLINGS.some((s) => b === `reset:${s}`)).reduce((n, [, c]) => n + c, 0);
-    const checks = { heldLegNoZeroing: H.zeroings === 0, controlCutBySiblings: sibCut >= 1 && K.touched >= 1, controlNeverResets: !!ctl && ctl.eval && ctl.eval.sg === false && K.sg.length === 0 };
-    row({ gate: 'VAC the hold was applied: no zeroing reset in the held leg; with the row SIBLINGS free, Generators touch the requirement, a sibling wipes them, and sg never resets', id: 'ptr', ok: Object.values(checks).every(Boolean),
-      notes: `${ck(checks)} — held: ${JSON.stringify(H)}; control (hold ${C.steps[0].features.join(',')}) over ${ctl && ctl.ticks - PIN_W.ticks} ticks: ${JSON.stringify(K)} — ${sibCut} sibling reset(s) the full hold prevented` });
+    const r3Cut = Object.entries(K.by).filter(([b]) => ROW3.some((s) => b === `reset:${s}`)).reduce((n, [, c]) => n + c, 0);
+    const checks = { heldLegNoZeroing: H.zeroings === 0, controlCutByRow3: r3Cut >= 1, controlNeverResets: !!ctl && ctl.eval && ctl.eval.sg === false && K.sg.length === 0 };
+    row({ gate: 'VAC the hold was applied: no zeroing reset in the held leg; with the ROW-3 zeroers free, q and h wipe Generators and sg never resets', id: 'ptr', ok: Object.values(checks).every(Boolean),
+      notes: `${ck(checks)} — held: ${JSON.stringify(H)}; control (hold ${C.steps[0].features.join(',')}) over ${ctl && ctl.ticks - PIN_W.ticks} ticks: ${JSON.stringify(K)} — ${r3Cut} row-3 reset(s) the full hold prevented` });
+  }
+  // SIB — the brief's mechanism, measured: the row siblings free changes nothing on this path
+  {
+    const S = zeroingsFromLog(logRecords(slog));
+    const checks = { sameTickAndHash: !!sib && !!live && sib.ticks === live.ticks && sib.hashGame === live.hashGame && sib.eval && sib.eval.sg === true, noSiblingDroppedGenerators: S.zeroings === 0 };
+    row({ gate: 'SIB the row SIBLINGS (e, s, sb, t) do not cut Generators on this path: freed, the leg is the held leg to the tick and hash', id: 'ptr', ok: Object.values(checks).every(Boolean),
+      notes: `${ck(checks)} — siblings free: ${sib && sib.ticks} / ${sib && sib.hashGame}; held: ${live && live.ticks} / ${live && live.hashGame}; zeroings ${JSON.stringify(S)} (after q milestone 5 t, s and sb reset nothing — layers.js resetsNothing — and the game resets them itself)` });
   }
   // EV — the template's evidence = an independent count of the same log
   {
@@ -260,8 +303,9 @@ async function partVerdict() {
     const v = ev0 && ev0.ok ? rr(await strategize('ptr', ['--from', WALL, '--goal', GOAL, '--auto-table', PRE_TABLE, '--window', String(WINDOW_SHORT), '--log', elog]))[0] : null;
     const e = v && v.binding && v.binding.evidence;
     const checks = { evidence: !!e && e.readable === true, zeroings: !!e && e.zeroings === ind.zeroings && e.zeroings > 0, touched: !!e && e.touched === ind.touched && e.touched >= 1,
+      byAutomationRow3: !!e && ROW3.some((z) => (e.by[`reset:${z}`] || 0) > 0),
       maxBefore: !!e && num(e.maxBefore) === num(ind.maxBefore), noSgReset: !!e && e.ownResets === 0 && ind.sg.length === 0 && ev0.eval && ev0.eval.sg === false };
-    row({ gate: `EV the state-log evidence: from the wall under the table before this slice, ${EV_TICKS} ticks — Generators touch the requirement and a zeroing reset wipes them; the template's count = an independent count`, id: 'ptr', ok: Object.values(checks).every(Boolean),
+    row({ gate: `EV the state-log evidence: from the wall under the table before this slice, ${EV_TICKS} ticks — Generators touch the requirement and q/h wipe them; the template's count = an independent count`, id: 'ptr', ok: Object.values(checks).every(Boolean),
       notes: `${ck(checks)} — template ${JSON.stringify(e)}; independent ${JSON.stringify(ind)}; end ${JSON.stringify(ev0 && ev0.eval)}` });
   }
   // O3 — generality
@@ -310,8 +354,21 @@ async function partStage() {
     row({ gate: `S2 ${STAGE} is the template's answer as DATA: its gates = the template's hold minus the reset it makes, each reads the engine's requirement, none carries its number`, id: 'ptr', ok: Object.values(checks).every(Boolean),
       notes: `${ck(checks)} — gates ${JSON.stringify(S && S.gates)}; the template's hold ${JSON.stringify(hold)}; when ${S && S.when}; literal hits ${JSON.stringify(literal)}` });
   }
+  // S3 — the LIMIT: past q milestone 6 the stage cannot do it (reset:sg yields to an autoPrestige the engine skips)
+  {
+    const lg3 = path.join(TMP, 's3.jsonl');
+    const y = await run('ptr', { 'from-snapshot': WALL, profile: 'all', ticks: 3000, until: 'player.sg.unlocked', log: lg3,
+      eval: "(function(){ var r = tmtLoader.explain().filter(function(x){ return x.id === 'reset:sg'; })[0]; return { sg: !!player.sg.unlocked, ms6: hasMilestone('q',6), autoPrestige: !!tmp.sg.autoPrestige, stage: tmtLoader.stages().filter(function(s){ return s.id === 'q33-sg-unlock'; }).map(function(s){ return s.active; })[0] }; })()" });
+    const recs = logRecords(lg3), Z = zeroingsFromLog(recs);
+    const yields = recs.filter((r) => r.type === 'action').length;
+    const checks = { ran: !!y.ok, stageInForce: !!y.eval && y.eval.stage === true, notReset: !!y.eval && y.eval.sg === false && Z.sg.length === 0, pastMilestone6: !!y.eval && y.eval.ms6 === true && y.eval.autoPrestige === true,
+      wipedAtTheRequirement: Z.touched >= 1 && ROW3.some((z) => (Z.by[`reset:${z}`] || 0) > 0) };
+    row({ gate: `S3 the stage's LIMIT: from the wall (past q milestone 6) the shipped table does not reset sg in 3,000 ticks — reset:sg yields, the gate opens at the requirement and q/h wipe Generators`, id: 'ptr', ok: Object.values(checks).every(Boolean),
+      notes: `${ck(checks)} — ${y.ticks} / ${y.hashGame} ${JSON.stringify(y.eval)}; zeroings ${JSON.stringify(Z)}; ${yields} action records — only a queue's own doReset gets past it (O1); the yield rule is the next slice's input` });
+  }
 }
 
+// S3 is in partStage (below the S2 block): the stage's LIMIT, from the wall under the shipped table
 // ---- Part grep -------------------------------------------------------------------------------------------------------
 function partGrep() {
   const ids = JSON.parse(fs.readFileSync(path.join(REPO, 'manifests/index.json'), 'utf8')).map((g) => g.id);
@@ -382,7 +439,7 @@ function partMerge() {
   }
 }
 
-const EXPECT = { fixture: 2, verdict: 6, stage: 2, grep: 1, leg: 1, merge: MERGED.length + (a.only ? 0 : 1) };
+const EXPECT = { fixture: 3, verdict: 8, stage: 3, grep: 1, leg: 1, merge: MERGED.length + (a.only ? 0 : 1) };
 const FN = { fixture: partFixture, verdict: partVerdict, stage: partStage, grep: partGrep, leg: partLeg, merge: partMerge };
 const RUN = PART === 'push' ? GATE_PARTS : [PART];
 let expected = 0;

@@ -708,9 +708,15 @@
   // off a BASE (`reads:<l>:baseAmount` — one numeric player field) that OTHER resets ZERO (`zeroed-by:<z>:<base>`), at
   // least one of them pressed by the automation (a `reset` feature). The base climbs toward the requirement, and a
   // zeroing reset fires before this one can. It is challenge-attempt's hold for a reset: on PTR, Super Generators need
-  // 200 Generators and eight resets the automation presses zero `player.g.points` — four of them (e, s, sb, t) are sg's
-  // row siblings and act EARLIER IN THE SAME TICK (layers order), so a base that touches the requirement is wiped before
-  // sg decides.
+  // 200 Generators and eight resets the automation presses zero `player.g.points` (e, s, sb, t — sg's row siblings —
+  // and h, o, q, ss).
+  // ⚠ THE ORDER INSIDE A TICK IS MEASURED, NOT ASSUMED (m30). The brief that asked for this template said the row
+  // siblings act earlier in the same tick and wipe the base; on ptr they do not cut it at all (after q milestone 5 t, s
+  // and sb reset nothing, and the game resets them itself) — the cutters are the row-3 resets q and h. What IS earlier
+  // is everything: PTR's gameLoop skips a never-reset layer (`unl`), so the automation decides that layer's reset in its
+  // FALLBACK pass, after every other layer's slot. The check reads where the layer is decided (`hookStats`), and what
+  // happens if the queue does NOT make the reset itself (`afterReach`): on ptr past q milestone 6 the automation's own
+  // reset:sg YIELDS to a native auto-reset (`tmp.sg.autoPrestige`) that the engine never performs for a locked layer.
   // The question the check answers: with every zeroing reset HELD, does the base reach the requirement — when, and if
   // not, what would have to move?
   var RR = { id: 'reset-requirement', needs: ['multiplier-reads', 'zeroed-by'] };
@@ -830,6 +836,33 @@
       return { samples: s, peak: peak, reach: reach };
     });
   }
+  /** Where the automation decides this layer's features in a tick: its own slot, or the fallback pass (after every
+   *  other layer's slot) — read off the hook counters across one tick on the copy. */
+  function rrWhere(b) {
+    return P.excursion(function () {
+      var h0 = T.hookStats ? T.hookStats() : null; T.tick(DIFF, 1); var h1 = T.hookStats ? T.hookStats() : null;
+      if (!h0 || !h1) return null;
+      var d = function (k) { return Number((h1[k] || {})[b.layer] || 0) - Number((h0[k] || {})[b.layer] || 0); };
+      return d('viaSlot') > 0 ? 'slot' : d('viaFallback') > 0 ? 'fallback' : null;
+    });
+  }
+  /** What happens at the reach WITHOUT the queue's own call: the zeroing resets still held, the layer's OWN reset
+   *  feature free, `extra` more ticks — does the automation's reflex (or the engine's auto-reset) make the reset, or
+   *  nobody? `autoPrestige` is the engine's own flag (the TMT contract), read live at the reach. */
+  function rrAfterReach(b, k, extra) {
+    return P.excursion(function () {
+      var own = (T.features || []).filter(function (f) { return f.layer === b.layer && f.kind === 'reset'; }).map(function (f) { return f.id; });
+      // ONE queue: a hold placed by a queue loaded later binds only from the tick after its slot, so swapping queues
+      // would leave the zeroing resets free for a tick (the trap challenge-attempt met) — release only the own feature
+      var q = rrHoldQueue(b, 'rr-after-reach', 0);
+      q.steps = [q.steps[0], { 'do': 'wait', until: 'false', timeout: { gs: k * DIFF }, onTimeout: 'skip' }, { 'do': 'release', features: own }, { 'do': 'wait', until: 'false', timeout: { gs: (extra + 2) * DIFF }, onTimeout: 'abort' }];
+      var r = T.queues.load(q); if (!r.ok) throw new Error('the after-reach queue was refused: ' + r.errors.join('; '));
+      T.tick(DIFF, k);
+      var ap = !!(G.tmp[b.layer] && G.tmp[b.layer].autoPrestige), at = null;
+      for (var i = 1; i <= extra; i++) { T.tick(DIFF, 1); if (player[b.layer].unlocked) { at = i; break; } }
+      return { ticks: extra, freed: own, autoPrestige: ap, reset: at !== null, afterTicks: at };
+    });
+  }
 
   RR.check = function (b, opts) {
     opts = opts || {};
@@ -838,12 +871,14 @@
     var why = [], hash0 = P.hashes().hashGame;
     if (!b.open) return { template: RR.id, goal: b.goal, verdict: 'abstain', reasoning: [b.why], queue: null };
     var window = Number(opts.window) || Number(opts.horizon) || RR_HORIZON_CAP;
+    var where = rrWhere(b);
     why.push('the facts: ' + b.goal + ' needs ' + b.requirement + ' (now ' + String(rrReq(b.layer)) + ') of ' + b.base + ' (' + b.facts.base + '), which a reset of ' + b.zeroers.join(', ') + ' zeroes (pressed by ' + b.pressed.join(', ') + ')' +
-      (b.siblings.length ? '; ' + b.siblings.join(', ') + ' share its row and act earlier in the same tick' : '') + '; holding ' + b.hold.join(', '));
+      (b.siblings.length ? '; ' + b.siblings.join(', ') + ' share its row' : '') + '; holding ' + b.hold.join(', '));
+    if (where === 'fallback') why.push('the automation decides ' + b.layer + ' in its FALLBACK pass (the engine skips the layer\'s own tick): every zeroing reset decides earlier in the same tick');
     if (b.evidence) why.push(b.evidence.readable ? 'the state log: ' + b.evidence.zeroings + ' zeroing reset(s) (' + Object.keys(b.evidence.by).map(function (k) { return k + ' ×' + b.evidence.by[k]; }).join(', ') + '), ' +
       b.evidence.touched + ' of them with ' + b.base + ' at or above the requirement (' + b.evidence.requirement + '; the best was ' + b.evidence.maxBefore + '), ' + b.evidence.ownResets + ' ' + b.goal + ' made' : 'the state log: ' + b.evidence.why);
     var run = rrHeldRun(b, window);
-    var out = { template: RR.id, goal: b.goal, binding: b, window: window, reasoning: why, queue: null, subgoal: null, levers: null,
+    var out = { template: RR.id, goal: b.goal, binding: b, window: window, reasoning: why, queue: null, subgoal: null, levers: null, decidedIn: where,
       rollback: { samples: run.samples.length, peak: run.peak, reach: run.reach, trace: run.samples.filter(function (s, i) { return i < 5 || i % 50 === 49 || s === run.peak || s === run.reach; }) } };
     if (DIFF !== 1) { out.diff = DIFF; why.push('every copy-side tick ran at diff ' + DIFF + ' (not the default 1)'); }
     if (run.reach) {
@@ -851,6 +886,9 @@
       out.verdict = 'reset-at';
       out.tStar = { tick: run.reach.tick, afterTicks: run.reach.k, gameSeconds: r4(run.reach.k * DIFF), base: run.reach.base, requirement: run.reach.requirement };
       why.push('rollback: with the zeroing resets held, ' + b.base + ' reaches the requirement (' + run.reach.base + ' of ' + run.reach.requirement + ') ' + out.tStar.gameSeconds + ' game-s in (tick ' + run.reach.tick + ')');
+      var ar = out.afterReach = rrAfterReach(b, run.reach.k, Math.round(10 / DIFF));
+      if (!ar.reset) why.push('without the queue\'s call (the zeroing resets still held, ' + ar.freed.join(', ') + ' free) nobody makes the reset in ' + ar.ticks + ' tick(s)' + (ar.autoPrestige ? ' — the engine\'s autoPrestige is set, so ' + ar.freed.join(', ') + ' YIELDS to a native auto-reset the engine does not perform here' : '') + ': only the queue\'s own call makes it');
+      else why.push('without the queue\'s call (the zeroing resets still held, ' + ar.freed.join(', ') + ' free) the reset is made ' + ar.afterTicks + ' tick(s) later — a stage that only pauses the zeroing resets would do');
       var q = RR.plan(b, out);
       var c = P.excursion(function () {
         var r = T.queues.load(q); if (!r.ok) return { played: false, refused: r.errors };
@@ -901,7 +939,8 @@
     var l = JSON.stringify(b.layer);
     var steps = [
       { 'do': 'hold', features: b.hold.slice(), comment: 'these zero ' + b.base + ' (' + b.facts.zeroedBy.join(', ') + '), and the reset is the queue\'s' +
-        (b.siblings.length ? ' — ' + b.siblings.join(', ') + ' act earlier in the same tick, so they are held before the base can reach it' : '') },
+        (v.decidedIn === 'fallback' ? ' — ' + b.layer + ' is decided in the automation\'s fallback pass, after every one of them' : '') +
+        (v.afterReach && !v.afterReach.reset && v.afterReach.autoPrestige ? '; its own reset feature would yield to a native auto-reset that does not happen' : '') },
       { 'do': 'wait', until: 'canReset(' + l + ')', timeout: { gs: sig(v.tStar.gameSeconds) + 10 }, onTimeout: 'abort',
         comment: 'the rollback measured ' + b.base + ' at ' + b.requirement + ' ' + v.tStar.gameSeconds + ' game-s into the hold (diff ' + DIFF + ')' },
       { 'do': 'call', fn: 'doReset', args: [b.layer], comment: 'reset ' + b.layer },

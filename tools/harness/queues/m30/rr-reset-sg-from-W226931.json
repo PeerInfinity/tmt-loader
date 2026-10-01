@@ -35,7 +35,7 @@
     "reset:o",
     "reset:ss"
    ],
-   "comment": "these zero player.g.points (zeroed-by:e:player.g.points, zeroed-by:h:player.g.points, zeroed-by:o:player.g.points, zeroed-by:q:player.g.points, zeroed-by:s:player.g.points, zeroed-by:sb:player.g.points, zeroed-by:ss:player.g.points, zeroed-by:t:player.g.points), and the reset is the queue's — e, s, sb, t act earlier in the same tick, so they are held before the base can reach it"
+   "comment": "these zero player.g.points (zeroed-by:e:player.g.points, zeroed-by:h:player.g.points, zeroed-by:o:player.g.points, zeroed-by:q:player.g.points, zeroed-by:s:player.g.points, zeroed-by:sb:player.g.points, zeroed-by:ss:player.g.points, zeroed-by:t:player.g.points), and the reset is the queue's — sg is decided in the automation's fallback pass, after every one of them; its own reset feature would yield to a native auto-reset that does not happen"
   },
   {
    "do": "wait",

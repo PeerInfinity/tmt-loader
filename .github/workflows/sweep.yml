@@ -987,7 +987,7 @@ jobs:
   # stage switches on at q33 and no zeroing reset fires until reset:sg makes the reset; its gates are the template's
   # hold and read the engine's requirement, never its number. Grep.
   # The MEASUREMENT (M30 at diff 1 and 0.05, both stage orders) is `qrate1.yml -f part=m30`, dispatch-only.
-  # ⛔ `--assert` holds the run to its exact row count (11), all green.
+  # ⛔ `--assert` holds the run to its exact row count (15), all green.
   # ---------------------------------------------------------------------------------------------------------------
   m30:
     name: m30 — Super Generators (M30)
