@@ -200,8 +200,8 @@ async function partSwitch() {
     () => run('ptr', { 'from-snapshot': QL5F, profile: 'all', ticks: 600, 'auto-opt': 'stages=off', eval: EV_Q }),
     () => run('ptr', { 'from-snapshot': QL5F, profile: 'all', ticks: 600, eval: EV_Q }),
     () => run('ptr', { 'from-snapshot': QL5F, profile: 'all', ticks: 30, queue: fQueue, eval: EV_Q }),
-    () => run('ptr', { 'from-snapshot': QL5F, profile: 'all', ticks: 90, queue: fQueue, log: logQ }),
-    () => run('ptr', { 'from-snapshot': QL5F, profile: 'all', ticks: 90, log: logC }),
+    () => run('ptr', { 'from-snapshot': QL5F, profile: 'all', ticks: 200, queue: fQueue, log: logQ }),
+    () => run('ptr', { 'from-snapshot': QL5F, profile: 'all', ticks: 200, log: logC }),
   ]);
   // S1
   {
