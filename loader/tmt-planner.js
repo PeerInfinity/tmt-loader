@@ -1507,6 +1507,7 @@
     minRise: 1e-9,        // the log10 rise that counts as a rise for the stall clocks
     reachRounds: 100,     // a goal whose target needs more than this many epochs at the MEASURED rate yields to the next
     maxRounds: 0,         // 0 = unbounded; a bound for a probe
+    keepModifiers: 0,     // (qrate1) 1 = ALSO offer each alternative PRIMARY policy with the incumbent's MODIFIERS kept (see policyCandidates)
   };
   P.optionDefaults = OPT_DEFAULTS;
   P.options = {};
@@ -1535,9 +1536,33 @@
   function freshState() {
     return { round: 0, reached: {}, abandoned: {}, clocks: {}, epoch: null, lastWinner: null, sameWinner: 0, escalate: false,
       escalateN: 0, unlocks: null, divergences: [], commits: 0, goal: null };
+    // (qrate1) `subgoal` is ABSENT until setSubgoal() writes it: a run with no sub-goal keeps the exact runtime record
+    // and round log it wrote before (every P1b pin and golden compares them as JSON).
   }
   S = freshState();
   P.state = function () { return S; };
+  /**
+   * (qrate1) setSubgoal(goal): a TEMPLATE'S SUB-GOAL becomes the round's ACTIVE goal — ahead of the ladder, until it is
+   * reached. `goal` is exactly what a `waiting cannot help` verdict emits (docs/templates.md): {kind: 'value', dimension,
+   * threshold, why?, source?}; null clears it. It lives in the planner's runtime state, so a snapshot carries it.
+   * The id is the ladder's own value-goal id (`value:<dimension>>=<threshold>`, resolveMark), so a sub-goal and a mark
+   * clause naming the same quantity are the same goal. ⛔ Only `value` goals: a dimension and a threshold are the whole
+   * contract between a template and the round, and nothing here knows which game emitted it.
+   */
+  P.setSubgoal = function (g) {
+    if (g === null || g === undefined) { delete S.subgoal; return null; }
+    if (!g || g.kind !== 'value') throw new Error('tmtLoader.planner.setSubgoal: only {kind: "value", dimension, threshold} goals (got kind ' + (g && g.kind) + ')');
+    if (typeof g.dimension !== 'string' || !/^player(\.[A-Za-z0-9_$]+)+$/.test(g.dimension)) throw new Error('tmtLoader.planner.setSubgoal: dimension must be a player.<path> (got ' + g.dimension + ')');
+    var thr = g.threshold === null || g.threshold === undefined ? null : dstr(D(g.threshold));
+    if (thr === null || !(lg(thr) > -Infinity)) throw new Error('tmtLoader.planner.setSubgoal: a positive threshold is required (got ' + g.threshold + ')');
+    S.subgoal = { id: 'value:' + g.dimension + '>=' + thr, kind: 'value', dimension: g.dimension, threshold: thr, why: g.why || null, source: g.source || null, set: { ticks: T.ticks, gameSeconds: T.gameSeconds } };
+    return S.subgoal;
+  };
+  function subgoalHolds() {
+    var sg = S.subgoal; if (!sg) return false;
+    var v = getPath(sg.dimension);
+    try { return v !== null && v !== undefined && D(v).gte(D(sg.threshold)); } catch (e) { return false; }
+  }
   if (typeof T.registerRuntime === 'function') T.registerRuntime('planner', function () { return JSON.parse(JSON.stringify(S)); }, function (v) { S = v ? JSON.parse(JSON.stringify(v)) : freshState(); });
 
   // ---- the configuration of the simple system ---------------------------------------------------------------------
@@ -1626,6 +1651,17 @@
     var add = function (p) { if (p && p !== st.policy && !seen[p]) { seen[p] = 1; out.push(p); } };
     for (i = 0; i < st.policies.length; i++) add(st.policies[i]);              // the table's registered alternatives
     for (i = 0; i < tpl.length; i++) { var v = instantiate(tpl[i], st, target); for (j = 0; j < v.length; j++) add(v[j]); }
+    // (qrate1) A policy is a PRIMARY plus MODIFIERS (`gain>=2|turn@10/30x/5/0/100`), and every candidate above REPLACES
+    // the whole string — so a reset that is a row-cycle member can only be offered a new primary by also leaving the
+    // cycle. Measured from PTR's QL5 state (design notes §17): `rate-peak@0/0` keeping `|turn@10/…` reaches 308,372 total
+    // quirks in 2,872 game-s; the bare `rate-peak@0/0` the table registers holds 176,415 after 5,000. With
+    // `keepModifiers=1` each plain primary is ALSO offered with the incumbent's modifiers kept. Off by default: it adds
+    // candidates, and the round-robin cut and the screen order would move every existing round log.
+    var bar = String(st.policy || '').indexOf('|');
+    if (O('keepModifiers') && bar > 0) {
+      var mods = String(st.policy).slice(bar), plain = out.slice();
+      for (i = 0; i < plain.length; i++) if (plain[i].indexOf('|') < 0) add(plain[i] + mods);
+    }
     return out;
   }
   function generateCandidates(base, target) {
@@ -1989,6 +2025,7 @@
     P.restore(P.snapshot());
     var marks = ladderMarks(), i, j;
     for (i = 0; i < marks.length; i++) if (holdsNow(marks[i]) && !S.reached[marks[i].id]) S.reached[marks[i].id] = { round: S.round, ticks: T.ticks, gameSeconds: T.gameSeconds };
+    if (S.subgoal && !S.reached[S.subgoal.id] && subgoalHolds()) S.reached[S.subgoal.id] = { round: S.round, ticks: T.ticks, gameSeconds: T.gameSeconds };
     var tk = wallMs();
     // ⚠ THE WALK'S WINDOW IS THE EPOCH. P1a's default is 10 game-seconds, chosen for the cost of a dump; a planner that
     // commits a 300-second epoch and asks "what moves this?" over 10 seconds is asking about a different question.
@@ -2009,7 +2046,22 @@
       entries.push(e);
     }
     var active = null, target = null;
-    for (i = 0; i < entries.length; i++) {
+    // (qrate1) a TEMPLATE'S SUB-GOAL comes first while it is open: the template has already decided it is the nearest
+    // lever toward the next ladder mark, so the ladder waits behind it. Its chain is the planner's own (chainFor, the
+    // value-goal path the ladder's `player.<path>.gte(…)` clauses take). A chain with no possible hop is skipped like a
+    // blocked mark, with its reason. ⚠ The REACH estimate is recorded, not obeyed: `reachRounds` exists so a dead TOP
+    // goal does not shadow the ladder entries below it, and a sub-goal shadows nothing the template has not already
+    // ranked — a rate goal (a total that only ever rises, ~1 order away) is exactly the target the estimate prices as
+    // "hundreds of epochs" and the round exists to shorten.
+    var sg = S.subgoal;
+    if (sg && !S.reached[sg.id] && !S.abandoned[sg.id]) {
+      var sgChain = P.chainFor({ id: sg.id, kind: 'value', dimension: sg.dimension, threshold: sg.threshold, held: dstr(getPath(sg.dimension)) }, K);
+      var ts0 = targetForChains([sgChain], K);
+      if (ts0.blocked && ts0.reach && ts0.reach.ok === false && ts0.dimension) { ts0.blocked = false; ts0.outOfReach = ts0.why; ts0.why = null; }
+      if (!ts0.blocked) { active = { source: 'subgoal', mark: sg.id, name: sg.why || 'a template\'s sub-goal', predicate: null, subgoal: sg, chain: sgChain }; target = ts0; }
+      else skipped.push({ mark: sg.id, dimension: ts0.dimension, why: ts0.why, subgoal: true });
+    }
+    for (i = 0; i < entries.length && !active; i++) {
       var t = targetForChains(entries[i].chains, K);
       if (!t.blocked) { active = { source: 'sticky', mark: entries[i].mark, name: entries[i].name, predicate: entries[i].predicate, entry: entries[i] }; target = t; break; }
       skipped.push({ mark: entries[i].mark, dimension: t.dimension, why: t.why });
@@ -2043,7 +2095,8 @@
       target = { dimension: 'player.points', threshold: null, held: dstr(getPath('player.points')), hop: 0, goal: 'root', chainIndex: 0, blocked: false, why: 'every goal is blocked: grow the root dimension' };
     }
     var rec = { round: S.round, ticks: T.ticks, gameSeconds: T.gameSeconds, mode: P.mode, reason: reason,
-      goal: active ? { source: active.source, id: active.mark, name: active.name, predicate: active.predicate, chain: active.entry ? active.entry.chains.map(function (c2) { return { goal: c2.goal, firstImpossible: c2.firstImpossible ? c2.firstImpossible.dimension : null }; }) : null } : null,
+      goal: active ? { source: active.source, id: active.mark, name: active.name, predicate: active.predicate, chain: active.entry ? active.entry.chains.map(function (c2) { return { goal: c2.goal, firstImpossible: c2.firstImpossible ? c2.firstImpossible.dimension : null }; }) : active.chain ? [{ goal: active.chain.goal, firstImpossible: active.chain.firstImpossible ? active.chain.firstImpossible.dimension : null }] : null,
+        subgoal: active.subgoal ? { dimension: active.subgoal.dimension, threshold: active.subgoal.threshold, source: active.subgoal.source } : undefined } : null,
       skipped: skipped, target: target || null, candidates: [], winner: null, epoch: null,
       reached: Object.keys(S.reached).sort(), abandoned: Object.keys(S.abandoned).sort(),
       cost: { knowledgeMs: knowledgeMs } };
@@ -2113,11 +2166,22 @@
     var screenMs = wallMs() - ts;
     var frontier = [];
     for (i = 0; i < G.discovered.length; i++) { var dg = G.discovered[i]; if (dg.dimension && dg.held != null) frontier.push({ id: dg.id, dimension: dg.dimension, held: dg.held }); }
-    var activeFn = active.source === 'sticky' ? T.predicate(active.predicate) : null;
+    var activeFn = active.source === 'sticky' ? T.predicate(active.predicate) : active.source === 'subgoal' ? subgoalHolds : null;
     var tc = wallMs(), measured = 0;
     for (i = 0; i < screened.length; i++) {
-      screened[i].confirm = measureConfig(screened[i].config, O('k'), target, activeFn, marks, frontier);
-      screened[i].score = scoreOutcome(screened[i].confirm, target, O('k'));
+      // (qrate1) A candidate the ENGINE REFUSES is a refusal, not a crash of the round. `instantiate` passes a template it
+      // has no rule for through as its literal id (`gain>=Nx-unit`, `rate-peak@B/H` — the strategy table grew after P1b),
+      // and `setPolicy` throws on the placeholder. Measured: with every candidate confirmed (screenK=999) the first such
+      // id killed the round, and the run with it. The excursion restores the state; the candidate keeps `refused` and
+      // can never win. Default rounds never confirm one, so their logs are unchanged.
+      try {
+        screened[i].confirm = measureConfig(screened[i].config, O('k'), target, activeFn, marks, frontier);
+        screened[i].score = scoreOutcome(screened[i].confirm, target, O('k'));
+      } catch (e) {
+        screened[i].confirm = null;
+        screened[i].refused = String(e && e.message || e).slice(0, 160);
+        screened[i].score = { total: -1e300, terms: {}, refused: screened[i].refused };
+      }
       measured += O('k');
     }
     var confirmMs = wallMs() - tc;
@@ -2125,6 +2189,7 @@
     var winner = null;
     for (i = 0; i < screened.length; i++) {
       var c3 = screened[i];
+      if (!c3.confirm) continue;
       if (!winner) { winner = c3; continue; }
       var a = winner.confirm, b = c3.confirm;
       if ((a.reachedAt === null) !== (b.reachedAt === null)) { if (b.reachedAt !== null) winner = c3; continue; }
@@ -2181,6 +2246,10 @@
     if (P.mode !== 'auto' && P.mode !== 'suggest') return null;
     if (O('maxRounds') && S.round >= O('maxRounds')) return null;
     if (!S.epoch) return P.round({ reason: 'first-round' });
+    if (S.subgoal && S.goal === S.subgoal.id && S.reached[S.goal] === undefined && subgoalHolds()) {
+      S.reached[S.goal] = { round: S.round, ticks: T.ticks, gameSeconds: T.gameSeconds };
+      return P.round({ reason: 'goal-reached' });
+    }
     if (S.goal && S.reached[S.goal] === undefined) {
       var m = null, ms = ladderMarks();
       for (var i = 0; i < ms.length; i++) if (ms[i].id === S.goal) { m = ms[i]; break; }
@@ -2209,7 +2278,7 @@
   /** The run's planner record: the mode, the options, the state and the round log (--rounds-out). */
   P.report = function () {
     return { contract: P.contract, game: T.id || null, mode: P.mode, options: Object.assign({}, P.options),
-      ticks: T.ticks, gameSeconds: T.gameSeconds, rounds: P.rounds.length, commits: S.commits,
+      ticks: T.ticks, gameSeconds: T.gameSeconds, rounds: P.rounds.length, commits: S.commits, subgoal: S.subgoal || undefined,
       reached: S.reached, abandoned: S.abandoned, divergences: S.divergences,
       clocks: S.clocks, epoch: S.epoch, configuration: currentConfig(), log: P.rounds };
   };

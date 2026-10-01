@@ -97,8 +97,39 @@ the queue's and no reflex spends the purse first. Derived from the features' lay
   played live buys it on the same tick.
 - something and collection-of-everything: no price shaped in a non-currency field, so no match (the funnel says so).
 
+## How a sub-goal reaches the planner (qrate1, 2026-09-30)
+
+A `waiting cannot help` verdict ends in a **sub-goal** — `{kind: 'value', dimension, threshold, why}` — and no queue.
+The sub-goal is the planner's to pursue: the P1b round (docs/planner.md Part 4) already targets VALUE goals (the ladder's
+`player.<path>.gte(…)` clauses), and a sub-goal is handed to it as one.
+
+```
+node tools/harness/strategize.mjs ptr --from <state> --goal upg:q:23 --json verdict.json
+node tools/harness/run.mjs ptr --from-snapshot <state> --profile all --planner=auto --planner-ladder tools/harness/ladder/ptr.json \
+     --planner-goal verdict.json --rounds-out rounds.json
+```
+
+**The seam** is `tmtLoader.planner.setSubgoal(goal)` (`null` clears it); `run.mjs --planner-goal <file>` calls it after
+the snapshot's runtime is restored. The file is the sub-goal itself, `{subgoal: …}`, or a strategize `--json` file that
+carries exactly ONE sub-goal (several, or none, is refused by name). What the round does with it:
+- it is the **active goal ahead of the ladder** until it holds (`goal.source: 'subgoal'` in the round log, id
+  `value:<dimension>>=<threshold>` — the ladder's own value-goal id, so a mark clause naming the same quantity is the
+  same goal); then the ladder resumes;
+- its chain is the planner's own (`chainFor`), so the target is the deepest possible hop exactly as for a mark;
+- a chain with no possible hop is skipped with its reason, like a blocked mark; ⚠ but the **reach estimate is recorded,
+  not obeyed** (`target.outOfReach`): `reachRounds` exists so a dead top mark does not shadow the marks below it, and a
+  rate goal — a total that only rises, ~1 order away — is exactly what that estimate prices as "hundreds of epochs";
+- it rides in the planner's runtime state, so a snapshot carries it. With no sub-goal nothing changes: the runtime
+  record and the round log are byte-identical to before (gate S2).
+
+**Measured on ptr (design notes §17):** from the QL5 state the q23 verdict's sub-goal is `player.q.total ≥ 308372`. The
+round targets it (S1). The configuration that answers it is `reset:q = rate-peak@0/0|turn@10/…` — 308,372 total quirks
+2,872 game-seconds after QL5, against the shipped table's 39,663 after 5,000 — and from that first state the verdict
+FLIPS: q23 says **buy at t\***, and its queue played live buys it on the copy's tick (T2, T3).
+
 ## Gates
 
 `tools/harness/gates-tpl1.mjs --part oracle` (O1 q23, O2 q22, O3 generality, and the verdicts counted) and `--part grep`;
+`tools/harness/gates-qrate1.mjs --part push` (the sub-goal seam S1–S3, the q23 flip T1–T3, the fixtures, the grep);
 `tools/harness/mutants-tpl1.sh` (a check that skips its confirmation, a check that ignores the multiplier chain, a game
 id in a template, and the runner's own).

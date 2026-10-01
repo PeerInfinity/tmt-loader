@@ -370,6 +370,7 @@ a sweep have one behind them. The rest are hand-chosen starting points, and the 
 | `minRise` | 1e-9 | the log10 rise that counts as a rise for the clocks | — |
 | `reachRounds` | 100 | epochs at the measured rate beyond which a goal's target counts as out of reach and the goal yields | hand-chosen: two orders of magnitude of slack over the ~4 epochs M15 needs at the frontier |
 | `maxRounds` | 0 | 0 = unbounded; a bound for a probe | — |
+| `keepModifiers` | 0 | (qrate1) 1 = also offer each alternative PRIMARY policy of a reset WITH the incumbent's modifiers (`rate-peak@0/0` + `\|turn@10/…`) — every other candidate replaces the whole string, so a row-cycle member could only change its rule by leaving the cycle | off by default: it adds candidates, and the round-robin cut would move every existing round log. Measured on ptr from QL5 (design notes §17): the kept-cycle `rate-peak` is the Part 1 winner; the bare one, which the table registers, is not |
 
 ### Reading a round log (`--rounds-out`, `planner.rounds[]`)
 
@@ -396,6 +397,29 @@ Read it in this order: **`target`** (what the round was trying to grow, and why 
 (what the engine said each one would reach), and **`screenDivergence.agree`** (whether the cheap model would have picked
 the same one). `cost` is the only block a clock wrote, and no decision reads it — the determinism gate strips it before
 comparing two runs' logs.
+
+### Value goals from TEMPLATES (qrate1, 2026-09-30)
+
+A strategy template that finds no queue can work emits a **sub-goal** (`{kind: 'value', dimension, threshold}`,
+docs/templates.md). `tmtLoader.planner.setSubgoal(goal)` — `run.mjs --planner-goal <file>` — makes it the round's
+**active goal ahead of the ladder** until it holds (`goal.source: 'subgoal'`). Its chain, target and clocks are a mark's;
+its reach estimate is recorded (`target.outOfReach`) but does not skip it — see docs/templates.md for why. With no
+sub-goal, nothing changes (gate qrate1 S2: the decisions from `pre-f1/M02` equal a pin taken before the seam existed).
+
+**What the round could and could not find, measured on ptr's QL5 state against `player.q.total ≥ 308372`** (design
+notes §17 has every number):
+- ⚠ **With the default options the round never confirms a `reset:q` policy.** The screen cannot rank candidates for a
+  total that only a reset's GAIN moves (every one projects the same number), the tie-break orders them by id, and the
+  round-robin cut takes each feature's first — `off:<feature>` — so the 24-candidate pool holds the incumbent and one
+  `off:*` per feature, and `screenK` 4 confirms the incumbent and three `off:buyables:*`. The incumbent wins, the target
+  rises every round, so the anti-fixation escalation never arms. Widening `maxCandidates` / `screenK` is the only way in.
+- The Part 1 winner (`rate-peak@0/0` KEEPING `|turn@10/…`) is not a candidate at all without `keepModifiers=1`: the
+  table registers `rate-peak@0/0` bare, and a candidate replaces the whole policy string.
+- **Defect fixed (qrate1): a candidate the engine refuses crashed the round.** `instantiate` passes a strategy template
+  it has no rule for through as its literal id (`gain>=Nx-unit`, `rate-peak@B/H`; the strategy table grew after P1b),
+  and `setPolicy` throws on the placeholder. A default round never confirms one; a widened round died on the first. A
+  refused candidate now keeps `refused` with the engine's message, scores −1e300 and cannot win; the excursion restores
+  the state. (Generating only instantiable candidates would change every round log, so it is not done here.)
 
 ### What P1b does NOT decide
 
