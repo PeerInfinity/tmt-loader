@@ -19,8 +19,14 @@ Templates are **harness-only**, like the planner they extend. The page never fet
 
 ```
 node tools/harness/strategize.mjs <game> [--from <snapshot.json>] [--goal <goal id>] [--out queue.json] [--json verdicts.json]
-                                         [--facts <file>] [--horizon <game-s>] [--lever-k <game-s>] [--all]
+                                         [--facts <file>] [--horizon <game-s>] [--lever-k <game-s>] [--all] [--diff <d>]
+                                         [--auto-opt "k=v;…"] [--window <game-s>] [--log <state-log.jsonl>] [--timeout-s <s>]
 ```
+
+(h22) `--auto-opt`: the automation configuration the checks run under (a stage's winning policy — the copy's reflexes
+are the configuration's). `--window` / `--log`: `challenge-attempt`'s stated window and its evidence (below).
+`--timeout-s`: the boot child's limit (run.mjs's default 600 s; a check at diff 0.05 ticks 20× as many copy-side ticks).
+Goal ids: `upg:<l>:<id>`, `buy:<l>:<id>`, `ch:<l>:<id>`.
 
 It boots the game at the state (`--from`, else a fresh game) with the planner, the templates and the queue runner,
 matches every template against `games-facts/<game>.json`, checks each match that is OPEN at that state (the item is
@@ -136,6 +142,52 @@ q.time 26, with every reset excluded at registration (gate V0 reproduces it): mi
 ⚠ The q11 lever's other input, the q-upgrade COUNT (`player.q.upgrades`, an array), is not a numeric input and is never
 priced — yet buying q31 raises q11's power 8 → 9, which is most of what q32 then needs.
 
+## `challenge-attempt` (h22, 2026-10-01)
+
+**The pattern** — an unlocked, incomplete challenge whose attempts are ENDED by resets the automation presses: the
+`exits-challenge` facts (docs/facts.md) name every reset that leaves it, and at least one is a `reset` feature. On PTR
+that is every `h` challenge — 2.2.1's `rowReset` clears `activeChallenge` on every layer of a row it resets, so q, o and
+ss (h's row) end an h attempt exactly as h does. That is why §18.5's 125 H22 attempts all ended at the next `rate-peak`
+q reset, with no completion and no give-up.
+
+**What it holds** — every `reset` and `challenges` feature of every exiting layer, the challenge's own `challenges`
+feature included: while the queue owns the attempt, no reflex enters, leaves or gives it up. (Under a configuration
+that excludes a feature at registration — M28's `exclude=challenges:h` — that feature does not exist and is not held.)
+
+**The check** — the measurement plan is played on the copy: hold, enter, and every tick read the goal currency against
+the engine's goal (R3a's `p = log(amount) / log(goal)`), for a stated window (`--window`, default 3,600 game-s — the
+same cap the time-priced held run uses; a measurement bound, not a strategy literal). Three verdicts:
+- **complete** — the engine's `canCompleteChallenge` holds inside the window. The plan (below) is played on the copy
+  again; only a plan that completed and released its holds is emitted (else `unconfirmed`).
+- **short** — the currency rose but the window ended first: the shortfall X = goal ÷ the peak amount. The attempt is
+  replayed to its peak and each NUMERIC input the `challenge-inputs` fact says moves the gain inside is priced: how far
+  the gain moves for ×10+1 (and for +1 of a buyable), and the value at which the gain rises by X (log-space bracket +
+  bisection, the gain read the way the probe reads it). Ranked by log10 distance; the nearest is the sub-goal — but
+  **never** an input the ENTRY zeroes (`zeroed-by:<challenge layer>:<input>`: entering is that layer's reset, so the
+  attempt rebuilds it from 0 — m28's "no sub-goal on a currency the purchase spends") and never one that is 0 at the
+  peak (m28's zeroed-at-peak rule). A challenge whose completion is a FUNCTION (`canComplete`) declares no goal value:
+  the shortfall is not priced and no lever is ranked (collection-of-everything's `st` 11).
+- **cannot-progress** — the goal currency never rose above its reading on entry, or no input the facts name moves it.
+It also reports where the table's own exit rule — the `give-up@B/H` modifier of the policy in force, read with the
+policy parser — would have conceded the attempt, from the measured trace. It does not tune it.
+
+**The plan** — `hold` → `call startChallenge` **if not already inside** → `wait` until the engine says it entered →
+`wait` until `canCompleteChallenge` (timeout: the measured moment + 10 s, `skip`) → `call startChallenge` **if inside**
+(the engine completes a challenge whose goal is met as it leaves) → `release` → `wait` until a completion is recorded.
+⚠ Both `if`s are load-bearing (docs/queues.md): `startChallenge` pressed INSIDE the challenge leaves it, and pressed
+outside enters it. One tick of reflexes runs before a `start` queue's hold binds, and under the shipped table the
+`challenges:h` reflex enters H22 in exactly that tick (measured — the first cut's queue then LEFT it); and when an
+attempt was cut, the finish must not re-enter (the vacuity control's second attempt was exactly that).
+
+**Measured (h22, ptr, m28/QL6; design notes §20):**
+| | |
+|---|---|
+| under M28's configuration (qrate1 winner + `exclude=challenges:h`), diff 1 | **COMPLETE: 984 game-s after entry**, confirmed on the copy on tick 87,055; the queue played LIVE completes H22 on the same tick (M29), holds released, its log replays equal (70 actions) |
+| the same, `--window 25` (the q-reset interval §18.5 saw) | **SHORT**: peak p 0.999175 at t = 25 (10^2.9445 short; §18.5's interrupted Q86K attempt: 0.9992 / 10^2.7); the nearest lever **the Primary Space Building `s.buyables.11` 63 → 265.8 (10^0.63)** — the guide's "Space into Primary", here ranked by the facts (its +1 moves the gain 10^0.031, ×10+1 10^4.79); p, g, s, t points priced but never the sub-goal (the entry zeroes them) |
+| under the shipped table | COMPLETE as well (984 game-s); the table's `sequential\|give-up@0.1/30/2x` would concede it at **t = 211 s (p = 0.9998)** — the attempt's points grow LINEARLY (~1.05e3566/s), so the remaining distance in log closes slower than 10 % per 30 s long before the goal |
+| the state log, QL6 under the winner, 600 game-s | 13 attempts: 0 completed, 0 given up, 12 ended by a reset (q ×11, h ×1), one open at the end |
+| something (fresh, all/S05) / collection-of-everything | 0 matches (no challenge has exits facts) / 1 match, SHORT with the shortfall unpriced (a `canComplete` function) |
+
 ## How a sub-goal reaches the planner (qrate1, 2026-09-30)
 
 A `waiting cannot help` verdict ends in a **sub-goal** — `{kind: 'value', dimension, threshold, why}` — and no queue.
@@ -169,6 +221,10 @@ FLIPS: q23 says **buy at t\***, and its queue played live buys it on the copy's 
 
 ## Gates
 
+`tools/harness/gates-h22.mjs --part push` (challenge-attempt: the M29 fixture, O1 complete / O1s short with the source's
+lever / O2 live + replay / O2s the shipped table / the hold's vacuity / the log evidence / O3 generality, the grep) and
+`tools/harness/mutants-h22.sh` (exits that miss rowReset's same-row case, a hold that misses a sibling, a spent lever
+emitted, a game id); its measurement, M29 at diff 1 and 0.05, is `qrate1.yml -f part=h22`.
 `tools/harness/gates-tpl1.mjs --part oracle` (O1 q23, O2 q22, O3 generality, and the verdicts counted) and `--part grep`;
 `tools/harness/gates-qrate1.mjs --part push` (the sub-goal seam S1–S3, the q23 flip T1–T3, the fixtures, the grep);
 `tools/harness/mutants-tpl1.sh` (a check that skips its confirmation, a check that ignores the multiplier chain, a game

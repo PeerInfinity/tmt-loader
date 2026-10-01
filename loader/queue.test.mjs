@@ -124,6 +124,30 @@ test('a wait whose condition THROWS aborts by name (a throw is not a false)', ()
   assert.equal(T.queueLink.holds, null);
 });
 
+test('(h22) a call with `if` is made only when the predicate holds; a false one is skipped and recorded, a throwing one aborts by name', () => {
+  const ctx = boot(), T = ctx.tmtLoader;
+  T.queues.load(Q([
+    { do: 'call', fn: 'doReset', args: ['a'], if: 'false' },
+    { do: 'call', fn: 'doReset', args: ['a'], if: 'true' },
+  ], { id: 'qif' }));
+  T.profile('off');
+  ctx.resets.length = 0;
+  tick(ctx, 1);
+  assert.equal(ctx.resets.length, 1, 'only the call whose `if` held was made');
+  const st = T.queues.status().queues[0];
+  assert.equal(st.state, 'done');
+  const c2 = boot();
+  c2.tmtLoader.queues.load(Q([{ do: 'hold', features: ['reset:a'] }, { do: 'call', fn: 'doReset', args: ['a'], if: 'player.nosuch.gte(1)' }]));
+  tick(c2, 1);
+  const s2 = c2.tmtLoader.queues.status().queues[0];
+  assert.equal(s2.state, 'aborted');
+  assert.match(s2.outcome, /"if" threw/);
+  assert.equal(c2.tmtLoader.queueLink.holds, null);
+  const r = boot().tmtLoader.queues.load(Q([{ do: 'call', fn: 'doReset', args: ['a'], if: 'player.(' }]));
+  assert.equal(r.ok, false);
+  assert.match(r.errors.join(' | '), /if:/);
+});
+
 test('UNLOAD mid-queue releases the holds; the slot empties when the last queue goes', () => {
   const ctx = boot(), T = ctx.tmtLoader;
   T.queues.load(Q([{ do: 'hold', features: ['reset:a'] }, { do: 'wait', until: 'false', timeout: { gs: 1000 }, onTimeout: 'abort' }]));
