@@ -703,7 +703,218 @@
     return q;
   };
 
-  var TEMPLATES = { 'time-priced-purchase': TPP, 'challenge-attempt': CA };
+  // ---- reset-requirement (m30) ---------------------------------------------------------------------------------------
+  // The pattern: a layer's RESET whose engine requirement (static: `tmp[l].nextAt`; normal: `tmp[l].requires`) is read
+  // off a BASE (`reads:<l>:baseAmount` — one numeric player field) that OTHER resets ZERO (`zeroed-by:<z>:<base>`), at
+  // least one of them pressed by the automation (a `reset` feature). The base climbs toward the requirement, and a
+  // zeroing reset fires before this one can. It is challenge-attempt's hold for a reset: on PTR, Super Generators need
+  // 200 Generators and eight resets the automation presses zero `player.g.points` — four of them (e, s, sb, t) are sg's
+  // row siblings and act EARLIER IN THE SAME TICK (layers order), so a base that touches the requirement is wiped before
+  // sg decides.
+  // The question the check answers: with every zeroing reset HELD, does the base reach the requirement — when, and if
+  // not, what would have to move?
+  var RR = { id: 'reset-requirement', needs: ['multiplier-reads', 'zeroed-by'] };
+  // A measurement bound, not a strategy literal: the longest held run a check plays on the copy (game-s) unless the
+  // caller states a window — the same cap the other templates use.
+  var RR_HORIZON_CAP = 3600;
+
+  // the engine's requirement for a layer's NEXT reset, as an expression the queue and the readout can state (the TMT
+  // contract: a static layer's cost is `nextAt`, a normal layer's threshold is `requires`); null for a custom layer
+  function rrReqExpr(l) {
+    var t = G.layers[l] && G.layers[l].type;
+    return t === 'static' ? 'tmp[' + JSON.stringify(l) + '].nextAt' : t === 'normal' ? 'tmp[' + JSON.stringify(l) + '].requires' : null;
+  }
+  function rrReq(l) { var t = G.tmp[l]; if (!t) return undefined; return G.layers[l].type === 'static' ? t.nextAt : t.requires; }
+  function rrCan(l) { try { return typeof canReset === 'function' ? !!canReset(l) : false; } catch (e) { return false; } }
+  function rrShown(l) {
+    var d = G.layers[l]; if (!d) return false;
+    var s = d.layerShown; if (s === undefined) return true;
+    try { s = typeof s === 'function' ? s.call(d) : s; } catch (e) { return false; }
+    return s === true;
+  }
+  function rrRow(l) { var t = G.tmp[l]; return t && t.row !== undefined ? t.row : G.layers[l] && G.layers[l].row; }
+
+  /** The features a hold must cover: each zeroing layer's `reset` and `challenges` features (entering or leaving a
+   *  challenge resets the layer), and this layer's own `reset` feature — the reset is the queue's, at the moment the
+   *  rollback measured (a reflex pressing it first would leave the queue's wait waiting for a requirement already spent). */
+  function rrHoldSet(zeroers, l) {
+    var out = [];
+    for (var i = 0; i < (T.features || []).length; i++) {
+      var f = T.features[i];
+      if (zeroers.indexOf(f.layer) >= 0 && (f.kind === 'reset' || f.kind === 'challenges')) out.push(f.id);
+      else if (f.layer === l && f.kind === 'reset') out.push(f.id);
+    }
+    return out;
+  }
+
+  // The state log as EVIDENCE (`opts.logRecords`): every zeroing reset the automation pressed, with the base's value just
+  // before it (the summary's `<layer>.p` — so only a base that IS a layer's points is readable), against the requirement
+  // read live: how often the base had touched it, and how close it came.
+  function rrEvidence(records, b) {
+    if (!records) return null;
+    var m = /^player\.([^.]+)\.points$/.exec(b.base);
+    if (!m) return { readable: false, why: 'the log\'s summary carries a layer\'s points only; ' + b.base + ' is not one' };
+    var key = m[1] + '.p', cur = null, req = rrReq(b.layer), ev = { readable: true, zeroings: 0, touched: 0, maxBefore: null, by: {}, ownResets: 0 };
+    for (var i = 0; i < records.length; i++) {
+      var r = records[i];
+      if (r.type === 'checkpoint' && r.summary) { cur = r.summary[key] === undefined ? null : r.summary[key]; continue; }
+      if (r.type !== 'action') continue;
+      var before = cur;
+      if (r.state && key in r.state) cur = r.state[key];
+      if (r.call !== 'doReset' || !r.args) continue;
+      var z = String(r.args[0]);
+      if (z === b.layer) { ev.ownResets++; continue; }
+      if (b.zeroers.indexOf(z) < 0) continue;
+      ev.zeroings++; ev.by[r.by || r.source] = (ev.by[r.by || r.source] || 0) + 1;
+      if (before === null) continue;
+      try { if (ev.maxBefore === null || N(before).gt(ev.maxBefore)) ev.maxBefore = String(before); if (req !== undefined && N(before).gte(req)) ev.touched++; } catch (e) { /* unreadable */ }
+    }
+    ev.requirement = req === undefined ? null : String(req);
+    return ev;
+  }
+
+  RR.match = function (facts, opts) {
+    opts = opts || {};
+    var fun = opts.funnel || {}, out = [];
+    var layersWithReset = [];
+    (T.features || []).forEach(function (f) { if (f.kind === 'reset' && layersWithReset.indexOf(f.layer) < 0) layersWithReset.push(f.layer); });
+    fun.resetFeatures = layersWithReset.length; fun.withRequirement = 0; fun.withBase = 0; fun.baseZeroed = 0; fun.zeroedByAutomation = 0;
+    var zs = byKind(facts, 'zeroed-by');
+    for (var i = 0; i < layersWithReset.length; i++) {
+      var l = layersWithReset[i];
+      if (opts.goal && opts.goal !== 'reset:' + l) continue;
+      var reqExpr = rrReqExpr(l);
+      if (!reqExpr) continue;
+      fun.withRequirement++;
+      var bf = factById(facts, 'reads:' + l + ':baseAmount'), reads = bf ? ((lastVariant(bf) || {}).reads || []) : [];
+      if (reads.length !== 1) continue;            // one base field, read by the engine's own baseAmount
+      fun.withBase++;
+      var base = reads[0];
+      var zf = zs.filter(function (z) { return z.field === base && z.reset !== l && (z.effect || (lastVariant(z) || {}).effect) === 'zeroes'; });
+      if (!zf.length) continue;
+      fun.baseZeroed++;
+      var zeroers = zf.map(function (z) { return z.reset; });
+      var pressed = (T.features || []).filter(function (f) { return f.kind === 'reset' && zeroers.indexOf(f.layer) >= 0; }).map(function (f) { return f.id; });
+      if (!pressed.length) continue;
+      fun.zeroedByAutomation++;
+      var shown = rrShown(l), unl = !!(player[l] && player[l].unlocked), row = rrRow(l);
+      var b = { template: RR.id, goal: 'reset:' + l, layer: l, type: G.layers[l].type, row: row, base: base, requirement: reqExpr, zeroers: zeroers, pressed: pressed,
+        siblings: zeroers.filter(function (z) { return rrRow(z) === row; }),
+        hold: rrHoldSet(zeroers, l), facts: { base: bf.id, zeroedBy: zf.map(function (z) { return z.id; }) },
+        open: shown && !unl, why: !shown ? 'the layer is not shown here' : unl ? 'the layer has been reset before here (unlocked): its requirement is not a wall' : null };
+      if (opts.logRecords) b.evidence = rrEvidence(opts.logRecords, b);
+      out.push(b);
+    }
+    return out;
+  };
+
+  function rrHoldQueue(b, id, gs) {
+    return { format: 'tmt-queue/1', id: id, source: { template: RR.id, purpose: 'measurement on the copy' },
+      steps: [{ 'do': 'hold', features: b.hold.slice() }, { 'do': 'wait', until: 'false', timeout: { gs: gs }, onTimeout: 'abort' }] };
+  }
+  /** The held run on the copy: the base against the engine's requirement every tick, until the engine says the reset
+   *  can be made (`canReset`) or the window ends. */
+  function rrHeldRun(b, window) {
+    return P.excursion(function () {
+      var r = T.queues.load(rrHoldQueue(b, 'rr-measure', window + 10));
+      if (!r.ok) throw new Error('the measurement queue was refused: ' + r.errors.join('; '));
+      var s = [], peak = null, reach = null, n = Math.round(window / DIFF);
+      for (var k = 1; k <= n; k++) {
+        T.tick(DIFF, 1);
+        var bv = getPath(b.base), req = rrReq(b.layer), L = lg(bv) - lg(req);
+        var row = { k: k, tick: T.ticks, base: String(bv), requirement: String(req), ratioLog10: isFinite(L) ? r4(L) : null };
+        s.push(row);
+        if (row.ratioLog10 !== null && (peak === null || row.ratioLog10 > peak.ratioLog10)) peak = row;
+        if (rrCan(b.layer)) { row.canReset = true; reach = row; break; }
+      }
+      return { samples: s, peak: peak, reach: reach };
+    });
+  }
+
+  RR.check = function (b, opts) {
+    opts = opts || {};
+    needRunner();
+    DIFF = Number(opts.diff) || 1;
+    var why = [], hash0 = P.hashes().hashGame;
+    if (!b.open) return { template: RR.id, goal: b.goal, verdict: 'abstain', reasoning: [b.why], queue: null };
+    var window = Number(opts.window) || Number(opts.horizon) || RR_HORIZON_CAP;
+    why.push('the facts: ' + b.goal + ' needs ' + b.requirement + ' (now ' + String(rrReq(b.layer)) + ') of ' + b.base + ' (' + b.facts.base + '), which a reset of ' + b.zeroers.join(', ') + ' zeroes (pressed by ' + b.pressed.join(', ') + ')' +
+      (b.siblings.length ? '; ' + b.siblings.join(', ') + ' share its row and act earlier in the same tick' : '') + '; holding ' + b.hold.join(', '));
+    if (b.evidence) why.push(b.evidence.readable ? 'the state log: ' + b.evidence.zeroings + ' zeroing reset(s) (' + Object.keys(b.evidence.by).map(function (k) { return k + ' ×' + b.evidence.by[k]; }).join(', ') + '), ' +
+      b.evidence.touched + ' of them with ' + b.base + ' at or above the requirement (' + b.evidence.requirement + '; the best was ' + b.evidence.maxBefore + '), ' + b.evidence.ownResets + ' ' + b.goal + ' made' : 'the state log: ' + b.evidence.why);
+    var run = rrHeldRun(b, window);
+    var out = { template: RR.id, goal: b.goal, binding: b, window: window, reasoning: why, queue: null, subgoal: null, levers: null,
+      rollback: { samples: run.samples.length, peak: run.peak, reach: run.reach, trace: run.samples.filter(function (s, i) { return i < 5 || i % 50 === 49 || s === run.peak || s === run.reach; }) } };
+    if (DIFF !== 1) { out.diff = DIFF; why.push('every copy-side tick ran at diff ' + DIFF + ' (not the default 1)'); }
+    if (run.reach) {
+      // ---- RESET-AT: plan at the measured moment, and CONFIRM by playing the plan on the copy --------------------------
+      out.verdict = 'reset-at';
+      out.tStar = { tick: run.reach.tick, afterTicks: run.reach.k, gameSeconds: r4(run.reach.k * DIFF), base: run.reach.base, requirement: run.reach.requirement };
+      why.push('rollback: with the zeroing resets held, ' + b.base + ' reaches the requirement (' + run.reach.base + ' of ' + run.reach.requirement + ') ' + out.tStar.gameSeconds + ' game-s in (tick ' + run.reach.tick + ')');
+      var q = RR.plan(b, out);
+      var c = P.excursion(function () {
+        var r = T.queues.load(q); if (!r.ok) return { played: false, refused: r.errors };
+        var at = null, st = null, lim = run.reach.k + Math.round(20 / DIFF);
+        for (var k = 1; k <= lim; k++) {
+          T.tick(DIFF, 1);
+          if (at === null && player[b.layer].unlocked) at = { tick: T.ticks, gameSeconds: T.gameSeconds, base: String(getPath(b.base)), points: String(player[b.layer].points) };
+          st = T.queues.status().queues.filter(function (x) { return x.id === q.id; })[0];
+          if (st && st.state !== 'armed' && st.state !== 'running') break;
+        }
+        return { played: true, reset: at !== null, at: at, state: st ? st.state : null, outcome: st ? st.outcome : null, holds: st ? st.holds : null };
+      });
+      out.confirm = c;
+      if (c.played && c.reset && c.state === 'done') { out.queue = q; why.push('confirmed on the copy: the queue made ' + b.goal + ' on tick ' + c.at.tick + ' and released its holds'); }
+      else { out.verdict = 'unconfirmed'; why.push('NOT confirmed: the queue played on the copy ' + (c.played ? 'ended ' + c.state + ' (' + c.outcome + ') without the reset' : 'was refused: ' + (c.refused || []).join('; ')) + ' — no queue is emitted'); }
+    } else {
+      var first = run.samples[0], pk = run.peak;
+      var moved = !!(pk && first && pk.ratioLog10 !== null && (first.ratioLog10 === null || pk.ratioLog10 > first.ratioLog10));
+      if (!moved) {
+        out.verdict = 'cannot';
+        why.push('rollback: in ' + window + ' game-s with the zeroing resets held, ' + b.base + ' never rose above its first reading (' + (first ? first.base : '—') + ') — holding cannot reach ' + b.goal);
+      } else {
+        // ---- SHORT by X: the base's own route to the requirement, priced by the planner's knowledge walk ---------------
+        out.verdict = 'short';
+        out.short = { log10: r4(-pk.ratioLog10), base: pk.base, requirement: pk.requirement, atTick: pk.tick };
+        why.push('rollback: at its best ' + b.base + ' is ' + pk.base + ' of ' + pk.requirement + ' (10^' + out.short.log10 + ' short) inside the ' + window + '-s window');
+        var lw = P.excursion(function () {
+          T.queues.load(rrHoldQueue(b, 'rr-peak', pk.k * DIFF + 10));
+          T.tick(DIFF, pk.k);
+          T.queues.unload('rr-peak');
+          var K = P.knowledge({ k: Number(opts.leverK || 30) });
+          var cd = chainDistance(b.base, String(rrReq(b.layer)), K);
+          return { chain: cd, at: { tick: T.ticks } };
+        });
+        out.levers = [{ input: b.base, held: pk.base, need: pk.requirement, distanceLog10: lw.chain.distanceLog10 === null ? out.short.log10 : Math.max(out.short.log10, lw.chain.distanceLog10),
+          binding: lw.chain.binding || (b.base + ' ' + pk.base + ' → ' + pk.requirement), hops: lw.chain.hops }];
+        out.leverWalk = { at: lw.at, firstImpossible: lw.chain.firstImpossible };
+        out.subgoal = { kind: 'value', dimension: b.base, threshold: pk.requirement, why: b.goal + '\'s requirement, held against the resets that zero it; its route\'s binding hop: ' + out.levers[0].binding };
+        why.push('the nearest lever: ' + b.base + ' → ' + pk.requirement + ' (binding: ' + out.levers[0].binding + '; 10^' + out.levers[0].distanceLog10 + ') — emitted as the sub-goal, no queue');
+      }
+    }
+    out.neutral = P.hashes().hashGame === hash0;
+    return out;
+  };
+
+  RR.plan = function (b, v) {
+    if (!v || v.verdict !== 'reset-at' || !v.tStar) return null;
+    var l = JSON.stringify(b.layer);
+    var steps = [
+      { 'do': 'hold', features: b.hold.slice(), comment: 'these zero ' + b.base + ' (' + b.facts.zeroedBy.join(', ') + '), and the reset is the queue\'s' +
+        (b.siblings.length ? ' — ' + b.siblings.join(', ') + ' act earlier in the same tick, so they are held before the base can reach it' : '') },
+      { 'do': 'wait', until: 'canReset(' + l + ')', timeout: { gs: sig(v.tStar.gameSeconds) + 10 }, onTimeout: 'abort',
+        comment: 'the rollback measured ' + b.base + ' at ' + b.requirement + ' ' + v.tStar.gameSeconds + ' game-s into the hold (diff ' + DIFF + ')' },
+      { 'do': 'call', fn: 'doReset', args: [b.layer], comment: 'reset ' + b.layer },
+      { 'do': 'wait', until: 'player[' + l + '].unlocked', timeout: { gs: 2 }, onTimeout: 'abort', comment: 'the reset happened' },
+      { 'do': 'release', comment: 'the reflexes resume' },
+    ];
+    return { format: 'tmt-queue/1', id: 'rr-' + b.goal.replace(/[^A-Za-z0-9_.-]/g, '-'), trigger: { on: 'start' },
+      source: { template: RR.id, goal: b.goal, facts: [b.facts.base].concat(b.facts.zeroedBy) },
+      comment: b.goal + ' needs ' + b.requirement + ' of ' + b.base + ', which a reset of ' + b.zeroers.join(', ') + ' zeroes. Hold every one, wait for the engine\'s canReset, reset, release.',
+      steps: steps };
+  };
+
+  var TEMPLATES = { 'time-priced-purchase': TPP, 'challenge-attempt': CA, 'reset-requirement': RR };
   /** run(facts, {goal?, horizon?}) — every template's matches, each checked; what `strategize.mjs` prints. */
   function run(facts, opts) {
     opts = Object.assign({}, opts || {}, { facts: facts });
