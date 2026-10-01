@@ -213,7 +213,9 @@ earlier is everything: PTR's gameLoop skips a layer that has never been reset (`
 layer's reset in its FALLBACK pass, after every other layer's slot (the check reads it off `hookStats`: `decidedIn`).
 And at the 226,931 wall the reflex never resets sg even at 200: past q milestone 6 `tmp.sg.autoPrestige` is set, so
 `reset:sg` YIELDS to a native auto-reset (`yielding:native`) — which the engine never performs for a locked layer.
-Generators sat at 200 for 83 ticks with no reset. The check says so (`afterReach`: the zeroing resets still held, the
+Generators sat at 200 for 83 ticks with no reset. (yield-1: `--auto-opt nativeYield=slot` makes a reset yield only in
+its own slot; from the wall, `reset:sg` then resets at tick 226,986. ⚖ The default is still the old rule; see
+docs/automation.md, "Where features run".) The check says so (`afterReach`: the zeroing resets still held, the
 layer's own reset feature freed, ten more ticks — does anyone make the reset?). The queue's hold binds from the next
 tick's first decision (docs/queues.md), and the reset is the queue's own call in its slot: hold → `wait canReset(l)` →
 `call doReset(l)` → `wait player[l].unlocked` → `release`. `canReset` reads `tmp`, which is the tick's START: the wait

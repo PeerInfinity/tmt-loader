@@ -522,7 +522,7 @@ declares one is a new demand signal with no change to the cycle at all.
 | `stopped:until` | (V4) the feature's `until` predicate has held; it stays stopped until the player re-arms it, with the game-second it latched |
 | `blocked:after` | an `unlockOrder` sibling is not unlocked yet |
 | `blocked:enter` / `blocked:exit` | the engine refuses to enter / to leave that challenge |
-| `yielding:native` | `tmp[l].autoPrestige` — the game's own auto-reset is doing it |
+| `yielding:native` | `tmp[l].autoPrestige` — the game's own auto-reset is doing it. (yield-1) `at` says WHERE the decision was taken: `slot` (the engine checked the auto-reset right before this layer's `automate`) or `fallback` (the engine skipped the layer this tick, so no native reset follows — only under `nativeYield=always`; see "Where features run"). The `buyables` kind's yield to a game autobuyer carries the same `at` |
 | `yielding:passive` | (F1) the game pays this layer `tmp[l].passiveGeneration` (shown as a % of the reset's gain per second) every tick WITHOUT resetting, and the rate exceeds the `passiveYield` threshold (default 0 — any at all). Only on an UNLOCKED layer, because the engines pay nothing to a locked one and a layer unlocks on its first reset. `passiveYield=off` switches it off (see "A reset yields to passive generation") |
 | `cannot-reset` | `tmp[l].canReset` is false, with the two numbers the engine compared |
 | `in-challenge` | a challenge is active and not completable yet — and with no `give-up` modifier this is the WHOLE of what a feature inside a challenge can say, which is why a run could sit inside PTR's H12 for 11,878 game-seconds without the readout changing |
@@ -1729,9 +1729,39 @@ A feature with a table **gate** does nothing while the gate's predicate is false
 Each registered feature's layer gets its `automate()` wrapped: the game's original `automate` runs first, then the
 layer's active features in kind order. `automate` is the per-layer function both engines call once per `gameLoop` and
 never from `updateTemp` (`autoPrestige` is not a hook: it is a predicate both engines evaluate inside `updateTemp`).
-TMT 2.2.1's `gameLoop` skips `automate` for a layer the player has not unlocked; for those, the `au` layer's own
+Some engines' `gameLoop` skip `automate` for a layer the player has not unlocked; for those, the `au` layer's own
 `automate` — called after every tree layer — runs the features of each hooked layer whose slot did not run. Every hooked
 layer's features run exactly once per tick (`tmtLoader.hookStats()` counts it; gate A1-1).
+
+⚠ **Which engines skip, measured (yield-1).** Not "TMT 2.2.1": vanilla 2.2.1 and 2.7 call every tree layer's body. Every
+roster engine's body is `if (tmp[layer].autoPrestige && tmp[layer].canReset) doReset(layer); if (layers[layer].automate)
+layers[layer].automate();`. Five engine files put `if (!unl(layer)) continue` in front of it: ptr, the-extended-tree,
+prestige-tree-ng, and the two trees bundled in the-classic-tree. One puts `if (tmp[layer].paused) continue` there:
+universal-reconstruction. Bounded text grep over `games/*/js/game.js`, 2026-10-01.
+
+### A reset yields to the native auto-reset ONLY where the engine performs it (yield-1) — `nativeYield`
+
+The engine checks a layer's auto-reset in the same loop body as the layer's `automate`, right before it, and nowhere
+else. So a `reset` decision taken in the layer's own SLOT follows the engine's check (its yield is right: the engine has
+just reset it, or will next tick). A decision taken in the FALLBACK follows no check at all. Under the rule before
+yield-1 it yielded anyway, to a reset that never comes. Measured on ptr (gates-yield D1): past q milestone 6
+`tmp.sg.autoPrestige` is set while Super Generators has never been reset. From `snapshots/ptr/m30/W226931`, `reset:sg`
+yielded in the fallback 1,917 times in 3,000 ticks with the engine allowing the reset, and sg never reset.
+
+| `--auto-opt nativeYield=` | a reset feature with `tmp[l].autoPrestige` set… |
+|---|---|
+| `always` (⚖ the DEFAULT until the user rules) | yields wherever it is decided — the rule before yield-1, and what every pin measured |
+| `slot` (the fix) | yields in its own slot; in the fallback it decides by its own rule, so it makes the first reset and the engine takes over from the next tick. From the wall, sg resets at tick 226,986 (gates-yield Y1) |
+
+⛔ **Derived, not listed.** No family data, no game id: the rule is *where the decision runs*. On an engine with no skip
+the fallback never decides a tree layer, so the two values are the same run (gates-yield C3, R1). The row cycle's
+eligibility and the stall arbiter apply the same rule to other layers before their slot has come round. They read
+that layer's slot history: this tick's if it has already run, otherwise last tick's. A layer with no history gets
+the old answer. ⚖ The default stays `always` because `slot` moves a pin: gates-m30 F0's wall is never reached
+(`cloud-reports/tmt-yield-1.md`).
+`tmtLoader.nativeYieldCounts` counts, per reset feature, the decisions taken with the auto-reset set: `slot`,
+`fallback`, and `fallbackReady` (fallback, with the engine allowing the reset). `fallbackReady` counts the only
+decisions `slot` can change.
 
 ⛔ **F1 FOUND THAT ADDING THE `au` LAYER COULD SWITCH OFF A GAME'S OWN PER-LAYER LOOP, AND REPAIRS IT.** The 2.6
 engines keep `maxRow` as the largest `displayRow` `setupLayer` has seen (`if (maxRow < displayRow) maxRow = displayRow`),
@@ -2334,6 +2364,9 @@ moot today (the derivation note above); on the-factoree `f` 21 is now bought to 
     holds a feature's own rule back until T game-seconds have passed since that feature last reset.
     `tmtLoader.sinceReset(id)` is the core's own clock (Infinity before the first reset), and `tmtLoader.fallbackFires`
     counts, per feature, the resets the stall fallback fired (the "fallback fires on a patient rule" hunt);
+  - `nativeYield=always|slot` — (yield-1) where a reset yields to the game's own auto-reset (`tmp[l].autoPrestige`):
+    `always` (⚖ the default until the user rules) wherever it is decided, `slot` only in the layer's own slot —
+    never in the fallback pass, where the engine skipped the layer. Anything else THROWS. See "Where features run";
   - `passiveYield=off|<x>` — (F1) the passive-generation yield (below): `off` switches it off, `<x>` (a number ≥ 0) is
     the rate the game's `passiveGeneration` must EXCEED for a reset to yield; default `0`. A table may carry it in its
     `options`. Anything else THROWS. ⛔ Every HISTORICAL pin names `off` (`tools/harness/lib.mjs` `PRE_F1`,
