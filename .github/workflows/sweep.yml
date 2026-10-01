@@ -807,7 +807,7 @@ jobs:
   # WAITING CANNOT HELP with their levers and the source's thresholds; the peak judged on the CHARGED price. Sub-goal:
   # the q31 verdict's sub-goal is the planner round's active goal. Grep: no game id.
   # The MEASUREMENT (the legs toward q32, the planner on the sub-goal) is `qrate1.yml -f part=m28`, dispatch-only.
-  # ⛔ `--assert` holds the run to its exact row count (11), all green.
+  # ⛔ `--assert` holds the run to its exact row count (13), all green.
   # ---------------------------------------------------------------------------------------------------------------
   m28:
     name: m28 — q31 and q32

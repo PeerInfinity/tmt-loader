@@ -21,6 +21,9 @@
 //               sub-goal the next Quirk Layer (q.points ≥ 2^(2^6−1), layers.js), Super Boosters NOT a sub-goal. V3 the
 //               verdict's peak is the CHARGED price's (the tick-start `tmp`, §16): an independent boot holding the same
 //               features for the same ticks reads the same ratio, and the live price's differs.
+//               F3 Q31 = QL6 under the winner with challenge attempts held until the reflex buys q31 (tick 88,767).
+//               V4 q32 at Q31: q31 raised q11's power (8 → 9 upgrades), so the nearest lever is total quirks again, at
+//               the source's threshold, and the measured purchase (CI, quoted) lands on it.
 // Part subgoal  S1 the q31 verdict's sub-goal, fed through `run.mjs --planner-goal`, IS round 0's active goal.
 // Part grep     X1 no game id and no ptr layer id in the code this slice changed (templates, planner, facts.mjs, strategize).
 // MEASUREMENTS (report; `.github/workflows/qrate1.yml` with `-f part=m28`, dispatch-only):
@@ -50,12 +53,17 @@ const rows = [];
 const row = (r) => { rows.push(r); console.log(`${r.ok ? 'GREEN' : 'RED  '} ${r.gate} ${r.id} ${String(r.notes || '').slice(0, 1600)}`); };
 
 const Q308K = 'tools/harness/snapshots/ptr/qrate1/Q308K.json';
-const Q86K = 'tools/harness/snapshots/ptr/m28/Q86K.json', QL6 = 'tools/harness/snapshots/ptr/m28/QL6.json';
+const Q86K = 'tools/harness/snapshots/ptr/m28/Q86K.json', QL6 = 'tools/harness/snapshots/ptr/m28/QL6.json', Q31 = 'tools/harness/snapshots/ptr/m28/Q31.json';
+const CHOFF = `policy:reset:q=rate-peak@0/0|turn@10/30x/5/0/100;exclude=challenges:h`;   // the winner with challenge attempts held
 const Q23 = 'tools/harness/queues/m28/q23-from-Q308K.json';
 const LADDER = 'tools/harness/ladder/ptr.json';
 const WINNER = 'policy:reset:q=rate-peak@0/0|turn@10/30x/5/0/100';     // qrate1's winner (§17.2), the configuration both fixtures ran
 const PIN_Q86K = { ticks: 86068, hashGame: '17d487cece5a5587' };          // = §17.4's end state (86,068; total quirks 1.17e13)
 const PIN_QL6 = { ticks: 86071, hashGame: '6b1557b562169e2e' };
+const PIN_Q31 = { ticks: 88767, hashGame: '66ef6823848ad208' };            // = CI 36822076088 leg winner-choff@1, stage q31
+// QUOTED from the measurement (CI 36822076088 at f565355, leg winner-choff@1, twice equal): from Q31 the same
+// configuration bought q32 at tick 140,759 with total quirks 2.8108370421808497e18 — the oracle V4's threshold meets.
+const Q32_BOUGHT_AT_TOTAL = 2.8108370421808497e18;
 // The SOURCE (games/ptr/js/layers.js): q31 `1e48*(time+1)^8.4` (:3262), q32 `1e58*(time+1)^10` (:3275); a Quirk Layer
 // costs `base^(base^x − 1)` quirks with base 2 (:3043-3052), so the 7th (x = 6) costs 2^63; quirk energy accrues as
 // `(q.time·enGainMult)^(QL + free − 1)·diff` (:2984), and q11 = `(log10(total+1)+1)^#upgrades` (:3139).
@@ -101,9 +109,10 @@ const EV = `({total: String(player.q.total), qp: String(player.q.points), ql: Nu
 // ---- Part fixture ----------------------------------------------------------------------------------------------------
 async function partFixture() {
   const d = path.join(TMP, 'fx');
-  const [x, y] = await Promise.all([
+  const [x, y, z] = await Promise.all([
     run('ptr', { 'from-snapshot': Q308K, profile: 'all', ticks: 6000, queue: Q23, 'auto-opt': WINNER, 'stop-snapshot': d, 'stop-snapshot-name': 'Q86K', eval: EV }),
     run('ptr', { 'from-snapshot': Q86K, profile: 'all', ticks: 3000, until: '!player.h.activeChallenge', 'auto-opt': WINNER, eval: EV }),
+    run('ptr', { 'from-snapshot': QL6, profile: 'all', ticks: 20000, until: "hasUpgrade('q',31)", 'auto-opt': CHOFF, eval: EV }),
   ]);
   const c1 = snapEval(Q86K), c2 = snapEval(QL6);
   const q = ((x.queueStatus && x.queueStatus.queues) || x.queues || [])[0];   // run.mjs reports the runner as `queueStatus`
@@ -114,6 +123,10 @@ async function partFixture() {
   const ok2 = !!y.ok && y.ticks === PIN_QL6.ticks && y.hashGame === PIN_QL6.hashGame && c2.ticks === PIN_QL6.ticks && c2.hashGame === PIN_QL6.hashGame && y.eval && y.eval.ac === null && y.eval.ql === 6;
   row({ gate: 'F2 QL6: Q86K under the same configuration until no challenge is active = the committed fixture (the declared facts state)', id: 'ptr', ok: ok2,
     notes: `rebuilt ${y.ticks} / ${y.hashGame} (+${y.ticks - PIN_Q86K.ticks} ticks; in a challenge: ${y.eval && y.eval.ac}; q.time ${y.eval && y.eval.qt}; Super Boosters ${y.eval && y.eval.sb}); committed ${c2.ticks} / ${c2.hashGame}; pin ${PIN_QL6.ticks} / ${PIN_QL6.hashGame} ${y.error || ''}` });
+  const c3 = snapEval(Q31);
+  const ok3 = !!z.ok && z.ticks === PIN_Q31.ticks && z.hashGame === PIN_Q31.hashGame && c3.ticks === PIN_Q31.ticks && c3.hashGame === PIN_Q31.hashGame && z.eval && /\b31\b/.test(z.eval.upg) && z.eval.ql === 6;
+  row({ gate: 'F3 Q31: QL6 under the winner with challenge attempts held until the reflex buys q31 = the committed fixture (the q32 verdict\'s state)', id: 'ptr', ok: ok3,
+    notes: `rebuilt ${z.ticks} / ${z.hashGame} (+${z.ticks - PIN_QL6.ticks} game-s from QL6; total ${z.eval && z.eval.total}; q.time ${z.eval && z.eval.qt}; Super Boosters ${z.eval && z.eval.sb}); committed ${c3.ticks} / ${c3.hashGame}; pin ${PIN_Q31.ticks} / ${PIN_Q31.hashGame} ${z.error || ''}` });
 }
 
 // ---- Part facts ------------------------------------------------------------------------------------------------------
@@ -190,10 +203,11 @@ const holdQueue = (hold, gs) => ({ format: 'tmt-queue/1', id: 'm28-v3-hold', sou
   steps: [{ do: 'hold', features: hold }, { do: 'wait', until: 'false', timeout: { gs }, onTimeout: 'abort' }] });
 const RATIO = (id) => `(function(){var L=function(x){return new Decimal(x).log10().toNumber()};var e=L(player.q.energy);return {qt: Number(player.q.time), charged: e - L(tmp.q.upgrades[${id}].cost), live: e - L(layers.q.upgrades[${id}].cost()), total: String(player.q.total), upg: player.q.upgrades.length}})()`;
 async function partVerdict() {
-  const [o, v31, v32] = await Promise.all([
+  const [o, v31, v32, v32b] = await Promise.all([
     Promise.all([31, 32].map((id) => run('ptr', { 'from-snapshot': Q86K, profile: 'all', ticks: 1, 'auto-opt': HOLD_EXCLUDE, eval: RATIO(id) }))),
     strategize('ptr', ['--from', QL6, '--goal', 'upg:q:31']),
     strategize('ptr', ['--from', QL6, '--goal', 'upg:q:32']),
+    strategize('ptr', ['--from', Q31, '--goal', 'upg:q:32']),
   ]);
   {
     const r31 = o[0].eval || {}, r32 = o[1].eval || {};
@@ -255,6 +269,27 @@ async function partVerdict() {
       notes = `independent boot at tick ${r.ticks} (q.time ${e.qt}): charged 10^${e.charged && e.charged.toFixed(4)} ${near(e.charged, V1.rollback.peak.ratioLog10, 2e-4) ? '=' : '≠'} the verdict's 10^${V1.rollback.peak.ratioLog10}; live 10^${e.live && e.live.toFixed(4)} (the price at q.time ${e.qt} — one tick later than the engine charges) ${r.error || ''}`;
     }
     row({ gate: 'V3 the verdict is judged against the CHARGED price (tick-start tmp, §16): an independent boot under the same hold reads the same peak, and the live price would not', id: 'ptr', ok: !probs.length, notes: probs.length ? probs.join('; ') + ' — ' + notes : notes });
+  }
+  {
+    // V4 — q32 once q31 is owned: q31 raised q11's POWER (the upgrade count 8 → 9), which no lever prices, so the
+    // QL6 verdict's sub-goal (the 7th Quirk Layer) is superseded; here the nearest lever is total quirks again, at the
+    // SOURCE's threshold — and the measured purchase (CI, quoted above) lands on it
+    const V = v32b.results && v32b.results[0], probs = [];
+    let want = NaN;
+    if (!V) probs.push('no verdict ' + (v32b.error || ''));
+    else {
+      if (V.verdict !== 'waiting-cannot-help' || V.queue !== null) probs.push(`verdict ${V.verdict}`);
+      const L = V.levers || [], sg = V.subgoal || {};
+      if (!L[0] || L[0].input !== 'player.q.total' || L[0].zeroedAtPeak) probs.push(`nearest lever ${L[0] && L[0].input}`);
+      const c = snapEval(Q31), P = typeof c.player === 'string' ? JSON.parse(c.player) : c.player;
+      const n = P.q.upgrades.length, base = Math.log10(Number(P.q.total) + 1) + 1, R = -V.rollback.peak.ratioLog10;
+      want = (base * Math.pow(10, R / 5 / n)) - 1;
+      if (n !== 9) probs.push(`${n} q upgrades held, not 9`);
+      if (sg.dimension !== 'player.q.total' || !near(lg(sg.threshold), want, 2e-3)) probs.push(`sub-goal ${JSON.stringify(sg)} ≠ player.q.total ≥ 10^${want.toFixed(4)} (source)`);
+      if (!near(lg(sg.threshold), Math.log10(Q32_BOUGHT_AT_TOTAL), 1e-3)) probs.push(`the threshold 10^${lg(sg.threshold).toFixed(4)} misses the measured purchase at 10^${Math.log10(Q32_BOUGHT_AT_TOTAL).toFixed(4)}`);
+    }
+    row({ gate: 'V4 q32 once q31 is owned (Q31): the nearest lever is total quirks at the SOURCE\'s threshold, and the measured purchase (CI 36822076088) lands on it', id: 'ptr', ok: !probs.length,
+      notes: probs.length ? probs.join('; ') : `peak 10^${V.rollback.peak.ratioLog10} at q.time ${V.rollback.peak.field}; levers ${(V.levers || []).map((l) => `${l.input} 10^${l.distanceLog10}${l.zeroedAtPeak ? ' (zeroed at the peak)' : ''}`).join(' < ')}; sub-goal ${V.subgoal.dimension} ≥ ${V.subgoal.threshold} (source 10^${want.toFixed(4)}); bought at ${Q32_BOUGHT_AT_TOTAL} (+${((Q32_BOUGHT_AT_TOTAL / Number(V.subgoal.threshold) - 1) * 100).toFixed(3)} %)` });
   }
   partVerdict.v31 = v31;
 }
@@ -386,7 +421,7 @@ function partMerge() {
   }
 }
 
-const EXPECT = { fixture: 2, facts: 3, verdict: 4, subgoal: 1, grep: 1, leg: 1, merge: MERGED.length };
+const EXPECT = { fixture: 3, facts: 3, verdict: 5, subgoal: 1, grep: 1, leg: 1, merge: MERGED.length };
 const FN = { fixture: partFixture, facts: partFacts, verdict: partVerdict, subgoal: partSubgoal, grep: partGrep, leg: partLeg, merge: partMerge };
 const RUN = PART === 'push' ? GATE_PARTS : [PART];
 let expected = 0;
