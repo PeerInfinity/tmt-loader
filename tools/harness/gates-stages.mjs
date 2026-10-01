@@ -18,7 +18,7 @@
 //               text, the block HTML). S4 a player's saved edit beats a stage. S5 a queue hold beats a stage.
 // Part pins     P1 the QL5 rebuild (tpl1 O1 / qrate1 F0a) is unmoved. P2 the stage path reaches q23 on the tick and
 //               hash the `--auto-opt` resume of the same winner measured — the table now carries that configuration.
-// Part fixture  F1 all/M29 = all/M26 under the shipped table until H22 is completed = the committed fixture.
+// Part fixture  F1 all/M29 and F2 all/M28 = all/M26 under the shipped table, one ladder run = the committed fixtures.
 // Part grep     X1 no game or ptr layer id in loader/tmt-auto.js (the stages are DATA).
 // MEASUREMENTS (`.github/workflows/qrate1.yml -f part=stages`, dispatch-only): the whole stretch from all/M26 under the
 // SHIPPED TABLE ALONE (order A: H22 first) at diff 1 and 0.05, and the losing order (B: q31/q32 first) at diff 1 — each
@@ -302,12 +302,19 @@ async function partPins() {
 }
 
 // ---- Part fixture ------------------------------------------------------------------------------------------------------
+// ONE ladder run from all/M26 under the shipped table until M28 AND M29 hold, recording each where it first holds: each
+// committed fixture is rebuilt to its tick and hashGame, and names the configuration it was written under.
 async function partFixture() {
-  const c = fixture(M29F), d = path.join(TMP, 'fx');
-  const x = await run('ptr', { 'from-snapshot': M26, profile: 'all', ticks: c.ticks - fixture(M26).ticks + 50, until: "hasChallenge('h',22)", 'stop-snapshot': d, 'stop-snapshot-name': 'M29' });
-  const checks = { ran: !!x.ok, pin: x.ticks === c.ticks && x.hashGame === c.hashGame, configNamed: c.config.profile === 'all' && c.config['auto-opt'] === null && c.config.from === M26 && !c.config['auto-table'], mark: c.mark === 'M29' };
-  row({ gate: 'F1 all/M29 = all/M26 under the SHIPPED TABLE ALONE until H22 is completed = the committed fixture', id: 'ptr', ok: Object.values(checks).every(Boolean),
-    notes: `${ck(checks)} — ${x.ticks} / ${x.hashGame} (committed ${c.ticks} / ${c.hashGame}; config ${JSON.stringify(c.config)}) ${x.error || ''}` });
+  const m26 = fixture(M26), want = { M29: fixture(M29F), M28: fixture(M28F) };
+  const x = await run('ptr', { 'from-snapshot': M26, profile: 'all', ticks: want.M28.ticks - m26.ticks + 50, ladder: LADDER, to: 'M29', 'until-all': true, 'marks-continue': true });   // the slice M27–M29 (M29 is AFTER M28 in the ladder; it lands first)
+  const reached = Object.fromEntries(((x.ladder && x.ladder.reached) || []).map((m) => [m.id, m]));
+  for (const k of ['M29', 'M28']) {
+    const c = want[k], r = reached[k];
+    const checks = { ran: !!x.ok, reached: !!r, pin: !!r && r.ticks === c.ticks && r.hashGame === c.hashGame && r.hash === c.hash,
+      configNamed: c.config.profile === 'all' && c.config['auto-opt'] === null && c.config.from === M26 && !c.config['auto-table'], mark: c.mark === k };
+    row({ gate: `F${k === 'M29' ? 1 : 2} all/${k} = all/M26 under the SHIPPED TABLE ALONE, through the ladder = the committed fixture`, id: 'ptr', ok: Object.values(checks).every(Boolean),
+      notes: `${ck(checks)} — ${r ? `${r.ticks} / ${r.hashGame} (full ${r.hash})` : 'not reached'} (committed ${c.ticks} / ${c.hashGame}, full ${c.hash}; +${c.ticks - m26.ticks} game-s from all/M26; config ${JSON.stringify(c.config)}) ${x.error || ''}` });
+  }
 }
 
 // ---- Part grep ---------------------------------------------------------------------------------------------------------
@@ -379,7 +386,7 @@ function partMerge() {
   }
 }
 
-const EXPECT = { vocab: 4, switch: 5, pins: 2, fixture: 1, grep: 1, leg: 1, merge: MERGED.length + (a.only ? 0 : 1) };
+const EXPECT = { vocab: 4, switch: 5, pins: 2, fixture: 2, grep: 1, leg: 1, merge: MERGED.length + (a.only ? 0 : 1) };
 const FN = { vocab: partVocab, switch: partSwitch, pins: partPins, fixture: partFixture, grep: partGrep, leg: partLeg, merge: partMerge };
 const RUN = PART === 'push' ? GATE_PARTS : [PART];
 let expected = 0;
