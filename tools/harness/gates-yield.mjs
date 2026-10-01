@@ -55,9 +55,10 @@ const LEG_TICKS = 3000;
 const PIN_OFF = { on: { ticks: 229931, hashGame: '8eacbeaa755e05ff', ready: 1917 }, off: { ticks: 229931, hashGame: 'fa73bf7da212106f', ready: 1270 } };
 const PIN_ON = { on: { ticks: 226986, hashGame: 'c92febbf3ac0abac' }, off: { ticks: 227045, hashGame: '16ade9bd7da9511e' } };
 const C2_TICKS = 500;
-// C3: a vanilla 2.2.1 / 2.7 engine (no `unl` skip) where a reset feature's auto-prestige is set inside a bounded run —
-// found by part roster (the only vanilla legs whose `slot` count is non-zero; the-modding-tree's own demo is one).
-const VANILLA = { id: 'something', from: 'tools/harness/snapshots/something/all/S05.json', ticks: 2000 };
+// C3: vanilla engines (no `unl` skip) where a reset feature's auto-prestige is set inside a bounded fresh run — found
+// by part roster (fresh × 2000 ticks: my-first-tree 707 slot decisions, the-number-tree 1,883; none in the fallback).
+const VANILLA = [{ id: 'my-first-tree', engine: 'TMT 2.7', ticks: 2000 }, { id: 'the-number-tree', engine: 'TMT 2.6.6.2', ticks: 2000 }];
+const SEED = 1;   // a seeded Math.random (boot.mjs --random-seed): several roster games roll dice every tick
 
 function child(args, { timeoutMs = 6 * 3600e3 } = {}) {
   return new Promise((resolve) => {
@@ -133,13 +134,12 @@ async function partFix() {
 // ---- Part control ----------------------------------------------------------------------------------------------------
 const EVC = '({counts: tmtLoader.nativeYieldCounts})';
 async function partControl() {
-  const [y, m22s, m22a, vs, va, unit] = await pool([
+  const [y, m22s, m22a, unit, ...van] = await pool([
     () => wallLeg('slot', 'on', null),
     () => run('ptr', { 'from-snapshot': M22, profile: 'all', 'auto-opt': opt('slot'), ticks: C2_TICKS, eval: EVC }),
     () => run('ptr', { 'from-snapshot': M22, profile: 'all', 'auto-opt': opt('always'), ticks: C2_TICKS, eval: EVC }),
-    () => run(VANILLA.id, { 'from-snapshot': VANILLA.from, profile: 'all', 'auto-opt': opt('slot'), ticks: VANILLA.ticks, eval: EVC }),
-    () => run(VANILLA.id, { 'from-snapshot': VANILLA.from, profile: 'all', 'auto-opt': opt('always'), ticks: VANILLA.ticks, eval: EVC }),
     () => child(['--test', path.join(REPO, 'loader/yield.test.mjs')]),
+    ...VANILLA.flatMap((V) => ['slot', 'always'].map((ny) => () => run(V.id, { profile: 'all', diff: 1, 'auto-opt': opt(ny), ticks: V.ticks, 'random-seed': SEED, eval: EVC }))),
   ]);
   {
     const c = (y.eval && y.eval.counts) || {};
@@ -154,10 +154,10 @@ async function partControl() {
       notes: `${ck(checks)} — slot ${m22s.ticks} / ${m22s.hashGame}, always ${m22a.ticks} / ${m22a.hashGame}; counts ${JSON.stringify(cs)}` });
   }
   {
-    const cs = vs.eval && vs.eval.counts;
-    const checks = { ran: !!vs.ok && !!va.ok, oneHash: vs.hashGame === va.hashGame && vs.ticks === va.ticks, autoPrestigeSeen: sum(cs, 'slot') > 0, neverInTheFallback: sum(cs, 'fallback') === 0 };
-    row({ gate: `C3 a VANILLA engine (${VANILLA.id}, no unl skip) with auto-prestige set: the two rules give one hash, every such decision in the slot`, id: VANILLA.id, ok: Object.values(checks).every(Boolean),
-      notes: `${ck(checks)} — from ${path.basename(VANILLA.from)} + ${VANILLA.ticks}: slot ${vs.ticks} / ${vs.hashGame}, always ${va.ticks} / ${va.hashGame}; counts ${JSON.stringify(cs)} ${vs.error || ''}` });
+    const per = VANILLA.map((V, i) => { const vs = van[2 * i], va = van[2 * i + 1], cs = vs.eval && vs.eval.counts;
+      return { V, vs, va, cs, ok: !!vs.ok && !!va.ok && vs.hashGame === va.hashGame && vs.ticks === va.ticks && sum(cs, 'slot') > 0 && sum(cs, 'fallback') === 0 }; });
+    row({ gate: `C3 VANILLA engines (no unl skip) with auto-prestige set: the two rules give one hash, every such decision in the slot`, id: VANILLA.map((V) => V.id).join('+'), ok: per.every((p) => p.ok),
+      notes: per.map((p) => `${p.V.id} (${p.V.engine}) fresh + ${p.V.ticks}: ${p.ok ? '✓' : '✗'} slot ${p.vs.ticks} / ${p.vs.hashGame}, always ${p.va.ticks} / ${p.va.hashGame}; counts ${JSON.stringify(p.cs)} ${p.vs.error || ''}`).join(' | ') });
   }
   {
     const pass = (/# pass (\d+)/.exec(unit.out) || [])[1], fail = (/# fail (\d+)/.exec(unit.out) || [])[1];
@@ -189,32 +189,43 @@ async function partRoster() {
   const only = a.only ? String(a.only).split(',') : null;
   const legs = [];
   for (const id of GAMES()) if (!only || only.includes(id)) legs.push({ id, from: null, ticks: T });
-  for (const g of ['ptr', 'something']) {
+  // the deep legs: every committed ladder fixture (all/), and ptr's stages/ and m30/ — where the one known case lives
+  for (const [g, sub] of [['ptr', 'all'], ['ptr', 'stages'], ['ptr', 'm30'], ['something', 'all']]) {
     if (only && !only.includes(g)) continue;
-    const dir = path.join(REPO, 'tools/harness/snapshots', g, 'all');
-    for (const f of fs.readdirSync(dir).filter((x) => x.endsWith('.json')).sort()) legs.push({ id: g, from: path.relative(REPO, path.join(dir, f)), ticks: DT });
+    const dir = path.join(REPO, 'tools/harness/snapshots', g, sub);
+    for (const f of fs.readdirSync(dir).filter((x) => /^[A-Z]\w*\.json$/.test(x)).sort()) legs.push({ id: g, from: path.relative(REPO, path.join(dir, f)), ticks: DT });
   }
   const t0 = Date.now();
-  const res = await pool(legs.flatMap((L) => ['slot', 'always'].map((ny) => async () => {
-    const r = await run(L.id, { 'from-snapshot': L.from, profile: 'all', diff: 1, 'auto-opt': opt(ny), ticks: L.ticks, eval: EVC, 'wall-ms': 300e3 });
+  const one = async (L, ny) => {
+    const r = await run(L.id, { 'from-snapshot': L.from, profile: 'all', diff: L.from ? null : 1, 'auto-opt': opt(ny), ticks: L.ticks, 'random-seed': SEED, eval: EVC, 'wall-ms': 300e3 });
     return { ...L, ny, ok: !!r.ok, ticks: r.ticks, hashGame: r.hashGame, counts: (r.eval && r.eval.counts) || null, error: r.ok ? null : String(r.error || r.failed_at || 'failed').slice(0, 160) };
-  })));
+  };
+  const res = await pool(legs.flatMap((L) => ['slot', 'always'].map((ny) => () => one(L, ny))));
   const out = [];
   for (let i = 0; i < legs.length; i++) {
     const s = res[2 * i], w = res[2 * i + 1];
     const tot = (cs, k) => Object.values(cs || {}).reduce((n, v) => n + v[k], 0);
-    out.push({ id: legs[i].id, from: legs[i].from, ok: s.ok && w.ok, error: s.error || w.error, same: s.ok && w.ok && s.hashGame === w.hashGame && s.ticks === w.ticks,
+    out.push({ id: legs[i].id, from: legs[i].from, ok: s.ok && w.ok, okEither: s.ok || w.ok, error: s.error || w.error, sameError: !s.ok && !w.ok && s.error === w.error, same: s.ok && w.ok && s.hashGame === w.hashGame && s.ticks === w.ticks,
       slot: tot(w.counts, 'slot'), fallback: tot(w.counts, 'fallback'), ready: tot(w.counts, 'fallbackReady'), readySlot: tot(s.counts, 'fallbackReady'),
       features: Object.entries(w.counts || {}).filter(([, v]) => v.fallback > 0).map(([k, v]) => `${k} ${v.fallback}/${v.fallbackReady}`) });
   }
   const ran = out.filter((o) => o.ok), bad = out.filter((o) => !o.ok);
-  const fb = ran.filter((o) => o.fallback > 0), moved = ran.filter((o) => !o.same), stray = moved.filter((o) => o.ready === 0);
+  // ⚠ THE DETERMINISM CONTROL. A seeded Math.random is not enough: some games read the CLOCK (`Date`), and those move
+  // between two runs under the SAME rule. A leg that moved with nothing ready is run once more under `always`; if it
+  // differs from its own first `always` run it varies by itself and is named as such — not the rule's, not counted.
+  const suspects = ran.filter((o) => !o.same && o.ready === 0);
+  const again = await pool(suspects.map((o) => () => one(legs.find((L) => L.id === o.id && L.from === o.from), 'always')));
+  suspects.forEach((o, i) => { const w = res[2 * legs.findIndex((L) => L.id === o.id && L.from === o.from) + 1]; o.selfVaries = !again[i].ok || again[i].hashGame !== w.hashGame || again[i].ticks !== w.ticks; });
+  const fb = ran.filter((o) => o.fallback > 0), moved = ran.filter((o) => !o.same), stray = moved.filter((o) => o.ready === 0 && !o.selfVaries);
   const games = (xs) => [...new Set(xs.map((o) => o.id))];
   const fmt = (o) => `${o.id}${o.from ? ' ' + path.basename(o.from, '.json') : ''} [${o.features.join(', ')}]${o.same ? '' : ' MOVED'}`;
   row({ gate: `R1 the roster: under the old rule (always), a reset decided in the FALLBACK with the auto-reset set — and a hash that moves ONLY where the engine also allowed it there`, id: `${games(ran).length} games`, ok: stray.length === 0 && ran.length > 0,
-    notes: `${ran.length} legs (${legs.filter((l) => !l.from).length} fresh × ${T} ticks, ${legs.filter((l) => l.from).length} snapshot legs × ${DT}); with the auto-reset set in the slot: ${games(ran.filter((o) => o.slot > 0)).length} game(s) (${games(ran.filter((o) => o.slot > 0)).join(', ')}); in the FALLBACK: ${games(fb).length} game(s) — ${fb.map(fmt).join(' | ') || 'none'}; moved ${moved.length} leg(s) (${moved.map(fmt).join(' | ') || 'none'}); moved with no fallback decision ready: ${stray.map(fmt).join(' | ') || 'none'}; wall ${Math.round((Date.now() - t0) / 1000)} s` });
-  row({ gate: 'R2 every roster leg ran under both rules (a game that does not boot is named, not counted)', id: `${out.length} legs`, ok: bad.length === 0,
-    notes: bad.length ? bad.map((o) => `${o.id}${o.from ? ' ' + o.from : ''}: ${o.error}`).join('; ') : `${out.length} legs × 2 rules` });
+    notes: `${ran.length} legs (${legs.filter((l) => !l.from).length} fresh × ${T} ticks, ${legs.filter((l) => l.from).length} snapshot legs × ${DT}); with the auto-reset set in the slot: ${games(ran.filter((o) => o.slot > 0)).length} game(s) (${games(ran.filter((o) => o.slot > 0)).join(', ')}); in the FALLBACK: ${games(fb).length} game(s) — ${fb.map(fmt).join(' | ') || 'none'}; moved ${moved.length} leg(s) (${moved.map(fmt).join(' | ') || 'none'}); moved with no fallback decision ready: ${stray.map(fmt).join(' | ') || 'none'}; varies by itself under one rule (reads the clock — named, not counted): ${suspects.filter((o) => o.selfVaries).map((o) => o.id + (o.from ? ' ' + path.basename(o.from, '.json') : '')).join(', ') || 'none'}; wall ${Math.round((Date.now() - t0) / 1000)} s` });
+  // a leg that fails under BOTH rules with the same error is a game that does not run under the harness at all (named,
+  // not counted); a leg that fails under ONE rule only, or differently, is the rule's — RED
+  const ruleBad = bad.filter((o) => !o.sameError);
+  row({ gate: 'R2 no leg fails under one rule and not the other (a game that fails under both, identically, is named, not counted)', id: `${out.length} legs`, ok: ruleBad.length === 0 && ran.length > 0,
+    notes: `${ran.length} of ${out.length} legs ran under both rules; failing under both, identically: ${bad.filter((o) => o.sameError).map((o) => `${o.id}${o.from ? ' ' + path.basename(o.from) : ''} (${o.error})`).join('; ') || 'none'}; under one rule only or differently: ${ruleBad.map((o) => `${o.id}${o.from ? ' ' + o.from : ''}: ${o.error}`).join('; ') || 'none'}` });
   if (!a['no-write']) { fs.mkdirSync(path.join(REPO, 'tools/harness/results/tmp'), { recursive: true }); fs.writeFileSync(path.join(REPO, 'tools/harness/results/tmp/gates-yield-roster.json'), JSON.stringify({ commit, dirty, ticks: T, deepTicks: DT, legs: out }, null, 1) + '\n'); }
 }
 
