@@ -348,8 +348,12 @@
   // A recording Proxy over `player` (the probes/census.mjs seed, NewDocs/plans/tmt/probes/census.mjs). Plain objects
   // are wrapped recursively so a read records its full path; a Decimal or an array is a LEAF (wrapping a Decimal would
   // record its internals, and array membership is not a dimension).
-  function traceReads(fn) {
+  // facts-1: `opts.tmp` also wraps `tmp` (paths 'tmp.…'), because most effects reach their inputs THROUGH tmp
+  // (upgradeEffect / buyableEffect read tmp.<l>.<group>.<id>.effect). Those reads land in `tmp`, never in `numeric`, so
+  // every caller that passes no option gets exactly the record it got before.
+  function traceReads(fn, opts) {
     numType();   // ⚠ resolve the number type on the REAL player, before it is swapped for the Proxy (see numType)
+    var withTmp = !!(opts && opts.tmp) && typeof tmp === 'object' && tmp !== null;
     var reads = [], seen = {};
     var record = function (p, v) {
       if (seen[p]) return;
@@ -367,10 +371,14 @@
         },
       });
     };
-    var real = player, value, error = null;
+    var real = player, realTmp = withTmp ? tmp : null, value, error = null;
     player = wrap(real, 'player');
-    try { value = fn(); } catch (e) { error = String(e && e.message || e).slice(0, 160); } finally { player = real; }
-    return { value: value, error: error, reads: reads, numeric: reads.filter(function (r) { return r.kind === 'decimal' || r.kind === 'number'; }).map(function (r) { return r.path; }) };
+    if (withTmp) tmp = wrap(realTmp, 'tmp');
+    try { value = fn(); } catch (e) { error = String(e && e.message || e).slice(0, 160); } finally { player = real; if (withTmp) tmp = realTmp; }
+    var isP = function (r) { return r.path.indexOf('player.') === 0; };
+    var o = { value: value, error: error, reads: reads.filter(isP), numeric: reads.filter(function (r) { return isP(r) && (r.kind === 'decimal' || r.kind === 'number'); }).map(function (r) { return r.path; }) };
+    if (withTmp) o.tmp = reads.filter(function (r) { return !isP(r); }).map(function (r) { return r.path; });
+    return o;
   }
   P.trace = traceReads;
 
@@ -1166,6 +1174,32 @@
     return head;
   }
 
+  // Raise a layer's base dimension to its reset requirement ON THE CALLER'S COPY (omsi's injected-resource measurement,
+  // AUTOMATION.md §3.3). Shared by measureReset (P1a) and the facts-1 reset probe, so both inject the same way.
+  function injectRequirement(head) {
+    var l = head.layer;
+    if (!head.requiresDimension || head.resetAt == null) return { blocked: 'canReset is false and the requirement has no traced dimension' };
+    // The requirement can MOVE with the injection: a static layer's nextAt is a function of the base dimension
+    // through gainMult (measured on PTR's b at the frontier — injecting points at nextAt raised nextAt). So the
+    // injection chases the fixed point a bounded number of times, and says so if it does not reach one.
+    var target = head.resetAt, rounds = [];
+    for (var r0 = 0; r0 < 4; r0++) {
+      var cur = getPath(head.requiresDimension);
+      setPath(head.requiresDimension, isDec(cur) ? D(target) : Number(target));
+      for (var z = 0; z < P.settlePasses; z++) need('updateTemp')();
+      rounds.push(target);
+      if (tmp[l].canReset === true) break;
+      var next = tmp[l].type === 'static' ? tmp[l].nextAt : tmp[l].requires;
+      if (next === undefined) break;
+      var nx = dstr(next);
+      if (nx === target) break;
+      target = nx;
+    }
+    var inject = { dimension: head.requiresDimension, to: target, rounds: rounds.length };
+    if (tmp[l].canReset !== true) return { blocked: 'canReset is still false after ' + rounds.length + ' injection rounds (' + head.requiresDimension + ' up to ' + target + ')', inject: inject };
+    return { inject: inject };
+  }
+
   function measureReset(head, k) {
     var l = head.layer;
     // A reset the game will not allow right now still has to appear in a chain — "e points come from an e reset, which
@@ -1178,25 +1212,9 @@
       // there (omsi's injected-resource measurement) — every such row carries atRequirement: true.
       var inject = null, can = tmp[l].canReset === true;
       if (!can) {
-        if (!head.requiresDimension || head.resetAt == null) return { blocked: 'canReset is false and the requirement has no traced dimension' };
-        // The requirement can MOVE with the injection: a static layer's nextAt is a function of the base dimension
-        // through gainMult (measured on PTR's b at the frontier — injecting points at nextAt raised nextAt). So the
-        // injection chases the fixed point a bounded number of times, and says so if it does not reach one.
-        var target = head.resetAt, rounds = [];
-        for (var r0 = 0; r0 < 4; r0++) {
-          var cur = getPath(head.requiresDimension);
-          setPath(head.requiresDimension, isDec(cur) ? D(target) : Number(target));
-          for (var z = 0; z < P.settlePasses; z++) need('updateTemp')();
-          rounds.push(target);
-          if (tmp[l].canReset === true) break;
-          var next = tmp[l].type === 'static' ? tmp[l].nextAt : tmp[l].requires;
-          if (next === undefined) break;
-          var nx = dstr(next);
-          if (nx === target) break;
-          target = nx;
-        }
-        inject = { dimension: head.requiresDimension, to: target, rounds: rounds.length };
-        if (tmp[l].canReset !== true) return { blocked: 'canReset is still false after ' + rounds.length + ' injection rounds (' + head.requiresDimension + ' up to ' + target + ')', inject: inject };
+        var ij = injectRequirement(head);
+        if (ij.blocked) return ij;
+        inject = ij.inject;
       }
       var before = leafMap(3);
       need('doReset')(l);
@@ -2201,4 +2219,815 @@
     var K = P.knowledge(opts);
     return { knowledge: K, goals: P.goals({ knowledge: K, ladder: (opts || {}).ladder }) };
   };
+  // ==== facts-1: the FACT PROBES (docs/facts.md) ====================================================================
+  // What the game IS, read off the engine on the rolled-back copy and written as data by tools/harness/facts.mjs:
+  //   price            — what an upgrade / buyable / challenge goal costs, what that price READS, and its SHAPE in each
+  //                      numeric read (the EXPONENT probe: set the field to a grid of values, read the price, fit);
+  //   zeroed-by        — what each reset zeroes or lowers, and WHICH layer's doReset wrote it (a write tracer);
+  //   production       — what moves a field over time, and the shape of its per-tick increment in each CLOCK it reads;
+  //   multiplier-reads — what every numeric getter a layer declares reads (player + tmp), which held items it depends on;
+  //   challenge-inputs — the IN-CHALLENGE SENSITIVITY probe: inside the challenge (entered on the copy, through the
+  //                      engine), which inputs still move the goal currency's gain;
+  //   purchase-budget  — a counter a purchase raises by one and its affordability refuses at, inside a challenge.
+  // ⛔ Same commitments as the rest of this file: no layer id, item id or game id appears here; engine API names
+  // (doReset, startChallenge, getPointGen, the declaration keys `cost` / `goal` / `effect` …) are the TMT contract.
+  // ⛔ The live game is never touched: every probe runs inside an excursion or restores each perturbed field itself, and
+  // `extractFacts` measures the hashes before and after every kind (`neutral`) and over the whole run (`stateNeutral`).
+  var F = {};
+  P.facts = F;
+  F.version = 1;
+  // The exponent probe's grid: wide enough that a power law's offset (q.time+1) is negligible at the top and visible at
+  // zero, fine enough at the bottom that a plain-number price that overflows at 1e3 still leaves four readings.
+  F.GRID = [0, 1, 2, 5, 10, 20, 50, 100, 1e3, 1e4, 1e5, 1e6];
+  F.TOL = 1e-6;
+
+  function sig(x, n) { if (!isFinite(x)) return String(x); if (x === 0) return 0; return Number(x.toPrecision(n || 6)); }
+  // 10^a as a short string (6 significant digits) — a coefficient may be far outside a double
+  function pow10str(a) {
+    if (!isFinite(a)) return String(a);
+    var e = Math.floor(a), m = Math.pow(10, a - e);
+    if (m >= 9.9999995) { m = 1; e += 1; }
+    return Number(m.toPrecision(6)) + 'e' + e;
+  }
+  function near(a, b, tol) { return Math.abs(a - b) <= tol * Math.max(1, Math.abs(a), Math.abs(b)); }
+
+  /**
+   * fitShape(points) — PURE. points: [{v, L}] with L = log10 of a positive reading (null where the reading was not a
+   * positive finite number, -Infinity where it was zero). Returns the shape, or an abstention BY NAME:
+   *   flat            — the reading does not move with the field over the grid;
+   *   power           — y = coef·(v + offset)^exponent (log-log constant, the offset found from the reading at 0);
+   *   exponential     — log10 y − log10 y(0) is linear in v (log10Base per unit of v);
+   *   superexponential— log10 y − log10 y(0) is a power law in v with exponent ≠ 1;
+   *   irregular       — none of those over the grid (the local log-log slopes are kept as the evidence);
+   *   unscored        — fewer than four finite readings.
+   * A residual counts as fitting when it is within TOL in log10, or within 1 in linear space where y < 1e15 (a price
+   * the game floors or ceils — `rounded: true`).
+   */
+  function fitShape(points, tol) {
+    tol = tol || F.TOL;
+    var val = points.filter(function (p) { return typeof p.L === 'number' && isFinite(p.L); });
+    if (val.length < 4) return { type: 'unscored', why: 'only ' + val.length + ' finite positive reading(s) over the grid' };
+    var L0 = val[0].L, flat = true, i;
+    for (i = 1; i < val.length; i++) if (!near(val[i].L, L0, 1e-12)) { flat = false; break; }
+    if (flat) return { type: 'flat' };
+    var pos = val.filter(function (p) { return p.v > 0; });
+    var z = points.filter(function (p) { return p.v === 0; })[0];
+    var rounded = false;
+    var fits = function (pred, L) {
+      if (Math.abs(pred - L) <= tol * Math.max(1, Math.abs(L)) + 1e-9) return true;
+      if (L < 15 && pred < 15 && Math.abs(Math.pow(10, pred) - Math.pow(10, L)) <= 1.0000001) { rounded = true; return true; }
+      return false;
+    };
+    if (pos.length >= 3) {
+      // ---- power: L = a + k·log10(v + c)
+      var p1 = pos[pos.length - 2], p2 = pos[pos.length - 1], c = 0, k = 0, a = 0, it;
+      for (it = 0; it < 40; it++) {
+        k = (p2.L - p1.L) / (Math.log10(p2.v + c) - Math.log10(p1.v + c));
+        a = p2.L - k * Math.log10(p2.v + c);
+        var cn = 0;
+        if (z && typeof z.L === 'number' && isFinite(z.L) && k !== 0) cn = Math.pow(10, (z.L - a) / k);
+        if (!isFinite(cn) || cn < 0) { cn = c; break; }
+        if (Math.abs(cn - c) <= 1e-13 * Math.max(1, c)) { c = cn; break; }
+        c = cn;
+      }
+      rounded = false;
+      var okPow = isFinite(k) && isFinite(a) && val.every(function (p) { return p.v + c > 0 && fits(a + k * Math.log10(p.v + c), p.L); });
+      if (okPow) {
+        var cr = Math.abs(c - Math.round(c)) <= 1e-6 * Math.max(1, c) ? Math.round(c) : sig(c);
+        var o = { type: 'power', exponent: sig(k), offset: cr, coef: pow10str(a) };
+        if (rounded) o.rounded = true;
+        return o;
+      }
+      // ---- exponential family: d(v) = L(v) − L(0) = s·10^b · v^q
+      if (z && typeof z.L === 'number' && isFinite(z.L)) {
+        var ds = pos.map(function (p) { return { v: p.v, d: p.L - z.L, L: p.L }; });
+        var s0 = ds[ds.length - 1].d > 0 ? 1 : -1;
+        if (ds.every(function (q) { return q.d * s0 > 0; })) {
+          var q1 = ds[ds.length - 2], q2 = ds[ds.length - 1];
+          var qq = (Math.log10(Math.abs(q2.d)) - Math.log10(Math.abs(q1.d))) / (Math.log10(q2.v) - Math.log10(q1.v));
+          var bb = Math.log10(Math.abs(q2.d)) - qq * Math.log10(q2.v);
+          rounded = false;
+          var okExp = ds.every(function (q) { return fits(z.L + s0 * Math.pow(10, bb + qq * Math.log10(q.v)), q.L); });
+          if (okExp && near(qq, 1, 1e-6)) { var lb = s0 * Math.pow(10, bb); var oe = { type: 'exponential', log10Base: sig(lb), base: pow10str(lb), at0: pow10str(z.L) }; if (rounded) oe.rounded = true; return oe; }
+          if (okExp) { var os = { type: 'superexponential', exponent: sig(qq), log10Scale: sig(s0 * Math.pow(10, bb)), at0: pow10str(z.L) }; if (rounded) os.rounded = true; return os; }
+        }
+      }
+    }
+    var slopes = [];
+    for (i = 1; i < pos.length; i++) slopes.push(sig((pos[i].L - pos[i - 1].L) / (Math.log10(pos[i].v) - Math.log10(pos[i - 1].v)), 4));
+    return { type: 'irregular', slopes: slopes, at: pos.map(function (p) { return p.v; }) };
+  }
+  F.fitShape = fitShape;
+
+  function lgOf(y) {
+    if (typeof y === 'number') return y > 0 && isFinite(y) ? Math.log10(y) : y === 0 ? -Infinity : null;
+    if (!isDec(y)) return null;
+    try { if (y.lte(0)) return y.eq(0) ? -Infinity : null; var l = Number(y.log10()); return isFinite(l) ? l : null; } catch (e) { return null; }
+  }
+  /**
+   * The EXPONENT probe: set `path` to each grid value ON THE CALLER'S COPY, read `evalFn()`, put the field back (same
+   * object), and fit. `opts.settle` runs updateTemp after each set (for a reading that goes through tmp).
+   */
+  F.shapeIn = function (path, evalFn, opts) {
+    opts = opts || {};
+    var saved = getPath(path), asDec = isDec(saved), pts = [], errors = 0, firstError = null;
+    if (!numLike(saved)) return { type: 'unscored', why: path + ' is not a number here' };
+    try {
+      for (var i = 0; i < F.GRID.length; i++) {
+        var v = F.GRID[i];
+        setPath(path, asDec ? D(v) : v);
+        if (opts.settle) need('updateTemp')();
+        var y;
+        try { y = evalFn(); } catch (e) { errors++; if (!firstError) firstError = String(e && e.message || e).slice(0, 120); pts.push({ v: v, L: null }); continue; }
+        pts.push({ v: v, L: lgOf(y) });
+      }
+    } finally { setPath(path, saved); if (opts.settle) need('updateTemp')(); }
+    var s = fitShape(pts);
+    if (errors) { s.errors = errors; s.firstError = firstError; }
+    return s;
+  };
+
+  // ---- shared walks ------------------------------------------------------------------------------------------------
+  function errText(e) { return String(e && e.message || e).slice(0, 160); }
+  function shownUnlocked(l) { return !!(layers[l] && player[l] && unlockedLayer(l)); }
+  // The challenge currency, by the engine's own canCompleteChallenge rule (2.2.1 game.js:275-297): a declared
+  // currencyInternalName as an upgrade does, and NOTHING declared means player.points — not the layer's points.
+  function challengeCurrency(l, C) {
+    if (C && C.currencyInternalName) return currencyOf(l, C);
+    return { dimension: 'player.points', how: 'no currency declared: the engine compares player.points' };
+  }
+  function priceThings() {
+    var out = [], ls = allLayers();
+    for (var i = 0; i < ls.length; i++) {
+      var l = ls[i], L = layers[l];
+      if (!L || !shownUnlocked(l)) continue;
+      var groups = [['upgrades', 'upgrade', 'cost'], ['buyables', 'buyable', 'cost'], ['challenges', 'challenge', 'goal']];
+      for (var g = 0; g < groups.length; g++) {
+        var obj = L[groups[g][0]];
+        if (!obj || typeof obj !== 'object') continue;
+        var ids = purchaseIds(obj);
+        for (var j = 0; j < ids.length; j++) {
+          var id = ids[j], decl = obj[id];
+          if (!decl || typeof decl !== 'object') continue;
+          if (!itemUnlocked(decl, tmpItem(l, groups[g][0], id))) continue;
+          if (decl[groups[g][2]] === undefined) continue;
+          out.push({ layer: l, group: groups[g][0], kind: groups[g][1], id: id, decl: decl, key: groups[g][2] });
+        }
+      }
+    }
+    return out;
+  }
+  function itemRef(t) { var o = { layer: t.layer }; o[t.kind] = t.id; return o; }
+
+  // ---- price ---------------------------------------------------------------------------------------------------------
+  F.price = function () {
+    var out = [], things = priceThings();
+    for (var i = 0; i < things.length; i++) {
+      var t = things[i], f = { id: 'price:' + t.layer + ':' + t.kind + ':' + t.id, kind: 'price', item: itemRef(t) };
+      try {
+        var cur;
+        if (t.kind === 'upgrade') cur = currencyOf(t.layer, t.decl);
+        else if (t.kind === 'challenge') cur = challengeCurrency(t.layer, t.decl);
+        else {
+          var g = typeof T.currencyOf === 'function' ? T.currencyOf(t.layer, t.id) : null;
+          cur = g && g.scored ? { dimension: g.pays, how: 'the generated currency data (C1)' } : { dimension: null, how: g ? 'the currency reader abstained: ' + (g.why || 'unscored') : 'no generated currency data' };
+        }
+        f.currency = cur.dimension === undefined ? null : cur.dimension;
+        f.currencyHow = cur.how;
+        var decl = t.decl, key = t.key;
+        if (typeof decl[key] !== 'function') {
+          f.reads = []; f.shapes = {};
+          f.constant = true;
+          f.from = { how: 'declaration: a constant ' + key };
+          out.push(f); continue;
+        }
+        var call = function () { return decl[key].call(decl); };
+        var tr = traceReads(call, { tmp: true });
+        if (tr.error) { f.abstain = 'the ' + key + '() function throws: ' + tr.error; f.from = { how: 'traceReads' }; out.push(f); continue; }
+        // A MULTI-CURRENCY price is a plain object of numbers ({knw, drw}): each PART gets its own shape per read.
+        var parts = null;
+        if (tr.value && typeof tr.value === 'object' && !isDec(tr.value)) {
+          parts = Object.keys(tr.value).filter(function (q) { return numLike(tr.value[q]); });
+          if (!parts.length) { f.abstain = 'the ' + key + '() value is neither a number nor an object of numbers'; f.from = { how: 'traceReads' }; out.push(f); continue; }
+          f.parts = parts;
+        } else if (!numLike(tr.value)) { f.abstain = 'the ' + key + '() value is not a number here (' + typeof tr.value + ')'; f.from = { how: 'traceReads' }; out.push(f); continue; }
+        f.reads = tr.reads.map(function (r) { return r.path; });
+        f.tmpReads = tr.tmp;
+        f.shapes = {};
+        for (var r = 0; r < tr.numeric.length; r++) {
+          if (!parts) { f.shapes[tr.numeric[r]] = F.shapeIn(tr.numeric[r], call); continue; }
+          f.shapes[tr.numeric[r]] = {};
+          for (var q2 = 0; q2 < parts.length; q2++) f.shapes[tr.numeric[r]][parts[q2]] = F.shapeIn(tr.numeric[r], (function (pt) { return function () { var v = call(); return v && v[pt]; }; })(parts[q2]));
+        }
+        f.from = { how: 'traceReads + probe:exponent' };
+      } catch (e) { f.abstain = 'the probe threw: ' + errText(e); f.from = { how: 'probe:exponent' }; }
+      out.push(f);
+    }
+    return out;
+  };
+
+  // ---- zeroed-by: a write tracer over one reset -------------------------------------------------------------------
+  // Every numeric leaf of player, depth ≤ 3, masked ONLY at depth 1 (player.time / offTime are wall clocks; a LAYER's
+  // `time` is game state — PTR's q.time is exactly what a price reads). ⚠ P1a's leafMap masks `time` at every depth,
+  // which is why the reset producers' deltas never showed q.time (facts-1, docs/facts.md).
+  function leafMapState(maxDepth) {
+    var mask = T.stateMask || ['time', 'offTime'], m = {};
+    (function walk(o, path, depth) {
+      var keys = Object.keys(o); keys.sort();
+      for (var i = 0; i < keys.length; i++) {
+        var k = keys[i];
+        if (depth === 1 && mask.indexOf(k) >= 0) continue;
+        if (depth === 1 && layers[k] && layers[k].tmtLoaderLayer) continue;
+        var v = o[k], p = path + '.' + k;
+        // a COPY, never the object itself: an engine may mutate a number IN PLACE (PTR's layOver copies a fresh
+        // Decimal's fields into the live one — utils.js:989-994), and an aliased reading would change after the fact
+        if (numLike(v)) { m[p] = isDec(v) ? new (numType())(v) : D(v); continue; }
+        if (v && typeof v === 'object' && !Array.isArray(v) && !isDec(v) && depth < maxDepth) walk(v, p, depth + 1);
+      }
+    })(player, 'player', 1);
+    return m;
+  }
+  F.leafMap = leafMapState;
+  // A write-through Proxy over `player`: every assignment is recorded with its full path and the innermost layer
+  // doReset running (`stack`). Proxies are cached per object, so identity holds; a proxy written back is unwrapped.
+  // A NUMBER object is wrapped too, because an engine may mutate one IN PLACE (PTR's layOver writes sign / layer / mag
+  // into the live Decimal — utils.js:989-994): such a write is recorded against the NUMBER's own path, with its value
+  // read after the write, so the last component written leaves the final value on the record.
+  function writeTracer(real, onWrite) {
+    var cache = new WeakMap(), targetOf = new WeakMap();
+    var wrap = function (obj, path) {
+      var hit = cache.get(obj);
+      if (hit) return hit;
+      var num = isDec(obj);
+      var px = new Proxy(obj, {
+        get: function (t, k) {
+          if (typeof k === 'symbol' || num) return t[k];
+          var v = t[k];
+          if (v && typeof v === 'object' && !Array.isArray(v)) return wrap(v, path + '.' + String(k));
+          return v;
+        },
+        set: function (t, k, v) {
+          if (v && typeof v === 'object' && targetOf.has(v)) v = targetOf.get(v);
+          t[k] = v;
+          if (num) onWrite(path, t);
+          else if (typeof k !== 'symbol') onWrite(path + '.' + String(k), v);
+          return true;
+        },
+      });
+      cache.set(obj, px); targetOf.set(px, obj);
+      return px;
+    };
+    return wrap(real, 'player');
+  }
+  // One reset on the copy, in TWO passes. Pass 1 runs doReset(l) under the write tracer: what changed, and every
+  // assignment with the layer doReset that made it. ⚠ A committed snapshot is usually taken right AFTER a reset (a mark
+  // lands on the tick a challenge completes), so most fields are already 0 and a value diff alone sees nothing — 3
+  // fields at ptr all/M27. A field the reset WROTE but that ended where it started is AMBIGUOUS (zeroed when it was
+  // already 0, or kept?), so pass 2 SEEDS exactly those fields to x·10 + 1 on a fresh copy, resets again and reads them:
+  // a seeded field that comes back lower is zeroed / lowered (`seeded: true` — a probe-only state, labelled), one that
+  // keeps the seed is kept.
+  function resetPrep(l, head) {
+    if (tmp[l].canReset === true) return { how: 'doReset', force: false };
+    var ij = injectRequirement(head);
+    if (ij.blocked) return { how: 'doReset(force) — ' + ij.blocked, force: true };
+    return { how: 'doReset at the injected requirement', force: false, inject: ij.inject };
+  }
+  F.resetEffects = function (l) {
+    var head = resetHead(l);
+    var pass1 = P.excursion(function () {
+      var prep = resetPrep(l, head);
+      var before = leafMapState(3);
+      var writes = [], stack = [], wrapped = [], ls = Object.keys(layers), i;
+      for (i = 0; i < ls.length; i++) {
+        var L = layers[ls[i]];
+        if (!L || typeof L.doReset !== 'function' || L.tmtLoaderLayer) continue;
+        (function (x, LL, orig) {
+          LL.doReset = function () { stack.push(x); try { return orig.apply(this, arguments); } finally { stack.pop(); } };
+          wrapped.push([LL, orig]);
+        })(ls[i], L, L.doReset);
+      }
+      var invoked = [];
+      var real = player, updOrig = api('updateTemp'), err = null;
+      var onWrite = function (p, v) {
+        var by = stack.length ? stack[stack.length - 1] : '(engine)';
+        writes.push({ path: p, by: by, v: numLike(v) ? dstr(v) : v && typeof v === 'object' ? '{object}' : String(v) });
+        if (stack.length && invoked.indexOf(by) < 0) invoked.push(by);
+      };
+      // updateTemp reads player hundreds of times and writes none of it: it runs on the REAL player (faster, and a
+      // tmp built from proxies would outlive the excursion's player).
+      var updWrap = function () { var pp = player; player = real; try { return updOrig.apply(this, arguments); } finally { player = pp; } };
+      try {
+        updateTemp = updWrap;
+        player = writeTracer(real, onWrite);
+        need('doReset')(l, prep.force);
+      } catch (e) { err = errText(e); }
+      finally {
+        player = real;
+        updateTemp = updOrig;
+        for (i = 0; i < wrapped.length; i++) wrapped[i][0].doReset = wrapped[i][1];
+      }
+      if (err) return { error: 'doReset threw: ' + err, how: prep.how };
+      need('updateTemp')();
+      var after = leafMapState(3), b = {}, a2 = {}, p;
+      for (p in before) { b[p] = dstr(before[p]); if (p in after) a2[p] = dstr(after[p]); }
+      return { prep: prep, before: b, after: a2, writes: writes, invoked: invoked };
+    });
+    if (pass1.error) return { layer: l, error: pass1.error, how: pass1.how };
+    var written = {}, w, p;
+    for (w = 0; w < pass1.writes.length; w++) written[pass1.writes[w].path] = 1;
+    var ambiguous = Object.keys(pass1.before).filter(function (q) { return written[q] && pass1.after[q] !== undefined && pass1.after[q] === pass1.before[q]; }).sort();
+    var seeded = {};
+    if (ambiguous.length) {
+      seeded = P.excursion(function () {
+        var seeds = {}, i;
+        for (i = 0; i < ambiguous.length; i++) { var cv = getPath(ambiguous[i]); var sv = isDec(cv) ? D(cv).times(10).plus(1) : cv * 10 + 1; setPath(ambiguous[i], sv); seeds[ambiguous[i]] = dstr(sv); }
+        for (var z = 0; z < P.settlePasses; z++) need('updateTemp')();
+        var prep2 = resetPrep(l, head);
+        try { need('doReset')(l, prep2.force); } catch (e) { return { error: errText(e) }; }
+        need('updateTemp')();
+        var o = {};
+        for (i = 0; i < ambiguous.length; i++) o[ambiguous[i]] = { seed: seeds[ambiguous[i]], after: dstr(getPath(ambiguous[i])) };
+        return o;
+      });
+      if (seeded.error) seeded = {};
+    }
+    var fields = {};
+    var paths = Object.keys(pass1.before).sort();
+    for (var i = 0; i < paths.length; i++) {
+      p = paths[i];
+      var bS = pass1.before[p], aS = pass1.after[p], isSeed = false;
+      if (aS === undefined) continue;
+      if (aS === bS && seeded[p]) { bS = seeded[p].seed; aS = seeded[p].after; isSeed = true; }
+      if (aS === bS) continue;
+      var bD = D(bS), aD = D(aS);
+      var kind = aD.eq(0) && !bD.eq(0) ? 'zeroes' : aD.lt(bD) ? 'lowers' : null;
+      if (!kind) continue;
+      // via: the writers that wrote this field its pass-1 FINAL value — to the field itself, else to an ancestor object
+      var via = [], hitSelf = false, fin = pass1.after[p];
+      for (w = 0; w < pass1.writes.length; w++) {
+        var W = pass1.writes[w];
+        if (W.path !== p) continue;
+        hitSelf = true;
+        if (W.v === fin && via.indexOf(W.by) < 0) via.push(W.by);
+      }
+      if (!hitSelf) for (w = 0; w < pass1.writes.length; w++) if (p.indexOf(pass1.writes[w].path + '.') === 0 && via.indexOf(pass1.writes[w].by) < 0) via.push(pass1.writes[w].by);
+      fields[p] = { effect: kind, via: via };
+      if (isSeed) fields[p].seeded = true;
+    }
+    var o = { layer: l, how: pass1.prep.how, fields: fields, invoked: pass1.invoked };
+    if (pass1.prep.inject) o.injected = pass1.prep.inject;
+    if (pass1.prep.force) o.forced = true;
+    return o;
+  };
+  F.zeroedBy = function () {
+    var ls = allLayers(), per = [], i;
+    for (i = 0; i < ls.length; i++) {
+      var l = ls[i];
+      if (!layers[l] || !player[l] || !tmp[l] || !layerShown(l)) continue;
+      if (tmp[l].type === 'none' || layers[l].tmtLoaderLayer) continue;
+      try { per.push(F.resetEffects(l)); } catch (e) { per.push({ layer: l, error: 'the probe threw: ' + errText(e) }); }
+    }
+    // ONE FACT PER (reset, field): what the reset does to the field and which doReset wrote it. How it was measured —
+    // at the injected requirement, forced, the field seeded — is PROVENANCE (`from.probeState`), not the fact, so a
+    // fact does not split into variants because the state it was read in needed a different probe.
+    var out = [], errors = [];
+    for (i = 0; i < per.length; i++) {
+      var R = per[i];
+      if (R.error) { errors.push({ id: 'zeroed-by:' + R.layer, kind: 'zeroed-by', reset: R.layer, abstain: R.error, from: { how: 'probe:reset-writes' } }); continue; }
+      var ps = Object.keys(R.fields).sort();
+      for (var j = 0; j < ps.length; j++) {
+        var fd = R.fields[ps[j]], lab = [];
+        if (R.forced) lab.push('doReset forced (the requirement could not be injected)');
+        else if (R.injected) lab.push('requirement injected');
+        if (fd.seeded) lab.push('field seeded to x·10+1');
+        var fr = { how: 'probe:reset-writes' };
+        if (lab.length) fr.probeState = lab.join('; ');
+        out.push({ id: 'zeroed-by:' + R.layer + ':' + ps[j], kind: 'zeroed-by', reset: R.layer, field: ps[j], effect: fd.effect, via: fd.via, from: fr });
+      }
+    }
+    return out.concat(errors);
+  };
+
+  // ---- production: what moves a field over time, and its shape in each CLOCK -----------------------------------
+  // With the automation OFF (what the GAME does on its own): tick `k` game-seconds at diff 1 and find what moved and
+  // which fields are CLOCKS (+diff every tick). Then, for each clock a tick actually READS, the exponent probe on the
+  // per-tick increment: set the clock to each grid value, tick once, read every moved field's increment.
+  F.production = function (opts) {
+    opts = opts || {};
+    var k = Number(opts.k || 10);
+    return P.excursion(function () {
+      // ⚠ NORMALISE THE INSTANT first: tmp is not a pure function of player, and every excursion below restores
+      // through the engine — so a baseline read before the first restore is a different instant from every reading
+      // after it (measured: the first increment differed from all later ones, and every clock read as a driver).
+      var snap0 = P.snapshot();
+      P.restore(snap0);
+      T.profile('off');
+      var first = leafMapState(3), prev = first, clockOk = {}, seen = {}, p, i;
+      for (p in first) { clockOk[p] = true; seen[p] = { min: first[p], max: first[p] }; }
+      for (i = 0; i < k; i++) {
+        T.tick(1, 1);
+        var cur = leafMapState(3);
+        for (p in clockOk) if (clockOk[p] && (!(p in cur) || !near(Number(cur[p].sub(prev[p])), 1, 1e-9))) clockOk[p] = false;
+        for (p in cur) { if (!seen[p]) { seen[p] = { min: cur[p], max: cur[p] }; continue; } if (cur[p].lt(seen[p].min)) seen[p].min = cur[p]; if (cur[p].gt(seen[p].max)) seen[p].max = cur[p]; }
+        prev = cur;
+      }
+      var last = prev; P.restore(snap0); T.profile('off');
+      var moved = [], clocks = [];
+      for (p in seen) if (!seen[p].max.eq(seen[p].min) && (p in first) && (p in last)) moved.push(p);
+      moved.sort();
+      for (p in clockOk) if (clockOk[p] && k > 0) clocks.push(p);
+      clocks.sort();
+      // which clocks DRIVE something: perturb each clock (×10 + 1000) and tick once; a clock whose perturbation moves any
+      // moved field's increment is a driver. (⚠ Not a traceReads over a tick: a tick run through the recording Proxy
+      // lost a whole layer object from `player` on PTR — measured, facts-1 — so a tick is never traced.)
+      var incOnce = function (setC) {
+        return P.excursion(function () {
+          T.profile('off');
+          if (setC) setC();
+          var b = leafMapState(3);
+          T.tick(1, 1);
+          var a = leafMapState(3), d = {};
+          for (var m = 0; m < moved.length; m++) { var q = moved[m]; if (!(q in a) || !(q in b)) continue; d[q] = dstr(a[q].sub(b[q])); }
+          return d;
+        });
+      };
+      var base0 = incOnce(null), drivers = [];
+      for (i = 0; i < clocks.length; i++) {
+        var Ck = clocks[i];
+        var dd = incOnce(function () { var cv = getPath(Ck); setPath(Ck, isDec(cv) ? D(cv).times(10).plus(1000) : cv * 10 + 1000); });
+        for (var q0 in dd) if (q0 !== Ck && dd[q0] !== base0[q0]) { drivers.push(Ck); break; }
+      }
+      var out = [];
+      for (var c = 0; c < drivers.length; c++) {
+        var C = drivers[c], series = {};
+        for (var g = 0; g < F.GRID.length; g++) {
+          var v = F.GRID[g];
+          var row = P.excursion(function () {
+            T.profile('off');
+            var cv = getPath(C);
+            setPath(C, isDec(cv) ? D(v) : v);
+            var b = leafMapState(3);
+            T.tick(1, 1);
+            var a = leafMapState(3), d = {};
+            for (var m = 0; m < moved.length; m++) { var q = moved[m]; if (q === C || !(q in a) || !(q in b)) continue; d[q] = a[q].sub(b[q]); }
+            return d;
+          });
+          for (var q in row) (series[q] || (series[q] = [])).push({ v: v, L: lgOf(row[q]) });
+        }
+        var qs = Object.keys(series).sort();
+        for (var j = 0; j < qs.length; j++) {
+          var sh = fitShape(series[qs[j]]);
+          if (sh.type === 'flat' || sh.type === 'unscored') continue;
+          var fct = { id: 'production:' + qs[j] + ':' + C, kind: 'production', field: qs[j], in: C, rate: sh, from: { how: 'probe:exponent on one tick (diff 1, automation off)' } };
+          if (sh.type === 'power') fct.integrated = { type: 'power', exponent: sig(Number(sh.exponent) + 1) };
+          out.push(fct);
+        }
+      }
+      for (i = 0; i < moved.length; i++) {
+        var mp = moved[i];
+        var dir = last[mp].gt(first[mp]) ? (seen[mp].min.eq(first[mp]) && seen[mp].max.eq(last[mp]) ? 'rises' : 'rises, not monotonically') : last[mp].lt(first[mp]) ? 'falls' : 'returns to its start';
+        out.push({ id: 'production:' + mp, kind: 'production', field: mp, clock: !!clockOk[mp], over: { ticks: k, diff: 1, moves: dir },
+          drivenBy: drivers.filter(function (dc) { return out.some(function (x) { return x.field === mp && x.in === dc; }); }), from: { how: 'producer:wait (automation off)' } });
+      }
+      return out;
+    });
+  };
+
+  // ---- multiplier-reads: what every numeric getter reads -------------------------------------------------------
+  // Found GENERICALLY: every zero-argument function a layer object declares, plus each item's `effect` /
+  // `rewardEffect` (contract keys). Action hooks are skipped by their CONTRACT names, anything else that writes `player`
+  // is caught by a purity check and restored. A getter is kept when it returns a number.
+  var ACTION_KEYS = { doReset: 1, update: 1, automate: 1, onPrestige: 1, onReset: 1, onComplete: 1, onEnter: 1, onExit: 1, onStart: 1, buy: 1, buyMax: 1, sellOne: 1, sellAll: 1, onClick: 1, onHold: 1, respec: 1, startData: 1, tabFormat: 1, componentStyles: 1 };
+  var HOLD_KIND = { upgrades: 'upg', milestones: 'ms', achievements: 'ach' };
+  F.getters = function () {
+    var out = [], ls = allLayers();
+    for (var i = 0; i < ls.length; i++) {
+      var l = ls[i], L = layers[l];
+      if (!L) continue;
+      var ks = Object.keys(L);
+      for (var j = 0; j < ks.length; j++) {
+        var f = L[ks[j]];
+        if (typeof f !== 'function' || f.length !== 0 || ACTION_KEYS[ks[j]]) continue;
+        out.push({ layer: l, key: ks[j], owner: L, fn: f, ref: { layer: l, fn: ks[j] }, id: 'reads:' + l + ':' + ks[j] });
+      }
+      var groups = [['upgrades', 'effect'], ['buyables', 'effect'], ['challenges', 'rewardEffect'], ['milestones', 'effect'], ['achievements', 'effect']];
+      for (var g = 0; g < groups.length; g++) {
+        var obj = L[groups[g][0]];
+        if (!obj || typeof obj !== 'object') continue;
+        var ids = groups[g][0] === 'milestones' || groups[g][0] === 'achievements' ? numIds(obj) : purchaseIds(obj);
+        for (var m = 0; m < ids.length; m++) {
+          var d = obj[ids[m]];
+          if (!d || typeof d !== 'object' || typeof d[groups[g][1]] !== 'function') continue;
+          out.push({ layer: l, key: groups[g][1], owner: d, fn: d[groups[g][1]], ref: { layer: l, group: groups[g][0], item: ids[m], fn: groups[g][1] }, id: 'reads:' + l + ':' + groups[g][0] + '.' + ids[m] + '.' + groups[g][1] });
+        }
+      }
+    }
+    return out;
+  };
+  function valStr(v) { try { return isDec(v) ? String(v) : typeof v === 'number' ? String(v) : JSON.stringify(v); } catch (e) { return '?'; } }
+  F.multiplierReads = function () {
+    return P.excursion(function () {
+      var snap = P.snapshot(), base = JSON.stringify(player), out = [], gs = F.getters();
+      for (var i = 0; i < gs.length; i++) {
+        var G = gs[i], call = (function (g) { return function () { return g.fn.call(g.owner); }; })(G);
+        var fct = { id: G.id, kind: 'multiplier-reads', fn: G.ref };
+        var tr = traceReads(call, { tmp: true });
+        if (JSON.stringify(player) !== base) { P.restore(snap); continue; }   // a writer, not a getter
+        if (tr.error || !numLike(tr.value)) continue;                       // not a numeric getter here
+        fct.reads = tr.reads.map(function (r) { return r.path; });
+        fct.tmpReads = tr.tmp;
+        var v0 = valStr(tr.value), members = [], widened = [], r, impure = false;
+        // membership: toggle each declared id of every HOLD array it read; a toggle that moves the value is a member
+        for (r = 0; r < tr.reads.length; r++) {
+          var mm = /^player\.([^.]+)\.(upgrades|milestones|achievements)$/.exec(tr.reads[r].path);
+          if (!mm || !layers[mm[1]] || !layers[mm[1]][mm[2]] || !player[mm[1]] || !Array.isArray(player[mm[1]][mm[2]])) continue;
+          var arr = player[mm[1]][mm[2]], ids = mm[2] === 'upgrades' ? purchaseIds(layers[mm[1]][mm[2]]) : numIds(layers[mm[1]][mm[2]]);
+          for (var j = 0; j < ids.length; j++) {
+            var at = -1;
+            for (var x = 0; x < arr.length; x++) if (String(arr[x]) === String(ids[j])) { at = x; break; }
+            var removed;
+            if (at >= 0) removed = arr.splice(at, 1)[0]; else arr.push(ids[j]);
+            var vt, tr2 = null;
+            try { vt = valStr(call()); } catch (e) { vt = 'threw'; }
+            if (vt !== v0) tr2 = traceReads(call, { tmp: true });
+            if (at >= 0) arr.splice(at, 0, removed); else arr.pop();
+            if (vt !== v0) {
+              var gid = HOLD_KIND[mm[2]] + ':' + mm[1] + ':' + ids[j];
+              members.push(gid);
+              var extra = tr2 ? tr2.reads.map(function (q) { return q.path; }).concat(tr2.tmp || []).filter(function (q) { return fct.reads.indexOf(q) < 0 && fct.tmpReads.indexOf(q) < 0; }) : [];
+              if (extra.length) widened.push({ when: gid + (at >= 0 ? ' removed' : ' added'), reads: extra });
+            }
+          }
+        }
+        // branch widening: a boolean read that is false is flipped (layer unlocked, a toggle) and the getter re-traced
+        for (r = 0; r < tr.reads.length; r++) {
+          if (tr.reads[r].kind !== 'boolean' || getPath(tr.reads[r].path) !== false) continue;
+          var bp = tr.reads[r].path;
+          setPath(bp, true);
+          var tr3 = traceReads(call, { tmp: true });
+          setPath(bp, false);
+          var ex = tr3.reads.map(function (q) { return q.path; }).concat(tr3.tmp || []).filter(function (q) { return fct.reads.indexOf(q) < 0 && fct.tmpReads.indexOf(q) < 0; });
+          if (ex.length) widened.push({ when: bp + '=true', reads: ex });
+        }
+        if (JSON.stringify(player) !== base) { impure = true; P.restore(snap); }
+        if (impure) continue;
+        fct.members = members;
+        if (widened.length) fct.widened = widened;
+        fct.from = { how: 'traceReads(player + tmp) + membership toggles + boolean widening' };
+        out.push(fct);
+      }
+      return out;
+    });
+  };
+
+  // ---- the IN-CHALLENGE SENSITIVITY probe --------------------------------------------------------------------------
+  // The gain of a currency, read through the engine: player.points → getPointGen(); a layer's points → tmp resetGain;
+  // anything else → one tick's increment on a copy.
+  function gainReader(path) {
+    if (path === 'player.points' && has('getPointGen')) return { name: 'getPointGen()', read: function () { return api('getPointGen')(); } };
+    var m = /^player\.([^.]+)\.points$/.exec(path || '');
+    if (m && tmp[m[1]]) return { name: 'tmp.' + m[1] + '.resetGain', read: function () { return tmp[m[1]].resetGain; } };
+    // ⛔ never traced: an excursion under traceReads' Proxy ticks the REAL player and then puts the old object back
+    // (measured: ptr all/M25, H21's generator-power goal — the live hash moved). `traced: false` skips the trace.
+    return { name: 'one tick of ' + path, traced: false, read: function () { return P.excursion(function () { var b = D(getPath(path)); T.tick(1, 1); return D(getPath(path)).sub(b); }); } };
+  }
+  function sensCandidates(readPaths) {
+    var c = [], seenP = {}, ls = allLayers(), i, j;
+    var addNum = function (p) { if (!seenP[p] && numLike(getPath(p))) { seenP[p] = 1; c.push({ kind: 'number', path: p }); } };
+    for (i = 0; i < ls.length; i++) {
+      var l = ls[i];
+      if (!shownUnlocked(l)) continue;
+      if (player[l].points !== undefined) addNum('player.' + l + '.points');
+      var bs = player[l].buyables;
+      if (bs && typeof bs === 'object') { var bids = Object.keys(bs).sort(); for (j = 0; j < bids.length; j++) addNum('player.' + l + '.buyables.' + bids[j]); }
+    }
+    for (i = 0; i < readPaths.length; i++) {
+      var p = readPaths[i];
+      var mm = /^player\.([^.]+)\.(upgrades|milestones|achievements)$/.exec(p);
+      if (mm) {
+        if (seenP[p] || !layers[mm[1]] || !layers[mm[1]][mm[2]] || !player[mm[1]] || !Array.isArray(player[mm[1]][mm[2]])) continue;
+        seenP[p] = 1;
+        var ids = mm[2] === 'upgrades' ? purchaseIds(layers[mm[1]][mm[2]]) : numIds(layers[mm[1]][mm[2]]);
+        for (j = 0; j < ids.length; j++) c.push({ kind: 'member', layer: mm[1], group: mm[2], id: ids[j], label: HOLD_KIND[mm[2]] + ':' + mm[1] + ':' + ids[j] });
+        continue;
+      }
+      addNum(p);
+    }
+    return c;
+  }
+  // Each candidate is perturbed in its OWN excursion and read after P.settlePasses updateTemps, and the baseline is read
+  // the same way with nothing perturbed — so every reading is one instant's (⚠ a first cut that undid each
+  // perturbation in place drifted: tmp is not a pure function of player, and a later candidate inherited an earlier
+  // one's tmp — PTR's t buyable 11 read as moving H22's point gain, which three clean passes show it does not).
+  function settledRead(reader, perturb) {
+    return P.excursion(function () {
+      try {
+        if (perturb) perturb();
+        for (var z = 0; z < P.settlePasses; z++) need('updateTemp')();
+        return { y: dstr(reader.read()) };
+      } catch (e) { return { error: errText(e) }; }
+    });
+  }
+  function measureSensitivity(reader, cands) {
+    var base = settledRead(reader, null), moves = [], threw = [];
+    if (base.error) return { error: 'the gain reader throws: ' + base.error, moves: [], candidates: cands.length };
+    var differs = function (y) { var a = lgOf(D(y)), b = lgOf(D(base.y)); if (a === null || b === null) return y !== base.y; if (!isFinite(a) || !isFinite(b)) return a !== b; return Math.abs(a - b) > 1e-9 * Math.max(1, Math.abs(b)); };
+    for (var i = 0; i < cands.length; i++) {
+      var cd = cands[i], label = cd.kind === 'number' ? cd.path : cd.label;
+      var r = settledRead(reader, function () {
+        if (cd.kind === 'number') { var was = getPath(cd.path); setPath(cd.path, isDec(was) ? D(was).times(10).plus(1) : was * 10 + 1); return; }
+        var arr = player[cd.layer][cd.group], at = -1;
+        for (var x = 0; x < arr.length; x++) if (String(arr[x]) === String(cd.id)) { at = x; break; }
+        if (at >= 0) arr.splice(at, 1); else arr.push(cd.id);
+        label = cd.label + (at >= 0 ? ' (held: removed)' : ' (added)');
+      });
+      if (r.error) threw.push(label + ': ' + r.error);
+      else if (differs(r.y)) moves.push(label);
+    }
+    return { gain: base.y, moves: moves, threw: threw, candidates: cands.length };
+  }
+  var OUTSIDE = {};   // per extraction: the outside measurement of a currency is the same for every challenge
+  F.sensitivity = function (l, id) {
+    var C = layers[l].challenges[id], cur = challengeCurrency(l, C), reader = gainReader(cur.dimension);
+    var noTrace = { reads: [] };
+    var trOut = reader.traced === false ? noTrace : traceReads(function () { return reader.read(); });
+    var outside = OUTSIDE[cur.dimension] || (OUTSIDE[cur.dimension] = measureSensitivity(reader, sensCandidates(trOut.reads.map(function (r) { return r.path; }))));
+    var inside = P.excursion(function () {
+      need('startChallenge')(l, id);
+      need('updateTemp')();
+      var entered = String(player[l].activeChallenge) === String(id);
+      if (!entered) return { entered: false };
+      var trIn = reader.traced === false ? noTrace : traceReads(function () { return reader.read(); });
+      var paths = trIn.reads.map(function (r) { return r.path; }).concat(trOut.reads.map(function (r) { return r.path; }));
+      var m = measureSensitivity(reader, sensCandidates(paths));
+      m.entered = true;
+      return m;
+    });
+    var f = { id: 'challenge-inputs:' + l + ':' + id, kind: 'challenge-inputs', inside: { layer: l, challenge: id }, goalCurrency: cur.dimension, gain: reader.name };
+    if (!inside.entered) { f.abstain = 'the engine did not enter the challenge (startChallenge left activeChallenge unchanged)'; f.from = { how: 'probe:in-challenge-sensitivity', state: 'probe-only: challenge entered on the copy' }; return f; }
+    f.entered = true;
+    f.moves = inside.moves;
+    f.movesOutside = outside.moves;
+    f.nerfed = outside.moves.filter(function (x) { return inside.moves.indexOf(x) < 0; });
+    f.candidates = inside.candidates;
+    if (inside.threw.length || outside.threw.length) f.threw = { inside: inside.threw, outside: outside.threw };
+    f.from = { how: 'probe:in-challenge-sensitivity (×10+1 per number, toggle per member; each in its own excursion, ' + P.settlePasses + ' updateTemps; ' + reader.name + ')', probeState: 'the challenge entered on the copy through startChallenge' };
+    if (inside.error || outside.error) f.abstain = inside.error || outside.error;
+    return f;
+  };
+  // The challenges a probe may enter at this state: layer unlocked, `unlocked` TRUE LIVE (never tmp, never faked),
+  // completions below the limit. A locked challenge is NOT entered — its rows abstain as unreachable.
+  function openChallenges() {
+    var out = [], ls = allLayers();
+    for (var i = 0; i < ls.length; i++) {
+      var l = ls[i], L = layers[l];
+      if (!L || !L.challenges || !shownUnlocked(l)) continue;
+      var ids = purchaseIds(L.challenges);
+      for (var j = 0; j < ids.length; j++) {
+        var C = L.challenges[ids[j]], Ct = tmpItem(l, 'challenges', ids[j]);
+        if (!C || typeof C !== 'object' || !itemUnlocked(C, Ct)) continue;
+        var limit = Ct && Ct.completionLimit !== undefined ? Number(Ct.completionLimit) : 1;
+        var done = Number(player[l].challenges && player[l].challenges[ids[j]] || 0);
+        if (done >= limit) continue;
+        out.push({ layer: l, id: ids[j] });
+      }
+    }
+    return out;
+  }
+  F.openChallenges = openChallenges;
+  F.challengeInputs = function () {
+    OUTSIDE = {};
+    var out = [], ch = openChallenges();
+    for (var i = 0; i < ch.length; i++) {
+      try { out.push(F.sensitivity(ch[i].layer, ch[i].id)); }
+      catch (e) { out.push({ id: 'challenge-inputs:' + ch[i].layer + ':' + ch[i].id, kind: 'challenge-inputs', inside: { layer: ch[i].layer, challenge: ch[i].id }, abstain: 'the probe threw: ' + errText(e), from: { how: 'probe:in-challenge-sensitivity' } }); }
+    }
+    return out;
+  };
+
+  // ---- purchase-budget ---------------------------------------------------------------------------------------------
+  // Inside each open challenge (entered on the copy) and outside: an item whose canAfford READS a numeric field that the
+  // purchase RAISES BY ONE (bought on the copy through the engine) — and the threshold probe on that field finds the
+  // count at which canAfford refuses. Both measured; neither guessed from a name.
+  function budgetItems() {
+    var out = [], ls = allLayers();
+    for (var i = 0; i < ls.length; i++) {
+      var l = ls[i], L = layers[l];
+      if (!L || !shownUnlocked(l)) continue;
+      var gr = [['buyables', 'buyable'], ['upgrades', 'upgrade']];
+      for (var g = 0; g < gr.length; g++) {
+        var obj = L[gr[g][0]];
+        if (!obj || typeof obj !== 'object') continue;
+        var ids = purchaseIds(obj);
+        for (var j = 0; j < ids.length; j++) {
+          var d = obj[ids[j]];
+          if (!d || typeof d !== 'object' || typeof d.canAfford !== 'function') continue;
+          if (!itemUnlocked(d, tmpItem(l, gr[g][0], ids[j]))) continue;
+          if (gr[g][1] === 'upgrade' && owned(l, ids[j])) continue;
+          out.push({ layer: l, group: gr[g][0], kind: gr[g][1], id: ids[j], decl: d });
+        }
+      }
+    }
+    return out;
+  }
+  function budgetIn(ctx) {
+    var found = [], items = budgetItems();
+    for (var i = 0; i < items.length; i++) {
+      var it = items[i], d = it.decl;
+      var aff = function () { return !!d.canAfford.call(d); };
+      var tr = traceReads(aff);
+      if (tr.error) continue;
+      var own = 'player.' + it.layer + '.buyables.' + it.id;
+      var cands = tr.numeric.filter(function (p) { return p !== own; });
+      if (!cands.length) continue;
+      var r = P.excursion(function () {
+        // make it affordable: lift each candidate that is NOT a counter-sized integer to 1e300 of its type, one at a time
+        if (!aff()) {
+          for (var c = 0; c < cands.length && !aff(); c++) {
+            var cv = getPath(cands[c]);
+            if (isDec(cv)) setPath(cands[c], D(cv).max(D(10).pow(300)));
+          }
+          need('updateTemp')();
+        }
+        if (!aff()) return null;
+        var before = {}, c2;
+        for (c2 = 0; c2 < cands.length; c2++) before[cands[c2]] = getPath(cands[c2]);
+        if (it.kind === 'buyable') need('buyBuyable')(it.layer, it.id); else need('buyUpgrade')(it.layer, it.id);
+        need('updateTemp')();
+        var rose = cands.filter(function (p) { var b = before[p], a = getPath(p); try { return numLike(a) && numLike(b) && D(a).sub(D(b)).eq(1); } catch (e) { return false; } });
+        if (!rose.length) return null;
+        // A BUDGET's limit does not move when everything else is made richer; a RESOURCE's does (PTR's s buyables raise
+        // player.s.spent by one per purchase, and the "limit" is wherever the lifted space runs out — 3e329). So the
+        // limit is probed twice, the other candidates lifted to 1e300 and then 1e600: it must agree, and be exact.
+        var limitWith = function (counter, e10, asDecC) {
+          for (var c3 = 0; c3 < cands.length; c3++) { if (cands[c3] === counter) continue; var cv3 = getPath(cands[c3]); if (isDec(cv3)) setPath(cands[c3], D(cv3).max(D(10).pow(e10))); }
+          need('updateTemp')();
+          setPath(counter, asDecC ? D(0) : 0);
+          if (!aff()) return null;
+          return probeField(counter, function () { return !aff(); }, asDecC);
+        };
+        var res = [];
+        for (var q = 0; q < rose.length; q++) {
+          var cur = getPath(rose[q]), asDecC = isDec(cur);
+          var L1 = limitWith(rose[q], 300, asDecC), L2 = limitWith(rose[q], 600, asDecC);
+          setPath(rose[q], cur);
+          if (!L1 || !L2 || !L1.exact || !L2.exact || L1.threshold !== L2.threshold || L1.threshold === null) continue;
+          res.push({ counter: rose[q], limit: L1.threshold, exact: true });
+        }
+        return res;
+      });
+      if (!r) continue;
+      for (var k = 0; k < r.length; k++) found.push({ item: [it.layer, it.kind, String(it.id)], counter: r[k].counter, limit: r[k].limit, exact: r[k].exact, why: r[k].why });
+    }
+    return found;
+  }
+  F.purchaseBudget = function () {
+    var ctxs = [null].concat(openChallenges()), out = [];
+    for (var i = 0; i < ctxs.length; i++) {
+      var ctx = ctxs[i], rows;
+      try {
+        rows = P.excursion(function () {
+          if (ctx) { need('startChallenge')(ctx.layer, ctx.id); need('updateTemp')(); if (String(player[ctx.layer].activeChallenge) !== String(ctx.id)) return { notEntered: true }; }
+          return { rows: budgetIn(ctx) };
+        });
+      } catch (e) { out.push({ id: 'purchase-budget:' + (ctx ? ctx.layer + ':' + ctx.id : 'outside'), kind: 'purchase-budget', abstain: 'the probe threw: ' + errText(e), from: { how: 'traceReads(canAfford) + buy + threshold probe' } }); continue; }
+      if (rows.notEntered) continue;
+      var byCounter = {};
+      for (var j = 0; j < rows.rows.length; j++) { var R = rows.rows[j]; (byCounter[R.counter] || (byCounter[R.counter] = [])).push(R); }
+      var cs = Object.keys(byCounter).sort();
+      for (j = 0; j < cs.length; j++) {
+        var list = byCounter[cs[j]], lim = list[0].limit;
+        var f = { id: 'purchase-budget:' + (ctx ? ctx.layer + ':' + ctx.id : 'outside') + ':' + cs[j], kind: 'purchase-budget', inside: ctx ? { layer: ctx.layer, challenge: ctx.id } : null, counter: cs[j],
+          items: list.map(function (x) { return x.item; }), limit: lim, from: { how: 'traceReads(canAfford) + buy raises it by 1 + threshold probe (Pass A)', probeState: ctx ? 'the challenge entered on the copy through startChallenge' : null } };
+        if (list.some(function (x) { return x.limit !== lim; })) f.abstain = 'the items disagree on the limit: ' + list.map(function (x) { return x.item.join('/') + '=' + x.limit; }).join(', ');
+        if (lim === null) f.abstain = list[0].why || 'no limit found';
+        out.push(f);
+      }
+    }
+    return out;
+  };
+
+  /** One state's facts, every kind, each measured for neutrality. A kind that throws is contained and named. */
+  F.KINDS = ['price', 'zeroed-by', 'production', 'multiplier-reads', 'challenge-inputs', 'purchase-budget'];
+  var KIND_FN = { 'price': 'price', 'zeroed-by': 'zeroedBy', 'production': 'production', 'multiplier-reads': 'multiplierReads', 'challenge-inputs': 'challengeInputs', 'purchase-budget': 'purchaseBudget' };
+  P.extractFacts = function (opts) {
+    opts = opts || {};
+    var kinds = opts.kinds || F.KINDS, h0 = P.hashes(), c0 = { ticks: T.ticks, gs: T.gameSeconds, profile: T.profileName };
+    // ⚠ Normalise the instant once (the round's step 1, docs/planner.md): byte-faithful in `player`, and every kind then
+    // reads tmp as a restore leaves it — so a kind's facts do not depend on which kinds ran before it.
+    P.restore(P.snapshot());
+    var out = { version: F.version, kinds: {}, neutral: {}, errors: [], ms: {} };
+    for (var i = 0; i < kinds.length; i++) {
+      var k = kinds[i], hb = P.hashes(), t0 = Date.now();
+      try { out.kinds[k] = F[KIND_FN[k]](opts); } catch (e) { out.errors.push({ kind: k, error: errText(e) }); out.kinds[k] = []; }
+      out.ms[k] = Date.now() - t0;
+      var ha = P.hashes();
+      out.neutral[k] = ha.hash === hb.hash && ha.hashGame === hb.hashGame;
+    }
+    var h1 = P.hashes();
+    out.stateNeutral = h1.hash === h0.hash && h1.hashGame === h0.hashGame && T.ticks === c0.ticks && T.gameSeconds === c0.gs && T.profileName === c0.profile;
+    out.hash = h0.hash; out.hashGame = h0.hashGame;
+    return out;
+  };
+
 })();
