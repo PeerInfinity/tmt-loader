@@ -121,6 +121,16 @@ the queue's and no reflex spends the purse first. Derived from the features' lay
 | verdict (diff 1) | waiting cannot help, peak 10^−2.0689 at q.time 1 | waiting cannot help, peak 10^−12.0689 at q.time 1 |
 | levers (log10 distance) | **total quirks → 7.06e14 (1.78)** · the 7th Quirk Layer 2^63 quirks (5.90) · Super Boosters (zeroed at the peak) | **the 7th Quirk Layer (5.90; E 5 → 6 does not flip 7 vs 10)** · total quirks → 1.5e27 (14.1) · Super Boosters (zeroed) |
 | verdict (diff 0.05) | peak 10^−3.4991 at q.time 2.35; total quirks → 1.62e16 (3.14) | — |
+| once q31 is owned (m28/Q31, tick 88,767) | — | waiting cannot help, peak 10^−3.9974; **total quirks → 2.80948e18 (3.60)** · the 7th Quirk Layer (4.11) |
+
+**And the purchases land on the thresholds** (CI 36822076088, diff 1, every leg twice equal, from QL6 under the qrate1
+winner with challenge attempts held — `exclude=challenges:h`): the reflex bought **q31 at +2,696 game-s with total quirks
+7.096e14** (sub-goal 7.06e14) and **q32 — M28 — at +54,688 with 2.81084e18** (the Q31 verdict's 2.80948e18, +0.048 %),
+still at 6 Quirk Layers. The QL6 q32 verdict's lever (the 7th Quirk Layer) was superseded: q31 raises q11's power 8 → 9.
+Without the hold (the winner as it is) the give-up reflex re-enters H22 after every q reset and q31 is not bought in
+30,000 game-s (8,000 at diff 0.05); with it, at diff 0.05, q31 at +2,760.2 (total 7.31e14 — the diff-0.05 verdict's
+1.62e16 overestimates: Super Boosters were 6 at q.time 1.7, rebuilt in 34 ticks, and total quirks also raise them through
+q12, which the single-input walk does not count).
 qrate1's reading (10^−4.89 / 10^−17.2) is the same game read at another instant — Q86K, inside an H22 attempt at
 q.time 26, with every reset excluded at registration (gate V0 reproduces it): mid-run, the ratio only falls.
 ⚠ The q11 lever's other input, the q-upgrade COUNT (`player.q.upgrades`, an array), is not a numeric input and is never

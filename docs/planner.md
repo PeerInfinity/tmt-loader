@@ -427,6 +427,15 @@ notes §17 has every number):
   refused candidate now keeps `refused` with the engine's message, scores −1e300 and cannot win; the excursion restores
   the state. (Generating only instantiable candidates would change every round log, so it is not done here.)
 
+**Measured on ptr past q24 (m28, design notes §18; CI 36822076088, twice equal):** from m28/QL6 with the q31 verdict's
+sub-goal (total quirks ≥ 7.06e14) and the widened options, round 0 commits `rate-peak@0/0` (bare) and q31 is bought at
++3,477 game-s (the fixed configuration with challenge attempts held: +2,696). `challengeCandidates=1` changed nothing:
+its candidate was confirmed every round and never won (both legs byte-identical). The q32 stage at the DEFAULT options
+then fails: at that state the template names the 7th Quirk Layer (`player.q.points ≥ 2^63`, a SAWTOOTH the Quirk Layer
+purchase spends), and 400 rounds alternate `buyables:q` off / buy / buy-unless-saving (197 / 98 / 98) — total quirks
+6.8e17 at +123,477, against the fixed configuration's q32 at +54,688 (2.81e18). A sub-goal on a spent currency turns
+the round into a save-or-spend oscillation on the very purchase it is for.
+
 ### What P1b does NOT decide
 
 Challenge entry, clickables and respec stay with the simple system's reflexes (and its table). Purchases are configured
