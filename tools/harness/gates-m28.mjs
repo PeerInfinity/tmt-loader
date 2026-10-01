@@ -3,7 +3,7 @@
 // and the sub-goal it emits handed to the planner.
 //   node tools/harness/gates-m28.mjs --part fixture|facts|verdict|subgoal|grep|push [--pool N] [--no-write] [--assert]
 //   node tools/harness/gates-m28.mjs --part leg --leg <key>       (one CI measurement leg, twice; writes results/tmp/m28-leg-<key>.json)
-//   node tools/harness/gates-m28.mjs --part merge --dir <dir>     (the CI legs, read back by FILE NAME; refuses a missing one)
+//   node tools/harness/gates-m28.mjs --part merge --dir <dir> [--only <key>]  (the CI legs, read back by FILE NAME; refuses a missing one)
 //
 // GATES (`push`, on every push in sweep.yml's `m28` job):
 // Part fixture  F1 Q86K = qrate1's Q308K → the q23 queue strategize emitted there → the qrate1 winner configuration for
@@ -37,7 +37,7 @@ import { statesOf, declaredStates } from './facts.mjs';
 entryOnly(import.meta.url);
 
 const a = parseArgs(process.argv.slice(2), ['no-write', 'assert']);
-const KNOWN = new Set(['_', 'part', 'pool', 'no-write', 'assert', 'leg', 'dir']);
+const KNOWN = new Set(['_', 'part', 'pool', 'no-write', 'assert', 'leg', 'dir', 'only']);
 for (const k of Object.keys(a)) if (!KNOWN.has(k)) { console.error(`REFUSED: unknown flag --${k}`); process.exit(2); }
 const GATE_PARTS = ['fixture', 'facts', 'verdict', 'subgoal', 'grep'];
 const PART = String(a.part || 'push');
@@ -310,7 +310,7 @@ const LEGS = {
   // the winner with challenge ATTEMPTS held (exclude=challenges:h — the registered alternative qrate1 screened as ch-off)
   'winner-choff@1': { diff: 1, opt: `${WINNER};exclude=challenges:h`, horizons: [20000, 120000] },
   // the page's tick: is q31 reached, and when (the template's diff-0.05 verdict asks for ~23× more quirks)
-  'winner-choff@0.05': { diff: 0.05, opt: `${WINNER};exclude=challenges:h`, horizons: [8000] },
+  'winner-choff@0.05': { diff: 0.05, opt: `${WINNER};exclude=challenges:h`, horizons: [8000, 120000] },
   'winner@0.05': { diff: 0.05, opt: WINNER, horizons: [8000] },
   // the PIPELINE: the planner on the template's sub-goal at each stage's start, from the shipped table (no auto-opt):
   // stage q31 WIDENED (qrate1's configuration: the pool that can confirm a reset:q policy, ~4 min a round), without and
@@ -371,19 +371,22 @@ async function partLeg() {
   fs.mkdirSync(path.join(REPO, 'tools/harness/results/tmp'), { recursive: true });
   fs.writeFileSync(path.join(REPO, 'tools/harness/results/tmp', `m28-leg-${a.leg.replace(/[^\w.-]/g, '_')}.json`), JSON.stringify(out, null, 1) + '\n');
 }
+// `--only <key>`: a dispatch that ran ONE leg (qrate1.yml `-f leg=…`) merges that one, by name; nothing else is implied
+const MERGED = a.only ? [String(a.only)] : Object.keys(LEGS);
+if (a.only && !LEGS[a.only]) { console.error(`REFUSED: --only ${a.only} is not one of ${Object.keys(LEGS).join(' | ')}`); process.exit(2); }
 function partMerge() {
   const dir = path.resolve(a.dir || path.join(REPO, 'tools/harness/results/tmp'));
   const files = fs.existsSync(dir) ? fs.readdirSync(dir, { recursive: true }).filter((f) => /m28-leg-.*\.json$/.test(f)) : [];
   const got = {};
   for (const f of files) got[path.basename(f)] = JSON.parse(fs.readFileSync(path.join(dir, f), 'utf8'));
-  for (const k of Object.keys(LEGS)) {
+  for (const k of MERGED) {
     const j = got[`m28-leg-${k.replace(/[^\w.-]/g, '_')}.json`];
     row({ gate: `M-merge ${k}`, id: 'ptr', ok: !!j && j.twiceEqual && j.stages.every((s) => s.ok && !s.walled),
       notes: j ? j.stages.map((s) => `${s.stage} ${s.reached ? `at +${s.sinceQL6}` : `not reached by +${s.sinceQL6} (total ${s.eval && s.eval.total})`}`).join(' → ') + `; commit ${j.commit}; twice equal ${j.twiceEqual}` : 'MISSING — the leg did not run or its artifact was not found' });
   }
 }
 
-const EXPECT = { fixture: 2, facts: 3, verdict: 4, subgoal: 1, grep: 1, leg: 1, merge: Object.keys(LEGS).length };
+const EXPECT = { fixture: 2, facts: 3, verdict: 4, subgoal: 1, grep: 1, leg: 1, merge: MERGED.length };
 const FN = { fixture: partFixture, facts: partFacts, verdict: partVerdict, subgoal: partSubgoal, grep: partGrep, leg: partLeg, merge: partMerge };
 const RUN = PART === 'push' ? GATE_PARTS : [PART];
 let expected = 0;

@@ -32,6 +32,10 @@ on:
         type: choice
         options: [qrate1, m28]
         default: qrate1
+      leg:
+        description: 'm28 only: run just this leg (a key of gates-m28.mjs LEGS); empty = every leg'
+        type: string
+        default: ''
 
 permissions:
   contents: read
@@ -209,6 +213,7 @@ jobs:
         shell: bash
         run: |
           set -o pipefail
+          if [ -n '${{ inputs.leg }}' ] && [ '${{ inputs.leg }}' != '${{ matrix.leg }}' ]; then echo 'SKIPPED: not the requested leg' | tee leg.txt; exit 0; fi
           s=$(date +%s)
           node tools/harness/gates-m28.mjs --part leg --leg '${{ matrix.leg }}' --assert | tee leg.txt
           echo "TIME leg ${{ matrix.leg }}: $(( $(date +%s) - s )) s" | tee -a leg.txt
@@ -251,7 +256,7 @@ jobs:
         shell: bash
         run: |
           set -o pipefail
-          node tools/harness/gates-m28.mjs --part merge --dir legs --assert | tee merge.txt
+          node tools/harness/gates-m28.mjs --part merge --dir legs ${{ inputs.leg != '' && format('--only ''{0}''', inputs.leg) || '' }} --assert | tee merge.txt
       - name: Summary
         if: always()
         shell: bash
