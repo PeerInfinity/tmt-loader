@@ -38,9 +38,12 @@ mutant() {
   if verdictOf "$name" "$out" "$want"; then KILLED=$((KILLED+1)); else SURVIVED=$((SURVIVED+1)); fi
 }
 SITE="'    if (curRun.layer === l) return curRun.via === \\'slot\\';'"
-# A — the fix applied in the SLOT too (never yield where the engine has just reset the layer): the loader resets every
-#     layer the game auto-resets a second time in the same tick — a double reset the slot leg's one-hash row sees
-mutant A-fix-in-the-slot-too "$(rep loader/tmt-auto.js "$SITE" "'    if (curRun.layer === l) return false;'")" control 'C2 the SLOT is untouched'
+# A — the fix applied in the SLOT too (never yield where the engine has just reset the layer): a DOUBLE RESET where the
+#     engine's reset leaves the reset allowed. Measured: NOT on ptr (C2 stays green — b, g, s, t, sb are reset by the
+#     engine first and `canReset` is false by the time the slot decides), but on the vanilla legs (my-first-tree's `a`,
+#     the-number-tree's `F`: the engine resets, the reset is still allowed, the loader resets again) — C3's one hash
+#     breaks, and the stub units (C4) see the extra reset by count
+mutant A-fix-in-the-slot-too "$(rep loader/tmt-auto.js "$SITE" "'    if (curRun.layer === l) return false;'")" control 'C3 VANILLA engines'
 # B — the fallback still yields (the defect, under the fix's own option): sg never resets from the wall
 mutant B-fallback-still-yields "$(rep loader/tmt-auto.js "$SITE" "'    if (curRun.layer === l) return true;'")" fix 'Y1 the FIX'
 # C — the reason no longer says where it yielded
