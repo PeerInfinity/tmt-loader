@@ -124,7 +124,8 @@ carries exactly ONE sub-goal (several, or none, is refused by name). What the ro
 
 **Measured on ptr (design notes §17):** from the QL5 state the q23 verdict's sub-goal is `player.q.total ≥ 308372`. The
 round targets it (S1). The configuration that answers it is `reset:q = rate-peak@0/0|turn@10/…` — 308,372 total quirks
-2,872 game-seconds after QL5, against the shipped table's 39,663 after 5,000 — and from that first state the verdict
+2,872 game-seconds after QL5 (1,223.65 at the page's tick), against the shipped table's 109,590 (and 51,032 quirks
+after 6,000 game-seconds at the page's tick; CI `36812038216`, every cell twice equal) — and from that first state the verdict
 FLIPS: q23 says **buy at t\***, and its queue played live buys it on the copy's tick (T2, T3).
 
 ## Gates
