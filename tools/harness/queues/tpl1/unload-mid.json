@@ -1,0 +1,6 @@
+{"format":"tmt-queue/1","id":"tpl1-unload-mid","source":"authored","trigger":{"on":"start"},
+ "comment":"tpl1 gate legs R3/R4 (ptr, fresh): a queue that holds and then waits for a long time — the gate unloads it mid-wait (R3) or reads the held feature's reason while it waits (R4).",
+ "steps":[
+  {"do":"hold","features":["reset:p"],"comment":"held while the queue waits"},
+  {"do":"wait","until":"player.points.gte('1e1000')","timeout":{"gs":100000},"onTimeout":"abort","comment":"a long wait"}
+ ]}

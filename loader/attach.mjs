@@ -209,6 +209,44 @@ export async function attachScripts(ctx) {
       const go = () => { try { T.stateLog.setPage(true); } catch (e) { console.warn('tmt-loader: the state log did not start', e); } };
       if (T.ready) go(); else window.addEventListener('tmt-loader:ready', go, { once: true });
     }
+    // ---- (tpl1) THE QUEUE RUNNER, on demand (docs/queues.md) --------------------------------------------------------
+    // ⛔ LAZY, as the log is: a page that loads no queue requests `loader/tmt-queue.js` never, stores nothing and runs
+    // none of it. Two doors: `tmtLoader.queues.load(obj)` (this stub fetches the runner on the first call, then hands
+    // over to the real one) and `?autoOpt=queue=<file>[,<file>…]` (paths relative to the loader, loaded at ready).
+    T.fetchQueueRunner = (function () {
+      let asked = null;
+      return function () {
+        if (asked) return asked;
+        asked = (async () => {
+          await insertScript({ src: abs('loader/tmt-queue.js') }, 'loader/tmt-queue.js');
+          T.loaded.push('loader/tmt-queue.js');
+          return T.queues && T.queues.ready ? T.queues : null;
+        })();
+        asked.catch(() => { asked = null; });
+        return asked;
+      };
+    })();
+    T.queues = {
+      ready: false,
+      load: async (obj) => { const Q = await T.fetchQueueRunner(); if (!Q) throw new Error('tmt-loader: the queue runner did not load'); return Q.load(obj); },
+      unload: (id) => ({ ok: false, id, error: 'no queue is loaded' }),
+      status: () => ({ ready: false, queues: [] }),
+    };
+    const queueOpt = T.options && T.options.queue;
+    if (queueOpt) {
+      step('script loader/tmt-queue.js');
+      await T.fetchQueueRunner();
+      const files = String(queueOpt).split(',').filter(Boolean);
+      const texts = [];
+      for (const f of files) texts.push(await fetchText(abs(f), f));
+      const go = () => {
+        for (let i = 0; i < texts.length; i++) {
+          const r = T.queues.load(texts[i]);
+          if (!r.ok) console.warn('tmt-loader: queue ' + files[i] + ' was refused: ' + r.errors.join('; '));
+        }
+      };
+      if (T.ready) go(); else window.addEventListener('tmt-loader:ready', go, { once: true });
+    }
   }
   // the OPTIONS SECTION (docs/options.md) — the only file here with no flag in front of it, and it has to be:
   // it is how a page that carries none of the flags offers them. It adds nothing to <head>, nothing to `player`

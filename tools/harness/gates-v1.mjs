@@ -47,7 +47,8 @@ const row = (r) => { rows.push(r); console.log(`${r.ok ? 'GREEN' : 'RED  '} ${r.
 // R3a added TWO witness legs for its four new codes: 11 → 13.
 // V5 added FOUR, one per new retry code (`waiting:retry-resets`, `-clock`, `-when`, `blocked:retry-when`): 14 → 18.
 // F1 added ONE, for `yielding:passive` — on the fixture where the game starts paying Prestige Points passively: 18 → 19.
-const ROWS = { 1: 19, 2: 3, 3: 2, '3p': 2, 4: 4, 6: 1 };
+// tpl1 added ONE, for `held:queue` — an authored queue holding `reset:p` on ptr fresh: 19 → 20 (CI run 36805209542 said so).
+const ROWS = { 1: 20, 2: 3, 3: 2, '3p': 2, 4: 4, 6: 1 };
 
 const SNAP = (id, m) => `tools/harness/snapshots/${id}/${id === 'ptr' ? 'pre-f1' : 'all'}/${m}.json`;   // F1: see above
 // M15 → M16: R1′'s own leg, and the one long ptr leg V1's inertness is measured on (plan §14d).
@@ -173,6 +174,9 @@ const LEGS = [
   // Prestige Points 100 %/s passive — so from its first tick `reset:p` yields to the game's own generation. Before F1
   // the same leg reset `p` 62 times in 600 ticks (plan §46a). A fixture witness beats a construction (§18.4's rule).
   { key: 'ptr all/M04 + 200×1 (F1: the reset yields to passive generation)', id: 'ptr', o: { profile: 'all', diff: 1, ticks: 200, 'from-snapshot': SNAP('ptr', 'M04'), explain: true } },
+  // ⛔ tpl1's `held:queue`, on a REAL GAME: an authored queue (tools/harness/queues/tpl1/unload-mid.json) holds `reset:p`
+  // and waits, so from its second tick the held feature says which queue holds it. A fixture witness beats a construction.
+  { key: 'ptr fresh 40×1, --queue tpl1/unload-mid.json (tpl1: a queue holds reset:p)', id: 'ptr', o: { profile: 'all', diff: 1, ticks: 40, queue: 'tools/harness/queues/tpl1/unload-mid.json', explain: true } },
   { key: 'something fresh 600×1 (profile all), --auto-opt policy:reset:fundamental=interval>=5 (the interval witness, named)', id: 'something', o: { profile: 'all', diff: 1, ticks: 600, 'auto-opt': 'policy:reset:fundamental=interval>=5', explain: true } },
 ];
 

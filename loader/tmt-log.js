@@ -33,6 +33,7 @@
   var depth = 0;           // hooked calls in flight: only the outermost is a record
   var inLoop = 0;          // inside gameLoop
   var auto = null;         // the feature EXEC is running: {id, layer, via, buf} — its records wait for its reason code
+  var qact = null;         // (tpl1) the queue step acting: {id, step, comment} — its calls are `source: 'queue'`
   var tick = 0, gs = 0;    // the log's own clock: ticks completed, game-seconds (tmtLoader's where it counts them)
   var sink = null;         // function(line) — the harness's file, the page's memory, or the replay's comparison
   var cfg = null;
@@ -172,7 +173,9 @@
   }
 
   // ---- the wrappers --------------------------------------------------------------------------------------------------
-  function sourceNow() { return auto !== null ? 'auto' : inLoop > 0 ? 'game' : 'player'; }
+  function sourceNow() { return qact !== null ? 'queue' : auto !== null ? 'auto' : inLoop > 0 ? 'game' : 'player'; }
+  // (tpl1) where a queue acts: the `au` layer's automate, after its fallback pass (tmt-auto.js `auAutomate`)
+  function queueAt() { return [T.auLayer || 'au', 'queue']; }
   function wrapCall(orig, call, where) {
     var w = function () {
       if (!on || depth > 0) return orig.apply(this, arguments);
@@ -203,9 +206,12 @@
     // until the amount stops moving") — written, those would be most of the log. A call that left the game state
     // byte-identical is not needed to replay it (the replay gate is what says so). A PLAYER's refused press IS
     // written, marked `did: false`: the player clicked, and that is worth reading.
-    if (!did && pre.src !== 'player') { counts.refused[pre.src] = (counts.refused[pre.src] || 0) + 1; return; }
+    if (!did && pre.src !== 'player' && pre.src !== 'queue') { counts.refused[pre.src] = (counts.refused[pre.src] || 0) + 1; return; }
     var rec = { type: 'action', tick: tick, gs: gs, source: pre.src };
     if (pre.src === 'auto') { rec.by = auto.id; rec.at = [auto.layer, auto.via]; }
+    // (tpl1) a queue call is written even when it changed nothing (like a player's press: the queue DID press it, and
+    // a refused purchase is exactly what a reader of a failed queue needs), with the queue, the step and its comment
+    if (pre.src === 'queue') { rec.queue = { id: qact.id, step: qact.step, comment: qact.comment }; rec.at = queueAt(); }
     rec.call = pre.call;
     rec.args = pre.args;
     if (pre.self !== undefined) rec.self = pre.self;
@@ -249,6 +255,20 @@
       for (var i = 0; i < a.buf.length; i++) { a.buf[i].why = why; emit(a.buf[i]); }
     },
     set: function (l, field, value) { if (on) { try { recordSet(l, field, value); } catch (e) { counts.errors++; } } },
+    // (tpl1) the queue runner: around a `call` step (its records are `source: 'queue'`), and its control records
+    qbegin: function (q) { qact = { id: q.id, step: q.step, comment: q.comment === undefined ? null : q.comment }; },
+    qend: function () { qact = null; },
+    // A `queue` record — the runner's own actions that are not engine calls (load, trigger, hold, release, a wait met
+    // or timed out, a comment, end, abort, unload). Like an `event`, a READING: it is not re-applied and not compared
+    // by the replay (the reflex calls a hold changed ARE recorded, as automation actions, and those are compared).
+    qnote: function (r) {
+      if (!on) return;
+      try {
+        var rec = { type: 'queue', tick: tick, gs: gs, source: 'queue' };
+        for (var k in r) if (!(k in rec)) rec[k] = r[k];   // the record's own type, clock and source are not the runner's to set
+        emit(rec);
+      } catch (e) { counts.errors++; }
+    },
   };
   function onEvent(ev) {
     if (!on) return;
@@ -392,8 +412,8 @@
     if (!on) return status();
     try { checkpoint('stop'); } catch (e) { counts.errors++; }
     on = false;
-    link.exec = null; link.progress = null; link.track = false; link.replay = null;
-    auto = null;
+    link.exec = null; link.progress = null; link.track = false; link.replay = null; link.queueSlot = null;
+    auto = null; qact = null;
     return status();
   }
   function status() {
@@ -432,7 +452,7 @@
   // sink: every action and checkpoint it writes must equal the original's, in order, hash included. Events are not
   // compared: the tracker polls inside `runLayer` only while a profile runs, so under the replay's `off` an event can
   // land later in the same tick, with a later amount.
-  var CMP_ACTION = ['tick', 'source', 'by', 'at', 'call', 'args', 'self', 'did', 'threw', 'hash'];
+  var CMP_ACTION = ['tick', 'source', 'by', 'at', 'queue', 'call', 'args', 'self', 'did', 'threw', 'hash'];
   var CMP_CK = ['tick', 'why', 'mark', 'hash'];
   function replayer(lines, opts) {
     opts = opts || {};
@@ -492,10 +512,21 @@
         } finally { execLink.end({ id: r.by }, null, r.why || { code: code }); }
       }
     }
+    // (tpl1) the recorded QUEUE calls of this tick, in the queue's slot (the `au` automate after its fallback pass),
+    // each under its own step's attribution, so the replayed records carry the same queue, step and comment
+    function qslot() {
+      while (ti < todo.length && !mismatch) {
+        var r = todo[ti];
+        if (r.source !== 'queue' || r.tick !== tick) return;
+        ti++; applied++;
+        execLink.qbegin(r.queue || {});
+        try { apply(r); } finally { execLink.qend(); }
+      }
+    }
     function between() {
       while (ti < todo.length && !mismatch) {
         var r = todo[ti];
-        if (r.source === 'auto' || r.tick !== tick) return;
+        if (r.source === 'auto' || r.source === 'queue' || r.tick !== tick) return;
         ti++; applied++;
         apply(r);
       }
@@ -506,6 +537,7 @@
       start: function (sinkOpts) {
         start(Object.assign({}, header.config, { origin: header.origin, loader: header.loader, snapshot: header.start.snapshot }, sinkOpts || {}), compareSink);
         link.replay = slot;
+        link.queueSlot = qslot;
         // the start itself: the header's hash and the first checkpoint must already agree
         if (hash16(gameJSON()) !== header.start.hash) mismatch = mismatch || { at: -1, field: 'start.hash', expected: header.start.hash, got: hash16(gameJSON()) };
       },
@@ -522,7 +554,7 @@
         return this.result(null);
       },
       result: function (why) {
-        if (on) { link.replay = null; stop(); }
+        if (on) { link.replay = null; link.queueSlot = null; stop(); }
         var unapplied = todo.length - ti;
         var missing = !mismatch && k < expected.length ? { at: k, field: 'missing', expected: strip(expected[k]), got: null } : null;
         return { equal: !mismatch && !missing && !why && unapplied === 0, why: why, compared: compared, expected: expected.length, applied: applied, unapplied: unapplied,
