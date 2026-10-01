@@ -753,14 +753,15 @@
     return out;
   }
 
-  // The state log as EVIDENCE (`opts.logRecords`): every zeroing reset the automation pressed, with the base's value just
-  // before it (the summary's `<layer>.p` — so only a base that IS a layer's points is readable), against the requirement
-  // read live: how often the base had touched it, and how close it came.
+  // The state log as EVIDENCE (`opts.logRecords`): every reset of a zeroing layer (`pressed`, by the automation or the
+  // game), the ones that DID zero the base (`wiped`: it fell — a fact holds where it was seen; on ptr after q milestone
+  // 5 t, s and sb reset nothing), with the base's value just before each (the summary's `<layer>.p` — so only a base that
+  // IS a layer's points is readable) against the requirement read live: how often it was wiped at the requirement.
   function rrEvidence(records, b) {
     if (!records) return null;
     var m = /^player\.([^.]+)\.points$/.exec(b.base);
     if (!m) return { readable: false, why: 'the log\'s summary carries a layer\'s points only; ' + b.base + ' is not one' };
-    var key = m[1] + '.p', cur = null, req = rrReq(b.layer), ev = { readable: true, zeroings: 0, touched: 0, maxBefore: null, by: {}, ownResets: 0 };
+    var key = m[1] + '.p', cur = null, req = rrReq(b.layer), ev = { readable: true, pressed: 0, wiped: 0, touched: 0, maxBefore: null, by: {}, ownResets: 0 };
     for (var i = 0; i < records.length; i++) {
       var r = records[i];
       if (r.type === 'checkpoint' && r.summary) { cur = r.summary[key] === undefined ? null : r.summary[key]; continue; }
@@ -771,8 +772,10 @@
       var z = String(r.args[0]);
       if (z === b.layer) { ev.ownResets++; continue; }
       if (b.zeroers.indexOf(z) < 0) continue;
-      ev.zeroings++; ev.by[r.by || r.source] = (ev.by[r.by || r.source] || 0) + 1;
-      if (before === null) continue;
+      ev.pressed++;
+      var fell = false; try { fell = before !== null && cur !== null && N(cur).lt(before); } catch (e) { fell = false; }
+      if (!fell) continue;
+      ev.wiped++; ev.by[r.by || r.source] = (ev.by[r.by || r.source] || 0) + 1;
       try { if (ev.maxBefore === null || N(before).gt(ev.maxBefore)) ev.maxBefore = String(before); if (req !== undefined && N(before).gte(req)) ev.touched++; } catch (e) { /* unreadable */ }
     }
     ev.requirement = req === undefined ? null : String(req);
@@ -875,8 +878,8 @@
     why.push('the facts: ' + b.goal + ' needs ' + b.requirement + ' (now ' + String(rrReq(b.layer)) + ') of ' + b.base + ' (' + b.facts.base + '), which a reset of ' + b.zeroers.join(', ') + ' zeroes (pressed by ' + b.pressed.join(', ') + ')' +
       (b.siblings.length ? '; ' + b.siblings.join(', ') + ' share its row' : '') + '; holding ' + b.hold.join(', '));
     if (where === 'fallback') why.push('the automation decides ' + b.layer + ' in its FALLBACK pass (the engine skips the layer\'s own tick): every zeroing reset decides earlier in the same tick');
-    if (b.evidence) why.push(b.evidence.readable ? 'the state log: ' + b.evidence.zeroings + ' zeroing reset(s) (' + Object.keys(b.evidence.by).map(function (k) { return k + ' ×' + b.evidence.by[k]; }).join(', ') + '), ' +
-      b.evidence.touched + ' of them with ' + b.base + ' at or above the requirement (' + b.evidence.requirement + '; the best was ' + b.evidence.maxBefore + '), ' + b.evidence.ownResets + ' ' + b.goal + ' made' : 'the state log: ' + b.evidence.why);
+    if (b.evidence) why.push(b.evidence.readable ? 'the state log: ' + b.evidence.pressed + ' reset(s) of a zeroing layer, ' + b.evidence.wiped + ' of which wiped ' + b.base + ' (' + Object.keys(b.evidence.by).map(function (k) { return k + ' ×' + b.evidence.by[k]; }).join(', ') + '), ' +
+      b.evidence.touched + ' of those at or above the requirement (' + b.evidence.requirement + '; the best wiped was ' + b.evidence.maxBefore + '), ' + b.evidence.ownResets + ' ' + b.goal + ' made' : 'the state log: ' + b.evidence.why);
     var run = rrHeldRun(b, window);
     var out = { template: RR.id, goal: b.goal, binding: b, window: window, reasoning: why, queue: null, subgoal: null, levers: null, decidedIn: where,
       rollback: { samples: run.samples.length, peak: run.peak, reach: run.reach, trace: run.samples.filter(function (s, i) { return i < 5 || i % 50 === 49 || s === run.peak || s === run.reach; }) } };

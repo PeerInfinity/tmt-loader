@@ -131,10 +131,12 @@ const rr = (R) => (R && R.results ? R.results.filter((v) => v.template === 'rese
 const ck = (checks) => Object.entries(checks).map(([k, y]) => `${k} ${y ? '✓' : '✗'}`).join(' ');
 const fixture = (f) => JSON.parse(fs.readFileSync(path.join(REPO, f), 'utf8'));
 const num = (x) => { const m = /^(-?\d+(?:\.\d+)?)(?:e\+?(-?\d+))?$/i.exec(String(x)); return m ? Number(m[1]) * Math.pow(10, m[2] ? Number(m[2]) : 0) : NaN; };
-// An INDEPENDENT reading of a state log: every doReset of a layer the SOURCE says zeroes Generators, with Generators just
-// before it (the summary's `g.p`), and the sg resets — not the template's rrEvidence.
+// An INDEPENDENT reading of a state log: every doReset of a layer the SOURCE says can zero Generators (`resets`), the
+// ones that DID (`zeroings`: Generators fell — after q milestone 5 t, s and sb reset nothing, and the game itself resets
+// them every few ticks), with Generators just before each (the summary's `g.p`), and the sg resets — not the template's
+// rrEvidence. ⚠ An action record carries the tick count at the START of its tick (one less than the run's count after it).
 function zeroingsFromLog(recs) {
-  let g = null; const o = { zeroings: 0, touched: 0, maxBefore: null, by: {}, sg: [], firstTick: null, lastTick: null };
+  let g = null; const o = { resets: 0, zeroings: 0, touched: 0, maxBefore: null, by: {}, sg: [], firstTick: null, lastTick: null };
   for (const r of recs) {
     if (r.type === 'checkpoint' && r.summary) { g = r.summary['g.p'] === undefined ? null : r.summary['g.p']; continue; }
     if (r.type !== 'action') continue;
@@ -144,9 +146,10 @@ function zeroingsFromLog(recs) {
     const L = String((r.args || [])[0]);
     if (L === 'sg') { o.sg.push({ tick: r.tick, by: r.by || r.source, did: r.did, gBefore: before }); continue; }
     if (!ZEROERS.includes(L)) continue;
+    o.resets++;
+    if (before === null || g === null || !(num(g) < num(before))) continue;
     o.zeroings++; o.by[r.by || r.source] = (o.by[r.by || r.source] || 0) + 1;
     if (o.firstTick === null) o.firstTick = r.tick; o.lastTick = r.tick;
-    if (before === null) continue;
     if (o.maxBefore === null || num(before) > num(o.maxBefore)) o.maxBefore = String(before);
     if (num(before) >= SRC.requires) o.touched++;
   }
@@ -276,7 +279,7 @@ async function partVerdict() {
     const Z = zeroingsFromLog(logRecords(log));
     const checks = {
       unlocks: !!live && live.ok && live.eval && live.eval.sg === true && num(live.eval.sgp) === 1, onTheCopysTick: !!live && live.ticks === PIN_RESET.ticks && !!v1 && v1.confirm && v1.confirm.at && v1.confirm.at.tick === live.ticks,
-      byTheQueue: Z.sg.length === 1 && Z.sg[0].by === 'queue' && Z.sg[0].did === true && num(Z.sg[0].gBefore) >= SRC.requires,
+      byTheQueue: Z.sg.length === 1 && Z.sg[0].by === 'queue' && Z.sg[0].did === true && Z.sg[0].tick === PIN_RESET.ticks - 1 && num(Z.sg[0].gBefore) >= SRC.requires,
       holdsReleased: !!st && st.state === 'done' && st.holds.length === 0, replayEqual: !!rp && rp.equal === true && rp.unapplied === 0,
     };
     row({ gate: 'O2 the emitted queue played LIVE from the wall unlocks Super Generators on the copy\'s tick; holds released; its log replays EQUAL', id: 'ptr', ok: Object.values(checks).every(Boolean),
@@ -302,7 +305,7 @@ async function partVerdict() {
     const ind = zeroingsFromLog(logRecords(elog));
     const v = ev0 && ev0.ok ? rr(await strategize('ptr', ['--from', WALL, '--goal', GOAL, '--auto-table', PRE_TABLE, '--window', String(WINDOW_SHORT), '--log', elog]))[0] : null;
     const e = v && v.binding && v.binding.evidence;
-    const checks = { evidence: !!e && e.readable === true, zeroings: !!e && e.zeroings === ind.zeroings && e.zeroings > 0, touched: !!e && e.touched === ind.touched && e.touched >= 1,
+    const checks = { evidence: !!e && e.readable === true, pressed: !!e && e.pressed === ind.resets && e.pressed > 0, wiped: !!e && e.wiped === ind.zeroings && e.wiped > 0, touched: !!e && e.touched === ind.touched && e.touched >= 1,
       byAutomationRow3: !!e && ROW3.some((z) => (e.by[`reset:${z}`] || 0) > 0),
       maxBefore: !!e && num(e.maxBefore) === num(ind.maxBefore), noSgReset: !!e && e.ownResets === 0 && ind.sg.length === 0 && ev0.eval && ev0.eval.sg === false };
     row({ gate: `EV the state-log evidence: from the wall under the table before this slice, ${EV_TICKS} ticks — Generators touch the requirement and q/h wipe them; the template's count = an independent count`, id: 'ptr', ok: Object.values(checks).every(Boolean),
@@ -336,7 +339,7 @@ async function partStage() {
     const Z = zeroingsFromLog(inside);
     const blocked = recs.filter((r) => r.type === 'action').length;
     const checks = { ran: !!x.ok && x.eval && x.eval.sg === true, onAtQ33: !!on && on[1] === PIN_Q33, sgOnTheM30Tick: x.ticks === PIN_M30.ticks && x.hashGame === PIN_M30.hashGame,
-      noZeroingInside: Z.zeroings === 0, byTheTable: Z.sg.length === 1 && Z.sg[0].by === 'reset:sg' && Z.sg[0].did === true && Z.sg[0].tick === PIN_M30.ticks,
+      noZeroingInside: Z.zeroings === 0, byTheTable: Z.sg.length === 1 && Z.sg[0].by === 'reset:sg' && Z.sg[0].did === true && Z.sg[0].tick === PIN_M30.ticks - 1,
       offAfter: !off || off[1] >= PIN_M30.ticks };
     row({ gate: `S1 ${STAGE} switches ON at the q33 loop; no zeroing reset fires while it is in force; reset:sg makes the reset on the M30 tick`, id: 'ptr', ok: Object.values(checks).every(Boolean),
       notes: `${ck(checks)} — stage records ${JSON.stringify(st)}; inside ${JSON.stringify(Z)}; ${x.ticks} / ${x.hashGame}; ${blocked} action records ${x.error || ''}` });
@@ -373,7 +376,7 @@ async function partStage() {
 function partGrep() {
   const ids = JSON.parse(fs.readFileSync(path.join(REPO, 'manifests/index.json'), 'utf8')).map((g) => g.id);
   const ptrLayers = ['p', 'b', 'g', 't', 'e', 's', 'sb', 'sg', 'h', 'q', 'o', 'ss', 'm', 'ba', 'ps', 'en', 'ne', 'hn', 'n', 'hs', 'i', 'id', 'r', 'ma', 'ge', 'mc', 'ai', 'c', 'a', 'sc', 'ab'];
-  const srcs = ['loader/tmt-templates.js', 'loader/tmt-queue.js', 'loader/tmt-auto.js', 'tools/harness/strategize.mjs'].map((f) => [f, fs.readFileSync(path.join(REPO, f), 'utf8')]);
+  const srcs = ['loader/tmt-templates.js', 'loader/tmt-queue.js', 'tools/harness/strategize.mjs'].map((f) => [f, fs.readFileSync(path.join(REPO, f), 'utf8')]);
   const hits = [];
   for (const [name, src] of srcs) {
     const code = src.replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:'"`\\])\/\/.*$/gm, '$1');   // comments may cite what was MEASURED
@@ -381,7 +384,7 @@ function partGrep() {
     for (const l of lits) { if (ids.includes(l)) hits.push(`${name}: game id '${l}'`); if (ptrLayers.includes(l) && l.length > 1) hits.push(`${name}: layer id '${l}'`); }
     for (const l of ptrLayers) { const re = new RegExp(`\\b(?:layers|player|tmp)\\s*(?:\\.\\s*${l}\\b|\\[\\s*['"\`]${l}['"\`]\\s*\\])`); if (re.test(code)) hits.push(`${name}: layer id ${l} addressed as layers/player/tmp.${l}`); }
   }
-  row({ gate: 'X1 no game or layer id in the generic code (templates, queue runner, the automation, strategize)', id: '—', ok: !hits.length, notes: hits.length ? hits.join('; ') : `${srcs.length} sources, ${ids.length} game ids and ${ptrLayers.length} ptr layer ids checked against every string literal and every layers/player/tmp member access` });
+  row({ gate: 'X1 no game or layer id in the generic code this slice changed (templates, queue runner, strategize; the stage is data, the automation untouched)', id: '—', ok: !hits.length, notes: hits.length ? hits.join('; ') : `${srcs.length} sources, ${ids.length} game ids and ${ptrLayers.length} ptr layer ids checked against every string literal and every layers/player/tmp member access` });
 }
 
 // ---- Part leg (measurement, one per CI job) ----------------------------------------------------------------------------
