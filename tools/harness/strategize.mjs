@@ -3,7 +3,8 @@
 // reasoning, and write the queue a confirmed verdict carries.
 //   node tools/harness/strategize.mjs <game> [--from <snapshot.json>] [--goal <goal id, e.g. upg:q:23>]
 //                                     [--facts <games-facts/<game>.json>] [--horizon <game-s>] [--lever-k <game-s>]
-//                                     [--out <queue.json>] [--json <verdicts.json>] [--all]
+//                                     [--out <queue.json>] [--json <verdicts.json>] [--all] [--diff <d>]
+//   --diff: the tick every copy-side measurement runs at (default 1; the page's is 0.05 — docs/harness.md THE TICK POLICY)
 // ⛔ Every flag is declared; an unknown one exits 2. The live game is never touched: every measurement is an excursion,
 // and each verdict reports `neutral` (the live hashGame before and after its check). Exit 0 = it ran (whatever the
 // verdicts); 1 = a boot or a template threw.
@@ -14,7 +15,7 @@ import { REPO, entryOnly } from './lib.mjs';
 import { runNode } from './run.mjs';
 entryOnly(import.meta.url);
 
-const FLAGS = { from: 1, goal: 1, facts: 1, horizon: 1, 'lever-k': 1, out: 1, json: 1, all: 0 };
+const FLAGS = { from: 1, goal: 1, facts: 1, horizon: 1, 'lever-k': 1, out: 1, json: 1, all: 0, diff: 1 };
 const argv = process.argv.slice(2), a = { _: [] };
 for (let i = 0; i < argv.length; i++) {
   const x = argv[i];
@@ -32,8 +33,9 @@ const facts = fs.readFileSync(factsFile, 'utf8');
 const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'tmt-loader-strategize-'));
 const drive = path.join(dir, 'drive.js');
 const opts = { goal: a.goal || null, horizon: a.horizon ? Number(a.horizon) : null, leverK: a['lever-k'] ? Number(a['lever-k']) : null, all: !!a.all };
+if (a.diff !== undefined) { if (!(Number(a.diff) > 0)) { console.error('strategize: --diff needs a number > 0'); process.exit(2); } opts.diff = Number(a.diff); }
 fs.writeFileSync(drive, `var FACTS = ${facts};\nreturn tmtLoader.planner.templates.run(FACTS, ${JSON.stringify(opts)});\n`);
-const o = { profile: 'all', diff: 1, ticks: 0, planner: true, templates: true, 'queue-runner': true, 'planner-script': drive };
+const o = { profile: 'all', diff: opts.diff || 1, ticks: 0, planner: true, templates: true, 'queue-runner': true, 'planner-script': drive };
 if (a.from) o['from-snapshot'] = a.from;
 const res = runNode(game, o);
 if (!res.ok || !res.plannerScript || res.plannerScript.error) {
@@ -46,7 +48,7 @@ R.facts = path.relative(REPO, factsFile);
 for (const v of R.results) {
   console.log(`\n${v.template}  ${v.goal}  →  ${String(v.verdict).toUpperCase()}`);
   for (const line of v.reasoning || []) console.log(`  · ${line}`);
-  if (v.levers) for (const l of v.levers) console.log(`    lever ${l.input} (${l.kind}${l.getter ? ' via ' + l.getter : ''}): ${l.distanceLog10 === null || l.distanceLog10 === undefined ? (l.why || 'unpriced') : '10^' + l.distanceLog10 + ' away — ' + l.binding}`);
+  if (v.levers) for (const l of v.levers) console.log(`    lever ${l.input} (${l.kind}${l.getter ? ' via ' + l.getter : ''}): ${l.distanceLog10 === null || l.distanceLog10 === undefined ? (l.why || 'unpriced') : '10^' + l.distanceLog10 + ' away — ' + l.binding}${l.zeroedAtPeak ? ' — NOT a sub-goal: ' + l.zeroedAtPeak : ''}`);
   if (v.subgoal) console.log(`  sub-goal: ${v.subgoal.dimension} ≥ ${v.subgoal.threshold} (${v.subgoal.why})`);
   if (v.neutral === false) console.log('  ⛔ NOT NEUTRAL: the live state moved during this check');
 }

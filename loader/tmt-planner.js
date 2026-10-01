@@ -1508,6 +1508,7 @@
     reachRounds: 100,     // a goal whose target needs more than this many epochs at the MEASURED rate yields to the next
     maxRounds: 0,         // 0 = unbounded; a bound for a probe
     keepModifiers: 0,     // (qrate1) 1 = ALSO offer each alternative PRIMARY policy with the incumbent's MODIFIERS kept (see policyCandidates)
+    challengeCandidates: 0, // (m28) 1 = ALSO offer `off:<challenges feature>` — hold challenge ATTEMPTS for the epoch (see generateCandidates)
   };
   P.optionDefaults = OPT_DEFAULTS;
   P.options = {};
@@ -1671,6 +1672,21 @@
       var st = fs[i];
       if (!st.unlocked) continue;                                  // a locked feature cannot run, so nothing to decide
       var isReset = st.kind === 'reset', isBuy = !!PURCHASE_KINDS[st.kind];
+      // (m28) A challenge ATTEMPT costs the run it interrupts: entering resets the layer, and inside, the challenge's
+      // nerfs hold. Measured on ptr from m28/QL6 (Quirk Layers 6, H22 unbeaten): the give-up reflex re-entered H22 ~790
+      // times in 30,000 game-s and total quirks rose ×1.8; with `challenges:h` excluded q31 was bought by the reflex
+      // 2,696 game-s in. With `challengeCandidates=1` each challenges feature is offered its HOLD (`off`) — only while
+      // its layer is outside every challenge: a paused challenges feature does not leave one (`paused:in-challenge`), so
+      // an `off` taken inside would strand the run there. Off by default: an extra candidate moves every round log.
+      var isCh = st.kind === 'challenges' && !!O('challengeCandidates');
+      if (isCh) {
+        var lp = player[st.layer];
+        if (base.enabled[st.id] && !(lp && lp.activeChallenge)) {
+          var c3 = cloneConfig(base); c3.enabled[st.id] = false;
+          list.push({ id: 'off:' + st.id, config: c3, kind: st.kind, feature: st.id, policy: 'off' });
+        }
+        continue;
+      }
       if (!isReset && !isBuy) continue;                            // toggles / challenges / clickables run as they are
       if (isReset || isBuy) {
         var pols = policyCandidates(st, target);

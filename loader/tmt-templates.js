@@ -97,6 +97,11 @@
   // and the resets that ZERO F. Holding those resets lets F grow; the question the check answers is whether the purse
   // catches the price while it does, when, and — when it never does — what would have to change.
   var TPP = { id: 'time-priced-purchase', needs: ['price', 'production', 'zeroed-by', 'multiplier-reads'] };
+  // (m28) the tick every copy-side measurement runs at: `opts.diff` (default 1, the harness's reachability ruler). The
+  // charged price is `tmp`'s, computed at the tick's START, so how far it lags the live price is the tick's size —
+  // at diff 1 a price ∝ (F+1)^k is charged at F−1 (a factor 2^k on the first tick after F is zeroed), at the page's
+  // 0.05 at F−0.05. A verdict is a claim about ONE tick size, and it says which.
+  var DIFF = 1;
 
   /** The features a hold must cover: every feature that calls a reset which zeroes F (its `reset` and its
    *  `challenges` feature — entering or leaving a challenge resets the layer), and the item's own purchase feature
@@ -148,7 +153,7 @@
     return P.excursion(function () {
       T.profile('off');
       var a = N(getPath(currency));
-      T.tick(1, 1);
+      T.tick(DIFF, 1);
       return N(getPath(currency)).sub(a);
     });
   }
@@ -164,9 +169,9 @@
     return P.excursion(function () {
       var r = T.queues.load(holdQueue('tpl-measure', b.hold, horizon + 10));
       if (!r.ok) throw new Error('the measurement queue was refused: ' + r.errors.join('; '));
-      var s = [], best = null, first = null;
-      for (var k = 1; k <= horizon; k++) {
-        T.tick(1, 1);
+      var s = [], best = null, first = null, n = Math.round(horizon / DIFF);
+      for (var k = 1; k <= n; k++) {
+        T.tick(DIFF, 1);
         var cur = getPath(b.currency), price = chargedPrice(b.item);
         var L = lg(cur) - lg(price), fv = Number(getPath(b.field)), can = affordable(b.item, b.currency);
         var row = { k: k, tick: T.ticks, field: sig(fv), ratioLog10: r4(L), liveLog10: r4(lg(cur) - lg(livePrice(b.item))) };
@@ -187,7 +192,7 @@
       if (!r.ok) return { played: false, refused: r.errors };
       var at = null, st = null;
       for (var k = 1; k <= limit; k++) {
-        T.tick(1, 1);
+        T.tick(DIFF, 1);
         if (at === null && owned(b.item)) at = { tick: T.ticks, gameSeconds: T.gameSeconds, field: sig(Number(getPath(b.field))) };
         st = T.queues.status().queues.filter(function (x) { return x.id === q.id; })[0];
         if (st && st.state !== 'armed' && st.state !== 'running') break;
@@ -204,7 +209,7 @@
     function incWith(k) {
       return P.excursion(function () {
         if (k !== 1) L[fn] = function () { return N(orig.apply(this, arguments)).times(k); };
-        try { settle(); T.profile('off'); var a = N(getPath(currency)); T.tick(1, 1); return N(getPath(currency)).sub(a); }
+        try { settle(); T.profile('off'); var a = N(getPath(currency)); T.tick(DIFF, 1); return N(getPath(currency)).sub(a); }
         finally { L[fn] = orig; }
       });
     }
@@ -255,11 +260,25 @@
     return { distanceLog10: worst === null ? null : r4(worst), binding: why, firstImpossible: ch.firstImpossible || null, hops: (ch.hops || []).length };
   }
 
+  // (m28) An input the SAME resets zero as F, still at zero at the peak, cannot be raised AT the peak: the run that would
+  // raise it is the run that raises F, so the moment moves (and the price with it). Read off the facts: every reset in
+  // the binding has a `zeroed-by:<reset>:<input>` fact that zeroes. Measured on ptr (m28/QL6, diff 1): q31's held run
+  // peaks one tick after the reset (q.time 1), where Super Boosters are 0 — zeroed by h, o, q, ss exactly like q.time —
+  // and the walk priced "sb 0 → 4.27" as the nearest lever.
+  function zeroedAtPeak(facts, b, input, held) {
+    var all = b.resets.length > 0 && b.resets.every(function (r) {
+      var z = factById(facts, 'zeroed-by:' + r + ':' + input);
+      return !!z && (z.effect || (lastVariant(z) || {}).effect) === 'zeroes';
+    });
+    var zero = false; try { zero = N(held).lte(0); } catch (e) { zero = false; }
+    return all && zero ? 'zeroed by every reset that zeroes ' + b.field + ' (' + b.resets.join(', ') + '), and still 0 at the peak: raising it moves the moment' : null;
+  }
+
   function leverWalk(facts, b, peakK, R, E, kp, opts) {
     // replay the held run to the PEAK on the copy and read the chain there: that is where the shortfall was measured
     return P.excursion(function () {
-      T.queues.load(holdQueue('tpl-peak', b.hold, peakK + 10));
-      T.tick(1, peakK);
+      T.queues.load(holdQueue('tpl-peak', b.hold, peakK * DIFF + 10));
+      T.tick(DIFF, peakK);
       T.queues.unload('tpl-peak');
       var layer = layerOfPath(b.currency), getters = byKind(facts, 'multiplier-reads').filter(function (g) {
         var fn = (lastVariant(g) || {}).fn || g.fn || {};
@@ -283,6 +302,8 @@
             var cd = chainDistance(ins[j].path, th.value, K);
             lev.distanceLog10 = cd.distanceLog10 === null ? lev.moveLog10 : Math.max(lev.moveLog10, cd.distanceLog10);
             lev.binding = cd.distanceLog10 !== null && cd.distanceLog10 > lev.moveLog10 ? cd.binding : ins[j].path + ' ' + String(held) + ' → ' + th.value;
+            var zp = zeroedAtPeak(facts, b, ins[j].path, held);
+            if (zp) lev.zeroedAtPeak = zp;
             levers.push(lev);
           }
         } else if (sen.kind === 'exponent') {
@@ -291,6 +312,8 @@
           for (var q = 0; q < ins2.length; q++) {
             var m = /^player\.([^.]+)\.buyables\.([^.]+)$/.exec(ins2[q].path);
             var lev2 = { kind: 'exponent', getter: layer + '.' + fn, input: ins2[q].path, held: String(getPath(ins2[q].path)), flips: E + 2 > kp };
+            var zp2 = zeroedAtPeak(facts, b, ins2[q].path, getPath(ins2[q].path));
+            if (zp2) lev2.zeroedAtPeak = zp2;
             if (!m) { lev2.distanceLog10 = null; lev2.why = 'no price is known for one more unit of ' + ins2[q].path; levers.push(lev2); continue; }
             var bi = { layer: m[1], kind: 'buyable', id: m[2] }, pfact = factById(facts, 'price:' + m[1] + ':buyable:' + m[2]);
             var cost = livePrice(bi), cur = pfact ? (pfact.currency || (lastVariant(pfact) || {}).currency || null) : null;
@@ -303,6 +326,7 @@
         }
       }
       levers.sort(function (a, c) {
+        if (!a.zeroedAtPeak !== !c.zeroedAtPeak) return a.zeroedAtPeak ? 1 : -1;     // (m28) never ahead of a lever the peak can use
         var da = a.distanceLog10, dc = c.distanceLog10;
         if (da === null || da === undefined) return 1; if (dc === null || dc === undefined) return -1;
         return da - dc;
@@ -314,6 +338,7 @@
   TPP.check = function (b, opts) {
     opts = opts || {};
     needRunner();
+    DIFF = Number(opts.diff) || 1;
     var why = [], hash0 = P.hashes().hashGame;
     if (!b.open) return { template: TPP.id, goal: b.goal, verdict: 'abstain', reasoning: [b.why], queue: null };
     // ---- 1. the STATIC reading (the facts, re-measured at this instant) -------------------------------------------
@@ -334,12 +359,13 @@
       trace: run.samples.filter(function (s, i) { return i < 10 || i % 10 === 9 || s === run.peak; }) };
     why.push('rollback: holding ' + b.hold.join(', ') + ' for up to ' + horizon + ' s — the best purse ÷ charged price is 10^' + run.peak.ratioLog10 + ' at ' + b.field + ' = ' + run.peak.field + ' (tick ' + run.peak.tick + ')');
     var out = { template: TPP.id, goal: b.goal, binding: b, static: stat, rollback: rb, reasoning: why, queue: null, subgoal: null, levers: null };
+    if (DIFF !== 1) { out.diff = DIFF; why.push('every copy-side tick above ran at diff ' + DIFF + ' (not the default 1)'); }
     if (run.firstAffordable) {
       // ---- 3a. BUY: plan at the measured moment, and CONFIRM by playing the plan on the copy ------------------------
       out.verdict = 'buy-at';
       out.tStar = { tick: run.firstAffordable.tick, field: run.firstAffordable.field, afterTicks: run.firstAffordable.k };
       var q = TPP.plan(b, out);
-      var c = playOnCopy(b, q, run.firstAffordable.k + 20);
+      var c = playOnCopy(b, q, run.firstAffordable.k + Math.round(20 / DIFF));
       out.confirm = c;
       if (c.played && c.bought) { out.queue = q; why.push('confirmed on the copy: the queue bought ' + b.goal + ' on tick ' + c.at.tick + ' (' + b.field + ' = ' + c.at.field + ')'); }
       else { out.verdict = 'unconfirmed'; why.push('NOT confirmed: the queue played on the copy ' + (c.played ? 'ended ' + c.state + ' (' + c.outcome + ') without the purchase' : 'was refused: ' + (c.refused || []).join('; ')) + ' — no queue is emitted'); }
@@ -356,7 +382,7 @@
       why.push('waiting cannot help: at its peak the purse is ' + sig(R) + '× short, and the ratio falls after it');
       var lw = leverWalk(opts.facts, b, run.peak.k, R, E === null ? 0 : E, kp === null ? Infinity : kp, opts);
       out.levers = lw.levers; out.leverWalk = { tested: lw.tested, at: lw.at };
-      var best = lw.levers.filter(function (l) { return l.distanceLog10 !== null && l.distanceLog10 !== undefined; })[0] || null;
+      var best = lw.levers.filter(function (l) { return l.distanceLog10 !== null && l.distanceLog10 !== undefined && !l.zeroedAtPeak; })[0] || null;
       if (best) {
         out.subgoal = best.kind === 'multiplier'
           ? { kind: 'value', dimension: best.input, threshold: best.need, why: 'raises ' + best.getter + ' ×' + best.factor + ' — enough for ' + b.goal + ' at the held run\'s peak' }
@@ -378,8 +404,8 @@
     var id = 'tpp-' + b.goal.replace(/[^A-Za-z0-9_.-]/g, '-');
     var steps = [
       { 'do': 'hold', features: b.hold.slice(), comment: 'these zero ' + b.field + ' (' + b.facts.zeroedBy.join(', ') + '), and the purchase is the queue\'s' },
-      { 'do': 'wait', until: afford, timeout: { gs: v.tStar.afterTicks + 10 }, onTimeout: 'abort',
-        comment: 'the rollback found it affordable ' + v.tStar.afterTicks + ' s into the hold, at ' + b.field + ' = ' + v.tStar.field },
+      { 'do': 'wait', until: afford, timeout: { gs: sig(v.tStar.afterTicks * DIFF) + 10 }, onTimeout: 'abort',
+        comment: 'the rollback found it affordable ' + sig(v.tStar.afterTicks * DIFF) + ' s into the hold, at ' + b.field + ' = ' + v.tStar.field },
       { 'do': 'call', fn: buyCall(it), args: [it.layer, argId(it.id)], comment: 'buy ' + b.goal },
     ];
     if (have) steps.push({ 'do': 'wait', until: have, timeout: { gs: 2 }, onTimeout: 'abort', comment: 'the purchase happened' });
