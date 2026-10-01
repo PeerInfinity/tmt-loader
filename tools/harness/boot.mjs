@@ -11,6 +11,10 @@
 //                      [--planner-ladder ladder.json] [--planner-script f.js] [--knowledge-out f] [--goals-out f] [--rounds-out f]
 //                      [--stop-snapshot] [--explain] [--random-seed N]
 //                      [--log <file.jsonl> [--log-meta <json>] [--log-every <game-s>]] [--replay <file.jsonl>]
+//                      [--queues <json array of queue files>] [--queue-runner]
+//   --queues: the QUEUE RUNNER (tpl1, docs/queues.md) — loader/tmt-queue.js is run, and each file is loaded into it in
+//   order (after the state log starts, so the log records the load). --queue-runner: the runner with nothing loaded (a
+//   planner script that plays queues on the copy). A --runtime record that carries queues loads the runner by itself.
 //   --log: the STATE LOG (log-1, docs/log.md) — loader/tmt-log.js records every action from here to the stop, and THIS
 //   process writes the file itself with writeSync (never through BOOTRESULT: R3c's >64 KB truncation). --replay: the
 //   log's header start is already booted (run.mjs); tmt-log.js re-applies its calls and compares every record (R.replay).
@@ -66,7 +70,7 @@ for (let i = 0; i < argv.length; i++) {
   const a = argv[i];
   if (!a.startsWith('--')) A._.push(a);
   else if (a.indexOf('=') > 2) A[a.slice(2, a.indexOf('='))] = a.slice(a.indexOf('=') + 1);   // --planner=auto
-  else if (['save', 'census', 'no-auto', 'no-currency', 'no-automation', 'marks-continue', 'stall-seen', 'snapshots', 'planner', 'stop-snapshot', 'explain'].includes(a.slice(2))) A[a.slice(2)] = true;
+  else if (['save', 'census', 'no-auto', 'no-currency', 'no-automation', 'marks-continue', 'stall-seen', 'snapshots', 'planner', 'stop-snapshot', 'explain', 'queue-runner'].includes(a.slice(2))) A[a.slice(2)] = true;
   else A[a.slice(2)] = argv[++i];
 }
 const ID = A._[0];
@@ -270,6 +274,19 @@ if (A.planner) {
   }
   catch (e) { R.file_errors.push({ file: 'loader/tmt-planner.js', error: String(e.message).slice(0, 200) }); R.planner = { loaded: false, error: String(e.message).slice(0, 300) }; }
 }
+// ---- (tpl1) the QUEUE RUNNER — loaded ONLY with --queues / --queue-runner, or for a --runtime record that carries
+// queues (a snapshot taken while one was loaded). ⛔ A run without them executes exactly what it executed before: the
+// automation core's `queueLink` slot stays null.
+const QUEUE_FILES = A.queues ? JSON.parse(A.queues) : [];
+const RUNTIME_HAS_QUEUES = (() => { try { const r = A.runtime ? JSON.parse(fs.readFileSync(A.runtime, 'utf8')) : null; return !!(r && r.auto && r.auto.queues); } catch { return false; } })();
+if (QUEUE_FILES.length || A['queue-runner'] || RUNTIME_HAS_QUEUES) {
+  if (!AUTOMATION) { console.error('--queue / --queue-runner need the automation core (its queue slot); drop --no-automation'); proc.exit(2); }
+  try {
+    run(fs.readFileSync(path.join(REPO, 'loader/tmt-queue.js'), 'utf8'), 'loader/tmt-queue.js');
+    if (run('!!(tmtLoader.queues && tmtLoader.queues.ready)', 'x') !== true) throw new Error('loader/tmt-queue.js did not define tmtLoader.queues');
+    R.queueRunner = { loaded: true, files: QUEUE_FILES.map((f) => path.relative(REPO, f)) };
+  } catch (e) { R.file_errors.push({ file: 'loader/tmt-queue.js', error: String(e.message).slice(0, 200) }); R.queueRunner = { loaded: false, error: String(e.message).slice(0, 300) }; }
+}
 R.load_ms = Date.now() - t0;
 const errText = (e) => { const st = String(e && e.stack || ''); const at = (st.match(/^\s+at .*$/m) || [''])[0].trim(); return `${e && e.name || 'Error'}: ${String(e && e.message || e).slice(0, 300)}${at ? ' @ ' + at.slice(0, 160) : ''}`; };
 const fail = (stage, e) => { R.ok = false; R.failed_at = stage; R.error = errText(e); out(R); proc.exit(0); };
@@ -373,6 +390,21 @@ if (A.replay) {
   } catch (e) { fail('replay', e); }
 }
 
+// ---- (tpl1) the queues: loaded AFTER the log has started (its `load` record), BEFORE the first tick ---------------
+if (QUEUE_FILES.length) {
+  if (!R.queueRunner || !R.queueRunner.loaded) fail('queue', new Error('the queue runner did not load: ' + (R.queueRunner && R.queueRunner.error)));
+  R.queues = { loaded: [] };
+  for (const f of QUEUE_FILES) {
+    try {
+      globalThis.__tmtQueue = fs.readFileSync(f, 'utf8');
+      const r = run('tmtLoader.queues.load(globalThis.__tmtQueue)', 'queue');
+      delete globalThis.__tmtQueue;
+      if (!r.ok) fail('queue', new Error(`${path.relative(REPO, f)} was refused: ${r.errors.join('; ')}`));
+      R.queues.loaded.push({ file: path.relative(REPO, f), id: r.id });
+    } catch (e) { fail('queue', e); }
+  }
+}
+
 // ---- ticks ---------------------------------------------------------------------------------------
 // Leg "idle": no input. Leg "policy": the census's generic policy before each tick (tools/harness/policy.mjs, the same
 // source the page runs). --until stops after the first tick whose predicate is true.
@@ -421,6 +453,7 @@ try {
   if (EXCLUDE.length) R.hashFull = await run('tmtLoader.hash()', 'hash');
   if (AUTOMATION) R.hashGame = await run('tmtLoader.hash(tmtLoader.gameState)', 'hash');
   R.hook = run('tmtLoader.hookStats ? tmtLoader.hookStats() : null', 'x');
+  if (R.queueRunner && R.queueRunner.loaded) R.queueStatus = run('JSON.parse(JSON.stringify(tmtLoader.queues.status()))', 'queue');
   R.features = run('(tmtLoader.features || []).map(f => f.id)', 'x');
   R.featureStates = run('(tmtLoader.features || []).map(f => { const s = tmtLoader.featureState(f.id); return [f.id, s.unlocked, s.policy]; })', 'x');
   // V1 — the readout. ⛔ THE COUNTER IS READ FIRST, BEFORE anything asks for text: `tmtLoader.explain()` is the

@@ -786,6 +786,9 @@
     // while the game is inside one therefore means "stop entering" AND "never leave" — R3a measured a run stranded
     // inside PTR's H11, a challenge it completes in 65 game-seconds, for the whole remaining 3,935 of its leg, with
     // `blocked:gate` as its only reason. The reason line now names the challenge and which control did it.
+    // ⛔ (tpl1) A QUEUE'S HOLD, and it names WHICH queue and WHICH step — a queue that pauses a reflex silently is
+    // the `paused:in-challenge` defect again. Released when the queue ends, aborts or is unloaded (docs/queues.md).
+    'held:queue':         { text: 'Held by queue {queue} (step {step}) — it is released when the queue ends, aborts or is unloaded', values: ['queue', 'step'] },
     'paused:in-challenge': { text: 'Paused inside challenge {id} — the “{which}” condition {src} stops this feature, and a pause does not leave a challenge', values: ['id', 'which', 'src'] },
     // running, and the policy says not yet
     'waiting:gain':       { text: 'Waiting — gain {gain} of {need}',                              values: ['gain', 'need'], quantities: ['gain', 'need'] },
@@ -973,7 +976,23 @@
   //                recorded automation calls, in the same slot of the same tick (the automation acts INSIDE gameLoop).
   //   · `progress` (event) — every event the progress tracker pushes (ONE definition of progress: the log subscribes).
   //   · `track`    true while the log wants the tracker armed.
-  var logLink = T.logLink = { exec: null, replay: null, progress: null, track: false };
+  //   · `queueSlot` () — (tpl1) in the QUEUE's slot of the tick (below): where a replay re-applies the recorded queue
+  //                calls, exactly as `replay` re-applies the automation's in theirs.
+  var logLink = T.logLink = { exec: null, replay: null, progress: null, track: false, queueSlot: null };
+
+  // ---- (tpl1) THE QUEUE RUNNER'S SLOT (docs/queues.md): four points, all NULL unless a queue is loaded ---------------
+  // The runner is `loader/tmt-queue.js`, loaded only when a queue is (harness `--queue`, the page's `?autoOpt=queue=`
+  // or `tmtLoader.queues.load`), and it fills these in WHILE a queue is loaded and empties them when the last one goes.
+  // With no queue every one is null and each call site is one comparison that does nothing — a run without a queue
+  // executes exactly what it executed before (the inertness gate).
+  //   · `holds`  {featureId: {queue, step}} — features a queue HOLDS. A hold beats every other source of `active()`
+  //              but the profile `off`, is never written to the save, and its reason (`held:queue`) names the queue and
+  //              the step, so a held feature is never a silent pause (the `paused:in-challenge` lesson).
+  //   · `step`   () — the runner's turn, ONCE per gameLoop, in the `au` layer's automate AFTER its fallback pass: after
+  //              every reflex of the tick has decided, inside the tick (so a replay re-applies it in the same place).
+  //   · `get` / `set` — the runner's memory for `runtimeState()` / `restoreRuntime()` (the `queues` block).
+  var queueLink = T.queueLink = { holds: null, step: null, get: null, set: null };
+  function heldBy(f) { return queueLink.holds !== null && queueLink.holds[f.id] !== undefined ? queueLink.holds[f.id] : null; }
 
   // Predicate strings (table gates, clickable `when`) compiled ONCE in the engine's global scope — the same scope as the
   // harness's --until / --marks (vm.runInThisContext of `function(){ return (<src>); }`), so a gate and a ladder mark
@@ -1049,6 +1068,7 @@
   // Whether a feature runs this tick under the current profile.
   function active(f) {
     if (T.profileName === 'off') return false;
+    if (queueLink.holds !== null && heldBy(f) !== null) return false;   // (tpl1) a queue's hold
     if (enableOverride[f.id] !== undefined) return enableOverride[f.id] && featureUnlocked(f);
     if (T.profileName === 'all') return featureUnlocked(f);
     return isOnSaved(f) && featureUnlocked(f);
@@ -3042,7 +3062,13 @@
       var f = list[i];
       // ⚠ EVERY exit records, including the ones that do nothing: a feature the player can see in the tab and that
       // is not running has a reason too, and `off` / `locked` / `armed` are the three the tab shows most often.
-      if (!active(f)) { say(f, featureUnlocked(f) ? 'off' : (isOnSaved(f) ? 'armed' : 'locked'), null); f.onSince = null; continue; }
+      if (!active(f)) {
+        // (tpl1) a HELD feature says which queue holds it and at which step — never a bare `off`
+        var hq = queueLink.holds !== null && T.profileName !== 'off' && featureUnlocked(f) ? heldBy(f) : null;
+        if (hq !== null) say(f, 'held:queue', { queue: hq.queue, step: hq.step });
+        else say(f, featureUnlocked(f) ? 'off' : (isOnSaved(f) ? 'armed' : 'locked'), null);
+        f.onSince = null; continue;
+      }
       // `onSince`: when this feature last became ELIGIBLE (on, unlocked, under a profile that runs it) with nothing
       // done since. It is what `neverFired` is measured over, and it lives outside `player` like `f.last`.
       if (f.onSince === null) f.onSince = Number(player.timePlayed) || 0;
@@ -3127,6 +3153,11 @@
   function auAutomate() {
     repairMaxRow();
     for (var i = 0; i < hookOrder.length; i++) if (ranAt[hookOrder[i]] !== loopNo) runLayer(hookOrder[i], 'fallback');
+    // (tpl1) THE QUEUE'S SLOT — after every reflex of this tick, still inside it. A replay re-applies the recorded
+    // queue calls here (the log's `queueSlot`); a loaded queue takes its turn here (`queueLink.step`). Both null
+    // unless one of them is running, and neither depends on the profile (the slot exists under `off` too).
+    if (logLink.queueSlot !== null) logLink.queueSlot();
+    if (queueLink.step !== null) queueLink.step();
     stats.loops++;
     loopNo++;
   }
@@ -3245,6 +3276,9 @@
     if (ne) o.watch = { rung: er, since: Object.assign({}, escSince), clock: { stalledAt: watchClock.stalledAt, escalatedAt: watchClock.escalatedAt, coolFrom: watchClock.coolFrom, events: watchClock.events } };
     else if (watchClock.events) o.watch = { rung: {}, since: {}, clock: { stalledAt: watchClock.stalledAt, escalatedAt: watchClock.escalatedAt, coolFrom: watchClock.coolFrom, events: watchClock.events } };
     if (runtimeHooks.length) { o.extra = {}; for (var i = 0; i < runtimeHooks.length; i++) o.extra[runtimeHooks[i].name] = runtimeHooks[i].get(); }
+    // (tpl1) the QUEUE RUNNER's memory — position, wait clocks, holds — ONLY while a queue is loaded: the runner's
+    // `get` returns null when none is, so a run without a queue writes exactly the record it wrote before.
+    if (queueLink.get !== null) { var qv = queueLink.get(); if (qv !== null) o.queues = qv; }
     return o;
   };
   T.restoreRuntime = function (rt) {
@@ -3321,6 +3355,13 @@
     watchLoop = -1;
     polledLoop = -1;
     for (var i = 0; i < runtimeHooks.length; i++) runtimeHooks[i].set((rt.extra || {})[runtimeHooks[i].name]);
+    // (tpl1) the queue runner's memory. A record WITH queues needs the runner loaded — this build's rule for a record
+    // it cannot honour is a THROW, never a silently different run; a record without them unloads whatever is loaded
+    // (an excursion that loaded a queue on the copy leaves nothing behind after its restore).
+    if (rt.queues) {
+      if (queueLink.set === null) throw new Error('restoreRuntime: this record carries loaded queues and the queue runner (loader/tmt-queue.js) is not loaded');
+      queueLink.set(rt.queues);
+    } else if (queueLink.set !== null) queueLink.set(null);
     return true;
   };
 
@@ -4157,6 +4198,7 @@
   // (`setFeatureEnabled`) — `null` when the saved choice is what runs. The precedence is `active()`'s own.
   function enabledBy(f) {
     if (T.profileName === 'off') return 'profile';
+    if (heldBy(f) !== null) return 'queue';                                // (tpl1) a queue's hold beats a runtime override
     if (enableOverride[f.id] !== undefined) return 'runtime';
     if (T.profileName === 'all') return 'profile';
     return null;
@@ -4166,8 +4208,10 @@
     var f = byId[id];
     if (!f) throw new Error('no feature "' + id + '"');
     var by = enabledBy(f), ok = armable(f);
+    var hq = heldBy(f);
     return { id: id, word: toggleWord(f), color: onColor(f), saved: isOnSaved(f), active: active(f), unlocked: featureUnlocked(f),
       armable: ok, by: by, profile: T.profileName, override: enableOverride[id] === undefined ? null : enableOverride[id],
+      heldBy: hq === null ? null : { queue: hq.queue, step: hq.step },
       why: ok ? null : 'locked — switch on “' + ARM_LABEL.replace(/ —.*$/, '') + '” on the Simple tab to arm it' };
   };
   /** V6: the toggle's PRESS — the grid's `canClick` + `onClick`, one call. Refuses (and says why) when not armable. */
@@ -4236,6 +4280,7 @@
   // V6: the on/off's OVERRIDDEN line — which of the two overrides is deciding, and what the player's own choice is.
   T.enabledByHTML = function (tv) {
     var mine = 'your saved choice is <b>' + (tv.saved ? 'on' : 'off') + '</b>';
+    if (tv.by === 'queue' && tv.heldBy) return chip('HELD', '#8a6d3b') + ' by queue <b>' + esc(tv.heldBy.queue) + '</b> (step ' + esc(tv.heldBy.step) + ') — released when the queue ends, aborts or is unloaded; ' + mine;
     if (tv.by === 'runtime') return chip('OVERRIDDEN', '#8a6d3b') + ' switched ' + (tv.override ? 'on' : 'off') + ' by a runtime setting — ' + mine + '; a press changes your saved choice, not this';
     return chip('OVERRIDDEN', '#8a6d3b') + ' — the page’s address sets profile “' + esc(tv.profile) + '”, which ' + (tv.profile === 'off' ? 'runs nothing' : 'runs every unlocked feature') + '; ' + mine;
   };
@@ -5169,6 +5214,14 @@
             + (m.dropped ? ' — ' + m.dropped + ' older records dropped to stay under the cap' : '');
           return { on: st.on, has: true, text: t };
         },
+        // (tpl1) THE QUEUES — READ-ONLY (the editor is a later slice). Re-read on every redraw like the log's counts;
+        // `null` (and nothing rendered) unless the runner is loaded AND holds at least one queue.
+        queueState: function () {
+          void this.blocks; void this.gen;
+          if (!T.queues || typeof T.queues.status !== 'function' || !T.queues.ready) return null;
+          var st = T.queues.status();
+          return st && st.queues && st.queues.length ? st : null;
+        },
       },
       template: '<div class="tmtl-root" style="' + ROOT_STYLE + '">'
         // ⚖ U16: how the tab works, collapsed — and the developer-details switch beside it
@@ -5189,6 +5242,15 @@
         +   '<button type="button" class="tmtl-log-toggle" :data-on="logState.on ? 1 : 0" style="' + BTN_STYLE + '" @click="logToggle" @keydown.stop>{{ logState.on ? \'stop the state log\' : \'record a state log\' }}</button>'
         +   '<button type="button" class="tmtl-log-download" v-if="logState.has" style="' + BTN_STYLE + '" @click="logDownload" @keydown.stop>download log</button>'
         +   '<span class="tmtl-log-read" style="opacity:.7;margin-left:6px">{{ logState.text }}</span>'
+        + '</div>'
+        // (tpl1) THE QUEUES, read-only: each loaded queue, its step and comment, what it holds, and its last outcome
+        + '<div v-if="queueState" class="tmtl-queues" style="text-align:left;margin-bottom:6px;font-size:.9em">'
+        +   '<div v-for="q in queueState.queues" :key="q.id" class="tmtl-queue" :data-queue="q.id" :data-state="q.state" style="margin:2px 0;overflow-wrap:anywhere">'
+        +     '<b>queue {{ q.id }}</b> — {{ q.stateText }}'
+        +     '<div v-if="q.current" style="margin-left:8px">step {{ q.current.index }} of {{ q.steps }}: <code>{{ q.current.do }}</code> {{ q.current.text }}<span v-if="q.current.comment" style="opacity:.7"> — {{ q.current.comment }}</span></div>'
+        +     '<div v-if="q.holds.length" style="margin-left:8px">holding: {{ q.holds.join(\', \') }}</div>'
+        +     '<div v-if="q.last" style="margin-left:8px;opacity:.7">last: {{ q.last }}</div>'
+        +   '</div>'
         + '</div>'
         // ⚖ Q1's second half: expand all / collapse all, and they set EVERY block including the ones whose default is
         // the other way — `collapse all` then `expand all` has to be reachable from any state.

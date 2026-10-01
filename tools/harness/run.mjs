@@ -23,6 +23,8 @@
 //   --until-all: stop when every mark of the slice holds, not when --to does.
 //   --log <file.jsonl> [--log-every <game-s>]: the STATE LOG (docs/log.md) of this run — every action, the state it
 //   acted on, checkpoints; written by the boot child itself. `tools/harness/replay.mjs <file>` replays it exactly.
+//   --queue <file> (REPEATABLE): load a `tmt-queue/1` file into the QUEUE RUNNER before the first tick (docs/queues.md);
+//   several are loaded in the order given. --queue-runner: the runner with nothing loaded (for a --planner-script).
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
@@ -181,6 +183,10 @@ function runNodeRaw(id, o) {
     if (o['log-every'] != null) args.push('--log-every', String(o['log-every']));
   }
   if (o.replay) args.push('--replay', path.resolve(String(o.replay)));
+  // (tpl1) the queue runner: --queue is repeatable (an array here; a single string from a programmatic caller)
+  const queues = o.queue == null ? [] : (Array.isArray(o.queue) ? o.queue : [o.queue]);
+  if (queues.length) args.push('--queues', JSON.stringify(queues.map((f) => path.resolve(String(f)))));
+  if (o['queue-runner']) args.push('--queue-runner');
   // the child runs with cwd = os.tmpdir(): every file argument is made absolute here
   for (const k of ['state-out', 'player-out', 'ids-out', 'save-storage', 'knowledge-out', 'goals-out', 'rounds-out']) if (o[k] != null) args.push(`--${k}`, path.resolve(String(o[k])));
   if (o.save) args.push('--save');
@@ -210,7 +216,11 @@ function runNodeRaw(id, o) {
 }
 
 async function main() {
-  const a = parseArgs(process.argv.slice(2), ['save', 'no-auto', 'no-currency', 'no-automation', 'marks-continue', 'stall-seen', 'no-runtime', 'until-all', 'planner', 'explain']);
+  // (tpl1) --queue is the one REPEATABLE flag: every occurrence is collected before parseArgs keeps the last
+  const argv = process.argv.slice(2), queues = [];
+  for (let i = 0; i < argv.length; i++) if (argv[i] === '--queue') { queues.push(argv[i + 1]); argv.splice(i, 2); i--; } else if (argv[i].startsWith('--queue=')) { queues.push(argv[i].slice(8)); argv.splice(i, 1); i--; }
+  const a = parseArgs(argv, ['save', 'no-auto', 'no-currency', 'no-automation', 'marks-continue', 'stall-seen', 'no-runtime', 'until-all', 'planner', 'explain', 'queue-runner']);
+  if (queues.length) a.queue = queues;
   const id = a._[0];
   if (!id) { console.error('usage: node run.mjs <id> [--ticks N] [--diff d] [--until "<js>"] [--json out] …'); process.exit(2); }
   const res = runNode(id, a);
@@ -234,6 +244,7 @@ async function main() {
   if (res.steps) line.steps = res.steps;
   if (res.log) line.log = res.log;
   if (res.replay) line.replay = res.replay;
+  if (res.queueStatus) line.queues = res.queueStatus.queues.map((q) => ({ id: q.id, state: q.state, outcome: q.outcome, pc: q.pc, holds: q.holds, last: q.last }));
   console.log(JSON.stringify(line));
   if (a.json) writeJSON(a.json, res);
   process.exit(res.ok ? 0 : 1);
