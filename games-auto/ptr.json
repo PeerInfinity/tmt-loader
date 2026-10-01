@@ -183,6 +183,25 @@
   },
   "stages": [
     {
+      "id": "q33-sg-unlock",
+      "when": "hasUpgrade('q',33) && !player.sg.unlocked",
+      "gates": {
+        "reset:e": "player.g.points.gte(tmp.sg.nextAt)",
+        "reset:s": "player.g.points.gte(tmp.sg.nextAt)",
+        "reset:sb": "player.g.points.gte(tmp.sg.nextAt)",
+        "reset:t": "player.g.points.gte(tmp.sg.nextAt)",
+        "reset:h": "player.g.points.gte(tmp.sg.nextAt)",
+        "reset:o": "player.g.points.gte(tmp.sg.nextAt)",
+        "reset:q": "player.g.points.gte(tmp.sg.nextAt)",
+        "reset:ss": "player.g.points.gte(tmp.sg.nextAt)",
+        "challenges:h": "player.g.points.gte(tmp.sg.nextAt)"
+      },
+      "provenance": {
+        "unverified": true,
+        "note": "scratch: under measurement"
+      }
+    },
+    {
       "id": "ql6-h22-attempt",
       "when": "player.q.buyables[11].plus(tmp.q.freeLayers).gte(6) && tmp.h.challenges[22].unlocked && !hasChallenge('h',22)",
       "policies": {
