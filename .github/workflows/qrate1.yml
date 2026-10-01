@@ -9,7 +9,12 @@
 # `measurements.yml` because that file holds the standing tables and costs ~5.5 runner-hours a dispatch; this one is
 # a slice's own cells, run once to answer one question.
 #
-# TO RUN IT:  gh workflow run qrate1.yml -R PeerInfinity/tmt-loader --ref <branch>
+# TO RUN IT:  gh workflow run qrate1.yml -R PeerInfinity/tmt-loader --ref <branch>               (qrate1's cells)
+#             gh workflow run qrate1.yml -R PeerInfinity/tmt-loader --ref <branch> -f part=m28  (m28's legs, below)
+# m28 (tmt-m28-1, `gates-m28.mjs --part leg`): each leg runs from m28/QL6 in stages — q31 bought, the 7th Quirk Layer,
+# q32 bought — twice; the qrate1 winner as it is, with challenge attempts held, at diff 1 and 0.05, and the planner on
+# the template's sub-goal (widened, with and without the challenge-hold candidate). It lives in THIS file because a new
+# workflow cannot be dispatched before it exists on the default branch (qrate1's 404).
 #
 # The cells (each one job, each leg TWICE in parallel, the state log written and read back by rate.mjs):
 #   control@1, q-w20@1                 the shipped table and the best non-rate-peak screen cell, QL5 → 308,372 total
@@ -21,6 +26,12 @@ name: qrate1
 
 on:
   workflow_dispatch:
+    inputs:
+      part:
+        description: 'qrate1 (the quirk-rate cells, the default) or m28 (the legs toward q32; design notes §18)'
+        type: choice
+        options: [qrate1, m28]
+        default: qrate1
 
 permissions:
   contents: read
@@ -35,6 +46,7 @@ env:
 jobs:
   screen:
     name: qrate1 — the screen (every candidate cell, 5,000 game-s, twice)
+    if: ${{ inputs.part != 'm28' }}
     runs-on: ubuntu-latest
     timeout-minutes: 90
     steps:
@@ -68,6 +80,7 @@ jobs:
 
   cells:
     name: qrate1 — cell ${{ matrix.cell }}
+    if: ${{ inputs.part != 'm28' }}
     runs-on: ubuntu-latest
     timeout-minutes: 330
     strategy:
@@ -111,6 +124,7 @@ jobs:
 
   planner:
     name: qrate1 — the planner on the sub-goal
+    if: ${{ inputs.part != 'm28' }}
     runs-on: ubuntu-latest
     timeout-minutes: 330
     steps:
@@ -147,7 +161,7 @@ jobs:
   merge:
     name: qrate1 — merge (refuses a missing cell)
     needs: cells
-    if: always()
+    if: ${{ always() && inputs.part != 'm28' }}
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -171,3 +185,75 @@ jobs:
         shell: bash
         run: |
           { echo '## qrate1 — merge'; echo ''; echo '```'; grep -aE '^(GREEN|RED|VERDICT)' merge.txt | cut -c1-700 || echo 'no output'; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
+
+  m28-legs:
+    name: m28 — leg ${{ matrix.leg }}
+    if: ${{ inputs.part == 'm28' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 330
+    strategy:
+      fail-fast: false
+      matrix:
+        leg: ['winner@1', 'winner-choff@1', 'winner-choff@0.05', 'winner@0.05', 'planner-wide@1', 'planner-wide-ch@1']
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+          fetch-depth: 1
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+      - run: npm ci
+      - name: The leg, twice
+        shell: bash
+        run: |
+          set -o pipefail
+          s=$(date +%s)
+          node tools/harness/gates-m28.mjs --part leg --leg '${{ matrix.leg }}' --assert | tee leg.txt
+          echo "TIME leg ${{ matrix.leg }}: $(( $(date +%s) - s )) s" | tee -a leg.txt
+      - name: Summary
+        if: always()
+        shell: bash
+        run: |
+          { echo '## m28 — ${{ matrix.leg }}'; echo ''; echo '```'; grep -aE '^(GREEN|RED|VERDICT|TIME)' leg.txt | cut -c1-3000 || echo 'no output'; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
+      - name: Name the artifact
+        if: always()
+        shell: bash
+        run: echo "ART=m28-leg-$(echo '${{ matrix.leg }}' | tr -c 'A-Za-z0-9.-' '_')" >> "$GITHUB_ENV"
+      - name: Upload the leg
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ env.ART }}
+          path: tools/harness/results/tmp/m28-leg-*.json
+          if-no-files-found: warn
+          retention-days: 14
+
+  m28-merge:
+    name: m28 — merge (refuses a missing leg)
+    needs: m28-legs
+    if: ${{ always() && inputs.part == 'm28' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: m28-leg-*
+          path: legs
+      - name: Merge
+        shell: bash
+        run: |
+          set -o pipefail
+          node tools/harness/gates-m28.mjs --part merge --dir legs --assert | tee merge.txt
+      - name: Summary
+        if: always()
+        shell: bash
+        run: |
+          { echo '## m28 — merge'; echo ''; echo '```'; grep -aE '^(GREEN|RED|VERDICT)' merge.txt | cut -c1-1500 || echo 'no output'; echo '```'; } >> "$GITHUB_STEP_SUMMARY"

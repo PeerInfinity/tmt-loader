@@ -462,3 +462,21 @@ test('qrate1: the gates on every push, the measurement dispatch-only in its own 
   assert.ok(g, 'qrate1.yml declares no concurrency group');
   assert.doesNotMatch(g[1], /^sweep-/, 'it must NOT share the sweep group — a push would cancel its cells');
 });
+
+// ---------------------------------------------------------------------------------------------------------------
+// m28: the slice's gates on every push; its legs in qrate1.yml behind `-f part=m28` (a new workflow cannot be
+// dispatched from a branch before it is on the default branch — qrate1's 404), and the qrate1 cells untouched by it.
+// ---------------------------------------------------------------------------------------------------------------
+test('m28: the gates on every push, the legs dispatch-only behind part=m28', () => {
+  const j = jobs(wf('sweep.yml'));
+  assert.ok(j.m28, 'sweep.yml has no `m28` job');
+  assert.deepEqual(needs(j.m28), ['fast']);
+  assert.match(j.m28, /gates-m28\.mjs --part push[^\n]*--assert/);
+  assert.doesNotMatch(j.m28, /--part (leg|merge)/, 'an m28 MEASUREMENT part is in the sweep — it would run on every push');
+  assert.doesNotMatch(j.m28, /^\s{4}if:/m, 'the m28 job is gated: it must run on every push');
+  const m = wf('qrate1.yml'), q = jobs(m);
+  assert.match(m, /inputs:\n\s+part:\n[\s\S]*?type: choice[\s\S]*?default: qrate1/, 'qrate1.yml has no `part` choice defaulting to qrate1');
+  for (const k of ['m28-legs', 'm28-merge']) assert.match(q[k] || '', /if: \$\{\{[^}]*inputs\.part == 'm28'/, `${k} is not gated on part=m28`);
+  for (const k of ['screen', 'cells', 'planner', 'merge']) assert.match(q[k] || '', /if: \$\{\{[^}]*inputs\.part != 'm28'/, `${k} would also run on a part=m28 dispatch`);
+  assert.match(q['m28-legs'], /gates-m28\.mjs --part leg[^\n]*--assert/);
+});
