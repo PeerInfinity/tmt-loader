@@ -120,6 +120,8 @@ export function runNode(id, o = {}) {
     const body = { mark: name, commit: headCommit(), dirty: snapshotTreeDirty(), ticks: res.ticks, gameSeconds: res.gameSeconds, diff: Number(o.diff ?? 0.05),
       hash: res.hash, hashGame: res.hashGame, config: { profile: o.profile || 'off', 'auto-opt': o['auto-opt'] || null, from: snap ? res.fromSnapshot.file : null, why: res.stall?.stalled ? 'stalled' : res.stall?.walled ? 'walled' : 'ticks' },
       player: res.stopSnapshot.player, runtime: res.stopSnapshot.runtime };
+    // (m28) a run that loaded queues says so: the stop is not reproducible from `auto-opt` alone (absent otherwise)
+    if (o.queue != null) body.config.queue = (Array.isArray(o.queue) ? o.queue : [o.queue]).map((f) => path.relative(REPO, path.resolve(String(f))));
     fs.writeFileSync(file, JSON.stringify(body, null, 1) + '\n');
     res.stopSnapshotWritten = { mark: name, file: path.relative(REPO, file), bytes: fs.statSync(file).size };
     delete res.stopSnapshot;

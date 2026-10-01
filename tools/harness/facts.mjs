@@ -9,7 +9,8 @@
 // ⛔ A FACT IS A PROPERTY OF THE GAME'S CODE, READ OFF THE ENGINE ON A ROLLED-BACK COPY (harness-only), so it is
 // precomputed here and committed as DATA: `games-facts/<id>.json` (format `tmt-facts/1`), one per game we extract, plus
 // `games-facts/index.json`. GENERATED facts only — authored facts (engine traps, guide schedules) get their own home.
-//   states     fresh, then every committed `tools/harness/snapshots/<id>/all/*.json` in mark order. `--from` replaces
+//   states     fresh, then every committed `tools/harness/snapshots/<id>/all/*.json` in mark order, then the states
+//              DECLARED in `tools/harness/snapshots/<id>/facts-states.json` (m28; a missing one is an error). `--from` replaces
 //              the list (repeatable; `fresh` is the fresh boot; a path is a snapshot file).
 //   --write    regenerate (the default). --check: regenerate IN MEMORY and compare with the committed file; exit 1 on
 //              any difference, naming the game. --out: write somewhere else (a scratch dir) instead of games-facts/.
@@ -65,6 +66,34 @@ export function statesOf(id, from) {
     const fs2 = fs.readdirSync(dir).filter((x) => /^[A-Za-z]+\d+\.json$/.test(x));
     fs2.sort((a, b) => Number(a.match(/\d+/)[0]) - Number(b.match(/\d+/)[0]) || (a < b ? -1 : a > b ? 1 : 0));
     for (const f of fs2) out.push({ name: 'all/' + f.slice(0, -5), file: path.join(dir, f) });
+  }
+  for (const d of declaredStates(id)) out.push(d);
+  return out;
+}
+
+// (m28) States BEYOND the ladder's marks are DECLARED, never discovered: `tools/harness/snapshots/<id>/facts-states.json`
+// (`tmt-facts-states/1`) lists snapshot files (relative to the game's snapshot directory), read after the `all/` marks
+// in the declared order — each one is a state LATER than every mark. A declared file that is missing, outside the
+// game's directory, named twice or shadowing a mark is a HARD ERROR: a declared state is never skipped silently (a
+// skipped state reads exactly like a locked item — its facts would ABSTAIN as "unreachable").
+export const DECLARED = 'facts-states.json';
+export function declaredStates(id, base = path.join(REPO, 'tools/harness/snapshots', id)) {
+  const f = path.join(base, DECLARED);
+  if (!fs.existsSync(f)) return [];
+  const d = JSON.parse(fs.readFileSync(f, 'utf8'));
+  if (d.format !== 'tmt-facts-states/1' || !Array.isArray(d.states)) throw new Error(`${path.relative(REPO, f)}: not a tmt-facts-states/1 file (format, states[])`);
+  const out = [], seen = new Set();
+  for (const e of d.states) {
+    const rel = e && typeof e.file === 'string' ? e.file : null;
+    if (!rel || !e.why) throw new Error(`${path.relative(REPO, f)}: every declared state needs {file, why}`);
+    const file = path.resolve(base, rel);
+    if (path.relative(base, file).startsWith('..')) throw new Error(`${path.relative(REPO, f)}: ${rel} is outside ${path.relative(REPO, base)}`);
+    if (!fs.existsSync(file)) throw new Error(`${path.relative(REPO, f)}: the declared state ${rel} does not exist`);
+    const name = path.relative(base, file).replace(/\.json$/, '').split(path.sep).join('/');
+    if (name.startsWith('all/')) throw new Error(`${path.relative(REPO, f)}: ${rel} is a mark (all/ is read anyway)`);
+    if (seen.has(name)) throw new Error(`${path.relative(REPO, f)}: ${rel} is declared twice`);
+    seen.add(name);
+    out.push({ name, file, declared: true });
   }
   return out;
 }

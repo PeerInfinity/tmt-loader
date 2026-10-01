@@ -289,7 +289,7 @@ one, because a round plays candidates on a copy.
    | `reset:<l>` | the feature's policy switched to each registered alternative and to each template of the kind: `always`, **`gain>=N` with N derived from the target** (what the round still needs, where the reset's gain lands in the dimension being chased), `gain>=Nx` for each `gainX`, `unlocks-purchase`, `keepsUpgrades` where the table names a milestone; plus `off` — the **hold** candidate for that layer |
    | `upgrades:<l>` | `off` (save the currency); the table's `order` policies where it has an `order[]` |
    | `buyables:<l>` | `off`; `highest-first`; `buy-unless-saving`; `reserve>=<the target's threshold>` when the target dimension IS that feature's layer's points |
-   | `toggles` / `challenges` / `clickables` | as they are — the planner decides nothing there in P1b |
+   | `toggles` / `challenges` / `clickables` | as they are — the planner decides nothing there in P1b; (m28) with `challengeCandidates=1` a `challenges` feature is offered `off` while its layer is outside every challenge |
 
    The set is cut to `maxCandidates` **round-robin over the features** — every unlocked feature contributes its
    best-ranked candidate before any feature contributes a second (the incumbent always survives). A flat cut by the
@@ -371,6 +371,7 @@ a sweep have one behind them. The rest are hand-chosen starting points, and the 
 | `reachRounds` | 100 | epochs at the measured rate beyond which a goal's target counts as out of reach and the goal yields | hand-chosen: two orders of magnitude of slack over the ~4 epochs M15 needs at the frontier |
 | `maxRounds` | 0 | 0 = unbounded; a bound for a probe | — |
 | `keepModifiers` | 0 | (qrate1) 1 = also offer each alternative PRIMARY policy of a reset WITH the incumbent's modifiers (`rate-peak@0/0` + `\|turn@10/…`) — every other candidate replaces the whole string, so a row-cycle member could only change its rule by leaving the cycle | off by default: it adds candidates, and the round-robin cut would move every existing round log. Measured on ptr from QL5 (design notes §17): the kept-cycle `rate-peak` is the Part 1 winner; the bare one, which the table registers, is not |
+| `challengeCandidates` | 0 | (m28) 1 = also offer `off:<challenges feature>` — hold challenge ATTEMPTS for the epoch — but only while that layer is outside every challenge (a paused challenges feature does not leave one: `paused:in-challenge`, the run would be stranded inside) | off by default: an extra candidate moves every round log. Measured on ptr from m28/QL6 (design notes §18): the give-up reflex re-entered H22 ~790 times in 30,000 game-s and total quirks rose ×1.8; with `challenges:h` excluded the reflex bought q31 2,696 game-s in. Without this option the round has NO candidate on that axis ("challenges run as they are") |
 
 ### Reading a round log (`--rounds-out`, `planner.rounds[]`)
 
@@ -425,6 +426,15 @@ notes §17 has every number):
   and `setPolicy` throws on the placeholder. A default round never confirms one; a widened round died on the first. A
   refused candidate now keeps `refused` with the engine's message, scores −1e300 and cannot win; the excursion restores
   the state. (Generating only instantiable candidates would change every round log, so it is not done here.)
+
+**Measured on ptr past q24 (m28, design notes §18; CI 36822076088, twice equal):** from m28/QL6 with the q31 verdict's
+sub-goal (total quirks ≥ 7.06e14) and the widened options, round 0 commits `rate-peak@0/0` (bare) and q31 is bought at
++3,477 game-s (the fixed configuration with challenge attempts held: +2,696). `challengeCandidates=1` changed nothing:
+its candidate was confirmed every round and never won (both legs byte-identical). The q32 stage at the DEFAULT options
+then fails: at that state the template names the 7th Quirk Layer (`player.q.points ≥ 2^63`, a SAWTOOTH the Quirk Layer
+purchase spends), and 400 rounds alternate `buyables:q` off / buy / buy-unless-saving (197 / 98 / 98) — total quirks
+6.8e17 at +123,477, against the fixed configuration's q32 at +54,688 (2.81e18). A sub-goal on a spent currency turns
+the round into a save-or-spend oscillation on the very purchase it is for.
 
 ### What P1b does NOT decide
 

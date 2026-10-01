@@ -72,8 +72,11 @@ the queue's and no reflex spends the purse first. Derived from the features' lay
    `planner.facts.shapeIn`). If the purse's exponent beats the price's, waiting helps; otherwise the ratio peaks, and the
    formula says roughly where.
 2. *Rollback*: plays the hold on the copy — the same queue runner, the same reflexes — for a horizon (≥ 300 game-s, or
-   8× the formula's peak), reading currency ÷ the LIVE price every tick (⚠ never `tmp`: in the PTR family a closed tab's
-   `tmp` lags — §12's 0.0193 was exactly that).
+   8× the formula's peak), reading currency ÷ the CHARGED price every tick: `tmp`'s cost, computed at the tick's START,
+   which is what the engine's purchase checks and subtracts (tpl1 §16.3; `tmp` costs are refreshed every tick whatever
+   tab is open — the closed-tab trap is `unlocked`, read live). ⚠ An earlier line here said "the LIVE price, never
+   `tmp`"; the code has judged on the charged price since tpl1, and gate m28 V3 holds it (mutant B of `mutants-m28.sh`
+   is the live reading).
 3. One of three verdicts:
    - **buy at t\*** — the ratio reaches 1. The plan holds, waits until the item is affordable (with a timeout from the
      measured moment), buys it through the engine, and checks the purchase happened. Then it is **played on the copy**:
@@ -96,6 +99,42 @@ the queue's and no reflex spends the purse first. Derived from the features' lay
 - `upg:q:22` from the last log checkpoint before the reflex bought it: **buy at t\***, confirmed on the copy; the queue
   played live buys it on the same tick.
 - something and collection-of-everything: no price shaped in a non-currency field, so no match (the funnel says so).
+
+## Options and the zeroed-at-peak rule (m28, 2026-09-30)
+
+- **`--diff <d>`** (`opts.diff`, default 1): the tick every copy-side measurement runs at. ⚠ **A verdict is a claim
+  about ONE tick size.** The charged price lags the live one by exactly one tick, so a price `∝ (F+1)^k` is charged at
+  `F − diff`: on the first tick after a reset zeroes F, at diff 1, the engine charges the F = 0 price — a factor
+  `2^k` below the live one (q31: 2^8.4 = 338×). Measured from ptr's m28/QL6: q31 peaks at q.time **1** at diff 1
+  (10^−2.07; live 10^−4.60) and at q.time **2.35** at diff 0.05 (10^−3.50, the formula's 2.5), and the nearest lever
+  moves with it — total quirks 7.06e14 at diff 1, **1.62e16** at diff 0.05. The reflex really buys at that first tick
+  at diff 1 (q31 at total 7.096e14, `gates-m28` leg `winner-choff@1`); the page cannot.
+- **`zeroedAtPeak`**: a lever whose input is zeroed by EVERY reset the binding holds (the `zeroed-by` facts) and is
+  still 0 at the peak cannot be raised AT the peak — the run that raises it is the run that raises F, so the moment
+  moves and the price with it. It is listed (`NOT a sub-goal: …`), ranked after the others, never emitted. Measured:
+  q31's walk at QL6 priced Super Boosters "0 → 4.27" at q.time 1 as its nearest lever (10^1.30); sb is zeroed by h, o,
+  q, ss exactly like q.time. At QL5 (q23) the peak is at q.time 38 with sb 4, so nothing there changes.
+
+**Measured (m28, ptr, m28/QL6 = Quirk Layers 6, q11–q24; design notes §18):**
+| | q31 (8.4 · 1e48) | q32 (10 · 1e58) |
+|---|---|---|
+| verdict (diff 1) | waiting cannot help, peak 10^−2.0689 at q.time 1 | waiting cannot help, peak 10^−12.0689 at q.time 1 |
+| levers (log10 distance) | **total quirks → 7.06e14 (1.78)** · the 7th Quirk Layer 2^63 quirks (5.90) · Super Boosters (zeroed at the peak) | **the 7th Quirk Layer (5.90; E 5 → 6 does not flip 7 vs 10)** · total quirks → 1.5e27 (14.1) · Super Boosters (zeroed) |
+| verdict (diff 0.05) | peak 10^−3.4991 at q.time 2.35; total quirks → 1.62e16 (3.14) | — |
+| once q31 is owned (m28/Q31, tick 88,767) | — | waiting cannot help, peak 10^−3.9974; **total quirks → 2.80948e18 (3.60)** · the 7th Quirk Layer (4.11) |
+
+**And the purchases land on the thresholds** (CI 36822076088, diff 1, every leg twice equal, from QL6 under the qrate1
+winner with challenge attempts held — `exclude=challenges:h`): the reflex bought **q31 at +2,696 game-s with total quirks
+7.096e14** (sub-goal 7.06e14) and **q32 — M28 — at +54,688 with 2.81084e18** (the Q31 verdict's 2.80948e18, +0.048 %),
+still at 6 Quirk Layers. The QL6 q32 verdict's lever (the 7th Quirk Layer) was superseded: q31 raises q11's power 8 → 9.
+Without the hold (the winner as it is) the give-up reflex re-enters H22 after every q reset and q31 is not bought in
+30,000 game-s (8,000 at diff 0.05); with it, at diff 0.05, q31 at +2,760.2 (total 7.31e14 — the diff-0.05 verdict's
+1.62e16 overestimates: Super Boosters were 6 at q.time 1.7, rebuilt in 34 ticks, and total quirks also raise them through
+q12, which the single-input walk does not count).
+qrate1's reading (10^−4.89 / 10^−17.2) is the same game read at another instant — Q86K, inside an H22 attempt at
+q.time 26, with every reset excluded at registration (gate V0 reproduces it): mid-run, the ratio only falls.
+⚠ The q11 lever's other input, the q-upgrade COUNT (`player.q.upgrades`, an array), is not a numeric input and is never
+priced — yet buying q31 raises q11's power 8 → 9, which is most of what q32 then needs.
 
 ## How a sub-goal reaches the planner (qrate1, 2026-09-30)
 
@@ -133,4 +172,6 @@ FLIPS: q23 says **buy at t\***, and its queue played live buys it on the copy's 
 `tools/harness/gates-tpl1.mjs --part oracle` (O1 q23, O2 q22, O3 generality, and the verdicts counted) and `--part grep`;
 `tools/harness/gates-qrate1.mjs --part push` (the sub-goal seam S1–S3, the q23 flip T1–T3, the fixtures, the grep);
 `tools/harness/mutants-tpl1.sh` (a check that skips its confirmation, a check that ignores the multiplier chain, a game
-id in a template, and the runner's own).
+id in a template, and the runner's own). `tools/harness/gates-m28.mjs --part push` (q31/q32: the fixtures, the declared
+facts state, the verdicts V0–V3, the sub-goal seam, the grep) and `tools/harness/mutants-m28.sh` (a skipped declared
+state, a verdict on the live price, the zeroed-at-peak rule dropped, a game id).

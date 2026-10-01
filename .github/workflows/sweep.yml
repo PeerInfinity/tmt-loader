@@ -800,6 +800,63 @@ jobs:
           retention-days: 14
 
   # ---------------------------------------------------------------------------------------------------------------
+  # m28 — REACHING M28 (`gates-m28.mjs --part push`; docs/facts.md, docs/templates.md; design notes §18).
+  # Fixture: Q86K (§17.4's end state) and QL6 (the DECLARED facts state) rebuild byte-for-byte. Facts: the committed file
+  # carries the declared state with q31 / q32's source shapes, a price-only regeneration through the default state list
+  # produces them (vacuity), and a bad declaration is a hard error. Verdict: qrate1's reading reproduced; q31 and q32
+  # WAITING CANNOT HELP with their levers and the source's thresholds; the peak judged on the CHARGED price. Sub-goal:
+  # the q31 verdict's sub-goal is the planner round's active goal. Grep: no game id.
+  # The MEASUREMENT (the legs toward q32, the planner on the sub-goal) is `qrate1.yml -f part=m28`, dispatch-only.
+  # ⛔ `--assert` holds the run to its exact row count (13), all green.
+  # ---------------------------------------------------------------------------------------------------------------
+  m28:
+    name: m28 — q31 and q32
+    needs: fast
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true   # games/ is the tmt-loader-games submodule
+          fetch-depth: 1
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - run: npm ci
+
+      - name: The battery — fixture, facts, verdict, subgoal, grep
+        shell: bash
+        run: |
+          set -o pipefail
+          s=$(date +%s)
+          node tools/harness/gates-m28.mjs --part push --pool 4 --assert | tee m28.txt
+          echo "TIME m28 push: $(( $(date +%s) - s )) s" | tee -a m28.txt
+
+      - name: Summary
+        if: always()
+        shell: bash
+        run: |
+          {
+            echo '## m28 — q31 and q32'
+            echo ''
+            echo '```'
+            cat m28.txt 2>/dev/null | grep -aE '^(GREEN|RED|VERDICT|TIME)' | cut -c1-600 || echo 'no output'
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload the rows
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: m28
+          path: tools/harness/results/tmp/gates-m28-part-*-last.json
+          if-no-files-found: warn
+          retention-days: 14
+
+  # ---------------------------------------------------------------------------------------------------------------
   # A1 part 2 — the `au` TAB ITSELF (`gates-a1.mjs --part 2`). Until V1 this ran NOWHERE in CI: only part 1's half
   # (the registry with no per-game table) rode inside M1's `both` leg, so every check of the tab the player actually
   # sees — the toggles' text, `?profile=all` not writing the save, a toggle surviving a reload, the disclosure line,
