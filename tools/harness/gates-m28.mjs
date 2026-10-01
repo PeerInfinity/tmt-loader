@@ -58,6 +58,8 @@ const CHOFF = `policy:reset:q=rate-peak@0/0|turn@10/30x/5/0/100;exclude=challeng
 const Q23 = 'tools/harness/queues/m28/q23-from-Q308K.json';
 const LADDER = 'tools/harness/ladder/ptr.json';
 const WINNER = 'policy:reset:q=rate-peak@0/0|turn@10/30x/5/0/100';     // qrate1's winner (§17.2), the configuration both fixtures ran
+// ⚖ stages-1 (user, 2026-10-01): this leg measured the table BEFORE its stages; it names that configuration (`stages=off`) rather than re-recording the pin — F1 and F2 run past QL6, where the table's stages now act (F3 holds challenges and is unmoved by them)
+const PRE = 'stages=off';
 const PIN_Q86K = { ticks: 86068, hashGame: '17d487cece5a5587' };          // = §17.4's end state (86,068; total quirks 1.17e13)
 const PIN_QL6 = { ticks: 86071, hashGame: '6b1557b562169e2e' };
 const PIN_Q31 = { ticks: 88767, hashGame: '66ef6823848ad208' };            // = CI 36822076088 leg winner-choff@1, stage q31
@@ -110,8 +112,8 @@ const EV = `({total: String(player.q.total), qp: String(player.q.points), ql: Nu
 async function partFixture() {
   const d = path.join(TMP, 'fx');
   const [x, y, z] = await Promise.all([
-    run('ptr', { 'from-snapshot': Q308K, profile: 'all', ticks: 6000, queue: Q23, 'auto-opt': WINNER, 'stop-snapshot': d, 'stop-snapshot-name': 'Q86K', eval: EV }),
-    run('ptr', { 'from-snapshot': Q86K, profile: 'all', ticks: 3000, until: '!player.h.activeChallenge', 'auto-opt': WINNER, eval: EV }),
+    run('ptr', { 'from-snapshot': Q308K, profile: 'all', ticks: 6000, queue: Q23, 'auto-opt': `${WINNER};${PRE}`, 'stop-snapshot': d, 'stop-snapshot-name': 'Q86K', eval: EV }),
+    run('ptr', { 'from-snapshot': Q86K, profile: 'all', ticks: 3000, until: '!player.h.activeChallenge', 'auto-opt': `${WINNER};${PRE}`, eval: EV }),
     run('ptr', { 'from-snapshot': QL6, profile: 'all', ticks: 20000, until: "hasUpgrade('q',31)", 'auto-opt': CHOFF, eval: EV }),
   ]);
   const c1 = snapEval(Q86K), c2 = snapEval(QL6);

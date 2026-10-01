@@ -57,6 +57,8 @@ const QL6 = 'tools/harness/snapshots/ptr/m28/QL6.json', M29 = 'tools/harness/sna
 const QUEUE = 'tools/harness/queues/h22/ch-h-22-from-QL6.json';
 const WINNER = 'policy:reset:q=rate-peak@0/0|turn@10/30x/5/0/100';        // qrate1's winner (§17.2)
 const CHOFF = `${WINNER};exclude=challenges:h`;                           // M28's configuration (§18.4): attempts held
+// ⚖ stages-1 (user, 2026-10-01): this leg measured the table BEFORE its stages; it names that configuration (`stages=off`) rather than re-recording the pin — O2s, VAC's control and EV run past QL6, where the table's stages now act
+const PRE = 'stages=off';
 const PIN_QL6 = { ticks: 86071, hashGame: '6b1557b562169e2e' };
 const PIN_M29 = { ticks: 87055, hashGame: '6613cb4ac28fa565' };           // measured at 61a9b0d + this slice (F1 holds it)
 const GOAL = 'ch:h:22';
@@ -161,9 +163,9 @@ async function partVerdict() {
     () => strategize('ptr', ['--from', QL6, '--goal', GOAL, '--auto-opt', CHOFF]),
     () => strategize('ptr', ['--from', QL6, '--goal', GOAL, '--auto-opt', CHOFF, '--window', String(WINDOW_SHORT)]),
     () => run('ptr', { 'from-snapshot': QL6, profile: 'all', 'auto-opt': CHOFF, queue: QUEUE, ticks: 1100, until: "hasChallenge('h',22)", log, eval: "({h22: Number(player.h.challenges[22]||0)})" }),
-    () => strategize('ptr', ['--from', QL6, '--goal', GOAL]),
-    () => run('ptr', { 'from-snapshot': QL6, profile: 'all', 'auto-opt': CHOFF, queue: cfile, ticks: 1100, until: "hasChallenge('h',22)", log: clog, eval: "({h22: Number(player.h.challenges[22]||0)})" }),
-    () => run('ptr', { 'from-snapshot': QL6, profile: 'all', 'auto-opt': WINNER, ticks: 600, log: elog }),
+    () => strategize('ptr', ['--from', QL6, '--goal', GOAL, '--auto-opt', PRE]),
+    () => run('ptr', { 'from-snapshot': QL6, profile: 'all', 'auto-opt': `${CHOFF};${PRE}`, queue: cfile, ticks: 1100, until: "hasChallenge('h',22)", log: clog, eval: "({h22: Number(player.h.challenges[22]||0)})" }),
+    () => run('ptr', { 'from-snapshot': QL6, profile: 'all', 'auto-opt': `${WINNER};${PRE}`, ticks: 600, log: elog }),
     () => strategize('something', []), () => strategize('something', ['--from', 'tools/harness/snapshots/something/all/S05.json']), () => strategize('collection-of-everything', []),
     () => strategize('ptr', []),
   ];
@@ -245,7 +247,7 @@ async function partVerdict() {
   // EV — the template's evidence = an independent count of the same log
   {
     const ind = attemptsFromLog(logRecords(elog));
-    const v = ev0 && ev0.ok ? ca(await strategize('ptr', ['--from', QL6, '--goal', GOAL, '--auto-opt', WINNER, '--window', String(WINDOW_SHORT), '--log', elog]))[0] : null;
+    const v = ev0 && ev0.ok ? ca(await strategize('ptr', ['--from', QL6, '--goal', GOAL, '--auto-opt', `${WINNER};${PRE}`, '--window', String(WINDOW_SHORT), '--log', elog]))[0] : null;
     const e = v && v.binding && v.binding.evidence;
     const checks = { evidence: !!e, attempts: !!e && e.attempts === ind.attempts && e.attempts > 1, completed: !!e && e.completed === ind.completed && e.completed === 0,
       givenUp: !!e && e.givenUp === ind.givenUp, cutByResets: !!e && e.cutByResets === ind.byReset && e.cutByResets >= e.attempts - 1 };

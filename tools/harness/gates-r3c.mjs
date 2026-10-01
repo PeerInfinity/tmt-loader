@@ -277,7 +277,8 @@ async function part2f() {
   // the leg: L25 from all/M15.json, or from `--fixture` (then `--from` is that fixture's own mark, so every LATER
   // ladder mark is recorded — including one the ladder orders earlier, as M26 is to M27)
   const fx = a.fixture ? path.resolve(String(a.fixture)) : null;
-  const L2F = fx ? { ...L25, 'from-snapshot': fx, from: 'M25' } : L25;
+  // ⚖ stages-1 (user, 2026-10-01): this leg measured the table BEFORE its stages; it names that configuration (`stages=off`) rather than re-recording the pin — from all/M27 the 50,000 ticks run to 83,546, past QL5 (77,196) and QL6, where they now act
+  const L2F = fx ? { ...L25, 'from-snapshot': fx, from: 'M25', 'auto-opt': 'stages=off' } : L25;
   const base = path.join(REPO, 'tools/harness/results/r3c-fixtures', fx ? path.basename(fx, '.json') : 'M15');
   const dirs = [path.join(base, 'run1'), path.join(base, 'run2')];
   dirs.forEach((d) => { fsm.rmSync(d, { recursive: true, force: true }); fsm.mkdirSync(d, { recursive: true }); });
