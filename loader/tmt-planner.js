@@ -1645,6 +1645,9 @@
       if (!/^\d+(\.\d+)?([eE][+-]?\d+)?$/.test(String(target.threshold))) return [];      // a reserve must be a plain quantity
       return ['reserve>=' + target.threshold];
     }
+    // (h22, ⚖ design notes §19-R.1) a template with no rule above passes through as its literal id; one the ENGINE does
+    // not parse (`gain>=Nx-unit`, `rate-peak@B/H`) is not a candidate at all — `setPolicy` would refuse it.
+    if (typeof T.parsePolicy === 'function' && !T.parsePolicy(st.kind, template)) return [];
     return [template];
   }
   function policyCandidates(st, target) {
@@ -2190,6 +2193,8 @@
       // and `setPolicy` throws on the placeholder. Measured: with every candidate confirmed (screenK=999) the first such
       // id killed the round, and the run with it. The excursion restores the state; the candidate keeps `refused` and
       // can never win. Default rounds never confirm one, so their logs are unchanged.
+      // (h22) `instantiate` now drops an id the engine cannot parse (§19-R.1), so that case no longer reaches here; the
+      // guard stays for any other refusal `setPolicy` makes, and gates-m28's legs still report the per-round count.
       try {
         screened[i].confirm = measureConfig(screened[i].config, O('k'), target, activeFn, marks, frontier);
         screened[i].score = scoreOutcome(screened[i].confirm, target, O('k'));

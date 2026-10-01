@@ -83,7 +83,11 @@ const LONG = {
 };
 // S2's pin: `--planner=auto` from pre-f1/M02, 700 ticks, the ptr ladder — measured at 8b30434 (origin/main before this
 // slice) in a throwaway worktree: the run's end and the round log's DECISIONS (each round with `cost` stripped).
-const PIN_INERT = { ticks: 2061, hashGame: '70bb6ae66f6fcebe', logSha16: '76a4e99d96a63bbc', rounds: 3 };
+// ⚖ RE-RECORDED (h22-1, the user's ruling 2026-10-01, design notes §19-R.1): `76a4e99d96a63bbc` → `4a8cf44689964883`.
+// `instantiate` no longer emits a candidate the engine cannot parse; measured at 64aece3 + that filter, the game end is
+// the same (2,061 / 70bb6ae66f6fcebe) and the round log is byte-equal once each candidate's `screen.rank` (its place in
+// the pre-cut list, which the refused ids used to occupy) is stripped too: e96560ad78f9e0c3 before and after.
+const PIN_INERT = { ticks: 2061, hashGame: '70bb6ae66f6fcebe', logSha16: '4a8cf44689964883', rounds: 3 };
 
 function child(args, { timeoutMs = 3 * 3600e3 } = {}) {
   return new Promise((resolve) => {
