@@ -94,7 +94,22 @@ const READ_PTR = `(function () {
     resetsRow3: Object.keys(layers).filter(function (l) { return typeof row(l) === 'number' && row(l) >= row('q') && shown(l) && tmp[l] && tmp[l].type !== 'none'; }).sort(),
     h: { unlocked: !!player.h.unlocked, c22: unl(layers.h.challenges[22]), c31: unl(layers.h.challenges[31]), done22: Number(player.h.challenges[22] || 0) },
     qUpg: {} };
+  // (m28) s15Steps: does the sensitivity probe's step on Space Building 15 (amount ×10 + 1) move its effect at all? Its
+  // effect is floored (layers.js:2133-2137), so from amount 0 one building can leave it unchanged. Read with the SOURCE's
+  // own effect function — an instrument separate from the probe (below, inside H22).
   [11, 12, 13, 14, 21, 22, 23, 24, 31, 32, 33].forEach(function (id) { o.qUpg[id] = !!player.q.unlocked && unl(layers.q.upgrades[id]); });
+  // LAST, because it changes this throwaway boot: INSIDE H22 (entering is an h reset, which zeroes the buildings, so the
+  // amount the probe steps from is the in-challenge one, and whether one building crosses the floor depends on the free
+  // levels' parity)
+  o.s15Steps = null;
+  try {
+    if (o.h.unlocked && o.h.c22 && o.h.done22 < 1) {
+      if (player.h.activeChallenge !== 22) startChallenge('h', 22);
+      for (var u = 0; u < 3; u++) updateTemp();
+      var B15 = layers.s.buyables[15], x15 = player.s.buyables[15];
+      o.s15Steps = player.h.activeChallenge === 22 ? !new Decimal(B15.effect.call(B15, x15.times(10).plus(1))).eq(B15.effect.call(B15, x15)) : null;
+    }
+  } catch (e) { o.s15Steps = null; }
   return o;
 })()`;
 const READ_CH = `(function () { var n = 0; for (var l in layers) { var L = layers[l]; if (!L || !L.challenges || !player[l] || !player[l].unlocked) continue; for (var id in L.challenges) { var C = L.challenges[id]; if (!C || typeof C !== 'object') continue; var v = C.unlocked; try { if (typeof v === 'function' ? v.call(C) : v !== false) n++; } catch (e) {} } } return n; })()`;
@@ -204,13 +219,17 @@ async function partOracle() {
     for (const { v, states } of vals) {
       const buy = (v.moves || []).filter((m) => /\.buyables\./.test(m)).sort();
       if (v.entered !== true) probs.push(`${states[0]}: not entered`);
-      if (!setEq(buy, ['player.s.buyables.11', 'player.s.buyables.15'])) probs.push(`${states[0]}: buyables moving it inside ${JSON.stringify(buy)}`);
+      // s 15 moves it through s 11's free levels — where the probe's step moves s 15's floored effect at all (m28)
+      const steps = states.filter((s) => at.includes(s)).map((s) => R.at[s].s15Steps);
+      if (steps.some((x) => x !== true && x !== false) || new Set(steps).size > 1) probs.push(`${states[0]}: s15Steps ${JSON.stringify(steps)} across one variant`);
+      const want = steps[0] === false ? ['player.s.buyables.11'] : ['player.s.buyables.11', 'player.s.buyables.15'];
+      if (!setEq(buy, want)) probs.push(`${states[0]}: buyables moving it inside ${JSON.stringify(buy)}, want ${JSON.stringify(want)}`);
       for (const m of ['ach:a:21', 'ach:a:31']) if (!(v.moves || []).some((x) => x.startsWith(m + ' '))) probs.push(`${states[0]}: ${m} does not move it`);
       if (!(v.moves || []).some((x) => x.startsWith('upg:p:'))) probs.push(`${states[0]}: no prestige upgrade moves it`);
       for (const n of ['player.b.points', 'player.h.points']) if (!(v.nerfed || []).includes(n)) probs.push(`${states[0]}: ${n} not nerfed`);
       if (!/challenge entered on the copy/.test(f.from.probeState || '')) probs.push('the probe-only state is not labelled');
     }
-    row({ gate: 'O6 challenge-inputs H22', id: 'ptr', ok: !!f && !probs.length, notes: probs.length ? probs.join('; ') : `${at.length} state(s) with H22 open (${at[0]}…): inside only s 11 and s 15 (its free levels) among buyables, achievements 21/31 and prestige upgrades; b and h points nerfed` });
+    row({ gate: 'O6 challenge-inputs H22', id: 'ptr', ok: !!f && !probs.length, notes: probs.length ? probs.join('; ') : `${at.length} state(s) with H22 open (${at[0]}…): inside only s 11 and s 15 (its free levels; s 15 only where the probe's step moves its floored effect: ${at.filter((s) => R.at[s].s15Steps === false).join(',') || 'none'} it does not) among buyables, achievements 21/31 and prestige upgrades; b and h points nerfed` });
   }
   // O7 — purchase-budget: H31's 10 purchases (layers.js:1251, :1536 read player.h.chall31bought < 10 inside H31;
   // :1256, :1541 raise it). Notes §7d. Reachable only once H31 is unlocked.

@@ -38,14 +38,15 @@
   "all/M24",
   "all/M25",
   "all/M26",
-  "all/M27"
+  "all/M27",
+  "m28/QL6"
  ],
  "seeds": [
   1
  ],
  "summary": {
   "price": {
-   "facts": 77,
+   "facts": 79,
    "abstained": 0,
    "variants": 9
   },
@@ -55,7 +56,7 @@
    "variants": 0
   },
   "production": {
-   "facts": 54,
+   "facts": 56,
    "abstained": 0,
    "variants": 14
   },
@@ -98,7 +99,7 @@
     "seen": [
      [
       "all/M02",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -125,7 +126,7 @@
     "seen": [
      [
       "all/M02",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -189,7 +190,7 @@
      ],
      [
       "all/M14",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -224,7 +225,7 @@
      ],
      [
       "all/M14",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -259,7 +260,7 @@
      ],
      [
       "all/M14",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -285,7 +286,7 @@
     "seen": [
      [
       "all/M15",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -312,7 +313,7 @@
     "seen": [
      [
       "all/M15",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -338,7 +339,7 @@
     "seen": [
      [
       "all/M15",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -401,7 +402,10 @@
        "all/M23"
       ],
       "all/M25",
-      "all/M27"
+      [
+       "all/M27",
+       "m28/QL6"
+      ]
      ]
     },
     {
@@ -468,7 +472,7 @@
      ],
      [
       "all/M14",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -530,7 +534,7 @@
      ],
      [
       "all/M14",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -595,7 +599,7 @@
      ],
      [
       "all/M18",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -629,7 +633,7 @@
      ],
      [
       "all/M18",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -660,7 +664,7 @@
      ],
      [
       "all/M14",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -699,7 +703,7 @@
      ],
      [
       "all/M18",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -788,7 +792,7 @@
      ],
      [
       "all/M14",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -819,7 +823,7 @@
      ],
      [
       "all/M14",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -845,7 +849,7 @@
     "seen": [
      [
       "all/M02",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -871,7 +875,7 @@
     "seen": [
      [
       "all/M02",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -957,7 +961,7 @@
      ],
      [
       "all/M08",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -987,7 +991,7 @@
      ],
      [
       "all/M08",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -1017,7 +1021,7 @@
      ],
      [
       "all/M08",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -1047,7 +1051,7 @@
      ],
      [
       "all/M08",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -1074,7 +1078,7 @@
      "all/M06",
      [
       "all/M08",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -1101,7 +1105,7 @@
      "all/M06",
      [
       "all/M08",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -1127,7 +1131,7 @@
     "seen": [
      [
       "all/M21",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -1153,7 +1157,7 @@
     "seen": [
      [
       "all/M23",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -1179,7 +1183,7 @@
     "seen": [
      [
       "all/M25",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -1205,7 +1209,7 @@
     "seen": [
      [
       "all/M26",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -1265,7 +1269,7 @@
     "seen": [
      [
       "all/M21",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -1293,7 +1297,7 @@
     "seen": [
      [
       "all/M01",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -1331,7 +1335,7 @@
      ],
      [
       "all/M16",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -1368,7 +1372,7 @@
      ],
      [
       "all/M16",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -1405,7 +1409,7 @@
      ],
      [
       "all/M16",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -1442,7 +1446,7 @@
      ],
      [
       "all/M16",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -1479,7 +1483,7 @@
      ],
      [
       "all/M16",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -1513,7 +1517,7 @@
      ],
      [
       "all/M16",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -1551,7 +1555,7 @@
      ],
      [
       "all/M24",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -1589,7 +1593,7 @@
      ],
      [
       "all/M24",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -1757,6 +1761,57 @@
        "all/M27"
       ]
      ]
+    },
+    {
+     "item": {
+      "layer": "q",
+      "buyable": 11
+     },
+     "currency": "player.q.points",
+     "currencyHow": "the generated currency data (C1)",
+     "reads": [
+      "player.q.buyables.11",
+      "player.q.upgrades",
+      "player.h.challenges.42",
+      "player.a.achievements"
+     ],
+     "tmpReads": [
+      "tmp.h.challenges.42.completionLimit",
+      "tmp.ma.mastered"
+     ],
+     "shapes": {
+      "player.q.buyables.11": {
+       "type": "irregular",
+       "slopes": [
+        1.807,
+        21.33,
+        992,
+        1048000,
+        851700000000000,
+        1.268e+30,
+        3.226e+300
+       ],
+       "at": [
+        1,
+        2,
+        5,
+        10,
+        20,
+        50,
+        100,
+        1000
+       ]
+      },
+      "player.h.challenges.42": {
+       "type": "superexponential",
+       "exponent": 0,
+       "log10Scale": -8.52129,
+       "at0": "9.22337e18"
+      }
+     },
+     "seen": [
+      "m28/QL6"
+     ]
     }
    ],
    "from": {
@@ -1765,7 +1820,7 @@
     "seen": [
      [
       "all/M17",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -1799,7 +1854,7 @@
     "seen": [
      [
       "all/M23",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -1833,7 +1888,7 @@
     "seen": [
      [
       "all/M24",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -1867,7 +1922,7 @@
     "seen": [
      [
       "all/M24",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -1901,7 +1956,7 @@
     "seen": [
      [
       "all/M24",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -1935,7 +1990,7 @@
     "seen": [
      [
       "all/M24",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -1969,7 +2024,7 @@
     "seen": [
      [
       "all/M25",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -2003,7 +2058,7 @@
     "seen": [
      [
       "all/M26",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -2035,7 +2090,70 @@
     "how": "traceReads + probe:exponent",
     "state": "all/M26",
     "seen": [
-     "all/M26"
+     "all/M26",
+     "m28/QL6"
+    ],
+    "loader": "facts.mjs v1"
+   }
+  },
+  {
+   "id": "price:q:upgrade:31",
+   "kind": "price",
+   "item": {
+    "layer": "q",
+    "upgrade": 31
+   },
+   "currency": "player.q.energy",
+   "currencyHow": "currencyLayer + currencyInternalName",
+   "reads": [
+    "player.q.time",
+    "player.ma.current"
+   ],
+   "tmpReads": [],
+   "shapes": {
+    "player.q.time": {
+     "type": "power",
+     "exponent": 8.4,
+     "offset": 1,
+     "coef": "1e48"
+    }
+   },
+   "from": {
+    "how": "traceReads + probe:exponent",
+    "state": "m28/QL6",
+    "seen": [
+     "m28/QL6"
+    ],
+    "loader": "facts.mjs v1"
+   }
+  },
+  {
+   "id": "price:q:upgrade:32",
+   "kind": "price",
+   "item": {
+    "layer": "q",
+    "upgrade": 32
+   },
+   "currency": "player.q.energy",
+   "currencyHow": "currencyLayer + currencyInternalName",
+   "reads": [
+    "player.q.time",
+    "player.ma.current"
+   ],
+   "tmpReads": [],
+   "shapes": {
+    "player.q.time": {
+     "type": "power",
+     "exponent": 10,
+     "offset": 1,
+     "coef": "1e58"
+    }
+   },
+   "from": {
+    "how": "traceReads + probe:exponent",
+    "state": "m28/QL6",
+    "seen": [
+     "m28/QL6"
     ],
     "loader": "facts.mjs v1"
    }
@@ -2097,7 +2215,7 @@
       ],
       [
        "all/M18",
-       "all/M27"
+       "m28/QL6"
       ]
      ]
     },
@@ -2155,7 +2273,7 @@
     "seen": [
      [
       "all/M07",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -2233,7 +2351,7 @@
       ],
       [
        "all/M18",
-       "all/M27"
+       "m28/QL6"
       ]
      ]
     }
@@ -2244,7 +2362,7 @@
     "seen": [
      [
       "all/M07",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -2322,7 +2440,7 @@
       ],
       [
        "all/M18",
-       "all/M27"
+       "m28/QL6"
       ]
      ]
     }
@@ -2333,7 +2451,7 @@
     "seen": [
      [
       "all/M07",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -2418,7 +2536,7 @@
       ],
       [
        "all/M18",
-       "all/M27"
+       "m28/QL6"
       ]
      ]
     }
@@ -2433,7 +2551,7 @@
      ],
      [
       "all/M18",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -2474,7 +2592,7 @@
      ],
      [
       "all/M18",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -2500,7 +2618,7 @@
     "seen": [
      [
       "all/M07",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -2530,7 +2648,7 @@
      ],
      [
       "all/M18",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -2592,7 +2710,7 @@
       ],
       [
        "all/M18",
-       "all/M27"
+       "m28/QL6"
       ]
      ]
     }
@@ -2607,7 +2725,7 @@
      ],
      [
       "all/M18",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -2637,7 +2755,7 @@
      ],
      [
       "all/M18",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -2701,7 +2819,7 @@
       ],
       [
        "all/M18",
-       "all/M27"
+       "m28/QL6"
       ]
      ]
     }
@@ -2716,7 +2834,7 @@
      ],
      [
       "all/M18",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -2747,7 +2865,7 @@
      ],
      [
       "all/M14",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -2778,7 +2896,7 @@
      ],
      [
       "all/M14",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -2862,7 +2980,7 @@
       ],
       [
        "all/M18",
-       "all/M27"
+       "m28/QL6"
       ]
      ]
     }
@@ -2882,7 +3000,7 @@
      ],
      [
       "all/M18",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -2913,7 +3031,7 @@
      ],
      [
       "all/M14",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -2944,7 +3062,7 @@
      ],
      [
       "all/M14",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -3006,7 +3124,7 @@
      ],
      [
       "all/M14",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -3036,7 +3154,7 @@
      ],
      [
       "all/M14",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -3116,7 +3234,7 @@
      ],
      [
       "all/M18",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -3181,7 +3299,7 @@
      ],
      [
       "all/M18",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -3223,7 +3341,7 @@
      ],
      [
       "all/M18",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -3254,7 +3372,7 @@
      ],
      [
       "all/M14",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -3285,7 +3403,7 @@
      ],
      [
       "all/M14",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -3376,7 +3494,7 @@
      ],
      [
       "all/M14",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -3407,7 +3525,7 @@
      ],
      [
       "all/M14",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -3566,7 +3684,7 @@
     "seen": [
      [
       "all/M02",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1",
@@ -3588,7 +3706,7 @@
     "seen": [
      [
       "all/M02",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1",
@@ -3610,7 +3728,7 @@
     "seen": [
      [
       "all/M02",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1",
@@ -3632,7 +3750,7 @@
     "seen": [
      [
       "all/M02",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1",
@@ -3654,7 +3772,7 @@
     "seen": [
      [
       "all/M02",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1",
@@ -3676,7 +3794,7 @@
     "seen": [
      [
       "all/M02",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1",
@@ -3698,7 +3816,7 @@
     "seen": [
      [
       "all/M02",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1",
@@ -3720,7 +3838,7 @@
     "seen": [
      [
       "all/M02",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1",
@@ -3742,7 +3860,7 @@
     "seen": [
      [
       "all/M02",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1",
@@ -3764,7 +3882,7 @@
     "seen": [
      [
       "all/M02",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1",
@@ -3786,7 +3904,7 @@
     "seen": [
      [
       "all/M02",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1",
@@ -3808,7 +3926,7 @@
     "seen": [
      [
       "all/M02",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1",
@@ -3830,7 +3948,7 @@
     "seen": [
      [
       "all/M02",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1",
@@ -3852,7 +3970,7 @@
     "seen": [
      [
       "all/M02",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1",
@@ -4012,7 +4130,7 @@
     "seen": [
      [
       "all/M20",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1",
@@ -4034,7 +4152,7 @@
     "seen": [
      [
       "all/M20",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1",
@@ -4056,7 +4174,7 @@
     "seen": [
      [
       "all/M20",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1",
@@ -4078,7 +4196,7 @@
     "seen": [
      [
       "all/M20",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1",
@@ -4100,7 +4218,7 @@
     "seen": [
      [
       "all/M20",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1",
@@ -4142,7 +4260,7 @@
     "seen": [
      [
       "all/M20",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1",
@@ -4164,7 +4282,7 @@
     "seen": [
      [
       "all/M20",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1",
@@ -4186,7 +4304,7 @@
     "seen": [
      [
       "all/M20",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1",
@@ -4208,7 +4326,7 @@
     "seen": [
      [
       "all/M20",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1",
@@ -4230,7 +4348,7 @@
     "seen": [
      [
       "all/M20",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1",
@@ -4252,7 +4370,7 @@
     "seen": [
      [
       "all/M20",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1",
@@ -4274,7 +4392,7 @@
     "seen": [
      [
       "all/M20",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1",
@@ -4296,7 +4414,7 @@
     "seen": [
      [
       "all/M20",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1",
@@ -4318,7 +4436,7 @@
     "seen": [
      [
       "all/M20",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1",
@@ -4340,7 +4458,7 @@
     "seen": [
      [
       "all/M20",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1",
@@ -4362,7 +4480,7 @@
     "seen": [
      [
       "all/M20",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1",
@@ -4384,7 +4502,7 @@
     "seen": [
      [
       "all/M20",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1",
@@ -4406,7 +4524,7 @@
     "seen": [
      [
       "all/M20",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1",
@@ -4428,7 +4546,7 @@
     "seen": [
      [
       "all/M20",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1",
@@ -4452,7 +4570,7 @@
     "seen": [
      [
       "all/M20",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1",
@@ -4476,7 +4594,7 @@
     "seen": [
      [
       "all/M20",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1",
@@ -4498,7 +4616,7 @@
     "seen": [
      [
       "all/M20",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1",
@@ -4520,7 +4638,7 @@
     "seen": [
      [
       "all/M20",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1",
@@ -4542,7 +4660,7 @@
     "seen": [
      [
       "all/M20",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1",
@@ -4564,7 +4682,7 @@
     "seen": [
      [
       "all/M20",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1",
@@ -4586,7 +4704,7 @@
     "seen": [
      [
       "all/M20",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1",
@@ -4608,7 +4726,7 @@
     "seen": [
      [
       "all/M20",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1",
@@ -4630,7 +4748,7 @@
     "seen": [
      [
       "all/M20",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1",
@@ -4652,7 +4770,7 @@
     "seen": [
      [
       "all/M20",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1",
@@ -4674,7 +4792,7 @@
     "seen": [
      [
       "all/M20",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1",
@@ -4696,7 +4814,7 @@
     "seen": [
      [
       "all/M20",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1",
@@ -4718,7 +4836,7 @@
     "seen": [
      [
       "all/M20",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1",
@@ -4740,7 +4858,7 @@
     "seen": [
      [
       "all/M20",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1",
@@ -4782,7 +4900,7 @@
     "seen": [
      [
       "all/M20",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1",
@@ -4804,7 +4922,7 @@
     "seen": [
      [
       "all/M20",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1",
@@ -4826,7 +4944,7 @@
     "seen": [
      [
       "all/M20",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1",
@@ -4848,7 +4966,7 @@
     "seen": [
      [
       "all/M21",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1",
@@ -4870,7 +4988,7 @@
     "seen": [
      [
       "all/M21",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1",
@@ -4892,7 +5010,7 @@
     "seen": [
      [
       "all/M21",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1",
@@ -4914,7 +5032,7 @@
     "seen": [
      [
       "all/M21",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1",
@@ -4936,7 +5054,7 @@
     "seen": [
      [
       "all/M21",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1",
@@ -4978,7 +5096,7 @@
     "seen": [
      [
       "all/M21",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1",
@@ -5000,7 +5118,7 @@
     "seen": [
      [
       "all/M21",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1",
@@ -5022,7 +5140,7 @@
     "seen": [
      [
       "all/M21",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1",
@@ -5044,7 +5162,7 @@
     "seen": [
      [
       "all/M21",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1",
@@ -5066,7 +5184,7 @@
     "seen": [
      [
       "all/M21",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1",
@@ -5088,7 +5206,7 @@
     "seen": [
      [
       "all/M21",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1",
@@ -5110,7 +5228,7 @@
     "seen": [
      [
       "all/M21",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1",
@@ -5132,7 +5250,7 @@
     "seen": [
      [
       "all/M21",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1",
@@ -5154,7 +5272,7 @@
     "seen": [
      [
       "all/M21",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1",
@@ -5176,7 +5294,7 @@
     "seen": [
      [
       "all/M21",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1",
@@ -5198,7 +5316,7 @@
     "seen": [
      [
       "all/M21",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1",
@@ -5220,7 +5338,7 @@
     "seen": [
      [
       "all/M21",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1",
@@ -5242,7 +5360,7 @@
     "seen": [
      [
       "all/M21",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1",
@@ -5264,7 +5382,7 @@
     "seen": [
      [
       "all/M21",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1",
@@ -5288,7 +5406,7 @@
     "seen": [
      [
       "all/M21",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1",
@@ -5312,7 +5430,7 @@
     "seen": [
      [
       "all/M21",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1",
@@ -5334,7 +5452,7 @@
     "seen": [
      [
       "all/M21",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1",
@@ -5356,7 +5474,7 @@
     "seen": [
      [
       "all/M21",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1",
@@ -5379,7 +5497,8 @@
      [
       "all/M21",
       "all/M26"
-     ]
+     ],
+     "m28/QL6"
     ],
     "loader": "facts.mjs v1",
     "probeState": "requirement injected"
@@ -5466,7 +5585,7 @@
     "seen": [
      [
       "all/M21",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1",
@@ -5488,7 +5607,7 @@
     "seen": [
      [
       "all/M21",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1",
@@ -5510,7 +5629,7 @@
     "seen": [
      [
       "all/M21",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1",
@@ -5532,7 +5651,7 @@
     "seen": [
      [
       "all/M21",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1",
@@ -5554,7 +5673,7 @@
     "seen": [
      [
       "all/M21",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1",
@@ -5576,7 +5695,7 @@
     "seen": [
      [
       "all/M21",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1",
@@ -5598,7 +5717,7 @@
     "seen": [
      [
       "all/M21",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1",
@@ -5620,7 +5739,7 @@
     "seen": [
      [
       "all/M21",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1",
@@ -5642,7 +5761,7 @@
     "seen": [
      [
       "all/M21",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1",
@@ -5664,7 +5783,7 @@
     "seen": [
      [
       "all/M21",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1",
@@ -5686,7 +5805,7 @@
     "seen": [
      [
       "all/M21",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1",
@@ -5708,7 +5827,7 @@
     "seen": [
      [
       "all/M21",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1",
@@ -5750,7 +5869,7 @@
     "seen": [
      [
       "all/M21",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1",
@@ -5772,7 +5891,7 @@
     "seen": [
      [
       "all/M21",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1",
@@ -5794,7 +5913,7 @@
     "seen": [
      [
       "all/M21",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1",
@@ -5816,7 +5935,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1",
@@ -5843,7 +5962,7 @@
      ],
      [
       "all/M14",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1",
@@ -5870,7 +5989,7 @@
      ],
      [
       "all/M14",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1",
@@ -5897,7 +6016,7 @@
      ],
      [
       "all/M14",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1",
@@ -5924,7 +6043,7 @@
      ],
      [
       "all/M14",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1",
@@ -5951,7 +6070,7 @@
      ],
      [
       "all/M14",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1",
@@ -6002,7 +6121,7 @@
      ],
      [
       "all/M14",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1",
@@ -6029,7 +6148,7 @@
      ],
      [
       "all/M14",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1",
@@ -6056,7 +6175,7 @@
      ],
      [
       "all/M14",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1",
@@ -6083,7 +6202,7 @@
      ],
      [
       "all/M14",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1",
@@ -6110,7 +6229,7 @@
      ],
      [
       "all/M14",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1",
@@ -6137,7 +6256,7 @@
      ],
      [
       "all/M14",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1",
@@ -6164,7 +6283,7 @@
      ],
      [
       "all/M14",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1",
@@ -6191,7 +6310,7 @@
      ],
      [
       "all/M14",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1",
@@ -6218,7 +6337,7 @@
      ],
      [
       "all/M14",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1",
@@ -6245,7 +6364,7 @@
      ],
      [
       "all/M14",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1",
@@ -6272,7 +6391,7 @@
      ],
      [
       "all/M14",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1",
@@ -6299,7 +6418,7 @@
      ],
      [
       "all/M14",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1",
@@ -6326,7 +6445,7 @@
      ],
      [
       "all/M14",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1",
@@ -6357,7 +6476,7 @@
      ],
      [
       "all/M17",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1",
@@ -6386,7 +6505,7 @@
      ],
      [
       "all/M14",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1",
@@ -6415,7 +6534,7 @@
      ],
      [
       "all/M14",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1",
@@ -6442,7 +6561,7 @@
      ],
      [
       "all/M14",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1",
@@ -6599,7 +6718,7 @@
      ],
      [
       "all/M14",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1",
@@ -6653,7 +6772,7 @@
      ],
      [
       "all/M14",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1",
@@ -6680,7 +6799,7 @@
      ],
      [
       "all/M14",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1",
@@ -6707,7 +6826,7 @@
      ],
      [
       "all/M14",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1",
@@ -6734,7 +6853,7 @@
      ],
      [
       "all/M14",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1",
@@ -6761,7 +6880,7 @@
      ],
      [
       "all/M14",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1",
@@ -6788,7 +6907,7 @@
      ],
      [
       "all/M14",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1",
@@ -6815,7 +6934,7 @@
      ],
      [
       "all/M14",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1",
@@ -6842,7 +6961,7 @@
      ],
      [
       "all/M14",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1",
@@ -6869,7 +6988,7 @@
      ],
      [
       "all/M14",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1",
@@ -6896,7 +7015,7 @@
      ],
      [
       "all/M14",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1",
@@ -6952,7 +7071,7 @@
      ],
      [
       "all/M14",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1",
@@ -6979,7 +7098,7 @@
      ],
      [
       "all/M14",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1",
@@ -7006,7 +7125,7 @@
      ],
      [
       "all/M14",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1",
@@ -7718,7 +7837,7 @@
     "seen": [
      [
       "all/M21",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1",
@@ -7740,7 +7859,7 @@
     "seen": [
      [
       "all/M21",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1",
@@ -7762,7 +7881,7 @@
     "seen": [
      [
       "all/M21",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1",
@@ -7784,7 +7903,7 @@
     "seen": [
      [
       "all/M21",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1",
@@ -7806,7 +7925,7 @@
     "seen": [
      [
       "all/M21",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1",
@@ -7848,7 +7967,7 @@
     "seen": [
      [
       "all/M21",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1",
@@ -7870,7 +7989,7 @@
     "seen": [
      [
       "all/M21",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1",
@@ -7892,7 +8011,7 @@
     "seen": [
      [
       "all/M21",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1",
@@ -7914,7 +8033,7 @@
     "seen": [
      [
       "all/M21",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1",
@@ -7936,7 +8055,7 @@
     "seen": [
      [
       "all/M21",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1",
@@ -7958,7 +8077,7 @@
     "seen": [
      [
       "all/M21",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1",
@@ -7980,7 +8099,7 @@
     "seen": [
      [
       "all/M21",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1",
@@ -8002,7 +8121,7 @@
     "seen": [
      [
       "all/M21",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1",
@@ -8024,7 +8143,7 @@
     "seen": [
      [
       "all/M21",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1",
@@ -8046,7 +8165,7 @@
     "seen": [
      [
       "all/M21",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1",
@@ -8068,7 +8187,7 @@
     "seen": [
      [
       "all/M21",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1",
@@ -8090,7 +8209,7 @@
     "seen": [
      [
       "all/M21",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1",
@@ -8112,7 +8231,7 @@
     "seen": [
      [
       "all/M21",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1",
@@ -8134,7 +8253,7 @@
     "seen": [
      [
       "all/M21",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1",
@@ -8158,7 +8277,7 @@
     "seen": [
      [
       "all/M21",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1",
@@ -8182,7 +8301,7 @@
     "seen": [
      [
       "all/M21",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1",
@@ -8204,7 +8323,7 @@
     "seen": [
      [
       "all/M21",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1",
@@ -8226,7 +8345,7 @@
     "seen": [
      [
       "all/M21",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1",
@@ -8249,7 +8368,8 @@
      [
       "all/M21",
       "all/M26"
-     ]
+     ],
+     "m28/QL6"
     ],
     "loader": "facts.mjs v1",
     "probeState": "requirement injected"
@@ -8336,7 +8456,7 @@
     "seen": [
      [
       "all/M21",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1",
@@ -8358,7 +8478,7 @@
     "seen": [
      [
       "all/M21",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1",
@@ -8380,7 +8500,7 @@
     "seen": [
      [
       "all/M21",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1",
@@ -8402,7 +8522,7 @@
     "seen": [
      [
       "all/M21",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1",
@@ -8424,7 +8544,7 @@
     "seen": [
      [
       "all/M21",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1",
@@ -8446,7 +8566,7 @@
     "seen": [
      [
       "all/M21",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1",
@@ -8468,7 +8588,7 @@
     "seen": [
      [
       "all/M21",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1",
@@ -8490,7 +8610,7 @@
     "seen": [
      [
       "all/M21",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1",
@@ -8512,7 +8632,7 @@
     "seen": [
      [
       "all/M21",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1",
@@ -8534,7 +8654,7 @@
     "seen": [
      [
       "all/M21",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1",
@@ -8556,7 +8676,7 @@
     "seen": [
      [
       "all/M21",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1",
@@ -8578,7 +8698,7 @@
     "seen": [
      [
       "all/M21",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1",
@@ -8620,7 +8740,7 @@
     "seen": [
      [
       "all/M21",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1",
@@ -8642,7 +8762,7 @@
     "seen": [
      [
       "all/M21",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1",
@@ -8664,7 +8784,7 @@
     "seen": [
      [
       "all/M21",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1",
@@ -8996,7 +9116,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -9027,7 +9147,7 @@
       ],
       [
        "all/M22",
-       "all/M27"
+       "m28/QL6"
       ]
      ]
     },
@@ -9072,7 +9192,7 @@
      "all/M14",
      [
       "all/M16",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -9126,7 +9246,7 @@
       ],
       [
        "all/M22",
-       "all/M27"
+       "m28/QL6"
       ]
      ]
     },
@@ -9171,7 +9291,7 @@
      "all/M14",
      [
       "all/M16",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -9202,7 +9322,7 @@
       ],
       [
        "all/M22",
-       "all/M27"
+       "m28/QL6"
       ]
      ]
     },
@@ -9247,7 +9367,7 @@
      "all/M14",
      [
       "all/M16",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -9270,7 +9390,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -9293,7 +9413,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -9316,7 +9436,7 @@
     "seen": [
      [
       "all/M18",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -9341,7 +9461,10 @@
       "all/M19",
       "all/M25"
      ],
-     "all/M27"
+     [
+      "all/M27",
+      "m28/QL6"
+     ]
     ],
     "loader": "facts.mjs v1"
    }
@@ -9388,7 +9511,7 @@
     "seen": [
      [
       "all/M18",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -9411,7 +9534,7 @@
     "seen": [
      [
       "all/M18",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -9434,7 +9557,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -9465,7 +9588,7 @@
       ],
       [
        "all/M22",
-       "all/M27"
+       "m28/QL6"
       ]
      ]
     },
@@ -9510,7 +9633,7 @@
      "all/M14",
      [
       "all/M16",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -9564,7 +9687,7 @@
       ],
       [
        "all/M22",
-       "all/M27"
+       "m28/QL6"
       ]
      ]
     },
@@ -9609,7 +9732,7 @@
      "all/M14",
      [
       "all/M16",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -9646,7 +9769,10 @@
        "all/M23"
       ],
       "all/M25",
-      "all/M27"
+      [
+       "all/M27",
+       "m28/QL6"
+      ]
      ]
     },
     {
@@ -9697,7 +9823,7 @@
      ],
      [
       "all/M25",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -9728,7 +9854,7 @@
       ],
       [
        "all/M22",
-       "all/M27"
+       "m28/QL6"
       ]
      ]
     },
@@ -9773,7 +9899,7 @@
      "all/M14",
      [
       "all/M16",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -9796,7 +9922,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -9842,7 +9968,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -9865,7 +9991,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -9888,7 +10014,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -9911,7 +10037,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -9934,7 +10060,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -9957,7 +10083,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -9980,7 +10106,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -10003,7 +10129,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -10026,7 +10152,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -10049,7 +10175,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -10090,7 +10216,10 @@
        "all/M23"
       ],
       "all/M25",
-      "all/M27"
+      [
+       "all/M27",
+       "m28/QL6"
+      ]
      ]
     },
     {
@@ -10139,7 +10268,7 @@
      ],
      [
       "all/M17",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -10200,7 +10329,10 @@
        "all/M23"
       ],
       "all/M25",
-      "all/M27"
+      [
+       "all/M27",
+       "m28/QL6"
+      ]
      ]
     },
     {
@@ -10249,7 +10381,7 @@
      ],
      [
       "all/M17",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -10290,7 +10422,10 @@
        "all/M23"
       ],
       "all/M25",
-      "all/M27"
+      [
+       "all/M27",
+       "m28/QL6"
+      ]
      ]
     },
     {
@@ -10339,7 +10474,7 @@
      ],
      [
       "all/M17",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -10390,7 +10525,10 @@
        "all/M23"
       ],
       "all/M25",
-      "all/M27"
+      [
+       "all/M27",
+       "m28/QL6"
+      ]
      ]
     },
     {
@@ -10442,7 +10580,7 @@
      ],
      [
       "all/M16",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -10489,7 +10627,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -10526,7 +10664,7 @@
      "seen": [
       [
        "all/M18",
-       "all/M27"
+       "m28/QL6"
       ]
      ]
     }
@@ -10537,7 +10675,7 @@
     "seen": [
      [
       "all/M17",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -10654,6 +10792,23 @@
      "seen": [
       "all/M27"
      ]
+    },
+    {
+     "field": "player.q.energy",
+     "in": "player.q.time",
+     "rate": {
+      "type": "power",
+      "exponent": 5,
+      "offset": 1,
+      "coef": "8.53229e45"
+     },
+     "integrated": {
+      "type": "power",
+      "exponent": 6
+     },
+     "seen": [
+      "m28/QL6"
+     ]
     }
    ],
    "from": {
@@ -10662,7 +10817,7 @@
     "seen": [
      [
       "all/M18",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -10708,7 +10863,7 @@
     "seen": [
      [
       "all/M17",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -10731,7 +10886,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -10756,7 +10911,10 @@
       "all/M19",
       "all/M25"
      ],
-     "all/M27"
+     [
+      "all/M27",
+      "m28/QL6"
+     ]
     ],
     "loader": "facts.mjs v1"
    }
@@ -10803,7 +10961,30 @@
       "all/M19",
       "all/M25"
      ],
-     "all/M27"
+     [
+      "all/M27",
+      "m28/QL6"
+     ]
+    ],
+    "loader": "facts.mjs v1"
+   }
+  },
+  {
+   "id": "production:player.sb.best",
+   "kind": "production",
+   "field": "player.sb.best",
+   "clock": false,
+   "over": {
+    "ticks": 10,
+    "diff": 1,
+    "moves": "rises"
+   },
+   "drivenBy": [],
+   "from": {
+    "how": "producer:wait (automation off)",
+    "state": "m28/QL6",
+    "seen": [
+     "m28/QL6"
     ],
     "loader": "facts.mjs v1"
    }
@@ -10832,6 +11013,26 @@
    }
   },
   {
+   "id": "production:player.sb.points",
+   "kind": "production",
+   "field": "player.sb.points",
+   "clock": false,
+   "over": {
+    "ticks": 10,
+    "diff": 1,
+    "moves": "rises"
+   },
+   "drivenBy": [],
+   "from": {
+    "how": "producer:wait (automation off)",
+    "state": "m28/QL6",
+    "seen": [
+     "m28/QL6"
+    ],
+    "loader": "facts.mjs v1"
+   }
+  },
+  {
    "id": "production:player.sg.first",
    "kind": "production",
    "field": "player.sg.first",
@@ -10848,7 +11049,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -10871,7 +11072,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -10896,7 +11097,10 @@
       "all/M19",
       "all/M25"
      ],
-     "all/M27"
+     [
+      "all/M27",
+      "m28/QL6"
+     ]
     ],
     "loader": "facts.mjs v1"
    }
@@ -10918,7 +11122,7 @@
     "seen": [
      [
       "all/M19",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -10962,7 +11166,7 @@
       "all/M10",
       [
        "all/M19",
-       "all/M27"
+       "m28/QL6"
       ]
      ]
     }
@@ -10981,7 +11185,7 @@
      ],
      [
       "all/M19",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -11030,7 +11234,10 @@
       "all/M19",
       "all/M25"
      ],
-     "all/M27"
+     [
+      "all/M27",
+      "m28/QL6"
+     ]
     ],
     "loader": "facts.mjs v1"
    }
@@ -11052,7 +11259,7 @@
     "seen": [
      [
       "all/M01",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -11076,7 +11283,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -11103,7 +11310,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -11127,7 +11334,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -11151,7 +11358,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -11175,7 +11382,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -11197,7 +11404,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -11221,7 +11428,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -11245,7 +11452,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -11267,7 +11474,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -11293,7 +11500,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -11319,7 +11526,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -11345,7 +11552,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -11388,7 +11595,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -11414,7 +11621,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -11440,7 +11647,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -12232,6 +12439,54 @@
       "all/M24",
       "all/M26"
      ]
+    },
+    {
+     "fn": {
+      "layer": "b",
+      "fn": "addToBase"
+     },
+     "reads": [
+      "player.b.upgrades",
+      "player.ma.selectionActive",
+      "player.b.unlocked",
+      "player.t.upgrades",
+      "player.t.unlocked",
+      "player.e.upgrades",
+      "player.e.unlocked",
+      "player.e.buyables.11",
+      "player.q.upgrades",
+      "player.q.unlocked",
+      "player.s.unlocked"
+     ],
+     "tmpReads": [
+      "tmp.ma.canBeMastered",
+      "tmp.b.upgrades.12.effect",
+      "tmp.b.upgrades.13.effect",
+      "tmp.t.upgrades.11.effect",
+      "tmp.e.upgrades.11.effect.b",
+      "tmp.e.buyables.11.power",
+      "tmp.e.freeEnh",
+      "tmp.ma.mastered",
+      "tmp.s.buyables.12.effect",
+      "tmp.t.upgrades.25.effect"
+     ],
+     "members": [
+      "upg:t:11"
+     ],
+     "widened": [
+      {
+       "when": "player.ma.selectionActive=true",
+       "reads": [
+        "tmp.b.row",
+        "tmp.t.row",
+        "tmp.e.row",
+        "tmp.q.row"
+       ]
+      }
+     ],
+     "seen": [
+      "m28/QL6"
+     ]
     }
    ],
    "from": {
@@ -12240,7 +12495,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -12264,7 +12519,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -12288,7 +12543,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -12372,7 +12627,10 @@
        "all/M23"
       ],
       "all/M25",
-      "all/M27"
+      [
+       "all/M27",
+       "m28/QL6"
+      ]
      ]
     },
     {
@@ -12423,7 +12681,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -12703,7 +12961,7 @@
      "seen": [
       [
        "all/M25",
-       "all/M27"
+       "m28/QL6"
       ]
      ]
     }
@@ -12714,7 +12972,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -12738,7 +12996,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -12926,7 +13184,7 @@
       ],
       [
        "all/M24",
-       "all/M27"
+       "m28/QL6"
       ]
      ]
     },
@@ -12966,7 +13224,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -12998,7 +13256,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -13039,7 +13297,7 @@
      "seen": [
       [
        "all/M02",
-       "all/M27"
+       "m28/QL6"
       ]
      ]
     }
@@ -13050,7 +13308,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -13192,7 +13450,10 @@
        "all/M22"
       ],
       "all/M25",
-      "all/M27"
+      [
+       "all/M27",
+       "m28/QL6"
+      ]
      ]
     },
     {
@@ -13311,7 +13572,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -13380,7 +13641,10 @@
        "all/M23"
       ],
       "all/M25",
-      "all/M27"
+      [
+       "all/M27",
+       "m28/QL6"
+      ]
      ]
     },
     {
@@ -13424,7 +13688,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -13491,7 +13755,10 @@
        "all/M23"
       ],
       "all/M25",
-      "all/M27"
+      [
+       "all/M27",
+       "m28/QL6"
+      ]
      ]
     },
     {
@@ -13537,7 +13804,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -13563,7 +13830,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -13622,7 +13889,7 @@
      "seen": [
       [
        "all/M07",
-       "all/M27"
+       "m28/QL6"
       ]
      ]
     }
@@ -13633,7 +13900,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -13659,7 +13926,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -13687,7 +13954,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -13715,7 +13982,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -13741,7 +14008,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -13765,7 +14032,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -13789,7 +14056,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -13813,7 +14080,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -13835,7 +14102,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -13868,7 +14135,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -13895,7 +14162,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -13923,7 +14190,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -13947,7 +14214,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -13975,7 +14242,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -14009,7 +14276,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -14036,7 +14303,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -14064,7 +14331,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -14088,7 +14355,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -14115,7 +14382,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -14141,7 +14408,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -14167,7 +14434,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -14196,7 +14463,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -14220,7 +14487,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -14244,7 +14511,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -14268,7 +14535,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -14292,7 +14559,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -14316,7 +14583,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -14340,7 +14607,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -14362,7 +14629,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -14384,7 +14651,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -14408,7 +14675,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -14432,7 +14699,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -14456,7 +14723,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -14480,7 +14747,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -14504,7 +14771,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -14809,6 +15076,41 @@
      "seen": [
       "all/M26"
      ]
+    },
+    {
+     "fn": {
+      "layer": "e",
+      "fn": "freeEnh"
+     },
+     "reads": [
+      "player.e.upgrades",
+      "player.ma.selectionActive",
+      "player.e.unlocked",
+      "player.q.upgrades",
+      "player.q.unlocked"
+     ],
+     "tmpReads": [
+      "tmp.ma.canBeMastered",
+      "tmp.e.upgrades.23.effect",
+      "tmp.q.upgrades.22.effect"
+     ],
+     "members": [
+      "upg:e:13",
+      "upg:e:21",
+      "upg:q:22"
+     ],
+     "widened": [
+      {
+       "when": "player.ma.selectionActive=true",
+       "reads": [
+        "tmp.e.row",
+        "tmp.q.row"
+       ]
+      }
+     ],
+     "seen": [
+      "m28/QL6"
+     ]
     }
    ],
    "from": {
@@ -14817,7 +15119,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -14839,7 +15141,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -14900,7 +15202,10 @@
        "all/M23"
       ],
       "all/M25",
-      "all/M27"
+      [
+       "all/M27",
+       "m28/QL6"
+      ]
      ]
     },
     {
@@ -14940,7 +15245,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -14993,7 +15298,7 @@
      "seen": [
       [
        "all/M18",
-       "all/M27"
+       "m28/QL6"
       ]
      ]
     }
@@ -15004,7 +15309,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -15028,7 +15333,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -15056,7 +15361,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -15179,7 +15484,10 @@
        "all/M22"
       ],
       "all/M25",
-      "all/M27"
+      [
+       "all/M27",
+       "m28/QL6"
+      ]
      ]
     }
    ],
@@ -15189,7 +15497,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -15217,7 +15525,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -15246,7 +15554,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -15272,7 +15580,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -15300,7 +15608,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -15324,7 +15632,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -15348,7 +15656,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -15372,7 +15680,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -15422,7 +15730,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -15449,7 +15757,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -15477,7 +15785,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -15501,7 +15809,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -15525,7 +15833,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -15551,7 +15859,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -15575,7 +15883,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -15599,7 +15907,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -15627,7 +15935,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -15651,7 +15959,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -15675,7 +15983,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -15699,7 +16007,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -15723,7 +16031,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -15747,7 +16055,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -16610,6 +16918,58 @@
      "seen": [
       "all/M26"
      ]
+    },
+    {
+     "fn": {
+      "layer": "g",
+      "fn": "effBase"
+     },
+     "reads": [
+      "player.g.upgrades",
+      "player.ma.selectionActive",
+      "player.g.unlocked",
+      "player.e.upgrades",
+      "player.e.unlocked",
+      "player.e.buyables.11",
+      "player.q.upgrades",
+      "player.q.unlocked",
+      "player.s.unlocked",
+      "player.h.activeChallenge",
+      "player.sg.unlocked"
+     ],
+     "tmpReads": [
+      "tmp.ma.canBeMastered",
+      "tmp.g.upgrades.12.effect",
+      "tmp.g.upgrades.13.effect",
+      "tmp.e.upgrades.11.effect.g",
+      "tmp.e.buyables.11.power",
+      "tmp.e.freeEnh",
+      "tmp.ma.mastered",
+      "tmp.s.buyables.12.effect",
+      "tmp.q.upgrades.12.effect"
+     ],
+     "members": [
+      "upg:q:12"
+     ],
+     "widened": [
+      {
+       "when": "player.ma.selectionActive=true",
+       "reads": [
+        "tmp.g.row",
+        "tmp.e.row",
+        "tmp.q.row"
+       ]
+      },
+      {
+       "when": "player.sg.unlocked=true",
+       "reads": [
+        "tmp.sg.enEff"
+       ]
+      }
+     ],
+     "seen": [
+      "m28/QL6"
+     ]
     }
    ],
    "from": {
@@ -16618,7 +16978,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -17528,6 +17888,66 @@
      "seen": [
       "all/M26"
      ]
+    },
+    {
+     "fn": {
+      "layer": "g",
+      "fn": "effect"
+     },
+     "reads": [
+      "player.ma.selectionActive",
+      "player.g.unlocked",
+      "player.ne.activeChallenge",
+      "player.g.upgrades",
+      "player.e.upgrades",
+      "player.e.unlocked",
+      "player.e.buyables.11",
+      "player.q.upgrades",
+      "player.q.unlocked",
+      "player.s.unlocked",
+      "player.h.activeChallenge",
+      "player.sg.unlocked",
+      "player.g.points",
+      "player.t.upgrades",
+      "player.t.unlocked",
+      "player.s.upgrades"
+     ],
+     "tmpReads": [
+      "tmp.ma.canBeMastered",
+      "tmp.g.upgrades.12.effect",
+      "tmp.g.upgrades.13.effect",
+      "tmp.e.upgrades.11.effect.g",
+      "tmp.e.buyables.11.power",
+      "tmp.e.freeEnh",
+      "tmp.ma.mastered",
+      "tmp.s.buyables.12.effect",
+      "tmp.q.upgrades.12.effect",
+      "tmp.sg.spectralTotal",
+      "tmp.g.upgrades.21.effect",
+      "tmp.g.upgrades.25.effect",
+      "tmp.t.enEff",
+      "tmp.s.upgrades.12.effect",
+      "tmp.s.upgrades.13.effect",
+      "tmp.q.enEff"
+     ],
+     "members": [],
+     "widened": [
+      {
+       "when": "player.ma.selectionActive=true",
+       "reads": [
+        "tmp.g.row"
+       ]
+      },
+      {
+       "when": "player.sg.unlocked=true",
+       "reads": [
+        "tmp.sg.enEff"
+       ]
+      }
+     ],
+     "seen": [
+      "m28/QL6"
+     ]
     }
    ],
    "from": {
@@ -17536,7 +17956,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -17560,7 +17980,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -17730,7 +18150,10 @@
        "all/M23"
       ],
       "all/M25",
-      "all/M27"
+      [
+       "all/M27",
+       "m28/QL6"
+      ]
      ]
     },
     {
@@ -17775,7 +18198,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -18024,7 +18447,10 @@
      ],
      "seen": [
       "all/M25",
-      "all/M27"
+      [
+       "all/M27",
+       "m28/QL6"
+      ]
      ]
     }
    ],
@@ -18034,7 +18460,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -18278,7 +18704,7 @@
      "seen": [
       [
        "all/M24",
-       "all/M27"
+       "m28/QL6"
       ]
      ]
     }
@@ -18289,7 +18715,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -18313,7 +18739,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -18341,7 +18767,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -18413,7 +18839,10 @@
        "all/M23"
       ],
       "all/M25",
-      "all/M27"
+      [
+       "all/M27",
+       "m28/QL6"
+      ]
      ]
     },
     {
@@ -18461,7 +18890,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -18566,7 +18995,10 @@
        "all/M23"
       ],
       "all/M25",
-      "all/M27"
+      [
+       "all/M27",
+       "m28/QL6"
+      ]
      ]
     },
     {
@@ -18616,7 +19048,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -18642,7 +19074,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -18712,7 +19144,10 @@
        "all/M23"
       ],
       "all/M25",
-      "all/M27"
+      [
+       "all/M27",
+       "m28/QL6"
+      ]
      ]
     },
     {
@@ -18756,7 +19191,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -18783,7 +19218,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -18809,7 +19244,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -18908,7 +19343,10 @@
        "all/M23"
       ],
       "all/M25",
-      "all/M27"
+      [
+       "all/M27",
+       "m28/QL6"
+      ]
      ]
     },
     {
@@ -18953,7 +19391,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -18979,7 +19417,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -19005,7 +19443,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -19031,7 +19469,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -19057,7 +19495,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -19081,7 +19519,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -19105,7 +19543,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -19131,7 +19569,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -19161,7 +19599,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -19185,7 +19623,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -19228,7 +19666,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -19262,7 +19700,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -19288,7 +19726,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -19313,7 +19751,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -19337,7 +19775,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -19364,7 +19802,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -19388,7 +19826,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -19416,7 +19854,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -19452,7 +19890,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -19476,7 +19914,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -19503,7 +19941,7 @@
       ],
       [
        "all/M25",
-       "all/M27"
+       "m28/QL6"
       ]
      ]
     },
@@ -19530,7 +19968,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -19558,7 +19996,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -19639,7 +20077,7 @@
      "seen": [
       [
        "all/M21",
-       "all/M27"
+       "m28/QL6"
       ]
      ]
     }
@@ -19650,7 +20088,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -19725,7 +20163,7 @@
      "seen": [
       [
        "all/M21",
-       "all/M27"
+       "m28/QL6"
       ]
      ]
     }
@@ -19736,7 +20174,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -19760,7 +20198,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -19784,7 +20222,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -19808,7 +20246,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -19921,7 +20359,8 @@
       }
      ],
      "seen": [
-      "all/M26"
+      "all/M26",
+      "m28/QL6"
      ]
     }
    ],
@@ -19931,7 +20370,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -19955,7 +20394,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -19977,7 +20416,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -20099,7 +20538,7 @@
      "seen": [
       [
        "all/M25",
-       "all/M27"
+       "m28/QL6"
       ]
      ]
     }
@@ -20110,7 +20549,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -20144,7 +20583,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -20233,7 +20672,7 @@
      "seen": [
       [
        "all/M21",
-       "all/M27"
+       "m28/QL6"
       ]
      ]
     }
@@ -20244,7 +20683,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -20266,7 +20705,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -20312,7 +20751,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -20343,7 +20782,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -20377,7 +20816,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -20408,7 +20847,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -20436,7 +20875,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -20463,7 +20902,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -20491,7 +20930,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -20519,7 +20958,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -20547,7 +20986,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -20574,7 +21013,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -20602,7 +21041,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -20628,7 +21067,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -20655,7 +21094,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -20683,7 +21122,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -20710,7 +21149,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -20737,7 +21176,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -20763,7 +21202,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -20789,7 +21228,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -20816,7 +21255,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -20840,7 +21279,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -20864,7 +21303,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -20890,7 +21329,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -20937,7 +21376,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -20967,7 +21406,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -20997,7 +21436,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -21027,7 +21466,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -21057,7 +21496,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -21087,7 +21526,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -21117,7 +21556,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -21147,7 +21586,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -21177,7 +21616,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -21207,7 +21646,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -21237,7 +21676,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -21261,7 +21700,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -21283,7 +21722,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -21321,7 +21760,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -21346,7 +21785,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -21372,7 +21811,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -21406,7 +21845,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -21430,7 +21869,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -21454,7 +21893,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -21478,7 +21917,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -21500,7 +21939,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -21522,7 +21961,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -21546,7 +21985,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -21570,7 +22009,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -21594,7 +22033,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -21618,7 +22057,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -21640,7 +22079,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -21664,7 +22103,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -21703,7 +22142,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -21725,7 +22164,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -21749,7 +22188,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -21781,7 +22220,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -21808,7 +22247,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -21832,7 +22271,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -21856,7 +22295,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -21887,7 +22326,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -21918,7 +22357,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -21947,7 +22386,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -21976,7 +22415,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -22005,7 +22444,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -22034,7 +22473,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -22058,7 +22497,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -22080,7 +22519,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -22106,7 +22545,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -22131,7 +22570,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -22156,7 +22595,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -22182,7 +22621,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -22216,7 +22655,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -22240,7 +22679,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -22284,7 +22723,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -22318,7 +22757,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -22342,7 +22781,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -22368,7 +22807,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -22392,7 +22831,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -22418,7 +22857,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -22440,7 +22879,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -22462,7 +22901,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -22516,7 +22955,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -22538,7 +22977,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -22562,7 +23001,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -22588,7 +23027,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -22614,7 +23053,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -22639,7 +23078,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -22661,7 +23100,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -22687,7 +23126,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -22711,7 +23150,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -22750,7 +23189,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -22776,7 +23215,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -22802,7 +23241,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -22826,7 +23265,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -22863,7 +23302,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -22889,7 +23328,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -22913,7 +23352,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -22935,7 +23374,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -22974,7 +23413,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -23008,7 +23447,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -23032,7 +23471,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -23059,7 +23498,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -23083,7 +23522,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -23107,7 +23546,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -23135,7 +23574,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -23161,7 +23600,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -23183,7 +23622,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -23207,7 +23646,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -23234,7 +23673,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -23266,7 +23705,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -23303,7 +23742,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -23330,7 +23769,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -23357,7 +23796,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -23382,7 +23821,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -23417,7 +23856,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -23444,7 +23883,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -23468,7 +23907,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -23492,7 +23931,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -23523,7 +23962,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -23554,7 +23993,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -23584,7 +24023,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -23615,7 +24054,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -23645,7 +24084,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -23675,7 +24114,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -23705,7 +24144,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -23735,7 +24174,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -23765,7 +24204,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -23807,7 +24246,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -23833,7 +24272,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -23870,7 +24309,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -23892,7 +24331,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -23916,7 +24355,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -23940,7 +24379,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -23969,7 +24408,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -23996,7 +24435,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -24020,7 +24459,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -24044,7 +24483,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -24083,7 +24522,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -24114,7 +24553,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -24138,7 +24577,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -24162,7 +24601,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -24256,7 +24695,7 @@
       ],
       [
        "all/M24",
-       "all/M27"
+       "m28/QL6"
       ]
      ]
     }
@@ -24267,7 +24706,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -25319,7 +25758,10 @@
        "all/M22"
       ],
       "all/M25",
-      "all/M27"
+      [
+       "all/M27",
+       "m28/QL6"
+      ]
      ]
     },
     {
@@ -25514,7 +25956,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -25580,7 +26022,7 @@
       ],
       [
        "all/M17",
-       "all/M27"
+       "m28/QL6"
       ]
      ]
     }
@@ -25591,7 +26033,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -25771,7 +26213,7 @@
       ],
       [
        "all/M08",
-       "all/M27"
+       "m28/QL6"
       ]
      ]
     }
@@ -25782,7 +26224,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -25977,7 +26419,10 @@
        "all/M22"
       ],
       "all/M25",
-      "all/M27"
+      [
+       "all/M27",
+       "m28/QL6"
+      ]
      ]
     },
     {
@@ -26026,7 +26471,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -26145,7 +26590,7 @@
       ],
       [
        "all/M24",
-       "all/M27"
+       "m28/QL6"
       ]
      ]
     }
@@ -26156,7 +26601,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -26318,7 +26763,10 @@
        "all/M22"
       ],
       "all/M25",
-      "all/M27"
+      [
+       "all/M27",
+       "m28/QL6"
+      ]
      ]
     },
     {
@@ -26402,7 +26850,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -26429,7 +26877,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -26456,7 +26904,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -26483,7 +26931,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -26509,7 +26957,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -26535,7 +26983,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -26559,7 +27007,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -26585,7 +27033,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -26607,7 +27055,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -26631,7 +27079,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -26657,7 +27105,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -26684,7 +27132,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -26706,7 +27154,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -26733,7 +27181,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -26758,7 +27206,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -26797,7 +27245,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -26821,7 +27269,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -26857,7 +27305,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -26881,7 +27329,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -26963,7 +27411,10 @@
        "all/M23"
       ],
       "all/M25",
-      "all/M27"
+      [
+       "all/M27",
+       "m28/QL6"
+      ]
      ]
     },
     {
@@ -27006,7 +27457,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -27032,7 +27483,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -27254,7 +27705,10 @@
       }
      ],
      "seen": [
-      "all/M27"
+      [
+       "all/M27",
+       "m28/QL6"
+      ]
      ]
     }
    ],
@@ -27264,7 +27718,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -27288,7 +27742,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -27324,7 +27778,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -27346,7 +27800,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -27468,7 +27922,7 @@
      "seen": [
       [
        "all/M25",
-       "all/M27"
+       "m28/QL6"
       ]
      ]
     }
@@ -27479,7 +27933,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -27513,7 +27967,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -27584,7 +28038,7 @@
      "seen": [
       [
        "all/M17",
-       "all/M27"
+       "m28/QL6"
       ]
      ]
     }
@@ -27595,7 +28049,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -27623,7 +28077,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -27649,7 +28103,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -27677,7 +28131,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -27705,7 +28159,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -27731,7 +28185,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -27759,7 +28213,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -27786,7 +28240,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -27814,7 +28268,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -27838,7 +28292,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -27864,7 +28318,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -27888,7 +28342,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -27913,7 +28367,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -27937,7 +28391,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -27973,7 +28427,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -28000,7 +28454,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -28028,7 +28482,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -28052,7 +28506,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -28076,7 +28530,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -28101,7 +28555,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -28125,7 +28579,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -28151,7 +28605,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -28178,7 +28632,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -28211,7 +28665,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -28244,7 +28698,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -28272,7 +28726,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -28296,7 +28750,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -28322,7 +28776,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -28346,7 +28800,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -28405,7 +28859,7 @@
      "seen": [
       [
        "all/M01",
-       "all/M27"
+       "m28/QL6"
       ]
      ]
     }
@@ -28416,7 +28870,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -28440,7 +28894,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -28597,7 +29051,7 @@
      "seen": [
       [
        "all/M26",
-       "all/M27"
+       "m28/QL6"
       ]
      ]
     }
@@ -28608,7 +29062,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -28648,7 +29102,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -28686,7 +29140,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -28724,7 +29178,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -28810,7 +29264,7 @@
       ],
       [
        "all/M18",
-       "all/M27"
+       "m28/QL6"
       ]
      ]
     }
@@ -28821,7 +29275,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -28901,7 +29355,7 @@
      "seen": [
       [
        "all/M18",
-       "all/M27"
+       "m28/QL6"
       ]
      ]
     }
@@ -28912,7 +29366,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -28950,7 +29404,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -28988,7 +29442,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -29026,7 +29480,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -29064,7 +29518,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -29102,7 +29556,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -29220,7 +29674,7 @@
       ],
       [
        "all/M18",
-       "all/M27"
+       "m28/QL6"
       ]
      ]
     }
@@ -29231,7 +29685,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -29255,7 +29709,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -29573,6 +30027,41 @@
      "seen": [
       "all/M26"
      ]
+    },
+    {
+     "fn": {
+      "layer": "s",
+      "fn": "freeSpaceBuildings"
+     },
+     "reads": [
+      "player.s.upgrades",
+      "player.ma.selectionActive",
+      "player.s.unlocked",
+      "player.q.upgrades",
+      "player.q.unlocked",
+      "player.ss.upgrades"
+     ],
+     "tmpReads": [
+      "tmp.ma.canBeMastered",
+      "tmp.s.upgrades.22.effect",
+      "tmp.q.upgrades.22.effect"
+     ],
+     "members": [
+      "upg:s:11",
+      "upg:q:22"
+     ],
+     "widened": [
+      {
+       "when": "player.ma.selectionActive=true",
+       "reads": [
+        "tmp.s.row",
+        "tmp.q.row"
+       ]
+      }
+     ],
+     "seen": [
+      "m28/QL6"
+     ]
     }
    ],
    "from": {
@@ -29581,7 +30070,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -29631,7 +30120,7 @@
      "seen": [
       [
        "all/M07",
-       "all/M27"
+       "m28/QL6"
       ]
      ]
     }
@@ -29642,7 +30131,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -29664,7 +30153,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -29686,7 +30175,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -29719,7 +30208,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -29743,7 +30232,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -29973,7 +30462,10 @@
        "all/M18",
        "all/M25"
       ],
-      "all/M27"
+      [
+       "all/M27",
+       "m28/QL6"
+      ]
      ]
     }
    ],
@@ -29983,7 +30475,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -30019,7 +30511,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -30045,7 +30537,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -30071,7 +30563,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -30097,7 +30589,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -30123,7 +30615,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -30149,7 +30641,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -30175,7 +30667,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -30201,7 +30693,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -30225,7 +30717,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -30249,7 +30741,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -30408,7 +30900,7 @@
      "seen": [
       [
        "all/M25",
-       "all/M27"
+       "m28/QL6"
       ]
      ]
     }
@@ -30419,7 +30911,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -30524,7 +31016,7 @@
      "seen": [
       [
        "all/M25",
-       "all/M27"
+       "m28/QL6"
       ]
      ]
     }
@@ -30535,7 +31027,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -30559,7 +31051,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -30585,7 +31077,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -30609,7 +31101,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -30635,7 +31127,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -30659,7 +31151,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -30683,7 +31175,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -30735,7 +31227,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -30782,7 +31274,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -30824,7 +31316,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -30848,7 +31340,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -30874,7 +31366,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -30898,7 +31390,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -30922,7 +31414,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -30946,7 +31438,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -30972,7 +31464,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -30998,7 +31490,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -31025,7 +31517,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -31072,7 +31564,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -31097,7 +31589,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -31142,7 +31634,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -31166,7 +31658,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -31188,7 +31680,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -31220,7 +31712,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -31244,7 +31736,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -31272,7 +31764,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -31300,7 +31792,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -31327,7 +31819,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -31353,7 +31845,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -31379,7 +31871,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -31403,7 +31895,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -31427,7 +31919,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -31473,7 +31965,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -31505,7 +31997,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -31539,7 +32031,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -31565,7 +32057,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -31589,7 +32081,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -31907,7 +32399,10 @@
        "all/M23"
       ],
       "all/M25",
-      "all/M27"
+      [
+       "all/M27",
+       "m28/QL6"
+      ]
      ]
     },
     {
@@ -31959,7 +32454,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -32121,6 +32616,37 @@
       "all/M24",
       "all/M26"
      ]
+    },
+    {
+     "fn": {
+      "layer": "t",
+      "fn": "enEff"
+     },
+     "reads": [
+      "player.ma.selectionActive",
+      "player.t.unlocked",
+      "player.t.energy",
+      "player.t.upgrades",
+      "player.q.upgrades",
+      "player.q.unlocked",
+      "player.ma.mastered"
+     ],
+     "tmpReads": [
+      "tmp.ma.canBeMastered",
+      "tmp.ma.mastered"
+     ],
+     "members": [],
+     "widened": [
+      {
+       "when": "player.ma.selectionActive=true",
+       "reads": [
+        "tmp.t.row"
+       ]
+      }
+     ],
+     "seen": [
+      "m28/QL6"
+     ]
     }
    ],
    "from": {
@@ -32129,7 +32655,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -32301,7 +32827,10 @@
        "all/M23"
       ],
       "all/M25",
-      "all/M27"
+      [
+       "all/M27",
+       "m28/QL6"
+      ]
      ]
     }
    ],
@@ -32311,7 +32840,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -32496,7 +33025,10 @@
        "all/M23"
       ],
       "all/M25",
-      "all/M27"
+      [
+       "all/M27",
+       "m28/QL6"
+      ]
      ]
     },
     {
@@ -32538,7 +33070,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -32562,7 +33094,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -32834,6 +33366,40 @@
      "seen": [
       "all/M26"
      ]
+    },
+    {
+     "fn": {
+      "layer": "t",
+      "fn": "freeExtraTimeCapsules"
+     },
+     "reads": [
+      "player.t.upgrades",
+      "player.ma.selectionActive",
+      "player.t.unlocked",
+      "player.q.upgrades",
+      "player.q.unlocked"
+     ],
+     "tmpReads": [
+      "tmp.ma.canBeMastered",
+      "tmp.t.enEff2",
+      "tmp.q.upgrades.22.effect"
+     ],
+     "members": [
+      "upg:t:12",
+      "upg:q:22"
+     ],
+     "widened": [
+      {
+       "when": "player.ma.selectionActive=true",
+       "reads": [
+        "tmp.t.row",
+        "tmp.q.row"
+       ]
+      }
+     ],
+     "seen": [
+      "m28/QL6"
+     ]
     }
    ],
    "from": {
@@ -32842,7 +33408,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -32864,7 +33430,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -32886,7 +33452,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -32978,7 +33544,7 @@
       ],
       [
        "all/M18",
-       "all/M27"
+       "m28/QL6"
       ]
      ]
     }
@@ -32989,7 +33555,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -33021,7 +33587,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -33045,7 +33611,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -33119,7 +33685,7 @@
       ],
       [
        "all/M18",
-       "all/M27"
+       "m28/QL6"
       ]
      ]
     }
@@ -33130,7 +33696,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -33156,7 +33722,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -33184,7 +33750,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -33212,7 +33778,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -33240,7 +33806,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -33266,7 +33832,7 @@
     "seen": [
      [
       "fresh",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -33658,6 +34224,83 @@
      "seen": [
       "all/M27"
      ]
+    },
+    {
+     "inside": {
+      "layer": "h",
+      "challenge": 22
+     },
+     "goalCurrency": "player.points",
+     "gain": "getPointGen()",
+     "entered": true,
+     "moves": [
+      "player.p.points",
+      "player.g.points",
+      "player.t.points",
+      "player.s.points",
+      "player.s.buyables.11",
+      "upg:p:11 (held: removed)",
+      "upg:p:12 (held: removed)",
+      "upg:p:13 (held: removed)",
+      "upg:p:14 (added)",
+      "upg:p:21 (held: removed)",
+      "upg:p:22 (held: removed)",
+      "upg:p:23 (held: removed)",
+      "upg:p:24 (added)",
+      "upg:p:31 (held: removed)",
+      "upg:p:32 (held: removed)",
+      "upg:p:33 (held: removed)",
+      "upg:p:34 (added)",
+      "upg:p:41 (added)",
+      "upg:p:42 (added)",
+      "upg:p:43 (added)",
+      "upg:p:44 (added)",
+      "ach:a:21 (held: removed)",
+      "ach:a:31 (held: removed)",
+      "ach:a:103 (added)"
+     ],
+     "movesOutside": [
+      "player.p.points",
+      "player.b.points",
+      "player.g.points",
+      "player.t.points",
+      "player.s.points",
+      "player.s.buyables.11",
+      "player.h.points",
+      "upg:p:11 (held: removed)",
+      "upg:p:12 (held: removed)",
+      "upg:p:13 (held: removed)",
+      "upg:p:14 (added)",
+      "upg:p:21 (held: removed)",
+      "upg:p:22 (held: removed)",
+      "upg:p:23 (held: removed)",
+      "upg:p:24 (added)",
+      "upg:p:31 (held: removed)",
+      "upg:p:32 (held: removed)",
+      "upg:p:33 (held: removed)",
+      "upg:p:34 (added)",
+      "upg:p:41 (added)",
+      "upg:p:42 (added)",
+      "upg:p:43 (added)",
+      "upg:p:44 (added)",
+      "ach:a:21 (held: removed)",
+      "ach:a:31 (held: removed)",
+      "ach:a:103 (added)"
+     ],
+     "nerfed": [
+      "player.b.points",
+      "player.h.points"
+     ],
+     "candidates": 168,
+     "threw": {
+      "inside": [
+       "player.h.activeChallenge: Cannot read properties of undefined (reading 'countsAs')"
+      ],
+      "outside": []
+     },
+     "seen": [
+      "m28/QL6"
+     ]
     }
    ],
    "from": {
@@ -33666,7 +34309,7 @@
     "seen": [
      [
       "all/M26",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1",
@@ -34021,6 +34664,84 @@
      "seen": [
       "all/M26"
      ]
+    },
+    {
+     "inside": {
+      "layer": "h",
+      "challenge": 32
+     },
+     "goalCurrency": "player.points",
+     "gain": "getPointGen()",
+     "entered": true,
+     "moves": [
+      "upg:p:11 (added)"
+     ],
+     "movesOutside": [
+      "player.p.points",
+      "player.b.points",
+      "player.g.points",
+      "player.t.points",
+      "player.s.points",
+      "player.s.buyables.11",
+      "player.h.points",
+      "upg:p:11 (held: removed)",
+      "upg:p:12 (held: removed)",
+      "upg:p:13 (held: removed)",
+      "upg:p:14 (added)",
+      "upg:p:21 (held: removed)",
+      "upg:p:22 (held: removed)",
+      "upg:p:23 (held: removed)",
+      "upg:p:24 (added)",
+      "upg:p:31 (held: removed)",
+      "upg:p:32 (held: removed)",
+      "upg:p:33 (held: removed)",
+      "upg:p:34 (added)",
+      "upg:p:41 (added)",
+      "upg:p:42 (added)",
+      "upg:p:43 (added)",
+      "upg:p:44 (added)",
+      "ach:a:21 (held: removed)",
+      "ach:a:31 (held: removed)",
+      "ach:a:103 (added)"
+     ],
+     "nerfed": [
+      "player.p.points",
+      "player.b.points",
+      "player.g.points",
+      "player.t.points",
+      "player.s.points",
+      "player.s.buyables.11",
+      "player.h.points",
+      "upg:p:11 (held: removed)",
+      "upg:p:12 (held: removed)",
+      "upg:p:13 (held: removed)",
+      "upg:p:14 (added)",
+      "upg:p:21 (held: removed)",
+      "upg:p:22 (held: removed)",
+      "upg:p:23 (held: removed)",
+      "upg:p:24 (added)",
+      "upg:p:31 (held: removed)",
+      "upg:p:32 (held: removed)",
+      "upg:p:33 (held: removed)",
+      "upg:p:34 (added)",
+      "upg:p:41 (added)",
+      "upg:p:42 (added)",
+      "upg:p:43 (added)",
+      "upg:p:44 (added)",
+      "ach:a:21 (held: removed)",
+      "ach:a:31 (held: removed)",
+      "ach:a:103 (added)"
+     ],
+     "candidates": 168,
+     "threw": {
+      "inside": [
+       "player.h.activeChallenge: Cannot read properties of undefined (reading 'countsAs')"
+      ],
+      "outside": []
+     },
+     "seen": [
+      "m28/QL6"
+     ]
     }
    ],
    "from": {
@@ -34029,7 +34750,7 @@
     "seen": [
      [
       "all/M21",
-      "all/M27"
+      "m28/QL6"
      ]
     ],
     "loader": "facts.mjs v1",

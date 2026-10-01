@@ -1,0 +1,10 @@
+{
+ "format": "tmt-facts-states/1",
+ "comment": "States beyond the ladder's marks that facts.mjs reads (after all/, in this order). Each must exist; a missing one is a hard error.",
+ "states": [
+  {
+   "file": "m28/QL6.json",
+   "why": "past q24 (Quirk Layers 6, q11-q24 owned, outside any challenge): the first committed state where q31 and q32 are unlocked, so their price facts get shapes (tmt-m28-1)"
+  }
+ ]
+}
