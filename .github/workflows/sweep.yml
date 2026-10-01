@@ -943,6 +943,20 @@ jobs:
           node tools/harness/gates-stages.mjs --part push --pool 4 --assert | tee stages.txt
           echo "TIME stages push: $(( $(date +%s) - s )) s" | tee -a stages.txt
 
+      - name: Cache the Playwright browser
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+
+      - run: npx playwright install --with-deps chromium
+
+      - name: Part page — the real page names the stages in force
+        shell: bash
+        run: |
+          set -o pipefail
+          node tools/harness/gates-stages.mjs --part page --assert | tee -a stages.txt
+
       - name: Summary
         if: always()
         shell: bash

@@ -2,7 +2,7 @@
 // records"): what the harness found at QL5 and QL6, written into `games-auto/ptr.json` as `stages`, so the page plays
 // them with no planner, no queue and no harness configuration.
 //
-//   node tools/harness/gates-stages.mjs --part vocab|switch|pins|fixture|grep|push [--pool N] [--no-write] [--assert]
+//   node tools/harness/gates-stages.mjs --part vocab|switch|pins|fixture|grep|push|page [--pool N] [--no-write] [--assert]
 //   node tools/harness/gates-stages.mjs --part leg --leg <key> [--assert]      (one CI job per leg: qrate1.yml -f part=stages)
 //   node tools/harness/gates-stages.mjs --part merge --dir <artifacts> [--only <key>] [--assert]
 //
@@ -18,17 +18,18 @@
 //               text, the block HTML). S4 a player's saved edit beats a stage. S5 a queue hold beats a stage.
 // Part pins     P1 the QL5 rebuild (tpl1 O1 / qrate1 F0a) is unmoved. P2 the stage path reaches q23 on the tick and
 //               hash the `--auto-opt` resume of the same winner measured — the table now carries that configuration.
-// Part fixture  F1 all/M29 and F2 all/M28 = all/M26 under the shipped table, one ladder run = the committed fixtures.
+// Part fixture  F1 stages/M29 and F2 stages/M28 = all/M26 under the shipped table, one ladder run = the committed fixtures.
 // Part grep     X1 no game or ptr layer id in loader/tmt-auto.js (the stages are DATA).
+// Part page     PG a real page (`?automation=1&profile=all`) loaded from the stages/M29 save names the stages in force.
 // MEASUREMENTS (`.github/workflows/qrate1.yml -f part=stages`, dispatch-only): the whole stretch from all/M26 under the
 // SHIPPED TABLE ALONE (order A: H22 first) at diff 1 and 0.05, and the losing order (B: q31/q32 first) at diff 1 — each
-// leg TWICE (equal or RED). The diff-1 A leg writes the all/M28 + all/M29 fixtures and runs on to name the next stall.
+// leg TWICE (equal or RED). The diff-1 A leg writes the M28 + M29 fixtures (committed as stages/) and runs on to name the next stall.
 // ⛔ EVERY FLAG IS DECLARED; `--assert` requires the exact row count, all green (fewer rows is fewer reds).
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { spawn } from 'node:child_process';
-import { REPO, parseArgs, headCommit, treeDirty, entryOnly } from './lib.mjs';
+import { REPO, parseArgs, headCommit, treeDirty, entryOnly, startServer } from './lib.mjs';
 import { loadSchemaBlock, checkTables, checkProvenance } from '../auto-tables.mjs';
 entryOnly(import.meta.url);
 
@@ -36,8 +37,9 @@ const a = parseArgs(process.argv.slice(2), ['no-write', 'assert']);
 const KNOWN = new Set(['_', 'part', 'pool', 'no-write', 'assert', 'leg', 'dir', 'only']);
 for (const k of Object.keys(a)) if (!KNOWN.has(k)) { console.error(`REFUSED: unknown flag --${k}`); process.exit(2); }
 const GATE_PARTS = ['vocab', 'switch', 'pins', 'fixture', 'grep'];
+// `page` is a gate too, run as its own CI step (it needs the Playwright browser); `push` is the five node parts
 const PART = String(a.part || 'push');
-const ALL_PARTS = [...GATE_PARTS, 'push', 'leg', 'merge'];
+const ALL_PARTS = [...GATE_PARTS, 'page', 'push', 'leg', 'merge'];
 if (!ALL_PARTS.includes(PART)) { console.error(`REFUSED: --part ${PART} is not one of ${ALL_PARTS.join(' | ')}`); process.exit(2); }
 const POOL = Number(a.pool || 4);
 const commit = headCommit(), dirty = treeDirty();
@@ -48,7 +50,10 @@ const row = (r) => { rows.push(r); console.log(`${r.ok ? 'GREEN' : 'RED  '} ${r.
 // ⚠ This file is the ORACLE, and ptr's ids are its data (the loader may not name them — part grep).
 const TABLE = 'games-auto/ptr.json';
 const LADDER = 'tools/harness/ladder/ptr.json';
-const M26 = 'tools/harness/snapshots/ptr/all/M26.json', M28F = 'tools/harness/snapshots/ptr/all/M28.json', M29F = 'tools/harness/snapshots/ptr/all/M29.json';
+// ⚖ (user, 2026-10-01) the M28/M29 fixtures live in `stages/`, NOT `all/`: an `all/` mark enrols in facts.mjs's and
+// currency-data.mjs's state lists and in deepestSnapshot(), and the first state with H31 unlocked fires two facts-1
+// oracles that find generator gaps (design notes §21) — that enrolment is the M30 slice's, with those findings.
+const M26 = 'tools/harness/snapshots/ptr/all/M26.json', M28F = 'tools/harness/snapshots/ptr/stages/M28.json', M29F = 'tools/harness/snapshots/ptr/stages/M29.json';
 const QL5F = 'tools/harness/snapshots/ptr/qrate1/QL5.json';
 const PIN_QL5 = { ticks: 77196, hashGame: '1fb78f9282c77b2b' };          // §17.2 / tpl1 O1 / qrate1 F0a
 const PIN_Q23 = { ticks: 80134, hashGame: 'c2d9442da073bfab' };          // QL5 under `--auto-opt policy:reset:q=<winner>` until q23 (stages-1, measured at f66f217)
@@ -245,7 +250,7 @@ async function partSwitch() {
       holdInForceAtTheEnd: e.chPolicy === 'off' && !!e.chStage && e.chStage.policy === C2 && e.h22 === 1,
     };
     row({ gate: `S2 from all/M26: ${C3} + ${C2} ON at the QL6 tick, ONE uncut H22 attempt, ${C3} OFF at the H22 tick, then the hold`, id: 'ptr', ok: Object.values(checks).every(Boolean),
-      notes: `${ck(checks)} — QL6 at ${T6} (an independent run), H22 at ${T22} (all/M29); stage records ${JSON.stringify(got)}; entries ${JSON.stringify(att.entered)}, completed ${JSON.stringify(att.completed)}, exiting resets inside ${att.exitingInside}, entries after H22 ${att.enteredAfter}; end ${JSON.stringify({ chPolicy: e.chPolicy, chStage: e.chStage && e.chStage.policy, stages: e.stages })}` });
+      notes: `${ck(checks)} — QL6 at ${T6} (an independent run), H22 at ${T22} (stages/M29); stage records ${JSON.stringify(got)}; entries ${JSON.stringify(att.entered)}, completed ${JSON.stringify(att.completed)}, exiting resets inside ${att.exitingInside}, entries after H22 ${att.enteredAfter}; end ${JSON.stringify({ chPolicy: e.chPolicy, chStage: e.chStage && e.chStage.policy, stages: e.stages })}` });
   }
   // S3
   {
@@ -312,9 +317,52 @@ async function partFixture() {
     const c = want[k], r = reached[k];
     const checks = { ran: !!x.ok, reached: !!r, pin: !!r && r.ticks === c.ticks && r.hashGame === c.hashGame && r.hash === c.hash,
       configNamed: c.config.profile === 'all' && c.config['auto-opt'] === null && c.config.from === M26 && !c.config['auto-table'], mark: c.mark === k };
-    row({ gate: `F${k === 'M29' ? 1 : 2} all/${k} = all/M26 under the SHIPPED TABLE ALONE, through the ladder = the committed fixture`, id: 'ptr', ok: Object.values(checks).every(Boolean),
+    row({ gate: `F${k === 'M29' ? 1 : 2} stages/${k} = all/M26 under the SHIPPED TABLE ALONE, through the ladder = the committed fixture`, id: 'ptr', ok: Object.values(checks).every(Boolean),
       notes: `${ck(checks)} — ${r ? `${r.ticks} / ${r.hashGame} (full ${r.hash})` : 'not reached'} (committed ${c.ticks} / ${c.hashGame}, full ${c.hash}; +${c.ticks - m26.ticks} game-s from all/M26; config ${JSON.stringify(c.config)}) ${x.error || ''}` });
   }
+}
+
+// ---- Part page — the PAGE names the stage (a real browser: `?automation=1&profile=all`) ---------------------------------
+// The stages/M29 save loaded into the page (the game's own importSave, then a reload), ticked at the page's diff for 40 ticks
+// so the stages are evaluated by the page's own loop, then the `au` tab's Advanced view opened the way its button does.
+// Real time is far too slow to reach a mark: the harness rows are the evidence for M28/M29; this is the readout.
+async function partPage() {
+  const { chromium } = await import('playwright');
+  const { pageLoadFrom } = await import('./page.mjs');
+  const browser = await chromium.launch(), server = await startServer(REPO);
+  const errs = [];
+  let out = null;
+  try {
+    const context = await browser.newContext(), page = await context.newPage();
+    page.on('pageerror', (e) => errs.push(String(e.message).slice(0, 200)));
+    await page.goto(new URL('index.html?mod=ptr&automation=1&profile=all', server.url).href, { waitUntil: 'load' });
+    await page.waitForFunction(() => window.tmtLoader && (tmtLoader.ready || tmtLoader.error), null, { timeout: 30000 });
+    // ⚠ the save's own `time` is when the fixture was WRITTEN, and the page credits everything since as offline progress
+    // (measured: 81,779 → 245,464 game-s on load, q32 bought before the first readout) — so it is stamped NOW
+    // and its BANKED offline time (`offTime.remain`, 858,679 s in this save) is cleared for the same reason
+    const pl = JSON.parse(fixture(M29F).player); pl.time = Date.now(); pl.offTime = null;
+    await pageLoadFrom(page, JSON.stringify(pl));
+    await page.evaluate(() => tmtLoader.pause());
+    out = await page.evaluate(() => {
+      tmtLoader.tick(0.05, 40);
+      showTab('au'); player.subtabs[tmtLoader.auLayer].mainTabs = 'Advanced';
+      updateTemp(); if (typeof updateTabFormats === 'function') updateTabFormats();
+      return { profile: tmtLoader.profile(), gs: Number(player.timePlayed), stages: tmtLoader.stages().map((s) => [s.id, s.active]) };
+    });
+    await page.waitForTimeout(400);
+    out.text = await page.evaluate(() => document.body.innerText);
+    out.url = page.url();
+    await context.close();
+  } finally { await browser.close(); server.stop(); }
+  const t = (out && out.text) || '';
+  const checks = {
+    loaded: !!out && out.profile === 'all' && /automation=1/.test(out.url) && out.gs < fixture(M29F).gameSeconds + 60,
+    stagesInForce: !!out && JSON.stringify(out.stages) === JSON.stringify([[C3, false], [C2, true], [C1, true]]),
+    viewNamesThem: new RegExp(`STAGE\\s*${C1}`).test(t) && new RegExp(`STAGE\\s*${C2}`).test(t) && new RegExp(`stage ${C2}`).test(t),
+    noPageError: !errs.length,
+  };
+  row({ gate: 'PG the PAGE (?automation=1&profile=all, the stages/M29 save, 40 ticks at 0.05) — the Advanced view names the stages in force', id: 'ptr', ok: Object.values(checks).every(Boolean),
+    notes: `${ck(checks)} — at ${out && out.gs} game-s; stages ${JSON.stringify(out && out.stages)}; the view: ${(t.match(new RegExp(`[^\\n]*(STAGE|stage) (${C1}|${C2})[^\\n]*`, 'g')) || []).slice(0, 3).map((x) => x.slice(0, 140)).join(' | ')}; errors ${JSON.stringify(errs.slice(0, 2))}` });
 }
 
 // ---- Part grep ---------------------------------------------------------------------------------------------------------
@@ -386,8 +434,8 @@ function partMerge() {
   }
 }
 
-const EXPECT = { vocab: 4, switch: 5, pins: 2, fixture: 2, grep: 1, leg: 1, merge: MERGED.length + (a.only ? 0 : 1) };
-const FN = { vocab: partVocab, switch: partSwitch, pins: partPins, fixture: partFixture, grep: partGrep, leg: partLeg, merge: partMerge };
+const EXPECT = { vocab: 4, switch: 5, pins: 2, fixture: 2, grep: 1, page: 1, leg: 1, merge: MERGED.length + (a.only ? 0 : 1) };
+const FN = { vocab: partVocab, switch: partSwitch, pins: partPins, fixture: partFixture, grep: partGrep, page: partPage, leg: partLeg, merge: partMerge };
 const RUN = PART === 'push' ? GATE_PARTS : [PART];
 let expected = 0;
 for (const p of RUN) { expected += EXPECT[p]; await FN[p](); }

@@ -194,10 +194,20 @@
         "reset:o": "!player.h.activeChallenge",
         "reset:ss": "!player.h.activeChallenge"
       },
-      "provenance": {
-        "unverified": true,
-        "note": "scratch: under measurement"
-      }
+      "provenance": [
+        {
+          "gate": "h22 M-leg table@1",
+          "run": "36895219233",
+          "commit": "b016d49d065a8dcd7c78fa7401e862e6e2d04c9a",
+          "note": "h22 (design notes §20): from m28/QL6 this entry — challenges:h `sequential` with no give-up, the row-3 resets paused while an h challenge is active — completes H22 in ONE uncut attempt at +984 game-s (diff 1, tick 87,055) and +960.65 (diff 0.05), twice equal, on the tick of the template's own queue. The table's give-up would concede that attempt at 211 s, and the qrate1 winner's resets cut every attempt (13 of 13 in 600 s)."
+        },
+        {
+          "gate": "stages M-order",
+          "run": "36905262237",
+          "commit": "769e7523eab4f3f79c0b236e85e610a402b39b5d",
+          "note": "stages-1 (design notes §21), the whole stretch from all/M26 under the table alone, every leg twice equal: listed BEFORE the hold, it reaches M29 at +4,848 and then M28 at +8,348 game-s (diff 1), M29 +3,592.85 and M28 +5,489.65 (diff 0.05). In the other order (the hold first) M28 lands at +59,180 and M29 at +59,230 (diff 1): H22's reward is what makes q31 and q32 fast."
+        }
+      ]
     },
     {
       "id": "ql6-hold-for-q32",
@@ -205,10 +215,20 @@
       "policies": {
         "challenges:h": "off"
       },
-      "provenance": {
-        "unverified": true,
-        "note": "scratch: under measurement"
-      }
+      "provenance": [
+        {
+          "gate": "m28 M-leg winner-choff@1",
+          "run": "36822076088",
+          "commit": "f5653550f26126b926d6dffdfff0be637443d863",
+          "note": "m28 (design notes §18): from m28/QL6, the qrate1 winner with challenge attempts held buys q31 at +2,696 and q32 (M28) at +54,688 game-s (diff 1); with attempts allowed the challenge reflex re-entered H22 after every q reset and q31 was not bought in 30,000. Diff 0.05: q31 +2,760.2, q32 +74,738.3 (run 36836849521)."
+        },
+        {
+          "gate": "stages M-order",
+          "run": "36905262237",
+          "commit": "769e7523eab4f3f79c0b236e85e610a402b39b5d",
+          "note": "stages-1 (design notes §21): in force from QL6 and IN FORCE after H22 (the attempt stage wins challenges:h until then), the table alone buys q31 890 and q32 3,500 game-s after H22 — M28 at +8,348 from all/M26 (diff 1), +5,489.65 (diff 0.05), twice equal."
+        }
+      ]
     },
     {
       "id": "ql5-quirk-rate",
@@ -216,10 +236,20 @@
       "policies": {
         "reset:q": "rate-peak@0/0|turn@10/30x/5/0/100"
       },
-      "provenance": {
-        "unverified": true,
-        "note": "scratch: under measurement"
-      }
+      "provenance": [
+        {
+          "gate": "qrate1 cells",
+          "run": "36812038216",
+          "commit": "1a9b613473b0ff86bf8e05fc28db4d5dd7d987b0",
+          "note": "qrate1 (design notes §17): from QL5, `rate-peak@0/0` keeping the row cycle reaches 308,372 total quirks (q23's threshold) at +2,872 game-s against the table's `gain>=2` at +109,590 (diff 1); at the page's tick +1,223.65 against 51,032 quirks by +6,000. As a WHOLE-GAME default it loses from all/M15 (R2-S1: M21 at 27,652, never M22), which is why it is a stage."
+        },
+        {
+          "gate": "stages M-order",
+          "run": "36905262237",
+          "commit": "769e7523eab4f3f79c0b236e85e610a402b39b5d",
+          "note": "stages-1 (design notes §21): switched on at the QL5 tick (77,196) the table reaches q23 on exactly the tick and hash of QL5 resumed under `--auto-opt policy:reset:q=<winner>` (80,134 / c2d9442da073bfab); the whole stretch reaches M29 and M28 (above)."
+        }
+      ]
     }
   ]
 }

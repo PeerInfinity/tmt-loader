@@ -1854,7 +1854,15 @@ table, verbatim.
 | ptr | `reset:h` | `always\|turn@1/30x/5/0/100` | R3b-2 (R3b2-2, CI run 35553187707): `always` inside its turn; on its own it is the starvation the user hit by hand |
 | ptr | `challenges:h` | `sequential\|give-up@0.1/30/2x` + gate `hasMilestone('q',5)` | R3a (R3a-1): the EXIT rule, and the digest's own advice (L3.9) minus the half measurement showed to be wrong |
 
-Everything else in ptr is derived.
+| ptr | stage `ql6-h22-attempt` (6 Quirk Layers, H22 open and not completed) | `challenges:h` = `sequential`; `reset:q` / `reset:h` / `reset:o` / `reset:ss` paused while an h challenge is active | h22 (CI run 36895219233): ONE uncut H22 attempt from m28/QL6 at +984 game-s; stages-1 (CI run 36905262237): listed first, the whole stretch from all/M26 reaches M29 +4,848 and M28 +8,348 (diff 1), +3,592.85 / +5,489.65 (diff 0.05); the other order +59,230 for both |
+| ptr | stage `ql6-hold-for-q32` (6 Quirk Layers, q32 not owned) | `challenges:h` = `off` | m28 (CI run 36822076088): attempts held, q31 +2,696 / q32 +54,688 from m28/QL6, never with them allowed; stages-1: after H22, q31 +890 and q32 +3,500 game-s |
+| ptr | stage `ql5-quirk-rate` (5 Quirk Layers) | `reset:q` = `rate-peak@0/0\|turn@10/30x/5/0/100` | qrate1 (CI run 36812038216): 308,372 total quirks at +2,872 vs `gain>=2`'s +109,590 (diff 1), +1,223.65 at diff 0.05; a whole-game default loses from all/M15 (R2-S1) |
+
+Everything else in ptr is derived. The three stages are the ONLY entries past QL5. The fixtures they wrote are
+`snapshots/ptr/stages/M29.json` and `stages/M28.json` (gates-stages F1/F2), deliberately NOT in `all/` (⚖ user,
+2026-10-01): an `all/` mark enrols in the facts and currency state lists and in `deepestSnapshot()`, and the first
+committed state with H31 unlocked fires two facts-1 oracles that find generator gaps (design notes §21). Every pin
+measured before the stages names `--auto-opt stages=off` (⚖ user, 2026-10-01).
 
 ### Something Tree — the table-less control (R3c Part 0)
 

@@ -507,6 +507,7 @@ test('stages: the gates on every push, the legs dispatch-only behind part=stages
   assert.ok(j.stages, 'sweep.yml has no `stages` job');
   assert.deepEqual(needs(j.stages), ['fast']);
   assert.match(j.stages, /gates-stages\.mjs --part push[^\n]*--assert/);
+  assert.match(j.stages, /gates-stages\.mjs --part page[^\n]*--assert/, 'the page leg (the readout names the stage) is not in the job');
   assert.doesNotMatch(j.stages, /--part (leg|merge)/, 'a stages MEASUREMENT part is in the sweep — it would run on every push');
   assert.doesNotMatch(j.stages, /^\s{4}if:/m, 'the stages job is gated: it must run on every push');
   const m = wf('qrate1.yml'), q = jobs(m);
