@@ -1,13 +1,16 @@
 #!/usr/bin/env bash
-# The m30 mutants — each breaks one promise of the slice (the hold covers the row SIBLINGS that act earlier in the same
-# tick; the stage reads the engine's requirement, never its number; no game id in generic code) and REQUIRES the gate
-# that can see it to go red (gates-m30.mjs).
+# The m30 mutants — each breaks one promise of the slice (the hold covers every reset that zeroes the base; the stage
+# reads the engine's requirement, never its number; no game id in generic code) and REQUIRES the gate that can see it to
+# go red (gates-m30.mjs).
 #
 #   tools/harness/mutants-m30.sh <out-dir> [name-filter]
 #
-# The fourth mutant the brief asked for — the stage in the LOSING order — does not exist: both orders were measured
-# EQUAL (the stage names no slot another stage names while both hold; gates-m30 M-order), so there is no losing order
-# to plant.
+# Two mutants the brief asked for are not what it expected, measured:
+#  · "the hold misses the row-2 siblings" (A0) — on ptr the siblings never cut Generators on this path (gates-m30 SIB:
+#    freed, the held leg is unchanged to the tick and hash). Only O1's structural check (the hold covers every zeroer
+#    the source names) kills it; the hold that matters behaviourally is the row-3 one (A, killed by the verdict itself).
+#  · "the stage in the losing order" — both orders measured EQUAL (gates-m30 M-order, first@1 = last@1 to the hash):
+#    the stage names no slot another stage names while both hold. There is no losing order to plant.
 #
 # ⛔ It restores from COPIES taken at the start (never `git checkout`), and it refuses a dirty tree anyway: a mutant
 # round must never be able to take uncommitted work with it.
@@ -42,9 +45,12 @@ mutant() {
   restore
   if verdictOf "$name" "$out" "$want"; then KILLED=$((KILLED+1)); else SURVIVED=$((SURVIVED+1)); fi
 }
-# A — the hold misses the row SIBLINGS (e, s, sb, t act earlier in the same tick): Generators touch 200 and a sibling
-#     wipes them before sg decides — the wall itself, so the verdict is not reset-at (or not confirmed)
-mutant A-hold-misses-siblings "$(rep loader/tmt-templates.js "'hold: rrHoldSet(zeroers, l),'" "'hold: rrHoldSet(zeroers.filter(function (z) { return rrRow(z) !== row; }), l),'")" verdict 'O1 reset:sg'
+# A — the hold misses the ROW-3 zeroers (h, o, q, ss and h's challenges): q and h wipe Generators at 200, the wall
+#     itself — the verdict is not reset-at
+mutant A-hold-misses-row3 "$(rep loader/tmt-templates.js "'hold: rrHoldSet(zeroers, l),'" "'hold: rrHoldSet(zeroers.filter(function (z) { return !(rrRow(z) > row); }), l),'")" verdict 'O1 reset:sg'
+# A0 — the brief's mutant: the hold misses the row SIBLINGS (e, s, sb, t). Only O1's STRUCTURAL check (the hold covers
+#      every zeroer the source names) can see it: behaviourally it changes nothing on this path (SIB)
+mutant A0-hold-misses-siblings "$(rep loader/tmt-templates.js "'hold: rrHoldSet(zeroers, l),'" "'hold: rrHoldSet(zeroers.filter(function (z) { return rrRow(z) !== row; }), l),'")" verdict 'O1 reset:sg'
 # B — a literal 200 in the stage's gate instead of the engine's requirement (it still reaches M30 at 0 Super
 #     Generators: only the grep leg can see it)
 mutant B-literal-requirement "$(rep games-auto/ptr.json "'\"player.g.points.gte(tmp.sg.nextAt)\"'" "'\"player.g.points.gte(200)\"'")" stage 'S2 q33-sg-unlock'

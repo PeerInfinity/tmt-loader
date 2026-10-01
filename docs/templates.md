@@ -204,13 +204,20 @@ walled by its requirement; `--goal reset:<l>` names one.
 **What it holds** — every `reset` and `challenges` feature of every zeroing layer (entering or leaving a challenge resets
 the layer), and the layer's OWN `reset` feature: the reset is the queue's, at the moment the rollback measured.
 
-⚠ **The order inside a tick.** The row siblings act EARLIER in the same tick (layers order: t, e, s, sb, then sg), and
-a reset calls `updateTemp`, so a sibling reset in the tick the base reaches the requirement wipes it before sg decides
-— the wall itself (a 3,000-tick leg from the wall state: Generators touch 200 and a sibling resets them). The queue's
-hold binds from the next tick's first decision (docs/queues.md), so it is placed before the base can reach the
-requirement, and the reset is the queue's own call in its slot: hold → `wait canReset(l)` → `call doReset(l)` → `wait
-player[l].unlocked` → `release`. `canReset` reads `tmp`, which is the tick's START: the wait is met in the tick AFTER
-the base reached the requirement, with the siblings still held.
+⚠ **The order inside a tick — measured, and not what the brief said.** The brief that asked for this template said
+sg's row siblings act earlier in the same tick and wipe Generators before sg decides. On ptr they do not cut them at
+all: past q milestone 5, t, s and sb reset nothing (layers.js `resetsNothing`) and the game resets them itself every
+few ticks — freed from the hold, the held leg is unchanged to the tick and hash (gates-m30 SIB). The resets that wipe
+Generators at the requirement are the row-3 ones, q and h (gates-m30 EV: 74 wipes in 3,000 ticks, q 68, h 6). What IS
+earlier is everything: PTR's gameLoop skips a layer that has never been reset (`unl`), so the automation decides that
+layer's reset in its FALLBACK pass, after every other layer's slot (the check reads it off `hookStats`: `decidedIn`).
+And at the 226,931 wall the reflex never resets sg even at 200: past q milestone 6 `tmp.sg.autoPrestige` is set, so
+`reset:sg` YIELDS to a native auto-reset (`yielding:native`) — which the engine never performs for a locked layer.
+Generators sat at 200 for 83 ticks with no reset. The check says so (`afterReach`: the zeroing resets still held, the
+layer's own reset feature freed, ten more ticks — does anyone make the reset?). The queue's hold binds from the next
+tick's first decision (docs/queues.md), and the reset is the queue's own call in its slot: hold → `wait canReset(l)` →
+`call doReset(l)` → `wait player[l].unlocked` → `release`. `canReset` reads `tmp`, which is the tick's START: the wait
+is met in the tick AFTER the base reached the requirement, with the zeroers still held.
 
 **The check** — the hold is played on the copy, every tick reading the base against the engine's requirement, until the
 engine's `canReset` or the window ends (`--window`, default 3,600 game-s, the same cap as the other templates). Three
@@ -231,16 +238,23 @@ table-before-m30.json`, main 68383aa's) for 141,652 ticks → `m30/W226931` (226
 7 Quirk Layers, 196 Generators, Super Generators never reset):
 | | |
 |---|---|
-| from the wall, the table before this slice | **RESET-AT: 55 game-s into the hold**, Generators 200 = the requirement (layers.js: `requires` 200, `base` 1.05, `exponent` 1.25 → 200 at 0 Super Generators); confirmed on the copy, the reset on tick **226,986**; the queue played LIVE resets sg on the same tick (Generators 200 — q milestone 6 makes sg's reset reset nothing), holds released, its log replays equal |
+| from the wall, the table before this slice | **RESET-AT: 55 game-s into the hold**, Generators 200 = the requirement (layers.js: `requires` 200, `base` 1.05, `exponent` 1.25 → 200 at 0 Super Generators); sg decided in the fallback pass; without the queue's call nobody resets it (reset:sg yields); confirmed on the copy, the reset on tick **226,986**; the queue played LIVE resets sg on the same tick (Generators stay 200 — q milestone 6 makes sg's reset reset nothing), holds released, its log replays equal |
 | the same, `--window 30` | **SHORT**: Generators 199 of 200 (10^0.0022); the sub-goal Generators ≥ 200 |
-| the same queue with the row SIBLINGS free | never resets: the siblings wipe Generators (gates-m30 VAC) |
-| from the q33 tick on the table's path (93,879; Generators 0) | RESET-AT 642 game-s into the hold (tick 94,521) — the tick the stage below reaches M30 on |
+| the same queue with the ROW-3 zeroers free | never resets: q and h wipe Generators (gates-m30 VAC; 74 wipes the full hold prevented) |
+| the same queue with the row SIBLINGS free | the held leg to the tick and hash (gates-m30 SIB) |
+| from the q33 loop on the table's path (`m30/Q33`, 93,879; Generators 0; before q milestone 6) | RESET-AT 642 game-s into the hold (tick 94,521); there the zeroers held are enough — reset:sg makes the reset itself 2 ticks after the reach: why a STAGE works on this path |
 | something (fresh, all/S05) / collection-of-everything | 2 / 9 matches, none open (the funnel and each `not-open` line say why: not shown, or already reset) |
 
 **Recorded as a stage** — `q33-sg-unlock` (docs/automation.md, "Stages"): from q33 until Super Generators are unlocked,
 the template's hold minus the reset it makes, as `while` gates that read the engine's requirement
 (`player.g.points.gte(tmp.sg.nextAt)` — never its number). The table alone then reaches M30 from stages/M28 on tick
-94,521 (+9,242 game-s, diff 1), the template's own tick from the q33 state.
+94,521 (+9,242 game-s, diff 1; +7,544.8 at diff 0.05), the template's own tick from the q33 state. The gate opens AT the
+requirement, which is safe because the tick the base reaches it is a row-1 tick (g), after every zeroer's slot, and sg
+is decided in the fallback right after it.
+⚠ **Its limit** (gates-m30 S3): past q milestone 6 the stage cannot do it — reset:sg yields, the gate opens at 200 and q
+and h wipe Generators (from the wall: 14 wipes at 200 in 3,000 ticks, no reset). On the table's own path q33 comes
+first, so it never meets that; a state that reaches q milestone 6 with sg still locked needs the queue (or a yield rule
+that knows the engine skips a locked layer — the next slice's input).
 
 ## How a sub-goal reaches the planner (qrate1, 2026-09-30)
 
