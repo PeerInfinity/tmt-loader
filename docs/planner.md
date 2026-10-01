@@ -225,6 +225,15 @@ are committed under `tools/harness/knowledge/<game>/` and re-produced twice per 
 The states are committed snapshots: `snapshots/ptr/all/{M02,M05,M09}`, `snapshots/ptr/frontier/STALL.json` (the S1
 frontier stall, written by `run.mjs --stop-snapshot`) and `snapshots/something/all/{S03,S04}`.
 
+## Facts (facts-1) — the planner's probes, written as data
+
+`tmtLoader.planner.facts` and `tmtLoader.planner.extractFacts()` are the FACT probes: the exponent probe (a price's or
+an increment's shape in each field it reads), the reset write tracer (what each reset zeroes, and which doReset wrote
+it), the in-challenge sensitivity probe, the purchase-budget probe, and the getter read sets. They reuse this file's
+rollback, `traceReads` (which can now also wrap `tmp`), the threshold probe and the requirement injection
+(`injectRequirement`, shared with `measureReset`). `tools/harness/facts.mjs` runs them over every committed snapshot and
+writes `games-facts/<id>.json`. See **docs/facts.md**.
+
 ## Part 4 — the ROUND: the planner configures the reflexes per EPOCH (P1b)
 
 **The planner does not act per tick.** Per **epoch** it chooses the *configuration* of the simple system — which derived

@@ -88,6 +88,7 @@ jobs:
         run: |
           node tools/auto-tables.mjs --check
           node tools/currency-data.mjs --check-index
+          node tools/harness/facts.mjs --check-index
 
       # The figures the docs QUOTE, regenerated from the tree. Three of them shipped wrong in this arc by two
       # different authors and no gate could have caught any of them, because the sweep drives games and a number in
@@ -574,6 +575,65 @@ jobs:
         with:
           name: log1
           path: tools/harness/results/tmp/gates-log1-part*-last.json
+          if-no-files-found: warn
+          retention-days: 14
+
+  # ---------------------------------------------------------------------------------------------------------------
+  # facts-1 — THE GENERATED FACTS (`tools/harness/facts.mjs`, `gates-facts1.mjs`, docs/facts.md). `--check` regenerates
+  # every committed `games-facts/<id>.json` from its states (ptr's 28 snapshots, something's 6, collection-of-everything
+  # fresh) and fails on any byte that moved — a change to the planner, the loader or a game that moves a fact reds here
+  # until the file is regenerated and committed with it. Then the battery: ptr's §7 oracle rows from the game source,
+  # every kind's vacuity (zero only where declared and measured), the live state untouched on five legs, no game id in
+  # the extractor. ⛔ `--assert` holds the run to its exact row count, all green.
+  # ---------------------------------------------------------------------------------------------------------------
+  facts1:
+    name: facts-1 — the generated facts
+    needs: fast
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true   # games/ is the tmt-loader-games submodule; every state boots a game
+          fetch-depth: 1
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - run: npm ci
+
+      - name: Freshness — every committed facts file regenerates byte-identically
+        shell: bash
+        run: |
+          set -o pipefail
+          node tools/harness/facts.mjs --check --jobs 4 | tee facts1-check.txt
+
+      - name: The battery — oracle, vacuity, neutral, grep
+        shell: bash
+        run: |
+          set -o pipefail
+          for p in oracle vacuity neutral grep; do node tools/harness/gates-facts1.mjs --part $p --pool 4 --no-summary --assert | tee -a facts1.txt; done
+
+      - name: Summary
+        if: always()
+        shell: bash
+        run: |
+          {
+            echo '## facts-1 — the generated facts'
+            echo ''
+            echo '```'
+            cat facts1-check.txt facts1.txt 2>/dev/null | grep -aE '^(FACTS|STALE|FAILED|GREEN|RED|VERDICT)' | cut -c1-300 || echo 'no output'
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload the rows
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: facts1
+          path: tools/harness/results/tmp/gates-facts1-part-*-last.json
           if-no-files-found: warn
           retention-days: 14
 
