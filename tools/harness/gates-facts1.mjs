@@ -231,6 +231,30 @@ async function partOracle() {
     }
     row({ gate: 'O6 challenge-inputs H22', id: 'ptr', ok: !!f && !probs.length, notes: probs.length ? probs.join('; ') : `${at.length} state(s) with H22 open (${at[0]}…): inside only s 11 and s 15 (its free levels; s 15 only where the probe's step moves its floored effect: ${at.filter((s) => R.at[s].s15Steps === false).join(',') || 'none'} it does not) among buyables, achievements 21/31 and prestige upgrades; b and h points nerfed` });
   }
+  // O8 — exits-challenge (h22): 2.2.1's rowReset (game.js:126-136) sets activeChallenge = null on every layer of each row
+  // it resets, and doReset (:222-224) first runs completeChallenge on every layer of a row ≤ its own. So an h challenge
+  // is left by EVERY shown reset of row ≥ h's — its siblings q (and the shown o, ss) included — and, with the goal met,
+  // each of those exits completes it. Notes §18.5: the q reset ended all 125 H22 attempts. Every state where H22 is open
+  // must carry its exits (coverage), and no h challenge's set may differ from the source's.
+  if (want('exits-challenge')) {
+    const fs8 = doc.facts.filter((f) => f.kind === 'exits-challenge' && /^exits-challenge:h:/.test(f.id));
+    const probs = [], per = {};
+    for (const f of fs8) {
+      if (f.abstain) { probs.push(`${f.id} abstained: ${f.abstain}`); continue; }
+      for (const { v, states } of valuesOf(f, order)) {
+        if (v.onGoal !== 'completes') probs.push(`${f.id}: onGoal ${v.onGoal} at ${states[0]}`);
+        for (const s of states) (per[`${s}|${v.inside.challenge}`] ||= []).push(v.reset);
+      }
+    }
+    for (const [k, rs] of Object.entries(per)) {
+      const [s, c] = k.split('|'), want8 = (R.at[s] && R.at[s].resetsRow3) || [];
+      if (!setEq(rs, want8)) probs.push(`${s} h${c}: exited by [${[...rs].sort().join(', ')}], the source says every shown reset of row ≥ h's [${want8.join(', ')}]`);
+    }
+    const at22 = statesWhere((x) => x.h.unlocked && x.h.c22 && x.h.done22 < 1);
+    for (const s of at22) if (!per[`${s}|22`]) probs.push(`${s}: H22 is open and no exits-challenge fact covers it`);
+    if (!at22.length) probs.push('H22 is open in no committed state');
+    row({ gate: 'O8 exits-challenge h', id: 'ptr', ok: !probs.length && fs8.length > 0, notes: probs.length ? probs.join('; ') : `${fs8.length} facts over ${Object.keys(per).length} (state, challenge) pairs: each h challenge left by exactly the shown resets of row ≥ h's (${[...new Set(Object.values(per).map((r) => [...r].sort().join(',')))].join(' | ')}), each completing it with the goal met; H22 covered in all ${at22.length} state(s) where it is open` });
+  }
   // O7 — purchase-budget: H31's 10 purchases (layers.js:1251, :1536 read player.h.chall31bought < 10 inside H31;
   // :1256, :1541 raise it). Notes §7d. Reachable only once H31 is unlocked.
   if (want('purchase-budget')) {
@@ -245,7 +269,7 @@ async function partOracle() {
 // ⛔ A KIND WITH ZERO FACTS IS RED unless declared here, and each declaration is MEASURED by the `check` it names.
 const DECLARED = {
   ptr: { 'purchase-budget': { why: 'the only budget in the source is H31\'s (layers.js:1251, :1536), and H31 is locked in every committed state', check: 'h31-locked' } },
-  something: { 'challenge-inputs': { why: 'no challenge is unlocked in any committed state', check: 'no-challenges' }, 'purchase-budget': { why: 'no challenge is unlocked in any committed state, and no purchase outside one raises a counter its canAfford reads', check: 'no-challenges' } },
+  something: { 'challenge-inputs': { why: 'no challenge is unlocked in any committed state', check: 'no-challenges' }, 'exits-challenge': { why: 'no challenge is unlocked in any committed state, so none is entered', check: 'no-challenges' }, 'purchase-budget': { why: 'no challenge is unlocked in any committed state, and no purchase outside one raises a counter its canAfford reads', check: 'no-challenges' } },
   'collection-of-everything': { 'purchase-budget': { why: 'its layer sources increment nothing (no ++ / += 1 outside a for header in js/layers*.js), so no purchase can raise a counter by one', check: 'no-increment' } },
 };
 async function partVacuity() {
@@ -325,7 +349,7 @@ function partGrep() {
   row({ gate: 'X1 no game or layer id in the extractor', id: 'ptr', ok: !hits.length, notes: hits.length ? hits.join('; ') : `${srcs.length} sources, ${ids.length} game ids and ${ptrLayers.length} ptr layer ids checked against every string literal and every layers/player/tmp member access` });
 }
 
-const EXPECT = { oracle: () => 1 + (want('price') ? Object.keys(Q_PRICES).length + 1 : 0) + (want('zeroed-by') ? 2 : 0) + (want('production') ? 1 : 0) + (want('multiplier-reads') ? 3 : 0) + (want('challenge-inputs') ? 1 : 0) + (want('purchase-budget') ? 1 : 0),
+const EXPECT = { oracle: () => 1 + (want('price') ? Object.keys(Q_PRICES).length + 1 : 0) + (want('zeroed-by') ? 2 : 0) + (want('production') ? 1 : 0) + (want('multiplier-reads') ? 3 : 0) + (want('challenge-inputs') ? 1 : 0) + (want('purchase-budget') ? 1 : 0) + (want('exits-challenge') ? 1 : 0),
   vacuity: () => GAMES.length * 2, neutral: () => NEUTRAL_LEGS.length, determinism: () => GAMES.length, grep: () => 1 };
 const FN = { oracle: partOracle, vacuity: partVacuity, neutral: partNeutral, determinism: partDeterminism, grep: partGrep };
 let expected = 0;

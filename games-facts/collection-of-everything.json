@@ -46,6 +46,11 @@
    "facts": 0,
    "abstained": 0,
    "variants": 0
+  },
+  "exits-challenge": {
+   "facts": 1,
+   "abstained": 0,
+   "variants": 0
   }
  },
  "thrown": [],
@@ -4611,6 +4616,26 @@
     ],
     "loader": "facts.mjs v1",
     "probeState": "the challenge entered on the copy through startChallenge"
+   }
+  },
+  {
+   "id": "exits-challenge:st:11:met11",
+   "kind": "exits-challenge",
+   "inside": {
+    "layer": "st",
+    "challenge": 11
+   },
+   "reset": "met11",
+   "exits": true,
+   "onGoal": "unread",
+   "from": {
+    "how": "probe:enter + doReset (each reset in its own excursion; a second one with the goal currency at the goal)",
+    "state": "fresh",
+    "seen": [
+     "fresh"
+    ],
+    "loader": "facts.mjs v1",
+    "probeState": "the challenge entered on the copy through startChallenge; doReset forced (the requirement could not be injected)"
    }
   }
  ]

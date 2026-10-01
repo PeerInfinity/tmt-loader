@@ -2985,12 +2985,80 @@
     return out;
   }
   F.openChallenges = openChallenges;
+  F.gainReader = gainReader;     // (h22) the challenge-attempt template reads a goal currency's gain the way the probe does
   F.challengeInputs = function () {
     OUTSIDE = {};
     var out = [], ch = openChallenges();
     for (var i = 0; i < ch.length; i++) {
       try { out.push(F.sensitivity(ch[i].layer, ch[i].id)); }
       catch (e) { out.push({ id: 'challenge-inputs:' + ch[i].layer + ':' + ch[i].id, kind: 'challenge-inputs', inside: { layer: ch[i].layer, challenge: ch[i].id }, abstain: 'the probe threw: ' + errText(e), from: { how: 'probe:in-challenge-sensitivity' } }); }
+    }
+    return out;
+  };
+
+  // ---- exits-challenge (h22): which resets END an attempt at a challenge ------------------------------------------
+  // 2.2.1's `rowReset` sets `activeChallenge = null` on every layer of a row it resets (game.js:126-136) and `doReset`
+  // first runs `completeChallenge` on every layer of a row ≤ its own (:222-224), so an attempt is ended by ANY reset of
+  // a row ≥ the challenge layer's — its siblings included. That is the engine's rule, and engines differ, so it is
+  // MEASURED, not assumed: enter the challenge on the copy (startChallenge, checked), then each shown reset layer's
+  // doReset in its OWN excursion — prepared exactly as zeroed-by prepares it (at the injected requirement, forced only
+  // when injection fails) — and read whether the challenge is still active. For each reset that exits, a second
+  // excursion sets the goal currency to the goal first and reads whether that exit COMPLETES the challenge instead
+  // (`onGoal`): a reset after the goal is reached is not a loss. One fact per (challenge, reset); a reset that does not
+  // exit writes nothing (zeroed-by's convention).
+  function resetLayers() {
+    var ls = allLayers(), out = [];
+    for (var i = 0; i < ls.length; i++) {
+      var l = ls[i];
+      if (!layers[l] || !player[l] || !tmp[l] || !layerShown(l)) continue;
+      if (tmp[l].type === 'none' || layers[l].tmtLoaderLayer) continue;
+      out.push(l);
+    }
+    return out;
+  }
+  function enterOnCopy(l, id) {
+    // a state already INSIDE the challenge (a snapshot taken mid-attempt) is probed as it is: startChallenge would LEAVE it
+    if (String(player[l].activeChallenge) === String(id)) return true;
+    need('startChallenge')(l, id);
+    need('updateTemp')();
+    return String(player[l].activeChallenge) === String(id);
+  }
+  F.exitReading = function (l, id, r, onGoal) {
+    return P.excursion(function () {
+      var wasInside = String(player[l].activeChallenge) === String(id);
+      if (!enterOnCopy(l, id)) return { notEntered: true };
+      var done0 = Number(player[l].challenges && player[l].challenges[id] || 0);
+      var prep = resetPrep(r, resetHead(r));
+      if (onGoal) {
+        var C = layers[l].challenges[id], cur = challengeCurrency(l, C), Ct = tmpItem(l, 'challenges', id);
+        var goal = Ct && Ct.goal !== undefined ? Ct.goal : C.goal;
+        if (!cur.dimension || goal === undefined) return { prep: prep, unread: 'no goal currency to set' };
+        setPath(cur.dimension, D(goal));
+      }
+      need('doReset')(r, prep.force);
+      need('updateTemp')();
+      var done1 = Number(player[l].challenges && player[l].challenges[id] || 0);
+      return { prep: prep, exits: String(player[l].activeChallenge) !== String(id), completed: done1 > done0, wasInside: wasInside };
+    });
+  };
+  F.exitsChallenge = function () {
+    var out = [], ch = openChallenges(), rs = resetLayers();
+    for (var i = 0; i < ch.length; i++) {
+      var l = ch[i].layer, id = ch[i].id, base = 'exits-challenge:' + l + ':' + id;
+      for (var j = 0; j < rs.length; j++) {
+        var r = rs[j], R, G = null;
+        try { R = F.exitReading(l, id, r, false); }
+        catch (e) { out.push({ id: base + ':' + r, kind: 'exits-challenge', inside: { layer: l, challenge: id }, reset: r, abstain: 'the probe threw: ' + errText(e), from: { how: 'probe:enter + doReset' } }); continue; }
+        if (R.notEntered) { out.push({ id: base, kind: 'exits-challenge', inside: { layer: l, challenge: id }, abstain: 'the engine did not enter the challenge (startChallenge left activeChallenge unchanged)', from: { how: 'probe:enter + doReset' } }); break; }
+        if (!R.exits) continue;
+        try { G = F.exitReading(l, id, r, true); } catch (e) { G = { unread: 'the probe threw: ' + errText(e) }; }
+        var lab = [R.wasInside ? 'the state was already inside the challenge' : 'the challenge entered on the copy through startChallenge'];
+        if (R.prep.force) lab.push('doReset forced (the requirement could not be injected)');
+        else if (R.prep.inject) lab.push('requirement injected');
+        out.push({ id: base + ':' + r, kind: 'exits-challenge', inside: { layer: l, challenge: id }, reset: r, exits: true,
+          onGoal: G && !G.unread ? (G.completed ? 'completes' : G.exits ? 'exits' : 'stays') : 'unread',
+          from: { how: 'probe:enter + doReset (each reset in its own excursion; a second one with the goal currency at the goal)', probeState: lab.join('; ') } });
+      }
     }
     return out;
   };
@@ -3098,8 +3166,8 @@
   };
 
   /** One state's facts, every kind, each measured for neutrality. A kind that throws is contained and named. */
-  F.KINDS = ['price', 'zeroed-by', 'production', 'multiplier-reads', 'challenge-inputs', 'purchase-budget'];
-  var KIND_FN = { 'price': 'price', 'zeroed-by': 'zeroedBy', 'production': 'production', 'multiplier-reads': 'multiplierReads', 'challenge-inputs': 'challengeInputs', 'purchase-budget': 'purchaseBudget' };
+  F.KINDS = ['price', 'zeroed-by', 'production', 'multiplier-reads', 'challenge-inputs', 'purchase-budget', 'exits-challenge'];
+  var KIND_FN = { 'price': 'price', 'zeroed-by': 'zeroedBy', 'production': 'production', 'multiplier-reads': 'multiplierReads', 'challenge-inputs': 'challengeInputs', 'purchase-budget': 'purchaseBudget', 'exits-challenge': 'exitsChallenge' };
   P.extractFacts = function (opts) {
     opts = opts || {};
     var kinds = opts.kinds || F.KINDS, h0 = P.hashes(), c0 = { ticks: T.ticks, gs: T.gameSeconds, profile: T.profileName };

@@ -74,6 +74,11 @@
    "facts": 0,
    "abstained": 0,
    "variants": 0
+  },
+  "exits-challenge": {
+   "facts": 20,
+   "abstained": 0,
+   "variants": 0
   }
  },
  "thrown": [],
@@ -34755,6 +34760,454 @@
     ],
     "loader": "facts.mjs v1",
     "probeState": "the challenge entered on the copy through startChallenge"
+   }
+  },
+  {
+   "id": "exits-challenge:h:11:h",
+   "kind": "exits-challenge",
+   "inside": {
+    "layer": "h",
+    "challenge": 11
+   },
+   "reset": "h",
+   "exits": true,
+   "onGoal": "completes",
+   "from": {
+    "how": "probe:enter + doReset (each reset in its own excursion; a second one with the goal currency at the goal)",
+    "state": "all/M21",
+    "seen": [
+     [
+      "all/M21",
+      "all/M22"
+     ]
+    ],
+    "loader": "facts.mjs v1",
+    "probeState": "the challenge entered on the copy through startChallenge; requirement injected"
+   }
+  },
+  {
+   "id": "exits-challenge:h:11:o",
+   "kind": "exits-challenge",
+   "inside": {
+    "layer": "h",
+    "challenge": 11
+   },
+   "reset": "o",
+   "exits": true,
+   "onGoal": "completes",
+   "from": {
+    "how": "probe:enter + doReset (each reset in its own excursion; a second one with the goal currency at the goal)",
+    "state": "all/M21",
+    "seen": [
+     [
+      "all/M21",
+      "all/M22"
+     ]
+    ],
+    "loader": "facts.mjs v1",
+    "probeState": "the challenge entered on the copy through startChallenge; requirement injected"
+   }
+  },
+  {
+   "id": "exits-challenge:h:11:q",
+   "kind": "exits-challenge",
+   "inside": {
+    "layer": "h",
+    "challenge": 11
+   },
+   "reset": "q",
+   "exits": true,
+   "onGoal": "completes",
+   "from": {
+    "how": "probe:enter + doReset (each reset in its own excursion; a second one with the goal currency at the goal)",
+    "state": "all/M21",
+    "seen": [
+     [
+      "all/M21",
+      "all/M22"
+     ]
+    ],
+    "loader": "facts.mjs v1",
+    "probeState": "the challenge entered on the copy through startChallenge; requirement injected"
+   }
+  },
+  {
+   "id": "exits-challenge:h:11:ss",
+   "kind": "exits-challenge",
+   "inside": {
+    "layer": "h",
+    "challenge": 11
+   },
+   "reset": "ss",
+   "exits": true,
+   "onGoal": "completes",
+   "from": {
+    "how": "probe:enter + doReset (each reset in its own excursion; a second one with the goal currency at the goal)",
+    "state": "all/M21",
+    "seen": [
+     [
+      "all/M21",
+      "all/M22"
+     ]
+    ],
+    "loader": "facts.mjs v1",
+    "probeState": "the challenge entered on the copy through startChallenge; requirement injected"
+   }
+  },
+  {
+   "id": "exits-challenge:h:12:h",
+   "kind": "exits-challenge",
+   "inside": {
+    "layer": "h",
+    "challenge": 12
+   },
+   "reset": "h",
+   "exits": true,
+   "onGoal": "completes",
+   "from": {
+    "how": "probe:enter + doReset (each reset in its own excursion; a second one with the goal currency at the goal)",
+    "state": "all/M23",
+    "seen": [
+     [
+      "all/M23",
+      "all/M24"
+     ]
+    ],
+    "loader": "facts.mjs v1",
+    "probeState": "the challenge entered on the copy through startChallenge; requirement injected | the state was already inside the challenge; requirement injected"
+   }
+  },
+  {
+   "id": "exits-challenge:h:12:o",
+   "kind": "exits-challenge",
+   "inside": {
+    "layer": "h",
+    "challenge": 12
+   },
+   "reset": "o",
+   "exits": true,
+   "onGoal": "completes",
+   "from": {
+    "how": "probe:enter + doReset (each reset in its own excursion; a second one with the goal currency at the goal)",
+    "state": "all/M23",
+    "seen": [
+     [
+      "all/M23",
+      "all/M24"
+     ]
+    ],
+    "loader": "facts.mjs v1",
+    "probeState": "the challenge entered on the copy through startChallenge; requirement injected | the state was already inside the challenge; requirement injected"
+   }
+  },
+  {
+   "id": "exits-challenge:h:12:q",
+   "kind": "exits-challenge",
+   "inside": {
+    "layer": "h",
+    "challenge": 12
+   },
+   "reset": "q",
+   "exits": true,
+   "onGoal": "completes",
+   "from": {
+    "how": "probe:enter + doReset (each reset in its own excursion; a second one with the goal currency at the goal)",
+    "state": "all/M23",
+    "seen": [
+     [
+      "all/M23",
+      "all/M24"
+     ]
+    ],
+    "loader": "facts.mjs v1",
+    "probeState": "the challenge entered on the copy through startChallenge; requirement injected | the state was already inside the challenge; requirement injected"
+   }
+  },
+  {
+   "id": "exits-challenge:h:12:ss",
+   "kind": "exits-challenge",
+   "inside": {
+    "layer": "h",
+    "challenge": 12
+   },
+   "reset": "ss",
+   "exits": true,
+   "onGoal": "completes",
+   "from": {
+    "how": "probe:enter + doReset (each reset in its own excursion; a second one with the goal currency at the goal)",
+    "state": "all/M23",
+    "seen": [
+     [
+      "all/M23",
+      "all/M24"
+     ]
+    ],
+    "loader": "facts.mjs v1",
+    "probeState": "the challenge entered on the copy through startChallenge; requirement injected | the state was already inside the challenge; requirement injected"
+   }
+  },
+  {
+   "id": "exits-challenge:h:21:h",
+   "kind": "exits-challenge",
+   "inside": {
+    "layer": "h",
+    "challenge": 21
+   },
+   "reset": "h",
+   "exits": true,
+   "onGoal": "completes",
+   "from": {
+    "how": "probe:enter + doReset (each reset in its own excursion; a second one with the goal currency at the goal)",
+    "state": "all/M25",
+    "seen": [
+     "all/M25"
+    ],
+    "loader": "facts.mjs v1",
+    "probeState": "the challenge entered on the copy through startChallenge; requirement injected"
+   }
+  },
+  {
+   "id": "exits-challenge:h:21:o",
+   "kind": "exits-challenge",
+   "inside": {
+    "layer": "h",
+    "challenge": 21
+   },
+   "reset": "o",
+   "exits": true,
+   "onGoal": "completes",
+   "from": {
+    "how": "probe:enter + doReset (each reset in its own excursion; a second one with the goal currency at the goal)",
+    "state": "all/M25",
+    "seen": [
+     "all/M25"
+    ],
+    "loader": "facts.mjs v1",
+    "probeState": "the challenge entered on the copy through startChallenge; requirement injected"
+   }
+  },
+  {
+   "id": "exits-challenge:h:21:q",
+   "kind": "exits-challenge",
+   "inside": {
+    "layer": "h",
+    "challenge": 21
+   },
+   "reset": "q",
+   "exits": true,
+   "onGoal": "completes",
+   "from": {
+    "how": "probe:enter + doReset (each reset in its own excursion; a second one with the goal currency at the goal)",
+    "state": "all/M25",
+    "seen": [
+     "all/M25"
+    ],
+    "loader": "facts.mjs v1",
+    "probeState": "the challenge entered on the copy through startChallenge; requirement injected"
+   }
+  },
+  {
+   "id": "exits-challenge:h:21:ss",
+   "kind": "exits-challenge",
+   "inside": {
+    "layer": "h",
+    "challenge": 21
+   },
+   "reset": "ss",
+   "exits": true,
+   "onGoal": "completes",
+   "from": {
+    "how": "probe:enter + doReset (each reset in its own excursion; a second one with the goal currency at the goal)",
+    "state": "all/M25",
+    "seen": [
+     "all/M25"
+    ],
+    "loader": "facts.mjs v1",
+    "probeState": "the challenge entered on the copy through startChallenge; requirement injected"
+   }
+  },
+  {
+   "id": "exits-challenge:h:22:h",
+   "kind": "exits-challenge",
+   "inside": {
+    "layer": "h",
+    "challenge": 22
+   },
+   "reset": "h",
+   "exits": true,
+   "onGoal": "completes",
+   "from": {
+    "how": "probe:enter + doReset (each reset in its own excursion; a second one with the goal currency at the goal)",
+    "state": "all/M26",
+    "seen": [
+     [
+      "all/M26",
+      "m28/QL6"
+     ]
+    ],
+    "loader": "facts.mjs v1",
+    "probeState": "the challenge entered on the copy through startChallenge; requirement injected"
+   }
+  },
+  {
+   "id": "exits-challenge:h:22:o",
+   "kind": "exits-challenge",
+   "inside": {
+    "layer": "h",
+    "challenge": 22
+   },
+   "reset": "o",
+   "exits": true,
+   "onGoal": "completes",
+   "from": {
+    "how": "probe:enter + doReset (each reset in its own excursion; a second one with the goal currency at the goal)",
+    "state": "all/M26",
+    "seen": [
+     [
+      "all/M26",
+      "m28/QL6"
+     ]
+    ],
+    "loader": "facts.mjs v1",
+    "probeState": "the challenge entered on the copy through startChallenge; requirement injected"
+   }
+  },
+  {
+   "id": "exits-challenge:h:22:q",
+   "kind": "exits-challenge",
+   "inside": {
+    "layer": "h",
+    "challenge": 22
+   },
+   "reset": "q",
+   "exits": true,
+   "onGoal": "completes",
+   "from": {
+    "how": "probe:enter + doReset (each reset in its own excursion; a second one with the goal currency at the goal)",
+    "state": "all/M26",
+    "seen": [
+     [
+      "all/M26",
+      "m28/QL6"
+     ]
+    ],
+    "loader": "facts.mjs v1",
+    "probeState": "the challenge entered on the copy through startChallenge; requirement injected"
+   }
+  },
+  {
+   "id": "exits-challenge:h:22:ss",
+   "kind": "exits-challenge",
+   "inside": {
+    "layer": "h",
+    "challenge": 22
+   },
+   "reset": "ss",
+   "exits": true,
+   "onGoal": "completes",
+   "from": {
+    "how": "probe:enter + doReset (each reset in its own excursion; a second one with the goal currency at the goal)",
+    "state": "all/M26",
+    "seen": [
+     [
+      "all/M26",
+      "m28/QL6"
+     ]
+    ],
+    "loader": "facts.mjs v1",
+    "probeState": "the challenge entered on the copy through startChallenge; requirement injected"
+   }
+  },
+  {
+   "id": "exits-challenge:h:32:h",
+   "kind": "exits-challenge",
+   "inside": {
+    "layer": "h",
+    "challenge": 32
+   },
+   "reset": "h",
+   "exits": true,
+   "onGoal": "completes",
+   "from": {
+    "how": "probe:enter + doReset (each reset in its own excursion; a second one with the goal currency at the goal)",
+    "state": "all/M21",
+    "seen": [
+     [
+      "all/M21",
+      "m28/QL6"
+     ]
+    ],
+    "loader": "facts.mjs v1",
+    "probeState": "the challenge entered on the copy through startChallenge; requirement injected"
+   }
+  },
+  {
+   "id": "exits-challenge:h:32:o",
+   "kind": "exits-challenge",
+   "inside": {
+    "layer": "h",
+    "challenge": 32
+   },
+   "reset": "o",
+   "exits": true,
+   "onGoal": "completes",
+   "from": {
+    "how": "probe:enter + doReset (each reset in its own excursion; a second one with the goal currency at the goal)",
+    "state": "all/M21",
+    "seen": [
+     [
+      "all/M21",
+      "m28/QL6"
+     ]
+    ],
+    "loader": "facts.mjs v1",
+    "probeState": "the challenge entered on the copy through startChallenge; requirement injected"
+   }
+  },
+  {
+   "id": "exits-challenge:h:32:q",
+   "kind": "exits-challenge",
+   "inside": {
+    "layer": "h",
+    "challenge": 32
+   },
+   "reset": "q",
+   "exits": true,
+   "onGoal": "completes",
+   "from": {
+    "how": "probe:enter + doReset (each reset in its own excursion; a second one with the goal currency at the goal)",
+    "state": "all/M21",
+    "seen": [
+     [
+      "all/M21",
+      "m28/QL6"
+     ]
+    ],
+    "loader": "facts.mjs v1",
+    "probeState": "the challenge entered on the copy through startChallenge; requirement injected"
+   }
+  },
+  {
+   "id": "exits-challenge:h:32:ss",
+   "kind": "exits-challenge",
+   "inside": {
+    "layer": "h",
+    "challenge": 32
+   },
+   "reset": "ss",
+   "exits": true,
+   "onGoal": "completes",
+   "from": {
+    "how": "probe:enter + doReset (each reset in its own excursion; a second one with the goal currency at the goal)",
+    "state": "all/M21",
+    "seen": [
+     [
+      "all/M21",
+      "m28/QL6"
+     ]
+    ],
+    "loader": "facts.mjs v1",
+    "probeState": "the challenge entered on the copy through startChallenge; requirement injected"
    }
   }
  ]

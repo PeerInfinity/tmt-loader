@@ -51,6 +51,11 @@
    "facts": 0,
    "abstained": 0,
    "variants": 0
+  },
+  "exits-challenge": {
+   "facts": 0,
+   "abstained": 0,
+   "variants": 0
   }
  },
  "thrown": [],
