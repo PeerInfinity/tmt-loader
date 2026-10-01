@@ -26,15 +26,30 @@
       "date": "2026-09-20",
       "subject": "feat(ptr): row 3's cycle ON in the table, and M25 \"Speed Demon\" landed with a fixture (R3b-2 parts 2 & 3)"
     },
+    "393b702": {
+      "commit": "393b7023092acb3798d968568e2de7b81c0ec504",
+      "date": "2026-10-01",
+      "subject": "data(ladder): M30 reached — stages/M28 under the shipped table alone, 94,521 / 132127d4d5573106 (+9,242; +7,544.8 at diff 0.05)"
+    },
     "3bc12bf77976cf60ba440664de1f421a29222e4f": {
       "commit": "3bc12bf77976cf60ba440664de1f421a29222e4f",
       "date": "2026-09-14",
       "subject": "gates-a1: part 3 constants above the top-level run (TDZ); docs/automation.md: the two tables' measured defaults + harness levers"
     },
+    "49cf9ab": {
+      "commit": "49cf9ab4577f6ce0a514516cdb9fc427a7ac4172",
+      "date": "2026-10-01",
+      "subject": "test(m30): m30/W226931 — the wall: stages/M28 under the table before this slice for 141,652 ticks (226,931 / e09f367518a8fb2d)"
+    },
     "769e7523eab4f3f79c0b236e85e610a402b39b5d": {
       "commit": "769e7523eab4f3f79c0b236e85e610a402b39b5d",
       "date": "2026-10-01",
       "subject": "feat(stages): ptr's three stages — QL5 quirk rate, QL6 H22 attempt, QL6 hold for q31/q32 (provenance pending CI)"
+    },
+    "8f59717": {
+      "commit": "8f59717fb8a31dbe4be0f2cb72eda27470438606",
+      "date": "2026-10-01",
+      "subject": "docs(m30): the measured tick order (fallback pass, the yield), the stage's limit past q milestone 6; mutants: the row-3 hold (A) and the brief's sibling hold (A0, structural only)"
     },
     "9a30dc31cef30eb777d5a74bde9184b51b257171": {
       "commit": "9a30dc31cef30eb777d5a74bde9184b51b257171",

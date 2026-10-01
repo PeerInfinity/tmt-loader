@@ -6176,3 +6176,15 @@ Reading this section: CI run 35777610644 (`c43a0e7e3`) reddened C1-3 (no currenc
 | U14 m3 Tree closes the tab | ptr | mutant, local, base efaeae795 | — | — | — | — | RED (expected) | leg S desktop: `PRESSING TREE CLOSED THE TAB (player.tab "p" → "none" → "none")`; restored clean |
 | U14 m4 column width not applied | ptr | mutant, local, base efaeae795 | — | — | — | — | RED (expected) | leg S desktop: `THE LIST IS NOT THE LEFT COLUMN (list x 0 w 1280, #treeTab x 0 w 633.6)`; restored clean |
 | U14 leg S, CI roster | 175 games | sweep 35808980574 at `e9c7a7d`, merge job: `rows: 175/175 game(s); 0 RED` | — | — | — | — | GREEN | leg S desktop 171/175 green, 4 abstained (no layer reachable at a fresh save: the-mj-tree, the-earth-tree, the-space-tree, the-burning-tree), 0 red; phone 171/175, 4 abstained, 0 red. List = #treeTab's box on all 171: 170 at 633.6 px (tab x 646.4), 1 engine at 640/640 (no gutter); at a 390 px desktop window 170 at 193/193, 1 at 195/195 |
+
+## 2026-10-01T21:50:15Z — Gate m30 merge — the stage q33-sg-unlock measured (`node tools/harness/gates-m30.mjs --part merge --summary`) — commit `393b702` — 5/5 green
+
+Reading this section: each leg ran TWICE (equal or RED); gameSeconds is the game clock at M30; the merged legs' own commit is in each row's notes.
+
+| gate | game | leg | ticks | gameSeconds | diff | hash | result | notes |
+|---|---|---|---|---|---|---|---|---|
+| m30-A@1 M-merge | ptr | shipped from stages/M28 | 94521 | 94521 | 1 | `132127d4d5573106` | GREEN | M30 +9242 game-s from M28.json (diff 1); M31 null · M32 null · M33 null; commit 49cf9ab; twice equal true |
+| m30-A@0.05 M-merge | ptr | shipped from stages/M28 | 236175 | 92823.8 | 0.05 | `45bc69ded28b1288` | GREEN | M30 +7544.8 game-s from M28.json (diff 0.05); M31 null · M32 null · M33 null; commit 49cf9ab; twice equal true |
+| m30-first@1 M-merge | ptr | shipped from all/M26 | 94521 | 94521 | 1 | `132127d4d5573106` | GREEN | M30 +17590 game-s from M26.json (diff 1); M31 null · M32 null · M33 null; commit 8f59717; twice equal true |
+| m30-last@1 M-merge | ptr | last from all/M26 | 94521 | 94521 | 1 | `132127d4d5573106` | GREEN | M30 +17590 game-s from M26.json (diff 1); M31 null · M32 null · M33 null; commit 393b702; twice equal true |
+| m30-order q33-sg-unlock FIRST (shipped) reaches M30 no later than LAST, from all/M26 at diff 1 — and the shipped path's M30 = the acceptance's | ptr | — | — | — | — | — | GREEN | first: M30 tick 94521 (132127d4d5573106); last: tick 94521 (132127d4d5573106); acceptance 94521 |

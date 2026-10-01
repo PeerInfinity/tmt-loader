@@ -196,10 +196,23 @@
         "reset:ss": "player.g.points.gte(tmp.sg.nextAt)",
         "challenges:h": "player.g.points.gte(tmp.sg.nextAt)"
       },
-      "provenance": {
-        "unverified": true,
-        "note": "scratch: under measurement"
-      }
+      "provenance": [
+        {
+          "gate": "m30-A@1",
+          "commit": "49cf9ab",
+          "note": "tmt-m30-1 (cloud-reports/tmt-m30-1.md; measured in the cloud session, CI pending): from stages/M28 the table alone reaches M30 at +9,242 game-s (diff 1, tick 94,521, 132127d4d5573106), twice equal — q33 at 93,879, the stage on from that loop, Generators 200 and reset:sg 642 game-s later: the reset-requirement template's own reset-at tick from that state (gates-m30 OQ). Without it (the table at 68383aa) Super Generators never reset in 141,652 ticks (gates-m30 F0)."
+        },
+        {
+          "gate": "m30-A@0.05",
+          "commit": "49cf9ab",
+          "note": "tmt-m30-1: the same at the page's diff 0.05 — M30 at +7,544.8 game-s (tick 236,175, 45bc69ded28b1288), twice equal; q33 at 92,134.2 game-s, the reset 689.6 game-s later."
+        },
+        {
+          "gate": "m30-order",
+          "commit": "393b702",
+          "note": "tmt-m30-1: the whole stretch from all/M26, the stage FIRST (shipped; legs at 8f59717) and LAST (at 393b702) — equal to the tick and hash (M30 94,521 / 132127d4d5573106, = the acceptance; M28 and M29 on their pins), twice each: while it holds no other stage holds that names its slots. ⚠ Its limit: past q milestone 6 reset:sg yields to an auto-reset the engine skips for a locked layer, so from the 226,931 wall the stage alone does not reset sg (gates-m30 S3)."
+        }
+      ]
     },
     {
       "id": "ql6-h22-attempt",
