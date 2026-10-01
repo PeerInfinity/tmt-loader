@@ -275,19 +275,24 @@ async function partCell() {
   const walled = legs.some((r) => r.stall && r.stall.walled);
   const eq = !!x.ok && !!y.ok && x.ticks === y.ticks && x.hashGame === y.hashGame && x.eval.total === y.eval.total;
   const gs = (r) => Math.round((r.gameSeconds - PIN_QL5.ticks) * 1000) / 1000;
-  const out = { cell: a.cell, ...L, opt: CELLS[L.cell].opt, commit, dirty, twiceEqual: eq, walled, reached: !!x.eval && Number(x.eval.total) >= Number(THRESHOLD),
+  // ⚠ `key` first and never `cell`: LONG's entries carry their own `cell` (the CELLS row), which a spread would let
+  // overwrite the key — the first CI merge (36812038216) found all six cells MISSING for exactly that reason.
+  const out = { ...L, key: a.cell, opt: CELLS[L.cell].opt, commit, dirty, twiceEqual: eq, walled, reached: !!x.eval && Number(x.eval.total) >= Number(THRESHOLD),
     gameSeconds: gs(x), ticks: x.ticks, hashGame: [x.hashGame, y.hashGame], eval: x.eval, rate: x.rate && { stretch: x.rate.stretch, intervals: x.rate.intervals, threshold: x.rate.threshold, series: x.rate.series }, wallMs: legs.map((r) => r.wallMs) };
   row({ gate: `Q-cell ${a.cell} — QL5 → ${THRESHOLD} at diff ${L.diff} (horizon ${L.horizon} game-s), twice equal, not walled`, id: 'ptr', ok: eq && !walled,
     notes: `${out.reached ? `REACHED at +${out.gameSeconds} game-s` : `NOT reached by +${out.gameSeconds}: total ${x.eval && x.eval.total}`}; rate ${x.rate && x.rate.stretch ? x.rate.stretch.rate.toPrecision(4) : '?'} quirks/game-s over the stretch (intervals ${x.rate && x.rate.intervals ? `${x.rate.intervals.min.toPrecision(3)} … ${x.rate.intervals.max.toPrecision(3)}` : '?'}); ${x.hashGame} / ${y.hashGame}; walled ${walled}; wall ${legs.map((r) => Math.round(r.wallMs / 1000)).join(' / ')} s ${x.error || ''}${y.error || ''}` });
   fs.mkdirSync(path.join(REPO, 'tools/harness/results/tmp'), { recursive: true });
-  fs.writeFileSync(path.join(REPO, `tools/harness/results/tmp/qrate1-cell-${a.cell.replace(/[^\w.-]/g, '_')}.json`), JSON.stringify(out, null, 1) + '\n');
+  fs.writeFileSync(path.join(REPO, 'tools/harness/results/tmp', `qrate1-cell-${a.cell.replace(/[^\w.-]/g, '_')}.json`), JSON.stringify(out, null, 1) + '\n');
 }
 function partMerge() {
   const dir = path.resolve(a.dir || path.join(REPO, 'tools/harness/results/tmp'));
   const files = fs.existsSync(dir) ? fs.readdirSync(dir, { recursive: true }).filter((f) => /qrate1-cell-.*\.json$/.test(f)) : [];
-  const got = Object.fromEntries(files.map((f) => { const j = JSON.parse(fs.readFileSync(path.join(dir, f), 'utf8')); return [j.cell, j]; }));
+  // matched by the FILE NAME the cell job writes (qrate1-cell-<key, sanitised>.json), never by a field inside it
+  const fileOf = (k) => `qrate1-cell-${k.replace(/[^\w.-]/g, '_')}.json`;
+  const got = {};
+  for (const f of files) got[path.basename(f)] = JSON.parse(fs.readFileSync(path.join(dir, f), 'utf8'));
   for (const k of Object.keys(LONG)) {
-    const j = got[k];
+    const j = got[fileOf(k)];
     row({ gate: `Q-merge ${k}`, id: 'ptr', ok: !!j && j.twiceEqual && !j.walled,
       notes: j ? `${j.reached ? `${THRESHOLD} at +${j.gameSeconds} game-s` : `NOT reached by +${j.gameSeconds}: total ${j.eval && j.eval.total}`}; stretch rate ${j.rate && j.rate.stretch ? j.rate.stretch.rate.toPrecision(4) : '?'} /game-s; commit ${j.commit}; twice equal ${j.twiceEqual}; walled ${j.walled}` : 'MISSING — the cell did not run or its artifact was not found' });
   }

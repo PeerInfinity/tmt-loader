@@ -415,6 +415,11 @@ notes §17 has every number):
   rises every round, so the anti-fixation escalation never arms. Widening `maxCandidates` / `screenK` is the only way in.
 - The Part 1 winner (`rate-peak@0/0` KEEPING `|turn@10/…`) is not a candidate at all without `keepModifiers=1`: the
   table registers `rate-peak@0/0` bare, and a candidate replaces the whole policy string.
+- **Widened, it finds the winner** (CI `36812038216`, `keepModifiers=1;maxCandidates=999;screenK=999`, 2 rounds from
+  QL5): round 0 confirms 104 of 132 candidates (the other 28 are refused template ids, below) and commits
+  `policy:reset:q=rate-peak@0/0|turn@10/…` — the Part 1 winner; round 1 adds `off:reset:h`, which measured as a cell
+  (the winner with `reset:h` excluded) reaches the threshold at +2,731 game-s against the winner's +2,872. Cost ~160 s of
+  wall per round in CI, against ~10 s for a default round (6 default rounds: the incumbent every time).
 - **Defect fixed (qrate1): a candidate the engine refuses crashed the round.** `instantiate` passes a strategy template
   it has no rule for through as its literal id (`gain>=Nx-unit`, `rate-peak@B/H`; the strategy table grew after P1b),
   and `setPolicy` throws on the placeholder. A default round never confirms one; a widened round died on the first. A
