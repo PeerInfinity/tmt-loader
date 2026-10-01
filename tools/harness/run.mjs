@@ -187,6 +187,7 @@ function runNodeRaw(id, o) {
   const queues = o.queue == null ? [] : (Array.isArray(o.queue) ? o.queue : [o.queue]);
   if (queues.length) args.push('--queues', JSON.stringify(queues.map((f) => path.resolve(String(f)))));
   if (o['queue-runner']) args.push('--queue-runner');
+  if (o.templates) args.push('--templates');
   // the child runs with cwd = os.tmpdir(): every file argument is made absolute here
   for (const k of ['state-out', 'player-out', 'ids-out', 'save-storage', 'knowledge-out', 'goals-out', 'rounds-out']) if (o[k] != null) args.push(`--${k}`, path.resolve(String(o[k])));
   if (o.save) args.push('--save');
@@ -219,7 +220,7 @@ async function main() {
   // (tpl1) --queue is the one REPEATABLE flag: every occurrence is collected before parseArgs keeps the last
   const argv = process.argv.slice(2), queues = [];
   for (let i = 0; i < argv.length; i++) if (argv[i] === '--queue') { queues.push(argv[i + 1]); argv.splice(i, 2); i--; } else if (argv[i].startsWith('--queue=')) { queues.push(argv[i].slice(8)); argv.splice(i, 1); i--; }
-  const a = parseArgs(argv, ['save', 'no-auto', 'no-currency', 'no-automation', 'marks-continue', 'stall-seen', 'no-runtime', 'until-all', 'planner', 'explain', 'queue-runner']);
+  const a = parseArgs(argv, ['save', 'no-auto', 'no-currency', 'no-automation', 'marks-continue', 'stall-seen', 'no-runtime', 'until-all', 'planner', 'explain', 'queue-runner', 'templates']);
   if (queues.length) a.queue = queues;
   const id = a._[0];
   if (!id) { console.error('usage: node run.mjs <id> [--ticks N] [--diff d] [--until "<js>"] [--json out] …'); process.exit(2); }

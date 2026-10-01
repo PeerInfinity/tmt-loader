@@ -11,7 +11,8 @@
 //                      [--planner-ladder ladder.json] [--planner-script f.js] [--knowledge-out f] [--goals-out f] [--rounds-out f]
 //                      [--stop-snapshot] [--explain] [--random-seed N]
 //                      [--log <file.jsonl> [--log-meta <json>] [--log-every <game-s>]] [--replay <file.jsonl>]
-//                      [--queues <json array of queue files>] [--queue-runner]
+//                      [--queues <json array of queue files>] [--queue-runner] [--templates]
+//   --templates (with --planner): loader/tmt-templates.js, the strategy templates (docs/templates.md).
 //   --queues: the QUEUE RUNNER (tpl1, docs/queues.md) — loader/tmt-queue.js is run, and each file is loaded into it in
 //   order (after the state log starts, so the log records the load). --queue-runner: the runner with nothing loaded (a
 //   planner script that plays queues on the copy). A --runtime record that carries queues loads the runner by itself.
@@ -70,7 +71,7 @@ for (let i = 0; i < argv.length; i++) {
   const a = argv[i];
   if (!a.startsWith('--')) A._.push(a);
   else if (a.indexOf('=') > 2) A[a.slice(2, a.indexOf('='))] = a.slice(a.indexOf('=') + 1);   // --planner=auto
-  else if (['save', 'census', 'no-auto', 'no-currency', 'no-automation', 'marks-continue', 'stall-seen', 'snapshots', 'planner', 'stop-snapshot', 'explain', 'queue-runner'].includes(a.slice(2))) A[a.slice(2)] = true;
+  else if (['save', 'census', 'no-auto', 'no-currency', 'no-automation', 'marks-continue', 'stall-seen', 'snapshots', 'planner', 'stop-snapshot', 'explain', 'queue-runner', 'templates'].includes(a.slice(2))) A[a.slice(2)] = true;
   else A[a.slice(2)] = argv[++i];
 }
 const ID = A._[0];
@@ -271,6 +272,13 @@ if (A.planner) {
     for (const part of String(A['planner-opt'] || '').split(';')) { if (!part) continue; const i = part.indexOf('='); if (i < 0) OPTS[part] = '1'; else OPTS[part.slice(0, i)] = part.slice(i + 1); }
     if (Object.keys(OPTS).length) { globalThis.__tmtPlannerOpt = OPTS; run('tmtLoader.planner.setOptions(globalThis.__tmtPlannerOpt)', 'planner-opt'); R.planner.options = OPTS; }
     run(`tmtLoader.planner.mode = ${JSON.stringify(PLANNER_MODE)}`, 'planner-mode');
+    // (tpl1) the STRATEGY TEMPLATES (docs/templates.md) — harness-only, after the planner they extend, ONLY with
+    // --templates; they play plans on the copy through the queue runner (--queue-runner).
+    if (A.templates) {
+      run(fs.readFileSync(path.join(REPO, 'loader/tmt-templates.js'), 'utf8'), 'loader/tmt-templates.js');
+      if (run('!!(tmtLoader.planner.templates)', 'x') !== true) throw new Error('loader/tmt-templates.js did not define tmtLoader.planner.templates');
+      R.planner.templates = true;
+    }
   }
   catch (e) { R.file_errors.push({ file: 'loader/tmt-planner.js', error: String(e.message).slice(0, 200) }); R.planner = { loaded: false, error: String(e.message).slice(0, 300) }; }
 }
