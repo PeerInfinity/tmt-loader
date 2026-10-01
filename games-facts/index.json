@@ -1,0 +1,10 @@
+{
+ "generated": true,
+ "generator": "tools/harness/facts.mjs",
+ "format": "tmt-facts/1",
+ "games": [
+  "collection-of-everything",
+  "ptr",
+  "something"
+ ]
+}

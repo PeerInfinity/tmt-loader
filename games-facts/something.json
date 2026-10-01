@@ -1,0 +1,7423 @@
+{
+ "generated": true,
+ "generator": "tools/harness/facts.mjs",
+ "generatorVersion": 1,
+ "format": "tmt-facts/1",
+ "game": "something",
+ "base": null,
+ "engine": "2.7",
+ "upstream": {
+  "repo": "Justcubing97/JC97sSomethingTree",
+  "commit": "30a311be6b91470f9c7818b6747bd7426b1b1f90"
+ },
+ "states": [
+  "fresh",
+  "all/S01",
+  "all/S02",
+  "all/S03",
+  "all/S04",
+  "all/S05"
+ ],
+ "seeds": [
+  1
+ ],
+ "summary": {
+  "price": {
+   "facts": 25,
+   "abstained": 0,
+   "variants": 0
+  },
+  "zeroed-by": {
+   "facts": 35,
+   "abstained": 0,
+   "variants": 0
+  },
+  "production": {
+   "facts": 27,
+   "abstained": 0,
+   "variants": 0
+  },
+  "multiplier-reads": {
+   "facts": 142,
+   "abstained": 0,
+   "variants": 8
+  },
+  "challenge-inputs": {
+   "facts": 0,
+   "abstained": 0,
+   "variants": 0
+  },
+  "purchase-budget": {
+   "facts": 0,
+   "abstained": 0,
+   "variants": 0
+  }
+ },
+ "thrown": [],
+ "facts": [
+  {
+   "id": "price:fundamental:upgrade:11",
+   "kind": "price",
+   "item": {
+    "layer": "fundamental",
+    "upgrade": 11
+   },
+   "currency": "player.fundamental.points",
+   "currencyHow": "the layer's own points",
+   "reads": [],
+   "shapes": {},
+   "constant": true,
+   "from": {
+    "how": "declaration: a constant cost",
+    "state": "all/S01",
+    "seen": [
+     [
+      "all/S01",
+      "all/S05"
+     ]
+    ],
+    "loader": "facts.mjs v1"
+   }
+  },
+  {
+   "id": "price:fundamental:upgrade:12",
+   "kind": "price",
+   "item": {
+    "layer": "fundamental",
+    "upgrade": 12
+   },
+   "currency": "player.fundamental.points",
+   "currencyHow": "the layer's own points",
+   "reads": [],
+   "shapes": {},
+   "constant": true,
+   "from": {
+    "how": "declaration: a constant cost",
+    "state": "all/S01",
+    "seen": [
+     [
+      "all/S01",
+      "all/S05"
+     ]
+    ],
+    "loader": "facts.mjs v1"
+   }
+  },
+  {
+   "id": "price:fundamental:upgrade:13",
+   "kind": "price",
+   "item": {
+    "layer": "fundamental",
+    "upgrade": 13
+   },
+   "currency": "player.fundamental.points",
+   "currencyHow": "the layer's own points",
+   "reads": [],
+   "shapes": {},
+   "constant": true,
+   "from": {
+    "how": "declaration: a constant cost",
+    "state": "all/S01",
+    "seen": [
+     [
+      "all/S01",
+      "all/S05"
+     ]
+    ],
+    "loader": "facts.mjs v1"
+   }
+  },
+  {
+   "id": "price:fundamental:upgrade:14",
+   "kind": "price",
+   "item": {
+    "layer": "fundamental",
+    "upgrade": 14
+   },
+   "currency": "player.fundamental.points",
+   "currencyHow": "the layer's own points",
+   "reads": [],
+   "shapes": {},
+   "constant": true,
+   "from": {
+    "how": "declaration: a constant cost",
+    "state": "all/S01",
+    "seen": [
+     [
+      "all/S01",
+      "all/S05"
+     ]
+    ],
+    "loader": "facts.mjs v1"
+   }
+  },
+  {
+   "id": "price:fundamental:upgrade:15",
+   "kind": "price",
+   "item": {
+    "layer": "fundamental",
+    "upgrade": 15
+   },
+   "currency": "player.fundamental.points",
+   "currencyHow": "the layer's own points",
+   "reads": [],
+   "shapes": {},
+   "constant": true,
+   "from": {
+    "how": "declaration: a constant cost",
+    "state": "all/S01",
+    "seen": [
+     [
+      "all/S01",
+      "all/S05"
+     ]
+    ],
+    "loader": "facts.mjs v1"
+   }
+  },
+  {
+   "id": "price:fundamental:upgrade:16",
+   "kind": "price",
+   "item": {
+    "layer": "fundamental",
+    "upgrade": 16
+   },
+   "currency": "player.fundamental.points",
+   "currencyHow": "the layer's own points",
+   "reads": [],
+   "shapes": {},
+   "constant": true,
+   "from": {
+    "how": "declaration: a constant cost",
+    "state": "all/S01",
+    "seen": [
+     [
+      "all/S01",
+      "all/S05"
+     ]
+    ],
+    "loader": "facts.mjs v1"
+   }
+  },
+  {
+   "id": "price:fundamental:upgrade:17",
+   "kind": "price",
+   "item": {
+    "layer": "fundamental",
+    "upgrade": 17
+   },
+   "currency": "player.fundamental.points",
+   "currencyHow": "the layer's own points",
+   "reads": [],
+   "shapes": {},
+   "constant": true,
+   "from": {
+    "how": "declaration: a constant cost",
+    "state": "all/S01",
+    "seen": [
+     [
+      "all/S01",
+      "all/S05"
+     ]
+    ],
+    "loader": "facts.mjs v1"
+   }
+  },
+  {
+   "id": "price:fundamental:upgrade:21",
+   "kind": "price",
+   "item": {
+    "layer": "fundamental",
+    "upgrade": 21
+   },
+   "currency": "player.fundamental.points",
+   "currencyHow": "the layer's own points",
+   "reads": [],
+   "shapes": {},
+   "constant": true,
+   "from": {
+    "how": "declaration: a constant cost",
+    "state": "all/S02",
+    "seen": [
+     [
+      "all/S02",
+      "all/S05"
+     ]
+    ],
+    "loader": "facts.mjs v1"
+   }
+  },
+  {
+   "id": "price:fundamental:upgrade:22",
+   "kind": "price",
+   "item": {
+    "layer": "fundamental",
+    "upgrade": 22
+   },
+   "currency": "player.fundamental.points",
+   "currencyHow": "the layer's own points",
+   "reads": [],
+   "shapes": {},
+   "constant": true,
+   "from": {
+    "how": "declaration: a constant cost",
+    "state": "all/S02",
+    "seen": [
+     [
+      "all/S02",
+      "all/S05"
+     ]
+    ],
+    "loader": "facts.mjs v1"
+   }
+  },
+  {
+   "id": "price:fundamental:upgrade:23",
+   "kind": "price",
+   "item": {
+    "layer": "fundamental",
+    "upgrade": 23
+   },
+   "currency": "player.fundamental.points",
+   "currencyHow": "the layer's own points",
+   "reads": [],
+   "shapes": {},
+   "constant": true,
+   "from": {
+    "how": "declaration: a constant cost",
+    "state": "all/S02",
+    "seen": [
+     [
+      "all/S02",
+      "all/S05"
+     ]
+    ],
+    "loader": "facts.mjs v1"
+   }
+  },
+  {
+   "id": "price:fundamental:upgrade:24",
+   "kind": "price",
+   "item": {
+    "layer": "fundamental",
+    "upgrade": 24
+   },
+   "currency": "player.fundamental.points",
+   "currencyHow": "the layer's own points",
+   "reads": [],
+   "shapes": {},
+   "constant": true,
+   "from": {
+    "how": "declaration: a constant cost",
+    "state": "all/S02",
+    "seen": [
+     [
+      "all/S02",
+      "all/S05"
+     ]
+    ],
+    "loader": "facts.mjs v1"
+   }
+  },
+  {
+   "id": "price:fundamental:upgrade:25",
+   "kind": "price",
+   "item": {
+    "layer": "fundamental",
+    "upgrade": 25
+   },
+   "currency": "player.fundamental.points",
+   "currencyHow": "the layer's own points",
+   "reads": [],
+   "shapes": {},
+   "constant": true,
+   "from": {
+    "how": "declaration: a constant cost",
+    "state": "all/S05",
+    "seen": [
+     "all/S05"
+    ],
+    "loader": "facts.mjs v1"
+   }
+  },
+  {
+   "id": "price:fundamental:upgrade:26",
+   "kind": "price",
+   "item": {
+    "layer": "fundamental",
+    "upgrade": 26
+   },
+   "currency": "player.fundamental.points",
+   "currencyHow": "the layer's own points",
+   "reads": [],
+   "shapes": {},
+   "constant": true,
+   "from": {
+    "how": "declaration: a constant cost",
+    "state": "all/S05",
+    "seen": [
+     "all/S05"
+    ],
+    "loader": "facts.mjs v1"
+   }
+  },
+  {
+   "id": "price:fundamental:upgrade:27",
+   "kind": "price",
+   "item": {
+    "layer": "fundamental",
+    "upgrade": 27
+   },
+   "currency": "player.fundamental.points",
+   "currencyHow": "the layer's own points",
+   "reads": [],
+   "shapes": {},
+   "constant": true,
+   "from": {
+    "how": "declaration: a constant cost",
+    "state": "all/S05",
+    "seen": [
+     "all/S05"
+    ],
+    "loader": "facts.mjs v1"
+   }
+  },
+  {
+   "id": "price:primitive:upgrade:11",
+   "kind": "price",
+   "item": {
+    "layer": "primitive",
+    "upgrade": 11
+   },
+   "currency": "player.primitive.points",
+   "currencyHow": "the layer's own points",
+   "reads": [],
+   "shapes": {},
+   "constant": true,
+   "from": {
+    "how": "declaration: a constant cost",
+    "state": "all/S03",
+    "seen": [
+     [
+      "all/S03",
+      "all/S05"
+     ]
+    ],
+    "loader": "facts.mjs v1"
+   }
+  },
+  {
+   "id": "price:primitive:upgrade:12",
+   "kind": "price",
+   "item": {
+    "layer": "primitive",
+    "upgrade": 12
+   },
+   "currency": "player.primitive.points",
+   "currencyHow": "the layer's own points",
+   "reads": [],
+   "shapes": {},
+   "constant": true,
+   "from": {
+    "how": "declaration: a constant cost",
+    "state": "all/S03",
+    "seen": [
+     [
+      "all/S03",
+      "all/S05"
+     ]
+    ],
+    "loader": "facts.mjs v1"
+   }
+  },
+  {
+   "id": "price:primitive:upgrade:13",
+   "kind": "price",
+   "item": {
+    "layer": "primitive",
+    "upgrade": 13
+   },
+   "currency": "player.primitive.points",
+   "currencyHow": "the layer's own points",
+   "reads": [],
+   "shapes": {},
+   "constant": true,
+   "from": {
+    "how": "declaration: a constant cost",
+    "state": "all/S03",
+    "seen": [
+     [
+      "all/S03",
+      "all/S05"
+     ]
+    ],
+    "loader": "facts.mjs v1"
+   }
+  },
+  {
+   "id": "price:primitive:upgrade:14",
+   "kind": "price",
+   "item": {
+    "layer": "primitive",
+    "upgrade": 14
+   },
+   "currency": "player.primitive.points",
+   "currencyHow": "the layer's own points",
+   "reads": [],
+   "shapes": {},
+   "constant": true,
+   "from": {
+    "how": "declaration: a constant cost",
+    "state": "all/S03",
+    "seen": [
+     [
+      "all/S03",
+      "all/S05"
+     ]
+    ],
+    "loader": "facts.mjs v1"
+   }
+  },
+  {
+   "id": "price:unlock:upgrade:11",
+   "kind": "price",
+   "item": {
+    "layer": "unlock",
+    "upgrade": 11
+   },
+   "currency": "player.unlock.points",
+   "currencyHow": "the layer's own points",
+   "reads": [],
+   "shapes": {},
+   "constant": true,
+   "from": {
+    "how": "declaration: a constant cost",
+    "state": "fresh",
+    "seen": [
+     [
+      "fresh",
+      "all/S05"
+     ]
+    ],
+    "loader": "facts.mjs v1"
+   }
+  },
+  {
+   "id": "price:unlock:upgrade:12",
+   "kind": "price",
+   "item": {
+    "layer": "unlock",
+    "upgrade": 12
+   },
+   "currency": "player.unlock.points",
+   "currencyHow": "the layer's own points",
+   "reads": [],
+   "shapes": {},
+   "constant": true,
+   "from": {
+    "how": "declaration: a constant cost",
+    "state": "fresh",
+    "seen": [
+     [
+      "fresh",
+      "all/S05"
+     ]
+    ],
+    "loader": "facts.mjs v1"
+   }
+  },
+  {
+   "id": "price:unlock:upgrade:13",
+   "kind": "price",
+   "item": {
+    "layer": "unlock",
+    "upgrade": 13
+   },
+   "currency": "player.unlock.points",
+   "currencyHow": "the layer's own points",
+   "reads": [],
+   "shapes": {},
+   "constant": true,
+   "from": {
+    "how": "declaration: a constant cost",
+    "state": "fresh",
+    "seen": [
+     [
+      "fresh",
+      "all/S05"
+     ]
+    ],
+    "loader": "facts.mjs v1"
+   }
+  },
+  {
+   "id": "price:unlock:upgrade:14",
+   "kind": "price",
+   "item": {
+    "layer": "unlock",
+    "upgrade": 14
+   },
+   "currency": "player.unlock.points",
+   "currencyHow": "the layer's own points",
+   "reads": [],
+   "shapes": {},
+   "constant": true,
+   "from": {
+    "how": "declaration: a constant cost",
+    "state": "fresh",
+    "seen": [
+     [
+      "fresh",
+      "all/S05"
+     ]
+    ],
+    "loader": "facts.mjs v1"
+   }
+  },
+  {
+   "id": "price:unlock:upgrade:15",
+   "kind": "price",
+   "item": {
+    "layer": "unlock",
+    "upgrade": 15
+   },
+   "currency": "player.unlock.points",
+   "currencyHow": "the layer's own points",
+   "reads": [],
+   "shapes": {},
+   "constant": true,
+   "from": {
+    "how": "declaration: a constant cost",
+    "state": "fresh",
+    "seen": [
+     [
+      "fresh",
+      "all/S05"
+     ]
+    ],
+    "loader": "facts.mjs v1"
+   }
+  },
+  {
+   "id": "price:unlock:upgrade:16",
+   "kind": "price",
+   "item": {
+    "layer": "unlock",
+    "upgrade": 16
+   },
+   "currency": "player.unlock.points",
+   "currencyHow": "the layer's own points",
+   "reads": [],
+   "shapes": {},
+   "constant": true,
+   "from": {
+    "how": "declaration: a constant cost",
+    "state": "fresh",
+    "seen": [
+     [
+      "fresh",
+      "all/S05"
+     ]
+    ],
+    "loader": "facts.mjs v1"
+   }
+  },
+  {
+   "id": "price:unlock:upgrade:17",
+   "kind": "price",
+   "item": {
+    "layer": "unlock",
+    "upgrade": 17
+   },
+   "currency": "player.unlock.points",
+   "currencyHow": "the layer's own points",
+   "reads": [],
+   "shapes": {},
+   "constant": true,
+   "from": {
+    "how": "declaration: a constant cost",
+    "state": "fresh",
+    "seen": [
+     [
+      "fresh",
+      "all/S05"
+     ]
+    ],
+    "loader": "facts.mjs v1"
+   }
+  },
+  {
+   "id": "zeroed-by:fundamental:player.achievements.best",
+   "kind": "zeroed-by",
+   "reset": "fundamental",
+   "field": "player.achievements.best",
+   "effect": "zeroes",
+   "via": [
+    "achievements"
+   ],
+   "from": {
+    "how": "probe:reset-writes",
+    "state": "all/S01",
+    "seen": [
+     [
+      "all/S01",
+      "all/S05"
+     ]
+    ],
+    "loader": "facts.mjs v1",
+    "probeState": "field seeded to x·10+1 | requirement injected; field seeded to x·10+1"
+   }
+  },
+  {
+   "id": "zeroed-by:fundamental:player.achievements.points",
+   "kind": "zeroed-by",
+   "reset": "fundamental",
+   "field": "player.achievements.points",
+   "effect": "zeroes",
+   "via": [
+    "achievements"
+   ],
+   "from": {
+    "how": "probe:reset-writes",
+    "state": "all/S01",
+    "seen": [
+     [
+      "all/S01",
+      "all/S05"
+     ]
+    ],
+    "loader": "facts.mjs v1",
+    "probeState": "field seeded to x·10+1 | requirement injected; field seeded to x·10+1"
+   }
+  },
+  {
+   "id": "zeroed-by:fundamental:player.achievements.resetTime",
+   "kind": "zeroed-by",
+   "reset": "fundamental",
+   "field": "player.achievements.resetTime",
+   "effect": "zeroes",
+   "via": [
+    "achievements"
+   ],
+   "from": {
+    "how": "probe:reset-writes",
+    "state": "all/S01",
+    "seen": [
+     [
+      "all/S01",
+      "all/S05"
+     ]
+    ],
+    "loader": "facts.mjs v1",
+    "probeState": "requirement injected; field seeded to x·10+1"
+   }
+  },
+  {
+   "id": "zeroed-by:fundamental:player.achievements.spentOnBuyables",
+   "kind": "zeroed-by",
+   "reset": "fundamental",
+   "field": "player.achievements.spentOnBuyables",
+   "effect": "zeroes",
+   "via": [
+    "achievements"
+   ],
+   "from": {
+    "how": "probe:reset-writes",
+    "state": "all/S01",
+    "seen": [
+     [
+      "all/S01",
+      "all/S05"
+     ]
+    ],
+    "loader": "facts.mjs v1",
+    "probeState": "field seeded to x·10+1 | requirement injected; field seeded to x·10+1"
+   }
+  },
+  {
+   "id": "zeroed-by:fundamental:player.achievements.total",
+   "kind": "zeroed-by",
+   "reset": "fundamental",
+   "field": "player.achievements.total",
+   "effect": "zeroes",
+   "via": [
+    "achievements"
+   ],
+   "from": {
+    "how": "probe:reset-writes",
+    "state": "all/S01",
+    "seen": [
+     [
+      "all/S01",
+      "all/S05"
+     ]
+    ],
+    "loader": "facts.mjs v1",
+    "probeState": "field seeded to x·10+1 | requirement injected; field seeded to x·10+1"
+   }
+  },
+  {
+   "id": "zeroed-by:fundamental:player.fundamental.resetTime",
+   "kind": "zeroed-by",
+   "reset": "fundamental",
+   "field": "player.fundamental.resetTime",
+   "effect": "zeroes",
+   "via": [
+    "(engine)"
+   ],
+   "from": {
+    "how": "probe:reset-writes",
+    "state": "all/S01",
+    "seen": [
+     [
+      "all/S01",
+      "all/S05"
+     ]
+    ],
+    "loader": "facts.mjs v1",
+    "probeState": "requirement injected; field seeded to x·10+1"
+   }
+  },
+  {
+   "id": "zeroed-by:fundamental:player.points",
+   "kind": "zeroed-by",
+   "reset": "fundamental",
+   "field": "player.points",
+   "effect": "zeroes",
+   "via": [
+    "(engine)"
+   ],
+   "from": {
+    "how": "probe:reset-writes",
+    "state": "all/S01",
+    "seen": [
+     [
+      "all/S01",
+      "all/S05"
+     ]
+    ],
+    "loader": "facts.mjs v1",
+    "probeState": "requirement injected"
+   }
+  },
+  {
+   "id": "zeroed-by:fundamental:player.unlock.best",
+   "kind": "zeroed-by",
+   "reset": "fundamental",
+   "field": "player.unlock.best",
+   "effect": "zeroes",
+   "via": [
+    "unlock"
+   ],
+   "from": {
+    "how": "probe:reset-writes",
+    "state": "all/S01",
+    "seen": [
+     [
+      "all/S01",
+      "all/S05"
+     ]
+    ],
+    "loader": "facts.mjs v1",
+    "probeState": "requirement injected; field seeded to x·10+1"
+   }
+  },
+  {
+   "id": "zeroed-by:fundamental:player.unlock.nextLayerProgress",
+   "kind": "zeroed-by",
+   "reset": "fundamental",
+   "field": "player.unlock.nextLayerProgress",
+   "effect": "lowers",
+   "via": [],
+   "from": {
+    "how": "probe:reset-writes",
+    "state": "all/S01",
+    "seen": [
+     [
+      "all/S01",
+      "all/S05"
+     ]
+    ],
+    "loader": "facts.mjs v1",
+    "probeState": "field seeded to x·10+1 | requirement injected; field seeded to x·10+1"
+   }
+  },
+  {
+   "id": "zeroed-by:fundamental:player.unlock.resetTime",
+   "kind": "zeroed-by",
+   "reset": "fundamental",
+   "field": "player.unlock.resetTime",
+   "effect": "zeroes",
+   "via": [
+    "unlock"
+   ],
+   "from": {
+    "how": "probe:reset-writes",
+    "state": "all/S01",
+    "seen": [
+     [
+      "all/S01",
+      "all/S05"
+     ]
+    ],
+    "loader": "facts.mjs v1",
+    "probeState": "requirement injected; field seeded to x·10+1"
+   }
+  },
+  {
+   "id": "zeroed-by:fundamental:player.unlock.spentOnBuyables",
+   "kind": "zeroed-by",
+   "reset": "fundamental",
+   "field": "player.unlock.spentOnBuyables",
+   "effect": "zeroes",
+   "via": [
+    "unlock"
+   ],
+   "from": {
+    "how": "probe:reset-writes",
+    "state": "all/S01",
+    "seen": [
+     [
+      "all/S01",
+      "all/S05"
+     ]
+    ],
+    "loader": "facts.mjs v1",
+    "probeState": "field seeded to x·10+1 | requirement injected; field seeded to x·10+1"
+   }
+  },
+  {
+   "id": "zeroed-by:fundamental:player.unlock.total",
+   "kind": "zeroed-by",
+   "reset": "fundamental",
+   "field": "player.unlock.total",
+   "effect": "zeroes",
+   "via": [
+    "unlock"
+   ],
+   "from": {
+    "how": "probe:reset-writes",
+    "state": "all/S01",
+    "seen": [
+     [
+      "all/S01",
+      "all/S05"
+     ]
+    ],
+    "loader": "facts.mjs v1",
+    "probeState": "requirement injected; field seeded to x·10+1"
+   }
+  },
+  {
+   "id": "zeroed-by:primitive:player.achievements.best",
+   "kind": "zeroed-by",
+   "reset": "primitive",
+   "field": "player.achievements.best",
+   "effect": "zeroes",
+   "via": [
+    "achievements"
+   ],
+   "from": {
+    "how": "probe:reset-writes",
+    "state": "all/S03",
+    "seen": [
+     [
+      "all/S03",
+      "all/S05"
+     ]
+    ],
+    "loader": "facts.mjs v1",
+    "probeState": "requirement injected; field seeded to x·10+1"
+   }
+  },
+  {
+   "id": "zeroed-by:primitive:player.achievements.points",
+   "kind": "zeroed-by",
+   "reset": "primitive",
+   "field": "player.achievements.points",
+   "effect": "zeroes",
+   "via": [
+    "achievements"
+   ],
+   "from": {
+    "how": "probe:reset-writes",
+    "state": "all/S03",
+    "seen": [
+     [
+      "all/S03",
+      "all/S05"
+     ]
+    ],
+    "loader": "facts.mjs v1",
+    "probeState": "requirement injected; field seeded to x·10+1"
+   }
+  },
+  {
+   "id": "zeroed-by:primitive:player.achievements.resetTime",
+   "kind": "zeroed-by",
+   "reset": "primitive",
+   "field": "player.achievements.resetTime",
+   "effect": "zeroes",
+   "via": [
+    "achievements"
+   ],
+   "from": {
+    "how": "probe:reset-writes",
+    "state": "all/S03",
+    "seen": [
+     [
+      "all/S03",
+      "all/S05"
+     ]
+    ],
+    "loader": "facts.mjs v1",
+    "probeState": "requirement injected; field seeded to x·10+1"
+   }
+  },
+  {
+   "id": "zeroed-by:primitive:player.achievements.spentOnBuyables",
+   "kind": "zeroed-by",
+   "reset": "primitive",
+   "field": "player.achievements.spentOnBuyables",
+   "effect": "zeroes",
+   "via": [
+    "achievements"
+   ],
+   "from": {
+    "how": "probe:reset-writes",
+    "state": "all/S03",
+    "seen": [
+     [
+      "all/S03",
+      "all/S05"
+     ]
+    ],
+    "loader": "facts.mjs v1",
+    "probeState": "requirement injected; field seeded to x·10+1"
+   }
+  },
+  {
+   "id": "zeroed-by:primitive:player.achievements.total",
+   "kind": "zeroed-by",
+   "reset": "primitive",
+   "field": "player.achievements.total",
+   "effect": "zeroes",
+   "via": [
+    "achievements"
+   ],
+   "from": {
+    "how": "probe:reset-writes",
+    "state": "all/S03",
+    "seen": [
+     [
+      "all/S03",
+      "all/S05"
+     ]
+    ],
+    "loader": "facts.mjs v1",
+    "probeState": "requirement injected; field seeded to x·10+1"
+   }
+  },
+  {
+   "id": "zeroed-by:primitive:player.fundamental.best",
+   "kind": "zeroed-by",
+   "reset": "primitive",
+   "field": "player.fundamental.best",
+   "effect": "zeroes",
+   "via": [
+    "fundamental"
+   ],
+   "from": {
+    "how": "probe:reset-writes",
+    "state": "all/S03",
+    "seen": [
+     [
+      "all/S03",
+      "all/S05"
+     ]
+    ],
+    "loader": "facts.mjs v1",
+    "probeState": "requirement injected; field seeded to x·10+1"
+   }
+  },
+  {
+   "id": "zeroed-by:primitive:player.fundamental.buyables.11",
+   "kind": "zeroed-by",
+   "reset": "primitive",
+   "field": "player.fundamental.buyables.11",
+   "effect": "zeroes",
+   "via": [
+    "fundamental"
+   ],
+   "from": {
+    "how": "probe:reset-writes",
+    "state": "all/S03",
+    "seen": [
+     [
+      "all/S03",
+      "all/S05"
+     ]
+    ],
+    "loader": "facts.mjs v1",
+    "probeState": "requirement injected; field seeded to x·10+1"
+   }
+  },
+  {
+   "id": "zeroed-by:primitive:player.fundamental.buyables.12",
+   "kind": "zeroed-by",
+   "reset": "primitive",
+   "field": "player.fundamental.buyables.12",
+   "effect": "zeroes",
+   "via": [
+    "fundamental"
+   ],
+   "from": {
+    "how": "probe:reset-writes",
+    "state": "all/S03",
+    "seen": [
+     [
+      "all/S03",
+      "all/S05"
+     ]
+    ],
+    "loader": "facts.mjs v1",
+    "probeState": "requirement injected; field seeded to x·10+1"
+   }
+  },
+  {
+   "id": "zeroed-by:primitive:player.fundamental.buyables.13",
+   "kind": "zeroed-by",
+   "reset": "primitive",
+   "field": "player.fundamental.buyables.13",
+   "effect": "zeroes",
+   "via": [
+    "fundamental"
+   ],
+   "from": {
+    "how": "probe:reset-writes",
+    "state": "all/S03",
+    "seen": [
+     [
+      "all/S03",
+      "all/S05"
+     ]
+    ],
+    "loader": "facts.mjs v1",
+    "probeState": "requirement injected; field seeded to x·10+1"
+   }
+  },
+  {
+   "id": "zeroed-by:primitive:player.fundamental.buyables.21",
+   "kind": "zeroed-by",
+   "reset": "primitive",
+   "field": "player.fundamental.buyables.21",
+   "effect": "zeroes",
+   "via": [
+    "fundamental"
+   ],
+   "from": {
+    "how": "probe:reset-writes",
+    "state": "all/S03",
+    "seen": [
+     [
+      "all/S03",
+      "all/S05"
+     ]
+    ],
+    "loader": "facts.mjs v1",
+    "probeState": "requirement injected; field seeded to x·10+1"
+   }
+  },
+  {
+   "id": "zeroed-by:primitive:player.fundamental.buyables.22",
+   "kind": "zeroed-by",
+   "reset": "primitive",
+   "field": "player.fundamental.buyables.22",
+   "effect": "zeroes",
+   "via": [
+    "fundamental"
+   ],
+   "from": {
+    "how": "probe:reset-writes",
+    "state": "all/S03",
+    "seen": [
+     [
+      "all/S03",
+      "all/S05"
+     ]
+    ],
+    "loader": "facts.mjs v1",
+    "probeState": "requirement injected; field seeded to x·10+1"
+   }
+  },
+  {
+   "id": "zeroed-by:primitive:player.fundamental.points",
+   "kind": "zeroed-by",
+   "reset": "primitive",
+   "field": "player.fundamental.points",
+   "effect": "zeroes",
+   "via": [
+    "fundamental"
+   ],
+   "from": {
+    "how": "probe:reset-writes",
+    "state": "all/S03",
+    "seen": [
+     [
+      "all/S03",
+      "all/S05"
+     ]
+    ],
+    "loader": "facts.mjs v1",
+    "probeState": "requirement injected"
+   }
+  },
+  {
+   "id": "zeroed-by:primitive:player.fundamental.resetTime",
+   "kind": "zeroed-by",
+   "reset": "primitive",
+   "field": "player.fundamental.resetTime",
+   "effect": "zeroes",
+   "via": [
+    "fundamental"
+   ],
+   "from": {
+    "how": "probe:reset-writes",
+    "state": "all/S03",
+    "seen": [
+     [
+      "all/S03",
+      "all/S05"
+     ]
+    ],
+    "loader": "facts.mjs v1",
+    "probeState": "requirement injected; field seeded to x·10+1"
+   }
+  },
+  {
+   "id": "zeroed-by:primitive:player.fundamental.softcapExponent",
+   "kind": "zeroed-by",
+   "reset": "primitive",
+   "field": "player.fundamental.softcapExponent",
+   "effect": "zeroes",
+   "via": [
+    "fundamental"
+   ],
+   "from": {
+    "how": "probe:reset-writes",
+    "state": "all/S03",
+    "seen": [
+     [
+      "all/S03",
+      "all/S05"
+     ]
+    ],
+    "loader": "facts.mjs v1",
+    "probeState": "requirement injected; field seeded to x·10+1"
+   }
+  },
+  {
+   "id": "zeroed-by:primitive:player.fundamental.spentOnBuyables",
+   "kind": "zeroed-by",
+   "reset": "primitive",
+   "field": "player.fundamental.spentOnBuyables",
+   "effect": "zeroes",
+   "via": [
+    "fundamental"
+   ],
+   "from": {
+    "how": "probe:reset-writes",
+    "state": "all/S03",
+    "seen": [
+     [
+      "all/S03",
+      "all/S05"
+     ]
+    ],
+    "loader": "facts.mjs v1",
+    "probeState": "requirement injected; field seeded to x·10+1"
+   }
+  },
+  {
+   "id": "zeroed-by:primitive:player.fundamental.total",
+   "kind": "zeroed-by",
+   "reset": "primitive",
+   "field": "player.fundamental.total",
+   "effect": "zeroes",
+   "via": [
+    "fundamental"
+   ],
+   "from": {
+    "how": "probe:reset-writes",
+    "state": "all/S03",
+    "seen": [
+     [
+      "all/S03",
+      "all/S05"
+     ]
+    ],
+    "loader": "facts.mjs v1",
+    "probeState": "requirement injected; field seeded to x·10+1"
+   }
+  },
+  {
+   "id": "zeroed-by:primitive:player.points",
+   "kind": "zeroed-by",
+   "reset": "primitive",
+   "field": "player.points",
+   "effect": "zeroes",
+   "via": [
+    "(engine)"
+   ],
+   "from": {
+    "how": "probe:reset-writes",
+    "state": "all/S03",
+    "seen": [
+     [
+      "all/S03",
+      "all/S05"
+     ]
+    ],
+    "loader": "facts.mjs v1",
+    "probeState": "requirement injected; field seeded to x·10+1"
+   }
+  },
+  {
+   "id": "zeroed-by:primitive:player.primitive.resetTime",
+   "kind": "zeroed-by",
+   "reset": "primitive",
+   "field": "player.primitive.resetTime",
+   "effect": "zeroes",
+   "via": [
+    "(engine)"
+   ],
+   "from": {
+    "how": "probe:reset-writes",
+    "state": "all/S03",
+    "seen": [
+     [
+      "all/S03",
+      "all/S05"
+     ]
+    ],
+    "loader": "facts.mjs v1",
+    "probeState": "requirement injected; field seeded to x·10+1"
+   }
+  },
+  {
+   "id": "zeroed-by:primitive:player.unlock.best",
+   "kind": "zeroed-by",
+   "reset": "primitive",
+   "field": "player.unlock.best",
+   "effect": "zeroes",
+   "via": [
+    "unlock"
+   ],
+   "from": {
+    "how": "probe:reset-writes",
+    "state": "all/S03",
+    "seen": [
+     [
+      "all/S03",
+      "all/S05"
+     ]
+    ],
+    "loader": "facts.mjs v1",
+    "probeState": "requirement injected; field seeded to x·10+1"
+   }
+  },
+  {
+   "id": "zeroed-by:primitive:player.unlock.nextLayerProgress",
+   "kind": "zeroed-by",
+   "reset": "primitive",
+   "field": "player.unlock.nextLayerProgress",
+   "effect": "lowers",
+   "via": [],
+   "from": {
+    "how": "probe:reset-writes",
+    "state": "all/S03",
+    "seen": [
+     [
+      "all/S03",
+      "all/S05"
+     ]
+    ],
+    "loader": "facts.mjs v1",
+    "probeState": "requirement injected; field seeded to x·10+1"
+   }
+  },
+  {
+   "id": "zeroed-by:primitive:player.unlock.resetTime",
+   "kind": "zeroed-by",
+   "reset": "primitive",
+   "field": "player.unlock.resetTime",
+   "effect": "zeroes",
+   "via": [
+    "unlock"
+   ],
+   "from": {
+    "how": "probe:reset-writes",
+    "state": "all/S03",
+    "seen": [
+     [
+      "all/S03",
+      "all/S05"
+     ]
+    ],
+    "loader": "facts.mjs v1",
+    "probeState": "requirement injected; field seeded to x·10+1"
+   }
+  },
+  {
+   "id": "zeroed-by:primitive:player.unlock.spentOnBuyables",
+   "kind": "zeroed-by",
+   "reset": "primitive",
+   "field": "player.unlock.spentOnBuyables",
+   "effect": "zeroes",
+   "via": [
+    "unlock"
+   ],
+   "from": {
+    "how": "probe:reset-writes",
+    "state": "all/S03",
+    "seen": [
+     [
+      "all/S03",
+      "all/S05"
+     ]
+    ],
+    "loader": "facts.mjs v1",
+    "probeState": "requirement injected; field seeded to x·10+1"
+   }
+  },
+  {
+   "id": "zeroed-by:primitive:player.unlock.total",
+   "kind": "zeroed-by",
+   "reset": "primitive",
+   "field": "player.unlock.total",
+   "effect": "zeroes",
+   "via": [
+    "unlock"
+   ],
+   "from": {
+    "how": "probe:reset-writes",
+    "state": "all/S03",
+    "seen": [
+     [
+      "all/S03",
+      "all/S05"
+     ]
+    ],
+    "loader": "facts.mjs v1",
+    "probeState": "requirement injected; field seeded to x·10+1"
+   }
+  },
+  {
+   "id": "production:player.achievements.resetTime",
+   "kind": "production",
+   "field": "player.achievements.resetTime",
+   "clock": true,
+   "over": {
+    "ticks": 10,
+    "diff": 1,
+    "moves": "rises"
+   },
+   "drivenBy": [],
+   "from": {
+    "how": "producer:wait (automation off)",
+    "state": "fresh",
+    "seen": [
+     [
+      "fresh",
+      "all/S05"
+     ]
+    ],
+    "loader": "facts.mjs v1"
+   }
+  },
+  {
+   "id": "production:player.addition.resetTime",
+   "kind": "production",
+   "field": "player.addition.resetTime",
+   "clock": true,
+   "over": {
+    "ticks": 10,
+    "diff": 1,
+    "moves": "rises"
+   },
+   "drivenBy": [],
+   "from": {
+    "how": "producer:wait (automation off)",
+    "state": "fresh",
+    "seen": [
+     [
+      "fresh",
+      "all/S05"
+     ]
+    ],
+    "loader": "facts.mjs v1"
+   }
+  },
+  {
+   "id": "production:player.arithmetic.resetTime",
+   "kind": "production",
+   "field": "player.arithmetic.resetTime",
+   "clock": true,
+   "over": {
+    "ticks": 10,
+    "diff": 1,
+    "moves": "rises"
+   },
+   "drivenBy": [],
+   "from": {
+    "how": "producer:wait (automation off)",
+    "state": "fresh",
+    "seen": [
+     [
+      "fresh",
+      "all/S05"
+     ]
+    ],
+    "loader": "facts.mjs v1"
+   }
+  },
+  {
+   "id": "production:player.blank.resetTime",
+   "kind": "production",
+   "field": "player.blank.resetTime",
+   "clock": true,
+   "over": {
+    "ticks": 10,
+    "diff": 1,
+    "moves": "rises"
+   },
+   "drivenBy": [],
+   "from": {
+    "how": "producer:wait (automation off)",
+    "state": "fresh",
+    "seen": [
+     [
+      "fresh",
+      "all/S05"
+     ]
+    ],
+    "loader": "facts.mjs v1"
+   }
+  },
+  {
+   "id": "production:player.changelog-tab.resetTime",
+   "kind": "production",
+   "field": "player.changelog-tab.resetTime",
+   "clock": true,
+   "over": {
+    "ticks": 10,
+    "diff": 1,
+    "moves": "rises"
+   },
+   "drivenBy": [],
+   "from": {
+    "how": "producer:wait (automation off)",
+    "state": "fresh",
+    "seen": [
+     [
+      "fresh",
+      "all/S05"
+     ]
+    ],
+    "loader": "facts.mjs v1"
+   }
+  },
+  {
+   "id": "production:player.corebooster.resetTime",
+   "kind": "production",
+   "field": "player.corebooster.resetTime",
+   "clock": true,
+   "over": {
+    "ticks": 10,
+    "diff": 1,
+    "moves": "rises"
+   },
+   "drivenBy": [],
+   "from": {
+    "how": "producer:wait (automation off)",
+    "state": "fresh",
+    "seen": [
+     [
+      "fresh",
+      "all/S05"
+     ]
+    ],
+    "loader": "facts.mjs v1"
+   }
+  },
+  {
+   "id": "production:player.dimension.resetTime",
+   "kind": "production",
+   "field": "player.dimension.resetTime",
+   "clock": true,
+   "over": {
+    "ticks": 10,
+    "diff": 1,
+    "moves": "rises"
+   },
+   "drivenBy": [],
+   "from": {
+    "how": "producer:wait (automation off)",
+    "state": "fresh",
+    "seen": [
+     [
+      "fresh",
+      "all/S05"
+     ]
+    ],
+    "loader": "facts.mjs v1"
+   }
+  },
+  {
+   "id": "production:player.division.resetTime",
+   "kind": "production",
+   "field": "player.division.resetTime",
+   "clock": true,
+   "over": {
+    "ticks": 10,
+    "diff": 1,
+    "moves": "rises"
+   },
+   "drivenBy": [],
+   "from": {
+    "how": "producer:wait (automation off)",
+    "state": "fresh",
+    "seen": [
+     [
+      "fresh",
+      "all/S05"
+     ]
+    ],
+    "loader": "facts.mjs v1"
+   }
+  },
+  {
+   "id": "production:player.fundamental.best",
+   "kind": "production",
+   "field": "player.fundamental.best",
+   "clock": false,
+   "over": {
+    "ticks": 10,
+    "diff": 1,
+    "moves": "rises"
+   },
+   "drivenBy": [],
+   "from": {
+    "how": "producer:wait (automation off)",
+    "state": "all/S02",
+    "seen": [
+     "all/S02",
+     "all/S05"
+    ],
+    "loader": "facts.mjs v1"
+   }
+  },
+  {
+   "id": "production:player.fundamental.points",
+   "kind": "production",
+   "field": "player.fundamental.points",
+   "clock": false,
+   "over": {
+    "ticks": 10,
+    "diff": 1,
+    "moves": "rises"
+   },
+   "drivenBy": [],
+   "from": {
+    "how": "producer:wait (automation off)",
+    "state": "all/S02",
+    "seen": [
+     "all/S02",
+     "all/S05"
+    ],
+    "loader": "facts.mjs v1"
+   }
+  },
+  {
+   "id": "production:player.fundamental.resetTime",
+   "kind": "production",
+   "field": "player.fundamental.resetTime",
+   "clock": true,
+   "over": {
+    "ticks": 10,
+    "diff": 1,
+    "moves": "rises"
+   },
+   "drivenBy": [],
+   "from": {
+    "how": "producer:wait (automation off)",
+    "state": "fresh",
+    "seen": [
+     [
+      "fresh",
+      "all/S05"
+     ]
+    ],
+    "loader": "facts.mjs v1"
+   }
+  },
+  {
+   "id": "production:player.fundamental.total",
+   "kind": "production",
+   "field": "player.fundamental.total",
+   "clock": false,
+   "over": {
+    "ticks": 10,
+    "diff": 1,
+    "moves": "rises"
+   },
+   "drivenBy": [],
+   "from": {
+    "how": "producer:wait (automation off)",
+    "state": "all/S02",
+    "seen": [
+     "all/S02",
+     "all/S05"
+    ],
+    "loader": "facts.mjs v1"
+   }
+  },
+  {
+   "id": "production:player.info-tab.resetTime",
+   "kind": "production",
+   "field": "player.info-tab.resetTime",
+   "clock": true,
+   "over": {
+    "ticks": 10,
+    "diff": 1,
+    "moves": "rises"
+   },
+   "drivenBy": [],
+   "from": {
+    "how": "producer:wait (automation off)",
+    "state": "fresh",
+    "seen": [
+     [
+      "fresh",
+      "all/S05"
+     ]
+    ],
+    "loader": "facts.mjs v1"
+   }
+  },
+  {
+   "id": "production:player.multiplication.resetTime",
+   "kind": "production",
+   "field": "player.multiplication.resetTime",
+   "clock": true,
+   "over": {
+    "ticks": 10,
+    "diff": 1,
+    "moves": "rises"
+   },
+   "drivenBy": [],
+   "from": {
+    "how": "producer:wait (automation off)",
+    "state": "fresh",
+    "seen": [
+     [
+      "fresh",
+      "all/S05"
+     ]
+    ],
+    "loader": "facts.mjs v1"
+   }
+  },
+  {
+   "id": "production:player.numbercore.resetTime",
+   "kind": "production",
+   "field": "player.numbercore.resetTime",
+   "clock": true,
+   "over": {
+    "ticks": 10,
+    "diff": 1,
+    "moves": "rises"
+   },
+   "drivenBy": [],
+   "from": {
+    "how": "producer:wait (automation off)",
+    "state": "fresh",
+    "seen": [
+     [
+      "fresh",
+      "all/S05"
+     ]
+    ],
+    "loader": "facts.mjs v1"
+   }
+  },
+  {
+   "id": "production:player.options-tab.resetTime",
+   "kind": "production",
+   "field": "player.options-tab.resetTime",
+   "clock": true,
+   "over": {
+    "ticks": 10,
+    "diff": 1,
+    "moves": "rises"
+   },
+   "drivenBy": [],
+   "from": {
+    "how": "producer:wait (automation off)",
+    "state": "fresh",
+    "seen": [
+     [
+      "fresh",
+      "all/S05"
+     ]
+    ],
+    "loader": "facts.mjs v1"
+   }
+  },
+  {
+   "id": "production:player.pbooster.resetTime",
+   "kind": "production",
+   "field": "player.pbooster.resetTime",
+   "clock": true,
+   "over": {
+    "ticks": 10,
+    "diff": 1,
+    "moves": "rises"
+   },
+   "drivenBy": [],
+   "from": {
+    "how": "producer:wait (automation off)",
+    "state": "fresh",
+    "seen": [
+     [
+      "fresh",
+      "all/S05"
+     ]
+    ],
+    "loader": "facts.mjs v1"
+   }
+  },
+  {
+   "id": "production:player.planetary.planetPowerEffect",
+   "kind": "production",
+   "field": "player.planetary.planetPowerEffect",
+   "clock": false,
+   "over": {
+    "ticks": 10,
+    "diff": 1,
+    "moves": "rises"
+   },
+   "drivenBy": [],
+   "from": {
+    "how": "producer:wait (automation off)",
+    "state": "fresh",
+    "seen": [
+     "fresh"
+    ],
+    "loader": "facts.mjs v1"
+   }
+  },
+  {
+   "id": "production:player.planetary.resetTime",
+   "kind": "production",
+   "field": "player.planetary.resetTime",
+   "clock": true,
+   "over": {
+    "ticks": 10,
+    "diff": 1,
+    "moves": "rises"
+   },
+   "drivenBy": [],
+   "from": {
+    "how": "producer:wait (automation off)",
+    "state": "fresh",
+    "seen": [
+     [
+      "fresh",
+      "all/S05"
+     ]
+    ],
+    "loader": "facts.mjs v1"
+   }
+  },
+  {
+   "id": "production:player.points",
+   "kind": "production",
+   "field": "player.points",
+   "clock": false,
+   "over": {
+    "ticks": 10,
+    "diff": 1,
+    "moves": "rises"
+   },
+   "drivenBy": [],
+   "from": {
+    "how": "producer:wait (automation off)",
+    "state": "fresh",
+    "seen": [
+     [
+      "fresh",
+      "all/S05"
+     ]
+    ],
+    "loader": "facts.mjs v1"
+   }
+  },
+  {
+   "id": "production:player.polygon.resetTime",
+   "kind": "production",
+   "field": "player.polygon.resetTime",
+   "clock": true,
+   "over": {
+    "ticks": 10,
+    "diff": 1,
+    "moves": "rises"
+   },
+   "drivenBy": [],
+   "from": {
+    "how": "producer:wait (automation off)",
+    "state": "fresh",
+    "seen": [
+     [
+      "fresh",
+      "all/S05"
+     ]
+    ],
+    "loader": "facts.mjs v1"
+   }
+  },
+  {
+   "id": "production:player.primitive.resetTime",
+   "kind": "production",
+   "field": "player.primitive.resetTime",
+   "clock": true,
+   "over": {
+    "ticks": 10,
+    "diff": 1,
+    "moves": "rises"
+   },
+   "drivenBy": [],
+   "from": {
+    "how": "producer:wait (automation off)",
+    "state": "fresh",
+    "seen": [
+     [
+      "fresh",
+      "all/S05"
+     ]
+    ],
+    "loader": "facts.mjs v1"
+   }
+  },
+  {
+   "id": "production:player.savebank.resetTime",
+   "kind": "production",
+   "field": "player.savebank.resetTime",
+   "clock": true,
+   "over": {
+    "ticks": 10,
+    "diff": 1,
+    "moves": "rises"
+   },
+   "drivenBy": [],
+   "from": {
+    "how": "producer:wait (automation off)",
+    "state": "fresh",
+    "seen": [
+     [
+      "fresh",
+      "all/S05"
+     ]
+    ],
+    "loader": "facts.mjs v1"
+   }
+  },
+  {
+   "id": "production:player.subtraction.resetTime",
+   "kind": "production",
+   "field": "player.subtraction.resetTime",
+   "clock": true,
+   "over": {
+    "ticks": 10,
+    "diff": 1,
+    "moves": "rises"
+   },
+   "drivenBy": [],
+   "from": {
+    "how": "producer:wait (automation off)",
+    "state": "fresh",
+    "seen": [
+     [
+      "fresh",
+      "all/S05"
+     ]
+    ],
+    "loader": "facts.mjs v1"
+   }
+  },
+  {
+   "id": "production:player.timePlayed",
+   "kind": "production",
+   "field": "player.timePlayed",
+   "clock": true,
+   "over": {
+    "ticks": 10,
+    "diff": 1,
+    "moves": "rises"
+   },
+   "drivenBy": [],
+   "from": {
+    "how": "producer:wait (automation off)",
+    "state": "fresh",
+    "seen": [
+     [
+      "fresh",
+      "all/S05"
+     ]
+    ],
+    "loader": "facts.mjs v1"
+   }
+  },
+  {
+   "id": "production:player.tree-tab.resetTime",
+   "kind": "production",
+   "field": "player.tree-tab.resetTime",
+   "clock": true,
+   "over": {
+    "ticks": 10,
+    "diff": 1,
+    "moves": "rises"
+   },
+   "drivenBy": [],
+   "from": {
+    "how": "producer:wait (automation off)",
+    "state": "fresh",
+    "seen": [
+     [
+      "fresh",
+      "all/S05"
+     ]
+    ],
+    "loader": "facts.mjs v1"
+   }
+  },
+  {
+   "id": "production:player.unlock.resetTime",
+   "kind": "production",
+   "field": "player.unlock.resetTime",
+   "clock": true,
+   "over": {
+    "ticks": 10,
+    "diff": 1,
+    "moves": "rises"
+   },
+   "drivenBy": [],
+   "from": {
+    "how": "producer:wait (automation off)",
+    "state": "fresh",
+    "seen": [
+     [
+      "fresh",
+      "all/S05"
+     ]
+    ],
+    "loader": "facts.mjs v1"
+   }
+  },
+  {
+   "id": "reads:addition:baseAmount",
+   "kind": "multiplier-reads",
+   "fn": {
+    "layer": "addition",
+    "fn": "baseAmount"
+   },
+   "reads": [
+    "player.arithmetic.points"
+   ],
+   "tmpReads": [],
+   "members": [],
+   "from": {
+    "how": "traceReads(player + tmp) + membership toggles + boolean widening",
+    "state": "fresh",
+    "seen": [
+     [
+      "fresh",
+      "all/S05"
+     ]
+    ],
+    "loader": "facts.mjs v1"
+   }
+  },
+  {
+   "id": "reads:addition:directMult",
+   "kind": "multiplier-reads",
+   "fn": {
+    "layer": "addition",
+    "fn": "directMult"
+   },
+   "reads": [
+    "player.pbooster.activeChallenge"
+   ],
+   "tmpReads": [],
+   "members": [],
+   "from": {
+    "how": "traceReads(player + tmp) + membership toggles + boolean widening",
+    "state": "fresh",
+    "seen": [
+     [
+      "fresh",
+      "all/S05"
+     ]
+    ],
+    "loader": "facts.mjs v1"
+   }
+  },
+  {
+   "id": "reads:addition:gainExp",
+   "kind": "multiplier-reads",
+   "fn": {
+    "layer": "addition",
+    "fn": "gainExp"
+   },
+   "reads": [],
+   "tmpReads": [],
+   "members": [],
+   "from": {
+    "how": "traceReads(player + tmp) + membership toggles + boolean widening",
+    "state": "fresh",
+    "seen": [
+     [
+      "fresh",
+      "all/S05"
+     ]
+    ],
+    "loader": "facts.mjs v1"
+   }
+  },
+  {
+   "id": "reads:addition:gainMult",
+   "kind": "multiplier-reads",
+   "fn": {
+    "layer": "addition",
+    "fn": "gainMult"
+   },
+   "reads": [
+    "player.primitive.upgrades",
+    "player.arithmetic.points",
+    "player.arithmetic.upgrades",
+    "player.division.upgrades",
+    "player.multiplication.upgrades",
+    "player.arithmetic.challenges.22",
+    "player.corebooster.e4",
+    "player.addition.milestones",
+    "player.subtraction.upgrades",
+    "player.dimension.milestones",
+    "player.arithmetic.activeChallenge",
+    "player.polygon.pentagons",
+    "player.pbooster.activeChallenge"
+   ],
+   "tmpReads": [
+    "tmp.multiplication.buyables.11.effect"
+   ],
+   "members": [
+    "upg:primitive:25",
+    "upg:primitive:26",
+    "upg:arithmetic:23",
+    "upg:multiplication:63",
+    "upg:subtraction:22",
+    "ms:dimension:6"
+   ],
+   "widened": [
+    {
+     "when": "upg:primitive:25 added",
+     "reads": [
+      "tmp.primitive.deactivated",
+      "tmp.primitive.upgrades.25.effect"
+     ]
+    },
+    {
+     "when": "upg:primitive:26 added",
+     "reads": [
+      "tmp.primitive.deactivated"
+     ]
+    },
+    {
+     "when": "upg:arithmetic:23 added",
+     "reads": [
+      "tmp.arithmetic.deactivated"
+     ]
+    },
+    {
+     "when": "upg:multiplication:63 added",
+     "reads": [
+      "tmp.multiplication.deactivated"
+     ]
+    },
+    {
+     "when": "upg:subtraction:22 added",
+     "reads": [
+      "tmp.subtraction.deactivated"
+     ]
+    },
+    {
+     "when": "ms:dimension:6 added",
+     "reads": [
+      "tmp.dimension.deactivated"
+     ]
+    }
+   ],
+   "from": {
+    "how": "traceReads(player + tmp) + membership toggles + boolean widening",
+    "state": "fresh",
+    "seen": [
+     [
+      "fresh",
+      "all/S05"
+     ]
+    ],
+    "loader": "facts.mjs v1"
+   }
+  },
+  {
+   "id": "reads:arithmetic:baseAmount",
+   "kind": "multiplier-reads",
+   "fn": {
+    "layer": "arithmetic",
+    "fn": "baseAmount"
+   },
+   "reads": [
+    "player.primitive.points"
+   ],
+   "tmpReads": [],
+   "members": [],
+   "from": {
+    "how": "traceReads(player + tmp) + membership toggles + boolean widening",
+    "state": "fresh",
+    "seen": [
+     [
+      "fresh",
+      "all/S05"
+     ]
+    ],
+    "loader": "facts.mjs v1"
+   }
+  },
+  {
+   "id": "reads:arithmetic:directMult",
+   "kind": "multiplier-reads",
+   "fn": {
+    "layer": "arithmetic",
+    "fn": "directMult"
+   },
+   "reads": [
+    "player.polygon.upgrades",
+    "player.polygon.triEffect",
+    "player.multiplication.upgrades",
+    "player.arithmetic.challenges.22",
+    "player.polygon.activeChallenge",
+    "player.division.milestones",
+    "player.planetary.achievements",
+    "player.dimension.points",
+    "player.polygon.pentagons",
+    "player.division.upgrades",
+    "player.primitive.milestones"
+   ],
+   "tmpReads": [],
+   "members": [
+    "upg:polygon:11",
+    "ms:division:5",
+    "ach:planetary:32"
+   ],
+   "widened": [
+    {
+     "when": "upg:polygon:11 added",
+     "reads": [
+      "tmp.polygon.deactivated"
+     ]
+    },
+    {
+     "when": "ms:division:5 added",
+     "reads": [
+      "tmp.division.deactivated"
+     ]
+    },
+    {
+     "when": "ach:planetary:32 added",
+     "reads": [
+      "tmp.planetary.deactivated"
+     ]
+    }
+   ],
+   "from": {
+    "how": "traceReads(player + tmp) + membership toggles + boolean widening",
+    "state": "fresh",
+    "seen": [
+     [
+      "fresh",
+      "all/S05"
+     ]
+    ],
+    "loader": "facts.mjs v1"
+   }
+  },
+  {
+   "id": "reads:arithmetic:gainExp",
+   "kind": "multiplier-reads",
+   "fn": {
+    "layer": "arithmetic",
+    "fn": "gainExp"
+   },
+   "reads": [],
+   "tmpReads": [],
+   "members": [],
+   "from": {
+    "how": "traceReads(player + tmp) + membership toggles + boolean widening",
+    "state": "fresh",
+    "seen": [
+     [
+      "fresh",
+      "all/S05"
+     ]
+    ],
+    "loader": "facts.mjs v1"
+   }
+  },
+  {
+   "id": "reads:arithmetic:gainMult",
+   "kind": "multiplier-reads",
+   "fn": {
+    "layer": "arithmetic",
+    "fn": "gainMult"
+   },
+   "reads": [
+    "player.addition.clickables.15",
+    "player.arithmetic.activeChallenge",
+    "player.fundamental.upgrades",
+    "player.subtraction.upgrades",
+    "player.multiplication.upgrades",
+    "player.arithmetic.challenges.12",
+    "player.primitive.upgrades",
+    "player.division.upgrades",
+    "player.arithmetic.upgrades",
+    "player.polygon.challenges.11",
+    "player.arithmetic.challenges.13",
+    "player.polygon.activeChallenge",
+    "player.planetary.milestones",
+    "player.pbooster.activeChallenge",
+    "player.division.clickables.11"
+   ],
+   "tmpReads": [
+    "tmp.addition.clickables.15.effect"
+   ],
+   "members": [
+    "upg:fundamental:36",
+    "upg:subtraction:13",
+    "upg:multiplication:22",
+    "upg:multiplication:32",
+    "upg:primitive:26",
+    "ms:planetary:1"
+   ],
+   "widened": [
+    {
+     "when": "upg:fundamental:36 added",
+     "reads": [
+      "tmp.fundamental.deactivated"
+     ]
+    },
+    {
+     "when": "upg:subtraction:13 added",
+     "reads": [
+      "tmp.subtraction.deactivated"
+     ]
+    },
+    {
+     "when": "upg:multiplication:22 added",
+     "reads": [
+      "tmp.multiplication.deactivated"
+     ]
+    },
+    {
+     "when": "upg:multiplication:32 added",
+     "reads": [
+      "tmp.multiplication.deactivated"
+     ]
+    },
+    {
+     "when": "upg:primitive:26 added",
+     "reads": [
+      "tmp.primitive.deactivated"
+     ]
+    },
+    {
+     "when": "ms:planetary:1 added",
+     "reads": [
+      "tmp.planetary.deactivated"
+     ]
+    }
+   ],
+   "from": {
+    "how": "traceReads(player + tmp) + membership toggles + boolean widening",
+    "state": "fresh",
+    "seen": [
+     [
+      "fresh",
+      "all/S05"
+     ]
+    ],
+    "loader": "facts.mjs v1"
+   }
+  },
+  {
+   "id": "reads:arithmetic:softcap",
+   "kind": "multiplier-reads",
+   "fn": {
+    "layer": "arithmetic",
+    "fn": "softcap"
+   },
+   "reads": [],
+   "tmpReads": [],
+   "members": [],
+   "from": {
+    "how": "traceReads(player + tmp) + membership toggles + boolean widening",
+    "state": "fresh",
+    "seen": [
+     [
+      "fresh",
+      "all/S05"
+     ]
+    ],
+    "loader": "facts.mjs v1"
+   }
+  },
+  {
+   "id": "reads:arithmetic:softcapPower",
+   "kind": "multiplier-reads",
+   "fn": {
+    "layer": "arithmetic",
+    "fn": "softcapPower"
+   },
+   "reads": [
+    "player.achievements.achievements",
+    "player.arithmetic.points",
+    "player.division.upgrades",
+    "player.multiplication.upgrades",
+    "player.addition.milestones"
+   ],
+   "tmpReads": [],
+   "members": [
+    "ach:achievements:54"
+   ],
+   "widened": [
+    {
+     "when": "ach:achievements:54 added",
+     "reads": [
+      "tmp.achievements.deactivated"
+     ]
+    }
+   ],
+   "from": {
+    "how": "traceReads(player + tmp) + membership toggles + boolean widening",
+    "state": "fresh",
+    "seen": [
+     [
+      "fresh",
+      "all/S05"
+     ]
+    ],
+    "loader": "facts.mjs v1"
+   }
+  },
+  {
+   "id": "reads:arithmetic:upgrades.14.effect",
+   "kind": "multiplier-reads",
+   "fn": {
+    "layer": "arithmetic",
+    "group": "upgrades",
+    "item": 14,
+    "fn": "effect"
+   },
+   "reads": [
+    "player.addition.points",
+    "player.subtraction.points",
+    "player.polygon.points"
+   ],
+   "tmpReads": [],
+   "members": [],
+   "from": {
+    "how": "traceReads(player + tmp) + membership toggles + boolean widening",
+    "state": "fresh",
+    "seen": [
+     [
+      "fresh",
+      "all/S05"
+     ]
+    ],
+    "loader": "facts.mjs v1"
+   }
+  },
+  {
+   "id": "reads:arithmetic:upgrades.21.effect",
+   "kind": "multiplier-reads",
+   "fn": {
+    "layer": "arithmetic",
+    "group": "upgrades",
+    "item": 21,
+    "fn": "effect"
+   },
+   "reads": [
+    "player.arithmetic.points",
+    "player.addition.milestones"
+   ],
+   "tmpReads": [],
+   "members": [],
+   "from": {
+    "how": "traceReads(player + tmp) + membership toggles + boolean widening",
+    "state": "fresh",
+    "seen": [
+     [
+      "fresh",
+      "all/S05"
+     ]
+    ],
+    "loader": "facts.mjs v1"
+   }
+  },
+  {
+   "id": "reads:arithmetic:upgrades.24.effect",
+   "kind": "multiplier-reads",
+   "fn": {
+    "layer": "arithmetic",
+    "group": "upgrades",
+    "item": 24,
+    "fn": "effect"
+   },
+   "reads": [
+    "player.multiplication.points"
+   ],
+   "tmpReads": [],
+   "members": [],
+   "from": {
+    "how": "traceReads(player + tmp) + membership toggles + boolean widening",
+    "state": "fresh",
+    "seen": [
+     [
+      "fresh",
+      "all/S05"
+     ]
+    ],
+    "loader": "facts.mjs v1"
+   }
+  },
+  {
+   "id": "reads:arithmetic:upgrades.27.effect",
+   "kind": "multiplier-reads",
+   "fn": {
+    "layer": "arithmetic",
+    "group": "upgrades",
+    "item": 27,
+    "fn": "effect"
+   },
+   "reads": [
+    "player.subtraction.points"
+   ],
+   "tmpReads": [],
+   "members": [],
+   "from": {
+    "how": "traceReads(player + tmp) + membership toggles + boolean widening",
+    "state": "fresh",
+    "seen": [
+     [
+      "fresh",
+      "all/S05"
+     ]
+    ],
+    "loader": "facts.mjs v1"
+   }
+  },
+  {
+   "id": "reads:arithmetic:upgrades.34.effect",
+   "kind": "multiplier-reads",
+   "fn": {
+    "layer": "arithmetic",
+    "group": "upgrades",
+    "item": 34,
+    "fn": "effect"
+   },
+   "reads": [
+    "player.arithmetic.points"
+   ],
+   "tmpReads": [],
+   "members": [],
+   "from": {
+    "how": "traceReads(player + tmp) + membership toggles + boolean widening",
+    "state": "fresh",
+    "seen": [
+     [
+      "fresh",
+      "all/S05"
+     ]
+    ],
+    "loader": "facts.mjs v1"
+   }
+  },
+  {
+   "id": "reads:corebooster:base",
+   "kind": "multiplier-reads",
+   "fn": {
+    "layer": "corebooster",
+    "fn": "base"
+   },
+   "reads": [],
+   "tmpReads": [],
+   "members": [],
+   "from": {
+    "how": "traceReads(player + tmp) + membership toggles + boolean widening",
+    "state": "fresh",
+    "seen": [
+     [
+      "fresh",
+      "all/S05"
+     ]
+    ],
+    "loader": "facts.mjs v1"
+   }
+  },
+  {
+   "id": "reads:corebooster:baseAmount",
+   "kind": "multiplier-reads",
+   "fn": {
+    "layer": "corebooster",
+    "fn": "baseAmount"
+   },
+   "reads": [
+    "player.numbercore.points"
+   ],
+   "tmpReads": [],
+   "members": [],
+   "from": {
+    "how": "traceReads(player + tmp) + membership toggles + boolean widening",
+    "state": "fresh",
+    "seen": [
+     [
+      "fresh",
+      "all/S05"
+     ]
+    ],
+    "loader": "facts.mjs v1"
+   }
+  },
+  {
+   "id": "reads:corebooster:directMult",
+   "kind": "multiplier-reads",
+   "fn": {
+    "layer": "corebooster",
+    "fn": "directMult"
+   },
+   "reads": [
+    "player.division.milestones",
+    "player.primitive.upgrades",
+    "player.multiplication.upgrades",
+    "player.polygon.challenges.11",
+    "player.division.upgrades",
+    "player.planetary.buyables.31"
+   ],
+   "tmpReads": [
+    "tmp.polygon.challenges.11.completionLimit"
+   ],
+   "members": [
+    "ms:division:7",
+    "upg:primitive:34"
+   ],
+   "widened": [
+    {
+     "when": "ms:division:7 added",
+     "reads": [
+      "tmp.division.deactivated"
+     ]
+    },
+    {
+     "when": "upg:primitive:34 added",
+     "reads": [
+      "tmp.primitive.deactivated"
+     ]
+    }
+   ],
+   "from": {
+    "how": "traceReads(player + tmp) + membership toggles + boolean widening",
+    "state": "fresh",
+    "seen": [
+     [
+      "fresh",
+      "all/S05"
+     ]
+    ],
+    "loader": "facts.mjs v1"
+   }
+  },
+  {
+   "id": "reads:corebooster:exponent",
+   "kind": "multiplier-reads",
+   "fn": {
+    "layer": "corebooster",
+    "fn": "exponent"
+   },
+   "reads": [
+    "player.achievements.achievements",
+    "player.primitive.upgrades"
+   ],
+   "tmpReads": [],
+   "members": [
+    "ach:achievements:53",
+    "upg:primitive:37"
+   ],
+   "widened": [
+    {
+     "when": "ach:achievements:53 added",
+     "reads": [
+      "tmp.achievements.deactivated"
+     ]
+    },
+    {
+     "when": "upg:primitive:37 added",
+     "reads": [
+      "tmp.primitive.deactivated"
+     ]
+    }
+   ],
+   "from": {
+    "how": "traceReads(player + tmp) + membership toggles + boolean widening",
+    "state": "fresh",
+    "seen": [
+     [
+      "fresh",
+      "all/S05"
+     ]
+    ],
+    "loader": "facts.mjs v1"
+   }
+  },
+  {
+   "id": "reads:corebooster:gainExp",
+   "kind": "multiplier-reads",
+   "fn": {
+    "layer": "corebooster",
+    "fn": "gainExp"
+   },
+   "reads": [],
+   "tmpReads": [],
+   "members": [],
+   "from": {
+    "how": "traceReads(player + tmp) + membership toggles + boolean widening",
+    "state": "fresh",
+    "seen": [
+     [
+      "fresh",
+      "all/S05"
+     ]
+    ],
+    "loader": "facts.mjs v1"
+   }
+  },
+  {
+   "id": "reads:corebooster:gainMult",
+   "kind": "multiplier-reads",
+   "fn": {
+    "layer": "corebooster",
+    "fn": "gainMult"
+   },
+   "reads": [],
+   "tmpReads": [],
+   "members": [],
+   "from": {
+    "how": "traceReads(player + tmp) + membership toggles + boolean widening",
+    "state": "fresh",
+    "seen": [
+     [
+      "fresh",
+      "all/S05"
+     ]
+    ],
+    "loader": "facts.mjs v1"
+   }
+  },
+  {
+   "id": "reads:corebooster:upgrades.11.effect",
+   "kind": "multiplier-reads",
+   "fn": {
+    "layer": "corebooster",
+    "group": "upgrades",
+    "item": 11,
+    "fn": "effect"
+   },
+   "reads": [
+    "player.corebooster.points"
+   ],
+   "tmpReads": [],
+   "members": [],
+   "from": {
+    "how": "traceReads(player + tmp) + membership toggles + boolean widening",
+    "state": "fresh",
+    "seen": [
+     [
+      "fresh",
+      "all/S05"
+     ]
+    ],
+    "loader": "facts.mjs v1"
+   }
+  },
+  {
+   "id": "reads:corebooster:upgrades.12.effect",
+   "kind": "multiplier-reads",
+   "fn": {
+    "layer": "corebooster",
+    "group": "upgrades",
+    "item": 12,
+    "fn": "effect"
+   },
+   "reads": [
+    "player.corebooster.points"
+   ],
+   "tmpReads": [],
+   "members": [],
+   "from": {
+    "how": "traceReads(player + tmp) + membership toggles + boolean widening",
+    "state": "fresh",
+    "seen": [
+     [
+      "fresh",
+      "all/S05"
+     ]
+    ],
+    "loader": "facts.mjs v1"
+   }
+  },
+  {
+   "id": "reads:dimension:baseAmount",
+   "kind": "multiplier-reads",
+   "fn": {
+    "layer": "dimension",
+    "fn": "baseAmount"
+   },
+   "reads": [
+    "player.primitive.points"
+   ],
+   "tmpReads": [],
+   "members": [],
+   "from": {
+    "how": "traceReads(player + tmp) + membership toggles + boolean widening",
+    "state": "fresh",
+    "seen": [
+     [
+      "fresh",
+      "all/S05"
+     ]
+    ],
+    "loader": "facts.mjs v1"
+   }
+  },
+  {
+   "id": "reads:dimension:exponent",
+   "kind": "multiplier-reads",
+   "fn": {
+    "layer": "dimension",
+    "fn": "exponent"
+   },
+   "reads": [
+    "player.dimension.points"
+   ],
+   "tmpReads": [],
+   "members": [],
+   "from": {
+    "how": "traceReads(player + tmp) + membership toggles + boolean widening",
+    "state": "fresh",
+    "seen": [
+     [
+      "fresh",
+      "all/S05"
+     ]
+    ],
+    "loader": "facts.mjs v1"
+   }
+  },
+  {
+   "id": "reads:dimension:gainExp",
+   "kind": "multiplier-reads",
+   "fn": {
+    "layer": "dimension",
+    "fn": "gainExp"
+   },
+   "reads": [],
+   "tmpReads": [],
+   "members": [],
+   "from": {
+    "how": "traceReads(player + tmp) + membership toggles + boolean widening",
+    "state": "fresh",
+    "seen": [
+     [
+      "fresh",
+      "all/S05"
+     ]
+    ],
+    "loader": "facts.mjs v1"
+   }
+  },
+  {
+   "id": "reads:dimension:gainMult",
+   "kind": "multiplier-reads",
+   "fn": {
+    "layer": "dimension",
+    "fn": "gainMult"
+   },
+   "reads": [],
+   "tmpReads": [],
+   "members": [],
+   "from": {
+    "how": "traceReads(player + tmp) + membership toggles + boolean widening",
+    "state": "fresh",
+    "seen": [
+     [
+      "fresh",
+      "all/S05"
+     ]
+    ],
+    "loader": "facts.mjs v1"
+   }
+  },
+  {
+   "id": "reads:division:baseAmount",
+   "kind": "multiplier-reads",
+   "fn": {
+    "layer": "division",
+    "fn": "baseAmount"
+   },
+   "reads": [
+    "player.primitive.points"
+   ],
+   "tmpReads": [],
+   "members": [],
+   "from": {
+    "how": "traceReads(player + tmp) + membership toggles + boolean widening",
+    "state": "fresh",
+    "seen": [
+     [
+      "fresh",
+      "all/S05"
+     ]
+    ],
+    "loader": "facts.mjs v1"
+   }
+  },
+  {
+   "id": "reads:division:directMult",
+   "kind": "multiplier-reads",
+   "fn": {
+    "layer": "division",
+    "fn": "directMult"
+   },
+   "reads": [],
+   "tmpReads": [],
+   "members": [],
+   "from": {
+    "how": "traceReads(player + tmp) + membership toggles + boolean widening",
+    "state": "fresh",
+    "seen": [
+     [
+      "fresh",
+      "all/S05"
+     ]
+    ],
+    "loader": "facts.mjs v1"
+   }
+  },
+  {
+   "id": "reads:division:exponent",
+   "kind": "multiplier-reads",
+   "fn": {
+    "layer": "division",
+    "fn": "exponent"
+   },
+   "reads": [],
+   "tmpReads": [],
+   "members": [],
+   "from": {
+    "how": "traceReads(player + tmp) + membership toggles + boolean widening",
+    "state": "fresh",
+    "seen": [
+     [
+      "fresh",
+      "all/S05"
+     ]
+    ],
+    "loader": "facts.mjs v1"
+   }
+  },
+  {
+   "id": "reads:division:gainExp",
+   "kind": "multiplier-reads",
+   "fn": {
+    "layer": "division",
+    "fn": "gainExp"
+   },
+   "reads": [],
+   "tmpReads": [],
+   "members": [],
+   "from": {
+    "how": "traceReads(player + tmp) + membership toggles + boolean widening",
+    "state": "fresh",
+    "seen": [
+     [
+      "fresh",
+      "all/S05"
+     ]
+    ],
+    "loader": "facts.mjs v1"
+   }
+  },
+  {
+   "id": "reads:division:getResetGain",
+   "kind": "multiplier-reads",
+   "fn": {
+    "layer": "division",
+    "fn": "getResetGain"
+   },
+   "reads": [
+    "player.primitive.points"
+   ],
+   "tmpReads": [],
+   "members": [],
+   "from": {
+    "how": "traceReads(player + tmp) + membership toggles + boolean widening",
+    "state": "fresh",
+    "seen": [
+     [
+      "fresh",
+      "all/S05"
+     ]
+    ],
+    "loader": "facts.mjs v1"
+   }
+  },
+  {
+   "id": "reads:division:passiveGeneration",
+   "kind": "multiplier-reads",
+   "fn": {
+    "layer": "division",
+    "fn": "passiveGeneration"
+   },
+   "reads": [
+    "player.division.milestones",
+    "player.primitive.milestones"
+   ],
+   "tmpReads": [],
+   "members": [
+    "ms:division:10"
+   ],
+   "widened": [
+    {
+     "when": "ms:division:10 added",
+     "reads": [
+      "tmp.division.deactivated"
+     ]
+    }
+   ],
+   "from": {
+    "how": "traceReads(player + tmp) + membership toggles + boolean widening",
+    "state": "fresh",
+    "seen": [
+     [
+      "fresh",
+      "all/S05"
+     ]
+    ],
+    "loader": "facts.mjs v1"
+   }
+  },
+  {
+   "id": "reads:division:requires",
+   "kind": "multiplier-reads",
+   "fn": {
+    "layer": "division",
+    "fn": "requires"
+   },
+   "reads": [],
+   "tmpReads": [],
+   "members": [],
+   "from": {
+    "how": "traceReads(player + tmp) + membership toggles + boolean widening",
+    "state": "fresh",
+    "seen": [
+     [
+      "fresh",
+      "all/S05"
+     ]
+    ],
+    "loader": "facts.mjs v1"
+   }
+  },
+  {
+   "id": "reads:division:upgrades.11.effect",
+   "kind": "multiplier-reads",
+   "fn": {
+    "layer": "division",
+    "group": "upgrades",
+    "item": 11,
+    "fn": "effect"
+   },
+   "reads": [
+    "player.division.points",
+    "player.division.upgrades"
+   ],
+   "tmpReads": [],
+   "members": [],
+   "from": {
+    "how": "traceReads(player + tmp) + membership toggles + boolean widening",
+    "state": "fresh",
+    "seen": [
+     [
+      "fresh",
+      "all/S05"
+     ]
+    ],
+    "loader": "facts.mjs v1"
+   }
+  },
+  {
+   "id": "reads:division:upgrades.12.effect",
+   "kind": "multiplier-reads",
+   "fn": {
+    "layer": "division",
+    "group": "upgrades",
+    "item": 12,
+    "fn": "effect"
+   },
+   "reads": [
+    "player.division.points"
+   ],
+   "tmpReads": [],
+   "members": [],
+   "from": {
+    "how": "traceReads(player + tmp) + membership toggles + boolean widening",
+    "state": "fresh",
+    "seen": [
+     [
+      "fresh",
+      "all/S05"
+     ]
+    ],
+    "loader": "facts.mjs v1"
+   }
+  },
+  {
+   "id": "reads:division:upgrades.17.effect",
+   "kind": "multiplier-reads",
+   "fn": {
+    "layer": "division",
+    "group": "upgrades",
+    "item": 17,
+    "fn": "effect"
+   },
+   "reads": [
+    "player.division.points",
+    "player.primitive.upgrades"
+   ],
+   "tmpReads": [],
+   "members": [],
+   "from": {
+    "how": "traceReads(player + tmp) + membership toggles + boolean widening",
+    "state": "fresh",
+    "seen": [
+     [
+      "fresh",
+      "all/S05"
+     ]
+    ],
+    "loader": "facts.mjs v1"
+   }
+  },
+  {
+   "id": "reads:division:upgrades.21.effect",
+   "kind": "multiplier-reads",
+   "fn": {
+    "layer": "division",
+    "group": "upgrades",
+    "item": 21,
+    "fn": "effect"
+   },
+   "reads": [
+    "player.corebooster.points",
+    "player.corebooster.trueUseful"
+   ],
+   "tmpReads": [],
+   "members": [],
+   "from": {
+    "how": "traceReads(player + tmp) + membership toggles + boolean widening",
+    "state": "fresh",
+    "seen": [
+     [
+      "fresh",
+      "all/S05"
+     ]
+    ],
+    "loader": "facts.mjs v1"
+   }
+  },
+  {
+   "id": "reads:division:upgrades.24.effect",
+   "kind": "multiplier-reads",
+   "fn": {
+    "layer": "division",
+    "group": "upgrades",
+    "item": 24,
+    "fn": "effect"
+   },
+   "reads": [
+    "player.subtraction.points"
+   ],
+   "tmpReads": [],
+   "members": [],
+   "from": {
+    "how": "traceReads(player + tmp) + membership toggles + boolean widening",
+    "state": "fresh",
+    "seen": [
+     [
+      "fresh",
+      "all/S05"
+     ]
+    ],
+    "loader": "facts.mjs v1"
+   }
+  },
+  {
+   "id": "reads:division:upgrades.32.effect",
+   "kind": "multiplier-reads",
+   "fn": {
+    "layer": "division",
+    "group": "upgrades",
+    "item": 32,
+    "fn": "effect"
+   },
+   "reads": [
+    "player.division.points"
+   ],
+   "tmpReads": [],
+   "members": [],
+   "from": {
+    "how": "traceReads(player + tmp) + membership toggles + boolean widening",
+    "state": "fresh",
+    "seen": [
+     [
+      "fresh",
+      "all/S05"
+     ]
+    ],
+    "loader": "facts.mjs v1"
+   }
+  },
+  {
+   "id": "reads:fundamental:baseAmount",
+   "kind": "multiplier-reads",
+   "fn": {
+    "layer": "fundamental",
+    "fn": "baseAmount"
+   },
+   "reads": [
+    "player.points"
+   ],
+   "tmpReads": [],
+   "members": [],
+   "from": {
+    "how": "traceReads(player + tmp) + membership toggles + boolean widening",
+    "state": "fresh",
+    "seen": [
+     [
+      "fresh",
+      "all/S05"
+     ]
+    ],
+    "loader": "facts.mjs v1"
+   }
+  },
+  {
+   "id": "reads:fundamental:buyables.11.effect",
+   "kind": "multiplier-reads",
+   "fn": {
+    "layer": "fundamental",
+    "group": "buyables",
+    "item": 11,
+    "fn": "effect"
+   },
+   "reads": [
+    "player.fundamental.buyables.11",
+    "player.dimension.milestones",
+    "player.primitive.milestones",
+    "player.addition.milestones",
+    "player.arithmetic.activeChallenge",
+    "player.polygon.points",
+    "player.multiplication.upgrades",
+    "player.dimension.points",
+    "player.planetary.upgrades"
+   ],
+   "tmpReads": [],
+   "members": [],
+   "from": {
+    "how": "traceReads(player + tmp) + membership toggles + boolean widening",
+    "state": "fresh",
+    "seen": [
+     [
+      "fresh",
+      "all/S05"
+     ]
+    ],
+    "loader": "facts.mjs v1"
+   }
+  },
+  {
+   "id": "reads:fundamental:buyables.12.effect",
+   "kind": "multiplier-reads",
+   "fn": {
+    "layer": "fundamental",
+    "group": "buyables",
+    "item": 12,
+    "fn": "effect"
+   },
+   "reads": [
+    "player.fundamental.buyables.12",
+    "player.multiplication.upgrades"
+   ],
+   "tmpReads": [],
+   "members": [],
+   "from": {
+    "how": "traceReads(player + tmp) + membership toggles + boolean widening",
+    "state": "fresh",
+    "seen": [
+     [
+      "fresh",
+      "all/S05"
+     ]
+    ],
+    "loader": "facts.mjs v1"
+   }
+  },
+  {
+   "id": "reads:fundamental:buyables.13.effect",
+   "kind": "multiplier-reads",
+   "fn": {
+    "layer": "fundamental",
+    "group": "buyables",
+    "item": 13,
+    "fn": "effect"
+   },
+   "reads": [
+    "player.fundamental.buyables.13"
+   ],
+   "tmpReads": [],
+   "members": [],
+   "from": {
+    "how": "traceReads(player + tmp) + membership toggles + boolean widening",
+    "state": "fresh",
+    "seen": [
+     [
+      "fresh",
+      "all/S05"
+     ]
+    ],
+    "loader": "facts.mjs v1"
+   }
+  },
+  {
+   "id": "reads:fundamental:buyables.21.effect",
+   "kind": "multiplier-reads",
+   "fn": {
+    "layer": "fundamental",
+    "group": "buyables",
+    "item": 21,
+    "fn": "effect"
+   },
+   "reads": [
+    "player.fundamental.buyables.21"
+   ],
+   "tmpReads": [],
+   "members": [],
+   "from": {
+    "how": "traceReads(player + tmp) + membership toggles + boolean widening",
+    "state": "fresh",
+    "seen": [
+     [
+      "fresh",
+      "all/S05"
+     ]
+    ],
+    "loader": "facts.mjs v1"
+   }
+  },
+  {
+   "id": "reads:fundamental:buyables.22.effect",
+   "kind": "multiplier-reads",
+   "fn": {
+    "layer": "fundamental",
+    "group": "buyables",
+    "item": 22,
+    "fn": "effect"
+   },
+   "reads": [
+    "player.fundamental.buyables.22"
+   ],
+   "tmpReads": [],
+   "members": [],
+   "from": {
+    "how": "traceReads(player + tmp) + membership toggles + boolean widening",
+    "state": "fresh",
+    "seen": [
+     [
+      "fresh",
+      "all/S05"
+     ]
+    ],
+    "loader": "facts.mjs v1"
+   }
+  },
+  {
+   "id": "reads:fundamental:directMult",
+   "kind": "multiplier-reads",
+   "variants": [
+    {
+     "fn": {
+      "layer": "fundamental",
+      "fn": "directMult"
+     },
+     "reads": [
+      "player.primitive.upgrades",
+      "player.fundamental.upgrades",
+      "player.arithmetic.upgrades",
+      "player.subtraction.upgrades",
+      "player.multiplication.upgrades",
+      "player.arithmetic.challenges.22",
+      "player.polygon.upgrades",
+      "player.polygon.hexagons",
+      "player.division.upgrades",
+      "player.primitive.milestones",
+      "player.polygon.challenges.11",
+      "player.pbooster.activeChallenge"
+     ],
+     "tmpReads": [
+      "tmp.fundamental.buyables.22.effect",
+      "tmp.polygon.challenges.11.completionLimit"
+     ],
+     "members": [
+      "upg:fundamental:32",
+      "upg:arithmetic:11",
+      "upg:arithmetic:23",
+      "upg:subtraction:13",
+      "upg:multiplication:61"
+     ],
+     "widened": [
+      {
+       "when": "upg:fundamental:32 added",
+       "reads": [
+        "tmp.fundamental.deactivated"
+       ]
+      },
+      {
+       "when": "upg:arithmetic:11 added",
+       "reads": [
+        "tmp.arithmetic.deactivated"
+       ]
+      },
+      {
+       "when": "upg:arithmetic:23 added",
+       "reads": [
+        "tmp.arithmetic.deactivated"
+       ]
+      },
+      {
+       "when": "upg:subtraction:13 added",
+       "reads": [
+        "tmp.subtraction.deactivated"
+       ]
+      },
+      {
+       "when": "upg:multiplication:61 added",
+       "reads": [
+        "tmp.multiplication.deactivated"
+       ]
+      }
+     ],
+     "seen": [
+      [
+       "fresh",
+       "all/S02"
+      ]
+     ]
+    },
+    {
+     "fn": {
+      "layer": "fundamental",
+      "fn": "directMult"
+     },
+     "reads": [
+      "player.primitive.upgrades",
+      "player.fundamental.upgrades",
+      "player.arithmetic.upgrades",
+      "player.subtraction.upgrades",
+      "player.multiplication.upgrades",
+      "player.arithmetic.challenges.22",
+      "player.polygon.upgrades",
+      "player.polygon.hexagons",
+      "player.division.upgrades",
+      "player.primitive.milestones",
+      "player.polygon.challenges.11",
+      "player.pbooster.activeChallenge"
+     ],
+     "tmpReads": [
+      "tmp.fundamental.buyables.22.effect",
+      "tmp.polygon.challenges.11.completionLimit"
+     ],
+     "members": [
+      "upg:primitive:17",
+      "upg:fundamental:32",
+      "upg:arithmetic:11",
+      "upg:arithmetic:23",
+      "upg:subtraction:13",
+      "upg:multiplication:61"
+     ],
+     "widened": [
+      {
+       "when": "upg:primitive:17 added",
+       "reads": [
+        "tmp.primitive.deactivated",
+        "tmp.primitive.upgrades.17.effect"
+       ]
+      },
+      {
+       "when": "upg:fundamental:32 added",
+       "reads": [
+        "tmp.fundamental.deactivated"
+       ]
+      },
+      {
+       "when": "upg:arithmetic:11 added",
+       "reads": [
+        "tmp.arithmetic.deactivated"
+       ]
+      },
+      {
+       "when": "upg:arithmetic:23 added",
+       "reads": [
+        "tmp.arithmetic.deactivated"
+       ]
+      },
+      {
+       "when": "upg:subtraction:13 added",
+       "reads": [
+        "tmp.subtraction.deactivated"
+       ]
+      },
+      {
+       "when": "upg:multiplication:61 added",
+       "reads": [
+        "tmp.multiplication.deactivated"
+       ]
+      }
+     ],
+     "seen": [
+      [
+       "all/S03",
+       "all/S05"
+      ]
+     ]
+    }
+   ],
+   "from": {
+    "how": "traceReads(player + tmp) + membership toggles + boolean widening",
+    "state": "fresh",
+    "seen": [
+     [
+      "fresh",
+      "all/S05"
+     ]
+    ],
+    "loader": "facts.mjs v1"
+   }
+  },
+  {
+   "id": "reads:fundamental:gainExp",
+   "kind": "multiplier-reads",
+   "fn": {
+    "layer": "fundamental",
+    "fn": "gainExp"
+   },
+   "reads": [],
+   "tmpReads": [],
+   "members": [],
+   "from": {
+    "how": "traceReads(player + tmp) + membership toggles + boolean widening",
+    "state": "fresh",
+    "seen": [
+     [
+      "fresh",
+      "all/S05"
+     ]
+    ],
+    "loader": "facts.mjs v1"
+   }
+  },
+  {
+   "id": "reads:fundamental:gainMult",
+   "kind": "multiplier-reads",
+   "variants": [
+    {
+     "fn": {
+      "layer": "fundamental",
+      "fn": "gainMult"
+     },
+     "reads": [
+      "player.fundamental.upgrades",
+      "player.addition.clickables.11",
+      "player.primitive.upgrades",
+      "player.arithmetic.activeChallenge",
+      "player.division.clickables.11",
+      "player.primitive.milestones",
+      "player.subtraction.upgrades",
+      "player.multiplication.upgrades",
+      "player.corebooster.e4",
+      "player.dimension.milestones",
+      "player.arithmetic.challenges.13",
+      "player.pbooster.milestones",
+      "player.pbooster.activeChallenge"
+     ],
+     "tmpReads": [
+      "tmp.fundamental.buyables.11.effect"
+     ],
+     "members": [
+      "upg:fundamental:11",
+      "upg:fundamental:14",
+      "upg:fundamental:15",
+      "upg:primitive:11",
+      "ms:primitive:3",
+      "ms:primitive:4",
+      "upg:subtraction:13",
+      "upg:multiplication:41",
+      "ms:dimension:6"
+     ],
+     "widened": [
+      {
+       "when": "upg:fundamental:11 added",
+       "reads": [
+        "tmp.fundamental.deactivated"
+       ]
+      },
+      {
+       "when": "upg:fundamental:14 added",
+       "reads": [
+        "tmp.fundamental.deactivated"
+       ]
+      },
+      {
+       "when": "upg:fundamental:15 added",
+       "reads": [
+        "tmp.fundamental.deactivated"
+       ]
+      },
+      {
+       "when": "upg:primitive:11 added",
+       "reads": [
+        "tmp.primitive.deactivated"
+       ]
+      },
+      {
+       "when": "ms:primitive:3 added",
+       "reads": [
+        "tmp.primitive.deactivated"
+       ]
+      },
+      {
+       "when": "ms:primitive:4 added",
+       "reads": [
+        "tmp.primitive.deactivated"
+       ]
+      },
+      {
+       "when": "upg:subtraction:13 added",
+       "reads": [
+        "tmp.subtraction.deactivated"
+       ]
+      },
+      {
+       "when": "upg:multiplication:41 added",
+       "reads": [
+        "tmp.multiplication.deactivated"
+       ]
+      },
+      {
+       "when": "ms:dimension:6 added",
+       "reads": [
+        "tmp.dimension.deactivated"
+       ]
+      }
+     ],
+     "seen": [
+      "fresh"
+     ]
+    },
+    {
+     "fn": {
+      "layer": "fundamental",
+      "fn": "gainMult"
+     },
+     "reads": [
+      "player.fundamental.upgrades",
+      "player.addition.clickables.11",
+      "player.primitive.upgrades",
+      "player.arithmetic.activeChallenge",
+      "player.division.clickables.11",
+      "player.primitive.milestones",
+      "player.subtraction.upgrades",
+      "player.multiplication.upgrades",
+      "player.corebooster.e4",
+      "player.dimension.milestones",
+      "player.arithmetic.challenges.13",
+      "player.pbooster.milestones",
+      "player.pbooster.activeChallenge"
+     ],
+     "tmpReads": [
+      "tmp.fundamental.deactivated",
+      "tmp.fundamental.buyables.11.effect"
+     ],
+     "members": [
+      "upg:fundamental:11",
+      "upg:fundamental:14",
+      "upg:fundamental:15",
+      "upg:primitive:11",
+      "ms:primitive:3",
+      "ms:primitive:4",
+      "upg:subtraction:13",
+      "upg:multiplication:41",
+      "ms:dimension:6",
+      "ms:pbooster:1"
+     ],
+     "widened": [
+      {
+       "when": "upg:primitive:11 added",
+       "reads": [
+        "tmp.primitive.deactivated"
+       ]
+      },
+      {
+       "when": "ms:primitive:3 added",
+       "reads": [
+        "tmp.primitive.deactivated"
+       ]
+      },
+      {
+       "when": "ms:primitive:4 added",
+       "reads": [
+        "tmp.primitive.deactivated"
+       ]
+      },
+      {
+       "when": "upg:subtraction:13 added",
+       "reads": [
+        "tmp.subtraction.deactivated"
+       ]
+      },
+      {
+       "when": "upg:multiplication:41 added",
+       "reads": [
+        "tmp.multiplication.deactivated"
+       ]
+      },
+      {
+       "when": "ms:dimension:6 added",
+       "reads": [
+        "tmp.dimension.deactivated"
+       ]
+      },
+      {
+       "when": "ms:pbooster:1 added",
+       "reads": [
+        "tmp.pbooster.deactivated"
+       ]
+      }
+     ],
+     "seen": [
+      "all/S01"
+     ]
+    },
+    {
+     "fn": {
+      "layer": "fundamental",
+      "fn": "gainMult"
+     },
+     "reads": [
+      "player.fundamental.upgrades",
+      "player.addition.clickables.11",
+      "player.primitive.upgrades",
+      "player.arithmetic.activeChallenge",
+      "player.division.clickables.11",
+      "player.primitive.milestones",
+      "player.subtraction.upgrades",
+      "player.multiplication.upgrades",
+      "player.corebooster.e4",
+      "player.dimension.milestones",
+      "player.arithmetic.challenges.13",
+      "player.pbooster.milestones",
+      "player.pbooster.activeChallenge"
+     ],
+     "tmpReads": [
+      "tmp.fundamental.deactivated",
+      "tmp.fundamental.upgrades.21.effect",
+      "tmp.fundamental.buyables.11.effect"
+     ],
+     "members": [
+      "upg:fundamental:11",
+      "upg:fundamental:14",
+      "upg:fundamental:15",
+      "upg:fundamental:21",
+      "upg:fundamental:25",
+      "upg:primitive:11",
+      "ms:primitive:3",
+      "ms:primitive:4",
+      "upg:subtraction:13",
+      "upg:multiplication:41",
+      "ms:dimension:6",
+      "ms:pbooster:1"
+     ],
+     "widened": [
+      {
+       "when": "upg:fundamental:25 added",
+       "reads": [
+        "tmp.fundamental.upgrades.25.effect"
+       ]
+      },
+      {
+       "when": "upg:primitive:11 added",
+       "reads": [
+        "tmp.primitive.deactivated"
+       ]
+      },
+      {
+       "when": "ms:primitive:3 added",
+       "reads": [
+        "tmp.primitive.deactivated"
+       ]
+      },
+      {
+       "when": "ms:primitive:4 added",
+       "reads": [
+        "tmp.primitive.deactivated"
+       ]
+      },
+      {
+       "when": "upg:subtraction:13 added",
+       "reads": [
+        "tmp.subtraction.deactivated"
+       ]
+      },
+      {
+       "when": "upg:multiplication:41 added",
+       "reads": [
+        "tmp.multiplication.deactivated"
+       ]
+      },
+      {
+       "when": "ms:dimension:6 added",
+       "reads": [
+        "tmp.dimension.deactivated"
+       ]
+      },
+      {
+       "when": "ms:pbooster:1 added",
+       "reads": [
+        "tmp.pbooster.deactivated"
+       ]
+      }
+     ],
+     "seen": [
+      "all/S02"
+     ]
+    },
+    {
+     "fn": {
+      "layer": "fundamental",
+      "fn": "gainMult"
+     },
+     "reads": [
+      "player.fundamental.upgrades",
+      "player.addition.clickables.11",
+      "player.primitive.upgrades",
+      "player.arithmetic.activeChallenge",
+      "player.division.clickables.11",
+      "player.primitive.milestones",
+      "player.subtraction.upgrades",
+      "player.multiplication.upgrades",
+      "player.corebooster.e4",
+      "player.dimension.milestones",
+      "player.arithmetic.challenges.13",
+      "player.pbooster.milestones",
+      "player.pbooster.activeChallenge"
+     ],
+     "tmpReads": [
+      "tmp.primitive.deactivated",
+      "tmp.fundamental.buyables.11.effect"
+     ],
+     "members": [
+      "upg:fundamental:11",
+      "upg:fundamental:14",
+      "upg:fundamental:15",
+      "upg:primitive:11",
+      "ms:primitive:3",
+      "ms:primitive:4",
+      "upg:subtraction:13",
+      "upg:multiplication:41",
+      "ms:dimension:6",
+      "ms:pbooster:1"
+     ],
+     "widened": [
+      {
+       "when": "upg:fundamental:11 added",
+       "reads": [
+        "tmp.fundamental.deactivated"
+       ]
+      },
+      {
+       "when": "upg:fundamental:14 added",
+       "reads": [
+        "tmp.fundamental.deactivated"
+       ]
+      },
+      {
+       "when": "upg:fundamental:15 added",
+       "reads": [
+        "tmp.fundamental.deactivated"
+       ]
+      },
+      {
+       "when": "upg:subtraction:13 added",
+       "reads": [
+        "tmp.subtraction.deactivated"
+       ]
+      },
+      {
+       "when": "upg:multiplication:41 added",
+       "reads": [
+        "tmp.multiplication.deactivated"
+       ]
+      },
+      {
+       "when": "ms:dimension:6 added",
+       "reads": [
+        "tmp.dimension.deactivated"
+       ]
+      },
+      {
+       "when": "ms:pbooster:1 added",
+       "reads": [
+        "tmp.pbooster.deactivated"
+       ]
+      }
+     ],
+     "seen": [
+      [
+       "all/S03",
+       "all/S05"
+      ]
+     ]
+    }
+   ],
+   "from": {
+    "how": "traceReads(player + tmp) + membership toggles + boolean widening",
+    "state": "fresh",
+    "seen": [
+     [
+      "fresh",
+      "all/S05"
+     ]
+    ],
+    "loader": "facts.mjs v1"
+   }
+  },
+  {
+   "id": "reads:fundamental:passiveGeneration",
+   "kind": "multiplier-reads",
+   "fn": {
+    "layer": "fundamental",
+    "fn": "passiveGeneration"
+   },
+   "reads": [
+    "player.fundamental.upgrades"
+   ],
+   "tmpReads": [
+    "tmp.fundamental.deactivated"
+   ],
+   "members": [
+    "upg:fundamental:23"
+   ],
+   "widened": [
+    {
+     "when": "upg:fundamental:23 removed",
+     "reads": [
+      "player.arithmetic.upgrades"
+     ]
+    }
+   ],
+   "from": {
+    "how": "traceReads(player + tmp) + membership toggles + boolean widening",
+    "state": "all/S02",
+    "seen": [
+     "all/S02",
+     "all/S05"
+    ],
+    "loader": "facts.mjs v1"
+   }
+  },
+  {
+   "id": "reads:fundamental:softcap",
+   "kind": "multiplier-reads",
+   "fn": {
+    "layer": "fundamental",
+    "fn": "softcap"
+   },
+   "reads": [],
+   "tmpReads": [],
+   "members": [],
+   "from": {
+    "how": "traceReads(player + tmp) + membership toggles + boolean widening",
+    "state": "fresh",
+    "seen": [
+     [
+      "fresh",
+      "all/S05"
+     ]
+    ],
+    "loader": "facts.mjs v1"
+   }
+  },
+  {
+   "id": "reads:fundamental:softcapPower",
+   "kind": "multiplier-reads",
+   "fn": {
+    "layer": "fundamental",
+    "fn": "softcapPower"
+   },
+   "reads": [
+    "player.fundamental.points"
+   ],
+   "tmpReads": [],
+   "members": [],
+   "from": {
+    "how": "traceReads(player + tmp) + membership toggles + boolean widening",
+    "state": "fresh",
+    "seen": [
+     [
+      "fresh",
+      "all/S05"
+     ]
+    ],
+    "loader": "facts.mjs v1"
+   }
+  },
+  {
+   "id": "reads:fundamental:upgrades.17.effect",
+   "kind": "multiplier-reads",
+   "variants": [
+    {
+     "fn": {
+      "layer": "fundamental",
+      "group": "upgrades",
+      "item": 17,
+      "fn": "effect"
+     },
+     "reads": [
+      "player.fundamental.points",
+      "player.fundamental.upgrades",
+      "player.arithmetic.activeChallenge",
+      "player.division.clickables.11"
+     ],
+     "tmpReads": [
+      "tmp.fundamental.buyables.12.effect"
+     ],
+     "members": [
+      "upg:fundamental:54"
+     ],
+     "widened": [
+      {
+       "when": "upg:fundamental:54 added",
+       "reads": [
+        "tmp.fundamental.deactivated"
+       ]
+      }
+     ],
+     "seen": [
+      [
+       "fresh",
+       "all/S01"
+      ],
+      [
+       "all/S03",
+       "all/S05"
+      ]
+     ]
+    },
+    {
+     "fn": {
+      "layer": "fundamental",
+      "group": "upgrades",
+      "item": 17,
+      "fn": "effect"
+     },
+     "reads": [
+      "player.fundamental.points",
+      "player.fundamental.upgrades",
+      "player.arithmetic.activeChallenge",
+      "player.division.clickables.11"
+     ],
+     "tmpReads": [
+      "tmp.fundamental.deactivated",
+      "tmp.fundamental.buyables.12.effect"
+     ],
+     "members": [
+      "upg:fundamental:22",
+      "upg:fundamental:54"
+     ],
+     "seen": [
+      "all/S02"
+     ]
+    }
+   ],
+   "from": {
+    "how": "traceReads(player + tmp) + membership toggles + boolean widening",
+    "state": "fresh",
+    "seen": [
+     [
+      "fresh",
+      "all/S05"
+     ]
+    ],
+    "loader": "facts.mjs v1"
+   }
+  },
+  {
+   "id": "reads:fundamental:upgrades.21.effect",
+   "kind": "multiplier-reads",
+   "fn": {
+    "layer": "fundamental",
+    "group": "upgrades",
+    "item": 21,
+    "fn": "effect"
+   },
+   "reads": [
+    "player.points",
+    "player.arithmetic.activeChallenge",
+    "player.division.clickables.11"
+   ],
+   "tmpReads": [
+    "tmp.fundamental.buyables.12.effect"
+   ],
+   "members": [],
+   "from": {
+    "how": "traceReads(player + tmp) + membership toggles + boolean widening",
+    "state": "fresh",
+    "seen": [
+     [
+      "fresh",
+      "all/S05"
+     ]
+    ],
+    "loader": "facts.mjs v1"
+   }
+  },
+  {
+   "id": "reads:fundamental:upgrades.25.effect",
+   "kind": "multiplier-reads",
+   "fn": {
+    "layer": "fundamental",
+    "group": "upgrades",
+    "item": 25,
+    "fn": "effect"
+   },
+   "reads": [
+    "player.fundamental.points"
+   ],
+   "tmpReads": [],
+   "members": [],
+   "from": {
+    "how": "traceReads(player + tmp) + membership toggles + boolean widening",
+    "state": "fresh",
+    "seen": [
+     [
+      "fresh",
+      "all/S05"
+     ]
+    ],
+    "loader": "facts.mjs v1"
+   }
+  },
+  {
+   "id": "reads:fundamental:upgrades.41.effect",
+   "kind": "multiplier-reads",
+   "fn": {
+    "layer": "fundamental",
+    "group": "upgrades",
+    "item": 41,
+    "fn": "effect"
+   },
+   "reads": [
+    "player.fundamental.points"
+   ],
+   "tmpReads": [],
+   "members": [],
+   "from": {
+    "how": "traceReads(player + tmp) + membership toggles + boolean widening",
+    "state": "fresh",
+    "seen": [
+     [
+      "fresh",
+      "all/S05"
+     ]
+    ],
+    "loader": "facts.mjs v1"
+   }
+  },
+  {
+   "id": "reads:fundamental:upgrades.45.effect",
+   "kind": "multiplier-reads",
+   "fn": {
+    "layer": "fundamental",
+    "group": "upgrades",
+    "item": 45,
+    "fn": "effect"
+   },
+   "reads": [
+    "player.fundamental.points",
+    "player.pbooster.challenges.11"
+   ],
+   "tmpReads": [],
+   "members": [],
+   "from": {
+    "how": "traceReads(player + tmp) + membership toggles + boolean widening",
+    "state": "fresh",
+    "seen": [
+     [
+      "fresh",
+      "all/S05"
+     ]
+    ],
+    "loader": "facts.mjs v1"
+   }
+  },
+  {
+   "id": "reads:fundamental:upgrades.51.effect",
+   "kind": "multiplier-reads",
+   "fn": {
+    "layer": "fundamental",
+    "group": "upgrades",
+    "item": 51,
+    "fn": "effect"
+   },
+   "reads": [
+    "player.fundamental.points",
+    "player.pbooster.milestones"
+   ],
+   "tmpReads": [],
+   "members": [
+    "ms:pbooster:2"
+   ],
+   "widened": [
+    {
+     "when": "ms:pbooster:2 added",
+     "reads": [
+      "tmp.pbooster.deactivated"
+     ]
+    }
+   ],
+   "from": {
+    "how": "traceReads(player + tmp) + membership toggles + boolean widening",
+    "state": "fresh",
+    "seen": [
+     [
+      "fresh",
+      "all/S05"
+     ]
+    ],
+    "loader": "facts.mjs v1"
+   }
+  },
+  {
+   "id": "reads:fundamental:upgrades.57.effect",
+   "kind": "multiplier-reads",
+   "fn": {
+    "layer": "fundamental",
+    "group": "upgrades",
+    "item": 57,
+    "fn": "effect"
+   },
+   "reads": [
+    "player.fundamental.points"
+   ],
+   "tmpReads": [],
+   "members": [],
+   "from": {
+    "how": "traceReads(player + tmp) + membership toggles + boolean widening",
+    "state": "fresh",
+    "seen": [
+     [
+      "fresh",
+      "all/S05"
+     ]
+    ],
+    "loader": "facts.mjs v1"
+   }
+  },
+  {
+   "id": "reads:multiplication:baseAmount",
+   "kind": "multiplier-reads",
+   "fn": {
+    "layer": "multiplication",
+    "fn": "baseAmount"
+   },
+   "reads": [
+    "player.arithmetic.points"
+   ],
+   "tmpReads": [],
+   "members": [],
+   "from": {
+    "how": "traceReads(player + tmp) + membership toggles + boolean widening",
+    "state": "fresh",
+    "seen": [
+     [
+      "fresh",
+      "all/S05"
+     ]
+    ],
+    "loader": "facts.mjs v1"
+   }
+  },
+  {
+   "id": "reads:multiplication:buyables.11.effect",
+   "kind": "multiplier-reads",
+   "fn": {
+    "layer": "multiplication",
+    "group": "buyables",
+    "item": 11,
+    "fn": "effect"
+   },
+   "reads": [
+    "player.multiplication.buyables.11",
+    "player.pbooster.activeChallenge",
+    "player.dimension.points"
+   ],
+   "tmpReads": [],
+   "members": [],
+   "from": {
+    "how": "traceReads(player + tmp) + membership toggles + boolean widening",
+    "state": "fresh",
+    "seen": [
+     [
+      "fresh",
+      "all/S05"
+     ]
+    ],
+    "loader": "facts.mjs v1"
+   }
+  },
+  {
+   "id": "reads:multiplication:buyables.12.effect",
+   "kind": "multiplier-reads",
+   "fn": {
+    "layer": "multiplication",
+    "group": "buyables",
+    "item": 12,
+    "fn": "effect"
+   },
+   "reads": [
+    "player.multiplication.buyables.12",
+    "player.pbooster.activeChallenge",
+    "player.numbercore.points"
+   ],
+   "tmpReads": [
+    "tmp.numbercore.buyables.31.effect"
+   ],
+   "members": [],
+   "from": {
+    "how": "traceReads(player + tmp) + membership toggles + boolean widening",
+    "state": "fresh",
+    "seen": [
+     [
+      "fresh",
+      "all/S05"
+     ]
+    ],
+    "loader": "facts.mjs v1"
+   }
+  },
+  {
+   "id": "reads:multiplication:directMult",
+   "kind": "multiplier-reads",
+   "fn": {
+    "layer": "multiplication",
+    "fn": "directMult"
+   },
+   "reads": [
+    "player.division.milestones",
+    "player.division.upgrades",
+    "player.primitive.milestones",
+    "player.subtraction.upgrades",
+    "player.planetary.milestones",
+    "player.pbooster.milestones",
+    "player.dimension.milestones",
+    "player.polygon.challenges.11",
+    "player.corebooster.milestones",
+    "player.pbooster.challenges.22",
+    "player.pbooster.activeChallenge"
+   ],
+   "tmpReads": [
+    "tmp.polygon.challenges.11.completionLimit"
+   ],
+   "members": [
+    "ms:division:1",
+    "ms:primitive:12",
+    "upg:subtraction:25",
+    "ms:planetary:2",
+    "ms:pbooster:2",
+    "ms:dimension:6"
+   ],
+   "widened": [
+    {
+     "when": "ms:division:1 added",
+     "reads": [
+      "tmp.division.deactivated"
+     ]
+    },
+    {
+     "when": "ms:primitive:12 added",
+     "reads": [
+      "tmp.primitive.deactivated"
+     ]
+    },
+    {
+     "when": "upg:subtraction:25 added",
+     "reads": [
+      "tmp.subtraction.deactivated"
+     ]
+    },
+    {
+     "when": "ms:planetary:2 added",
+     "reads": [
+      "tmp.planetary.deactivated"
+     ]
+    },
+    {
+     "when": "ms:pbooster:2 added",
+     "reads": [
+      "tmp.pbooster.deactivated"
+     ]
+    },
+    {
+     "when": "ms:dimension:6 added",
+     "reads": [
+      "tmp.dimension.deactivated"
+     ]
+    }
+   ],
+   "from": {
+    "how": "traceReads(player + tmp) + membership toggles + boolean widening",
+    "state": "fresh",
+    "seen": [
+     [
+      "fresh",
+      "all/S05"
+     ]
+    ],
+    "loader": "facts.mjs v1"
+   }
+  },
+  {
+   "id": "reads:multiplication:exponent",
+   "kind": "multiplier-reads",
+   "fn": {
+    "layer": "multiplication",
+    "fn": "exponent"
+   },
+   "reads": [
+    "player.subtraction.upgrades",
+    "player.pbooster.milestones",
+    "player.multiplication.points"
+   ],
+   "tmpReads": [],
+   "members": [
+    "upg:subtraction:14",
+    "ms:pbooster:1"
+   ],
+   "widened": [
+    {
+     "when": "upg:subtraction:14 added",
+     "reads": [
+      "tmp.subtraction.deactivated"
+     ]
+    },
+    {
+     "when": "ms:pbooster:1 added",
+     "reads": [
+      "tmp.pbooster.deactivated"
+     ]
+    }
+   ],
+   "from": {
+    "how": "traceReads(player + tmp) + membership toggles + boolean widening",
+    "state": "fresh",
+    "seen": [
+     [
+      "fresh",
+      "all/S05"
+     ]
+    ],
+    "loader": "facts.mjs v1"
+   }
+  },
+  {
+   "id": "reads:multiplication:gainExp",
+   "kind": "multiplier-reads",
+   "fn": {
+    "layer": "multiplication",
+    "fn": "gainExp"
+   },
+   "reads": [],
+   "tmpReads": [],
+   "members": [],
+   "from": {
+    "how": "traceReads(player + tmp) + membership toggles + boolean widening",
+    "state": "fresh",
+    "seen": [
+     [
+      "fresh",
+      "all/S05"
+     ]
+    ],
+    "loader": "facts.mjs v1"
+   }
+  },
+  {
+   "id": "reads:multiplication:gainMult",
+   "kind": "multiplier-reads",
+   "fn": {
+    "layer": "multiplication",
+    "fn": "gainMult"
+   },
+   "reads": [],
+   "tmpReads": [],
+   "members": [],
+   "from": {
+    "how": "traceReads(player + tmp) + membership toggles + boolean widening",
+    "state": "fresh",
+    "seen": [
+     [
+      "fresh",
+      "all/S05"
+     ]
+    ],
+    "loader": "facts.mjs v1"
+   }
+  },
+  {
+   "id": "reads:multiplication:requires",
+   "kind": "multiplier-reads",
+   "fn": {
+    "layer": "multiplication",
+    "fn": "requires"
+   },
+   "reads": [],
+   "tmpReads": [],
+   "members": [],
+   "from": {
+    "how": "traceReads(player + tmp) + membership toggles + boolean widening",
+    "state": "fresh",
+    "seen": [
+     [
+      "fresh",
+      "all/S05"
+     ]
+    ],
+    "loader": "facts.mjs v1"
+   }
+  },
+  {
+   "id": "reads:multiplication:upgrades.102.effect",
+   "kind": "multiplier-reads",
+   "fn": {
+    "layer": "multiplication",
+    "group": "upgrades",
+    "item": 102,
+    "fn": "effect"
+   },
+   "reads": [],
+   "tmpReads": [
+    "tmp.polygon.buyables.12.effect"
+   ],
+   "members": [],
+   "from": {
+    "how": "traceReads(player + tmp) + membership toggles + boolean widening",
+    "state": "fresh",
+    "seen": [
+     [
+      "fresh",
+      "all/S05"
+     ]
+    ],
+    "loader": "facts.mjs v1"
+   }
+  },
+  {
+   "id": "reads:multiplication:upgrades.111.effect",
+   "kind": "multiplier-reads",
+   "fn": {
+    "layer": "multiplication",
+    "group": "upgrades",
+    "item": 111,
+    "fn": "effect"
+   },
+   "reads": [
+    "player.multiplication.points"
+   ],
+   "tmpReads": [],
+   "members": [],
+   "from": {
+    "how": "traceReads(player + tmp) + membership toggles + boolean widening",
+    "state": "fresh",
+    "seen": [
+     [
+      "fresh",
+      "all/S05"
+     ]
+    ],
+    "loader": "facts.mjs v1"
+   }
+  },
+  {
+   "id": "reads:multiplication:upgrades.131.effect",
+   "kind": "multiplier-reads",
+   "fn": {
+    "layer": "multiplication",
+    "group": "upgrades",
+    "item": 131,
+    "fn": "effect"
+   },
+   "reads": [
+    "player.planetary.buyables.11",
+    "player.planetary.buyables.12",
+    "player.planetary.buyables.21",
+    "player.planetary.buyables.22",
+    "player.planetary.buyables.31",
+    "player.planetary.buyables.32",
+    "player.planetary.buyables.41",
+    "player.planetary.buyables.42"
+   ],
+   "tmpReads": [],
+   "members": [],
+   "from": {
+    "how": "traceReads(player + tmp) + membership toggles + boolean widening",
+    "state": "fresh",
+    "seen": [
+     [
+      "fresh",
+      "all/S05"
+     ]
+    ],
+    "loader": "facts.mjs v1"
+   }
+  },
+  {
+   "id": "reads:multiplication:upgrades.132.effect",
+   "kind": "multiplier-reads",
+   "fn": {
+    "layer": "multiplication",
+    "group": "upgrades",
+    "item": 132,
+    "fn": "effect"
+   },
+   "reads": [
+    "player.fundamental.points"
+   ],
+   "tmpReads": [],
+   "members": [],
+   "from": {
+    "how": "traceReads(player + tmp) + membership toggles + boolean widening",
+    "state": "fresh",
+    "seen": [
+     [
+      "fresh",
+      "all/S05"
+     ]
+    ],
+    "loader": "facts.mjs v1"
+   }
+  },
+  {
+   "id": "reads:multiplication:upgrades.22.effect",
+   "kind": "multiplier-reads",
+   "fn": {
+    "layer": "multiplication",
+    "group": "upgrades",
+    "item": 22,
+    "fn": "effect"
+   },
+   "reads": [
+    "player.multiplication.points"
+   ],
+   "tmpReads": [],
+   "members": [],
+   "from": {
+    "how": "traceReads(player + tmp) + membership toggles + boolean widening",
+    "state": "fresh",
+    "seen": [
+     [
+      "fresh",
+      "all/S05"
+     ]
+    ],
+    "loader": "facts.mjs v1"
+   }
+  },
+  {
+   "id": "reads:multiplication:upgrades.51.effect",
+   "kind": "multiplier-reads",
+   "fn": {
+    "layer": "multiplication",
+    "group": "upgrades",
+    "item": 51,
+    "fn": "effect"
+   },
+   "reads": [],
+   "tmpReads": [
+    "tmp.arithmetic.upgrades.14.effect"
+   ],
+   "members": [],
+   "from": {
+    "how": "traceReads(player + tmp) + membership toggles + boolean widening",
+    "state": "fresh",
+    "seen": [
+     [
+      "fresh",
+      "all/S05"
+     ]
+    ],
+    "loader": "facts.mjs v1"
+   }
+  },
+  {
+   "id": "reads:multiplication:upgrades.52.effect",
+   "kind": "multiplier-reads",
+   "fn": {
+    "layer": "multiplication",
+    "group": "upgrades",
+    "item": 52,
+    "fn": "effect"
+   },
+   "reads": [
+    "player.multiplication.points"
+   ],
+   "tmpReads": [],
+   "members": [],
+   "from": {
+    "how": "traceReads(player + tmp) + membership toggles + boolean widening",
+    "state": "fresh",
+    "seen": [
+     [
+      "fresh",
+      "all/S05"
+     ]
+    ],
+    "loader": "facts.mjs v1"
+   }
+  },
+  {
+   "id": "reads:multiplication:upgrades.64.effect",
+   "kind": "multiplier-reads",
+   "fn": {
+    "layer": "multiplication",
+    "group": "upgrades",
+    "item": 64,
+    "fn": "effect"
+   },
+   "reads": [
+    "player.points"
+   ],
+   "tmpReads": [],
+   "members": [],
+   "from": {
+    "how": "traceReads(player + tmp) + membership toggles + boolean widening",
+    "state": "fresh",
+    "seen": [
+     [
+      "fresh",
+      "all/S05"
+     ]
+    ],
+    "loader": "facts.mjs v1"
+   }
+  },
+  {
+   "id": "reads:multiplication:upgrades.72.effect",
+   "kind": "multiplier-reads",
+   "fn": {
+    "layer": "multiplication",
+    "group": "upgrades",
+    "item": 72,
+    "fn": "effect"
+   },
+   "reads": [
+    "player.polygon.buyables.12"
+   ],
+   "tmpReads": [],
+   "members": [],
+   "from": {
+    "how": "traceReads(player + tmp) + membership toggles + boolean widening",
+    "state": "fresh",
+    "seen": [
+     [
+      "fresh",
+      "all/S05"
+     ]
+    ],
+    "loader": "facts.mjs v1"
+   }
+  },
+  {
+   "id": "reads:multiplication:upgrades.81.effect",
+   "kind": "multiplier-reads",
+   "fn": {
+    "layer": "multiplication",
+    "group": "upgrades",
+    "item": 81,
+    "fn": "effect"
+   },
+   "reads": [
+    "player.multiplication.points"
+   ],
+   "tmpReads": [],
+   "members": [],
+   "from": {
+    "how": "traceReads(player + tmp) + membership toggles + boolean widening",
+    "state": "fresh",
+    "seen": [
+     [
+      "fresh",
+      "all/S05"
+     ]
+    ],
+    "loader": "facts.mjs v1"
+   }
+  },
+  {
+   "id": "reads:multiplication:upgrades.94.effect",
+   "kind": "multiplier-reads",
+   "fn": {
+    "layer": "multiplication",
+    "group": "upgrades",
+    "item": 94,
+    "fn": "effect"
+   },
+   "reads": [
+    "player.primitive.points"
+   ],
+   "tmpReads": [],
+   "members": [],
+   "from": {
+    "how": "traceReads(player + tmp) + membership toggles + boolean widening",
+    "state": "fresh",
+    "seen": [
+     [
+      "fresh",
+      "all/S05"
+     ]
+    ],
+    "loader": "facts.mjs v1"
+   }
+  },
+  {
+   "id": "reads:multiplication:upgrades.95.effect",
+   "kind": "multiplier-reads",
+   "fn": {
+    "layer": "multiplication",
+    "group": "upgrades",
+    "item": 95,
+    "fn": "effect"
+   },
+   "reads": [
+    "player.subtraction.points"
+   ],
+   "tmpReads": [],
+   "members": [],
+   "from": {
+    "how": "traceReads(player + tmp) + membership toggles + boolean widening",
+    "state": "fresh",
+    "seen": [
+     [
+      "fresh",
+      "all/S05"
+     ]
+    ],
+    "loader": "facts.mjs v1"
+   }
+  },
+  {
+   "id": "reads:numbercore:baseAmount",
+   "kind": "multiplier-reads",
+   "fn": {
+    "layer": "numbercore",
+    "fn": "baseAmount"
+   },
+   "reads": [
+    "player.primitive.points"
+   ],
+   "tmpReads": [],
+   "members": [],
+   "from": {
+    "how": "traceReads(player + tmp) + membership toggles + boolean widening",
+    "state": "fresh",
+    "seen": [
+     [
+      "fresh",
+      "all/S05"
+     ]
+    ],
+    "loader": "facts.mjs v1"
+   }
+  },
+  {
+   "id": "reads:numbercore:buyables.11.effect",
+   "kind": "multiplier-reads",
+   "fn": {
+    "layer": "numbercore",
+    "group": "buyables",
+    "item": 11,
+    "fn": "effect"
+   },
+   "reads": [
+    "player.numbercore.buyables.11",
+    "player.polygon.activeChallenge"
+   ],
+   "tmpReads": [],
+   "members": [],
+   "from": {
+    "how": "traceReads(player + tmp) + membership toggles + boolean widening",
+    "state": "fresh",
+    "seen": [
+     [
+      "fresh",
+      "all/S05"
+     ]
+    ],
+    "loader": "facts.mjs v1"
+   }
+  },
+  {
+   "id": "reads:numbercore:buyables.12.effect",
+   "kind": "multiplier-reads",
+   "fn": {
+    "layer": "numbercore",
+    "group": "buyables",
+    "item": 12,
+    "fn": "effect"
+   },
+   "reads": [
+    "player.numbercore.buyables.12",
+    "player.polygon.activeChallenge"
+   ],
+   "tmpReads": [],
+   "members": [],
+   "from": {
+    "how": "traceReads(player + tmp) + membership toggles + boolean widening",
+    "state": "fresh",
+    "seen": [
+     [
+      "fresh",
+      "all/S05"
+     ]
+    ],
+    "loader": "facts.mjs v1"
+   }
+  },
+  {
+   "id": "reads:numbercore:buyables.13.effect",
+   "kind": "multiplier-reads",
+   "fn": {
+    "layer": "numbercore",
+    "group": "buyables",
+    "item": 13,
+    "fn": "effect"
+   },
+   "reads": [
+    "player.numbercore.buyables.13",
+    "player.polygon.activeChallenge"
+   ],
+   "tmpReads": [],
+   "members": [],
+   "from": {
+    "how": "traceReads(player + tmp) + membership toggles + boolean widening",
+    "state": "fresh",
+    "seen": [
+     [
+      "fresh",
+      "all/S05"
+     ]
+    ],
+    "loader": "facts.mjs v1"
+   }
+  },
+  {
+   "id": "reads:numbercore:buyables.21.effect",
+   "kind": "multiplier-reads",
+   "fn": {
+    "layer": "numbercore",
+    "group": "buyables",
+    "item": 21,
+    "fn": "effect"
+   },
+   "reads": [
+    "player.numbercore.buyables.21",
+    "player.polygon.activeChallenge"
+   ],
+   "tmpReads": [],
+   "members": [],
+   "from": {
+    "how": "traceReads(player + tmp) + membership toggles + boolean widening",
+    "state": "fresh",
+    "seen": [
+     [
+      "fresh",
+      "all/S05"
+     ]
+    ],
+    "loader": "facts.mjs v1"
+   }
+  },
+  {
+   "id": "reads:numbercore:buyables.23.effect",
+   "kind": "multiplier-reads",
+   "fn": {
+    "layer": "numbercore",
+    "group": "buyables",
+    "item": 23,
+    "fn": "effect"
+   },
+   "reads": [
+    "player.numbercore.buyables.23"
+   ],
+   "tmpReads": [],
+   "members": [],
+   "from": {
+    "how": "traceReads(player + tmp) + membership toggles + boolean widening",
+    "state": "fresh",
+    "seen": [
+     [
+      "fresh",
+      "all/S05"
+     ]
+    ],
+    "loader": "facts.mjs v1"
+   }
+  },
+  {
+   "id": "reads:numbercore:directMult",
+   "kind": "multiplier-reads",
+   "fn": {
+    "layer": "numbercore",
+    "fn": "directMult"
+   },
+   "reads": [
+    "player.pbooster.activeChallenge"
+   ],
+   "tmpReads": [],
+   "members": [],
+   "from": {
+    "how": "traceReads(player + tmp) + membership toggles + boolean widening",
+    "state": "fresh",
+    "seen": [
+     [
+      "fresh",
+      "all/S05"
+     ]
+    ],
+    "loader": "facts.mjs v1"
+   }
+  },
+  {
+   "id": "reads:numbercore:exponent",
+   "kind": "multiplier-reads",
+   "fn": {
+    "layer": "numbercore",
+    "fn": "exponent"
+   },
+   "reads": [
+    "player.subtraction.upgrades",
+    "player.pbooster.milestones"
+   ],
+   "tmpReads": [],
+   "members": [
+    "upg:subtraction:21",
+    "ms:pbooster:4"
+   ],
+   "widened": [
+    {
+     "when": "upg:subtraction:21 added",
+     "reads": [
+      "tmp.subtraction.deactivated"
+     ]
+    },
+    {
+     "when": "ms:pbooster:4 added",
+     "reads": [
+      "tmp.pbooster.deactivated"
+     ]
+    }
+   ],
+   "from": {
+    "how": "traceReads(player + tmp) + membership toggles + boolean widening",
+    "state": "fresh",
+    "seen": [
+     [
+      "fresh",
+      "all/S05"
+     ]
+    ],
+    "loader": "facts.mjs v1"
+   }
+  },
+  {
+   "id": "reads:numbercore:gainExp",
+   "kind": "multiplier-reads",
+   "fn": {
+    "layer": "numbercore",
+    "fn": "gainExp"
+   },
+   "reads": [],
+   "tmpReads": [],
+   "members": [],
+   "from": {
+    "how": "traceReads(player + tmp) + membership toggles + boolean widening",
+    "state": "fresh",
+    "seen": [
+     [
+      "fresh",
+      "all/S05"
+     ]
+    ],
+    "loader": "facts.mjs v1"
+   }
+  },
+  {
+   "id": "reads:numbercore:gainMult",
+   "kind": "multiplier-reads",
+   "fn": {
+    "layer": "numbercore",
+    "fn": "gainMult"
+   },
+   "reads": [
+    "player.addition.clickables.14",
+    "player.arithmetic.activeChallenge",
+    "player.polygon.squEffect",
+    "player.dimension.points",
+    "player.addition.milestones",
+    "player.polygon.upgrades",
+    "player.subtraction.upgrades",
+    "player.arithmetic.challenges.22",
+    "player.primitive.upgrades",
+    "player.division.milestones",
+    "player.achievements.achievements",
+    "player.multiplication.upgrades",
+    "player.polygon.challenges.11",
+    "player.planetary.achievements",
+    "player.pbooster.milestones",
+    "player.fundamental.upgrades",
+    "player.pbooster.challenges.12",
+    "player.pbooster.activeChallenge"
+   ],
+   "tmpReads": [
+    "tmp.addition.clickables.14.effect",
+    "tmp.numbercore.buyables.11.effect",
+    "tmp.numbercore.buyables.31.effect",
+    "tmp.polygon.challenges.11.completionLimit"
+   ],
+   "members": [
+    "ms:addition:3",
+    "upg:subtraction:17",
+    "upg:primitive:31",
+    "ms:division:6",
+    "ms:division:9",
+    "ach:achievements:53",
+    "upg:multiplication:93",
+    "upg:multiplication:121",
+    "ach:planetary:21",
+    "ms:pbooster:1",
+    "upg:fundamental:54"
+   ],
+   "widened": [
+    {
+     "when": "ms:addition:3 added",
+     "reads": [
+      "player.division.points",
+      "tmp.addition.deactivated"
+     ]
+    },
+    {
+     "when": "upg:subtraction:17 added",
+     "reads": [
+      "tmp.subtraction.deactivated"
+     ]
+    },
+    {
+     "when": "upg:primitive:31 added",
+     "reads": [
+      "tmp.primitive.deactivated"
+     ]
+    },
+    {
+     "when": "ms:division:6 added",
+     "reads": [
+      "tmp.division.deactivated"
+     ]
+    },
+    {
+     "when": "ms:division:9 added",
+     "reads": [
+      "player.multiplication.effect",
+      "tmp.division.deactivated"
+     ]
+    },
+    {
+     "when": "ach:achievements:53 added",
+     "reads": [
+      "tmp.achievements.deactivated"
+     ]
+    },
+    {
+     "when": "upg:multiplication:93 added",
+     "reads": [
+      "tmp.multiplication.deactivated"
+     ]
+    },
+    {
+     "when": "upg:multiplication:121 added",
+     "reads": [
+      "tmp.multiplication.deactivated"
+     ]
+    },
+    {
+     "when": "ach:planetary:21 added",
+     "reads": [
+      "tmp.planetary.deactivated"
+     ]
+    },
+    {
+     "when": "ms:pbooster:1 added",
+     "reads": [
+      "tmp.pbooster.deactivated"
+     ]
+    },
+    {
+     "when": "upg:fundamental:54 added",
+     "reads": [
+      "tmp.fundamental.deactivated"
+     ]
+    }
+   ],
+   "from": {
+    "how": "traceReads(player + tmp) + membership toggles + boolean widening",
+    "state": "fresh",
+    "seen": [
+     [
+      "fresh",
+      "all/S05"
+     ]
+    ],
+    "loader": "facts.mjs v1"
+   }
+  },
+  {
+   "id": "reads:numbercore:softcap",
+   "kind": "multiplier-reads",
+   "fn": {
+    "layer": "numbercore",
+    "fn": "softcap"
+   },
+   "reads": [
+    "player.polygon.upgrades"
+   ],
+   "tmpReads": [],
+   "members": [
+    "upg:polygon:23"
+   ],
+   "widened": [
+    {
+     "when": "upg:polygon:23 added",
+     "reads": [
+      "tmp.polygon.deactivated"
+     ]
+    }
+   ],
+   "from": {
+    "how": "traceReads(player + tmp) + membership toggles + boolean widening",
+    "state": "fresh",
+    "seen": [
+     [
+      "fresh",
+      "all/S05"
+     ]
+    ],
+    "loader": "facts.mjs v1"
+   }
+  },
+  {
+   "id": "reads:numbercore:softcapPower",
+   "kind": "multiplier-reads",
+   "fn": {
+    "layer": "numbercore",
+    "fn": "softcapPower"
+   },
+   "reads": [],
+   "tmpReads": [],
+   "members": [],
+   "from": {
+    "how": "traceReads(player + tmp) + membership toggles + boolean widening",
+    "state": "fresh",
+    "seen": [
+     [
+      "fresh",
+      "all/S05"
+     ]
+    ],
+    "loader": "facts.mjs v1"
+   }
+  },
+  {
+   "id": "reads:pbooster:base",
+   "kind": "multiplier-reads",
+   "fn": {
+    "layer": "pbooster",
+    "fn": "base"
+   },
+   "reads": [],
+   "tmpReads": [],
+   "members": [],
+   "from": {
+    "how": "traceReads(player + tmp) + membership toggles + boolean widening",
+    "state": "fresh",
+    "seen": [
+     [
+      "fresh",
+      "all/S05"
+     ]
+    ],
+    "loader": "facts.mjs v1"
+   }
+  },
+  {
+   "id": "reads:pbooster:baseAmount",
+   "kind": "multiplier-reads",
+   "fn": {
+    "layer": "pbooster",
+    "fn": "baseAmount"
+   },
+   "reads": [
+    "player.polygon.points"
+   ],
+   "tmpReads": [],
+   "members": [],
+   "from": {
+    "how": "traceReads(player + tmp) + membership toggles + boolean widening",
+    "state": "fresh",
+    "seen": [
+     [
+      "fresh",
+      "all/S05"
+     ]
+    ],
+    "loader": "facts.mjs v1"
+   }
+  },
+  {
+   "id": "reads:pbooster:directMult",
+   "kind": "multiplier-reads",
+   "fn": {
+    "layer": "pbooster",
+    "fn": "directMult"
+   },
+   "reads": [
+    "player.fundamental.upgrades",
+    "player.multiplication.upgrades",
+    "player.polygon.upgrades"
+   ],
+   "tmpReads": [],
+   "members": [
+    "upg:fundamental:56",
+    "upg:multiplication:141",
+    "upg:polygon:27"
+   ],
+   "widened": [
+    {
+     "when": "upg:fundamental:56 added",
+     "reads": [
+      "tmp.fundamental.deactivated"
+     ]
+    },
+    {
+     "when": "upg:multiplication:141 added",
+     "reads": [
+      "tmp.multiplication.deactivated"
+     ]
+    },
+    {
+     "when": "upg:polygon:27 added",
+     "reads": [
+      "tmp.polygon.deactivated"
+     ]
+    }
+   ],
+   "from": {
+    "how": "traceReads(player + tmp) + membership toggles + boolean widening",
+    "state": "fresh",
+    "seen": [
+     [
+      "fresh",
+      "all/S05"
+     ]
+    ],
+    "loader": "facts.mjs v1"
+   }
+  },
+  {
+   "id": "reads:pbooster:exponent",
+   "kind": "multiplier-reads",
+   "fn": {
+    "layer": "pbooster",
+    "fn": "exponent"
+   },
+   "reads": [],
+   "tmpReads": [],
+   "members": [],
+   "from": {
+    "how": "traceReads(player + tmp) + membership toggles + boolean widening",
+    "state": "fresh",
+    "seen": [
+     [
+      "fresh",
+      "all/S05"
+     ]
+    ],
+    "loader": "facts.mjs v1"
+   }
+  },
+  {
+   "id": "reads:pbooster:gainExp",
+   "kind": "multiplier-reads",
+   "fn": {
+    "layer": "pbooster",
+    "fn": "gainExp"
+   },
+   "reads": [],
+   "tmpReads": [],
+   "members": [],
+   "from": {
+    "how": "traceReads(player + tmp) + membership toggles + boolean widening",
+    "state": "fresh",
+    "seen": [
+     [
+      "fresh",
+      "all/S05"
+     ]
+    ],
+    "loader": "facts.mjs v1"
+   }
+  },
+  {
+   "id": "reads:pbooster:gainMult",
+   "kind": "multiplier-reads",
+   "fn": {
+    "layer": "pbooster",
+    "fn": "gainMult"
+   },
+   "reads": [],
+   "tmpReads": [],
+   "members": [],
+   "from": {
+    "how": "traceReads(player + tmp) + membership toggles + boolean widening",
+    "state": "fresh",
+    "seen": [
+     [
+      "fresh",
+      "all/S05"
+     ]
+    ],
+    "loader": "facts.mjs v1"
+   }
+  },
+  {
+   "id": "reads:planetary:baseAmount",
+   "kind": "multiplier-reads",
+   "fn": {
+    "layer": "planetary",
+    "fn": "baseAmount"
+   },
+   "reads": [
+    "player.polygon.points"
+   ],
+   "tmpReads": [],
+   "members": [],
+   "from": {
+    "how": "traceReads(player + tmp) + membership toggles + boolean widening",
+    "state": "fresh",
+    "seen": [
+     [
+      "fresh",
+      "all/S05"
+     ]
+    ],
+    "loader": "facts.mjs v1"
+   }
+  },
+  {
+   "id": "reads:planetary:buyables.11.effect",
+   "kind": "multiplier-reads",
+   "fn": {
+    "layer": "planetary",
+    "group": "buyables",
+    "item": 11,
+    "fn": "effect"
+   },
+   "reads": [
+    "player.planetary.buyables.11",
+    "player.planetary.mercuryGenAmt"
+   ],
+   "tmpReads": [],
+   "members": [],
+   "from": {
+    "how": "traceReads(player + tmp) + membership toggles + boolean widening",
+    "state": "fresh",
+    "seen": [
+     [
+      "fresh",
+      "all/S05"
+     ]
+    ],
+    "loader": "facts.mjs v1"
+   }
+  },
+  {
+   "id": "reads:planetary:buyables.12.effect",
+   "kind": "multiplier-reads",
+   "fn": {
+    "layer": "planetary",
+    "group": "buyables",
+    "item": 12,
+    "fn": "effect"
+   },
+   "reads": [
+    "player.planetary.buyables.12",
+    "player.planetary.venusGenAmt"
+   ],
+   "tmpReads": [],
+   "members": [],
+   "from": {
+    "how": "traceReads(player + tmp) + membership toggles + boolean widening",
+    "state": "fresh",
+    "seen": [
+     [
+      "fresh",
+      "all/S05"
+     ]
+    ],
+    "loader": "facts.mjs v1"
+   }
+  },
+  {
+   "id": "reads:planetary:buyables.21.effect",
+   "kind": "multiplier-reads",
+   "fn": {
+    "layer": "planetary",
+    "group": "buyables",
+    "item": 21,
+    "fn": "effect"
+   },
+   "reads": [
+    "player.planetary.buyables.21",
+    "player.planetary.earthGenAmt"
+   ],
+   "tmpReads": [],
+   "members": [],
+   "from": {
+    "how": "traceReads(player + tmp) + membership toggles + boolean widening",
+    "state": "fresh",
+    "seen": [
+     [
+      "fresh",
+      "all/S05"
+     ]
+    ],
+    "loader": "facts.mjs v1"
+   }
+  },
+  {
+   "id": "reads:planetary:buyables.22.effect",
+   "kind": "multiplier-reads",
+   "fn": {
+    "layer": "planetary",
+    "group": "buyables",
+    "item": 22,
+    "fn": "effect"
+   },
+   "reads": [
+    "player.planetary.buyables.22",
+    "player.planetary.marsGenAmt"
+   ],
+   "tmpReads": [],
+   "members": [],
+   "from": {
+    "how": "traceReads(player + tmp) + membership toggles + boolean widening",
+    "state": "fresh",
+    "seen": [
+     [
+      "fresh",
+      "all/S05"
+     ]
+    ],
+    "loader": "facts.mjs v1"
+   }
+  },
+  {
+   "id": "reads:planetary:buyables.31.effect",
+   "kind": "multiplier-reads",
+   "fn": {
+    "layer": "planetary",
+    "group": "buyables",
+    "item": 31,
+    "fn": "effect"
+   },
+   "reads": [
+    "player.planetary.buyables.31",
+    "player.planetary.jupiterGenAmt"
+   ],
+   "tmpReads": [],
+   "members": [],
+   "from": {
+    "how": "traceReads(player + tmp) + membership toggles + boolean widening",
+    "state": "fresh",
+    "seen": [
+     [
+      "fresh",
+      "all/S05"
+     ]
+    ],
+    "loader": "facts.mjs v1"
+   }
+  },
+  {
+   "id": "reads:planetary:buyables.32.effect",
+   "kind": "multiplier-reads",
+   "fn": {
+    "layer": "planetary",
+    "group": "buyables",
+    "item": 32,
+    "fn": "effect"
+   },
+   "reads": [
+    "player.planetary.buyables.32",
+    "player.planetary.saturnGenAmt"
+   ],
+   "tmpReads": [],
+   "members": [],
+   "from": {
+    "how": "traceReads(player + tmp) + membership toggles + boolean widening",
+    "state": "fresh",
+    "seen": [
+     [
+      "fresh",
+      "all/S05"
+     ]
+    ],
+    "loader": "facts.mjs v1"
+   }
+  },
+  {
+   "id": "reads:planetary:directMult",
+   "kind": "multiplier-reads",
+   "fn": {
+    "layer": "planetary",
+    "fn": "directMult"
+   },
+   "reads": [],
+   "tmpReads": [],
+   "members": [],
+   "from": {
+    "how": "traceReads(player + tmp) + membership toggles + boolean widening",
+    "state": "fresh",
+    "seen": [
+     [
+      "fresh",
+      "all/S05"
+     ]
+    ],
+    "loader": "facts.mjs v1"
+   }
+  },
+  {
+   "id": "reads:planetary:gainExp",
+   "kind": "multiplier-reads",
+   "fn": {
+    "layer": "planetary",
+    "fn": "gainExp"
+   },
+   "reads": [],
+   "tmpReads": [],
+   "members": [],
+   "from": {
+    "how": "traceReads(player + tmp) + membership toggles + boolean widening",
+    "state": "fresh",
+    "seen": [
+     [
+      "fresh",
+      "all/S05"
+     ]
+    ],
+    "loader": "facts.mjs v1"
+   }
+  },
+  {
+   "id": "reads:planetary:gainMult",
+   "kind": "multiplier-reads",
+   "fn": {
+    "layer": "planetary",
+    "fn": "gainMult"
+   },
+   "reads": [
+    "player.planetary.achievements",
+    "player.planetary.milestones",
+    "player.polygon.upgrades",
+    "player.dimension.milestones",
+    "player.pbooster.e1",
+    "player.fundamental.upgrades",
+    "player.pbooster.challenges.22"
+   ],
+   "tmpReads": [],
+   "members": [
+    "ach:planetary:11",
+    "ach:planetary:12",
+    "ach:planetary:24",
+    "ach:planetary:32",
+    "ms:planetary:8",
+    "upg:polygon:22",
+    "upg:polygon:26",
+    "ms:dimension:6",
+    "upg:fundamental:57"
+   ],
+   "widened": [
+    {
+     "when": "ach:planetary:11 added",
+     "reads": [
+      "tmp.planetary.deactivated"
+     ]
+    },
+    {
+     "when": "ach:planetary:12 added",
+     "reads": [
+      "tmp.planetary.deactivated"
+     ]
+    },
+    {
+     "when": "ach:planetary:24 added",
+     "reads": [
+      "tmp.planetary.deactivated"
+     ]
+    },
+    {
+     "when": "ach:planetary:32 added",
+     "reads": [
+      "tmp.planetary.deactivated"
+     ]
+    },
+    {
+     "when": "ms:planetary:8 added",
+     "reads": [
+      "tmp.planetary.deactivated"
+     ]
+    },
+    {
+     "when": "upg:polygon:22 added",
+     "reads": [
+      "tmp.polygon.deactivated"
+     ]
+    },
+    {
+     "when": "upg:polygon:26 added",
+     "reads": [
+      "tmp.polygon.deactivated"
+     ]
+    },
+    {
+     "when": "ms:dimension:6 added",
+     "reads": [
+      "tmp.dimension.deactivated"
+     ]
+    },
+    {
+     "when": "upg:fundamental:57 added",
+     "reads": [
+      "tmp.fundamental.deactivated",
+      "tmp.fundamental.upgrades.57.effect"
+     ]
+    }
+   ],
+   "from": {
+    "how": "traceReads(player + tmp) + membership toggles + boolean widening",
+    "state": "fresh",
+    "seen": [
+     [
+      "fresh",
+      "all/S05"
+     ]
+    ],
+    "loader": "facts.mjs v1"
+   }
+  },
+  {
+   "id": "reads:planetary:upgrades.11.effect",
+   "kind": "multiplier-reads",
+   "fn": {
+    "layer": "planetary",
+    "group": "upgrades",
+    "item": 11,
+    "fn": "effect"
+   },
+   "reads": [
+    "player.planetary.points",
+    "player.planetary.achievements"
+   ],
+   "tmpReads": [],
+   "members": [
+    "ach:planetary:31"
+   ],
+   "widened": [
+    {
+     "when": "ach:planetary:31 added",
+     "reads": [
+      "tmp.planetary.deactivated"
+     ]
+    }
+   ],
+   "from": {
+    "how": "traceReads(player + tmp) + membership toggles + boolean widening",
+    "state": "fresh",
+    "seen": [
+     [
+      "fresh",
+      "all/S05"
+     ]
+    ],
+    "loader": "facts.mjs v1"
+   }
+  },
+  {
+   "id": "reads:planetary:upgrades.12.effect",
+   "kind": "multiplier-reads",
+   "fn": {
+    "layer": "planetary",
+    "group": "upgrades",
+    "item": 12,
+    "fn": "effect"
+   },
+   "reads": [
+    "player.planetary.buyables.11"
+   ],
+   "tmpReads": [],
+   "members": [],
+   "from": {
+    "how": "traceReads(player + tmp) + membership toggles + boolean widening",
+    "state": "fresh",
+    "seen": [
+     [
+      "fresh",
+      "all/S05"
+     ]
+    ],
+    "loader": "facts.mjs v1"
+   }
+  },
+  {
+   "id": "reads:planetary:upgrades.14.effect",
+   "kind": "multiplier-reads",
+   "fn": {
+    "layer": "planetary",
+    "group": "upgrades",
+    "item": 14,
+    "fn": "effect"
+   },
+   "reads": [
+    "player.planetary.buyables.21"
+   ],
+   "tmpReads": [],
+   "members": [],
+   "from": {
+    "how": "traceReads(player + tmp) + membership toggles + boolean widening",
+    "state": "fresh",
+    "seen": [
+     [
+      "fresh",
+      "all/S05"
+     ]
+    ],
+    "loader": "facts.mjs v1"
+   }
+  },
+  {
+   "id": "reads:polygon:baseAmount",
+   "kind": "multiplier-reads",
+   "fn": {
+    "layer": "polygon",
+    "fn": "baseAmount"
+   },
+   "reads": [
+    "player.arithmetic.points"
+   ],
+   "tmpReads": [],
+   "members": [],
+   "from": {
+    "how": "traceReads(player + tmp) + membership toggles + boolean widening",
+    "state": "fresh",
+    "seen": [
+     [
+      "fresh",
+      "all/S05"
+     ]
+    ],
+    "loader": "facts.mjs v1"
+   }
+  },
+  {
+   "id": "reads:polygon:buyables.11.effect",
+   "kind": "multiplier-reads",
+   "fn": {
+    "layer": "polygon",
+    "group": "buyables",
+    "item": 11,
+    "fn": "effect"
+   },
+   "reads": [
+    "player.polygon.buyables.11",
+    "player.dimension.points"
+   ],
+   "tmpReads": [
+    "tmp.numbercore.buyables.22.effect"
+   ],
+   "members": [],
+   "from": {
+    "how": "traceReads(player + tmp) + membership toggles + boolean widening",
+    "state": "fresh",
+    "seen": [
+     [
+      "fresh",
+      "all/S05"
+     ]
+    ],
+    "loader": "facts.mjs v1"
+   }
+  },
+  {
+   "id": "reads:polygon:buyables.12.effect",
+   "kind": "multiplier-reads",
+   "fn": {
+    "layer": "polygon",
+    "group": "buyables",
+    "item": 12,
+    "fn": "effect"
+   },
+   "reads": [
+    "player.polygon.buyables.12"
+   ],
+   "tmpReads": [
+    "tmp.numbercore.buyables.22.effect"
+   ],
+   "members": [],
+   "from": {
+    "how": "traceReads(player + tmp) + membership toggles + boolean widening",
+    "state": "fresh",
+    "seen": [
+     [
+      "fresh",
+      "all/S05"
+     ]
+    ],
+    "loader": "facts.mjs v1"
+   }
+  },
+  {
+   "id": "reads:polygon:directMult",
+   "kind": "multiplier-reads",
+   "fn": {
+    "layer": "polygon",
+    "fn": "directMult"
+   },
+   "reads": [
+    "player.multiplication.upgrades",
+    "player.division.upgrades",
+    "player.polygon.upgrades",
+    "player.subtraction.upgrades"
+   ],
+   "tmpReads": [],
+   "members": [
+    "upg:multiplication:101",
+    "upg:division:27",
+    "upg:polygon:24"
+   ],
+   "widened": [
+    {
+     "when": "upg:multiplication:101 added",
+     "reads": [
+      "tmp.multiplication.deactivated"
+     ]
+    },
+    {
+     "when": "upg:division:27 added",
+     "reads": [
+      "tmp.division.deactivated"
+     ]
+    },
+    {
+     "when": "upg:polygon:24 added",
+     "reads": [
+      "tmp.polygon.deactivated"
+     ]
+    }
+   ],
+   "from": {
+    "how": "traceReads(player + tmp) + membership toggles + boolean widening",
+    "state": "fresh",
+    "seen": [
+     [
+      "fresh",
+      "all/S05"
+     ]
+    ],
+    "loader": "facts.mjs v1"
+   }
+  },
+  {
+   "id": "reads:polygon:gainExp",
+   "kind": "multiplier-reads",
+   "fn": {
+    "layer": "polygon",
+    "fn": "gainExp"
+   },
+   "reads": [],
+   "tmpReads": [],
+   "members": [],
+   "from": {
+    "how": "traceReads(player + tmp) + membership toggles + boolean widening",
+    "state": "fresh",
+    "seen": [
+     [
+      "fresh",
+      "all/S05"
+     ]
+    ],
+    "loader": "facts.mjs v1"
+   }
+  },
+  {
+   "id": "reads:polygon:gainMult",
+   "kind": "multiplier-reads",
+   "fn": {
+    "layer": "polygon",
+    "fn": "gainMult"
+   },
+   "reads": [
+    "player.division.milestones",
+    "player.polygon.upgrades",
+    "player.dimension.points",
+    "player.arithmetic.upgrades",
+    "player.multiplication.upgrades",
+    "player.subtraction.upgrades",
+    "player.planetary.milestones",
+    "player.division.upgrades",
+    "player.arithmetic.activeChallenge"
+   ],
+   "tmpReads": [],
+   "members": [
+    "ms:division:2",
+    "ms:division:7",
+    "upg:arithmetic:31",
+    "upg:multiplication:102",
+    "upg:subtraction:24",
+    "ms:planetary:1"
+   ],
+   "widened": [
+    {
+     "when": "ms:division:2 added",
+     "reads": [
+      "tmp.division.deactivated"
+     ]
+    },
+    {
+     "when": "ms:division:7 added",
+     "reads": [
+      "tmp.division.deactivated"
+     ]
+    },
+    {
+     "when": "upg:arithmetic:31 added",
+     "reads": [
+      "tmp.arithmetic.deactivated"
+     ]
+    },
+    {
+     "when": "upg:multiplication:102 added",
+     "reads": [
+      "tmp.multiplication.deactivated",
+      "tmp.multiplication.upgrades.102.effect"
+     ]
+    },
+    {
+     "when": "upg:subtraction:24 added",
+     "reads": [
+      "tmp.subtraction.deactivated"
+     ]
+    },
+    {
+     "when": "ms:planetary:1 added",
+     "reads": [
+      "tmp.planetary.deactivated"
+     ]
+    }
+   ],
+   "from": {
+    "how": "traceReads(player + tmp) + membership toggles + boolean widening",
+    "state": "fresh",
+    "seen": [
+     [
+      "fresh",
+      "all/S05"
+     ]
+    ],
+    "loader": "facts.mjs v1"
+   }
+  },
+  {
+   "id": "reads:polygon:getResetGain",
+   "kind": "multiplier-reads",
+   "fn": {
+    "layer": "polygon",
+    "fn": "getResetGain"
+   },
+   "reads": [],
+   "tmpReads": [
+    "tmp.polygon.baseAmount",
+    "tmp.polygon.requires"
+   ],
+   "members": [],
+   "from": {
+    "how": "traceReads(player + tmp) + membership toggles + boolean widening",
+    "state": "fresh",
+    "seen": [
+     [
+      "fresh",
+      "all/S05"
+     ]
+    ],
+    "loader": "facts.mjs v1"
+   }
+  },
+  {
+   "id": "reads:polygon:softcap",
+   "kind": "multiplier-reads",
+   "fn": {
+    "layer": "polygon",
+    "fn": "softcap"
+   },
+   "reads": [],
+   "tmpReads": [],
+   "members": [],
+   "from": {
+    "how": "traceReads(player + tmp) + membership toggles + boolean widening",
+    "state": "fresh",
+    "seen": [
+     [
+      "fresh",
+      "all/S05"
+     ]
+    ],
+    "loader": "facts.mjs v1"
+   }
+  },
+  {
+   "id": "reads:polygon:softcapPower",
+   "kind": "multiplier-reads",
+   "fn": {
+    "layer": "polygon",
+    "fn": "softcapPower"
+   },
+   "reads": [],
+   "tmpReads": [],
+   "members": [],
+   "from": {
+    "how": "traceReads(player + tmp) + membership toggles + boolean widening",
+    "state": "fresh",
+    "seen": [
+     [
+      "fresh",
+      "all/S05"
+     ]
+    ],
+    "loader": "facts.mjs v1"
+   }
+  },
+  {
+   "id": "reads:polygon:upgrades.13.effect",
+   "kind": "multiplier-reads",
+   "fn": {
+    "layer": "polygon",
+    "group": "upgrades",
+    "item": 13,
+    "fn": "effect"
+   },
+   "reads": [
+    "player.subtraction.points"
+   ],
+   "tmpReads": [],
+   "members": [],
+   "from": {
+    "how": "traceReads(player + tmp) + membership toggles + boolean widening",
+    "state": "fresh",
+    "seen": [
+     [
+      "fresh",
+      "all/S05"
+     ]
+    ],
+    "loader": "facts.mjs v1"
+   }
+  },
+  {
+   "id": "reads:polygon:upgrades.15.effect",
+   "kind": "multiplier-reads",
+   "fn": {
+    "layer": "polygon",
+    "group": "upgrades",
+    "item": 15,
+    "fn": "effect"
+   },
+   "reads": [
+    "player.multiplication.buyables.11",
+    "player.primitive.milestones"
+   ],
+   "tmpReads": [],
+   "members": [],
+   "from": {
+    "how": "traceReads(player + tmp) + membership toggles + boolean widening",
+    "state": "fresh",
+    "seen": [
+     [
+      "fresh",
+      "all/S05"
+     ]
+    ],
+    "loader": "facts.mjs v1"
+   }
+  },
+  {
+   "id": "reads:polygon:upgrades.16.effect",
+   "kind": "multiplier-reads",
+   "fn": {
+    "layer": "polygon",
+    "group": "upgrades",
+    "item": 16,
+    "fn": "effect"
+   },
+   "reads": [
+    "player.polygon.points"
+   ],
+   "tmpReads": [],
+   "members": [],
+   "from": {
+    "how": "traceReads(player + tmp) + membership toggles + boolean widening",
+    "state": "fresh",
+    "seen": [
+     [
+      "fresh",
+      "all/S05"
+     ]
+    ],
+    "loader": "facts.mjs v1"
+   }
+  },
+  {
+   "id": "reads:polygon:upgrades.24.effect",
+   "kind": "multiplier-reads",
+   "fn": {
+    "layer": "polygon",
+    "group": "upgrades",
+    "item": 24,
+    "fn": "effect"
+   },
+   "reads": [
+    "player.polygon.points"
+   ],
+   "tmpReads": [],
+   "members": [],
+   "from": {
+    "how": "traceReads(player + tmp) + membership toggles + boolean widening",
+    "state": "fresh",
+    "seen": [
+     [
+      "fresh",
+      "all/S05"
+     ]
+    ],
+    "loader": "facts.mjs v1"
+   }
+  },
+  {
+   "id": "reads:primitive:baseAmount",
+   "kind": "multiplier-reads",
+   "fn": {
+    "layer": "primitive",
+    "fn": "baseAmount"
+   },
+   "reads": [
+    "player.fundamental.points"
+   ],
+   "tmpReads": [],
+   "members": [],
+   "from": {
+    "how": "traceReads(player + tmp) + membership toggles + boolean widening",
+    "state": "fresh",
+    "seen": [
+     [
+      "fresh",
+      "all/S05"
+     ]
+    ],
+    "loader": "facts.mjs v1"
+   }
+  },
+  {
+   "id": "reads:primitive:directMult",
+   "kind": "multiplier-reads",
+   "fn": {
+    "layer": "primitive",
+    "fn": "directMult"
+   },
+   "reads": [
+    "player.subtraction.upgrades",
+    "player.multiplication.upgrades",
+    "player.arithmetic.upgrades",
+    "player.primitive.upgrades",
+    "player.dimension.points",
+    "player.polygon.hexagons",
+    "player.division.upgrades",
+    "player.pbooster.activeChallenge"
+   ],
+   "tmpReads": [
+    "tmp.fundamental.buyables.22.effect",
+    "tmp.numbercore.buyables.12.effect"
+   ],
+   "members": [
+    "upg:subtraction:13",
+    "upg:multiplication:42"
+   ],
+   "widened": [
+    {
+     "when": "upg:subtraction:13 added",
+     "reads": [
+      "tmp.subtraction.deactivated"
+     ]
+    },
+    {
+     "when": "upg:multiplication:42 added",
+     "reads": [
+      "tmp.multiplication.deactivated"
+     ]
+    }
+   ],
+   "from": {
+    "how": "traceReads(player + tmp) + membership toggles + boolean widening",
+    "state": "fresh",
+    "seen": [
+     [
+      "fresh",
+      "all/S05"
+     ]
+    ],
+    "loader": "facts.mjs v1"
+   }
+  },
+  {
+   "id": "reads:primitive:gainExp",
+   "kind": "multiplier-reads",
+   "fn": {
+    "layer": "primitive",
+    "fn": "gainExp"
+   },
+   "reads": [],
+   "tmpReads": [],
+   "members": [],
+   "from": {
+    "how": "traceReads(player + tmp) + membership toggles + boolean widening",
+    "state": "fresh",
+    "seen": [
+     [
+      "fresh",
+      "all/S05"
+     ]
+    ],
+    "loader": "facts.mjs v1"
+   }
+  },
+  {
+   "id": "reads:primitive:gainMult",
+   "kind": "multiplier-reads",
+   "variants": [
+    {
+     "fn": {
+      "layer": "primitive",
+      "fn": "gainMult"
+     },
+     "reads": [
+      "player.primitive.milestones",
+      "player.addition.clickables.12",
+      "player.arithmetic.activeChallenge",
+      "player.primitive.upgrades",
+      "player.fundamental.upgrades",
+      "player.arithmetic.upgrades",
+      "player.multiplication.upgrades",
+      "player.division.clickables.11",
+      "player.dimension.milestones",
+      "player.arithmetic.challenges.13",
+      "player.polygon.activeChallenge",
+      "player.pbooster.activeChallenge"
+     ],
+     "tmpReads": [
+      "tmp.addition.clickables.12.effect"
+     ],
+     "members": [
+      "ms:primitive:4",
+      "upg:primitive:14",
+      "upg:primitive:23",
+      "upg:fundamental:27",
+      "upg:fundamental:31",
+      "upg:fundamental:32",
+      "upg:fundamental:35",
+      "upg:fundamental:42",
+      "upg:arithmetic:11",
+      "upg:arithmetic:23",
+      "upg:multiplication:43",
+      "ms:dimension:6"
+     ],
+     "widened": [
+      {
+       "when": "ms:primitive:4 added",
+       "reads": [
+        "tmp.primitive.deactivated"
+       ]
+      },
+      {
+       "when": "upg:primitive:14 added",
+       "reads": [
+        "tmp.primitive.deactivated"
+       ]
+      },
+      {
+       "when": "upg:primitive:23 added",
+       "reads": [
+        "tmp.primitive.deactivated"
+       ]
+      },
+      {
+       "when": "upg:fundamental:27 added",
+       "reads": [
+        "tmp.fundamental.deactivated"
+       ]
+      },
+      {
+       "when": "upg:fundamental:31 added",
+       "reads": [
+        "tmp.fundamental.deactivated"
+       ]
+      },
+      {
+       "when": "upg:fundamental:32 added",
+       "reads": [
+        "tmp.fundamental.deactivated"
+       ]
+      },
+      {
+       "when": "upg:fundamental:35 added",
+       "reads": [
+        "tmp.fundamental.deactivated"
+       ]
+      },
+      {
+       "when": "upg:fundamental:42 added",
+       "reads": [
+        "tmp.fundamental.deactivated"
+       ]
+      },
+      {
+       "when": "upg:arithmetic:11 added",
+       "reads": [
+        "tmp.arithmetic.deactivated"
+       ]
+      },
+      {
+       "when": "upg:arithmetic:23 added",
+       "reads": [
+        "tmp.arithmetic.deactivated"
+       ]
+      },
+      {
+       "when": "upg:multiplication:43 added",
+       "reads": [
+        "tmp.multiplication.deactivated"
+       ]
+      },
+      {
+       "when": "ms:dimension:6 added",
+       "reads": [
+        "tmp.dimension.deactivated"
+       ]
+      }
+     ],
+     "seen": [
+      [
+       "fresh",
+       "all/S01"
+      ]
+     ]
+    },
+    {
+     "fn": {
+      "layer": "primitive",
+      "fn": "gainMult"
+     },
+     "reads": [
+      "player.primitive.milestones",
+      "player.addition.clickables.12",
+      "player.arithmetic.activeChallenge",
+      "player.primitive.upgrades",
+      "player.fundamental.upgrades",
+      "player.arithmetic.upgrades",
+      "player.multiplication.upgrades",
+      "player.division.clickables.11",
+      "player.dimension.milestones",
+      "player.arithmetic.challenges.13",
+      "player.polygon.activeChallenge",
+      "player.pbooster.activeChallenge"
+     ],
+     "tmpReads": [
+      "tmp.addition.clickables.12.effect"
+     ],
+     "members": [
+      "ms:primitive:4",
+      "upg:primitive:14",
+      "upg:primitive:23",
+      "upg:fundamental:27",
+      "upg:fundamental:31",
+      "upg:fundamental:32",
+      "upg:fundamental:35",
+      "upg:fundamental:41",
+      "upg:fundamental:42",
+      "upg:arithmetic:11",
+      "upg:arithmetic:23",
+      "upg:multiplication:43",
+      "ms:dimension:6"
+     ],
+     "widened": [
+      {
+       "when": "ms:primitive:4 added",
+       "reads": [
+        "tmp.primitive.deactivated"
+       ]
+      },
+      {
+       "when": "upg:primitive:14 added",
+       "reads": [
+        "tmp.primitive.deactivated"
+       ]
+      },
+      {
+       "when": "upg:primitive:23 added",
+       "reads": [
+        "tmp.primitive.deactivated"
+       ]
+      },
+      {
+       "when": "upg:fundamental:27 added",
+       "reads": [
+        "tmp.fundamental.deactivated"
+       ]
+      },
+      {
+       "when": "upg:fundamental:31 added",
+       "reads": [
+        "tmp.fundamental.deactivated"
+       ]
+      },
+      {
+       "when": "upg:fundamental:32 added",
+       "reads": [
+        "tmp.fundamental.deactivated"
+       ]
+      },
+      {
+       "when": "upg:fundamental:35 added",
+       "reads": [
+        "tmp.fundamental.deactivated"
+       ]
+      },
+      {
+       "when": "upg:fundamental:41 added",
+       "reads": [
+        "tmp.fundamental.deactivated",
+        "tmp.fundamental.upgrades.41.effect"
+       ]
+      },
+      {
+       "when": "upg:fundamental:42 added",
+       "reads": [
+        "tmp.fundamental.deactivated"
+       ]
+      },
+      {
+       "when": "upg:arithmetic:11 added",
+       "reads": [
+        "tmp.arithmetic.deactivated"
+       ]
+      },
+      {
+       "when": "upg:arithmetic:23 added",
+       "reads": [
+        "tmp.arithmetic.deactivated"
+       ]
+      },
+      {
+       "when": "upg:multiplication:43 added",
+       "reads": [
+        "tmp.multiplication.deactivated"
+       ]
+      },
+      {
+       "when": "ms:dimension:6 added",
+       "reads": [
+        "tmp.dimension.deactivated"
+       ]
+      }
+     ],
+     "seen": [
+      "all/S02"
+     ]
+    },
+    {
+     "fn": {
+      "layer": "primitive",
+      "fn": "gainMult"
+     },
+     "reads": [
+      "player.primitive.milestones",
+      "player.addition.clickables.12",
+      "player.arithmetic.activeChallenge",
+      "player.primitive.upgrades",
+      "player.fundamental.upgrades",
+      "player.arithmetic.upgrades",
+      "player.multiplication.upgrades",
+      "player.division.clickables.11",
+      "player.dimension.milestones",
+      "player.arithmetic.challenges.13",
+      "player.polygon.activeChallenge",
+      "player.pbooster.activeChallenge"
+     ],
+     "tmpReads": [
+      "tmp.addition.clickables.12.effect"
+     ],
+     "members": [
+      "ms:primitive:4",
+      "upg:primitive:14",
+      "upg:primitive:16",
+      "upg:primitive:23",
+      "upg:fundamental:27",
+      "upg:fundamental:31",
+      "upg:fundamental:32",
+      "upg:fundamental:35",
+      "upg:fundamental:42",
+      "upg:arithmetic:11",
+      "upg:arithmetic:23",
+      "upg:multiplication:43",
+      "ms:dimension:6"
+     ],
+     "widened": [
+      {
+       "when": "ms:primitive:4 added",
+       "reads": [
+        "tmp.primitive.deactivated"
+       ]
+      },
+      {
+       "when": "upg:primitive:14 added",
+       "reads": [
+        "tmp.primitive.deactivated"
+       ]
+      },
+      {
+       "when": "upg:primitive:16 added",
+       "reads": [
+        "tmp.primitive.deactivated",
+        "tmp.primitive.upgrades.16.effect"
+       ]
+      },
+      {
+       "when": "upg:primitive:23 added",
+       "reads": [
+        "tmp.primitive.deactivated"
+       ]
+      },
+      {
+       "when": "upg:fundamental:27 added",
+       "reads": [
+        "tmp.fundamental.deactivated"
+       ]
+      },
+      {
+       "when": "upg:fundamental:31 added",
+       "reads": [
+        "tmp.fundamental.deactivated"
+       ]
+      },
+      {
+       "when": "upg:fundamental:32 added",
+       "reads": [
+        "tmp.fundamental.deactivated"
+       ]
+      },
+      {
+       "when": "upg:fundamental:35 added",
+       "reads": [
+        "tmp.fundamental.deactivated"
+       ]
+      },
+      {
+       "when": "upg:fundamental:42 added",
+       "reads": [
+        "tmp.fundamental.deactivated"
+       ]
+      },
+      {
+       "when": "upg:arithmetic:11 added",
+       "reads": [
+        "tmp.arithmetic.deactivated"
+       ]
+      },
+      {
+       "when": "upg:arithmetic:23 added",
+       "reads": [
+        "tmp.arithmetic.deactivated"
+       ]
+      },
+      {
+       "when": "upg:multiplication:43 added",
+       "reads": [
+        "tmp.multiplication.deactivated"
+       ]
+      },
+      {
+       "when": "ms:dimension:6 added",
+       "reads": [
+        "tmp.dimension.deactivated"
+       ]
+      }
+     ],
+     "seen": [
+      [
+       "all/S03",
+       "all/S05"
+      ]
+     ]
+    }
+   ],
+   "from": {
+    "how": "traceReads(player + tmp) + membership toggles + boolean widening",
+    "state": "fresh",
+    "seen": [
+     [
+      "fresh",
+      "all/S05"
+     ]
+    ],
+    "loader": "facts.mjs v1"
+   }
+  },
+  {
+   "id": "reads:primitive:softcap",
+   "kind": "multiplier-reads",
+   "fn": {
+    "layer": "primitive",
+    "fn": "softcap"
+   },
+   "reads": [],
+   "tmpReads": [],
+   "members": [],
+   "from": {
+    "how": "traceReads(player + tmp) + membership toggles + boolean widening",
+    "state": "fresh",
+    "seen": [
+     [
+      "fresh",
+      "all/S05"
+     ]
+    ],
+    "loader": "facts.mjs v1"
+   }
+  },
+  {
+   "id": "reads:primitive:softcapPower",
+   "kind": "multiplier-reads",
+   "fn": {
+    "layer": "primitive",
+    "fn": "softcapPower"
+   },
+   "reads": [
+    "player.subtraction.upgrades",
+    "player.primitive.points",
+    "player.polygon.challenges.11"
+   ],
+   "tmpReads": [
+    "tmp.polygon.challenges.11.completionLimit"
+   ],
+   "members": [
+    "upg:subtraction:12"
+   ],
+   "widened": [
+    {
+     "when": "upg:subtraction:12 added",
+     "reads": [
+      "tmp.subtraction.deactivated"
+     ]
+    }
+   ],
+   "from": {
+    "how": "traceReads(player + tmp) + membership toggles + boolean widening",
+    "state": "fresh",
+    "seen": [
+     [
+      "fresh",
+      "all/S05"
+     ]
+    ],
+    "loader": "facts.mjs v1"
+   }
+  },
+  {
+   "id": "reads:primitive:upgrades.14.effect",
+   "kind": "multiplier-reads",
+   "variants": [
+    {
+     "fn": {
+      "layer": "primitive",
+      "group": "upgrades",
+      "item": 14,
+      "fn": "effect"
+     },
+     "reads": [
+      "player.primitive.points",
+      "player.dimension.milestones",
+      "player.primitive.milestones",
+      "player.addition.milestones",
+      "player.multiplication.upgrades"
+     ],
+     "tmpReads": [],
+     "members": [],
+     "seen": [
+      [
+       "fresh",
+       "all/S02"
+      ]
+     ]
+    },
+    {
+     "fn": {
+      "layer": "primitive",
+      "group": "upgrades",
+      "item": 14,
+      "fn": "effect"
+     },
+     "reads": [
+      "player.primitive.points",
+      "player.dimension.milestones",
+      "player.primitive.milestones",
+      "player.addition.milestones",
+      "player.multiplication.upgrades"
+     ],
+     "tmpReads": [],
+     "members": [
+      "ms:dimension:2",
+      "ms:primitive:5",
+      "ms:addition:1"
+     ],
+     "widened": [
+      {
+       "when": "ms:dimension:2 added",
+       "reads": [
+        "player.arithmetic.activeChallenge",
+        "player.division.clickables.11",
+        "tmp.dimension.deactivated"
+       ]
+      },
+      {
+       "when": "ms:primitive:5 added",
+       "reads": [
+        "tmp.primitive.deactivated"
+       ]
+      },
+      {
+       "when": "ms:addition:1 added",
+       "reads": [
+        "tmp.addition.deactivated"
+       ]
+      }
+     ],
+     "seen": [
+      [
+       "all/S03",
+       "all/S05"
+      ]
+     ]
+    }
+   ],
+   "from": {
+    "how": "traceReads(player + tmp) + membership toggles + boolean widening",
+    "state": "fresh",
+    "seen": [
+     [
+      "fresh",
+      "all/S05"
+     ]
+    ],
+    "loader": "facts.mjs v1"
+   }
+  },
+  {
+   "id": "reads:primitive:upgrades.16.effect",
+   "kind": "multiplier-reads",
+   "variants": [
+    {
+     "fn": {
+      "layer": "primitive",
+      "group": "upgrades",
+      "item": 16,
+      "fn": "effect"
+     },
+     "reads": [
+      "player.primitive.points",
+      "player.dimension.milestones"
+     ],
+     "tmpReads": [
+      "tmp.numbercore.buyables.12.effect"
+     ],
+     "members": [],
+     "seen": [
+      [
+       "fresh",
+       "all/S02"
+      ]
+     ]
+    },
+    {
+     "fn": {
+      "layer": "primitive",
+      "group": "upgrades",
+      "item": 16,
+      "fn": "effect"
+     },
+     "reads": [
+      "player.primitive.points",
+      "player.dimension.milestones"
+     ],
+     "tmpReads": [
+      "tmp.numbercore.buyables.12.effect"
+     ],
+     "members": [
+      "ms:dimension:2"
+     ],
+     "widened": [
+      {
+       "when": "ms:dimension:2 added",
+       "reads": [
+        "player.arithmetic.activeChallenge",
+        "player.division.clickables.11",
+        "tmp.dimension.deactivated"
+       ]
+      }
+     ],
+     "seen": [
+      [
+       "all/S03",
+       "all/S05"
+      ]
+     ]
+    }
+   ],
+   "from": {
+    "how": "traceReads(player + tmp) + membership toggles + boolean widening",
+    "state": "fresh",
+    "seen": [
+     [
+      "fresh",
+      "all/S05"
+     ]
+    ],
+    "loader": "facts.mjs v1"
+   }
+  },
+  {
+   "id": "reads:primitive:upgrades.17.effect",
+   "kind": "multiplier-reads",
+   "variants": [
+    {
+     "fn": {
+      "layer": "primitive",
+      "group": "upgrades",
+      "item": 17,
+      "fn": "effect"
+     },
+     "reads": [
+      "player.primitive.milestones",
+      "player.primitive.points",
+      "player.multiplication.upgrades"
+     ],
+     "tmpReads": [],
+     "members": [],
+     "seen": [
+      [
+       "fresh",
+       "all/S02"
+      ]
+     ]
+    },
+    {
+     "fn": {
+      "layer": "primitive",
+      "group": "upgrades",
+      "item": 17,
+      "fn": "effect"
+     },
+     "reads": [
+      "player.primitive.milestones",
+      "player.primitive.points",
+      "player.multiplication.upgrades"
+     ],
+     "tmpReads": [],
+     "members": [
+      "ms:primitive:5",
+      "upg:multiplication:121"
+     ],
+     "widened": [
+      {
+       "when": "ms:primitive:5 added",
+       "reads": [
+        "tmp.primitive.deactivated"
+       ]
+      },
+      {
+       "when": "upg:multiplication:121 added",
+       "reads": [
+        "tmp.multiplication.deactivated"
+       ]
+      }
+     ],
+     "seen": [
+      [
+       "all/S03",
+       "all/S05"
+      ]
+     ]
+    }
+   ],
+   "from": {
+    "how": "traceReads(player + tmp) + membership toggles + boolean widening",
+    "state": "fresh",
+    "seen": [
+     [
+      "fresh",
+      "all/S05"
+     ]
+    ],
+    "loader": "facts.mjs v1"
+   }
+  },
+  {
+   "id": "reads:primitive:upgrades.25.effect",
+   "kind": "multiplier-reads",
+   "fn": {
+    "layer": "primitive",
+    "group": "upgrades",
+    "item": 25,
+    "fn": "effect"
+   },
+   "reads": [
+    "player.primitive.points"
+   ],
+   "tmpReads": [],
+   "members": [],
+   "from": {
+    "how": "traceReads(player + tmp) + membership toggles + boolean widening",
+    "state": "fresh",
+    "seen": [
+     [
+      "fresh",
+      "all/S05"
+     ]
+    ],
+    "loader": "facts.mjs v1"
+   }
+  },
+  {
+   "id": "reads:subtraction:baseAmount",
+   "kind": "multiplier-reads",
+   "fn": {
+    "layer": "subtraction",
+    "fn": "baseAmount"
+   },
+   "reads": [
+    "player.arithmetic.points"
+   ],
+   "tmpReads": [],
+   "members": [],
+   "from": {
+    "how": "traceReads(player + tmp) + membership toggles + boolean widening",
+    "state": "fresh",
+    "seen": [
+     [
+      "fresh",
+      "all/S05"
+     ]
+    ],
+    "loader": "facts.mjs v1"
+   }
+  },
+  {
+   "id": "reads:subtraction:directMult",
+   "kind": "multiplier-reads",
+   "fn": {
+    "layer": "subtraction",
+    "fn": "directMult"
+   },
+   "reads": [],
+   "tmpReads": [],
+   "members": [],
+   "from": {
+    "how": "traceReads(player + tmp) + membership toggles + boolean widening",
+    "state": "fresh",
+    "seen": [
+     [
+      "fresh",
+      "all/S05"
+     ]
+    ],
+    "loader": "facts.mjs v1"
+   }
+  },
+  {
+   "id": "reads:subtraction:gainExp",
+   "kind": "multiplier-reads",
+   "fn": {
+    "layer": "subtraction",
+    "fn": "gainExp"
+   },
+   "reads": [],
+   "tmpReads": [],
+   "members": [],
+   "from": {
+    "how": "traceReads(player + tmp) + membership toggles + boolean widening",
+    "state": "fresh",
+    "seen": [
+     [
+      "fresh",
+      "all/S05"
+     ]
+    ],
+    "loader": "facts.mjs v1"
+   }
+  },
+  {
+   "id": "reads:subtraction:gainMult",
+   "kind": "multiplier-reads",
+   "fn": {
+    "layer": "subtraction",
+    "fn": "gainMult"
+   },
+   "reads": [
+    "player.fundamental.upgrades",
+    "player.arithmetic.points",
+    "player.arithmetic.upgrades",
+    "player.division.upgrades",
+    "player.dimension.milestones",
+    "player.arithmetic.activeChallenge",
+    "player.multiplication.upgrades",
+    "player.polygon.pentagons",
+    "player.pbooster.activeChallenge"
+   ],
+   "tmpReads": [],
+   "members": [
+    "upg:fundamental:42",
+    "upg:division:13",
+    "upg:division:25",
+    "ms:dimension:6"
+   ],
+   "widened": [
+    {
+     "when": "upg:fundamental:42 added",
+     "reads": [
+      "tmp.fundamental.deactivated"
+     ]
+    },
+    {
+     "when": "upg:division:13 added",
+     "reads": [
+      "tmp.division.deactivated"
+     ]
+    },
+    {
+     "when": "upg:division:25 added",
+     "reads": [
+      "tmp.division.deactivated"
+     ]
+    },
+    {
+     "when": "ms:dimension:6 added",
+     "reads": [
+      "tmp.dimension.deactivated"
+     ]
+    }
+   ],
+   "from": {
+    "how": "traceReads(player + tmp) + membership toggles + boolean widening",
+    "state": "fresh",
+    "seen": [
+     [
+      "fresh",
+      "all/S05"
+     ]
+    ],
+    "loader": "facts.mjs v1"
+   }
+  },
+  {
+   "id": "reads:subtraction:upgrades.16.effect",
+   "kind": "multiplier-reads",
+   "fn": {
+    "layer": "subtraction",
+    "group": "upgrades",
+    "item": 16,
+    "fn": "effect"
+   },
+   "reads": [
+    "player.subtraction.points"
+   ],
+   "tmpReads": [],
+   "members": [],
+   "from": {
+    "how": "traceReads(player + tmp) + membership toggles + boolean widening",
+    "state": "fresh",
+    "seen": [
+     [
+      "fresh",
+      "all/S05"
+     ]
+    ],
+    "loader": "facts.mjs v1"
+   }
+  },
+  {
+   "id": "reads:unlock:baseAmount",
+   "kind": "multiplier-reads",
+   "fn": {
+    "layer": "unlock",
+    "fn": "baseAmount"
+   },
+   "reads": [
+    "player.points"
+   ],
+   "tmpReads": [],
+   "members": [],
+   "from": {
+    "how": "traceReads(player + tmp) + membership toggles + boolean widening",
+    "state": "fresh",
+    "seen": [
+     [
+      "fresh",
+      "all/S05"
+     ]
+    ],
+    "loader": "facts.mjs v1"
+   }
+  },
+  {
+   "id": "reads:unlock:gainExp",
+   "kind": "multiplier-reads",
+   "fn": {
+    "layer": "unlock",
+    "fn": "gainExp"
+   },
+   "reads": [],
+   "tmpReads": [],
+   "members": [],
+   "from": {
+    "how": "traceReads(player + tmp) + membership toggles + boolean widening",
+    "state": "fresh",
+    "seen": [
+     [
+      "fresh",
+      "all/S05"
+     ]
+    ],
+    "loader": "facts.mjs v1"
+   }
+  },
+  {
+   "id": "reads:unlock:gainMult",
+   "kind": "multiplier-reads",
+   "variants": [
+    {
+     "fn": {
+      "layer": "unlock",
+      "fn": "gainMult"
+     },
+     "reads": [
+      "player.fundamental.upgrades",
+      "player.polygon.upgrades",
+      "player.multiplication.upgrades",
+      "player.arithmetic.challenges.23"
+     ],
+     "tmpReads": [],
+     "members": [
+      "upg:fundamental:24",
+      "upg:fundamental:34",
+      "upg:fundamental:37",
+      "upg:polygon:12",
+      "upg:multiplication:73"
+     ],
+     "widened": [
+      {
+       "when": "upg:fundamental:24 added",
+       "reads": [
+        "tmp.fundamental.deactivated"
+       ]
+      },
+      {
+       "when": "upg:fundamental:34 added",
+       "reads": [
+        "tmp.fundamental.deactivated"
+       ]
+      },
+      {
+       "when": "upg:fundamental:37 added",
+       "reads": [
+        "tmp.fundamental.deactivated"
+       ]
+      },
+      {
+       "when": "upg:polygon:12 added",
+       "reads": [
+        "tmp.polygon.deactivated"
+       ]
+      },
+      {
+       "when": "upg:multiplication:73 added",
+       "reads": [
+        "tmp.multiplication.deactivated"
+       ]
+      }
+     ],
+     "seen": [
+      [
+       "fresh",
+       "all/S01"
+      ],
+      [
+       "all/S03",
+       "all/S05"
+      ]
+     ]
+    },
+    {
+     "fn": {
+      "layer": "unlock",
+      "fn": "gainMult"
+     },
+     "reads": [
+      "player.fundamental.upgrades",
+      "player.polygon.upgrades",
+      "player.multiplication.upgrades",
+      "player.arithmetic.challenges.23"
+     ],
+     "tmpReads": [
+      "tmp.fundamental.deactivated"
+     ],
+     "members": [
+      "upg:fundamental:24",
+      "upg:fundamental:34",
+      "upg:fundamental:37",
+      "upg:polygon:12",
+      "upg:multiplication:73"
+     ],
+     "widened": [
+      {
+       "when": "upg:polygon:12 added",
+       "reads": [
+        "tmp.polygon.deactivated"
+       ]
+      },
+      {
+       "when": "upg:multiplication:73 added",
+       "reads": [
+        "tmp.multiplication.deactivated"
+       ]
+      }
+     ],
+     "seen": [
+      "all/S02"
+     ]
+    }
+   ],
+   "from": {
+    "how": "traceReads(player + tmp) + membership toggles + boolean widening",
+    "state": "fresh",
+    "seen": [
+     [
+      "fresh",
+      "all/S05"
+     ]
+    ],
+    "loader": "facts.mjs v1"
+   }
+  },
+  {
+   "id": "reads:unlock:softcapPower",
+   "kind": "multiplier-reads",
+   "fn": {
+    "layer": "unlock",
+    "fn": "softcapPower"
+   },
+   "reads": [],
+   "tmpReads": [],
+   "members": [],
+   "from": {
+    "how": "traceReads(player + tmp) + membership toggles + boolean widening",
+    "state": "fresh",
+    "seen": [
+     [
+      "fresh",
+      "all/S05"
+     ]
+    ],
+    "loader": "facts.mjs v1"
+   }
+  }
+ ]
+}
