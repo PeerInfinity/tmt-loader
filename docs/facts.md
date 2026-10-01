@@ -40,8 +40,9 @@ node tools/harness/facts.mjs --check [--jobs N]                    regenerate ev
 node tools/harness/facts.mjs --check-index                         no boot: the index names exactly the files on disk
 ```
 
-- **States.** The fresh boot, then every committed `tools/harness/snapshots/<id>/all/*.json` in MARK order. A partial
-  extraction (`--from`, `--kinds`) must go to `--out`: `games-facts/` holds only full ones.
+- **States.** The fresh boot, then every committed `tools/harness/snapshots/<id>/all/*.json` in MARK order, then the
+  states DECLARED in `tools/harness/snapshots/<id>/facts-states.json` (m28, below). A partial extraction (`--from`,
+  `--kinds`) must go to `--out`: `games-facts/` holds only full ones.
 - **Every flag is declared**; an unknown one exits 2.
 - **Neutral or nothing.** A state whose extraction moved the live hash, or a kind whose excursions did, is a hard
   error and nothing is written (`NOT NEUTRAL — <state>: …`).
@@ -50,6 +51,34 @@ node tools/harness/facts.mjs --check-index                         no boot: the 
 - **Cost** (this box, 8 jobs): ptr 28 states ≈ 3.5 min wall (≈ 15 CPU-min: the in-challenge sensitivity probe is most
   of it), something 6 states 4 s, collection-of-everything 1.5 s.
 - **CI**: the `facts-1` job runs `--check-index` and `--check` (freshness), then the gate battery below.
+
+## Declared states (m28) — facts past the ladder's marks
+
+A wall past the last ladder mark has items no `all/` snapshot unlocks, so their facts abstain as "locked in every
+state" (ptr's q31/q32 until m28). A state past the marks is added by DECLARING it — never by the tool discovering
+files:
+
+```json
+tools/harness/snapshots/<id>/facts-states.json
+{ "format": "tmt-facts-states/1", "comment": "…",
+  "states": [ { "file": "m28/QL6.json", "why": "past q24 …: the first committed state where q31 and q32 are unlocked" } ] }
+```
+
+- Read AFTER the `all/` marks, in the declared order; each is a state later than every mark. Its name in the file is
+  its path under the game's snapshot directory (`m28/QL6`).
+- ⛔ **A declared state is never skipped.** A missing file, a mark (`all/…`), a duplicate, a path outside the game's
+  directory or an entry without `why` is a HARD ERROR (`facts.mjs` exits 2). A skipped state reads exactly like a locked
+  item: its facts would ABSTAIN, and facts-1's O1 abstains GREEN on an item locked in every state — gate m28 D2
+  regenerates through the default state list and requires q31/q32 there; mutant A of `mutants-m28.sh` is that skip.
+- ⚠ **Declare a state OUTSIDE every challenge.** The in-challenge sensitivity probe enters each open challenge on the
+  copy and checks the engine says so; a state already inside one cannot be entered again, and its challenge-inputs fact
+  abstains (`the engine did not enter the challenge`). m28's first fixture (Q86K, §17.4's end state) was inside an
+  H22 attempt; the declared one (QL6) is the same run 3 ticks later, after the give-up.
+- ptr declares `m28/QL6` (tick 86,071; Quirk Layers 6, q11–q24 owned): + `price:q:upgrade:31` (1e48·(q.time+1)^8.4),
+  `:32` (1e58·(q.time+1)^10), `production:player.sb.points` / `.best`; 12 facts gain a QL6 variant (the quirk-energy
+  production E = 5, coef 8.53e45 = enGainMult^5; the Quirk Layer price's h42 read; read ORDER of five getters; H22 /
+  H32's inputs without Space Building 15 — at QL6 one building does not cross its effect's floor); no fact changes at
+  any older state (design notes §18 lists every one).
 
 ## The file (`tmt-facts/1`)
 
@@ -159,7 +188,7 @@ only an exact limit equal in both probes is a fact. Items sharing a counter are 
 
 | part | what it holds |
 |---|---|
-| `oracle` | ptr's §7 rows against the file, each value from the design notes and the game SOURCE (cited per row), never from a probe; state readings from a separate `--eval` boot of every state. q11–q24 prices (exponent, offset 1, coefficient, currency) · q31–q33 and H31's goal ABSTAIN (locked in every state — measured) · `q.time` / `q.energy` zeroed by exactly the shown resets of row ≥ 3, writers h, q, o · quirk energy's increment `(q.time·M)^E`, E = Quirk Layers + free − 1, M = `enGainMult` per state · `enGainMult` / q11 / q21 read sets = the source · H22: inside, only Space buildings 11 and 15 among buyables, achievements 21/31 and prestige upgrades; b and h nerfed · H31's budget ABSTAINS (locked) |
+| `oracle` | ptr's §7 rows against the file, each value from the design notes and the game SOURCE (cited per row), never from a probe; state readings from a separate `--eval` boot of every state. q11–q32 prices (exponent, offset 1, coefficient, currency; q31/q32 at the declared m28/QL6) · q33 and H31's goal ABSTAIN (locked in every state — measured) · `q.time` / `q.energy` zeroed by exactly the shown resets of row ≥ 3, writers h, q, o · quirk energy's increment `(q.time·M)^E`, E = Quirk Layers + free − 1, M = `enGainMult` per state · `enGainMult` / q11 / q21 read sets = the source · H22: inside, only Space buildings 11 and 15 among buyables (15 only where the probe's one-building step moves its FLOORED effect — read per state with the source's own effect inside H22; not at m28/QL6), achievements 21/31 and prestige upgrades; b and h nerfed · H31's budget ABSTAINS (locked) |
 | `vacuity` | facts per kind per game; a kind with ZERO facts is RED unless declared, and each declaration is measured (ptr budget: H31 locked in every state; something: no challenge unlocked in any state; collection-of-everything budget: its layer sources increment nothing); nothing threw |
 | `neutral` | the live hash after the whole extraction = a run extracting nothing, and every kind neutral: ptr fresh / all/M25 / all/M27, something all/S05, collection-of-everything fresh |
 | `determinism` | two regenerations byte-identical to each other and to the committed file |
@@ -176,8 +205,9 @@ classes on known formulas; the probe returns the same object it perturbed).
   `buyMax` with a closed tab reads stale `tmp`), H31's native automation being off inside, the guides' schedules and
   recipes. They will live in their own file with digest citations (§40-R ruling B).
 - **Unlock prerequisites** as facts of their own (the planner's hidden-goal gate probe already measures them).
-- **Anything not reachable from a committed snapshot.** ptr's q31–q33, H31 and its budget, Super Generators' later
-  items: no committed state unlocks them, so they abstain by name. A fact needs a state; a state is never faked.
+- **Anything not reachable from a committed snapshot.** ptr's q33, H31 and its budget, Super Generators' later items:
+  no committed state unlocks them, so they abstain by name. A fact needs a state; a state is never faked — a state past
+  the marks is DECLARED (above; q31/q32 since m28).
 - **Games beyond the three committed** (ptr, something, collection-of-everything). The tool runs on any roster game;
   adding one is `facts.mjs <id>` and a vacuity declaration for any kind it has none of.
 

@@ -273,8 +273,9 @@ async function partOracle() {
   // VACUITY — the run's row: the oracles above were reached, and the pattern finds the time-priced q upgrades at all
   {
     const pf = pfresh.counts && pfresh.counts['time-priced-purchase'];
-    const ok = verdictCounts['waiting-cannot-help'] === 1 && verdictCounts['buy-at'] === 2 && Object.keys(verdictCounts).length === 2 && !!pf && pf.matches === 8 && pf.open === 0;
-    row({ gate: 'V vacuity: the verdicts COUNTED — one waiting-cannot-help (O1), two buy-at (O2 and its control), nothing else; ptr fresh matches its 8 time-priced q upgrades, none open', id: 'ptr', ok,
+    // (m28) 10, not 8: the facts carry q31 and q32 since the declared state m28/QL6 (games-facts/ptr.json; docs/facts.md)
+    const ok = verdictCounts['waiting-cannot-help'] === 1 && verdictCounts['buy-at'] === 2 && Object.keys(verdictCounts).length === 2 && !!pf && pf.matches === 10 && pf.open === 0;
+    row({ gate: 'V vacuity: the verdicts COUNTED — one waiting-cannot-help (O1), two buy-at (O2 and its control), nothing else; ptr fresh matches its 10 time-priced q upgrades (q11–q24, q31, q32), none open', id: 'ptr', ok,
       notes: `verdicts ${JSON.stringify(verdictCounts)}; ptr fresh ${pf ? `${pf.matches} matches, ${pf.open} open, ${JSON.stringify(pf.verdicts)} — goals ${pfresh.results.map((x) => x.goal).join(' ')}` : pfresh.error}` });
   }
 }
