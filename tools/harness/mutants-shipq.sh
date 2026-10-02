@@ -41,7 +41,7 @@ mutant() {
 }
 
 # A — the template's `when` carries a number read off the state it was written at (the game clock there)
-mutant A-when-baked-literal "$(rep loader/tmt-templates.js "\"    return conditional(q, when, b.hold);\"" "\"    return conditional(q, when + ' && player.timePlayed >= ' + Math.floor(Number(player.timePlayed)), b.hold);\"")" tpl 'T2 every template-written queue'
+mutant A-when-baked-literal "$(rep loader/tmt-templates.js "\"    q.trigger = { on: 'predicate', when: when };\"" "\"    q.trigger = { on: 'predicate', when: when + ' && player.timePlayed >= ' + Math.floor(Number(player.timePlayed)) };\"")" tpl 'T2 every template-written queue'
 # B — \`each\` with no cool-off: a run may start the moment the condition turns true again
 mutant B-each-no-cooloff "$(rep loader/tmt-queue.js "'      if (Q.coolUntil !== null && t < Q.coolUntil) continue;      // the cool-off since the last run ended'" "''")" rearm 'R2 `each`'
 # C — a shipped queue written into the player's own store (the editor's key) when it is loaded
