@@ -1,0 +1,290 @@
+{
+  "formatVersion": 1,
+  "id": "ptr",
+  "unlockOrder": [
+    [
+      "g",
+      "b"
+    ],
+    [
+      "s",
+      "t",
+      "e"
+    ]
+  ],
+  "kindOrder": [
+    "toggles",
+    "reset",
+    "upgrades",
+    "buyables",
+    "challenges",
+    "clickables"
+  ],
+  "policies": {
+    "reset:p": "gain>=2x",
+    "reset:b": "gain>=1",
+    "reset:g": "gain>=1",
+    "reset:t": "always",
+    "reset:s": "always",
+    "reset:e": "gain>=2x",
+    "buyables:e": "reserve>=next-upgrade",
+    "reset:q": "gain>=2|turn@10/30x/5/0/100",
+    "reset:h": "always|turn@1/30x/5/0/100",
+    "challenges:h": "sequential|give-up@0.1/30/2x"
+  },
+  "gates": {
+    "reset:q": "!hasMilestone('q',4) || player.h.unlocked",
+    "challenges:h": "hasMilestone('q',5)"
+  },
+  "alternatives": {
+    "reset:p": [
+      "interval>=10",
+      "always",
+      "gain>=1"
+    ],
+    "reset:b": [
+      "keepsUpgrades"
+    ],
+    "reset:g": [
+      "keepsUpgrades"
+    ],
+    "reset:t": [
+      "interval>=5",
+      "gain>=1"
+    ],
+    "reset:e": [
+      "interval>=5",
+      "unlocks-purchase",
+      "always",
+      "gain>=1"
+    ],
+    "reset:s": [
+      "interval>=5",
+      "gain>=1"
+    ],
+    "buyables:e": [
+      "buy",
+      "buy-unless-saving"
+    ],
+    "reset:q": [
+      "gain>=2x-unit",
+      "rate-peak@0/0",
+      "gain>=2x",
+      "always",
+      "gain>=2",
+      "gain>=2|turn@20/30x/5/0/100"
+    ],
+    "reset:h": [
+      "always",
+      "gain>=2x",
+      "always|turn@1/30x/5/0/0"
+    ],
+    "challenges:h": [
+      "sequential",
+      "off"
+    ]
+  },
+  "keep": {
+    "reset:b": {
+      "layer": "b",
+      "id": 0
+    },
+    "reset:g": {
+      "layer": "g",
+      "id": 0
+    }
+  },
+  "off": {},
+  "provenance": {
+    "reset:p": {
+      "gate": "R1′-2.3",
+      "commit": "d9b2ca177835d5c50d2ec02489f3a5dc761c0dd1",
+      "note": "R1′ (SUMMARY gate R1′-2.3, and S1-2's sweep): `gain>=2x` reached A1-3's three marks at 918 / 1627 / 2112 game-s against `interval>=10`'s 1361 / 2360 / 2936, and M11 at 15582 against 15782 — the target-driven rule ⚖ 13d.2 asks for."
+    },
+    "reset:b": {
+      "gate": "A1-3",
+      "commit": "3bc12bf77976cf60ba440664de1f421a29222e4f",
+      "note": "A1 table (SUMMARY gate A1-3): a static layer's gain is 1 per reset and its requirement paces it, so b resets whenever it can. Its `keep` entry is b milestone 0 (\"8 Boosters\": keep Prestige Upgrades on reset), which gates `keepsUpgrades` — the (ii) mark of the same A1-3 rows (A1 §11e.8)."
+    },
+    "reset:g": {
+      "gate": "A1-3",
+      "commit": "3bc12bf77976cf60ba440664de1f421a29222e4f",
+      "note": "A1 table (SUMMARY gate A1-3): as `reset:b`; `unlockOrder [g, b]` puts g first — 1361 / 2360 / 2936 game-s against b-first's 1532 / 2491 / 3067, ahead at every p interval tried. Its `keep` entry is g milestone 0 (\"8 Generators\": keep Prestige Upgrades on reset), which gates `keepsUpgrades` — the (ii) mark of the same A1-3 rows (A1 §11e.8)."
+    },
+    "reset:t": {
+      "gate": "R1′-2.3",
+      "commit": "d9b2ca177835d5c50d2ec02489f3a5dc761c0dd1",
+      "note": "A2-3, re-measured at the frontier (SUMMARY gate R1′-2.3): `always` reaches M16 at 24212 against `interval>=5`'s 24236 — a tie to within 0.1 %, and constant-free."
+    },
+    "reset:s": {
+      "gate": "R1′-2.3",
+      "commit": "d9b2ca177835d5c50d2ec02489f3a5dc761c0dd1",
+      "note": "A2-3, re-measured at the frontier (SUMMARY gate R1′-2.3): `always` reaches M16 at 24203 against `interval>=5`'s 24236 — the same tie."
+    },
+    "reset:e": {
+      "gate": "R1′-2.3",
+      "commit": "d9b2ca177835d5c50d2ec02489f3a5dc761c0dd1",
+      "note": "R1′ (SUMMARY gate R1′-2.3): e is row 2's only NORMAL layer, so its gain follows how high points climbed and an interval reset spends that climb every 5 s. `gain>=2x` reaches every remaining mark of the rung (M11 14745 · M12 14909 · M15 16048 · M16 24179); `interval>=5` and `always` reach none of them."
+    },
+    "buyables:e": {
+      "gate": "R1′-1",
+      "commit": "9a30dc31cef30eb777d5a74bde9184b51b257171",
+      "note": "R1′ (SUMMARY gate R1′-1, row \"C the Enhance reserve only\"; the id R1′-2.2 this line used to cite is in no SUMMARY row): the reserve is READ from the game, never written here. `reserve>=next-upgrade` ends 47 EP held with 3 Enhancers against `buy`'s 11 EP with 4 — and a literal `reserve>=25` is byte-identical to `buy`, because once e11 is owned the next upgrade costs 400."
+    },
+    "buyables:t": {
+      "gate": "R1′-1",
+      "commit": "9a30dc31cef30eb777d5a74bde9184b51b257171",
+      "note": "R1′ (SUMMARY gate R1′-1, row \"B Extra Time Capsules only\"; the id R1′-2.4 this line used to cite is in no SUMMARY row) LIFTED the exclusion this table used to carry. With it: t upgrades [11], Time Energy 6300 at its cap, `t.unlockOrder` 1. Without it: 11 Extra Time Capsules, cap 2.49e9, t upgrades [11,12,13,14,15,23] and `t.unlockOrder` 0 — the t half of M12."
+    },
+    "reset:q": [
+      {
+        "gate": "R2-S1",
+        "commit": "d656e5c9943cf4f91b2e7f957398b14b32066dfc",
+        "note": "R2: the derived `gain>=2x` is `gain >= 0` while q holds nothing, so it unlocked q at 16917 and a row-3 reset wiped row 2 — M16 24179 and then nothing past M19. `gain>=2` reaches M16 at 17058, M20 at 26594 and M22 at 29194; 2 is q milestone 0's own requirement (2 total quirks)."
+      },
+      {
+        "gate": "V4-m21",
+        "commit": "d30741b05c74b045702705f2fa099b537278bba0",
+        "note": "V4 added the PAUSE (`gates`): without it M21 is never reached and M22 lands at 29204; with it M21 lands at 28058 and M22 at 30618, M16–M20 unmoved to the second. The +1414 game-s at M22 is the 1446 game-s Time Energy needs to reach 1e30 with row 2 intact — the game's cost, not the rule's."
+      },
+      {
+        "gate": "R3b2-2",
+        "commit": "3842e441ad3c8ca5ee5227bc9622c07136da52f6",
+        "run": "35553187707",
+        "note": "R3b-2 added the ROW CYCLE (nine cells at ONE horizon, every cell twice equal): with `turn@10` the run reaches M25 (H12 \"Speed Demon\") at 35778, which no cell without a cycle reaches at all, with M22–M24 unmoved to the second, 636 quirks against 559 and 1000 Hindrance Spirit against 1. W = 5 moves M22–M24 by +358 game-s; W = 20 and W = 40 reach M25 later with less Hindrance Spirit. The derived `turn-demand` variant LOSES (no M22, 10 quirks)."
+      }
+    ],
+    "reset:h": {
+      "gate": "R3b2-2",
+      "commit": "3842e441ad3c8ca5ee5227bc9622c07136da52f6",
+      "run": "35553187707",
+      "note": "R3b-2 (CI run 35553187707 — R3b-2 wrote no SUMMARY rows), scored over a WHOLE STRETCH from `all/M15.json` → 37048, every cell twice equal: `reset:h` had no entry before this slice and inherited the derived `gain>=2x`, which on an empty purse is `gain >= 0` and so fires once and never again — 91 quirks, 4 Hindrance Spirit, seven turns and no M25. With `always` INSIDE ITS TURN the same configuration reaches M25 at 35778 with 636 quirks and 1000 Hindrance Spirit. `always` is safe only because the cycle bounds it: on its own it is the starvation the user hit by hand (44 Hindrance Spirit, quirks frozen at 10)."
+    },
+    "challenges:h": {
+      "gate": "R3a-1",
+      "commit": "0e236daf0add75cfd5ef6fc6b2c66f32089353e4",
+      "note": "R3a (SUMMARY gate R3a-1), scored over a WHOLE STRETCH from `all/M22.json` → M26, every cell twice equal: bare `sequential` completes H11 in 65 game-s and then sits inside H12 for 11,878 game-s with the currency flat at 1e2334 against a goal of 1e3550 and every quirk frozen — it has an entry rule and no exit rule. With the give-up modifier the same run leaves H12 when it stops closing the distance and defers the next attempt until the layer is twice as strong, and the tree goes back to farming: 532 `reset:q` and 1065 total quirks against the trapped run's 13 and 26. The gate is the digest's own advice (L3.9) minus the half measurement showed to be wrong: the 25-quirk milestone matters, the 10 hindrance spirit does not."
+    },
+    "unlockOrder:0": {
+      "gate": "A1-3",
+      "commit": "3bc12bf77976cf60ba440664de1f421a29222e4f",
+      "note": "[g, b]: g first reached both unlocked / b0+g0 / both best ≥ 15 at 1361 / 2360 / 2936 game-s against b first's 1532 / 2491 / 3067, ahead at every p interval tried."
+    },
+    "unlockOrder:1": {
+      "gate": "A2-3",
+      "commit": "b695e4780e3f983d261c4516071f01d13752c873",
+      "note": "[s, t, e]: s,t,e reaches the three A2-3 marks at 3550 / 6037 / 8035; s,e,t 3550 / 6037 / —; t,e,s and e,t,s never reach (ii)."
+    },
+    "kindOrder": {
+      "gate": "S1-2k",
+      "commit": "245ed3b2bbe841774552e787956797464ec151ea",
+      "note": "Every A1/A2 number was measured with a layer's reset BEFORE its purchases; S1-2k measured the generic order faster (ptr A1-3 at 1322 / 2321 / 2893 against 1361 / 2360 / 2936) and the table keeps reset-first so those pinned numbers stay reproducible."
+    }
+  },
+  "stages": [
+    {
+      "id": "q33-sg-unlock",
+      "when": "hasUpgrade('q',33) && !player.sg.unlocked",
+      "gates": {
+        "reset:e": "player.g.points.gte(tmp.sg.nextAt)",
+        "reset:s": "player.g.points.gte(tmp.sg.nextAt)",
+        "reset:sb": "player.g.points.gte(tmp.sg.nextAt)",
+        "reset:t": "player.g.points.gte(tmp.sg.nextAt)",
+        "reset:h": "player.g.points.gte(tmp.sg.nextAt)",
+        "reset:o": "player.g.points.gte(tmp.sg.nextAt)",
+        "reset:q": "player.g.points.gte(tmp.sg.nextAt)",
+        "reset:ss": "player.g.points.gte(tmp.sg.nextAt)",
+        "challenges:h": "player.g.points.gte(tmp.sg.nextAt)"
+      },
+      "provenance": [
+        {
+          "gate": "m30-A@1",
+          "commit": "49cf9ab",
+          "note": "tmt-m30-1 (cloud-reports/tmt-m30-1.md; measured in the cloud session; CI qrate1 part=m30 run 36935055563 reproduced it): from stages/M28 the table alone reaches M30 at +9,242 game-s (diff 1, tick 94,521, 132127d4d5573106), twice equal — q33 at 93,879, the stage on from that loop, Generators 200 and reset:sg 642 game-s later: the reset-requirement template's own reset-at tick from that state (gates-m30 OQ). Without it (the table at 68383aa) Super Generators never reset in 141,652 ticks (gates-m30 F0).",
+          "run": "36935055563"
+        },
+        {
+          "gate": "m30-A@0.05",
+          "commit": "49cf9ab",
+          "note": "tmt-m30-1: the same at the page's diff 0.05 — M30 at +7,544.8 game-s (tick 236,175, 45bc69ded28b1288), twice equal; q33 at 92,134.2 game-s, the reset 689.6 game-s later.",
+          "run": "36935055563"
+        },
+        {
+          "gate": "m30-order",
+          "commit": "393b702",
+          "note": "tmt-m30-1: the whole stretch from all/M26, the stage FIRST (shipped; legs at 8f59717) and LAST (at 393b702) — equal to the tick and hash (M30 94,521 / 132127d4d5573106, = the acceptance; M28 and M29 on their pins), twice each: while it holds no other stage holds that names its slots. ⚠ Its limit: past q milestone 6 reset:sg yields to an auto-reset the engine skips for a locked layer, so from the 226,931 wall the stage alone does not reset sg (gates-m30 S3).",
+          "run": "36935055563"
+        }
+      ]
+    },
+    {
+      "id": "ql6-h22-attempt",
+      "when": "player.q.buyables[11].plus(tmp.q.freeLayers).gte(6) && tmp.h.challenges[22].unlocked && !hasChallenge('h',22)",
+      "policies": {
+        "challenges:h": "sequential"
+      },
+      "gates": {
+        "reset:q": "!player.h.activeChallenge",
+        "reset:h": "!player.h.activeChallenge",
+        "reset:o": "!player.h.activeChallenge",
+        "reset:ss": "!player.h.activeChallenge"
+      },
+      "provenance": [
+        {
+          "gate": "h22 M-leg table@1",
+          "run": "36895219233",
+          "commit": "b016d49d065a8dcd7c78fa7401e862e6e2d04c9a",
+          "note": "h22 (design notes §20): from m28/QL6 this entry — challenges:h `sequential` with no give-up, the row-3 resets paused while an h challenge is active — completes H22 in ONE uncut attempt at +984 game-s (diff 1, tick 87,055) and +960.65 (diff 0.05), twice equal, on the tick of the template's own queue. The table's give-up would concede that attempt at 211 s, and the qrate1 winner's resets cut every attempt (13 of 13 in 600 s)."
+        },
+        {
+          "gate": "stages M-order",
+          "run": "36905262237",
+          "commit": "769e7523eab4f3f79c0b236e85e610a402b39b5d",
+          "note": "stages-1 (design notes §21), the whole stretch from all/M26 under the table alone, every leg twice equal: listed BEFORE the hold, it reaches M29 at +4,848 and then M28 at +8,348 game-s (diff 1), M29 +3,592.85 and M28 +5,489.65 (diff 0.05). In the other order (the hold first) M28 lands at +59,180 and M29 at +59,230 (diff 1): H22's reward is what makes q31 and q32 fast."
+        }
+      ]
+    },
+    {
+      "id": "ql6-hold-for-q32",
+      "when": "player.q.buyables[11].plus(tmp.q.freeLayers).gte(6) && !hasUpgrade('q',32)",
+      "policies": {
+        "challenges:h": "off"
+      },
+      "provenance": [
+        {
+          "gate": "m28 M-leg winner-choff@1",
+          "run": "36822076088",
+          "commit": "f5653550f26126b926d6dffdfff0be637443d863",
+          "note": "m28 (design notes §18): from m28/QL6, the qrate1 winner with challenge attempts held buys q31 at +2,696 and q32 (M28) at +54,688 game-s (diff 1); with attempts allowed the challenge reflex re-entered H22 after every q reset and q31 was not bought in 30,000. Diff 0.05: q31 +2,760.2, q32 +74,738.3 (run 36836849521)."
+        },
+        {
+          "gate": "stages M-order",
+          "run": "36905262237",
+          "commit": "769e7523eab4f3f79c0b236e85e610a402b39b5d",
+          "note": "stages-1 (design notes §21): in force from QL6 and IN FORCE after H22 (the attempt stage wins challenges:h until then), the table alone buys q32 3,500 game-s after H22 — M28 at +8,348 from all/M26 (diff 1), +5,489.65 (diff 0.05), twice equal."
+        }
+      ]
+    },
+    {
+      "id": "ql5-quirk-rate",
+      "when": "player.q.buyables[11].plus(tmp.q.freeLayers).gte(5)",
+      "policies": {
+        "reset:q": "rate-peak@0/0|turn@10/30x/5/0/100"
+      },
+      "provenance": [
+        {
+          "gate": "qrate1 cells",
+          "run": "36812038216",
+          "commit": "1a9b613473b0ff86bf8e05fc28db4d5dd7d987b0",
+          "note": "qrate1 (design notes §17): from QL5, `rate-peak@0/0` keeping the row cycle reaches 308,372 total quirks (q23's threshold) at +2,872 game-s against the table's `gain>=2` at +109,590 (diff 1); at the page's tick +1,223.65 against 51,032 quirks by +6,000. As a WHOLE-GAME default it loses from all/M15 (R2-S1: M21 at 27,652, never M22), which is why it is a stage."
+        },
+        {
+          "gate": "stages M-order",
+          "run": "36905262237",
+          "commit": "769e7523eab4f3f79c0b236e85e610a402b39b5d",
+          "note": "stages-1 (design notes §21): switched on at the QL5 tick (77,196) the table reaches q23 on exactly the tick and hash of QL5 resumed under `--auto-opt policy:reset:q=<winner>` (80,134 / c2d9442da073bfab); the whole stretch reaches M29 and M28 (above)."
+        }
+      ]
+    }
+  ]
+}
