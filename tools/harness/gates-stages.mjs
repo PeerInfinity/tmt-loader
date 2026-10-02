@@ -193,7 +193,7 @@ async function partSwitch() {
   const m29 = fixture(M29F);
   const log1 = path.join(TMP, 's1.jsonl'), log2 = path.join(TMP, 's2.jsonl');
   const EV_END = "(function(){ var r = function(id){ return tmtLoader.explain().filter(function(x){ return x.id === id; })[0]; }; var ch = r('challenges:h'); return { ql: Number(" + QL + "), h22: Number(player.h.challenges[22]||0), ac: player.h.activeChallenge, chPolicy: ch.policy.inForce, chStage: ch.stage, stages: tmtLoader.stages().map(function(s){ return [s.id, s.active]; }), stats: tmtLoader.stageStats() }; })()";
-  const EV_MID = "(function(){ var R = tmtLoader.advancedRows(); var row = function(id){ return R.filter(function(x){ return x.id === id; })[0]; }; var q = row('reset:q'), ch = row('challenges:h'); return { ac: player.h.activeChallenge, q: { code: q.last && q.last.code, values: q.last && q.last.values, text: tmtLoader.reasonText(q.last), stage: q.stage, html: tmtLoader.featureBlockHTML(q, false) }, ch: { code: ch.last && ch.last.code, text: tmtLoader.reasonText(ch.last), stage: ch.stage, policy: ch.policy.inForce, html: tmtLoader.featureBlockHTML(ch, false) }, ctl: tmtLoader.controlState('reset:q')['while'], qs: (function(){ var s = tmtLoader.queues.status().queues.filter(function(x){ return x.id === '' + H22Q + ''; })[0]; return s ? { state: s.state, phase: s.shipped && s.shipped.phase, cur: s.current && s.current.do, until: s.wait && s.wait.until } : null; })() }; })()";
+  const EV_MID = "(function(){ var R = tmtLoader.advancedRows(); var row = function(id){ return R.filter(function(x){ return x.id === id; })[0]; }; var q = row('reset:q'), ch = row('challenges:h'); return { ac: player.h.activeChallenge, q: { code: q.last && q.last.code, values: q.last && q.last.values, text: tmtLoader.reasonText(q.last), stage: q.stage, html: tmtLoader.featureBlockHTML(q, false) }, ch: { code: ch.last && ch.last.code, text: tmtLoader.reasonText(ch.last), stage: ch.stage, policy: ch.policy.inForce, html: tmtLoader.featureBlockHTML(ch, false) }, ctl: tmtLoader.controlState('reset:q')['while'], qs: (function(){ var s = tmtLoader.queues.status().queues.filter(function(x){ return x.id === '" + H22Q + "'; })[0]; return s ? { state: s.state, phase: s.shipped && s.shipped.phase, cur: s.current && s.current.do, until: s.wait && s.wait.until } : null; })() }; })()";
   // S4 — the QL5 fixture with a PLAYER's saved edit restoring the table's own reset:q (hashGame excludes `au`)
   const ql5 = fixture(QL5F), pl = JSON.parse(ql5.player);
   pl.au.edits = { 'reset:q': { policy: 'gain>=2|turn@10/30x/5/0/100' } };
@@ -255,7 +255,8 @@ async function partSwitch() {
     const checks = {
       ran: !!r2.ok && !!ql6.ok,
       stageRecordsAtThePredictedTicks: got.length === want.length && sameSet(got, want),
-      queueStartsWithTheStageAndEndsAtH22: qTrig.length === 1 && qTrig[0] === T6 && qEnd.length === 1 && qEnd[0] === T22,
+      // the queue's records carry the tick they were made IN (as the actions do); the mark is read after it
+      queueStartsWithTheStageAndEndsAtH22: qTrig.length === 1 && qTrig[0] === T6 && qEnd.length === 1 && att.completed.length === 1 && qEnd[0] === att.completed[0] && qEnd[0] === T22 - 1,
       oneUncutAttempt: att.entered.length === 1 && att.entered[0][1] === '22' && att.entered[0][2] === 'queue' && att.entered[0][0] >= T6 && att.completed.length === 1 && att.exitingInside === 0,
       noEntryAfter: att.enteredAfter === 0,
       holdInForceAtTheEnd: e.chPolicy === 'off' && !!e.chStage && e.chStage.policy === C2 && e.h22 === 1,
