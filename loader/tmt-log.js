@@ -41,9 +41,14 @@
   var nextCk = Infinity;   // game-seconds of the next interval checkpoint
   var marks = [];          // ladder marks not yet held: [{id, name, fn}]
   var t0wall = 0;
-  var counts = null;
+  var counts = { records: {}, calls: {}, refused: {}, errors: 0, bytes: 0 };   // (qedit-1) never null: a tap with the log off counts its errors here
   var installed = null;    // what was hooked: {family, globals: [...], layer: [...paths matched], gameLoop}
   var HOOKS = null;
+  // (qedit-1) TAPS — the queue editor's RECORDER listens on these SAME wrappers (one hook path, never a second
+  // wrapper): while a tap is attached the wrappers see every outermost call even with the log OFF, and hand each tap
+  // {source, call, args, self, did, threw}. Nothing is written anywhere unless the log itself is on.
+  var taps = [];
+  function live() { return on || taps.length > 0; }
 
   function num(x) { return Number(x); }
   function round9(x) { return Math.round(x * 1e9) / 1e9; }
@@ -178,7 +183,7 @@
   function queueAt() { return [T.auLayer || 'au', 'queue']; }
   function wrapCall(orig, call, where) {
     var w = function () {
-      if (!on || depth > 0) return orig.apply(this, arguments);
+      if (depth > 0 || !live()) return orig.apply(this, arguments);
       var pre = null;
       try { pre = { src: sourceNow(), call: call, args: encArgs(arguments), self: where ? selfOf(where, this) : undefined, json: gameJSON() }; } catch (e) { counts.errors++; }
       depth++;
@@ -201,6 +206,9 @@
   function after(pre, ok) {
     var json = gameJSON();
     var did = json !== pre.json;
+    if (taps.length) tapAll({ source: pre.src, call: pre.call, args: pre.args, self: pre.self === undefined ? null : pre.self, did: did, threw: !ok,
+      gs: Number(T.gameSeconds) || 0, tick: Number(T.ticks) || 0 });
+    if (!on) return;   // tapped only: the log itself is off, so nothing is recorded
     // ⚖ A GAME OR AUTOMATION CALL THAT CHANGED NOTHING IS COUNTED, NOT WRITTEN. The game's own autobuyers call these
     // every tick, and the automation's buy loop ends every run of purchases with one refused call per buyable ("buy
     // until the amount stops moving") — written, those would be most of the log. A call that left the game state
@@ -249,7 +257,7 @@
     // `given` (a replay): the original record's reason, carried over as it was
     end: function (f, r, given) {
       var a = auto; auto = null;
-      if (!a || !a.buf.length) return;
+      if (!on || !a || !a.buf.length) return;
       var why = given || (r && r.code ? { code: String(r.code) } : { code: 'threw' });
       if (!given && r && r.values) { try { var pv = plainValues(r.values); if (pv) why.values = pv; } catch (e) { counts.errors++; } }
       for (var i = 0; i < a.buf.length; i++) { a.buf[i].why = why; emit(a.buf[i]); }
@@ -289,10 +297,10 @@
 
   function wrapLoop(orig) {
     var w = function (diff) {
-      if (!on) return orig.apply(this, arguments);
+      if (!live()) return orig.apply(this, arguments);
       inLoop++;
       try { return orig.apply(this, arguments); }
-      finally { inLoop--; if (inLoop === 0) { try { tickEnd(num(diff)); } catch (e) { counts.errors++; } } }
+      finally { inLoop--; if (inLoop === 0 && on) { try { tickEnd(num(diff)); } catch (e) { counts.errors++; } } }
     };
     w[MARK] = orig;
     return w;
@@ -425,7 +433,8 @@
     if (!on) return status();
     try { checkpoint('stop'); } catch (e) { counts.errors++; }
     on = false;
-    link.exec = null; link.progress = null; link.track = false; link.replay = null; link.queueSlot = null; link.stage = null;
+    link.exec = taps.length ? execLink : null;   // (qedit-1) a tap still needs to know who is acting
+    link.progress = null; link.track = false; link.replay = null; link.queueSlot = null; link.stage = null;
     auto = null; qact = null;
     return status();
   }
@@ -638,7 +647,28 @@
     return { name: name, bytes: text.length };
   }
 
+  // ---- (qedit-1) taps ------------------------------------------------------------------------------------------------
+  function tapAll(ev) {
+    for (var i = 0; i < taps.length; i++) { try { taps[i](ev); } catch (e) { if (counts) counts.errors++; } }
+  }
+  /** Attach a listener to the hook layer (installing the hooks if the log never has). Returns the function that detaches
+   *  it. With the log off, the automation's link is filled only so a tap can tell the player from the automation. */
+  function tap(fn) {
+    if (typeof fn !== 'function') throw new Error('tap: a function is required');
+    HOOKS = T.logHooks || HOOKS;
+    install();
+    taps.push(fn);
+    if (!on) link.exec = execLink;
+    return function untap() {
+      var i = taps.indexOf(fn);
+      if (i >= 0) taps.splice(i, 1);
+      if (!taps.length && !on) { link.exec = null; auto = null; qact = null; }
+    };
+  }
+
   T.stateLog = {
+    tap: tap,
+    taps: function () { return taps.length; },
     format: FORMAT,
     start: start,
     stop: stop,

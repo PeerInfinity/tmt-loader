@@ -10,8 +10,8 @@
 // ⚖ The rulings it rests on (PTR-strategy design notes §5, §11; tpl1 brief):
 //  · a step is an ENGINE action — an engine entry point and its arguments — never a DOM click;
 //  · no game id, layer id or item id appears in this file: a queue names them as DATA;
-//  · this slice builds the runner and a READ-ONLY readout; the editor (several queues with triggers, edited in the page)
-//    is a later slice, and a queue file is plain JSON so nothing here precludes it.
+//  · tpl1 built the runner and a READ-ONLY readout; the editor (several queues with triggers, edited in the page) is
+//    qedit-1's `loader/tmt-qedit.js`, which plays its queues through THIS runner — one runner, one format.
 //
 // WHERE IT ACTS — the queue's SLOT: the `au` layer's automate, after its fallback pass (tmt-auto.js `auAutomate`).
 //  · INSIDE the tick, so a replay re-applies a queue call in the same place (`logLink.queueSlot`), as it does an
@@ -33,6 +33,12 @@
   var STEP_KINDS = ['call', 'hold', 'release', 'wait', 'comment'];
   var TRIGGERS = ['start', 'predicate'];
   var ON_TIMEOUT = ['abort', 'skip'];
+  // (qedit-1) THE VERSION FIELD. A queue with no `version` is version 1, exactly the format tpl1 shipped. Version 2 adds
+  // two fields and nothing else: a queue's `name` (what the editor shows; the `id` stays the key) and a call's `times`
+  // (the call made N times in a row in one slot — the recorder folds a run of identical presses into one step). A
+  // version this runner does not know is REFUSED by name: a field it would ignore could change what a queue does.
+  var VERSIONS = [1, 2];
+  var MAX_TIMES = 1000;
 
   var loaded = [];         // [{q, state, pc, waitFrom, holds: {featureId: stepIndex}, firedAt, endedAt, outcome, last}]
 
@@ -71,6 +77,9 @@
     if (!q || typeof q !== 'object' || Array.isArray(q)) return ['a queue is a JSON object'];
     if (q.format !== FORMAT) errs.push('"format" must be "' + FORMAT + '" (got ' + JSON.stringify(q.format) + ')');
     if (typeof q.id !== 'string' || !/^[A-Za-z0-9_.:-]{1,80}$/.test(q.id)) errs.push('"id" must be 1–80 characters of letters, digits and _ . : -');
+    var ver = q.version === undefined ? 1 : q.version;
+    if (VERSIONS.indexOf(ver) < 0) errs.push('"version" must be one of ' + VERSIONS.join(' | ') + ' (got ' + JSON.stringify(q.version) + ')');
+    if (q.name !== undefined && (ver < 2 || typeof q.name !== 'string' || q.name.length > 80)) errs.push('"name" needs "version": 2 and is text of at most 80 characters');
     var tr = q.trigger === undefined ? { on: 'start' } : q.trigger;
     if (!tr || TRIGGERS.indexOf(tr.on) < 0) errs.push('"trigger.on" must be one of ' + TRIGGERS.join(' | '));
     else if (tr.on === 'predicate') { var te = typeof tr.when === 'string' && tr.when ? compiles(tr.when) : 'a predicate trigger needs "when"'; if (te) errs.push('trigger.when: ' + te); }
@@ -94,6 +103,7 @@
         var t = target(s.fn, s.self);
         if (t.error) errs.push(at + t.error);
         if (s.args !== undefined && !Array.isArray(s.args)) errs.push(at + '"args" must be an array');
+        if (s.times !== undefined && (ver < 2 || !(s.times === Math.floor(s.times) && s.times >= 1 && s.times <= MAX_TIMES))) errs.push(at + '"times" needs "version": 2 and is a whole number from 1 to ' + MAX_TIMES);
         // (h22) `if`: the call is made only when this holds — `startChallenge` LEAVES the challenge it is pressed inside,
         // so a plan that enters one must not press it when a reflex already entered in the tick before the hold bound
         if (s['if'] !== undefined) { var ie = typeof s['if'] === 'string' && s['if'] ? compiles(s['if']) : '"if" must be a non-empty predicate'; if (ie) errs.push(at + 'if: ' + ie); }
@@ -148,7 +158,9 @@
     var before = T.stateJSON(T.gameState), threw = null;
     var lx = logLink ? logLink.exec : null;
     if (lx !== null && lx && typeof lx.qbegin === 'function') lx.qbegin({ id: Q.q.id, step: Q.pc + 1, comment: s.comment || null });
-    try { t.fn.apply(t.self, (s.args || []).slice()); }
+    // (qedit-1) `times`: the same call N times in a row, in this one slot; a throw stops the run and aborts the queue
+    var n = s.times === undefined ? 1 : s.times;
+    try { for (var k = 0; k < n; k++) t.fn.apply(t.self, (s.args || []).slice()); }
     catch (e) { threw = String(e && e.message || e).slice(0, 160); }
     finally { if (lx !== null && lx && typeof lx.qend === 'function') lx.qend(); }
     return { threw: threw, did: T.stateJSON(T.gameState) !== before };
@@ -185,7 +197,7 @@
         }
         var r = callStep(Q, s);
         if (r.threw) { setLast(Q, 'call ' + s.fn + ' threw: ' + r.threw); finish(Q, 'aborted', 'step ' + (Q.pc + 1) + ': the call ' + s.fn + ' threw: ' + r.threw); return; }
-        setLast(Q, 'called ' + s.fn + '(' + (s.args || []).map(function (a) { return JSON.stringify(a); }).join(', ') + ') — ' + (r.did ? 'it changed the game' : 'it changed nothing'));
+        setLast(Q, 'called ' + s.fn + '(' + (s.args || []).map(function (a) { return JSON.stringify(a); }).join(', ') + ')' + (s.times > 1 ? ' ×' + s.times : '') + ' — ' + (r.did ? 'it changed the game' : 'it changed nothing'));
         Q.pc++;
       } else if (s.do === 'wait') {
         var t0 = now();
@@ -273,7 +285,7 @@
   }
   var STATE_TEXT = { armed: 'waiting for its trigger', running: 'running', done: 'finished', aborted: 'aborted' };
   function stepText(s) {
-    if (s.do === 'call') return s.fn + '(' + (s.args || []).map(function (a) { return JSON.stringify(a); }).join(', ') + ')';
+    if (s.do === 'call') return s.fn + '(' + (s.args || []).map(function (a) { return JSON.stringify(a); }).join(', ') + ')' + (s.times > 1 ? ' ×' + s.times : '');
     if (s.do === 'wait') return 'until ' + s.until + ' (at most ' + s.timeout.gs + ' s, then ' + s.onTimeout + ')';
     if (s.do === 'hold' || s.do === 'release') return (s.features || ['every hold of this queue']).join(', ');
     return s.text || '';
@@ -285,6 +297,10 @@
         steps: Q.q.steps.length, pc: Q.pc, comment: Q.q.comment || null, source: Q.q.source === undefined ? null : Q.q.source,
         current: cur ? { index: Q.pc + 1, 'do': cur.do, text: stepText(cur), comment: cur.comment || null } : null,
         waiting: Q.waitFrom === null ? null : round6(now() - Q.waitFrom),
+        // (qedit-1) the run-status view: what a running wait is waiting for, and how long it has left before its timeout
+        wait: cur && cur.do === 'wait' && Q.state === 'running' ? { until: cur.until, timeout: Number(cur.timeout.gs), onTimeout: cur.onTimeout,
+          waited: Q.waitFrom === null ? 0 : round6(now() - Q.waitFrom), left: round6(Math.max(0, Number(cur.timeout.gs) - (Q.waitFrom === null ? 0 : now() - Q.waitFrom))) } : null,
+        name: typeof Q.q.name === 'string' ? Q.q.name : null, trigger: Q.q.trigger || { on: 'start' },
         holds: Object.keys(Q.holds).sort(), firedAt: Q.firedAt, endedAt: Q.endedAt, outcome: Q.outcome, last: Q.last ? Q.last.text : null };
     }) };
   }
