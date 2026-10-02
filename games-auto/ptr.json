@@ -409,6 +409,16 @@
           "run": "36905262237",
           "commit": "769e7523eab4f3f79c0b236e85e610a402b39b5d",
           "note": "stages-1 (design notes §21), the whole stretch from all/M26 under the table alone, every leg twice equal: listed BEFORE the hold, it reaches M29 at +4,848 and then M28 at +8,348 game-s (diff 1), M29 +3,592.85 and M28 +5,489.65 (diff 0.05). In the other order (the hold first) M28 lands at +59,180 and M29 at +59,230 (diff 1): H22's reward is what makes q31 and q32 fast."
+        },
+        {
+          "gate": "shipq-equal@1",
+          "commit": "6243411878966bc3b20f30c360c6313ccb29a66d",
+          "note": "shipq-1 (cloud-reports/tmt-shipq-1.md; measured in the cloud session, every leg twice equal — CI qrate1 part=shipq to reproduce): the H22 attempt moved from the stage ql6-h22-attempt into this shipped queue — the challenge-attempt template's own queue from m28/QL6 under this table, with the stage's boundary (6 Quirk Layers). From all/M26 the table alone reaches M29 at 81,779 (be1df4037cbb5804), M28 at 85,279 (827cf164da85a931) and M30 at 94,521 (132127d4d5573106), the stage's ticks and hashes (shipq-A@1 = shipq-ctl@1)."
+        },
+        {
+          "gate": "shipq-equal@0.05",
+          "commit": "6243411878966bc3b20f30c360c6313ccb29a66d",
+          "note": "shipq-1: the same at the page's diff 0.05 — M29 +3,592.85 (ee381821c137ac68) and M28 +5,489.65 (5c7dd56ad8d00e17) from all/M26, the stage's (shipq-A@0.05 = shipq-ctl@0.05)."
         }
       ]
     }
