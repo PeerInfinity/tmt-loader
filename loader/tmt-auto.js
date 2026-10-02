@@ -5511,8 +5511,8 @@
         // (shipq-1) a SHIPPED queue (the game's table's `queues`) says so, and its state in plain words: armed (waiting for
         // its condition), running, done — or why it does not start (off, a setting it relies on, cooling off)
         +     '<b v-if="q.shipped">shipped queue {{ q.name || q.id }}</b><b v-else>queue {{ q.id }}</b> — {{ q.shipped ? q.shipped.text : q.stateText }}'
-        +     '<div v-if="q.shipped" class="tmtl-queue-shipped" style="margin-left:8px;opacity:.8">part of this game\'s automation: {{ q.comment || \'a move the automation makes when its condition holds\' }} ({{ q.shipped.rearm === \'each\' ? \'it runs again each time its condition turns true, at most \' + q.shipped.cap + \' times, \' + q.shipped.coolOff + \' game-s apart\' : \'it runs once per page load\' }})</div>'
-        +     '<div v-if="q.shipped && dev" style="margin-left:8px;opacity:.7">starts when <code>{{ q.shipped.condition }}</code></div>'
+        +     '<div v-if="q.shipped" class="tmtl-queue-shipped" style="margin-left:8px;opacity:.8">a move this game\'s automation makes by itself when its moment comes — {{ q.shipped.rearm === \'each\' ? \'again each time, at most \' + q.shipped.cap + \' times, \' + q.shipped.coolOff + \' game-s apart\' : \'once per page load\' }}</div>'
+        +     '<div v-if="q.shipped && dev" style="margin-left:8px;opacity:.7">{{ q.comment }} Starts when <code>{{ q.shipped.condition }}</code></div>'
         +     '<div v-if="!q.shipped && q.reliesWhy" style="margin-left:8px">does not start: {{ q.reliesWhy }}</div>'
         +     '<div v-if="q.current" style="margin-left:8px">step {{ q.current.index }} of {{ q.steps }}: <code>{{ q.current.do }}</code> {{ q.current.text }}<span v-if="q.current.comment" style="opacity:.7"> — {{ q.current.comment }}</span></div>'
         // (qedit-1) what a running wait is waiting for, and the time it has left before its timeout

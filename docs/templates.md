@@ -86,8 +86,8 @@ the queue's and no reflex spends the purse first. Derived from the features' lay
    `tmp`"; the code has judged on the charged price since tpl1, and gate m28 V3 holds it (mutant B of `mutants-m28.sh`
    is the live reading).
 3. One of three verdicts:
-   - **buy at t\*** — the ratio reaches 1. The plan holds, waits until the item is affordable (with a timeout from the
-     measured moment), buys it through the engine, and checks the purchase happened. Then it is **played on the copy**:
+   - **buy at t\*** — the ratio reaches 1. The plan holds, waits until the item is affordable (shipq-1: at most the
+     check's horizon — before it, the measured moment + 10 s), buys it through the engine, and checks the purchase happened. Then it is **played on the copy**:
      only a plan that bought is emitted.
    - **waiting cannot help** — the ratio peaks below 1. The template replays the hold to the peak and walks the
      **multiplier chain** there: each numeric getter of the currency's layer is scaled ×2 and ×4 on the copy; one that
@@ -174,7 +174,7 @@ It also reports where the table's own exit rule — the `give-up@B/H` modifier o
 policy parser — would have conceded the attempt, from the measured trace. It does not tune it.
 
 **The plan** — `hold` → `call startChallenge` **if not already inside** → `wait` until the engine says it entered →
-`wait` until `canCompleteChallenge` (timeout: the measured moment + 10 s, `skip`) → `call startChallenge` **if inside**
+`wait` until `canCompleteChallenge` (timeout: the check's window — shipq-1; the measured moment + 10 s before it — `skip`) → `call startChallenge` **if inside**
 (the engine completes a challenge whose goal is met as it leaves) → `release` → `wait` until a completion is recorded.
 ⚠ Both `if`s are load-bearing (docs/queues.md): `startChallenge` pressed INSIDE the challenge leaves it, and pressed
 outside enters it. One tick of reflexes runs before a `start` queue's hold binds, and under the shipped table the
@@ -290,6 +290,39 @@ measured). What wins is the hold WITH a cash-in the hold cannot starve — `sg-k
 rebuild's gates, sg's own currency kept (h, o, ss and h's challenges wait until it is empty at the requirement), and the q
 reset by the derived default's ratio rule `gain>=2x`. From stages/M30 it ends +30,000 game-s with 5.10e25 total quirks
 against the table's 1.86e23 (diff 1), and +6,000 game-s with 1.79e24 against 9.85e21 (diff 0.05), every leg twice equal.
+
+## What every emitted queue carries (shipq-1, 2026-10-02)
+
+Before shipq-1 every emitted queue started on `{"on": "start"}`: it was right only from the exact state, and the exact
+configuration, it was written at (qedit-1 measured q23's queue ABORTING on the page under another configuration). Now
+each one carries, besides its steps (queue format version 3):
+
+- **A start condition — the template's MATCH**, as a predicate trigger written from engine values and the item's own ids,
+  with no number read off the state:
+  | template | `when` |
+  |---|---|
+  | `time-priced-purchase` | the item's layer unlocked, the item unlocked (`tmp[l].upgrades[id].unlocked`), and — an upgrade — not owned |
+  | `challenge-attempt` | the layer unlocked, the challenge unlocked, not maxed (`maxedChallenge`), and no OTHER challenge of the layer running (inside THIS one is fine: the plan's `if` skips the entry) |
+  | `reset-requirement` | the layer shown (`tmp[l].layerShown`), and never reset — or, for a REBUILD, holding none of its currency |
+  The completion check of a one-completion challenge is `hasChallenge` (it used to compare with the count at the state
+  it was written at — a state literal); a repeatable challenge can only say the attempt LEFT. Gate shipq T2 greps every
+  emitted `when` for numeric literals (the item's id and `0` aside); the mutant that bakes one in goes red.
+- **`relies`** — the settings the check ran under (`tmtLoader.autoConfig()`, and the policy in force of every feature the
+  queue does not hold where that policy is not the table's own). The runner refuses to START the queue while one differs
+  (docs/queues.md, "relies").
+- **The long wait's limit is the CHECK's WINDOW** (`--window`, default 3,600 game-s; the time-priced horizon for
+  `time-priced-purchase`): the rollback measured the goal inside it, and past it nothing was checked. It used to be the
+  measured moment + 10 s (h22's `{gs: 994}` from 984), a number read off one state. ⚖ The give-up progress reading
+  (R3a's `give-up@B/H`) was the other option and was NOT taken: the table's own give-up would concede the H22 attempt at
+  211 s of its 984 (the points grow linearly), so a progress rule here needs its own measurement first. The two 2-game-s
+  waits that confirm a call took effect (the entry, the completion) stay: the call is applied in the same slot and the
+  wait is met at once (measured: waited 0).
+
+`strategize` turns the table's shipped queues OFF on the copy (`shippedQueues=off`): a check measures its own plan.
+The four catalog queues were regenerated with their old commands (h22: `--auto-opt` the winner + `exclude=challenges:h`;
+q23: the winner + `stages=off`; m30: the table before m30 + `nativeYield=always`; m31: the table before m31); their
+`start` versions are in git history. The table's own `ca-ch-h-22` is `strategize ptr --from m28/QL6 --goal ch:h:22`
+under the shipped table, byte for byte (gate shipq T1).
 
 ## How a sub-goal reaches the planner (qrate1, 2026-09-30)
 

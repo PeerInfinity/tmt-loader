@@ -16,7 +16,9 @@ hand is the escape hatch and says so (`"source": "authored"`). Either way a queu
 
 ## For players
 
-- **Nothing happens unless a queue is loaded.** A page that loads no queue does not even fetch the runner.
+- **Nothing happens unless a queue is loaded.** A page that loads no queue does not even fetch the runner. (shipq-1) A
+  game's automation table may SHIP queues (its `queues` section, below, "Shipped queues"): then the runner is fetched
+  with the table, in automation mode only, and the table's queues are part of the automation like its other features.
 - Load one with `&autoOpt=queue=<file>` in the address (a path on the loader's site; several are separated by commas), or
   from the console with `tmtLoader.queues.load(<the queue as an object or JSON text>)`. `tmtLoader.queues.status()` says
   what each loaded queue is doing; `tmtLoader.queues.unload(<id>)` removes one.
@@ -46,7 +48,8 @@ hand is the escape hatch and says so (`"source": "authored"`). Either way a queu
 | `id` | 1–80 letters, digits, `_ . : -`; unique among the loaded queues |
 | `trigger` | `{"on": "start"}` (default) — the first tick after it is loaded; `{"on": "predicate", "when": "<expression>"}` — the first tick on which the expression holds |
 | `source` | `"authored"`, or `{template, goal, facts}` for a generated queue |
-| `version` | (qedit-1) absent = 1; `2` allows `name` and a call's `times` (below, "Version 2 of the format") |
+| `version` | (qedit-1) absent = 1; `2` allows `name` and a call's `times` (below, "Version 2 of the format"); (shipq-1) `3` also allows `relies` |
+| `relies` | (version 3) `{options?: {<setting>: <value>}, policies?: {<feature id>: <policy>}}` — the automation settings the queue was checked under (below, "relies") |
 | `name` | (version 2) what the editor shows, ≤ 80 characters |
 | `steps` | a non-empty list, run in order |
 
@@ -85,13 +88,22 @@ a runtime enable override (the advanced planner's epoch) — everything except t
 released when its queue ends, aborts or is unloaded**, and a restore that drops the queue (a planner excursion on the
 copy) drops its holds with it. Two queues may hold the same feature; it stays held until both let go.
 
+(shipq-1) **A hold PAUSES a reset in the row cycle; it does not take it out.** The R3b row cycle (`|turn@…`) counts a
+held reset as a paused member, as a `while` pauses one, so the cycle keeps what it remembers while the queue holds the
+row. Before shipq-1 a held reset LEFT the row, and a row left with fewer than two members dropped its cycle and its
+memory: measured, the H22 attempt played as a queue reached M29 on the stage's tick and hash and M28 180 ticks away,
+because the row-3 cycle had been erased by the hold. `--auto-opt holdCycle=leave` is the old behaviour, named by the
+legs measured under it (gates-m28 F1/F2).
+
 ## The state log
 
 With the state log on (`docs/log.md`), every runner action is recorded:
 - a queue's **call** is an `action` record with `source: "queue"`, `queue: {id, step, comment}` and
   `at: ["au", "queue"]` — written even when it changed nothing (the queue did press it);
 - the runner's own actions are `queue` records (`do`: `load`, `trigger`, `hold`, `release`, `wait-met`, `wait-timeout`,
-  `call-skipped`, `comment`, `end`, `abort`, `unload`), with the queue, the step and its comment. A skipped call makes no
+  `call-skipped`, `comment`, `end`, `abort`, `unload`; shipq-1: `relies` — it would start and a setting differs —,
+  `condition` — a shipped queue's condition started or stopped throwing —, `rearm` and `spent`), with the queue, the
+  step and its comment. A skipped call makes no
   `action` record, so the replay has nothing to re-apply for it.
 
 The replay re-applies queue calls in the queue's slot exactly as it re-applies the automation's calls in theirs, and
@@ -152,7 +164,7 @@ Open a game with the automation tools (`&automation=1`), go to the **AU** tab an
    my queues** adds one (Off).
 
 A queue keeps running until it ends, stops or is switched off; it runs once per page load (switch it Off and On, or
-press *run again from the top*, to run it again).
+press *run again from the top*, to run it again). A queue the game's table ships can re-arm itself (below).
 
 ### The architecture, and why
 
@@ -201,3 +213,97 @@ without `"version": 2`, is refused by name: a field an older runner ignored coul
 
 Gates: `tools/harness/gates-qedit.mjs` (14 page rows + the grep; CI job `qedit`), `tools/harness/mutants-qedit.sh`
 (seven mutants), `loader/qedit.test.mjs`; `tools/queues-catalog.mjs --check` in the fast job.
+
+## Shipped queues (shipq-1) — queues as parts of a game's automation
+
+⚖ The user's goal (2026-10-02): the page plays the whole game from parts a player can make sense of — **queues** (one-off
+moves, with a start condition and comments), **stages** (ongoing behaviour while a condition holds) and the reflexes'
+settings — all shipped as DATA in `games-auto/<id>.json`. The harness (facts, templates, planner) is the factory that
+writes those parts with measured rows; the page never needs the planner. This slice is the first rung: shipped
+conditional queues.
+
+### For players
+
+A **shipped queue** is a move the game's automation makes by itself when its moment comes — on PTR, *attempt the
+Descension hindrance (H22) once you have 6 Quirk Layers: hold the resets that would end it, enter it, wait for its goal,
+finish it, then let everything go again*. The **Advanced** view of the automation tab shows it as *shipped queue …* with
+what it is for and its state in words: **armed — waiting for its condition**, **running** (with its step, the condition
+a wait waits for and its time left, and the features it holds — each held feature says *Held by queue …*), **done**,
+or why it does not start (*the automation is off*, *a feature it takes over is switched off*, *it relies on a setting
+that is different*, *cooling off*). It acts only where the automation does: never under the profile `off`, and under
+your own choices (`saved`) only while every feature it holds is switched on. It is never written into your own queues;
+`tmtLoader.queues.copyShipped(<id>)` gives you a copy (a new id, *copy of …*, its condition written into its trigger)
+that the Queues tab can import and you can edit (the editor's own button is the next slice's).
+
+### The table's `queues` section
+
+```json
+"queues": [
+  { "id": "ca-ch-h-22",
+    "when": "player.q.buyables[11].plus(tmp.q.freeLayers).gte(6)",
+    "rearm": "once",
+    "queue": { "format": "tmt-queue/1", "version": 3, "id": "ca-ch-h-22", "trigger": {"on": "predicate", "when": "…the template's match…"},
+               "relies": {"options": {"nativeYield": "slot", "stages": "on", …}}, "steps": [ … ] },
+    "provenance": [ { "gate": "…", "commit": "…", "run": "…", "note": "…" } ] }
+]
+```
+
+| field | |
+|---|---|
+| `id` | the queue's own `id` (one id: the entry and its queue must carry the same) |
+| `when` | the TABLE's boundary — where the move was measured to be worth making (the stage it replaced had the same) |
+| `rearm` | `once` (default): once per page load. `each`: again every time the condition turns from false to true |
+| `cap`, `coolOff` | `each` only, both required: at most `cap` runs per page load, and a run starts no sooner than `coolOff.gs` game-seconds after the previous one ended |
+| `enabled` | `false` ships it switched off |
+| `queue` | the queue itself, INLINE (`tmt-queue/1`) |
+| `provenance` | REQUIRED, as a stage's: the measured rows behind it (`tools/auto-tables.mjs --provenance` reads them as `queue:<id>`) |
+
+**Inline, not a reference — and why.** The table is ONE document, fetched before the automation runs, and its
+provenance is about exactly these steps. A reference to a file would be a second request at boot and a second file that
+could drift from the measured one. The generated-queue catalog (`games-queues/`) stays the player's library; gate T1
+checks that the inline queue IS what the template writes from the measured state.
+
+**When it starts.** The entry's `when` AND the queue's own trigger (the template's match, below) — read ONCE PER LOOP,
+where the stages are read (before the first feature decides): a condition that becomes true inside loop N starts the
+queue in loop N+1's queue slot. That is the stage rule, and it is measured: read at the queue's slot instead, the H22
+queue entered one tick earlier and every later mark moved. A condition that THROWS reads as false and says so (the
+readout, one `condition` log record), as a stage's does.
+
+**Re-arming.** `each` re-arms the queue after a run ends (done or aborted): from the top, holding nothing (⛔ every run
+ends by releasing every hold, `finish`). It starts again only after (1) its condition has read FALSE at least once since
+the run ended — an edge, not a level — and (2) `coolOff.gs` game-seconds have passed since that end, and (3) fewer than
+`cap` runs were made; at the cap it is `spent`. A flickering condition therefore cannot loop: gate R2 drives a condition
+true 3 game-s of every 6 and gets exactly `cap` runs, each ≥ the cool-off after the last. ⚖ No shipped entry uses
+`each` yet: its cool-off must be MEASURED (the period of the condition it waits on, cited in the entry's provenance),
+never guessed.
+
+**`relies`** (queue format version 3) — the settings the template's check ran under: every automation option the core
+reports (`tmtLoader.autoConfig()`: `nativeYield`, `stages`, `passiveYield`, `resetDefault`, `turnMark`, `exclude`,
+`include`) and the policy in force of every feature the queue does NOT hold that is not the table's own (a stage's, an
+option's). When the queue would START (any queue, shipped or not), the runner compares them; one that differs keeps it
+from starting, by name (*it relies on the setting nativeYield = slot, and it is always*), and it is re-read every tick
+until they agree. Measured: the catalog's H22 queue was checked with `exclude=challenges:h`; under the shipped table it
+does not start (the challenge reflex would race it), and under its own configuration it does (gate L1).
+
+**A configuration that excludes a held feature** (`exclude=<id>`) cannot play the queue: it is left out, by name
+(`tmtLoader.queues.shippedSkipped()`), and the run goes on — that is a configuration, not a broken table. A queue the
+runner REFUSES for any other reason fails the load by name, like a bad table entry.
+
+**Memory.** A shipped queue that has done nothing yet is NOT written into `runtimeState()` — the table re-creates it —
+so a run whose shipped queues never started writes exactly the record it wrote before (gate K3). Once one has run it is
+written (`owner: 'table'`, its runs, its cool-off), and a restore puts it back where it was; a record without it re-arms
+it fresh. `--auto-opt shippedQueues=off` measures the table without them (the templates' checks run that way:
+`strategize` turns them off, so a check measures its own plan alone).
+
+### PTR's one shipped queue
+
+`ca-ch-h-22` — the `challenge-attempt` template's queue for H22, written from `m28/QL6` under the shipped table, with
+the table's boundary *6 Quirk Layers* (the boundary of the stage it replaced, `ql6-h22-attempt`). The stage said "while
+6 Quirk Layers and H22 is open: run challenges sequentially, and pause q, h, o and ss while one is active"; the queue says
+the same move directly: hold h, h's challenges, q, o and ss; enter H22 unless already inside; wait for the goal (at most
+the check's window, 3,600 game-s); finish it; release. From `all/M26` the table alone reaches **M29 at 81,779
+(`be1df4037cbb5804`), M28 at 85,279 (`827cf164da85a931`) and M30 at 94,521 (`132127d4d5573106`)** — the stage's ticks
+and hashes (gates-shipq A1, A0; at diff 0.05 the `shipq-equal@0.05` merge row).
+
+Gates: `tools/harness/gates-shipq.mjs` (push: vocab K1–K3, rearm R1–R4, tpl T1–T3, relies L1–L2, accept A1/A0, grep X1;
+page: PG, G1; the measurement legs A@1/ctl@1/A@0.05/ctl@0.05 in `qrate1.yml -f part=shipq`), `tools/harness/mutants-shipq.sh`.

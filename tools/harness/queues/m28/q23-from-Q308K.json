@@ -60,6 +60,7 @@
   }
  ],
  "version": 3,
+ "name": "buy The Waiting Game (quirks)",
  "relies": {
   "options": {
    "nativeYield": "slot",

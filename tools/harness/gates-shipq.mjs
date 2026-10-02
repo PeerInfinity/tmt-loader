@@ -185,7 +185,8 @@ async function partVocab() {
 // the re-arm rules (the shipped table carries no `each` entry). From all/M09 (the clock runs: p is unlocked).
 const FLICKER = 'Math.floor(player.timePlayed / 3) % 2 === 0';
 const probeQueue = (id) => ({ format: 'tmt-queue/1', version: 2, id, name: 'flicker probe', source: 'authored',
-  steps: [{ do: 'hold', features: ['reset:p'] }, { do: 'wait', until: 'false', timeout: { gs: 1 }, onTimeout: 'skip', comment: 'one game-second' }, { do: 'release' }] });
+  // no `release` step: the END must release the hold, every run (the rule a re-armed queue rests on)
+  steps: [{ do: 'hold', features: ['reset:p'] }, { do: 'wait', until: 'false', timeout: { gs: 1 }, onTimeout: 'skip', comment: 'one game-second' }] });
 async function partRearm() {
   const once = withQueue({ id: 'probe-once', when: FLICKER, queue: probeQueue('probe-once'), provenance: PROBE_PROV });
   const each = withQueue({ id: 'probe-each', when: FLICKER, rearm: 'each', cap: 3, coolOff: { gs: 8 }, queue: probeQueue('probe-each'), provenance: PROBE_PROV });
@@ -224,7 +225,7 @@ async function partRearm() {
       threeRunsTheCap: trig.length === 3 && q.filter((r) => r.do === 'spent').length === 1 && !!r2.eval && r2.eval.phase === 'spent' && r2.eval.runs === 3,
       coolOffKept: gaps.length === 2 && gaps.every((g) => g >= 8),
       edgeNotLevel: sawFalse,
-      everyRunReleased: ends.length === 3 && holds === 3 && rels === 3 && ends.every((e) => e.released === 0) && q.filter((r) => r.do === 'rearm').length === 2,
+      everyRunReleased: ends.length === 3 && holds === 3 && rels === 0 && ends.every((e) => e.released === 1) && q.filter((r) => r.do === 'rearm').length === 2,
       // between two runs, nothing is held and the feature decides again (the re-armed queue starts holding nothing)
       nothingHeldBetween: !!mid.ok && m.held === null && m.active === true && !!m.status && m.status.state === 'armed' && m.status.runs === 1 && !m.status.holds.length,
       nothingHeldAtTheEnd: !!r2.eval && !r2.eval.holds.length,
@@ -275,13 +276,14 @@ async function partTpl() {
   }
   // T2
   {
-    const all = [...CATALOG.map((f) => [f, fixture(f)]), [`${TABLE} queues[${H22Q}]`, s.queue]];
+    // the committed ones, and the one the template writes NOW (T1's) — a template that bakes a state number in is seen here
+    const all = [...CATALOG.map((f) => [f, fixture(f)]), [`${TABLE} queues[${H22Q}]`, s.queue], ['strategize m28/QL6 (now)', st.queue || {}]];
     const res = all.map(([f, q]) => {
       const w = q.trigger && q.trigger.when, lits = w ? stateLiterals(w, goalIds(q)) : ['(no when)'];
       const okv = q.trigger && q.trigger.on === 'predicate' && !lits.length && q.version === 3 && !!q.relies && !!q.relies.options;
       return [f, okv, lits];
     });
-    row({ gate: 'T2 every template-written queue (4 in the catalog + the shipped one) starts on a predicate with NO numeric literal but its item\'s id, is version 3 and carries `relies`', id: 'ptr', ok: res.every((r) => r[1]),
+    row({ gate: 'T2 every template-written queue (4 in the catalog, the shipped one, and T1\'s emitted now) starts on a predicate with NO numeric literal but its item\'s id, is version 3 and carries `relies`', id: 'ptr', ok: res.every((r) => r[1]),
       notes: res.map((r) => `${path.basename(r[0])} ${r[1] ? '✓' : '✗'}${r[2].length ? ' literals ' + JSON.stringify(r[2]) : ''}`).join('; ') });
   }
   // T3
@@ -373,6 +375,10 @@ async function partPage() {
       const errs = []; page.on('pageerror', (e) => errs.push(String(e.message).slice(0, 200)));
       const ld = await openGame(page, server.url, 'ptr', { profile: 'all' });
       if (!ld.ready) f.push(`did not load: ${JSON.stringify(ld.error)}`);
+      // G1 counts the FIRST load (the readout below reloads the page twice to load saves, and each load asks again)
+      await page.evaluate(() => tmtLoader.tick(1, 30));
+      const urls0 = stats.of(page).urls.slice();
+      const ks0 = await page.evaluate(() => Object.keys(localStorage));
       const stamp = (file) => { const p = JSON.parse(fixture(file).player); p.time = Date.now(); p.offTime = null; return JSON.stringify(p); };
       const view = async () => page.evaluate(() => {
         showTab('au'); player.subtabs[tmtLoader.auLayer].mainTabs = 'Advanced';
@@ -400,13 +406,13 @@ async function partPage() {
       if (errs.length) f.push(`page errors ${JSON.stringify(errs.slice(0, 2))}`);
       pgNotes = `armed: ${String(armed.block).replace(/\s+/g, ' ').slice(0, 160)} | running: ${String(running.block).replace(/\s+/g, ' ').slice(0, 220)} | copy ${copy.id} (${copy.name})`;
       // G1, ptr's own page: the runner once, nothing else new, no store key
-      const urls = stats.of(page).urls;
-      const nRunner = urls.filter((u) => RUNNER.test(u)).length, nEditor = urls.filter((u) => EDITOR.test(u)).length;
-      if (nRunner !== 1) g.push(`ptr automation page requested the runner ${nRunner} time(s)`);
+      const urls = urls0;
+      const nRunner = urls.filter((u) => RUNNER.test(u)).length, nEditor = stats.of(page).urls.filter((u) => EDITOR.test(u)).length;
+      if (nRunner !== 1) g.push(`ptr automation page requested the runner ${nRunner} time(s) on its first load`);
       if (nEditor) g.push(`ptr automation page requested the editor or the catalog (${nEditor})`);
       const ks = await page.evaluate(() => Object.keys(localStorage));
-      if (ks.some((k) => /:queues$/.test(k))) g.push(`a queues key exists: ${ks.filter((k) => /:queues$/.test(k))}`);
-      g1Notes = `ptr automation: runner ×${nRunner}, editor/catalog ×${nEditor}, ${urls.length} requests`;
+      if ([...ks0, ...ks].some((k) => /:queues$/.test(k))) g.push(`a queues key exists: ${[...ks0, ...ks].filter((k) => /:queues$/.test(k))}`);
+      g1Notes = `ptr automation, first load: runner ×${nRunner} of ${urls.length} requests; editor/catalog ×${nEditor} over the whole session; no queues key`;
       await context.close();
     }
     // G1 — a plain page, and a game whose table ships no queue

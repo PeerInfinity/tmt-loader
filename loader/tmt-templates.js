@@ -183,8 +183,17 @@
     if (any) r.policies = pol;
     return r;
   }
-  function conditional(q, when, hold) {
+  // the queue's NAME, in the game's own words (a declaration's `title` / `name`, read guarded, HTML stripped — as the
+  // editor names a step): what the readout shows a player, instead of the goal id
+  function plain(v, obj) {
+    try { if (typeof v === 'function') v = v.call(obj); } catch (e) { v = null; }
+    if (v === null || v === undefined) return null;
+    var t = String(v).replace(/<br\s*\/?>/gi, ' ').replace(/<[^>]*>/g, '').replace(/&nbsp;/g, ' ').replace(/&amp;/g, '&').replace(/\s+/g, ' ').trim();
+    return t || null;
+  }
+  function conditional(q, when, hold, name) {
     q.version = 3;
+    if (name) q.name = name.slice(0, 80);
     q.trigger = { on: 'predicate', when: when };
     q.relies = reliesNow(hold);
     return q;
@@ -443,7 +452,7 @@
       source: { template: TPP.id, goal: b.goal, facts: [b.facts.price, b.facts.production].concat(b.facts.zeroedBy) },
       comment: b.goal + '\'s price grows with ' + b.field + ' (exponent ' + (v.static.priceExponent === null ? '?' : v.static.priceExponent) + '), the purse as ' + b.field + '^' + (v.static.integratedExponent === null ? '?' : v.static.integratedExponent) +
         '. Hold every reset that zeroes ' + b.field + ' and buy at the moment the rollback measured. It starts whenever ' + b.goal + ' is unlocked and not owned.',
-      steps: steps }, when, b.hold);
+      steps: steps }, when, b.hold, 'buy ' + (plain(d && d.title, d) || b.goal) + ' (' + (plain(G.layers[it.layer] && G.layers[it.layer].name, G.layers[it.layer]) || it.layer) + ')');
   };
 
   // ---- challenge-attempt (h22) ---------------------------------------------------------------------------------------
@@ -737,7 +746,8 @@
     else { last.until = 'String(' + x.path + '.activeChallenge) !== ' + cid; last.comment = 'the attempt is over (a repeatable challenge: the completion count it started from is not an engine value)'; }
     var notDone = typeof maxedChallenge === 'function' ? '!maxedChallenge(' + x.l + ', ' + x.id + ')' : '!hasChallenge(' + x.l + ', ' + x.id + ')';
     var when = x.path + '.unlocked && tmp[' + x.l + '].challenges[' + x.id + '].unlocked && ' + notDone + ' && (!' + x.path + '.activeChallenge || String(' + x.path + '.activeChallenge) === ' + cid + ')';
-    return conditional(q, when, b.hold);
+    var cd = chalDecl(b.challenge), L0 = G.layers[b.challenge.layer];
+    return conditional(q, when, b.hold, 'attempt ' + (plain(cd && cd.name, cd) || b.goal) + ' (' + (plain(L0 && L0.name, L0) || b.challenge.layer) + ')');
   };
 
   // ---- reset-requirement (m30) ---------------------------------------------------------------------------------------
@@ -1011,7 +1021,7 @@
     return conditional({ format: 'tmt-queue/1', id: 'rr-' + b.goal.replace(/[^A-Za-z0-9_.-]/g, '-'), trigger: { on: 'start' },
       source: { template: RR.id, goal: b.goal, facts: [b.facts.base].concat(b.facts.zeroedBy) },
       comment: b.goal + ' needs ' + b.requirement + ' of ' + b.base + ', which a reset of ' + b.zeroers.join(', ') + ' zeroes. Hold every one, wait for the engine\'s canReset, reset, release. It starts whenever the layer is shown and ' + (b.rebuild ? 'holds none of its currency' : 'has never been reset') + '.',
-      steps: steps }, when, b.hold);
+      steps: steps }, when, b.hold, (b.rebuild ? 'rebuild ' : 'first reset of ') + (plain(G.layers[b.layer] && G.layers[b.layer].name, G.layers[b.layer]) || b.layer));
   };
 
   var TEMPLATES = { 'time-priced-purchase': TPP, 'challenge-attempt': CA, 'reset-requirement': RR };
