@@ -27,7 +27,8 @@
 //               challenges) only when it is empty AND at the requirement; q cashes in by the derived default's ratio rule
 //               (`gain>=2x`), because `rate-peak` never sees a peak in a held cycle (measured); its `when` is state. S2 from
 //               m31/R95400 under the SHIPPED table: no zeroing reset fires, and reset:sg rebuilds Super Generators on the
-//               template's tick.
+//               template's tick. S3 the named WALL: m31/W124521 = stages/M30 + 30,000 game-s under the shipped table
+//               (5.104e25 total quirks, q milestones 0–6, 7 Quirk Layers), rebuilt to its pin.
 // Part grep     X1 no game id and no ptr layer id in the generic code this slice changed (templates, the facts probes).
 // MEASUREMENTS (dispatch-only, `.github/workflows/qrate1.yml -f part=m31`): `levers` (M31's value goal, ranked) and the
 // legs — from stages/M30 under the shipped table at diff 1 and 0.05, the stage order, and the control without it — each
@@ -62,6 +63,8 @@ const M30F = 'tools/harness/snapshots/ptr/stages/M30.json';
 const PRE_TABLE = 'tools/harness/snapshots/ptr/m31/table-before-m31.json';   // main f14ac74's table, byte for byte
 const REBUILD = 'tools/harness/snapshots/ptr/m31/R95400.json';              // stages/M30 + 879 ticks under PRE_TABLE
 const QUEUE = 'tools/harness/queues/m31/rr-reset-sg-from-R95400.json';
+const WALL = 'tools/harness/snapshots/ptr/m31/W124521.json';                // stages/M30 + 30,000 game-s under the shipped table
+const PIN_WALL = { ticks: 124521, hashGame: '41ed4f4f303019da', total: '5.103998705401289e25' };
 const STATES_FILE = 'tools/harness/snapshots/ptr/facts-states.json';
 const STAGE = 'sg-keep';
 const PIN_M30 = { ticks: 94521, hashGame: '132127d4d5573106' };
@@ -339,8 +342,21 @@ async function partStage() {
     row({ gate: `S2 from m31/R95400 under the SHIPPED table: ${STAGE} is in force, no zeroing reset fires, and reset:sg rebuilds Super Generators on the template's tick`, id: 'ptr', ok: Object.values(checks).every(Boolean),
       notes: `${ck(checks)} — stage ${JSON.stringify(st)}; ${x.ticks} / ${x.hashGame} ${JSON.stringify(x.eval)}; zeroings ${JSON.stringify(Z)} ${x.error || ''}` });
   }
+  // S3 — the named wall, rebuilt
+  {
+    const dW = path.join(TMP, 'fw');
+    const w = await run('ptr', { 'from-snapshot': M30F, profile: 'all', ticks: PIN_WALL.ticks - PIN_M30.ticks, 'stop-snapshot': dW, 'stop-snapshot-name': 'W124521',
+      eval: "({total: String(player.q.total), qms: player.q.milestones.length, ql: String(player.q.buyables[11].plus(tmp.q.freeLayers)), m31: hasMilestone('q',7) && !!player.s.autoBld})" });
+    const c = fixture(WALL), built = fs.existsSync(path.join(dW, 'W124521.json')) ? JSON.parse(fs.readFileSync(path.join(dW, 'W124521.json'), 'utf8')) : null;
+    const checks = { ran: !!w.ok, pin: w.ticks === PIN_WALL.ticks && w.hashGame === PIN_WALL.hashGame, committed: c.ticks === PIN_WALL.ticks && c.hashGame === PIN_WALL.hashGame,
+      rebuilt: !!built && built.hashGame === c.hashGame, notM31: !!w.eval && w.eval.m31 === false && w.eval.total === PIN_WALL.total && w.eval.qms === 7,
+      configNamed: c.config.from === M30F && c.config['auto-opt'] === null && !c.config['auto-table'] };
+    row({ gate: 'S3 the named WALL m31/W124521 = stages/M30 + 30,000 game-s under the shipped table: 5.104e25 total quirks, M31 not reached', id: 'ptr', ok: Object.values(checks).every(Boolean),
+      notes: `${ck(checks)} — ${w.ticks} / ${w.hashGame} (pin ${PIN_WALL.ticks} / ${PIN_WALL.hashGame}); ${JSON.stringify(w.eval)} ${w.error || ''}` });
+  }
 }
 
+// S3 is in partStage (below S2): the wall state, rebuilt
 // ---- Part grep -------------------------------------------------------------------------------------------------------
 function partGrep() {
   const ids = JSON.parse(fs.readFileSync(path.join(REPO, 'manifests/index.json'), 'utf8')).map((g) => g.id);
@@ -438,7 +454,7 @@ function partMerge() {
   }
 }
 
-const EXPECT = { facts: 5, verdict: 5, stage: 2, grep: 1, levers: Object.keys(LEVER_STATES).length, leg: 1, merge: MERGED.length + (a.only ? 0 : 1) };
+const EXPECT = { facts: 5, verdict: 5, stage: 3, grep: 1, levers: Object.keys(LEVER_STATES).length, leg: 1, merge: MERGED.length + (a.only ? 0 : 1) };
 const FN = { facts: partFacts, verdict: partVerdict, stage: partStage, grep: partGrep, levers: partLevers, leg: partLeg, merge: partMerge };
 const RUN = PART === 'push' ? GATE_PARTS : [PART];
 let expected = 0;

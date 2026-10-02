@@ -1040,10 +1040,11 @@ jobs:
   # "reset-requirement", docs/automation.md "Stages"). Facts: the declared state stages/M30 (q34 and H31 unlocked there);
   # H31's goal read over its completion limit (O2), its purchase budget (O7), `unlocked()` read as the engine does, q34's
   # price — each against the game source and a separate --eval boot. Verdict: q34 waiting-cannot-help with its levers,
-  # H31 short, sg not open at M30, the reset-requirement REBUILD from m31/R95400, the extension's reach. Stage and grep.
+  # H31 short, sg not open at M30, the reset-requirement REBUILD from m31/R95400, the extension's reach. Stage (as data,
+  # its switch, the named wall m31/W124521 rebuilt) and grep.
   # The MEASUREMENT (the M31 value goal's levers, and the legs from stages/M30 at diff 1 and 0.05) is
   # `qrate1.yml -f part=m31`, dispatch-only.
-  # ⛔ `--assert` holds the run to its exact row count (13), all green.
+  # ⛔ `--assert` holds the run to its exact row count (14), all green.
   # ---------------------------------------------------------------------------------------------------------------
   m31:
     name: m31 — facts past q33, toward M31
