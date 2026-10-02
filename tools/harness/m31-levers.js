@@ -59,7 +59,8 @@ for (var i = 0; i < names.length; i++) {
   try { r1 = gainAfter(function () { var cur = get(p); set(p, isBuy ? mk(new Decimal(cur).plus(1)) : mk(new Decimal(cur).times(10).plus(1))); }); }
   catch (e) { out.push({ input: p, via: inputs[p].via, threw: String(e && e.message || e).slice(0, 120) }); continue; }
   var dg = lg(r1.gain) - g0;
-  if (!isFinite(dg) || Math.abs(dg) < 1e-9) continue;
+  // a mover below 10^-3 of the gain per step is not a lever (its first-order distance is noise)
+  if (!isFinite(dg) || Math.abs(dg) < 1e-3) continue;
   var row = { input: p, via: inputs[p].via, held: String(v0), step: step[1], gainMovesLog10: Math.round(dg * 1e4) / 1e4 };
   if (dg > 0) {
     // first-order: orders of the input (×10 steps), or units (+1 steps), to close log10(target ÷ gain)

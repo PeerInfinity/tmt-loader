@@ -183,6 +183,28 @@
   },
   "stages": [
     {
+      "id": "sg-keep",
+      "when": "hasUpgrade('q',33) && player.sg.unlocked && !player.h.activeChallenge",
+      "policies": {
+        "reset:q": "gain>=2x"
+      },
+      "gates": {
+        "reset:t": "player.sg.points.gt(0) || player.g.points.gte(tmp.sg.nextAt)",
+        "reset:e": "player.sg.points.gt(0) || player.g.points.gte(tmp.sg.nextAt)",
+        "reset:s": "player.sg.points.gt(0) || player.g.points.gte(tmp.sg.nextAt)",
+        "reset:sb": "player.sg.points.gt(0) || player.g.points.gte(tmp.sg.nextAt)",
+        "reset:h": "player.sg.points.eq(0) && player.g.points.gte(tmp.sg.nextAt)",
+        "challenges:h": "player.sg.points.eq(0) && player.g.points.gte(tmp.sg.nextAt)",
+        "reset:q": "player.sg.points.gt(0) || player.g.points.gte(tmp.sg.nextAt)",
+        "reset:o": "player.sg.points.eq(0) && player.g.points.gte(tmp.sg.nextAt)",
+        "reset:ss": "player.sg.points.eq(0) && player.g.points.gte(tmp.sg.nextAt)"
+      },
+      "provenance": {
+        "unverified": true,
+        "note": "scratch: under measurement (tmt-m31-1)"
+      }
+    },
+    {
       "id": "q33-sg-unlock",
       "when": "hasUpgrade('q',33) && !player.sg.unlocked",
       "gates": {
