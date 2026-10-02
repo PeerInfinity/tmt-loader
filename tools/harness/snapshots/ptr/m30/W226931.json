@@ -9,7 +9,7 @@
  "hashGame": "e09f367518a8fb2d",
  "config": {
   "profile": "all",
-  "auto-opt": null,
+  "auto-opt": "nativeYield=always",
   "from": "tools/harness/snapshots/ptr/stages/M28.json",
   "why": "ticks",
   "auto-table": "tools/harness/snapshots/ptr/m30/table-before-m30.json"

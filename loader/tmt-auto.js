@@ -760,7 +760,9 @@
     'blocked:after':      { text: 'Blocked — waiting for {sibling} to unlock first',              values: ['sibling'], demand: 'sibling' },
     'blocked:enter':      { text: 'Blocked — the game will not enter challenge {id}',             values: ['id'] },
     'blocked:exit':       { text: 'Blocked — the game will not exit challenge {id} yet',          values: ['id'] },
-    'yielding:native':    { text: "Yielding — the game's own auto-reset is resetting {layer}",     values: ['layer'] },
+    // yield-1: `at` is WHERE it yielded — `slot` (the engine has just checked its auto-reset) or `fallback` (the engine
+    // skipped the layer this tick; only under `nativeYield=always`, the rule before yield-1, which waits there in vain)
+    'yielding:native':    { text: "Yielding — the game's own auto-reset is resetting {layer} (decided in: {at})",     values: ['layer', 'at'] },
     // F1: `pct` is the engine's own `passiveGeneration` as a percentage of the reset's gain per game-second —
     // dimensionless, so it is not a `quantities` value.
     'yielding:passive':   { text: 'Yielding — the game pays {layer} {pct}% of a reset’s gain every second without resetting', values: ['layer', 'pct'] },
@@ -965,6 +967,49 @@
     var r = passiveRateOf(l);
     return r > passiveYieldNow ? r : null;
   }
+  // ---- yield-1: A RESET YIELDS TO THE NATIVE AUTO-RESET ONLY WHERE THE ENGINE PERFORMS IT ---------------------------
+  // Every engine on the roster does `if (tmp[layer].autoPrestige && tmp[layer].canReset) doReset(layer);` and then
+  // `if (layers[layer].automate) layers[layer].automate();`, in one loop body (each game's own `js/game.js`) — so the
+  // engine checks a layer's auto-reset IN THE SAME TICK AND RIGHT BEFORE the layer's own `automate` slot, and in no
+  // other place. Five engine files skip the whole body for a layer that has never been reset (`if (!unl(layer))
+  // continue`: ptr, the-extended-tree, prestige-tree-ng, the two trees bundled in the-classic-tree) and one for a
+  // paused layer (universal-reconstruction). There the automation decides the layer in the `au` layer's FALLBACK pass,
+  // and a yield there waits for a reset the engine does not make: ptr's `sg` past q milestone 6 sat at the requirement
+  // for 83 ticks with nothing resetting it (snapshots/ptr/m30/W226931, the M30 slice's S3 row).
+  // ⛔ DERIVED, NOT LISTED: `slot` yields only when this decision runs in the layer's own slot — the engine has just
+  // checked the auto-reset — and never in the fallback, where it did not. No family data, no game id. `always` is the
+  // rule before yield-1 (yield wherever `autoPrestige` is set), the lever every pin recorded before it measured.
+  // ⚖ THE DEFAULT IS `slot` (user, 2026-10-02: "ON; old rows name old rule", yield-2). The rows that measured the old
+  // rule — gates-m30 F0 (the wall m30/W226931 is built under it: under `slot` sg resets on the way and the wall is never
+  // reached), O1, VAC's control, EV and S3 (each asserts the defect) — name `nativeYield=always` rather than being
+  // re-recorded, as the legs before the stages name `stages=off` (cloud-reports/tmt-yield-1.md, tmt-yield-2.md).
+  var NATIVE_YIELDS = ['slot', 'always'], NATIVE_YIELD_DEFAULT = 'slot', nativeYieldNow = NATIVE_YIELD_DEFAULT;
+  var curRun = { layer: null, via: null };   // the layer `runLayer` is deciding right now, and where (slot / fallback)
+  // A READOUT for the gates (like `fallbackFires`; not runtime memory): per reset feature, how many decisions were
+  // taken with the layer's `autoPrestige` set — in the slot, in the fallback, and in the fallback with the engine
+  // allowing the reset (`fallbackReady`: the only decisions this rule can change).
+  T.nativeYieldCounts = {};
+  function countNative(f, ready) {
+    var c = T.nativeYieldCounts[f.id] || (T.nativeYieldCounts[f.id] = { slot: 0, fallback: 0, fallbackReady: 0 });
+    if (curRun.via === 'slot') c.slot++;
+    else { c.fallback++; if (ready) c.fallbackReady++; }
+  }
+  /**
+   * Does the ENGINE perform layer `l`'s auto-reset where the automation is deciding it? The decision itself knows
+   * (`curRun`). The row cycle and the stall arbiter ask about OTHER layers before their slot has come round this tick,
+   * so they read the history: a slot already run this tick, or a fallback run, says which; otherwise last tick's
+   * answer stands (a layer's `unl` does not change inside a tick), and a layer with no history gets the old answer.
+   */
+  function nativeAutoHere(l) {
+    if (!tmp[l] || !tmp[l].autoPrestige) return false;
+    if (nativeYieldNow === 'always') return true;
+    if (curRun.layer === l) return curRun.via === 'slot';
+    if (stats.slotAt[l] === loopNo) return true;
+    if (ranAt[l] === loopNo) return false;
+    if (slotHistoryFrom > loopNo - 1 || ranAt[l] !== loopNo - 1) return true;
+    return stats.slotAt[l] === loopNo - 1;
+  }
+  var slotHistoryFrom = 0;   // the first loop whose slot history is known (a restore without one starts it afresh)
   var features = [];
   var byId = {};
   T.features = features;
@@ -972,7 +1017,7 @@
   var hookOrder = [];
   var loopNo = 0;          // one per gameLoop: advanced by the au layer's automate, the last automate a gameLoop calls
   var ranAt = {};          // layer → loopNo it last ran in
-  var stats = { calls: {}, viaSlot: {}, viaFallback: {}, doubles: 0, loops: 0, actions: {}, challenges: {} };
+  var stats = { calls: {}, viaSlot: {}, viaFallback: {}, doubles: 0, loops: 0, actions: {}, challenges: {}, slotAt: {} };   // slotAt (yield-1): layer → the loop its own slot last ran in
   var lastReset = {};      // feature id → player.timePlayed of its last reset (interval policy; runtime only)
   // ---- (log-1) THE STATE LOG'S SLOT: four points this file calls out to, and all four are NULL unless the log runs ----
   // The recorder is `loader/tmt-log.js` (docs/log.md). It is loaded ONLY when the log is switched on, and it fills
@@ -1233,6 +1278,7 @@
   function decideReset(f) {
     var l = f.layer;
     if (!tmp[l] || tmp[l].canReset !== true) {
+      if (tmp[l] && tmp[l].autoPrestige) countNative(f, false);
       // the engine's own refusal, with the two numbers it has WHERE it has them: `tmp[l].baseAmount` against
       // `tmp[l].requires` is what 2.2.1's and 2.7's own `canReset` compare for a normal / static layer. A `custom`
       // layer answers with its own `canReset()` and need not publish either, so both may be absent.
@@ -1240,7 +1286,11 @@
       return { act: false, code: 'cannot-reset', values: { have: t.baseAmount === undefined ? null : t.baseAmount, need: resetThreshold(l) } };
     }
     // yield to native: while the game's own auto-reset predicate holds, gameLoop resets this layer itself
-    if (tmp[l].autoPrestige) return { act: false, code: 'yielding:native', values: { layer: l } };
+    // ⛔ yield-1: …but only where the engine performs it — in this layer's own slot (see `nativeAutoHere`)
+    if (tmp[l].autoPrestige) {
+      countNative(f, true);
+      if (nativeAutoHere(l)) return { act: false, code: 'yielding:native', values: { layer: l, at: curRun.via } };
+    }
     // F1: …and while the game pays this layer passively, which it does without resetting anything (see `passiveYieldOf`)
     var pr = passiveYieldOf(l);
     if (pr !== null) return { act: false, code: 'yielding:passive', values: { layer: l, pct: Math.round(pr * 1e4) / 100 } };
@@ -1456,7 +1506,7 @@
     if (!stallMod(P)) return null;
     if (g.gate && !holds(g.gate)) return null;
     var l = g.layer;
-    if (!tmp[l] || tmp[l].canReset !== true || tmp[l].autoPrestige || passiveYieldOf(l) !== null) return null;
+    if (!tmp[l] || tmp[l].canReset !== true || nativeAutoHere(l) || passiveYieldOf(l) !== null) return null;
     for (var i = 0; i < g.after.length; i++) if (!player[g.after[i]] || !player[g.after[i]].unlocked) return null;
     var d = primaryReset(g, P);
     if (d.act) return null;
@@ -1550,7 +1600,7 @@
   /** Would the ENGINE allow this member's reset right now? (The same three questions `decideReset` opens with.) */
   function engineAllows(f) {
     var l = f.layer;
-    if (!tmp[l] || tmp[l].canReset !== true || tmp[l].autoPrestige) return false;
+    if (!tmp[l] || tmp[l].canReset !== true || nativeAutoHere(l)) return false;
     for (var i = 0; i < f.after.length; i++) if (!player[f.after[i]] || !player[f.after[i]].unlocked) return false;
     return true;
   }
@@ -2959,7 +3009,7 @@
       if (held && heldIn) return { act: false, code: 'holding:reserve-in', values: { have: heldIn.have, currency: heldIn.path, reserve: heldIn.reserve } };
       if (held) return { act: false, code: 'holding:reserve', values: { have: player[l].points, reserve: lim } };
       // every unlocked buyable of this layer is the GAME's to buy — the same sentence `reset` already says
-      if (!seen && autoed.length) return { act: false, code: 'yielding:native', values: { layer: l } };
+      if (!seen && autoed.length) return { act: false, code: 'yielding:native', values: { layer: l, at: curRun.via } };
       if (!seen) return { act: false, code: 'nothing-to-do', values: { kind: 'buyables', layer: l } };
       // C1: the refusal names the currency the cheapest buyable is waiting on, or says it is unknown
       if (minId !== null) {
@@ -3161,8 +3211,13 @@
     ranAt[l] = loopNo;
     stats.calls[l] = (stats.calls[l] || 0) + 1;
     (via === 'slot' ? stats.viaSlot : stats.viaFallback)[l] = ((via === 'slot' ? stats.viaSlot : stats.viaFallback)[l] || 0) + 1;
+    if (via === 'slot') stats.slotAt[l] = loopNo;
     if (logLink.replay !== null) logLink.replay(l, via);
     if (T.profileName === 'off') return;
+    curRun.layer = l; curRun.via = via;
+    try { runFeatures(l, via); } finally { curRun.layer = null; curRun.via = null; }
+  }
+  function runFeatures(l, via) {
     // ⛔ ONCE PER `gameLoop`, AHEAD OF THE FIRST FEATURE OF THAT LOOP (V3). `runLayer` is called from each layer's own
     // `automate` wrapper and from the `au` layer's fallback, so this is the earliest point that is guaranteed to come
     // before any feature decides, whatever order the engines walk the layers in. `watchTick` polls the progress
@@ -3405,6 +3460,8 @@
     for (k in rt.ranAt || {}) ranAt[k] = rt.ranAt[k];
     loopNo = Number(rt.loopNo) || 0;
     if (rt.stats) for (k in stats) if (rt.stats[k] !== undefined) stats[k] = JSON.parse(JSON.stringify(rt.stats[k]));
+    // yield-1: a record from before the slot history existed has none — its first loop gets the old answer (nativeAutoHere)
+    if (!rt.stats || !rt.stats.slotAt) { stats.slotAt = {}; slotHistoryFrom = loopNo; } else slotHistoryFrom = 0;
     for (k in enableOverride) delete enableOverride[k];
     for (k in rt.enabled || {}) enableOverride[k] = !!rt.enabled[k];
     for (var pj = 0; pj < features.length; pj++) features[pj].policyRuntime = null;
@@ -5649,6 +5706,10 @@
     else if (String(py) === 'off') passiveYieldNow = null;
     else if (/^\d+(\.\d+)?$/.test(String(py).trim())) passiveYieldNow = Number(py);
     else throw new Error(src + ': option passiveYield must be "off" or a number ≥ 0 (got "' + py + '")');
+    // yield-1: `nativeYield` — `slot` (yield to the native auto-reset only in the layer's own slot) or `always` (before)
+    var ny = T.autoOptions.nativeYield;
+    nativeYieldNow = ny === undefined || ny === '' ? NATIVE_YIELD_DEFAULT : String(ny);
+    if (NATIVE_YIELDS.indexOf(nativeYieldNow) < 0) throw new Error(src + ': option nativeYield must be one of ' + NATIVE_YIELDS.join(', ') + ' (got "' + ny + '")');
     var cands = candidates(kindOrder);
     var candById = {};
     cands.forEach(function (c) { candById[c.id] = c; });

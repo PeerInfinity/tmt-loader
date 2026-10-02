@@ -516,3 +516,16 @@ test('stages: the gates on every push, the legs dispatch-only behind part=stages
   for (const k of ['m28-legs', 'm28-merge', 'h22-legs', 'h22-merge']) assert.doesNotMatch(q[k] || '', /inputs\.part == 'stages'/, `${k} would run on a part=stages dispatch`);
   assert.match(q['stages-legs'], /gates-stages\.mjs --part leg[^\n]*--assert/);
 });
+
+// ---------------------------------------------------------------------------------------------------------------
+// yield-1: the yield rule's gates on every push — the battery AND the roster (both rules, every hosted game).
+// ---------------------------------------------------------------------------------------------------------------
+test('yield: the battery and the roster on every push, exact row counts', () => {
+  const j = jobs(wf('sweep.yml'));
+  assert.ok(j.yield, 'sweep.yml has no `yield` job');
+  assert.deepEqual(needs(j.yield), ['fast']);
+  assert.match(j.yield, /gates-yield\.mjs --part push[^\n]*--assert/);
+  assert.match(j.yield, /gates-yield\.mjs --part roster[^\n]*--assert/, 'the roster leg (both rules over every hosted game) is not in the job');
+  assert.doesNotMatch(j.yield, /--part leg/, 'a yield MEASUREMENT part is in the sweep — it would run on every push');
+  assert.doesNotMatch(j.yield, /^\s{4}if:/m, 'the yield job is gated: it must run on every push');
+});

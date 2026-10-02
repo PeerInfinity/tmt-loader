@@ -1036,6 +1036,73 @@ jobs:
           if-no-files-found: warn
           retention-days: 14
 
+  # yield — THE YIELD RULE (`gates-yield.mjs`; docs/automation.md "Where features run", slice tmt-yield-1): a reset
+  # yields to the game's own auto-reset only in the layer's own slot, never in the fallback pass, where the engine
+  # skipped the layer (`nativeYield=slot`, the default since yield-2; the old rule is `nativeYield=always`, which the rows
+  # that measured it name). Push: the defect from the wall m30/W226931 with the fix off (the pre-slice loader to the hash), the fix on
+  # (sg resets on its pinned tick, in the fallback, the log replays equal), vacuity (slot and fallback both exercised),
+  # the slot untouched (all/M22: one hash), vanilla engines one hash, the stub units, a game-id grep. Roster: every
+  # hosted game fresh × 2,000 ticks and every committed ptr/something fixture × 500 ticks under BOTH rules, seeded — a
+  # hash may move only where a reset was decided in the fallback with the auto-reset set and the engine allowing it.
+  # ⛔ `--assert` holds each run to its exact row count (9 and 2), all green.
+  # ---------------------------------------------------------------------------------------------------------------
+  yield:
+    name: yield — the native auto-reset yield rule
+    needs: fast
+    runs-on: ubuntu-latest
+    timeout-minutes: 75
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true   # games/ is the tmt-loader-games submodule
+          fetch-depth: 1
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - run: npm ci
+
+      - name: The battery — defect, fix, control, grep
+        shell: bash
+        run: |
+          set -o pipefail
+          s=$(date +%s)
+          node tools/harness/gates-yield.mjs --part push --pool 4 --assert | tee yield.txt
+          echo "TIME yield push: $(( $(date +%s) - s )) s" | tee -a yield.txt
+
+      - name: The roster — both rules, every hosted game and every committed fixture
+        shell: bash
+        run: |
+          set -o pipefail
+          s=$(date +%s)
+          node tools/harness/gates-yield.mjs --part roster --ticks 2000 --deep-ticks 500 --pool 4 --assert | tee -a yield.txt
+          echo "TIME yield roster: $(( $(date +%s) - s )) s" | tee -a yield.txt
+
+      - name: Summary
+        if: always()
+        shell: bash
+        run: |
+          {
+            echo '## yield — the native auto-reset yield rule'
+            echo ''
+            echo '```'
+            cat yield.txt 2>/dev/null | grep -aE '^(GREEN|RED|VERDICT|TIME)' | cut -c1-600 || echo 'no output'
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload the rows
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: yield
+          path: |
+            tools/harness/results/tmp/gates-yield-part-*-last.json
+            tools/harness/results/tmp/gates-yield-roster.json
+          if-no-files-found: warn
+          retention-days: 14
+
   # ---------------------------------------------------------------------------------------------------------------
   # A1 part 2 — the `au` TAB ITSELF (`gates-a1.mjs --part 2`). Until V1 this ran NOWHERE in CI: only part 1's half
   # (the registry with no per-game table) rode inside M1's `both` leg, so every check of the tab the player actually
