@@ -1038,8 +1038,8 @@ jobs:
 
   # yield — THE YIELD RULE (`gates-yield.mjs`; docs/automation.md "Where features run", slice tmt-yield-1): a reset
   # yields to the game's own auto-reset only in the layer's own slot, never in the fallback pass, where the engine
-  # skipped the layer (`--auto-opt nativeYield=slot`; ⚖ the default stays `always` until the user rules on the pin it
-  # moves). Push: the defect from the wall m30/W226931 with the fix off (the pre-slice loader to the hash), the fix on
+  # skipped the layer (`nativeYield=slot`, the default since yield-2; the old rule is `nativeYield=always`, which the rows
+  # that measured it name). Push: the defect from the wall m30/W226931 with the fix off (the pre-slice loader to the hash), the fix on
   # (sg resets on its pinned tick, in the fallback, the log replays equal), vacuity (slot and fallback both exercised),
   # the slot untouched (all/M22: one hash), vanilla engines one hash, the stub units, a game-id grep. Roster: every
   # hosted game fresh × 2,000 ticks and every committed ptr/something fixture × 500 ticks under BOTH rules, seeded — a
