@@ -199,10 +199,23 @@
         "reset:o": "player.sg.points.eq(0) && player.g.points.gte(tmp.sg.nextAt)",
         "reset:ss": "player.sg.points.eq(0) && player.g.points.gte(tmp.sg.nextAt)"
       },
-      "provenance": {
-        "unverified": true,
-        "note": "scratch: under measurement (tmt-m31-1)"
-      }
+      "provenance": [
+        {
+          "gate": "m31-A@1",
+          "commit": "7dc963f",
+          "note": "tmt-m31-1 (cloud-reports/tmt-m31-1.md; measured in the cloud session, every leg twice equal — CI qrate1 part=m31 pending): from stages/M30 the shipped table with this stage ends +30,000 game-s (diff 1, tick 124,521, 41ed4f4f303019da) with 5.104e25 total quirks; the table before this slice (m31-ctl@1, ef3ec3df273c0e45) with 1.856e23. The hold is the reset-requirement REBUILD (gates-m31 V4: sg rebuilds 520 game-s into the hold from m31/R95400); the q reset cashes in by gain>=2x because a held cycle never shows rate-peak a peak. M31 (1e60 total quirks) is not reached."
+        },
+        {
+          "gate": "m31-A@0.05",
+          "commit": "7dc963f",
+          "note": "tmt-m31-1: the same at the page tick diff 0.05 — +6,000 game-s with 1.789e24 total quirks (e8f1c845e0c70429) against the table before this slice 9.849e21 (m31-ctl@0.05, a0e5a023d501d565), twice equal."
+        },
+        {
+          "gate": "m31-last@1",
+          "commit": "7dc963f",
+          "note": "tmt-m31-1: the ORDER — listed after ql5-quirk-rate the stage loses reset:q policy to rate-peak, which never fires in a held cycle: total quirks stay 2.4528e21 for 30,000 game-s (c0735b89e2ad312c), so it is listed first."
+        }
+      ]
     },
     {
       "id": "q33-sg-unlock",

@@ -286,7 +286,10 @@ But the held gain grows FASTER than linearly in time (≈ t^1.08 over 1,000–4,
 and never cashes in: every stage that held the zeroers under the table's q policy froze total quirks at 2.45e21 for
 30,000 ticks (the hold alone; with the dead cycle members gated; with h, o, ss paused). And it must stay outside the h
 challenges: a hold that names `challenges:h` while an attempt is open holds its give-up too (a deadlock inside H31,
-measured). What wins is the hold WITH a cash-in the hold cannot starve — `sg-keep` (docs/automation.md, "Stages").
+measured). What wins is the hold WITH a cash-in the hold cannot starve — `sg-keep` (docs/automation.md, "Stages"): the
+rebuild's gates, sg's own currency kept (h, o, ss and h's challenges wait until it is empty at the requirement), and the q
+reset by the derived default's ratio rule `gain>=2x`. From stages/M30 it ends +30,000 game-s with 5.10e25 total quirks
+against the table's 1.86e23 (diff 1), and +6,000 game-s with 1.79e24 against 9.85e21 (diff 0.05), every leg twice equal.
 
 ## How a sub-goal reaches the planner (qrate1, 2026-09-30)
 
@@ -325,6 +328,13 @@ FLIPS: q23 says **buy at t\***, and its queue played live buys it on the copy's 
 source / O1s short / O2 live + replay / the hold's vacuity / the log evidence / O3 generality, the stage's switch and its
 data, the grep) and `tools/harness/mutants-m30.sh` (a hold that misses the row siblings, a literal requirement in the
 stage, a game id); its measurement, M30 at diff 1 and 0.05 and both stage orders, is `qrate1.yml -f part=m30`.
+`tools/harness/gates-m31.mjs --part push` (facts past q33 — the declared stages/M30, H31's goal over its completion
+limit, its budget, `unlocked()` as the engine reads it, q34's price; the verdicts at stages/M30 — q34 waiting-cannot-help,
+H31 short, sg not open — and the REBUILD from m31/R95400; the extension's reach; the stage `sg-keep` as data and its
+switch; the grep) and `tools/harness/mutants-m31.sh` (the completions probe unbounded, `undefined` read as unlocked, the
+budget not re-traced, the rebuild's done-check on `unlocked`, a layer that starts unlocked read as a rebuild, a game id);
+its measurement — the M31 value goal's levers, and the legs from stages/M30 at diff 1 and 0.05, the control and the
+stage last — is `qrate1.yml -f part=m31`.
 `tools/harness/gates-h22.mjs --part push` (challenge-attempt: the M29 fixture, O1 complete / O1s short with the source's
 lever / O2 live + replay / O2s the shipped table / the hold's vacuity / the log evidence / O3 generality, the grep) and
 `tools/harness/mutants-h22.sh` (exits that miss rowReset's same-row case, a hold that misses a sibling, a spent lever
