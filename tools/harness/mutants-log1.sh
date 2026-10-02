@@ -60,7 +60,8 @@ mutant G-replay-applies-nothing "$(rep loader/tmt-log.js "'            ti++; app
 # H — the automation core's replay slot never called: the automation's calls have no slot to go in
 mutant H-no-replay-slot "$(rep loader/tmt-auto.js "'    if (logLink.replay !== null) logLink.replay(l, via);\n'" "''")" replay collection-of-everything
 # I — a record that is not the OUTERMOST call (a nested one written too): the replay re-applies it twice
-mutant I-nested-recorded "$(rep loader/tmt-log.js "'      if (!on || depth > 0) return orig.apply(this, arguments);'" "'      if (!on) return orig.apply(this, arguments);'")" unit 'TRANSPARENT'
+# (qedit-1: the guard reads `!live()` since the recorder's tap — the same guard, the same mutation)
+mutant I-nested-recorded "$(rep loader/tmt-log.js "'      if (depth > 0 || !live()) return orig.apply(this, arguments);'" "'      if (!live()) return orig.apply(this, arguments);'")" unit 'TRANSPARENT'
 
 echo "log-1 mutants: $KILLED killed, $SURVIVED survived"
 [ "$SURVIVED" -eq 0 ]
