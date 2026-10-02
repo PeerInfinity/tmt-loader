@@ -1,0 +1,778 @@
+// loader/tmt-qedit.js — THE QUEUE EDITOR (qedit-1; docs/queues.md, "The editor"): the player's own action queues, kept
+// in this browser per game, edited in the automation tab's `Queues` subtab, played by the ONE runner (`tmt-queue.js`).
+//
+// A CLASSIC script, like tmt-auto.js, tmt-log.js and tmt-queue.js. It is fetched ONLY through the host's
+// `fetchQueueEditor` door: the `Queues` subtab opened, this game having saved queues (the declared key below), or
+// `tmtLoader.qeditLoad()`. A page that does none of these never runs a line of it (G1, gates-qedit `inert`).
+//
+// ⚖ The user's rulings (2026-10-02) it rests on:
+//  · a step is an ENGINE action, never a DOM click — and the editor SHOWS it by the GAME's own names (the upgrade's
+//    title, the buyable's title, the challenge's name, the layer's name); ids are a developer detail;
+//  · the queues live in BROWSER STORAGE, per game: ONE key, `tmt-loader:<id>:queues`, through `T.storage.raw` — the
+//    loader's own namespace, declared in docs/contract.md beside the others. ⛔ NEVER in `player`: a key there changes
+//    every save's full hash. Plus export / import as JSON files — the exported file is what `run.mjs --queue` plays;
+//  · v1 = edit (queues, triggers, steps, comments) + the generated queues + the run-status + recording the player's
+//    presses. Recording listens on the STATE LOG's hooks (`T.stateLog.tap`): ONE hook path, no second wrapper, and the
+//    log itself need not be on.
+//  · no game id, layer id or item id in this file: they come from the game's own declarations or from a queue's data.
+//
+// DISCIPLINE (the V2 / V6 lessons): a TYPED field keeps a local draft until it is committed (change / Enter / blur) and
+// refuses to be overwritten while it has focus; a PRESS keeps no state of its own — it calls an operation here and the
+// view re-reads. The view is built from this file's API on every redraw; nothing here holds an element.
+(function () {
+  var T = globalThis.tmtLoader;
+  if (!T || !T.automation || !T.uiKit || (T.qedit && T.qedit.ready)) return;
+  var G = globalThis;
+  var K = T.uiKit, VUE = K.vue;
+  var KEY = 'queues';
+  var STORE_FORMAT = 'tmt-queue-store/1';
+  var FORMAT = 'tmt-queue/1';
+  var VERSION = 2;
+  var AU = T.auLayer || 'au';
+
+  // ---- the store: ONE key in the loader's own per-game namespace ----------------------------------------------------
+  // `{format: 'tmt-queue-store/1', queues: [{enabled: bool, queue: <tmt-queue/1>}]}`. Every read and write is wrapped:
+  // a private window or a full store costs the persistence, never the page. In Node there is no `storage.raw`, so the
+  // store is memory only.
+  var store = null;
+  function storeKey() { var st = T.storage; return st && st.prefix && st.raw ? st.prefix + KEY : null; }
+  function blank() { return { format: STORE_FORMAT, queues: [] }; }
+  function readStore() {
+    if (store) return store;
+    store = blank();
+    try {
+      var k = storeKey(), raw = k ? T.storage.raw.getItem.call(localStorage, k) : null;
+      var v = raw ? JSON.parse(raw) : null;
+      if (v && v.format === STORE_FORMAT && Array.isArray(v.queues)) {
+        for (var i = 0; i < v.queues.length; i++) {
+          var e = v.queues[i];
+          if (e && e.queue && typeof e.queue === 'object' && typeof e.queue.id === 'string') store.queues.push({ enabled: !!e.enabled, queue: e.queue });
+        }
+      }
+    } catch (e) { store = blank(); }
+    return store;
+  }
+  var writes = 0;
+  function writeStore() {
+    writes++;
+    try {
+      var k = storeKey();
+      if (!k) return;
+      var s = readStore();
+      // nothing kept is nothing to remember: the key goes, and the next boot requests nothing
+      if (s.queues.length) T.storage.raw.setItem.call(localStorage, k, JSON.stringify(s));
+      else T.storage.raw.removeItem.call(localStorage, k);
+    } catch (e) { /* a full or read-only store */ }
+  }
+  function find(id) { var s = readStore(); for (var i = 0; i < s.queues.length; i++) if (s.queues[i].queue.id === id) return s.queues[i]; return null; }
+  function clone(o) { return JSON.parse(JSON.stringify(o)); }
+
+  // ---- the runner ------------------------------------------------------------------------------------------------
+  function runner() { return T.queues && T.queues.ready ? T.queues : null; }
+  function ensureRunner() {
+    if (runner()) return Promise.resolve(runner());
+    if (typeof T.fetchQueueRunner === 'function') return T.fetchQueueRunner().then(function () { return runner(); });
+    return Promise.resolve(null);
+  }
+  var armedAs = {};   // id → the JSON the runner was given, so an edit since then is visible ("restart to use it")
+  function loadedIds() {
+    var R = runner(), o = {};
+    if (!R) return o;
+    var st = R.status();
+    for (var i = 0; i < st.queues.length; i++) o[st.queues[i].id] = st.queues[i];
+    return o;
+  }
+  // ⛔ EVERY HOLD IS RELEASED when a queue is switched off, deleted or restarted: the runner's own `unload` does it
+  function unloadIfLoaded(id) {
+    var R = runner();
+    if (!R || !loadedIds()[id]) return null;
+    delete armedAs[id];
+    return R.unload(id);
+  }
+  function arm(e) {
+    var R = runner();
+    if (!R) return { ok: false, errors: ['the queue runner is not loaded yet'] };
+    var errs = validate(e.queue);
+    if (errs.length) return { ok: false, errors: errs };
+    unloadIfLoaded(e.queue.id);
+    var r = R.load(clone(e.queue));
+    if (r.ok) armedAs[e.queue.id] = JSON.stringify(e.queue);
+    return { ok: r.ok, errors: plainAll(r.errors || []) };
+  }
+
+  // ---- validation, in plain words --------------------------------------------------------------------------------
+  // The RUNNER's validate is the judge (one rule set, the one that refuses at load); this only says it for a player.
+  var PLAIN = [
+    [/^step (\d+): until: a wait needs .until., a predicate$/, function (m) { return 'Step ' + m[1] + ': a wait needs a condition to wait for.'; }],
+    [/^step (\d+): if: .if. must be a non-empty predicate$/, function (m) { return 'Step ' + m[1] + ': the “only if” condition is empty.'; }],
+    [/^step (\d+): until: (.*)$/, function (m) { return 'Step ' + m[1] + ': the condition to wait for is not something the game understands (' + m[2] + ').'; }],
+    [/^step (\d+): if: (.*)$/, function (m) { return 'Step ' + m[1] + ': the “only if” condition is not something the game understands (' + m[2] + ').'; }],
+    [/^step (\d+): a wait needs "timeout".*$/, function (m) { return 'Step ' + m[1] + ': a wait needs a time limit, in game-seconds, above 0.'; }],
+    [/^step (\d+): "onTimeout".*$/, function (m) { return 'Step ' + m[1] + ': say what happens when the time limit runs out (stop the queue, or skip the wait).'; }],
+    [/^step (\d+): no automation feature "(.*)" in this game$/, function (m) { return 'Step ' + m[1] + ': this game has no automation tool “' + m[2] + '”.'; }],
+    [/^step (\d+): a hold names its "features"$/, function (m) { return 'Step ' + m[1] + ': choose at least one automation tool to pause.'; }],
+    [/^step (\d+): the engine has no global function "(.*)"$/, function (m) { return 'Step ' + m[1] + ': this game has no action “' + m[2] + '”.'; }],
+    [/^step (\d+): a call step needs "fn".*$/, function (m) { return 'Step ' + m[1] + ': choose the action to take.'; }],
+    [/^step (\d+): "(.*)" is not a function here$/, function (m) { return 'Step ' + m[1] + ': this game has no action “' + m[2] + '”.'; }],
+    [/^step (\d+): a comment step carries "text"$/, function (m) { return 'Step ' + m[1] + ': a comment needs some text.'; }],
+    [/^step (\d+): "times".*$/, function (m) { return 'Step ' + m[1] + ': “how many times” is a whole number from 1 to 1000.'; }],
+    [/^step (\d+): "do" must be.*$/, function (m) { return 'Step ' + m[1] + ': this is not a kind of step this page knows.'; }],
+    [/^trigger\.when: a predicate trigger needs "when"$/, function () { return 'The start condition is empty: type the condition this queue waits for before it starts.'; }],
+    [/^trigger\.when: (.*)$/, function (m) { return 'The start condition is not something the game understands (' + m[1] + ').'; }],
+    [/^"steps" must be a non-empty array$/, function () { return 'A queue needs at least one step.'; }],
+    [/^"format" must be.*$/, function (m) { return 'This is not a queue file (' + m[0] + ').'; }],
+    [/^"version" must be.*$/, function (m) { return 'This queue was written for a newer page than this one (' + m[0] + ').'; }],
+    [/^\x22name\x22 needs.*$/, function () { return 'A name is text of at most 80 characters (and needs "version": 2).'; }],
+    [/^\x22id\x22 must be.*$/, function () { return 'The queue’s id must be 1–80 letters, digits or _ . : -'; }],
+  ];
+  function plain(msg) {
+    for (var i = 0; i < PLAIN.length; i++) { var m = PLAIN[i][0].exec(msg); if (m) return PLAIN[i][1](m); }
+    msg = String(msg);
+    return msg.charAt(0).toUpperCase() + msg.slice(1) + (/[.!?]$/.test(msg) ? '' : '.');
+  }
+  function plainAll(list) { return list.map(plain); }
+  /** The reasons a queue cannot run, in plain words (empty = it can). The runner's validate, then the editor's own. */
+  function validate(q) {
+    var R = runner();
+    if (!R) return ['The queue runner is not loaded yet.'];
+    return plainAll(R.validate(q));
+  }
+
+  // ---- the GAME's own names --------------------------------------------------------------------------------------
+  function text(v) {
+    var s = '';
+    try { s = typeof v === 'function' ? v() : v; } catch (e) { s = ''; }
+    if (s === undefined || s === null) return '';
+    return String(s).replace(/<br\s*\/?>/gi, ' ').replace(/<[^>]*>/g, '').replace(/&nbsp;/g, ' ').replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>')
+      .replace(/\s+/g, ' ').trim().slice(0, 70);
+  }
+  function guarded(fn) { try { return K.withoutRaisingNaN(fn); } catch (e) { return ''; } }
+  function layerName(l) {
+    return guarded(function () { var L = layers[l]; return (L && text(L.name)) || l; }) || l;
+  }
+  var GROUP_WORD = { upgrades: 'upgrade', buyables: 'buyable', challenges: 'challenge', clickables: 'button' };
+  function itemName(l, group, id) {
+    var n = guarded(function () {
+      var d = layers[l] && layers[l][group] ? layers[l][group][id] : null;
+      if (!d) return '';
+      // the field the engine's own component draws as the item's name
+      return text(d.title) || text(d.name) || '';
+    });
+    return n || (GROUP_WORD[group] || group) + ' ' + id;
+  }
+  // an engine call → its words. The FUNCTIONS are the engines' public entry points (docs/log.md's hook list), not game ids.
+  var CALLS = {
+    buyUpgrade: { verb: 'Buy upgrade', group: 'upgrades' }, buyUpg: { verb: 'Buy upgrade', group: 'upgrades' },
+    buyBuyable: { verb: 'Buy', group: 'buyables' }, buyMaxBuyable: { verb: 'Buy as many as you can of', group: 'buyables' },
+    startChallenge: { verb: 'Enter (or leave) challenge', group: 'challenges' }, completeChallenge: { verb: 'Complete challenge', group: 'challenges' },
+    clickClickable: { verb: 'Press', group: 'clickables' }, doReset: { verb: 'Reset for', group: null }, respecBuyables: { verb: 'Respec the buyables of', group: null },
+  };
+  function featureTitle(id) {
+    var fs = T.features || [];
+    for (var i = 0; i < fs.length; i++) if (fs[i].id === id) return fs[i].title && fs[i].title !== id ? fs[i].title + ' (' + layerName(fs[i].layer) + ')' : id;
+    return id;
+  }
+  function secs(x) { var n = Number(x); return (Math.round(n * 10) / 10) + ' s'; }
+  function isPause(s) { return s.do === 'wait' && String(s.until).trim() === 'false' && s.onTimeout === 'skip'; }
+  /** One step in the player's words: {kind, title, detail} — `detail` is the raw form, shown with developer details. */
+  function describe(s) {
+    if (!s || typeof s !== 'object') return { kind: '?', title: '(not a step)', detail: '' };
+    if (s.do === 'call') {
+      var c = CALLS[s.fn], a = s.args || [], t;
+      if (c && c.group && a.length >= 2 && layers[a[0]]) t = c.verb + ' “' + itemName(a[0], c.group, a[1]) + '” (' + layerName(a[0]) + ')';
+      else if (c && !c.group && a.length >= 1 && layers[a[0]]) t = c.verb + ' ' + layerName(a[0]);
+      else if (/^layers\./.test(String(s.fn))) {
+        var p = String(s.fn).split('.');
+        t = 'Press “' + p.slice(-1)[0] + '” of ' + (p[3] && layers[p[1]] && layers[p[1]][p[2]] ? itemName(p[1], p[2], p[3]) : p.slice(2, -1).join(' ')) + (layers[p[1]] ? ' (' + layerName(p[1]) + ')' : '');
+      } else t = 'Call ' + s.fn + '(' + a.map(function (x) { return JSON.stringify(x); }).join(', ') + ')';
+      if (s.times > 1) t += ' × ' + s.times;
+      if (s['if']) t += ' — only if ' + s['if'];
+      return { kind: 'action', title: t, detail: s.fn + '(' + a.map(function (x) { return JSON.stringify(x); }).join(', ') + ')' };
+    }
+    if (s.do === 'wait') {
+      if (isPause(s)) return { kind: 'pause', title: 'Pause for ' + secs(s.timeout && s.timeout.gs) + ' of game time', detail: 'wait until false, ' + (s.timeout && s.timeout.gs) + ' s, then skip' };
+      return { kind: 'wait', title: 'Wait until ' + (s.until || '…') + ' — at most ' + secs(s.timeout && s.timeout.gs) + ', then ' + (s.onTimeout === 'skip' ? 'carry on' : 'stop the queue'), detail: 'wait ' + (s.until || '') };
+    }
+    if (s.do === 'hold') return { kind: 'pause tools', title: 'Pause the automation’s ' + (s.features || []).map(featureTitle).join(', '), detail: 'hold ' + (s.features || []).join(', ') };
+    if (s.do === 'release') return { kind: 'resume tools', title: s.features ? 'Let the automation’s ' + s.features.map(featureTitle).join(', ') + ' run again' : 'Let every tool this queue paused run again', detail: 'release ' + (s.features || []).join(', ') };
+    if (s.do === 'comment') return { kind: 'comment', title: s.text || s.comment || '', detail: 'comment' };
+    return { kind: String(s.do), title: String(s.do), detail: '' };
+  }
+
+  // ---- the game's own lists: every action a step can take, by name --------------------------------------------------
+  function gameLayers() {
+    var out = [];
+    for (var l in layers) { if (!layers[l] || layers[l].tmtLoaderLayer || l === AU) continue; out.push(l); }
+    return out;
+  }
+  function numericIds(obj) { var o = []; for (var k in obj) if (!isNaN(k) && obj[k] && typeof obj[k] === 'object') o.push(k); return o; }
+  function buyFn() { return typeof G.buyUpgrade === 'function' ? 'buyUpgrade' : 'buyUpg'; }
+  /** Per layer, the actions a player can put in a step: [{layer, name, actions: [{key, fn, args, label}]}] */
+  function actions() {
+    var out = [], ls = gameLayers();
+    for (var i = 0; i < ls.length; i++) {
+      var l = ls[i], L = layers[l], acts = [];
+      if (L.type && L.type !== 'none' && typeof G.doReset === 'function') acts.push({ fn: 'doReset', args: [l], label: 'Reset for ' + layerName(l) });
+      var groups = [['upgrades', buyFn(), 'Buy upgrade'], ['buyables', 'buyBuyable', 'Buy'], ['challenges', 'startChallenge', 'Enter (or leave) challenge'], ['clickables', 'clickClickable', 'Press']];
+      for (var g = 0; g < groups.length; g++) {
+        var grp = groups[g][0];
+        if (!L[grp] || typeof G[groups[g][1]] !== 'function') continue;
+        var ids = grp === 'upgrades' || grp === 'buyables' ? T.purchaseIds(L[grp]) : numericIds(L[grp]);
+        for (var j = 0; j < ids.length; j++) acts.push({ fn: groups[g][1], args: [l, isNaN(ids[j]) ? ids[j] : Number(ids[j])], label: groups[g][2] + ' “' + itemName(l, grp, ids[j]) + '”' });
+      }
+      for (var a = 0; a < acts.length; a++) acts[a].key = acts[a].fn + ':' + JSON.stringify(acts[a].args);
+      if (acts.length) out.push({ layer: l, name: layerName(l), actions: acts });
+    }
+    return out;
+  }
+  function featureList() { return (T.features || []).map(function (f) { return { id: f.id, title: featureTitle(f.id) }; }); }
+
+  // ---- operations: each returns {ok, errors[, id]} and leaves the store written ------------------------------------
+  function slug(name) { return String(name || '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 60) || 'queue'; }
+  function freeId(base) { var id = base, n = 2; while (find(id)) id = base + '-' + n++; return id; }
+  function create(name, steps) {
+    name = String(name || '').trim().slice(0, 80) || 'my queue';
+    var q = { format: FORMAT, version: VERSION, id: freeId(slug(name)), name: name, trigger: { on: 'start' }, source: 'authored', comment: '',
+      steps: steps && steps.length ? steps : [{ 'do': 'comment', text: 'a new queue — add its steps below' }] };
+    readStore().queues.push({ enabled: false, queue: q });
+    writeStore();
+    return { ok: true, errors: [], id: q.id };
+  }
+  function edit(id, fn) {
+    var e = find(id);
+    if (!e) return { ok: false, errors: ['There is no queue “' + id + '”.'] };
+    var q = clone(e.queue), why = fn(q);
+    if (why) return { ok: false, errors: [why] };
+    if (!q.version || q.version < VERSION) q.version = VERSION;   // the editor writes version 2 (`name`, `times`)
+    e.queue = q;
+    writeStore();
+    return { ok: true, errors: [], id: id };
+  }
+  function rename(id, name) {
+    name = String(name || '').trim();
+    if (!name) return { ok: false, errors: ['A queue needs a name.'] };
+    if (name.length > 80) return { ok: false, errors: ['A name is at most 80 characters.'] };
+    return edit(id, function (q) { q.name = name; });
+  }
+  function setComment(id, t) { return edit(id, function (q) { if (t) q.comment = String(t); else delete q.comment; }); }
+  function setTrigger(id, tr) {
+    if (!tr || (tr.on !== 'start' && tr.on !== 'predicate')) return { ok: false, errors: ['A queue starts when the game starts, or when a condition holds.'] };
+    return edit(id, function (q) { q.trigger = tr.on === 'start' ? { on: 'start' } : { on: 'predicate', when: String(tr.when || '') }; });
+  }
+  function stepAt(q, i) { return i >= 0 && i < q.steps.length; }
+  function addStep(id, step, at) {
+    return edit(id, function (q) {
+      if (!step || typeof step !== 'object') return 'That is not a step.';
+      var i = at === undefined || at === null ? q.steps.length : Math.max(0, Math.min(q.steps.length, at));
+      q.steps.splice(i, 0, clone(step));
+    });
+  }
+  function setStep(id, i, step) { return edit(id, function (q) { if (!stepAt(q, i)) return 'There is no step ' + (i + 1) + '.'; q.steps[i] = clone(step); }); }
+  function moveStep(id, i, dir) {
+    return edit(id, function (q) {
+      var j = i + dir;
+      if (!stepAt(q, i) || !stepAt(q, j)) return 'That step cannot move that way.';
+      var t = q.steps[i]; q.steps[i] = q.steps[j]; q.steps[j] = t;
+    });
+  }
+  function deleteStep(id, i) {
+    return edit(id, function (q) {
+      if (!stepAt(q, i)) return 'There is no step ' + (i + 1) + '.';
+      if (q.steps.length === 1) return 'A queue needs at least one step — delete the queue instead.';
+      q.steps.splice(i, 1);
+    });
+  }
+  /** Switch a queue on (it is checked, then armed: a `start` queue runs on the next tick) or off (unloaded; its holds go). */
+  function setEnabled(id, on) {
+    var e = find(id);
+    if (!e) return { ok: false, errors: ['There is no queue “' + id + '”.'] };
+    if (on) {
+      var r = arm(e);
+      if (!r.ok) return r;
+      e.enabled = true;
+    } else {
+      unloadIfLoaded(id);
+      e.enabled = false;
+    }
+    writeStore();
+    return { ok: true, errors: [], id: id };
+  }
+  /** Run it again from the top with what is saved now (an edit to an armed queue takes effect only through this). */
+  function restart(id) {
+    var e = find(id);
+    if (!e) return { ok: false, errors: ['There is no queue “' + id + '”.'] };
+    if (!e.enabled) return setEnabled(id, true);
+    return arm(e);
+  }
+  // ⛔ DELETE RELEASES ITS HOLDS: a deleted queue is unloaded first, so nothing it paused stays paused
+  function remove(id) {
+    var s = readStore();
+    for (var i = 0; i < s.queues.length; i++) {
+      if (s.queues[i].queue.id !== id) continue;
+      var u = unloadIfLoaded(id);
+      s.queues.splice(i, 1);
+      writeStore();
+      return { ok: true, errors: [], id: id, released: u && u.released || 0 };
+    }
+    return { ok: false, errors: ['There is no queue “' + id + '”.'] };
+  }
+
+  // ---- export / import --------------------------------------------------------------------------------------------
+  // The file is the queue itself, in the format the harness plays (`run.mjs --queue <file>`), one-space indent as the
+  // committed queue files are. Import keeps the object exactly as parsed, so export → import → export is byte-equal.
+  function exportText(id) { var e = find(id); return e ? JSON.stringify(e.queue, null, 1) + '\n' : null; }
+  function fileName(id) { return 'tmt-queue-' + (T.id || 'game') + '-' + id + '.json'; }
+  function download(id) {
+    var t = exportText(id);
+    if (t === null) return { ok: false, errors: ['There is no queue “' + id + '”.'] };
+    try {
+      var blob = new Blob([t], { type: 'application/json' }), a = document.createElement('a');
+      a.href = URL.createObjectURL(blob); a.download = fileName(id);
+      document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(function () { URL.revokeObjectURL(a.href); }, 10000);
+    } catch (e) { /* no DOM (the harness) */ }
+    return { ok: true, errors: [], name: fileName(id), bytes: t.length };
+  }
+  /** Import ONE queue (a JSON text). Refused, with every reason, unless the runner would load it; never half-added. */
+  function importText(txt, opts) {
+    var q;
+    try { q = JSON.parse(txt); } catch (e) { return { ok: false, errors: ['This file is not JSON (' + String(e.message).slice(0, 100) + ').'] }; }
+    if (!q || typeof q !== 'object' || Array.isArray(q)) return { ok: false, errors: ['This file is not a queue.'] };
+    var errs = validate(q);
+    if (!errs.length && find(q.id)) errs.push('You already have a queue with the id “' + q.id + '” — delete or rename that one first.');
+    if (errs.length) return { ok: false, errors: errs };
+    readStore().queues.push({ enabled: false, queue: q });
+    writeStore();
+    return { ok: true, errors: [], id: q.id, from: opts && opts.from || null };
+  }
+
+  // ---- the generated queues: shipped beside the game data --------------------------------------------------------
+  // ⚖ SHIPPED, NOT GENERATED HERE: a template needs the planner's rolled-back copy and the game's facts, minutes of
+  // harness work that the page does not carry (docs/templates.md, "Templates are harness-only"). The catalog,
+  // `games-queues/index.json`, lists per game the committed queues the templates wrote; it is requested only when the
+  // player opens the list (never at boot), and each queue file only when the player adds it.
+  var catalogState = { asked: false, loading: false, error: null, entries: null };
+  function catalog() {
+    if (catalogState.asked) return catalogState.promise;
+    catalogState.asked = true; catalogState.loading = true;
+    catalogState.promise = (typeof T.fetchLoaderText === 'function' ? T.fetchLoaderText('games-queues/index.json') : Promise.reject(new Error('no loader files on this page')))
+      .then(function (t) {
+        var c = JSON.parse(t);
+        if (!c || c.format !== 'tmt-queue-catalog/1' || !c.games) throw new Error('games-queues/index.json is not a queue catalog');
+        catalogState.entries = (c.games[T.id] || []).slice();
+        catalogState.loading = false;
+        return catalogState.entries;
+      }).catch(function (e) { catalogState.loading = false; catalogState.error = String(e && e.message || e).slice(0, 160); catalogState.asked = false; return null; });
+    return catalogState.promise;
+  }
+  function addGenerated(entry) {
+    if (!entry || typeof entry.file !== 'string') return Promise.resolve({ ok: false, errors: ['That is not a catalog entry.'] });
+    return ensureRunner().then(function () { return T.fetchLoaderText(entry.file); })
+      .then(function (t) { return importText(t, { from: entry.file }); }, function (e) { return { ok: false, errors: ['The queue file could not be loaded (' + String(e && e.message || e).slice(0, 120) + ').'] }; });
+  }
+
+  // ---- RECORD MY PRESSES ------------------------------------------------------------------------------------------
+  // Listens on the state log's hooks (`T.stateLog.tap`) — the one hook path; the log itself need not be on, and with it
+  // off nothing is recorded anywhere but here. Only the PLAYER's presses are kept (`source: player` — never the
+  // automation's, a queue's or the game's own), and only those that changed the game: a press that bought nothing is
+  // counted and left out. On stop:
+  //  · a run of the SAME press with less than a game-second between them is ONE step with `times` (version 2);
+  //  · a gap of a game-second or more between presses becomes a pause step (a wait on `false` that skips at its limit),
+  //    so a replay waits as the player did; delete the pauses to make the queue press as fast as it can;
+  //  · the queue is added to the list switched OFF, for the player to read and edit before it runs.
+  var GAP = 1;
+  var rec = { on: false, presses: [], refused: 0, odd: 0, untap: null, busy: false, error: null, startedGs: 0 };
+  function plainArg(v) { return v === null || typeof v === 'string' || typeof v === 'boolean' || (typeof v === 'number' && isFinite(v)); }
+  function onTap(ev) {
+    if (!rec.on || ev.source !== 'player') return;
+    if (!ev.did) { rec.refused++; return; }
+    var args = ev.args || [];
+    for (var i = 0; i < args.length; i++) if (!plainArg(args[i])) { rec.odd++; return; }
+    rec.presses.push({ fn: ev.call, args: args.slice(), self: ev.self === 'layers' ? 'layers' : null, gs: Number(player.timePlayed) || Number(ev.gs) || 0 });
+  }
+  function recStart() {
+    if (rec.on || rec.busy) return Promise.resolve(recStatus());
+    rec.busy = true; rec.error = null;
+    var go = function () {
+      if (!T.stateLog || typeof T.stateLog.tap !== 'function') throw new Error('the recorder (the state log’s hooks) is not available');
+      rec.presses = []; rec.refused = 0; rec.odd = 0;
+      rec.untap = T.stateLog.tap(onTap);
+      rec.on = true; rec.busy = false;
+      rec.startedGs = Number(player.timePlayed) || 0;
+      return recStatus();
+    };
+    var p = T.stateLog ? Promise.resolve() : (typeof T.fetchStateLog === 'function' ? T.fetchStateLog() : Promise.reject(new Error('no recorder on this page')));
+    return p.then(go).catch(function (e) { rec.busy = false; rec.error = String(e && e.message || e).slice(0, 160); return recStatus(); });
+  }
+  function same(a, b) { return a.fn === b.fn && a.self === b.self && JSON.stringify(a.args) === JSON.stringify(b.args); }
+  function foldPresses(ps) {
+    var steps = [], i = 0;
+    while (i < ps.length) {
+      var p = ps[i], n = 1;
+      while (i + n < ps.length && same(ps[i + n], p) && ps[i + n].gs - ps[i + n - 1].gs < GAP) n++;
+      var last = ps[i + n - 1];
+      var st = { 'do': 'call', fn: p.fn, args: p.args.slice() };
+      if (p.self) st.self = p.self;
+      if (n > 1) st.times = n;
+      steps.push(st);
+      var next = ps[i + n];
+      if (next && next.gs - last.gs >= GAP) {
+        var gap = Math.round((next.gs - last.gs) * 10) / 10;
+        steps.push({ 'do': 'wait', until: 'false', timeout: { gs: gap }, onTimeout: 'skip', comment: 'recorded: ' + gap + ' game-seconds passed before your next press' });
+      }
+      i += n;
+    }
+    return steps;
+  }
+  function recStop() {
+    if (!rec.on) return { ok: false, errors: ['Nothing is being recorded.'] };
+    if (rec.untap) rec.untap();
+    rec.untap = null; rec.on = false;
+    var ps = rec.presses.slice();
+    if (!ps.length) return { ok: false, errors: ['No presses were recorded' + (rec.refused ? ' (' + rec.refused + ' press(es) changed nothing and were left out)' : '') + '.'] };
+    var steps = foldPresses(ps);
+    var when = new Date();
+    var name = 'recorded ' + when.getFullYear() + '-' + ('0' + (when.getMonth() + 1)).slice(-2) + '-' + ('0' + when.getDate()).slice(-2) + ' ' + ('0' + when.getHours()).slice(-2) + ':' + ('0' + when.getMinutes()).slice(-2);
+    var r = create(name, steps);
+    edit(r.id, function (q) {
+      q.comment = 'Recorded from your presses: ' + ps.length + ' press(es), as ' + steps.filter(function (s) { return s.do === 'call'; }).length + ' action step(s)'
+        + (rec.refused ? '; ' + rec.refused + ' press(es) that changed nothing were left out' : '') + (rec.odd ? '; ' + rec.odd + ' press(es) whose arguments a file cannot hold were left out' : '') + '.';
+    });
+    return { ok: true, errors: [], id: r.id, presses: ps.length, steps: steps.length };
+  }
+  function recStatus() { return { on: rec.on, busy: rec.busy, presses: rec.presses.length, refused: rec.refused, odd: rec.odd, error: rec.error }; }
+
+  // ---- the run-status -------------------------------------------------------------------------------------------
+  var STATE_WORDS = { armed: 'waiting for its start', running: 'running', done: 'finished', aborted: 'stopped' };
+  function view() {
+    var s = readStore(), L = loadedIds(), out = [];
+    for (var i = 0; i < s.queues.length; i++) {
+      var e = s.queues[i], q = e.queue, st = L[q.id] || null, cur = null;
+      if (st && st.current) { var d = describe(q.steps[st.current.index - 1] || {}); cur = { index: st.current.index, title: d.title, comment: st.current.comment }; }
+      var errs = runner() ? validate(q) : [];
+      out.push({
+        id: q.id, name: q.name || q.id, enabled: e.enabled, comment: q.comment || '', trigger: q.trigger || { on: 'start' }, source: q.source === undefined ? null : q.source,
+        steps: q.steps.map(function (x, k) { var d = describe(x); return { i: k, kind: d.kind, title: d.title, detail: d.detail, comment: x.comment || '', step: x }; }),
+        errors: errs,
+        run: st ? { state: st.state, words: STATE_WORDS[st.state] || st.state, outcome: st.outcome, current: cur, wait: st.wait,
+          holds: st.holds.map(featureTitle), holdIds: st.holds.slice(), last: st.last, steps: st.steps } : null,
+        stale: !!(st && armedAs[q.id] && armedAs[q.id] !== JSON.stringify(q)),
+      });
+    }
+    return out;
+  }
+  /** Queues the runner holds that are not in this list (a `?autoOpt=queue=` file, the console): shown, read-only. */
+  function others() {
+    var L = loadedIds(), o = [];
+    for (var id in L) if (!find(id)) o.push({ id: id, words: STATE_WORDS[L[id].state] || L[id].state, holds: L[id].holds.map(featureTitle), last: L[id].last });
+    return o;
+  }
+
+  // ---- boot: arm every switched-on queue ----------------------------------------------------------------------------
+  var booted = null;
+  function boot() {
+    if (booted) return booted;
+    booted = ensureRunner().then(function () {
+      var s = readStore(), report = { armed: [], refused: [] };
+      for (var i = 0; i < s.queues.length; i++) {
+        var e = s.queues[i];
+        if (!e.enabled || loadedIds()[e.queue.id]) continue;
+        var r = arm(e);
+        if (r.ok) report.armed.push(e.queue.id); else report.refused.push({ id: e.queue.id, errors: r.errors });
+      }
+      bootReport = report;
+      return report;
+    });
+    return booted;
+  }
+  var bootReport = null;
+
+  // ---- the components -------------------------------------------------------------------------------------------
+  var BTN = K.BTN_STYLE, SEL = K.SELECT_STYLE, ROOT = K.ROOT_STYLE;
+  var PRED = K.PRED_FIELD_STYLE, FIELD = K.FIELD_STYLE;
+  // ⛔ EVERY ROW WRAPS (V5): flex rows with `flex-wrap:wrap`, no `white-space:nowrap` anywhere, every block `min-width:0`
+  // — a 390 px phone puts a control on the next line rather than past the edge.
+  var ROW = 'display:flex;flex-wrap:wrap;align-items:center;gap:3px;min-width:0;max-width:100%;text-align:left;margin:2px 0';
+  var BLOCK = 'text-align:left;min-width:0;max-width:100%;box-sizing:border-box;border-left:3px solid #7fb2d9;background:rgba(127,178,217,.08);border-radius:4px;padding:6px 8px;margin:0 0 8px 0';
+  var SUB = 'text-align:left;min-width:0;max-width:100%;box-sizing:border-box;margin:2px 0 2px 8px';
+  var ERR = 'color:#d07a7a;font-size:.9em;text-align:left';
+  var DIM = 'opacity:.7;font-size:.9em';
+  function clock() { try { return tmp[AU].auViewGen; } catch (e) { return player.timePlayed; } }
+
+  var COMPONENTS = {
+    // ONE TEXT FIELD, with V2's draft discipline: bound to a local draft, committed on change / Enter / blur, never
+    // overwritten while focused, every key stopped at the field (the game's bare-letter hotkeys), `focused()` called.
+    // `data` = {value, label, kind: 'text'|'predicate'|'number', commit(v) → {ok, errors}, cls}
+    'tmtl-qtext': {
+      props: ['data'],
+      data: function () { return { draft: String(this.data.value === undefined || this.data.value === null ? '' : this.data.value), editing: false, error: null }; },
+      watch: { 'data.value': function (v) { if (!this.editing) { this.draft = String(v === undefined || v === null ? '' : v); this.error = null; } } },
+      methods: {
+        onFocus: function () { this.editing = true; K.setFocused(true); },
+        onBlur: function () { this.commit(); this.editing = false; K.setFocused(false); },
+        onKey: function (e) { if (e.key === 'Enter') this.commit(); else if (e.key === 'Escape') { this.draft = String(this.data.value === undefined || this.data.value === null ? '' : this.data.value); this.error = null; } },
+        commit: function () {
+          var cur = String(this.data.value === undefined || this.data.value === null ? '' : this.data.value);
+          if (this.draft === cur) { this.error = null; return; }
+          var r = this.data.commit(this.draft);
+          this.error = r && r.ok ? null : (r && r.errors && r.errors.join(' ')) || 'not accepted';
+          if (r && r.ok && this.data.reset) this.draft = '';   // a "name it and create" field empties once it has acted
+          this.$emit('changed');
+        },
+      },
+      computed: { fstyle: function () { return this.data.kind === 'number' ? FIELD : PRED; }, wide: function () { return this.data.kind !== 'number'; } },
+      template: '<span class="tmtl-qfield" style="display:inline-flex;flex-wrap:wrap;align-items:center;min-width:0;max-width:100%;box-sizing:border-box;text-align:left;margin:1px 0" :style="wide ? \'width:100%\' : \'\'">'
+        + '<span v-if="data.label" style="opacity:.75;font-size:.85em;min-width:0;max-width:100%;overflow-wrap:anywhere;margin:0 3px 0 0">{{ data.label }}</span>'
+        + '<input type="text" :class="\'tmtl-qinput \' + (data.cls || \'\')" v-model="draft" :style="fstyle + \';text-align:left\'" @focus="onFocus" @blur="onBlur" @change="commit"'
+        + ' @keydown.stop="onKey" @keyup.stop @keypress.stop>'
+        + '<span v-if="error" class="tmtl-error" style="' + ERR + ';display:block;flex:1 1 100%">{{ error }}</span>'
+        + '</span>',
+    },
+    // ONE STEP: its words, its comment, ↑ ↓ ×, and (opened) the fields of its kind
+    'tmtl-qstep': {
+      props: ['data'],
+      data: function () { return { open: false, err: null }; },
+      computed: {
+        s: function () { return this.data.st.step; },
+        pick: function () {
+          if (this.s.do !== 'call') return null;
+          var k = this.s.fn + ':' + JSON.stringify(this.s.args || []);
+          return k;
+        },
+        actionOpts: function () { return this.data.acts; },
+        featureOpts: function () { return this.data.features; },
+        held: function () { var o = {}; (this.s.features || []).forEach(function (f) { o[f] = true; }); return o; },
+      },
+      methods: {
+        put: function (fn) { var s = clone(this.s); fn(s); var r = setStep(this.data.qid, this.data.st.i, s); this.err = r.ok ? null : r.errors.join(' '); this.$emit('changed'); return r; },
+        move: function (d) { var r = moveStep(this.data.qid, this.data.st.i, d); this.err = r.ok ? null : r.errors.join(' '); this.$emit('changed'); },
+        drop: function () { var r = deleteStep(this.data.qid, this.data.st.i); this.err = r.ok ? null : r.errors.join(' '); this.$emit('changed'); },
+        setAction: function (e) {
+          var k = e.target.value, all = this.data.acts, hit = null;
+          for (var i = 0; i < all.length && !hit; i++) for (var j = 0; j < all[i].actions.length; j++) if (all[i].actions[j].key === k) { hit = all[i].actions[j]; break; }
+          if (hit) this.put(function (s) { s.fn = hit.fn; s.args = hit.args.slice(); delete s.self; });
+        },
+        setTimes: function (v) { var n = Number(v); return this.put(function (s) { if (n === 1) delete s.times; else s.times = n; }); },
+        setUntil: function (v) { return this.put(function (s) { s.until = v; }); },
+        setGs: function (v) { var n = Number(v); return this.put(function (s) { s.timeout = { gs: n }; }); },
+        setOnTimeout: function (e) { var v = e.target.value; this.put(function (s) { s.onTimeout = v; }); },
+        toggleFeature: function (id) { this.put(function (s) { var f = s.features || []; var i = f.indexOf(id); if (i >= 0) f.splice(i, 1); else f.push(id); if (f.length || s.do === 'hold') s.features = f; else delete s.features; }); },
+        setText: function (v) { return this.put(function (s) { s.text = v; }); },
+        setComment: function (v) { return this.put(function (s) { if (v) s.comment = v; else delete s.comment; }); },
+        fwrap: function (v, fn) { return { value: v, commit: fn }; },
+      },
+      template: '<div class="tmtl-qstep" :data-step="data.st.i + 1" :data-kind="s.do" style="' + SUB + ';border-bottom:1px solid rgba(127,178,217,.15);padding:2px 0">'
+        + '<div style="' + ROW + '">'
+        +   '<span style="' + DIM + '">{{ data.st.i + 1 }}.</span>'
+        +   '<span class="tmtl-qstep-title" style="min-width:0;overflow-wrap:anywhere;flex:1 1 12em;text-align:left">{{ data.st.title }}</span>'
+        +   '<button type="button" class="tmtl-qstep-up" style="' + BTN + '" title="earlier" @click="move(-1)" @keydown.stop>↑</button>'
+        +   '<button type="button" class="tmtl-qstep-down" style="' + BTN + '" title="later" @click="move(1)" @keydown.stop>↓</button>'
+        +   '<button type="button" class="tmtl-qstep-edit" style="' + BTN + '" @click="open = !open" @keydown.stop>{{ open ? \'done\' : \'edit\' }}</button>'
+        +   '<button type="button" class="tmtl-qstep-del" style="' + BTN + '" title="delete this step" @click="drop" @keydown.stop>×</button>'
+        + '</div>'
+        + '<div v-if="data.st.comment && s.do !== \'comment\'" class="tmtl-qstep-comment" style="' + SUB + ';' + DIM + '">— {{ data.st.comment }}</div>'
+        + '<div v-if="data.dev" style="' + SUB + ';' + DIM + ';font-family:monospace;font-size:.8em">{{ data.st.detail }}</div>'
+        + '<div v-if="open" class="tmtl-qstep-fields" style="' + SUB + '">'
+        +   '<div v-if="s.do === \'call\'" style="' + ROW + '">'
+        +     '<select class="tmtl-qstep-action" style="' + SEL + '" :value="pick" @change="setAction" @keydown.stop>'
+        +       '<optgroup v-for="g in actionOpts" :key="g.layer" :label="g.name"><option v-for="a in g.actions" :key="a.key" :value="a.key">{{ a.label }}</option></optgroup>'
+        +       '<option v-if="pick && !data.known[pick]" :value="pick">{{ data.st.title }}</option>'
+        +     '</select>'
+        +     '<tmtl-qtext :data="{ value: s.times || 1, label: \'how many times\', kind: \'number\', cls: \'tmtl-qstep-times\', commit: setTimes }" @changed="$emit(\'changed\')"></tmtl-qtext>'
+        +   '</div>'
+        +   '<div v-if="s.do === \'wait\'">'
+        +     '<tmtl-qtext :data="{ value: s.until, label: \'wait until (a condition on the game, e.g. hasUpgrade(\\u0022p\\u0022, 11))\', kind: \'predicate\', cls: \'tmtl-qstep-until\', commit: setUntil }" @changed="$emit(\'changed\')"></tmtl-qtext>'
+        +     '<div style="' + ROW + '"><tmtl-qtext :data="{ value: s.timeout && s.timeout.gs, label: \'at most (game-seconds)\', kind: \'number\', cls: \'tmtl-qstep-gs\', commit: setGs }" @changed="$emit(\'changed\')"></tmtl-qtext>'
+        +       '<select class="tmtl-qstep-ontimeout" style="' + SEL + '" :value="s.onTimeout" @change="setOnTimeout" @keydown.stop><option value="abort">then stop the queue</option><option value="skip">then carry on</option></select></div>'
+        +   '</div>'
+        +   '<div v-if="s.do === \'hold\' || s.do === \'release\'" style="' + ROW + '">'
+        +     '<span style="' + DIM + '">{{ s.do === \'hold\' ? \'pause these tools:\' : \'let these run again (none chosen = all this queue paused):\' }}</span>'
+        +     '<button v-for="f in featureOpts" :key="f.id" type="button" class="tmtl-qstep-feature" :data-feature="f.id" :data-on="held[f.id] ? 1 : 0" style="' + BTN + '" :style="held[f.id] ? \'outline:2px solid #7fb2d9\' : \'opacity:.75\'" @click="toggleFeature(f.id)" @keydown.stop>{{ (held[f.id] ? \'\\u2713 \' : \'\') + f.title }}</button>'
+        +   '</div>'
+        +   '<tmtl-qtext v-if="s.do === \'comment\'" :data="{ value: s.text, label: \'comment\', kind: \'text\', cls: \'tmtl-qstep-text\', commit: setText }" @changed="$emit(\'changed\')"></tmtl-qtext>'
+        +   '<tmtl-qtext v-if="s.do !== \'comment\'" :data="{ value: s.comment, label: \'note on this step\', kind: \'text\', cls: \'tmtl-qstep-note\', commit: setComment }" @changed="$emit(\'changed\')"></tmtl-qtext>'
+        + '</div>'
+        + '<div v-if="err" class="tmtl-error" style="' + ERR + '">{{ err }}</div>'
+        + '</div>',
+    },
+    // ONE QUEUE: name, on/off, its run-status, its start, its steps, adding a step, export, delete
+    'tmtl-qqueue': {
+      props: ['data'],
+      data: function () { return { open: true, confirm: false, err: null, addKind: 'call', addAction: '', pickLayer: '' }; },
+      computed: {
+        q: function () { return this.data.q; },
+        known: function () { var o = {}; this.data.acts.forEach(function (g) { g.actions.forEach(function (a) { o[a.key] = true; }); }); return o; },
+        layerActs: function () {
+          var l = this.pickLayer || (this.data.acts[0] && this.data.acts[0].layer);
+          for (var i = 0; i < this.data.acts.length; i++) if (this.data.acts[i].layer === l) return this.data.acts[i].actions;
+          return [];
+        },
+      },
+      methods: {
+        done: function (r) { this.err = r && !r.ok ? r.errors.join(' ') : null; this.$emit('changed'); return r; },
+        toggle: function () { this.done(setEnabled(this.q.id, !this.q.enabled)); },
+        restart: function () { this.done(restart(this.q.id)); },
+        exp: function () { this.done(download(this.q.id)); },
+        del: function () { this.confirm = false; this.done(remove(this.q.id)); },
+        rename: function (v) { return rename(this.q.id, v); },
+        setComment: function (v) { return setComment(this.q.id, v); },
+        setOn: function (e) { var on = e.target.value; this.done(setTrigger(this.q.id, on === 'start' ? { on: 'start' } : { on: 'predicate', when: this.q.trigger.when || '' })); },
+        setWhen: function (v) { return setTrigger(this.q.id, { on: 'predicate', when: v }); },
+        setLayer: function (e) { this.pickLayer = e.target.value; },
+        add: function () {
+          var k = this.addKind, s;
+          if (k === 'call') {
+            var a = null, acts = this.layerActs, key = this.$refs.act ? this.$refs.act.value : '';
+            for (var i = 0; i < acts.length; i++) if (acts[i].key === key) a = acts[i];
+            if (!a) a = acts[0];
+            if (!a) return this.done({ ok: false, errors: ['This game has no actions to choose from.'] });
+            s = { 'do': 'call', fn: a.fn, args: a.args.slice() };
+          } else if (k === 'wait') s = { 'do': 'wait', until: '', timeout: { gs: 60 }, onTimeout: 'abort' };
+          else if (k === 'pause') s = { 'do': 'wait', until: 'false', timeout: { gs: 10 }, onTimeout: 'skip' };
+          else if (k === 'hold') s = { 'do': 'hold', features: [] };
+          else if (k === 'release') s = { 'do': 'release' };
+          else s = { 'do': 'comment', text: 'a note' };
+          this.done(addStep(this.q.id, s));
+        },
+      },
+      template: '<div class="tmtl-qqueue" :data-queue="q.id" :data-enabled="q.enabled ? 1 : 0" :data-state="q.run ? q.run.state : \'off\'" style="' + BLOCK + '">'
+        + '<div style="' + ROW + '">'
+        +   '<button type="button" class="tmtl-qqueue-fold" style="' + BTN + '" @click="open = !open" @keydown.stop>{{ open ? \'−\' : \'+\' }}</button>'
+        +   '<b class="tmtl-qqueue-name" style="min-width:0;overflow-wrap:anywhere;flex:1 1 10em;text-align:left">{{ q.name }}</b>'
+        +   '<button type="button" class="tmtl-qqueue-onoff" :data-on="q.enabled ? 1 : 0" style="' + BTN + '" @click="toggle" @keydown.stop>{{ q.enabled ? \'On\' : \'Off\' }}</button>'
+        +   '<button v-if="q.enabled" type="button" class="tmtl-qqueue-restart" style="' + BTN + '" @click="restart" @keydown.stop>run again from the top</button>'
+        +   '<button type="button" class="tmtl-qqueue-export" style="' + BTN + '" @click="exp" @keydown.stop>export</button>'
+        +   '<button v-if="!confirm" type="button" class="tmtl-qqueue-del" style="' + BTN + '" @click="confirm = true" @keydown.stop>delete…</button>'
+        +   '<span v-if="confirm" style="' + ROW + '"><button type="button" class="tmtl-qqueue-del-go" style="' + BTN + '" @click="del" @keydown.stop>yes, delete it</button>'
+        +     '<button type="button" class="tmtl-qqueue-del-no" style="' + BTN + '" @click="confirm = false" @keydown.stop>keep it</button></span>'
+        + '</div>'
+        // THE RUN-STATUS: which step, what it waits for and the time left, which tools it has paused, the last outcome
+        + '<div class="tmtl-qrun" style="' + SUB + '">'
+        +   '<div v-if="!q.run" style="' + DIM + '">{{ q.enabled ? \'on, not armed\' : \'off — switch it On to arm it\' }} · starts {{ q.trigger.on === \'start\' ? \'when the game starts (or as soon as it is switched on)\' : \'when \' + (q.trigger.when || \'…\') + \' holds\' }}</div>'
+        +   '<div v-else><span class="tmtl-qrun-state" :data-state="q.run.state"><b>{{ q.run.words }}</b></span><span v-if="q.run.outcome && q.run.state !== \'running\'"> — {{ q.run.outcome }}</span>'
+        +     '<span v-if="q.stale" class="tmtl-qrun-stale" style="color:#c08a3e"> · edited since it was armed: press <i>run again from the top</i> to use the changes</span></div>'
+        +   '<div v-if="q.run && q.run.current" class="tmtl-qrun-step">step {{ q.run.current.index }} of {{ q.run.steps }}: {{ q.run.current.title }}<span v-if="q.run.current.comment" style="opacity:.7"> — {{ q.run.current.comment }}</span></div>'
+        +   '<div v-if="q.run && q.run.wait" class="tmtl-qrun-wait">waiting for <code style="overflow-wrap:anywhere">{{ q.run.wait.until }}</code> — <b>{{ Math.round(q.run.wait.left * 10) / 10 }} s</b> left of {{ q.run.wait.timeout }}</div>'
+        +   '<div v-if="q.run && q.run.holds.length" class="tmtl-qrun-holds">has paused: {{ q.run.holds.join(\', \') }}</div>'
+        +   '<div v-if="q.run && q.run.last" class="tmtl-qrun-last" style="' + DIM + '">last: {{ q.run.last }}</div>'
+        + '</div>'
+        + '<div v-if="q.errors.length" class="tmtl-qerrors" style="' + SUB + '"><div style="' + ERR + '"><b>It cannot run yet:</b></div><div v-for="e in q.errors" :key="e" class="tmtl-qerror" style="' + ERR + '">• {{ e }}</div></div>'
+        + '<div v-if="err" class="tmtl-error" style="' + ERR + '">{{ err }}</div>'
+        + '<div v-if="open" style="text-align:left;min-width:0">'
+        +   '<tmtl-qtext :data="{ value: q.name, label: \'name\', kind: \'text\', cls: \'tmtl-qqueue-rename\', commit: rename }" @changed="$emit(\'changed\')"></tmtl-qtext>'
+        +   '<div style="' + ROW + '"><span style="' + DIM + '">starts</span>'
+        +     '<select class="tmtl-qqueue-trigger" style="' + SEL + '" :value="q.trigger.on" @change="setOn" @keydown.stop><option value="start">when the game starts</option><option value="predicate">when a condition holds</option></select></div>'
+        +   '<tmtl-qtext v-if="q.trigger.on === \'predicate\'" :data="{ value: q.trigger.when, label: \'the condition\', kind: \'predicate\', cls: \'tmtl-qqueue-when\', commit: setWhen }" @changed="$emit(\'changed\')"></tmtl-qtext>'
+        +   '<tmtl-qtext :data="{ value: q.comment, label: \'what this queue is for\', kind: \'text\', cls: \'tmtl-qqueue-comment\', commit: setComment }" @changed="$emit(\'changed\')"></tmtl-qtext>'
+        +   '<div v-if="data.dev" style="' + SUB + ';' + DIM + '">id {{ q.id }}<span v-if="q.source && q.source.template"> · written by the template {{ q.source.template }} for {{ q.source.goal }}</span></div>'
+        +   '<div class="tmtl-qsteps" style="text-align:left;min-width:0">'
+        +     '<tmtl-qstep v-for="st in q.steps" :key="q.id + \':\' + st.i" :data="{ qid: q.id, st: st, acts: data.acts, known: known, features: data.features, dev: data.dev }" @changed="$emit(\'changed\')"></tmtl-qstep>'
+        +   '</div>'
+        +   '<div class="tmtl-qadd" style="' + ROW + '"><span style="' + DIM + '">add</span>'
+        +     '<select class="tmtl-qadd-kind" style="' + SEL + '" v-model="addKind" @keydown.stop>'
+        +       '<option value="call">an action</option><option value="wait">a wait for a condition</option><option value="pause">a pause (game-seconds)</option>'
+        +       '<option value="hold">pause automation tools</option><option value="release">resume automation tools</option><option value="comment">a comment</option></select>'
+        +     '<select v-if="addKind === \'call\'" class="tmtl-qadd-layer" style="' + SEL + '" :value="pickLayer || (data.acts[0] && data.acts[0].layer)" @change="setLayer" @keydown.stop>'
+        +       '<option v-for="g in data.acts" :key="g.layer" :value="g.layer">{{ g.name }}</option></select>'
+        +     '<select v-if="addKind === \'call\'" ref="act" class="tmtl-qadd-action" style="' + SEL + '" @keydown.stop>'
+        +       '<option v-for="a in layerActs" :key="a.key" :value="a.key">{{ a.label }}</option></select>'
+        +     '<button type="button" class="tmtl-qadd-go" style="' + BTN + '" @click="add" @keydown.stop>add step</button>'
+        +   '</div>'
+        + '</div>'
+        + '</div>',
+    },
+    // THE TAB
+    'tmtl-qedit': {
+      props: ['layer', 'data'],
+      data: function () { return { gen: 0, err: null, note: null, newName: '', showCat: false, catBusy: false }; },
+      computed: {
+        clock: function () { return clock(); },
+        dev: function () { void this.gen; return T.devDetails ? T.devDetails() : false; },
+        acts: function () { void this.gen; return actions(); },
+        features: function () { return featureList(); },
+        queues: function () { void this.clock; void this.gen; return view(); },
+        others: function () { void this.clock; void this.gen; return others(); },
+        recording: function () { void this.clock; void this.gen; return recStatus(); },
+        cat: function () { void this.gen; return { loading: catalogState.loading, error: catalogState.error, entries: catalogState.entries }; },
+        boot: function () { void this.gen; return bootReport; },
+      },
+      created: function () { var self = this; ensureRunner().then(function () { self.gen++; }); },
+      methods: {
+        bump: function () { this.gen++; },
+        done: function (r, okNote) { this.err = r && !r.ok ? r.errors.join(' ') : null; this.note = r && r.ok && okNote ? okNote : null; this.gen++; return r; },
+        create: function (v) { var r = this.done(create(v || 'my queue'), 'added “' + (v || 'my queue') + '” — it is Off until you switch it On'); return r; },
+        createNow: function () { this.create(''); },
+        rec: function () {
+          var self = this;
+          if (rec.on) { var r = recStop(); self.done(r, r.ok ? 'recorded ' + r.presses + ' press(es) as ' + r.steps + ' step(s) — the new queue is at the bottom, Off' : null); return; }
+          recStart().then(function () { self.gen++; });
+          self.gen++;
+        },
+        onFile: function (e) {
+          var self = this, f = e && e.target && e.target.files && e.target.files[0];
+          if (!f) return;
+          var rd = new FileReader();
+          rd.onload = function () { ensureRunner().then(function () { self.done(importText(String(rd.result)), 'imported — it is Off until you switch it On'); }); };
+          rd.readAsText(f);
+          try { e.target.value = ''; } catch (x) { /* read-only in some browsers */ }
+        },
+        openCat: function () { var self = this; self.showCat = !self.showCat; if (self.showCat) { self.catBusy = true; catalog().then(function () { self.catBusy = false; self.gen++; }); } },
+        addGen: function (entry) { var self = this; addGenerated(entry).then(function (r) { self.done(r, 'added — it is Off until you switch it On'); }); },
+      },
+      template: '<div class="tmtl-root tmtl-qedit" style="' + ROOT + '">'
+        + '<div style="' + DIM + ';margin-bottom:6px;text-align:left">A <b>queue</b> is a list of steps the automation takes in order: press one of the game’s own buttons, wait for something, pause or resume the automation’s own tools, or just a note. Each queue starts when the game starts or when a condition you type holds, and is kept by this browser for this game (not in your save). Export one to keep it or share it.</div>'
+        // the recorder
+        + '<div class="tmtl-qrec" style="' + ROW + ';margin-bottom:6px">'
+        +   '<button type="button" class="tmtl-qrec-toggle" :data-on="recording.on ? 1 : 0" style="' + BTN + '" @click="rec" @keydown.stop>{{ recording.on ? \'■ stop recording\' : (recording.busy ? \'loading…\' : \'● record my presses\') }}</button>'
+        +   '<span class="tmtl-qrec-read" style="' + DIM + '">{{ recording.on ? \'recording: \' + recording.presses + \' press(es) so far\' + (recording.refused ? \', \' + recording.refused + \' that changed nothing (left out)\' : \'\') : \'press the game’s buttons while recording, then stop: you get a queue that presses them again\' }}</span>'
+        +   '<span v-if="recording.error" class="tmtl-error" style="' + ERR + '">{{ recording.error }}</span>'
+        + '</div>'
+        + '<div v-if="note" class="tmtl-qnote" style="color:#4f9a6a;text-align:left">{{ note }}</div>'
+        + '<div v-if="err" class="tmtl-error tmtl-qedit-error" style="' + ERR + '">{{ err }}</div>'
+        + '<div v-if="boot && boot.refused.length" style="' + ERR + '">These saved queues are switched on but could not be armed: <span v-for="b in boot.refused" :key="b.id">{{ b.id }} ({{ b.errors.join(\' \') }}) </span></div>'
+        // the queues
+        + '<div class="tmtl-qlist" style="text-align:left;min-width:0">'
+        +   '<tmtl-qqueue v-for="q in queues" :key="q.id" :data="{ q: q, acts: acts, features: features, dev: dev, gen: gen }" @changed="bump"></tmtl-qqueue>'
+        +   '<div v-if="!queues.length" style="' + DIM + ';text-align:left;margin:4px 0">No queues yet.</div>'
+        + '</div>'
+        + '<div v-if="others.length" style="' + SUB + ';' + DIM + '">Also running (loaded from the address or the console, not kept here): <span v-for="o in others" :key="o.id" class="tmtl-qother">{{ o.id }} — {{ o.words }}<span v-if="o.holds.length">, has paused {{ o.holds.join(\', \') }}</span>; </span></div>'
+        + '<div class="tmtl-qnew" style="' + ROW + ';margin-top:6px">'
+        +   '<button type="button" class="tmtl-qnew-go" style="' + BTN + '" @click="createNow" @keydown.stop>new queue</button>'
+        +   '<span style="' + DIM + '">or name it:</span>'
+        +   '<span style="flex:1 1 12em;min-width:0"><tmtl-qtext :data="{ value: \'\', label: \'\', kind: \'text\', cls: \'tmtl-qnew-name\', reset: true, commit: create }"></tmtl-qtext></span>'
+        + '</div>'
+        + '<div class="tmtl-qimport" style="' + ROW + '"><span style="' + DIM + '">import a queue file:</span>'
+        +   '<input type="file" accept=".json,application/json" class="tmtl-qimport-file" style="' + K.CONTROL + ';max-width:100%;min-width:0;font-size:.85em" @change="onFile" @keydown.stop></div>'
+        // the generated queues
+        + '<div class="tmtl-qcat" style="text-align:left;margin-top:6px;min-width:0">'
+        +   '<button type="button" class="tmtl-qcat-toggle" style="' + BTN + '" @click="openCat" @keydown.stop>{{ showCat ? \'hide the generated queues\' : \'queues the strategy templates wrote for this game\' }}</button>'
+        +   '<div v-if="showCat" style="' + SUB + '">'
+        +     '<div v-if="catBusy" style="' + DIM + '">loading…</div>'
+        +     '<div v-else-if="cat.error" style="' + ERR + '">{{ cat.error }}</div>'
+        +     '<div v-else-if="!cat.entries || !cat.entries.length" style="' + DIM + '">none for this game yet.</div>'
+        +     '<div v-for="c in (cat.entries || [])" :key="c.file" class="tmtl-qcat-entry" :data-file="c.file" style="' + SUB + ';border-bottom:1px solid rgba(127,178,217,.15)">'
+        +       '<div style="' + ROW + '"><b style="min-width:0;overflow-wrap:anywhere;flex:1 1 12em;text-align:left">{{ c.title }}</b><button type="button" class="tmtl-qcat-add" style="' + BTN + '" @click="addGen(c)" @keydown.stop>add to my queues</button></div>'
+        +       '<div style="' + DIM + '">{{ c.comment }}</div>'
+        +       '<div v-if="c.state" style="' + DIM + '">written for the state {{ c.state }}</div>'
+        +     '</div>'
+        +   '</div>'
+        + '</div>'
+        + '</div>',
+    },
+  };
+  var names = [];
+  if (VUE && typeof VUE.component === 'function') {
+    for (var cn in COMPONENTS) { VUE.component(cn, COMPONENTS[cn]); names.push(cn); if (T.componentNames) T.componentNames.push(cn); }
+  }
+
+  T.qedit = {
+    ready: true, key: KEY, storeFormat: STORE_FORMAT, version: VERSION, components: names,
+    boot: boot, storeKey: storeKey, store: function () { return clone(readStore()); }, writes: function () { return writes; },
+    list: view, others: others, describe: describe, actions: actions, features: featureList, validate: validate,
+    create: create, rename: rename, setComment: setComment, setTrigger: setTrigger, setEnabled: setEnabled, restart: restart, remove: remove,
+    addStep: addStep, setStep: setStep, moveStep: moveStep, deleteStep: deleteStep,
+    exportText: exportText, download: download, importText: importText, fileName: fileName,
+    catalog: catalog, addGenerated: addGenerated,
+    record: { start: recStart, stop: recStop, status: recStatus, fold: foldPresses },
+  };
+})();
