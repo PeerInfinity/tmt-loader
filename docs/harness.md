@@ -440,6 +440,8 @@ drove a chip**. ⛔ A check nobody runs is not a check.
 | the M1 sweep on a bounded local set | a slice, before it pushes | minutes |
 | **P1a parts 2 and 3** — the planner's knowledge walk and goal sources (`gates-p1a --part 2 / 3 --assert`, 10 + 9 rows) | CI, the `p1a` job (qrate1, 2026-09-30). ⚠ Until then it ran in NO job, and its goldens went stale unseen (design notes §16.1: nine reds, all expected drift). ⚖ Ruling (A): the rows NAME their configuration — Something's four under `SOMETHING_OLD_TABLE`, the Time-Energy row under `PIN_A2` — and only ptr's four goals() goldens were re-recorded | ~5 min per part locally at pool 3 |
 | qrate1 — the sub-goal seam, the q23 flip, the fixtures, the grep (`gates-qrate1 --part push --assert`, 9 rows) | CI, the `qrate1` job | ~4 min locally |
+| qedit-1 — the queue editor driven through the page (`gates-qedit --part all --assert`, 13 page rows + the grep) | CI, the `qedit` job | ~4 min locally |
+| the generated-queue catalog (`tools/queues-catalog.mjs --check`) | CI, the fast job | < 1 s |
 | qrate1 — the quirk-RATE cells and the planner legs (`gates-qrate1 --part screen / cell / planner / merge`) | ⚖ `qrate1.yml`, **dispatch-only**, its own concurrency group (a measurement, F1's ruling) | the screen ~10 min; a diff-1 control cell to 150,000 game-s and the diff-0.05 cells are hours, one job each |
 
 ⚠ The numbers above are local wall clock on one workstation unless they say CI; CI runs this kind of work about

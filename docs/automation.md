@@ -186,7 +186,7 @@ SUPPLIED). Both engines' `column` / `row` render **any registered component by n
 `:layer` and `:data` — ptr `js/components.js:71-73`, something `:60-72`), so a component the LOADER registers appears
 inside a `tabFormat` exactly like an engine one. Censused quote-agnostically over `games/`: **all 175 of the 175
 games register `Vue.component("column")`**, which is the premise the whole design rests on. `tmt-auto.js` registers
-**seven** components (four since V2, two more since V3, one more since V4b), namespaced so nothing can collide:
+**eight** components (four since V2, two more since V3, one more since V4b, one more since qedit-1), namespaced so nothing can collide:
 
 | component | what it is |
 |---|---|
@@ -197,6 +197,7 @@ games register `Vue.component("column")`**, which is the premise the whole desig
 | `tmtl-watch` | (V3) the stall watch's own controls: the on/off press, the tracker's, the three settings and the state line |
 | `tmtl-progress` | (V3) the `Progress` subtab's timeline |
 | `tmtl-reset` | (V4b) *reset the automation settings* — a two-press confirm at the BOTTOM of the Advanced view, under every block, because it is the one control here that cannot be undone |
+| `tmtl-queues` | (qedit-1) the `Queues` subtab's SHELL: it fetches the lazy queue editor (`loader/tmt-qedit.js`, docs/queues.md) when the tab is opened and renders its `tmtl-qedit` by name. The editor's own four components (`tmtl-qedit`, `tmtl-qqueue`, `tmtl-qstep`, `tmtl-qtext`) are registered by that file, through the same Vue and the same `T.uiKit` styles, only once it has loaded |
 
 ⚖ **They wear the GAME's theme, not the browser's** (user, 2026-09-19: *"light text on a dark background"*). An
 `<input>`, a `<select>` and a `<button>` come with the browser's own colours — black on white — which is wrong

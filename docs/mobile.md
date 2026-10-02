@@ -641,6 +641,11 @@ blocks of the automation tab's `Advanced` view the player has folded (V3, `docs/
 pattern deliberately: the same store, `storage.raw`, every read and write wrapped, nothing in `player`, and the
 same consequence — a cleared game comes back with today's defaults.
 
+⚠ **A THIRD, since qedit-1** — `tmt-loader:<id>:queues`, the player's own action queues (the automation tab's `Queues`
+subtab, `docs/queues.md`). The same store and rules: `storage.raw`, every read and write wrapped, nothing in `player`,
+the key removed when the list is empty. ⚠ Unlike a fold map it is the player's WORK, and it too is inside what "clear
+this game's save" clears — the editor's **export** is how a queue outlives that.
+
 ⚠ **It found a defect of its own, and the defect is the persistence's, not U2d's.** A card **built open** hides its
 whole action row, and a `display: none` row has no layout — `getBoundingClientRect()` reports every button at the
 same zero top, so the build-time fit pass cannot see where the browser wrapped them and marks none. MEASURED on
