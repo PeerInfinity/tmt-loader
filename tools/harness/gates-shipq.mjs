@@ -340,21 +340,19 @@ async function partAccept() {
 
 // ---- Part grep ---------------------------------------------------------------------------------------------------------
 function partGrep() {
+  // the same grep as gates-m30 / gates-m31 X1 (ptr's layer ids as a list: `au` is the loader's own layer, and the core,
+  // tmt-auto.js, is grepped whole by gates-stages X1)
   const ids = JSON.parse(fs.readFileSync(path.join(REPO, 'manifests/index.json'), 'utf8')).map((g) => g.id);
-  const ptrLayers = Object.keys(JSON.parse(fs.readFileSync(path.join(REPO, 'tools/harness/snapshots/ptr/all/M26.json'), 'utf8')).player ? JSON.parse(JSON.parse(fs.readFileSync(path.join(REPO, 'tools/harness/snapshots/ptr/all/M26.json'), 'utf8')).player) : {}).filter((k) => /^[a-z]{1,3}$/.test(k));
+  const ptrLayers = ['p', 'b', 'g', 't', 'e', 's', 'sb', 'sg', 'h', 'q', 'o', 'ss', 'm', 'ba', 'ps', 'en', 'ne', 'hn', 'n', 'hs', 'i', 'id', 'r', 'ma', 'ge', 'mc', 'ai', 'c', 'a', 'sc', 'ab'];
   const srcs = ['loader/tmt-queue.js', 'loader/tmt-templates.js', 'loader/attach.mjs', 'tools/harness/strategize.mjs'].map((f) => [f, fs.readFileSync(path.join(REPO, f), 'utf8')]);
-  // tmt-auto.js: only the lines this slice added (they carry the `shipq-1` mark or sit in its blocks) — the file is
-  // gated whole by gates-stages X1
-  const auto = fs.readFileSync(path.join(REPO, 'loader/tmt-auto.js'), 'utf8');
-  srcs.push(['loader/tmt-auto.js', auto]);
   const hits = [];
-  for (const [name, code] of srcs) {
-    const noComments = code.replace(/\/\/[^\n]*/g, '').replace(/\/\*[^]*?\*\//g, '');
-    const lits = [...noComments.matchAll(/(['"`])((?:\\.|(?!\1).)*)\1/g)].map((m) => m[2]);
+  for (const [name, src] of srcs) {
+    const code = src.replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:'"`\\])\/\/.*$/gm, '$1');   // comments may cite what was MEASURED
+    const lits = [...code.matchAll(/(['"`])((?:\\.|(?!\1).)*?)\1/g)].map((m) => m[2]);
     for (const l of lits) { if (ids.includes(l)) hits.push(`${name}: game id '${l}'`); if (ptrLayers.includes(l) && l.length > 1) hits.push(`${name}: layer id '${l}'`); }
-    for (const l of ptrLayers) { const re = new RegExp(`\\b(?:layers|player|tmp)\\s*(?:\\.\\s*${l}\\b|\\[\\s*['"\`]${l}['"\`]\\s*\\])`); if (re.test(noComments)) hits.push(`${name}: layer id ${l} addressed as layers/player/tmp.${l}`); }
+    for (const l of ptrLayers) { const re = new RegExp(`\\b(?:layers|player|tmp)\\s*(?:\\.\\s*${l}\\b|\\[\\s*['"\`]${l}['"\`]\\s*\\])`); if (re.test(code)) hits.push(`${name}: layer id ${l} addressed as layers/player/tmp.${l}`); }
   }
-  row({ gate: 'X1 no game or layer id in the generic code this slice changed (runner, templates, the core, attach, strategize)', id: '—', ok: !hits.length,
+  row({ gate: 'X1 no game or layer id in the generic code this slice changed (runner, templates, attach, strategize)', id: '—', ok: !hits.length,
     notes: hits.length ? hits.join('; ') : `${srcs.length} sources, ${ids.length} game ids and ${ptrLayers.length} ptr layer ids checked against every string literal and every layers/player/tmp member access` });
 }
 

@@ -394,10 +394,11 @@ async function legRelease(browser) {
   await tick(page, 2);
   const h0 = await page.evaluate(() => JSON.stringify(tmtLoader.queueLink.holds));
   await block(page, 'off-me').locator('button.tmtl-qqueue-onoff').click(); await tick(page, 1);
-  const h1 = await page.evaluate(() => ({ holds: tmtLoader.queueLink.holds, loaded: tmtLoader.queues.status().queues.map((q) => q.id) }));
+  // (shipq-1) the editor's queues: ptr's table ships one (the H22 attempt), armed and holding nothing here
+  const h1 = await page.evaluate(() => ({ holds: tmtLoader.queueLink.holds, loaded: tmtLoader.queues.status().queues.filter((q) => !q.shipped).map((q) => q.id) }));
   await block(page, 'delete-me').locator('button.tmtl-qqueue-del').click(); await redraw(page);
   await block(page, 'delete-me').locator('button.tmtl-qqueue-del-go').click(); await tick(page, 1);
-  const h2 = await page.evaluate(() => ({ holds: tmtLoader.queueLink.holds, loaded: tmtLoader.queues.status().queues.map((q) => q.id), stored: tmtLoader.qedit.list().map((q) => q.id) }));
+  const h2 = await page.evaluate(() => ({ holds: tmtLoader.queueLink.holds, loaded: tmtLoader.queues.status().queues.filter((q) => !q.shipped).map((q) => q.id), stored: tmtLoader.qedit.list().map((q) => q.id) }));
   if (!/reset:p/.test(h0)) f.push(`nothing held to begin with: ${h0}`);
   if (h1.loaded.includes('off-me') || !h1.holds || h1.holds['reset:p'].queue !== 'delete-me') f.push(`after Off: ${JSON.stringify(h1)}`);
   if (h2.holds !== null || h2.loaded.length || h2.stored.includes('delete-me')) f.push(`after delete: ${JSON.stringify(h2)}`);
