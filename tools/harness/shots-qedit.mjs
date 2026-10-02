@@ -19,7 +19,7 @@ const browser = await chromium.launch();
 const redraw = async (page) => { await page.evaluate(() => { try { updateTemp(); } catch (e) { /* */ } if (typeof updateTabFormats === 'function') updateTabFormats(); }); await page.waitForTimeout(200); };
 
 async function open(view) {
-  const ctx = await browser.newContext(view.phone ? { viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true, deviceScaleFactor: 2 } : { viewport: { width: 1280, height: 900 } });
+  const ctx = await browser.newContext(view.phone ? { viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true, deviceScaleFactor: 2 } : { viewport: { width: 1280, height: 2400 } });
   const page = await ctx.newPage();
   await page.goto(new URL(`index.html?mod=ptr&managed=1&automation=1&profile=off${view.phone ? '&mobile=1' : ''}`, server.url).href, { waitUntil: 'load' });
   await waitReady(page);

@@ -496,7 +496,7 @@
   var BLOCK = 'text-align:left;min-width:0;max-width:100%;box-sizing:border-box;border-left:3px solid #7fb2d9;background:rgba(127,178,217,.08);border-radius:4px;padding:6px 8px;margin:0 0 8px 0';
   var SUB = 'text-align:left;min-width:0;max-width:100%;box-sizing:border-box;margin:2px 0 2px 8px';
   var ERR = 'color:#d07a7a;font-size:.9em;text-align:left';
-  var DIM = 'opacity:.7;font-size:.9em';
+  var DIM = 'opacity:.7;font-size:.9em;text-align:left';
   function clock() { try { return tmp[AU].auViewGen; } catch (e) { return player.timePlayed; } }
 
   var COMPONENTS = {
@@ -580,7 +580,7 @@
         +     '</select>'
         +     '<tmtl-qtext :data="{ value: s.times || 1, label: \'how many times\', kind: \'number\', cls: \'tmtl-qstep-times\', commit: setTimes }" @changed="$emit(\'changed\')"></tmtl-qtext>'
         +   '</div>'
-        +   '<div v-if="s.do === \'wait\'">'
+        +   '<div v-if="s.do === \'wait\'" style="text-align:left">'
         +     '<tmtl-qtext :data="{ value: s.until, label: \'wait until (a condition on the game, e.g. hasUpgrade(\\u0022p\\u0022, 11))\', kind: \'predicate\', cls: \'tmtl-qstep-until\', commit: setUntil }" @changed="$emit(\'changed\')"></tmtl-qtext>'
         +     '<div style="' + ROW + '"><tmtl-qtext :data="{ value: s.timeout && s.timeout.gs, label: \'at most (game-seconds)\', kind: \'number\', cls: \'tmtl-qstep-gs\', commit: setGs }" @changed="$emit(\'changed\')"></tmtl-qtext>'
         +       '<select class="tmtl-qstep-ontimeout" style="' + SEL + '" :value="s.onTimeout" @change="setOnTimeout" @keydown.stop><option value="abort">then stop the queue</option><option value="skip">then carry on</option></select></div>'
@@ -649,11 +649,11 @@
         // THE RUN-STATUS: which step, what it waits for and the time left, which tools it has paused, the last outcome
         + '<div class="tmtl-qrun" style="' + SUB + '">'
         +   '<div v-if="!q.run" style="' + DIM + '">{{ q.enabled ? \'on, not armed\' : \'off — switch it On to arm it\' }} · starts {{ q.trigger.on === \'start\' ? \'when the game starts (or as soon as it is switched on)\' : \'when \' + (q.trigger.when || \'…\') + \' holds\' }}</div>'
-        +   '<div v-else><span class="tmtl-qrun-state" :data-state="q.run.state"><b>{{ q.run.words }}</b></span><span v-if="q.run.outcome && q.run.state !== \'running\'"> — {{ q.run.outcome }}</span>'
+        +   '<div v-else style="text-align:left"><span class="tmtl-qrun-state" :data-state="q.run.state"><b>{{ q.run.words }}</b></span><span v-if="q.run.outcome && q.run.state !== \'running\'"> — {{ q.run.outcome }}</span>'
         +     '<span v-if="q.stale" class="tmtl-qrun-stale" style="color:#c08a3e"> · edited since it was armed: press <i>run again from the top</i> to use the changes</span></div>'
-        +   '<div v-if="q.run && q.run.current" class="tmtl-qrun-step">step {{ q.run.current.index }} of {{ q.run.steps }}: {{ q.run.current.title }}<span v-if="q.run.current.comment" style="opacity:.7"> — {{ q.run.current.comment }}</span></div>'
-        +   '<div v-if="q.run && q.run.wait" class="tmtl-qrun-wait">waiting for <code style="overflow-wrap:anywhere">{{ q.run.wait.until }}</code> — <b>{{ Math.round(q.run.wait.left * 10) / 10 }} s</b> left of {{ q.run.wait.timeout }}</div>'
-        +   '<div v-if="q.run && q.run.holds.length" class="tmtl-qrun-holds">has paused: {{ q.run.holds.join(\', \') }}</div>'
+        +   '<div v-if="q.run && q.run.current" class="tmtl-qrun-step" style="text-align:left">step {{ q.run.current.index }} of {{ q.run.steps }}: {{ q.run.current.title }}<span v-if="q.run.current.comment" style="opacity:.7"> — {{ q.run.current.comment }}</span></div>'
+        +   '<div v-if="q.run && q.run.wait" class="tmtl-qrun-wait" style="text-align:left">waiting for <code style="overflow-wrap:anywhere">{{ q.run.wait.until }}</code> — <b>{{ Math.round(q.run.wait.left * 10) / 10 }} s</b> left of {{ q.run.wait.timeout }}</div>'
+        +   '<div v-if="q.run && q.run.holds.length" class="tmtl-qrun-holds" style="text-align:left">has paused: {{ q.run.holds.join(\', \') }}</div>'
         +   '<div v-if="q.run && q.run.last" class="tmtl-qrun-last" style="' + DIM + '">last: {{ q.run.last }}</div>'
         + '</div>'
         + '<div v-if="q.errors.length" class="tmtl-qerrors" style="' + SUB + '"><div style="' + ERR + '"><b>It cannot run yet:</b></div><div v-for="e in q.errors" :key="e" class="tmtl-qerror" style="' + ERR + '">• {{ e }}</div></div>'
