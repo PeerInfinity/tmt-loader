@@ -224,6 +224,12 @@ async function partVerdict() {
   // the controls: the same queue with the ROW-3 zeroers free (VAC), and with the row SIBLINGS free (SIB)
   const C = JSON.parse(JSON.stringify(Q)); C.id = 'rr-reset-sg-row3-free';
   C.steps[0].features = C.steps[0].features.filter((f) => !ROW3.some((s) => f === `reset:${s}`) && f !== 'challenges:h');
+  // ⚖ shipq-1: the emitted queue's long wait is now the CHECK's window (3,600 game-s), no longer the measured moment + 10.
+  // The control keeps the question it was built to ask — in the time the FULL hold needs (the reset 55 game-s into it:
+  // PIN_RESET), does the row-3-free hold reset sg? — so its limit is that moment + 10, as the emitted queue's was. (Given
+  // the whole window it does, at tick 227,268, 337 ticks after the wall: a slower route, measured, not this row's claim.)
+  const cw = C.steps.find((x) => x.do === 'wait' && /canReset/.test(x.until));
+  if (cw) cw.timeout = { gs: PIN_RESET.ticks - PIN_W.ticks + 10 };
   const cfile = path.join(TMP, 'control.queue.json'); fs.writeFileSync(cfile, JSON.stringify(C));
   const B = JSON.parse(JSON.stringify(Q)); B.id = Q.id;   // the same id: the leg must be the held leg to the hash
   B.steps[0].features = B.steps[0].features.filter((f) => !SIBLINGS.some((s) => f === `reset:${s}`));
