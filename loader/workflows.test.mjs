@@ -529,3 +529,22 @@ test('yield: the battery and the roster on every push, exact row counts', () => 
   assert.doesNotMatch(j.yield, /--part leg/, 'a yield MEASUREMENT part is in the sweep — it would run on every push');
   assert.doesNotMatch(j.yield, /^\s{4}if:/m, 'the yield job is gated: it must run on every push');
 });
+
+// m31: the slice's gates on every push; its measurement (the M31 value goal's levers and the legs) in qrate1.yml behind
+// `-f part=m31`, never on a push.
+test('m31: the battery on every push with an exact row count; the levers and legs dispatch-only behind part=m31', () => {
+  const j = jobs(wf('sweep.yml'));
+  assert.ok(j.m31, 'sweep.yml has no `m31` job');
+  assert.deepEqual(needs(j.m31), ['fast']);
+  assert.match(j.m31, /gates-m31\.mjs --part push[^\n]*--assert/);
+  assert.doesNotMatch(j.m31, /--part (leg|levers|merge)/, 'an m31 MEASUREMENT part is in the sweep — it would run on every push');
+  assert.doesNotMatch(j.m31, /^\s{4}if:/m, 'the m31 job is gated: it must run on every push');
+  const m = wf('qrate1.yml'), q = jobs(m);
+  assert.match(m, /options: \[[^\]]*\bm31\b[^\]]*\]/, 'qrate1.yml offers no part=m31');
+  for (const k of ['m31-levers', 'm31-legs', 'm31-merge']) {
+    assert.ok(q[k], `qrate1.yml has no ${k} job`);
+    assert.match(q[k], /if: \$\{\{[^}]*inputs\.part == 'm31'/, `${k} would also run on another part's dispatch`);
+  }
+  assert.match(q['m31-legs'], /gates-m31\.mjs --part leg/);
+  assert.match(q['m31-merge'], /gates-m31\.mjs --part merge/);
+});

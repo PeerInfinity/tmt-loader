@@ -14,6 +14,11 @@
 #             gh workflow run qrate1.yml -R PeerInfinity/tmt-loader --ref <branch> -f part=h22  (h22's legs, below)
 #             gh workflow run qrate1.yml -R PeerInfinity/tmt-loader --ref <branch> -f part=stages  (stages-1's legs, below)
 #             gh workflow run qrate1.yml -R PeerInfinity/tmt-loader --ref <branch> -f part=m30  (m30's legs, below)
+#             gh workflow run qrate1.yml -R PeerInfinity/tmt-loader --ref <branch> -f part=m31  (m31's levers + legs, below)
+# m31 (tmt-m31-1, `gates-m31.mjs --part levers` and `--part leg`): toward M31 from stages/M30 — the M31 value goal's levers
+# (total quirks >= 1e60: the q reset's gain, walked from the facts and measured over a held window), and the legs under the
+# SHIPPED TABLE at diff 1 and 0.05 (A@...), the table BEFORE this slice (ctl@...) and the stage last (last@1), each twice
+# (equal or RED); merge refuses a missing leg and adds the stage row.
 # m30 (tmt-m30-1, `gates-m30.mjs --part leg`): M30 under the SHIPPED TABLE ALONE — the acceptance from stages/M28 at diff 1
 # (A@1, which runs on to M33 to name the next wall) and at the page's diff 0.05 (A@0.05), and the whole stretch from
 # all/M26 with q33-sg-unlock FIRST (first@1, shipped) and LAST (last@1) — each leg twice (equal or RED); merge refuses a
@@ -42,12 +47,12 @@ on:
   workflow_dispatch:
     inputs:
       part:
-        description: 'qrate1 (the quirk-rate cells, the default), m28 (the legs toward q32; design notes §18), h22 (M29 at diff 1 and 0.05; §20), stages (M28 + M29 from all/M26 under the table alone; §21) or m30 (M30 under the table alone, both stage orders)'
+        description: 'qrate1 (the quirk-rate cells, the default), m28 (the legs toward q32; design notes §18), h22 (M29 at diff 1 and 0.05; §20), stages (M28 + M29 from all/M26 under the table alone; §21), m30 (M30 under the table alone, both stage orders) or m31 (toward M31 from stages/M30: the levers and the legs)'
         type: choice
-        options: [qrate1, m28, h22, stages, m30]
+        options: [qrate1, m28, h22, stages, m30, m31]
         default: qrate1
       leg:
-        description: 'm28 / h22 / stages / m30 only: run just this leg (a key of gates-m28.mjs / gates-h22.mjs / gates-stages.mjs / gates-m30.mjs LEGS); empty = every leg'
+        description: 'm28 / h22 / stages / m30 / m31 only: run just this leg (a key of gates-m28.mjs / gates-h22.mjs / gates-stages.mjs / gates-m30.mjs / gates-m31.mjs LEGS); empty = every leg'
         type: string
         default: ''
 
@@ -499,3 +504,104 @@ jobs:
         shell: bash
         run: |
           { echo '## m30 — merge'; echo ''; echo '```'; grep -aE '^(GREEN|RED|VERDICT)' merge.txt | cut -c1-1500 || echo 'no output'; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
+
+  m31-levers:
+    name: m31 — the M31 value goal's levers
+    if: ${{ inputs.part == 'm31' && inputs.leg == '' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+          fetch-depth: 1
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+      - run: npm ci
+      - name: The levers
+        shell: bash
+        run: |
+          set -o pipefail
+          node tools/harness/gates-m31.mjs --part levers --pool 2 --assert | tee levers.txt
+      - name: Summary
+        if: always()
+        shell: bash
+        run: |
+          { echo '## m31 — levers'; echo ''; echo '```'; grep -aE '^(GREEN|RED|VERDICT)' levers.txt | cut -c1-3000 || echo 'no output'; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
+
+  m31-legs:
+    name: m31 — leg ${{ matrix.leg }}
+    if: ${{ inputs.part == 'm31' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 340
+    strategy:
+      fail-fast: false
+      matrix:
+        leg: ['A@1', 'A@0.05', 'ctl@1', 'ctl@0.05', 'last@1']
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+          fetch-depth: 1
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+      - run: npm ci
+      - name: The leg, twice
+        shell: bash
+        run: |
+          set -o pipefail
+          if [ -n '${{ inputs.leg }}' ] && [ '${{ inputs.leg }}' != '${{ matrix.leg }}' ]; then echo 'SKIPPED: not the requested leg' | tee leg.txt; exit 0; fi
+          s=$(date +%s)
+          node tools/harness/gates-m31.mjs --part leg --leg '${{ matrix.leg }}' --assert | tee leg.txt
+          echo "TIME leg ${{ matrix.leg }}: $(( $(date +%s) - s )) s" | tee -a leg.txt
+      - name: Summary
+        if: always()
+        shell: bash
+        run: |
+          { echo '## m31 — ${{ matrix.leg }}'; echo ''; echo '```'; grep -aE '^(GREEN|RED|VERDICT|TIME)' leg.txt | cut -c1-3000 || echo 'no output'; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
+      - name: Name the artifact
+        if: always()
+        shell: bash
+        run: echo "ART=m31-leg-$(echo '${{ matrix.leg }}' | tr -c 'A-Za-z0-9.-' '_')" >> "$GITHUB_ENV"
+      - name: Upload the leg (its row file and the snapshots it wrote)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ env.ART }}
+          path: |
+            tools/harness/results/tmp/m31-leg-*.json
+            tools/harness/results/tmp/m31-leg-*/
+          if-no-files-found: warn
+          retention-days: 14
+
+  m31-merge:
+    name: m31 — merge (refuses a missing leg)
+    needs: m31-legs
+    if: ${{ always() && inputs.part == 'm31' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: m31-leg-*
+          path: legs
+      - name: Merge
+        shell: bash
+        run: |
+          set -o pipefail
+          node tools/harness/gates-m31.mjs --part merge --dir legs ${{ inputs.leg != '' && format('--only ''{0}''', inputs.leg) || '' }} --assert | tee merge.txt
+      - name: Summary
+        if: always()
+        shell: bash
+        run: |
+          { echo '## m31 — merge'; echo ''; echo '```'; grep -aE '^(GREEN|RED|VERDICT)' merge.txt | cut -c1-1500 || echo 'no output'; echo '```'; } >> "$GITHUB_STEP_SUMMARY"

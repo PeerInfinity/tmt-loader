@@ -1036,6 +1036,62 @@ jobs:
           if-no-files-found: warn
           retention-days: 14
 
+  # m31 — facts past q33, and toward M31 (`gates-m31.mjs --part push`; docs/facts.md, docs/templates.md
+  # "reset-requirement", docs/automation.md "Stages"). Facts: the declared state stages/M30 (q34 and H31 unlocked there);
+  # H31's goal read over its completion limit (O2), its purchase budget (O7), `unlocked()` read as the engine does, q34's
+  # price — each against the game source and a separate --eval boot. Verdict: q34 waiting-cannot-help with its levers,
+  # H31 short, sg not open at M30, the reset-requirement REBUILD from m31/R95400, the extension's reach. Stage and grep.
+  # The MEASUREMENT (the M31 value goal's levers, and the legs from stages/M30 at diff 1 and 0.05) is
+  # `qrate1.yml -f part=m31`, dispatch-only.
+  # ⛔ `--assert` holds the run to its exact row count (13), all green.
+  # ---------------------------------------------------------------------------------------------------------------
+  m31:
+    name: m31 — facts past q33, toward M31
+    needs: fast
+    runs-on: ubuntu-latest
+    timeout-minutes: 75
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true   # games/ is the tmt-loader-games submodule
+          fetch-depth: 1
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - run: npm ci
+
+      - name: The battery — facts, verdict, stage, grep
+        shell: bash
+        run: |
+          set -o pipefail
+          s=$(date +%s)
+          node tools/harness/gates-m31.mjs --part push --pool 4 --assert | tee m31.txt
+          echo "TIME m31 push: $(( $(date +%s) - s )) s" | tee -a m31.txt
+
+      - name: Summary
+        if: always()
+        shell: bash
+        run: |
+          {
+            echo '## m31 — facts past q33, toward M31'
+            echo ''
+            echo '```'
+            cat m31.txt 2>/dev/null | grep -aE '^(GREEN|RED|VERDICT|TIME)' | cut -c1-600 || echo 'no output'
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload the rows
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: m31
+          path: tools/harness/results/tmp/gates-m31-part-*-last.json
+          if-no-files-found: warn
+          retention-days: 14
+
   # yield — THE YIELD RULE (`gates-yield.mjs`; docs/automation.md "Where features run", slice tmt-yield-1): a reset
   # yields to the game's own auto-reset only in the layer's own slot, never in the fallback pass, where the engine
   # skipped the layer (`nativeYield=slot`, the default since yield-2; the old rule is `nativeYield=always`, which the rows
