@@ -35,7 +35,7 @@ function engine(ctx, { skipLocked = true } = {}) {
   };
   return ctx;
 }
-// ⚖ the default is `always` until the user rules (tmt-auto.js, yield-1): these tests name the rule they drive
+// the tests name the rule they drive (the default is `slot` since yield-2; one test below reads the default itself)
 const boot = (unlocked, options = { nativeYield: 'slot' }, ap = true) => {
   const ctx = engine(bootStub(game(unlocked, ap), { options }));
   ctx.tmtLoader.profile('all');
@@ -99,11 +99,12 @@ test('a mistyped nativeYield is a hard fail of the load, by name', () => {
   assert.throws(() => boot(true, { nativeYield: 'fallback' }), /option nativeYield must be one of slot, always/);
 });
 
-test('⚖ the DEFAULT is the rule before yield-1 (always) until the user rules on the pins slot moves', () => {
+test('⚖ the DEFAULT is `slot` (user, 2026-10-02, yield-2): the fallback does not yield, the loader makes the first reset', () => {
   const ctx = boot(false, {});
-  tick(ctx, 2);
-  assert.equal(ctx.resets.length, 0);
-  assert.equal(rowOf(ctx, 'reset:a').last.values.at, 'fallback');
+  tick(ctx, 1);
+  assert.equal(own(ctx), 1, 'the default yielded in the fallback (the rule before yield-1)');
+  assert.equal(rowOf(ctx, 'reset:a').last.code, 'acted:reset');
+  assert.deepEqual(plain(ctx.tmtLoader.nativeYieldCounts['reset:a']), { slot: 0, fallback: 1, fallbackReady: 1 });
 });
 
 test('the slot history survives a runtime round trip; a record from before it starts afresh', () => {

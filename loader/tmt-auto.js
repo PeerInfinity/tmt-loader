@@ -979,10 +979,11 @@
   // ⛔ DERIVED, NOT LISTED: `slot` yields only when this decision runs in the layer's own slot — the engine has just
   // checked the auto-reset — and never in the fallback, where it did not. No family data, no game id. `always` is the
   // rule before yield-1 (yield wherever `autoPrestige` is set), the lever every pin recorded before it measured.
-  // ⚖ THE DEFAULT IS `always` UNTIL THE USER RULES: `slot` moves a pin (gates-m30 F0 — the wall m30/W226931 is never
-  // reached, because sg resets on the way; cloud-reports/tmt-yield-1.md), and a moved pin is the user's call. The
-  // fix is `--auto-opt nativeYield=slot` / `?autoOpt=nativeYield=slot` until then (gates-yield).
-  var NATIVE_YIELDS = ['slot', 'always'], NATIVE_YIELD_DEFAULT = 'always', nativeYieldNow = NATIVE_YIELD_DEFAULT;
+  // ⚖ THE DEFAULT IS `slot` (user, 2026-10-02: "ON; old rows name old rule", yield-2). The rows that measured the old
+  // rule — gates-m30 F0 (the wall m30/W226931 is built under it: under `slot` sg resets on the way and the wall is never
+  // reached), O1, VAC's control, EV and S3 (each asserts the defect) — name `nativeYield=always` rather than being
+  // re-recorded, as the legs before the stages name `stages=off` (cloud-reports/tmt-yield-1.md, tmt-yield-2.md).
+  var NATIVE_YIELDS = ['slot', 'always'], NATIVE_YIELD_DEFAULT = 'slot', nativeYieldNow = NATIVE_YIELD_DEFAULT;
   var curRun = { layer: null, via: null };   // the layer `runLayer` is deciding right now, and where (slot / fallback)
   // A READOUT for the gates (like `fallbackFires`; not runtime memory): per reset feature, how many decisions were
   // taken with the layer's `autoPrestige` set — in the slot, in the fallback, and in the fallback with the engine
