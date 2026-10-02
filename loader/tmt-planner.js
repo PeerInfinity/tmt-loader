@@ -127,12 +127,20 @@
   // tmp is NOT a safe reader for `unlocked`: updateTempData skips every `unlocked` outside `upgrades` while the layer's
   // tab is not open (2.2.1 temp.js:96), and setupTemp seeds an un-evaluated function as Decimal(1) — truthy forever.
   // So a locked buyable or challenge reads UNLOCKED out of tmp. Every `unlocked` here is read live from the declaration.
-  // (m31) The ENGINE's reading, not a looser one: setupLayer gives an item that declares no `unlocked` the value true
-  // (2.2.1 layerSupport.js:47-104), and every reader after that tests the value for TRUTH (components.js `v-if`,
-  // utils.js `if (!tmp[l].upgrades[id].unlocked) return`). So an `unlocked()` that RETURNS undefined is LOCKED — PTR's
-  // H32 "Option D" returns `tmp.ps.buyables[11].effects.hindr`, undefined while Pseudo-Boosters are locked, and the
-  // engine hides it. Only a function that THROWS falls back to tmp (the engine would have no value either).
   function itemUnlocked(decl, tmpItem) {
+    var v = live(decl, 'unlocked');
+    if (v !== undefined) return v !== false;
+    if (tmpItem && tmpItem.unlocked !== undefined) return !!tmpItem.unlocked;
+    return true;
+  }
+  // (m31) The FACT PROBES read `unlocked` as the ENGINE does, not more loosely: setupLayer gives an item that declares no
+  // `unlocked` the value true (2.2.1 layerSupport.js:47-104), and every reader after that tests the value for TRUTH
+  // (components.js `v-if`, utils.js `if (!tmp[l].upgrades[id].unlocked) return`). So an `unlocked()` that RETURNS
+  // undefined is LOCKED — PTR's H32 "Option D" returns `tmp.ps.buyables[11].effects.hindr`, undefined while
+  // Pseudo-Boosters are locked, and the engine hides it. Only a function that THROWS falls back to tmp.
+  // ⚖ The knowledge walk (the goals sources, below) keeps the looser `itemUnlocked`: switching it changes P1a-2's Something goldens
+  // (the `itemUnlocked` diagnostic of five already-hidden goals in S03 and S04) — a pin, left for the user (m31 report).
+  function itemUnlockedEngine(decl, tmpItem) {
     if (!decl || decl.unlocked === undefined) return true;
     if (typeof decl.unlocked !== 'function') return !!decl.unlocked;
     var v, threw = false;
@@ -2471,7 +2479,7 @@
         for (var j = 0; j < ids.length; j++) {
           var id = ids[j], decl = obj[id];
           if (!decl || typeof decl !== 'object') continue;
-          if (!itemUnlocked(decl, tmpItem(l, groups[g][0], id))) continue;
+          if (!itemUnlockedEngine(decl, tmpItem(l, groups[g][0], id))) continue;
           if (decl[groups[g][2]] === undefined) continue;
           out.push({ layer: l, group: groups[g][0], kind: groups[g][1], id: id, decl: decl, key: groups[g][2] });
         }
@@ -3030,7 +3038,7 @@
       var ids = purchaseIds(L.challenges);
       for (var j = 0; j < ids.length; j++) {
         var C = L.challenges[ids[j]], Ct = tmpItem(l, 'challenges', ids[j]);
-        if (!C || typeof C !== 'object' || !itemUnlocked(C, Ct)) continue;
+        if (!C || typeof C !== 'object' || !itemUnlockedEngine(C, Ct)) continue;
         var limit = Ct && Ct.completionLimit !== undefined ? Number(Ct.completionLimit) : 1;
         var done = Number(player[l].challenges && player[l].challenges[ids[j]] || 0);
         if (done >= limit) continue;
@@ -3135,7 +3143,7 @@
         for (var j = 0; j < ids.length; j++) {
           var d = obj[ids[j]];
           if (!d || typeof d !== 'object' || typeof d.canAfford !== 'function') continue;
-          if (!itemUnlocked(d, tmpItem(l, gr[g][0], ids[j]))) continue;
+          if (!itemUnlockedEngine(d, tmpItem(l, gr[g][0], ids[j]))) continue;
           if (gr[g][1] === 'upgrade' && owned(l, ids[j])) continue;
           out.push({ layer: l, group: gr[g][0], kind: gr[g][1], id: ids[j], decl: d });
         }
