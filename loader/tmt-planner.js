@@ -127,19 +127,15 @@
   // tmp is NOT a safe reader for `unlocked`: updateTempData skips every `unlocked` outside `upgrades` while the layer's
   // tab is not open (2.2.1 temp.js:96), and setupTemp seeds an un-evaluated function as Decimal(1) — truthy forever.
   // So a locked buyable or challenge reads UNLOCKED out of tmp. Every `unlocked` here is read live from the declaration.
-  function itemUnlocked(decl, tmpItem) {
-    var v = live(decl, 'unlocked');
-    if (v !== undefined) return v !== false;
-    if (tmpItem && tmpItem.unlocked !== undefined) return !!tmpItem.unlocked;
-    return true;
-  }
-  // (m31) The FACT PROBES read `unlocked` as the ENGINE does, not more loosely: setupLayer gives an item that declares no
-  // `unlocked` the value true (2.2.1 layerSupport.js:47-104), and every reader after that tests the value for TRUTH
-  // (components.js `v-if`, utils.js `if (!tmp[l].upgrades[id].unlocked) return`). So an `unlocked()` that RETURNS
-  // undefined is LOCKED — PTR's H32 "Option D" returns `tmp.ps.buyables[11].effects.hindr`, undefined while
-  // Pseudo-Boosters are locked, and the engine hides it. Only a function that THROWS falls back to tmp.
-  // ⚖ The knowledge walk (the goals sources, below) keeps the looser `itemUnlocked`: switching it changes P1a-2's Something goldens
-  // (the `itemUnlocked` diagnostic of five already-hidden goals in S03 and S04) — a pin, left for the user (m31 report).
+  // (m31) And it is read as the ENGINE reads it: setupLayer gives an item that declares no `unlocked` the value true
+  // (2.2.1 layerSupport.js:47-104), and every reader after that tests the value for TRUTH (components.js `v-if`,
+  // utils.js `if (!tmp[l].upgrades[id].unlocked) return`). So an `unlocked()` that RETURNS undefined is LOCKED — PTR's H32
+  // "Option D" returns `tmp.ps.buyables[11].effects.hindr`, undefined while Pseudo-Boosters are locked, and the engine
+  // hides it. Only a function that THROWS falls back to tmp.
+  // ⚖ (user, 2026-10-02, "Yes, re-record") ONE reading for the fact probes AND the knowledge walk (the goal sources,
+  // below). Until qedit-1 the walk kept the looser `v !== false`; switching it flipped only the `gate.itemUnlocked`
+  // diagnostic of five already-hidden goals in each of P1a-2's Something goldens (S03, S04), true → false — no goal and no
+  // hidden set moved — and those two goldens were re-recorded under the ruling.
   function itemUnlockedEngine(decl, tmpItem) {
     if (!decl || decl.unlocked === undefined) return true;
     if (typeof decl.unlocked !== 'function') return !!decl.unlocked;
@@ -960,7 +956,7 @@
           id = ids[j];
           if (held(l, 'upg', id)) continue;
           var U = tmpItem(l, 'upgrades', id), decl = L.upgrades[id];
-          var uUnl = itemUnlocked(decl, U);
+          var uUnl = itemUnlockedEngine(decl, U);
           var cur = currencyOf(l, U || decl);
           var row = { id: 'upg:' + l + ':' + id, kind: 'upg', layer: l, item: id, dimension: cur.dimension, dimensionHow: cur.how,
             threshold: U && U.cost !== undefined ? dstr(U.cost) : null, held: cur.dimension ? dstr(getPath(cur.dimension)) : null, source: 'tmp.upgrades[' + id + '].cost' };
@@ -978,7 +974,7 @@
         for (j = 0; j < ids.length; j++) {
           id = ids[j];
           var B = tmpItem(l, 'buyables', id);
-          var bUnl = itemUnlocked(L.buyables[id], B);
+          var bUnl = itemUnlockedEngine(L.buyables[id], B);
           var cb = buyableCurrencyOf(l, id, B || L.buyables[id]);
           var brow = { id: 'buy:' + l + ':' + id, kind: 'buy', layer: l, item: id, dimension: cb.dimension, dimensionHow: cb.how,
             threshold: B && B.cost !== undefined ? dstr(B.cost) : null, held: cb.dimension ? dstr(getPath(cb.dimension)) : null,
@@ -1024,7 +1020,7 @@
         for (j = 0; j < ids.length; j++) {
           id = ids[j];
           var C = L.challenges[id], Ct = tmpItem(l, 'challenges', id);
-          if (!itemUnlocked(C, Ct)) continue;
+          if (!itemUnlockedEngine(C, Ct)) continue;
           var limit = Ct && Ct.completionLimit !== undefined ? Number(Ct.completionLimit) : 1;
           var done = Number(player[l].challenges && player[l].challenges[id] || 0);
           if (done >= limit) continue;

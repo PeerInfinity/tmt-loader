@@ -3461,7 +3461,7 @@
    "hidden": true,
    "gate": {
     "layerUnlocked": false,
-    "itemUnlocked": true,
+    "itemUnlocked": false,
     "conditions": [
      {
       "which": "unlocked",
@@ -3501,7 +3501,7 @@
    "hidden": true,
    "gate": {
     "layerUnlocked": false,
-    "itemUnlocked": true,
+    "itemUnlocked": false,
     "conditions": [
      {
       "which": "unlocked",
@@ -3541,7 +3541,7 @@
    "hidden": true,
    "gate": {
     "layerUnlocked": false,
-    "itemUnlocked": true,
+    "itemUnlocked": false,
     "conditions": [
      {
       "which": "unlocked",
@@ -7087,7 +7087,7 @@
    "hidden": true,
    "gate": {
     "layerUnlocked": false,
-    "itemUnlocked": true,
+    "itemUnlocked": false,
     "conditions": [
      {
       "which": "unlocked",
@@ -7127,7 +7127,7 @@
    "hidden": true,
    "gate": {
     "layerUnlocked": false,
-    "itemUnlocked": true,
+    "itemUnlocked": false,
     "conditions": [
      {
       "which": "unlocked",

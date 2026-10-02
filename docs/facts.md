@@ -215,9 +215,11 @@ challenge declares no goal value). One fact per (challenge, reset): `exits-chall
   (`tmp.ps.buyables[11].effects.hindr`, undefined while Pseudo-Boosters are locked) where the engine hides it: its six
   facts (`price:h:challenge:32`, `challenge-inputs:h:32`, `exits-challenge:h:32:*`) are gone from all/M21…m28/QL6.
   collection-of-everything loses 18 price facts at fresh for the same reason (`unlocked(){ if (cond) return true }`).
-  ⚖ The fix is the FACT PROBES' (`itemUnlockedEngine`). The planner's knowledge walk keeps its looser `itemUnlocked`:
-  switching it too changes P1a-2's Something goldens (the `itemUnlocked` diagnostic of five already-hidden goals in
-  S03 and S04, no goal set) — a pin, left for the user.
+  ⚖ The fix was the FACT PROBES' (`itemUnlockedEngine`). (qedit-1, ⚖ user 2026-10-02 "Yes, re-record") The planner's
+  knowledge walk reads it the same way now, and its looser `itemUnlocked` is gone: the switch flipped the
+  `gate.itemUnlocked` diagnostic of five already-hidden goals in each of P1a-2's Something goldens (S03, S04: corebooster
+  11/12/13, polygon 24/25), true → false, with no goal and no hidden set moved (measured by a diff of the regenerated
+  goldens), and those two goldens were re-recorded.
 - Abstains: the engine did not enter the challenge; `doReset` throws.
 
 ### `purchase-budget` — a counter a purchase raises by one, and its limit
