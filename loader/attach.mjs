@@ -247,6 +247,38 @@ export async function attachScripts(ctx) {
       };
       if (T.ready) go(); else window.addEventListener('tmt-loader:ready', go, { once: true });
     }
+    // ---- (qedit-1) THE QUEUE EDITOR, on demand (docs/queues.md, "The editor") -------------------------------------
+    // ⛔ LAZY, as the log and the runner are. Three doors, and nothing else requests `loader/tmt-qedit.js`:
+    //   · the `Queues` subtab of the automation tab, OPENED (its shell component calls this);
+    //   · THIS GAME HAS SAVED QUEUES: the one declared key `tmt-loader:<id>:queues` exists in this browser — then the
+    //     editor is fetched here, so its enabled queues are armed at ready (a `start` queue runs on load). A page with no
+    //     such key reads one storage key and requests nothing;
+    //   · `tmtLoader.qeditLoad()` (the console / a gate).
+    // The editor fetches the runner itself (`fetchQueueRunner`) when it has a queue to play or to validate.
+    T.fetchQueueEditor = (function () {
+      let asked = null;
+      return function () {
+        if (asked) return asked;
+        asked = (async () => {
+          await insertScript({ src: abs('loader/tmt-qedit.js') }, 'loader/tmt-qedit.js');
+          T.loaded.push('loader/tmt-qedit.js');
+          if (T.qedit && typeof T.qedit.boot === 'function') await T.qedit.boot();
+          return T.qedit && T.qedit.ready ? T.qedit : null;
+        })();
+        asked.catch(() => { asked = null; });
+        return asked;
+      };
+    })();
+    T.qeditLoad = () => T.fetchQueueEditor();
+    // the editor's one other read: a LOADER file by its path (the generated-queue catalog `games-queues/index.json` and
+    // the queue files it lists), asked only when the player opens the list of generated queues
+    T.fetchLoaderText = (p) => fetchText(abs(p), p);
+    let savedQueues = null;
+    try { savedQueues = T.storage && T.storage.raw && T.storage.prefix ? T.storage.raw.getItem.call(localStorage, T.storage.prefix + 'queues') : null; } catch (e) { savedQueues = null; }
+    if (savedQueues !== null) {
+      const go = () => { T.fetchQueueEditor().catch((e) => console.warn('tmt-loader: the saved queues were not loaded', e)); };
+      if (T.ready) go(); else window.addEventListener('tmt-loader:ready', go, { once: true });
+    }
   }
   // the OPTIONS SECTION (docs/options.md) — the only file here with no flag in front of it, and it has to be:
   // it is how a page that carries none of the flags offers them. It adds nothing to <head>, nothing to `player`

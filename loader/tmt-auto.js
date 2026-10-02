@@ -4441,6 +4441,10 @@
   //
   // ⚠ ENGINE COMPONENTS ONLY, and `loader/tmt-auto.js` still never touches the DOM (docs/contract.md). This builds
   // a STRING that the engines' own `display-text` renders; it queries no element and holds no reference to one.
+  function queuesShown() {
+    try { return (player.tab === AU || player.navTab === AU) && !!player.subtabs && !!player.subtabs[AU] && player.subtabs[AU].mainTabs === 'Queues'; } catch (e) { return false; }
+  }
+  T.queuesShown = queuesShown;
   function advancedShown() {
     try { return (player.tab === AU || player.navTab === AU) && !!player.subtabs && !!player.subtabs[AU] && player.subtabs[AU].mainTabs === 'Advanced'; } catch (e) { return false; }
   }
@@ -4746,7 +4750,8 @@
   // evaluate a layer-level function into `tmp` on every redraw, which is exactly the cadence the view wants.
   // ⚠ It returns a CONSTANT while the Advanced view is off screen, so a tab nobody is looking at churns nothing.
   var viewGen = 0;
-  function auViewGen() { return advancedShown() ? ++viewGen : 0; }
+  // (qedit-1) and while the QUEUES subtab is on screen: the run-status there is live for the same reason
+  function auViewGen() { return advancedShown() || queuesShown() ? ++viewGen : 0; }
 
   // ---- the read-only half: V1's blocks, unchanged, exposed so a component can render one -------------------------
   // ⚠ V5: the header's FLOORS. It is a `display-text` function, not a component, so they live here — and they are
@@ -4825,6 +4830,11 @@
   // "no element past the viewport" count over it comes back 0 — a vacuous green, which is why gates-v5 part 1 also
   // asserts the root is as wide as its pane.
   var ROOT_STYLE = 'text-align:left;max-width:100%;overflow-wrap:anywhere;word-break:break-word;display:table;table-layout:fixed;width:100%;box-sizing:border-box';
+  // (qedit-1) THE KIT the lazily-loaded queue editor (`loader/tmt-qedit.js`) builds its components from: the SAME theme,
+  // the same root (V5's fixed-layout table at 100 %), the same hotkey guard and the same NaN guard — so the editor
+  // cannot drift into a second look or a second set of the traps the controls above were measured against.
+  T.uiKit = { ROOT_STYLE: ROOT_STYLE, BTN_STYLE: BTN_STYLE, CONTROL: CONTROL, FIELD_STYLE: FIELD_STYLE, PRED_FIELD_STYLE: PRED_FIELD_STYLE,
+    SELECT_STYLE: SELECT_STYLE, THEMED: THEMED, setFocused: setFocused, withoutRaisingNaN: withoutRaisingNaN, esc: esc, vue: VUE };
 
   var COMPONENTS = {
     // ONE parameter. `data` = {fid, which, name, value, label, type, min, max} plus, since V3, an optional TARGET:
@@ -5320,6 +5330,28 @@
         +   '<div v-if="!p.rows.length" style="opacity:.7;text-align:left">nothing yet \u2014 the tracker records what the game has not held before, and the save it started from does not count.</div>'
         + '</div></div>',
     },
+    // ---- (qedit-1) the QUEUES subtab's SHELL --------------------------------------------------------------------
+    // ⛔ THE EDITOR IS LAZY, like the state log: its code is `loader/tmt-qedit.js`, fetched through the host's
+    // `fetchQueueEditor` door the first time this subtab is OPENED (or at boot when this game has saved queues). This
+    // shell is the one component that exists before that, so a page that never opens the tab requests nothing new and
+    // stores nothing new (G1). Once the file has run it registers `tmtl-qedit` and the shell renders it by name.
+    'tmtl-queues': {
+      props: ['layer', 'data'],
+      data: function () { return { state: T.qedit && T.qedit.ready ? 'ready' : 'idle' }; },
+      created: function () {
+        var self = this;
+        if (self.state === 'ready') return;
+        if (typeof T.fetchQueueEditor !== 'function') { self.state = 'none'; return; }
+        self.state = 'loading';
+        T.fetchQueueEditor().then(function () { self.state = T.qedit && T.qedit.ready ? 'ready' : 'failed'; }, function () { self.state = 'failed'; });
+      },
+      template: '<div class="tmtl-root tmtl-queues-shell" style="' + ROOT_STYLE + '">'
+        + '<component v-if="state === \'ready\'" :is="\'tmtl-qedit\'"></component>'
+        + '<div v-else-if="state === \'loading\' || state === \'idle\'" style="opacity:.7;text-align:left">loading the queue editor…</div>'
+        + '<div v-else-if="state === \'failed\'" class="tmtl-error" style="color:#d07a7a;text-align:left">the queue editor could not be loaded — open this tab again to retry</div>'
+        + '<div v-else style="opacity:.7;text-align:left">the queue editor is not available on this page</div>'
+        + '</div>',
+    },
     // The LIST. One instance for the whole Advanced view, so the input elements keep their identity across ticks.
     'tmtl-editors': {
       props: ['layer', 'data'],
@@ -5444,9 +5476,12 @@
         +   '<div v-for="q in queueState.queues" :key="q.id" class="tmtl-queue" :data-queue="q.id" :data-state="q.state" style="margin:2px 0;overflow-wrap:anywhere">'
         +     '<b>queue {{ q.id }}</b> — {{ q.stateText }}'
         +     '<div v-if="q.current" style="margin-left:8px">step {{ q.current.index }} of {{ q.steps }}: <code>{{ q.current.do }}</code> {{ q.current.text }}<span v-if="q.current.comment" style="opacity:.7"> — {{ q.current.comment }}</span></div>'
+        // (qedit-1) what a running wait is waiting for, and the time it has left before its timeout
+        +     '<div v-if="q.wait" class="tmtl-queue-wait" style="margin-left:8px">waiting for <code>{{ q.wait.until }}</code> — {{ Math.round(q.wait.left * 10) / 10 }} s left of {{ q.wait.timeout }} (then {{ q.wait.onTimeout === \'skip\' ? \'it skips the wait\' : \'the queue stops\' }})</div>'
         +     '<div v-if="q.holds.length" style="margin-left:8px">holding: {{ q.holds.join(\', \') }}</div>'
         +     '<div v-if="q.last" style="margin-left:8px;opacity:.7">last: {{ q.last }}</div>'
         +   '</div>'
+        +   '<div style="opacity:.7">edit, add or record queues in the <b>Queues</b> tab</div>'
         + '</div>'
         // ⚖ Q1's second half: expand all / collapse all, and they set EVERY block including the ones whose default is
         // the other way — `collapse all` then `expand all` has to be reachable from any state.
@@ -6039,6 +6074,11 @@
       // `G1 load — automation page` is what says so over all 171.
       Progress: { content: [
         'tmtl-progress',
+      ] },
+      // (qedit-1) THE FOURTH KEY, LAST — `Simple` stays first, so a first load still shows it. The bare component form
+      // again (no `null` anywhere in the tab format). Its content is the lazy editor's SHELL (`tmtl-queues`).
+      Queues: { content: [
+        'tmtl-queues',
       ] },
       },
       automate: auAutomate,

@@ -1,0 +1,48 @@
+{
+ "format": "tmt-queue-catalog/1",
+ "note": "written by tools/queues-catalog.mjs --write; the queues the strategy templates wrote, per game, for the page's queue editor (docs/queues.md)",
+ "games": {
+  "ptr": [
+   {
+    "file": "tools/harness/queues/m28/q23-from-Q308K.json",
+    "id": "tpp-upg-q-23",
+    "title": "time-priced-purchase → upg:q:23",
+    "template": "time-priced-purchase",
+    "goal": "upg:q:23",
+    "state": "ptr qrate1/Q308K (the q23 purchase, m28)",
+    "steps": 4,
+    "comment": "upg:q:23's price grows with player.q.time (exponent 5.4), the purse as player.q.time^5. Hold every reset that zeroes player.q.time and buy at the moment the rollback measured."
+   },
+   {
+    "file": "tools/harness/queues/h22/ch-h-22-from-QL6.json",
+    "id": "ca-ch-h-22",
+    "title": "challenge-attempt → ch:h:22",
+    "template": "challenge-attempt",
+    "goal": "ch:h:22",
+    "state": "ptr h22/QL6 (the H22 attempt)",
+    "steps": 7,
+    "comment": "ch:h:22 is ended by a reset of h, o, q, ss (the exits-challenge facts). Hold every one, enter, wait for the goal, finish, release."
+   },
+   {
+    "file": "tools/harness/queues/m30/rr-reset-sg-from-W226931.json",
+    "id": "rr-reset-sg",
+    "title": "reset-requirement → reset:sg",
+    "template": "reset-requirement",
+    "goal": "reset:sg",
+    "state": "ptr m30/W226931 (the sg reset, m30)",
+    "steps": 5,
+    "comment": "reset:sg needs tmp[\"sg\"].nextAt of player.g.points, which a reset of e, h, o, q, s, sb, ss, t zeroes. Hold every one, wait for the engine's canReset, reset, release."
+   },
+   {
+    "file": "tools/harness/queues/m31/rr-reset-sg-from-R95400.json",
+    "id": "rr-reset-sg",
+    "title": "reset-requirement → reset:sg",
+    "template": "reset-requirement",
+    "goal": "reset:sg",
+    "state": "ptr m31/R95400 (the sg reset, m31)",
+    "steps": 5,
+    "comment": "reset:sg needs tmp[\"sg\"].nextAt of player.g.points, which a reset of e, h, o, q, s, sb, ss, t zeroes. Hold every one, wait for the engine's canReset, reset, release."
+   }
+  ]
+ }
+}

@@ -89,6 +89,7 @@ jobs:
           node tools/auto-tables.mjs --check
           node tools/currency-data.mjs --check-index
           node tools/harness/facts.mjs --check-index
+          node tools/queues-catalog.mjs --check
 
       # The figures the docs QUOTE, regenerated from the tree. Three of them shipped wrong in this arc by two
       # different authors and no gate could have caught any of them, because the sweep drives games and a number in
@@ -688,6 +689,68 @@ jobs:
         with:
           name: tpl1
           path: tools/harness/results/tmp/gates-tpl1-part-*-last.json
+          if-no-files-found: warn
+          retention-days: 14
+
+  # ---------------------------------------------------------------------------------------------------------------
+  # qedit — THE QUEUE EDITOR (`gates-qedit.mjs`, docs/queues.md "The editor"), driven through the PAGE: inert until
+  # the Queues subtab is opened (no request, no key), a queue of every step kind persisting in the ONE declared key
+  # and never in `player`, the game's own names, export → import byte-equal (and the harness playing the export), an
+  # invalid import refused in plain words, both triggers, the run-status with its time left and the tools paused,
+  # holds released on Off and delete, q23's generated queue run on qrate1/Q308K, recording real clicks with the log
+  # off and replaying them equal, the 390 px phone width; then the grep (no game id in the editor).
+  # ⛔ `--assert` holds the run to its exact row count (14 + 1), all green.
+  # ---------------------------------------------------------------------------------------------------------------
+  qedit:
+    name: qedit — the queue editor
+    needs: fast
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true   # games/ is the tmt-loader-games submodule; every leg boots ptr
+          fetch-depth: 1
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - run: npm ci
+
+      - name: Cache the Playwright browser
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+
+      - run: npx playwright install --with-deps chromium
+
+      - name: The battery — the page legs and the grep
+        shell: bash
+        run: |
+          set -o pipefail
+          node tools/harness/gates-qedit.mjs --part all --no-summary --assert | tee qedit.txt
+
+      - name: Summary
+        if: always()
+        shell: bash
+        run: |
+          {
+            echo '## qedit — the queue editor'
+            echo ''
+            echo '```'
+            cat qedit.txt 2>/dev/null | grep -aE '^(GREEN|RED|VERDICT)' | cut -c1-400 || echo 'no output'
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload the rows
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: qedit
+          path: tools/harness/results/tmp/gates-qedit-part*-last.json
           if-no-files-found: warn
           retention-days: 14
 

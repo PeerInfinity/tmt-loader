@@ -98,6 +98,12 @@ Space Building autobuyer calls `buyMax()` on the buyable itself) shows up only a
 does not name (a particle, a game's own custom button) is not recorded; if it changes the game, the harness replay
 below says so.
 
+**Taps (qedit-1).** `tmtLoader.stateLog.tap(fn)` attaches a listener to these SAME wrappers — the queue editor's
+*record my presses* — and returns the function that detaches it. While a tap is attached the wrappers see every
+outermost call even with the log OFF, and hand each tap `{source, call, args, self, did, threw, gs, tick}`; nothing is
+recorded or written anywhere unless the log itself is on. One hook path: a recorder never wraps an engine function of
+its own (the second-wrapper mutant in `mutants-qedit.sh` counts every press twice).
+
 ⛔ **Transparency.** Every hook runs the original with the caller's own `this`, all of its arguments, returns its
 return value and lets its errors through untouched; nothing is written to the save. Once installed a hook stays for
 the life of the page, and switching the log off turns it into a plain pass-through.

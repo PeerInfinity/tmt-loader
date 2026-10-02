@@ -342,7 +342,7 @@ async function part7() {
       const hasCh = seen.kinds.includes('challenges');
       const wantFields = ['modifier:b', 'modifier:h', 'modifier:r'];
       const fieldsOk = JSON.stringify(seen.modFields.slice().sort()) === JSON.stringify(wantFields);
-      const ok = !errs.length && !seen.error && seen.components === 7
+      const ok = !errs.length && !seen.error && seen.components === 8   /* (qedit-1: 7 → 8, the Queues subtab's lazy shell `tmtl-queues`) */
         && (!hasCh || ((seen.mods.challenges || []).includes('give-up@B/H/Rx') && fieldsOk
             && !!seen.button && seen.button.indexOf('Give up when it stops getting closer') >= 0));
       row({ gate: `R3a-7 the page on ${id}: the new modifier through V2’s GENERIC editors`, id, leg: 'index.html?mod=<id>&automation=1, Advanced, the feature switched on', ok,
