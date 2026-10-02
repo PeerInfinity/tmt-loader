@@ -39,39 +39,40 @@
   "all/M25",
   "all/M26",
   "all/M27",
-  "m28/QL6"
+  "m28/QL6",
+  "stages/M30"
  ],
  "seeds": [
   1
  ],
  "summary": {
   "price": {
-   "facts": 79,
+   "facts": 81,
    "abstained": 0,
-   "variants": 9
+   "variants": 10
   },
   "zeroed-by": {
-   "facts": 239,
+   "facts": 253,
    "abstained": 0,
    "variants": 0
   },
   "production": {
-   "facts": 56,
+   "facts": 62,
    "abstained": 0,
    "variants": 14
   },
   "multiplier-reads": {
    "facts": 427,
    "abstained": 0,
-   "variants": 56
+   "variants": 58
   },
   "challenge-inputs": {
    "facts": 5,
    "abstained": 0,
-   "variants": 3
+   "variants": 2
   },
   "purchase-budget": {
-   "facts": 0,
+   "facts": 1,
    "abstained": 0,
    "variants": 0
   },
@@ -104,7 +105,7 @@
     "seen": [
      [
       "all/M02",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -131,7 +132,7 @@
     "seen": [
      [
       "all/M02",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -195,7 +196,7 @@
      ],
      [
       "all/M14",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -230,7 +231,7 @@
      ],
      [
       "all/M14",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -265,7 +266,7 @@
      ],
      [
       "all/M14",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -291,7 +292,7 @@
     "seen": [
      [
       "all/M15",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -318,7 +319,7 @@
     "seen": [
      [
       "all/M15",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -344,7 +345,7 @@
     "seen": [
      [
       "all/M15",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -462,7 +463,8 @@
        "all/M16"
       ],
       "all/M24",
-      "all/M26"
+      "all/M26",
+      "stages/M30"
      ]
     }
    ],
@@ -477,7 +479,7 @@
      ],
      [
       "all/M14",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -539,7 +541,7 @@
      ],
      [
       "all/M14",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -604,7 +606,7 @@
      ],
      [
       "all/M18",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -638,7 +640,7 @@
      ],
      [
       "all/M18",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -669,7 +671,7 @@
      ],
      [
       "all/M14",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -708,7 +710,7 @@
      ],
      [
       "all/M18",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -797,7 +799,7 @@
      ],
      [
       "all/M14",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -828,7 +830,7 @@
      ],
      [
       "all/M14",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -854,7 +856,7 @@
     "seen": [
      [
       "all/M02",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -880,7 +882,7 @@
     "seen": [
      [
       "all/M02",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -966,7 +968,7 @@
      ],
      [
       "all/M08",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -996,7 +998,7 @@
      ],
      [
       "all/M08",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -1026,7 +1028,7 @@
      ],
      [
       "all/M08",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -1056,7 +1058,7 @@
      ],
      [
       "all/M08",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -1083,7 +1085,7 @@
      "all/M06",
      [
       "all/M08",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -1110,7 +1112,7 @@
      "all/M06",
      [
       "all/M08",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -1136,7 +1138,7 @@
     "seen": [
      [
       "all/M21",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -1162,7 +1164,7 @@
     "seen": [
      [
       "all/M23",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -1188,7 +1190,7 @@
     "seen": [
      [
       "all/M25",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -1214,68 +1216,47 @@
     "seen": [
      [
       "all/M26",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
    }
   },
   {
-   "id": "price:h:challenge:32",
+   "id": "price:h:challenge:31",
    "kind": "price",
    "item": {
     "layer": "h",
-    "challenge": 32
+    "challenge": 31
    },
    "currency": "player.points",
    "currencyHow": "currencyInternalName on player",
    "reads": [
     "player.ma.selectionActive",
     "player.h.unlocked",
-    "player.h.challenges.32"
+    "player.h.challenges.31"
    ],
    "tmpReads": [
     "tmp.ma.canBeMastered",
-    "tmp.h.challenges.32.scalePower"
+    "tmp.h.challenges.31.scalePower"
    ],
    "shapes": {
-    "player.h.challenges.32": {
-     "type": "irregular",
-     "slopes": [
-      23250,
-      459400,
-      6467000,
-      59250000,
-      807400000,
-      8205000000,
-      2883000000000,
-      2890000000000000,
-      2891000000000000000,
-      2.891e+21
-     ],
-     "at": [
-      1,
-      2,
-      5,
-      10,
-      20,
-      50,
-      100,
-      1000,
-      10000,
-      100000,
-      1000000
-     ]
+    "player.h.challenges.31": {
+     "type": "superexponential",
+     "exponent": 2.5,
+     "log10Scale": 50,
+     "at0": "1e5325",
+     "domain": {
+      "max": 10,
+      "why": "the challenge's completionLimit"
+     }
     }
    },
    "from": {
     "how": "traceReads + probe:exponent",
-    "state": "all/M21",
+    "state": "stages/M30",
     "seen": [
-     [
-      "all/M21",
-      "m28/QL6"
-     ]
+     "stages/M30"
     ],
     "loader": "facts.mjs v1"
    }
@@ -1302,7 +1283,7 @@
     "seen": [
      [
       "all/M01",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -1340,7 +1321,7 @@
      ],
      [
       "all/M16",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -1377,7 +1358,7 @@
      ],
      [
       "all/M16",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -1414,7 +1395,7 @@
      ],
      [
       "all/M16",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -1451,7 +1432,7 @@
      ],
      [
       "all/M16",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -1488,7 +1469,7 @@
      ],
      [
       "all/M16",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -1522,7 +1503,7 @@
      ],
      [
       "all/M16",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -1560,7 +1541,7 @@
      ],
      [
       "all/M24",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -1598,7 +1579,7 @@
      ],
      [
       "all/M24",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -1817,6 +1798,57 @@
      "seen": [
       "m28/QL6"
      ]
+    },
+    {
+     "item": {
+      "layer": "q",
+      "buyable": 11
+     },
+     "currency": "player.q.points",
+     "currencyHow": "the generated currency data (C1)",
+     "reads": [
+      "player.q.buyables.11",
+      "player.q.upgrades",
+      "player.h.challenges.42",
+      "player.a.achievements"
+     ],
+     "tmpReads": [
+      "tmp.h.challenges.42.completionLimit",
+      "tmp.ma.mastered"
+     ],
+     "shapes": {
+      "player.q.buyables.11": {
+       "type": "irregular",
+       "slopes": [
+        1.807,
+        21.33,
+        992,
+        1048000,
+        851700000000000,
+        1.268e+30,
+        3.226e+300
+       ],
+       "at": [
+        1,
+        2,
+        5,
+        10,
+        20,
+        50,
+        100,
+        1000
+       ]
+      },
+      "player.h.challenges.42": {
+       "type": "superexponential",
+       "exponent": 0,
+       "log10Scale": -18.683,
+       "at0": "1.70141e38"
+      }
+     },
+     "seen": [
+      "stages/M30"
+     ]
     }
    ],
    "from": {
@@ -1825,7 +1857,7 @@
     "seen": [
      [
       "all/M17",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -1859,7 +1891,7 @@
     "seen": [
      [
       "all/M23",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -1893,7 +1925,7 @@
     "seen": [
      [
       "all/M24",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -1927,7 +1959,7 @@
     "seen": [
      [
       "all/M24",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -1961,7 +1993,7 @@
     "seen": [
      [
       "all/M24",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -1995,7 +2027,7 @@
     "seen": [
      [
       "all/M24",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -2029,7 +2061,7 @@
     "seen": [
      [
       "all/M25",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -2063,7 +2095,7 @@
     "seen": [
      [
       "all/M26",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -2096,7 +2128,10 @@
     "state": "all/M26",
     "seen": [
      "all/M26",
-     "m28/QL6"
+     [
+      "m28/QL6",
+      "stages/M30"
+     ]
     ],
     "loader": "facts.mjs v1"
    }
@@ -2127,7 +2162,10 @@
     "how": "traceReads + probe:exponent",
     "state": "m28/QL6",
     "seen": [
-     "m28/QL6"
+     [
+      "m28/QL6",
+      "stages/M30"
+     ]
     ],
     "loader": "facts.mjs v1"
    }
@@ -2158,7 +2196,72 @@
     "how": "traceReads + probe:exponent",
     "state": "m28/QL6",
     "seen": [
-     "m28/QL6"
+     [
+      "m28/QL6",
+      "stages/M30"
+     ]
+    ],
+    "loader": "facts.mjs v1"
+   }
+  },
+  {
+   "id": "price:q:upgrade:33",
+   "kind": "price",
+   "item": {
+    "layer": "q",
+    "upgrade": 33
+   },
+   "currency": "player.q.energy",
+   "currencyHow": "currencyLayer + currencyInternalName",
+   "reads": [
+    "player.q.time",
+    "player.ma.current"
+   ],
+   "tmpReads": [],
+   "shapes": {
+    "player.q.time": {
+     "type": "power",
+     "exponent": 12,
+     "offset": 1,
+     "coef": "1e81"
+    }
+   },
+   "from": {
+    "how": "traceReads + probe:exponent",
+    "state": "stages/M30",
+    "seen": [
+     "stages/M30"
+    ],
+    "loader": "facts.mjs v1"
+   }
+  },
+  {
+   "id": "price:q:upgrade:34",
+   "kind": "price",
+   "item": {
+    "layer": "q",
+    "upgrade": 34
+   },
+   "currency": "player.q.energy",
+   "currencyHow": "currencyLayer + currencyInternalName",
+   "reads": [
+    "player.q.time",
+    "player.ma.current"
+   ],
+   "tmpReads": [],
+   "shapes": {
+    "player.q.time": {
+     "type": "power",
+     "exponent": 15,
+     "offset": 1,
+     "coef": "2.5e94"
+    }
+   },
+   "from": {
+    "how": "traceReads + probe:exponent",
+    "state": "stages/M30",
+    "seen": [
+     "stages/M30"
     ],
     "loader": "facts.mjs v1"
    }
@@ -2220,7 +2323,7 @@
       ],
       [
        "all/M18",
-       "m28/QL6"
+       "stages/M30"
       ]
      ]
     },
@@ -2278,7 +2381,7 @@
     "seen": [
      [
       "all/M07",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -2356,7 +2459,7 @@
       ],
       [
        "all/M18",
-       "m28/QL6"
+       "stages/M30"
       ]
      ]
     }
@@ -2367,7 +2470,7 @@
     "seen": [
      [
       "all/M07",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -2445,7 +2548,7 @@
       ],
       [
        "all/M18",
-       "m28/QL6"
+       "stages/M30"
       ]
      ]
     }
@@ -2456,7 +2559,7 @@
     "seen": [
      [
       "all/M07",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -2541,7 +2644,7 @@
       ],
       [
        "all/M18",
-       "m28/QL6"
+       "stages/M30"
       ]
      ]
     }
@@ -2556,7 +2659,7 @@
      ],
      [
       "all/M18",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -2597,7 +2700,7 @@
      ],
      [
       "all/M18",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -2623,7 +2726,7 @@
     "seen": [
      [
       "all/M07",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -2653,7 +2756,7 @@
      ],
      [
       "all/M18",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -2715,7 +2818,7 @@
       ],
       [
        "all/M18",
-       "m28/QL6"
+       "stages/M30"
       ]
      ]
     }
@@ -2730,7 +2833,7 @@
      ],
      [
       "all/M18",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -2760,7 +2863,7 @@
      ],
      [
       "all/M18",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -2824,7 +2927,7 @@
       ],
       [
        "all/M18",
-       "m28/QL6"
+       "stages/M30"
       ]
      ]
     }
@@ -2839,7 +2942,7 @@
      ],
      [
       "all/M18",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -2870,7 +2973,7 @@
      ],
      [
       "all/M14",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -2901,7 +3004,7 @@
      ],
      [
       "all/M14",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -2985,7 +3088,7 @@
       ],
       [
        "all/M18",
-       "m28/QL6"
+       "stages/M30"
       ]
      ]
     }
@@ -3005,7 +3108,7 @@
      ],
      [
       "all/M18",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -3036,7 +3139,7 @@
      ],
      [
       "all/M14",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -3067,7 +3170,7 @@
      ],
      [
       "all/M14",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -3076,49 +3179,112 @@
   {
    "id": "price:t:buyable:11",
    "kind": "price",
-   "item": {
-    "layer": "t",
-    "buyable": 11
-   },
-   "currency": "player.b.points",
-   "currencyHow": "the generated currency data (C1)",
-   "reads": [
-    "player.t.buyables.11"
-   ],
-   "tmpReads": [
-    "tmp.t.buyables.11.costExp",
-    "tmp.ma.mastered"
-   ],
-   "shapes": {
-    "player.t.buyables.11": {
-     "type": "irregular",
-     "slopes": [
-      0.387,
-      0.6903,
-      0.9542,
-      1.079,
-      2.036,
-      2.387,
-      2.399,
-      2.4,
-      2.4,
-      2.4
+   "variants": [
+    {
+     "item": {
+      "layer": "t",
+      "buyable": 11
+     },
+     "currency": "player.b.points",
+     "currencyHow": "the generated currency data (C1)",
+     "reads": [
+      "player.t.buyables.11"
      ],
-     "at": [
-      1,
-      2,
-      5,
-      10,
-      20,
-      50,
-      100,
-      1000,
-      10000,
-      100000,
-      1000000
+     "tmpReads": [
+      "tmp.t.buyables.11.costExp",
+      "tmp.ma.mastered"
+     ],
+     "shapes": {
+      "player.t.buyables.11": {
+       "type": "irregular",
+       "slopes": [
+        0.387,
+        0.6903,
+        0.9542,
+        1.079,
+        2.036,
+        2.387,
+        2.399,
+        2.4,
+        2.4,
+        2.4
+       ],
+       "at": [
+        1,
+        2,
+        5,
+        10,
+        20,
+        50,
+        100,
+        1000,
+        10000,
+        100000,
+        1000000
+       ]
+      }
+     },
+     "seen": [
+      [
+       "all/M09",
+       "all/M12"
+      ],
+      [
+       "all/M14",
+       "m28/QL6"
+      ]
+     ]
+    },
+    {
+     "item": {
+      "layer": "t",
+      "buyable": 11
+     },
+     "currency": "player.b.points",
+     "currencyHow": "the generated currency data (C1)",
+     "reads": [
+      "player.t.buyables.11"
+     ],
+     "tmpReads": [
+      "tmp.t.buyables.11.costScalingEnabled",
+      "tmp.t.buyables.11.costExp",
+      "tmp.ma.mastered"
+     ],
+     "shapes": {
+      "player.t.buyables.11": {
+       "type": "irregular",
+       "slopes": [
+        0.387,
+        0.6903,
+        0.9542,
+        1.079,
+        2.036,
+        2.387,
+        2.399,
+        2.4,
+        2.4,
+        2.4
+       ],
+       "at": [
+        1,
+        2,
+        5,
+        10,
+        20,
+        50,
+        100,
+        1000,
+        10000,
+        100000,
+        1000000
+       ]
+      }
+     },
+     "seen": [
+      "stages/M30"
      ]
     }
-   },
+   ],
    "from": {
     "how": "traceReads + probe:exponent",
     "state": "all/M09",
@@ -3129,7 +3295,7 @@
      ],
      [
       "all/M14",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -3159,7 +3325,7 @@
      ],
      [
       "all/M14",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -3199,7 +3365,8 @@
       "all/M16"
      ],
      "all/M24",
-     "all/M26"
+     "all/M26",
+     "stages/M30"
     ],
     "loader": "facts.mjs v1"
    }
@@ -3239,7 +3406,7 @@
      ],
      [
       "all/M18",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -3304,7 +3471,7 @@
      ],
      [
       "all/M18",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -3346,7 +3513,7 @@
      ],
      [
       "all/M18",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -3377,7 +3544,7 @@
      ],
      [
       "all/M14",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -3408,7 +3575,7 @@
      ],
      [
       "all/M14",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -3499,7 +3666,7 @@
      ],
      [
       "all/M14",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -3530,7 +3697,7 @@
      ],
      [
       "all/M14",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -3689,7 +3856,7 @@
     "seen": [
      [
       "all/M02",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1",
@@ -3711,7 +3878,7 @@
     "seen": [
      [
       "all/M02",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1",
@@ -3733,7 +3900,7 @@
     "seen": [
      [
       "all/M02",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1",
@@ -3755,7 +3922,7 @@
     "seen": [
      [
       "all/M02",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1",
@@ -3777,7 +3944,7 @@
     "seen": [
      [
       "all/M02",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1",
@@ -3799,7 +3966,7 @@
     "seen": [
      [
       "all/M02",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1",
@@ -3821,7 +3988,7 @@
     "seen": [
      [
       "all/M02",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1",
@@ -3843,7 +4010,7 @@
     "seen": [
      [
       "all/M02",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1",
@@ -3865,7 +4032,7 @@
     "seen": [
      [
       "all/M02",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1",
@@ -3887,7 +4054,7 @@
     "seen": [
      [
       "all/M02",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1",
@@ -3909,7 +4076,7 @@
     "seen": [
      [
       "all/M02",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1",
@@ -3931,7 +4098,7 @@
     "seen": [
      [
       "all/M02",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1",
@@ -3953,7 +4120,7 @@
     "seen": [
      [
       "all/M02",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1",
@@ -3975,7 +4142,7 @@
     "seen": [
      [
       "all/M02",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1",
@@ -4135,11 +4302,11 @@
     "seen": [
      [
       "all/M20",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1",
-    "probeState": "requirement injected | requirement injected; field seeded to x·10+1"
+    "probeState": "field seeded to x·10+1 | requirement injected | requirement injected; field seeded to x·10+1"
    }
   },
   {
@@ -4157,11 +4324,11 @@
     "seen": [
      [
       "all/M20",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1",
-    "probeState": "requirement injected | requirement injected; field seeded to x·10+1"
+    "probeState": "field seeded to x·10+1 | requirement injected | requirement injected; field seeded to x·10+1"
    }
   },
   {
@@ -4179,7 +4346,7 @@
     "seen": [
      [
       "all/M20",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1",
@@ -4201,11 +4368,11 @@
     "seen": [
      [
       "all/M20",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1",
-    "probeState": "requirement injected | requirement injected; field seeded to x·10+1"
+    "probeState": "field seeded to x·10+1 | requirement injected | requirement injected; field seeded to x·10+1"
    }
   },
   {
@@ -4223,7 +4390,7 @@
     "seen": [
      [
       "all/M20",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1",
@@ -4244,7 +4411,8 @@
     "state": "all/M24",
     "seen": [
      "all/M24",
-     "all/M26"
+     "all/M26",
+     "stages/M30"
     ],
     "loader": "facts.mjs v1",
     "probeState": "requirement injected"
@@ -4265,7 +4433,7 @@
     "seen": [
      [
       "all/M20",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1",
@@ -4287,7 +4455,7 @@
     "seen": [
      [
       "all/M20",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1",
@@ -4309,7 +4477,7 @@
     "seen": [
      [
       "all/M20",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1",
@@ -4331,11 +4499,11 @@
     "seen": [
      [
       "all/M20",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1",
-    "probeState": "requirement injected | requirement injected; field seeded to x·10+1"
+    "probeState": "field seeded to x·10+1 | requirement injected | requirement injected; field seeded to x·10+1"
    }
   },
   {
@@ -4353,11 +4521,11 @@
     "seen": [
      [
       "all/M20",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1",
-    "probeState": "requirement injected | requirement injected; field seeded to x·10+1"
+    "probeState": "field seeded to x·10+1 | requirement injected | requirement injected; field seeded to x·10+1"
    }
   },
   {
@@ -4375,11 +4543,11 @@
     "seen": [
      [
       "all/M20",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1",
-    "probeState": "requirement injected | requirement injected; field seeded to x·10+1"
+    "probeState": "field seeded to x·10+1 | requirement injected | requirement injected; field seeded to x·10+1"
    }
   },
   {
@@ -4397,7 +4565,7 @@
     "seen": [
      [
       "all/M20",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1",
@@ -4419,11 +4587,11 @@
     "seen": [
      [
       "all/M20",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1",
-    "probeState": "requirement injected | requirement injected; field seeded to x·10+1"
+    "probeState": "field seeded to x·10+1 | requirement injected | requirement injected; field seeded to x·10+1"
    }
   },
   {
@@ -4441,7 +4609,7 @@
     "seen": [
      [
       "all/M20",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1",
@@ -4463,11 +4631,11 @@
     "seen": [
      [
       "all/M20",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1",
-    "probeState": "requirement injected | requirement injected; field seeded to x·10+1"
+    "probeState": "field seeded to x·10+1 | requirement injected | requirement injected; field seeded to x·10+1"
    }
   },
   {
@@ -4485,11 +4653,11 @@
     "seen": [
      [
       "all/M20",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1",
-    "probeState": "requirement injected | requirement injected; field seeded to x·10+1"
+    "probeState": "field seeded to x·10+1 | requirement injected | requirement injected; field seeded to x·10+1"
    }
   },
   {
@@ -4507,7 +4675,7 @@
     "seen": [
      [
       "all/M20",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1",
@@ -4529,11 +4697,11 @@
     "seen": [
      [
       "all/M20",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1",
-    "probeState": "requirement injected | requirement injected; field seeded to x·10+1"
+    "probeState": "field seeded to x·10+1 | requirement injected | requirement injected; field seeded to x·10+1"
    }
   },
   {
@@ -4551,11 +4719,11 @@
     "seen": [
      [
       "all/M20",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1",
-    "probeState": "requirement injected | requirement injected; field seeded to x·10+1"
+    "probeState": "field seeded to x·10+1 | requirement injected | requirement injected; field seeded to x·10+1"
    }
   },
   {
@@ -4575,7 +4743,7 @@
     "seen": [
      [
       "all/M20",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1",
@@ -4599,7 +4767,7 @@
     "seen": [
      [
       "all/M20",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1",
@@ -4621,7 +4789,7 @@
     "seen": [
      [
       "all/M20",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1",
@@ -4643,7 +4811,7 @@
     "seen": [
      [
       "all/M20",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1",
@@ -4665,7 +4833,7 @@
     "seen": [
      [
       "all/M20",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1",
@@ -4687,7 +4855,7 @@
     "seen": [
      [
       "all/M20",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1",
@@ -4709,7 +4877,7 @@
     "seen": [
      [
       "all/M20",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1",
@@ -4731,7 +4899,7 @@
     "seen": [
      [
       "all/M20",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1",
@@ -4753,7 +4921,7 @@
     "seen": [
      [
       "all/M20",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1",
@@ -4775,7 +4943,7 @@
     "seen": [
      [
       "all/M20",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1",
@@ -4797,7 +4965,7 @@
     "seen": [
      [
       "all/M20",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1",
@@ -4819,7 +4987,7 @@
     "seen": [
      [
       "all/M20",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1",
@@ -4841,7 +5009,7 @@
     "seen": [
      [
       "all/M20",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1",
@@ -4863,7 +5031,7 @@
     "seen": [
      [
       "all/M20",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1",
@@ -4884,7 +5052,8 @@
     "state": "all/M24",
     "seen": [
      "all/M24",
-     "all/M26"
+     "all/M26",
+     "stages/M30"
     ],
     "loader": "facts.mjs v1",
     "probeState": "requirement injected"
@@ -4905,7 +5074,7 @@
     "seen": [
      [
       "all/M20",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1",
@@ -4927,7 +5096,7 @@
     "seen": [
      [
       "all/M20",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1",
@@ -4949,7 +5118,7 @@
     "seen": [
      [
       "all/M20",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1",
@@ -4971,7 +5140,7 @@
     "seen": [
      [
       "all/M21",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1",
@@ -4993,7 +5162,7 @@
     "seen": [
      [
       "all/M21",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1",
@@ -5015,7 +5184,7 @@
     "seen": [
      [
       "all/M21",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1",
@@ -5037,7 +5206,7 @@
     "seen": [
      [
       "all/M21",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1",
@@ -5059,7 +5228,7 @@
     "seen": [
      [
       "all/M21",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1",
@@ -5080,7 +5249,8 @@
     "state": "all/M24",
     "seen": [
      "all/M24",
-     "all/M26"
+     "all/M26",
+     "stages/M30"
     ],
     "loader": "facts.mjs v1",
     "probeState": "requirement injected"
@@ -5101,7 +5271,7 @@
     "seen": [
      [
       "all/M21",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1",
@@ -5123,7 +5293,7 @@
     "seen": [
      [
       "all/M21",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1",
@@ -5145,7 +5315,7 @@
     "seen": [
      [
       "all/M21",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1",
@@ -5167,7 +5337,7 @@
     "seen": [
      [
       "all/M21",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1",
@@ -5189,7 +5359,7 @@
     "seen": [
      [
       "all/M21",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1",
@@ -5211,7 +5381,7 @@
     "seen": [
      [
       "all/M21",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1",
@@ -5233,7 +5403,7 @@
     "seen": [
      [
       "all/M21",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1",
@@ -5255,7 +5425,7 @@
     "seen": [
      [
       "all/M21",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1",
@@ -5277,7 +5447,7 @@
     "seen": [
      [
       "all/M21",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1",
@@ -5299,7 +5469,7 @@
     "seen": [
      [
       "all/M21",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1",
@@ -5321,7 +5491,7 @@
     "seen": [
      [
       "all/M21",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1",
@@ -5343,7 +5513,7 @@
     "seen": [
      [
       "all/M21",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1",
@@ -5365,7 +5535,7 @@
     "seen": [
      [
       "all/M21",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1",
@@ -5387,7 +5557,7 @@
     "seen": [
      [
       "all/M21",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1",
@@ -5411,7 +5581,7 @@
     "seen": [
      [
       "all/M21",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1",
@@ -5435,7 +5605,7 @@
     "seen": [
      [
       "all/M21",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1",
@@ -5457,7 +5627,7 @@
     "seen": [
      [
       "all/M21",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1",
@@ -5479,7 +5649,7 @@
     "seen": [
      [
       "all/M21",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1",
@@ -5503,7 +5673,10 @@
       "all/M21",
       "all/M26"
      ],
-     "m28/QL6"
+     [
+      "m28/QL6",
+      "stages/M30"
+     ]
     ],
     "loader": "facts.mjs v1",
     "probeState": "requirement injected"
@@ -5590,7 +5763,7 @@
     "seen": [
      [
       "all/M21",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1",
@@ -5612,7 +5785,7 @@
     "seen": [
      [
       "all/M21",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1",
@@ -5634,7 +5807,7 @@
     "seen": [
      [
       "all/M21",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1",
@@ -5656,7 +5829,7 @@
     "seen": [
      [
       "all/M21",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1",
@@ -5678,7 +5851,7 @@
     "seen": [
      [
       "all/M21",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1",
@@ -5700,7 +5873,7 @@
     "seen": [
      [
       "all/M21",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1",
@@ -5722,11 +5895,11 @@
     "seen": [
      [
       "all/M21",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1",
-    "probeState": "requirement injected; field seeded to x·10+1"
+    "probeState": "requirement injected | requirement injected; field seeded to x·10+1"
    }
   },
   {
@@ -5744,11 +5917,11 @@
     "seen": [
      [
       "all/M21",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1",
-    "probeState": "requirement injected; field seeded to x·10+1"
+    "probeState": "requirement injected | requirement injected; field seeded to x·10+1"
    }
   },
   {
@@ -5766,7 +5939,7 @@
     "seen": [
      [
       "all/M21",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1",
@@ -5788,7 +5961,7 @@
     "seen": [
      [
       "all/M21",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1",
@@ -5810,7 +5983,7 @@
     "seen": [
      [
       "all/M21",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1",
@@ -5832,7 +6005,7 @@
     "seen": [
      [
       "all/M21",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1",
@@ -5853,7 +6026,8 @@
     "state": "all/M24",
     "seen": [
      "all/M24",
-     "all/M26"
+     "all/M26",
+     "stages/M30"
     ],
     "loader": "facts.mjs v1",
     "probeState": "requirement injected"
@@ -5874,7 +6048,7 @@
     "seen": [
      [
       "all/M21",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1",
@@ -5896,7 +6070,7 @@
     "seen": [
      [
       "all/M21",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1",
@@ -5918,7 +6092,7 @@
     "seen": [
      [
       "all/M21",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1",
@@ -5940,7 +6114,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1",
@@ -5967,7 +6141,7 @@
      ],
      [
       "all/M14",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1",
@@ -5994,7 +6168,7 @@
      ],
      [
       "all/M14",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1",
@@ -6021,7 +6195,7 @@
      ],
      [
       "all/M14",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1",
@@ -6048,7 +6222,7 @@
      ],
      [
       "all/M14",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1",
@@ -6075,7 +6249,7 @@
      ],
      [
       "all/M14",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1",
@@ -6100,7 +6274,8 @@
       "all/M16"
      ],
      "all/M24",
-     "all/M26"
+     "all/M26",
+     "stages/M30"
     ],
     "loader": "facts.mjs v1",
     "probeState": "requirement injected"
@@ -6126,7 +6301,7 @@
      ],
      [
       "all/M14",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1",
@@ -6153,7 +6328,7 @@
      ],
      [
       "all/M14",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1",
@@ -6180,7 +6355,7 @@
      ],
      [
       "all/M14",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1",
@@ -6207,7 +6382,7 @@
      ],
      [
       "all/M14",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1",
@@ -6234,7 +6409,7 @@
      ],
      [
       "all/M14",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1",
@@ -6261,7 +6436,7 @@
      ],
      [
       "all/M14",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1",
@@ -6288,7 +6463,7 @@
      ],
      [
       "all/M14",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1",
@@ -6315,7 +6490,7 @@
      ],
      [
       "all/M14",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1",
@@ -6342,7 +6517,7 @@
      ],
      [
       "all/M14",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1",
@@ -6369,7 +6544,7 @@
      ],
      [
       "all/M14",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1",
@@ -6396,7 +6571,7 @@
      ],
      [
       "all/M14",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1",
@@ -6423,7 +6598,7 @@
      ],
      [
       "all/M14",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1",
@@ -6450,7 +6625,7 @@
      ],
      [
       "all/M14",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1",
@@ -6481,7 +6656,7 @@
      ],
      [
       "all/M17",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1",
@@ -6510,7 +6685,7 @@
      ],
      [
       "all/M14",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1",
@@ -6539,7 +6714,7 @@
      ],
      [
       "all/M14",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1",
@@ -6566,7 +6741,7 @@
      ],
      [
       "all/M14",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1",
@@ -6723,7 +6898,7 @@
      ],
      [
       "all/M14",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1",
@@ -6777,7 +6952,7 @@
      ],
      [
       "all/M14",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1",
@@ -6804,7 +6979,7 @@
      ],
      [
       "all/M14",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1",
@@ -6831,7 +7006,7 @@
      ],
      [
       "all/M14",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1",
@@ -6858,7 +7033,7 @@
      ],
      [
       "all/M14",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1",
@@ -6885,11 +7060,11 @@
      ],
      [
       "all/M14",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1",
-    "probeState": "field seeded to x·10+1 | requirement injected; field seeded to x·10+1"
+    "probeState": "field seeded to x·10+1 | requirement injected | requirement injected; field seeded to x·10+1"
    }
   },
   {
@@ -6912,11 +7087,11 @@
      ],
      [
       "all/M14",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1",
-    "probeState": "field seeded to x·10+1 | requirement injected; field seeded to x·10+1"
+    "probeState": "field seeded to x·10+1 | requirement injected | requirement injected; field seeded to x·10+1"
    }
   },
   {
@@ -6939,7 +7114,7 @@
      ],
      [
       "all/M14",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1",
@@ -6966,7 +7141,7 @@
      ],
      [
       "all/M14",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1",
@@ -6993,7 +7168,7 @@
      ],
      [
       "all/M14",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1",
@@ -7020,7 +7195,7 @@
      ],
      [
       "all/M14",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1",
@@ -7050,7 +7225,8 @@
       "all/M16"
      ],
      "all/M24",
-     "all/M26"
+     "all/M26",
+     "stages/M30"
     ],
     "loader": "facts.mjs v1",
     "probeState": "requirement injected"
@@ -7076,7 +7252,7 @@
      ],
      [
       "all/M14",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1",
@@ -7103,7 +7279,7 @@
      ],
      [
       "all/M14",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1",
@@ -7130,7 +7306,7 @@
      ],
      [
       "all/M14",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1",
@@ -7828,6 +8004,272 @@
    }
   },
   {
+   "id": "zeroed-by:sg:player.b.best",
+   "kind": "zeroed-by",
+   "reset": "sg",
+   "field": "player.b.best",
+   "effect": "zeroes",
+   "via": [
+    "b"
+   ],
+   "from": {
+    "how": "probe:reset-writes",
+    "state": "stages/M30",
+    "seen": [
+     "stages/M30"
+    ],
+    "loader": "facts.mjs v1",
+    "probeState": "requirement injected; field seeded to x·10+1"
+   }
+  },
+  {
+   "id": "zeroed-by:sg:player.b.points",
+   "kind": "zeroed-by",
+   "reset": "sg",
+   "field": "player.b.points",
+   "effect": "zeroes",
+   "via": [
+    "b"
+   ],
+   "from": {
+    "how": "probe:reset-writes",
+    "state": "stages/M30",
+    "seen": [
+     "stages/M30"
+    ],
+    "loader": "facts.mjs v1",
+    "probeState": "requirement injected; field seeded to x·10+1"
+   }
+  },
+  {
+   "id": "zeroed-by:sg:player.b.spentOnBuyables",
+   "kind": "zeroed-by",
+   "reset": "sg",
+   "field": "player.b.spentOnBuyables",
+   "effect": "zeroes",
+   "via": [
+    "b"
+   ],
+   "from": {
+    "how": "probe:reset-writes",
+    "state": "stages/M30",
+    "seen": [
+     "stages/M30"
+    ],
+    "loader": "facts.mjs v1",
+    "probeState": "requirement injected; field seeded to x·10+1"
+   }
+  },
+  {
+   "id": "zeroed-by:sg:player.b.total",
+   "kind": "zeroed-by",
+   "reset": "sg",
+   "field": "player.b.total",
+   "effect": "zeroes",
+   "via": [
+    "b"
+   ],
+   "from": {
+    "how": "probe:reset-writes",
+    "state": "stages/M30",
+    "seen": [
+     "stages/M30"
+    ],
+    "loader": "facts.mjs v1",
+    "probeState": "requirement injected; field seeded to x·10+1"
+   }
+  },
+  {
+   "id": "zeroed-by:sg:player.g.best",
+   "kind": "zeroed-by",
+   "reset": "sg",
+   "field": "player.g.best",
+   "effect": "zeroes",
+   "via": [
+    "g"
+   ],
+   "from": {
+    "how": "probe:reset-writes",
+    "state": "stages/M30",
+    "seen": [
+     "stages/M30"
+    ],
+    "loader": "facts.mjs v1",
+    "probeState": "requirement injected; field seeded to x·10+1"
+   }
+  },
+  {
+   "id": "zeroed-by:sg:player.g.points",
+   "kind": "zeroed-by",
+   "reset": "sg",
+   "field": "player.g.points",
+   "effect": "zeroes",
+   "via": [
+    "g"
+   ],
+   "from": {
+    "how": "probe:reset-writes",
+    "state": "stages/M30",
+    "seen": [
+     "stages/M30"
+    ],
+    "loader": "facts.mjs v1",
+    "probeState": "requirement injected"
+   }
+  },
+  {
+   "id": "zeroed-by:sg:player.g.power",
+   "kind": "zeroed-by",
+   "reset": "sg",
+   "field": "player.g.power",
+   "effect": "zeroes",
+   "via": [
+    "g"
+   ],
+   "from": {
+    "how": "probe:reset-writes",
+    "state": "stages/M30",
+    "seen": [
+     "stages/M30"
+    ],
+    "loader": "facts.mjs v1",
+    "probeState": "requirement injected; field seeded to x·10+1"
+   }
+  },
+  {
+   "id": "zeroed-by:sg:player.g.spentOnBuyables",
+   "kind": "zeroed-by",
+   "reset": "sg",
+   "field": "player.g.spentOnBuyables",
+   "effect": "zeroes",
+   "via": [
+    "g"
+   ],
+   "from": {
+    "how": "probe:reset-writes",
+    "state": "stages/M30",
+    "seen": [
+     "stages/M30"
+    ],
+    "loader": "facts.mjs v1",
+    "probeState": "requirement injected; field seeded to x·10+1"
+   }
+  },
+  {
+   "id": "zeroed-by:sg:player.g.total",
+   "kind": "zeroed-by",
+   "reset": "sg",
+   "field": "player.g.total",
+   "effect": "zeroes",
+   "via": [
+    "g"
+   ],
+   "from": {
+    "how": "probe:reset-writes",
+    "state": "stages/M30",
+    "seen": [
+     "stages/M30"
+    ],
+    "loader": "facts.mjs v1",
+    "probeState": "requirement injected; field seeded to x·10+1"
+   }
+  },
+  {
+   "id": "zeroed-by:sg:player.p.best",
+   "kind": "zeroed-by",
+   "reset": "sg",
+   "field": "player.p.best",
+   "effect": "zeroes",
+   "via": [
+    "p"
+   ],
+   "from": {
+    "how": "probe:reset-writes",
+    "state": "stages/M30",
+    "seen": [
+     "stages/M30"
+    ],
+    "loader": "facts.mjs v1",
+    "probeState": "requirement injected; field seeded to x·10+1"
+   }
+  },
+  {
+   "id": "zeroed-by:sg:player.p.points",
+   "kind": "zeroed-by",
+   "reset": "sg",
+   "field": "player.p.points",
+   "effect": "zeroes",
+   "via": [
+    "p"
+   ],
+   "from": {
+    "how": "probe:reset-writes",
+    "state": "stages/M30",
+    "seen": [
+     "stages/M30"
+    ],
+    "loader": "facts.mjs v1",
+    "probeState": "requirement injected; field seeded to x·10+1"
+   }
+  },
+  {
+   "id": "zeroed-by:sg:player.p.spentOnBuyables",
+   "kind": "zeroed-by",
+   "reset": "sg",
+   "field": "player.p.spentOnBuyables",
+   "effect": "zeroes",
+   "via": [
+    "p"
+   ],
+   "from": {
+    "how": "probe:reset-writes",
+    "state": "stages/M30",
+    "seen": [
+     "stages/M30"
+    ],
+    "loader": "facts.mjs v1",
+    "probeState": "requirement injected; field seeded to x·10+1"
+   }
+  },
+  {
+   "id": "zeroed-by:sg:player.p.total",
+   "kind": "zeroed-by",
+   "reset": "sg",
+   "field": "player.p.total",
+   "effect": "zeroes",
+   "via": [
+    "p"
+   ],
+   "from": {
+    "how": "probe:reset-writes",
+    "state": "stages/M30",
+    "seen": [
+     "stages/M30"
+    ],
+    "loader": "facts.mjs v1",
+    "probeState": "requirement injected; field seeded to x·10+1"
+   }
+  },
+  {
+   "id": "zeroed-by:sg:player.points",
+   "kind": "zeroed-by",
+   "reset": "sg",
+   "field": "player.points",
+   "effect": "lowers",
+   "via": [
+    "(engine)"
+   ],
+   "from": {
+    "how": "probe:reset-writes",
+    "state": "stages/M30",
+    "seen": [
+     "stages/M30"
+    ],
+    "loader": "facts.mjs v1",
+    "probeState": "requirement injected; field seeded to x·10+1"
+   }
+  },
+  {
    "id": "zeroed-by:ss:player.b.best",
    "kind": "zeroed-by",
    "reset": "ss",
@@ -7842,7 +8284,7 @@
     "seen": [
      [
       "all/M21",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1",
@@ -7864,7 +8306,7 @@
     "seen": [
      [
       "all/M21",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1",
@@ -7886,7 +8328,7 @@
     "seen": [
      [
       "all/M21",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1",
@@ -7908,7 +8350,7 @@
     "seen": [
      [
       "all/M21",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1",
@@ -7930,7 +8372,7 @@
     "seen": [
      [
       "all/M21",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1",
@@ -7951,7 +8393,8 @@
     "state": "all/M24",
     "seen": [
      "all/M24",
-     "all/M26"
+     "all/M26",
+     "stages/M30"
     ],
     "loader": "facts.mjs v1",
     "probeState": "requirement injected"
@@ -7972,7 +8415,7 @@
     "seen": [
      [
       "all/M21",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1",
@@ -7994,7 +8437,7 @@
     "seen": [
      [
       "all/M21",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1",
@@ -8016,7 +8459,7 @@
     "seen": [
      [
       "all/M21",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1",
@@ -8038,7 +8481,7 @@
     "seen": [
      [
       "all/M21",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1",
@@ -8060,7 +8503,7 @@
     "seen": [
      [
       "all/M21",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1",
@@ -8082,7 +8525,7 @@
     "seen": [
      [
       "all/M21",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1",
@@ -8104,7 +8547,7 @@
     "seen": [
      [
       "all/M21",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1",
@@ -8126,7 +8569,7 @@
     "seen": [
      [
       "all/M21",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1",
@@ -8148,7 +8591,7 @@
     "seen": [
      [
       "all/M21",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1",
@@ -8170,7 +8613,7 @@
     "seen": [
      [
       "all/M21",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1",
@@ -8192,7 +8635,7 @@
     "seen": [
      [
       "all/M21",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1",
@@ -8214,7 +8657,7 @@
     "seen": [
      [
       "all/M21",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1",
@@ -8236,7 +8679,7 @@
     "seen": [
      [
       "all/M21",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1",
@@ -8258,7 +8701,7 @@
     "seen": [
      [
       "all/M21",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1",
@@ -8282,7 +8725,7 @@
     "seen": [
      [
       "all/M21",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1",
@@ -8306,7 +8749,7 @@
     "seen": [
      [
       "all/M21",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1",
@@ -8328,7 +8771,7 @@
     "seen": [
      [
       "all/M21",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1",
@@ -8350,7 +8793,7 @@
     "seen": [
      [
       "all/M21",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1",
@@ -8374,7 +8817,10 @@
       "all/M21",
       "all/M26"
      ],
-     "m28/QL6"
+     [
+      "m28/QL6",
+      "stages/M30"
+     ]
     ],
     "loader": "facts.mjs v1",
     "probeState": "requirement injected"
@@ -8461,7 +8907,7 @@
     "seen": [
      [
       "all/M21",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1",
@@ -8483,7 +8929,7 @@
     "seen": [
      [
       "all/M21",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1",
@@ -8505,7 +8951,7 @@
     "seen": [
      [
       "all/M21",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1",
@@ -8527,7 +8973,7 @@
     "seen": [
      [
       "all/M21",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1",
@@ -8549,7 +8995,7 @@
     "seen": [
      [
       "all/M21",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1",
@@ -8571,7 +9017,7 @@
     "seen": [
      [
       "all/M21",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1",
@@ -8593,11 +9039,11 @@
     "seen": [
      [
       "all/M21",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1",
-    "probeState": "requirement injected; field seeded to x·10+1"
+    "probeState": "requirement injected | requirement injected; field seeded to x·10+1"
    }
   },
   {
@@ -8615,11 +9061,11 @@
     "seen": [
      [
       "all/M21",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1",
-    "probeState": "requirement injected; field seeded to x·10+1"
+    "probeState": "requirement injected | requirement injected; field seeded to x·10+1"
    }
   },
   {
@@ -8637,7 +9083,7 @@
     "seen": [
      [
       "all/M21",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1",
@@ -8659,7 +9105,7 @@
     "seen": [
      [
       "all/M21",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1",
@@ -8681,7 +9127,7 @@
     "seen": [
      [
       "all/M21",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1",
@@ -8703,7 +9149,7 @@
     "seen": [
      [
       "all/M21",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1",
@@ -8724,7 +9170,8 @@
     "state": "all/M24",
     "seen": [
      "all/M24",
-     "all/M26"
+     "all/M26",
+     "stages/M30"
     ],
     "loader": "facts.mjs v1",
     "probeState": "requirement injected"
@@ -8745,7 +9192,7 @@
     "seen": [
      [
       "all/M21",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1",
@@ -8767,7 +9214,7 @@
     "seen": [
      [
       "all/M21",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1",
@@ -8789,7 +9236,7 @@
     "seen": [
      [
       "all/M21",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1",
@@ -9121,7 +9568,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -9152,7 +9599,7 @@
       ],
       [
        "all/M22",
-       "m28/QL6"
+       "stages/M30"
       ]
      ]
     },
@@ -9197,7 +9644,7 @@
      "all/M14",
      [
       "all/M16",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -9251,7 +9698,7 @@
       ],
       [
        "all/M22",
-       "m28/QL6"
+       "stages/M30"
       ]
      ]
     },
@@ -9296,7 +9743,7 @@
      "all/M14",
      [
       "all/M16",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -9327,7 +9774,7 @@
       ],
       [
        "all/M22",
-       "m28/QL6"
+       "stages/M30"
       ]
      ]
     },
@@ -9372,7 +9819,7 @@
      "all/M14",
      [
       "all/M16",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -9395,7 +9842,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -9418,7 +9865,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -9441,7 +9888,7 @@
     "seen": [
      [
       "all/M18",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -9516,7 +9963,7 @@
     "seen": [
      [
       "all/M18",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -9539,7 +9986,7 @@
     "seen": [
      [
       "all/M18",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -9562,7 +10009,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -9593,7 +10040,7 @@
       ],
       [
        "all/M22",
-       "m28/QL6"
+       "stages/M30"
       ]
      ]
     },
@@ -9638,7 +10085,7 @@
      "all/M14",
      [
       "all/M16",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -9692,7 +10139,7 @@
       ],
       [
        "all/M22",
-       "m28/QL6"
+       "stages/M30"
       ]
      ]
     },
@@ -9737,7 +10184,7 @@
      "all/M14",
      [
       "all/M16",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -9776,7 +10223,7 @@
       "all/M25",
       [
        "all/M27",
-       "m28/QL6"
+       "stages/M30"
       ]
      ]
     },
@@ -9828,7 +10275,7 @@
      ],
      [
       "all/M25",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -9859,7 +10306,7 @@
       ],
       [
        "all/M22",
-       "m28/QL6"
+       "stages/M30"
       ]
      ]
     },
@@ -9904,7 +10351,7 @@
      "all/M14",
      [
       "all/M16",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -9927,7 +10374,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -9973,7 +10420,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -9996,7 +10443,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -10019,7 +10466,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -10042,7 +10489,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -10065,7 +10512,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -10088,7 +10535,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -10111,7 +10558,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -10134,7 +10581,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -10157,7 +10604,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -10180,7 +10627,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -10257,6 +10704,21 @@
       "all/M24",
       "all/M26"
      ]
+    },
+    {
+     "field": "player.p.best",
+     "clock": true,
+     "over": {
+      "ticks": 10,
+      "diff": 1,
+      "moves": "rises"
+     },
+     "drivenBy": [
+      "player.points"
+     ],
+     "seen": [
+      "stages/M30"
+     ]
     }
    ],
    "from": {
@@ -10273,8 +10735,32 @@
      ],
      [
       "all/M17",
-      "m28/QL6"
+      "stages/M30"
      ]
+    ],
+    "loader": "facts.mjs v1"
+   }
+  },
+  {
+   "id": "production:player.p.best:player.points",
+   "kind": "production",
+   "field": "player.p.best",
+   "in": "player.points",
+   "rate": {
+    "type": "power",
+    "exponent": 0.525,
+    "offset": 0,
+    "coef": "2.19579e3255"
+   },
+   "integrated": {
+    "type": "power",
+    "exponent": 1.525
+   },
+   "from": {
+    "how": "probe:exponent on one tick (diff 1, automation off)",
+    "state": "stages/M30",
+    "seen": [
+     "stages/M30"
     ],
     "loader": "facts.mjs v1"
    }
@@ -10370,6 +10856,21 @@
       "all/M24",
       "all/M26"
      ]
+    },
+    {
+     "field": "player.p.points",
+     "clock": true,
+     "over": {
+      "ticks": 10,
+      "diff": 1,
+      "moves": "rises"
+     },
+     "drivenBy": [
+      "player.points"
+     ],
+     "seen": [
+      "stages/M30"
+     ]
     }
    ],
    "from": {
@@ -10386,8 +10887,32 @@
      ],
      [
       "all/M17",
-      "m28/QL6"
+      "stages/M30"
      ]
+    ],
+    "loader": "facts.mjs v1"
+   }
+  },
+  {
+   "id": "production:player.p.points:player.points",
+   "kind": "production",
+   "field": "player.p.points",
+   "in": "player.points",
+   "rate": {
+    "type": "power",
+    "exponent": 0.525,
+    "offset": 0,
+    "coef": "2.19579e3255"
+   },
+   "integrated": {
+    "type": "power",
+    "exponent": 1.525
+   },
+   "from": {
+    "how": "probe:exponent on one tick (diff 1, automation off)",
+    "state": "stages/M30",
+    "seen": [
+     "stages/M30"
     ],
     "loader": "facts.mjs v1"
    }
@@ -10463,6 +10988,21 @@
       "all/M24",
       "all/M26"
      ]
+    },
+    {
+     "field": "player.p.total",
+     "clock": true,
+     "over": {
+      "ticks": 10,
+      "diff": 1,
+      "moves": "rises"
+     },
+     "drivenBy": [
+      "player.points"
+     ],
+     "seen": [
+      "stages/M30"
+     ]
     }
    ],
    "from": {
@@ -10479,8 +11019,32 @@
      ],
      [
       "all/M17",
-      "m28/QL6"
+      "stages/M30"
      ]
+    ],
+    "loader": "facts.mjs v1"
+   }
+  },
+  {
+   "id": "production:player.p.total:player.points",
+   "kind": "production",
+   "field": "player.p.total",
+   "in": "player.points",
+   "rate": {
+    "type": "power",
+    "exponent": 0.525,
+    "offset": 0,
+    "coef": "2.19579e3255"
+   },
+   "integrated": {
+    "type": "power",
+    "exponent": 1.525
+   },
+   "from": {
+    "how": "probe:exponent on one tick (diff 1, automation off)",
+    "state": "stages/M30",
+    "seen": [
+     "stages/M30"
     ],
     "loader": "facts.mjs v1"
    }
@@ -10567,6 +11131,21 @@
      "seen": [
       "all/M17"
      ]
+    },
+    {
+     "field": "player.points",
+     "clock": true,
+     "over": {
+      "ticks": 10,
+      "diff": 1,
+      "moves": "rises"
+     },
+     "drivenBy": [
+      "player.p.points"
+     ],
+     "seen": [
+      "stages/M30"
+     ]
     }
    ],
    "from": {
@@ -10585,8 +11164,32 @@
      ],
      [
       "all/M16",
-      "m28/QL6"
+      "stages/M30"
      ]
+    ],
+    "loader": "facts.mjs v1"
+   }
+  },
+  {
+   "id": "production:player.points:player.p.points",
+   "kind": "production",
+   "field": "player.points",
+   "in": "player.p.points",
+   "rate": {
+    "type": "power",
+    "exponent": 1.1,
+    "offset": 2,
+    "coef": "7.05025e1618"
+   },
+   "integrated": {
+    "type": "power",
+    "exponent": 2.1
+   },
+   "from": {
+    "how": "probe:exponent on one tick (diff 1, automation off)",
+    "state": "stages/M30",
+    "seen": [
+     "stages/M30"
     ],
     "loader": "facts.mjs v1"
    }
@@ -10632,7 +11235,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -10669,7 +11272,7 @@
      "seen": [
       [
        "all/M18",
-       "m28/QL6"
+       "stages/M30"
       ]
      ]
     }
@@ -10680,7 +11283,7 @@
     "seen": [
      [
       "all/M17",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -10814,6 +11417,23 @@
      "seen": [
       "m28/QL6"
      ]
+    },
+    {
+     "field": "player.q.energy",
+     "in": "player.q.time",
+     "rate": {
+      "type": "power",
+      "exponent": 6,
+      "offset": 1,
+      "coef": "2.16912e94"
+     },
+     "integrated": {
+      "type": "power",
+      "exponent": 7
+     },
+     "seen": [
+      "stages/M30"
+     ]
     }
    ],
    "from": {
@@ -10822,10 +11442,11 @@
     "seen": [
      [
       "all/M18",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
-    "loader": "facts.mjs v1"
+    "loader": "facts.mjs v1",
+    "probeState": "the field seeded to 0 at player.q.time = 0, 1, 2, 5, 10, 20, 50 (its increment was below its own precision there; seeding it does not move the increment at player.q.time = 1000000)"
    }
   },
   {
@@ -10868,7 +11489,7 @@
     "seen": [
      [
       "all/M17",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -10891,7 +11512,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -11061,6 +11682,46 @@
    }
   },
   {
+   "id": "production:player.sg.power",
+   "kind": "production",
+   "field": "player.sg.power",
+   "clock": false,
+   "over": {
+    "ticks": 10,
+    "diff": 1,
+    "moves": "rises"
+   },
+   "drivenBy": [],
+   "from": {
+    "how": "producer:wait (automation off)",
+    "state": "stages/M30",
+    "seen": [
+     "stages/M30"
+    ],
+    "loader": "facts.mjs v1"
+   }
+  },
+  {
+   "id": "production:player.sg.time",
+   "kind": "production",
+   "field": "player.sg.time",
+   "clock": true,
+   "over": {
+    "ticks": 10,
+    "diff": 1,
+    "moves": "rises"
+   },
+   "drivenBy": [],
+   "from": {
+    "how": "producer:wait (automation off)",
+    "state": "stages/M30",
+    "seen": [
+     "stages/M30"
+    ],
+    "loader": "facts.mjs v1"
+   }
+  },
+  {
    "id": "production:player.ss.first",
    "kind": "production",
    "field": "player.ss.first",
@@ -11077,7 +11738,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -11155,7 +11816,8 @@
       [
        "all/M14",
        "all/M16"
-      ]
+      ],
+      "stages/M30"
      ]
     },
     {
@@ -11190,7 +11852,7 @@
      ],
      [
       "all/M19",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -11264,7 +11926,7 @@
     "seen": [
      [
       "all/M01",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -11288,7 +11950,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -11315,7 +11977,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -11339,7 +12001,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -11363,7 +12025,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -11387,7 +12049,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -11409,7 +12071,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -11433,7 +12095,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -11457,7 +12119,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -11479,7 +12141,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -11505,7 +12167,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -11531,7 +12193,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -11557,7 +12219,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -11600,7 +12262,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -11626,7 +12288,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -11652,7 +12314,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -12492,6 +13154,55 @@
      "seen": [
       "m28/QL6"
      ]
+    },
+    {
+     "fn": {
+      "layer": "b",
+      "fn": "addToBase"
+     },
+     "reads": [
+      "player.b.upgrades",
+      "player.ma.selectionActive",
+      "player.b.unlocked",
+      "player.t.upgrades",
+      "player.t.unlocked",
+      "player.e.upgrades",
+      "player.e.unlocked",
+      "player.e.buyables.11",
+      "player.q.upgrades",
+      "player.q.unlocked",
+      "player.s.unlocked"
+     ],
+     "tmpReads": [
+      "tmp.ma.canBeMastered",
+      "tmp.b.upgrades.12.effect",
+      "tmp.b.upgrades.13.effect",
+      "tmp.t.upgrades.11.effect",
+      "tmp.e.upgrades.11.effect.b",
+      "tmp.e.buyables.11.power",
+      "tmp.e.freeEnh",
+      "tmp.ma.mastered",
+      "tmp.s.buyables.12.effect",
+      "tmp.t.upgrades.25.effect"
+     ],
+     "members": [
+      "upg:t:11",
+      "upg:t:25"
+     ],
+     "widened": [
+      {
+       "when": "player.ma.selectionActive=true",
+       "reads": [
+        "tmp.b.row",
+        "tmp.t.row",
+        "tmp.e.row",
+        "tmp.q.row"
+       ]
+      }
+     ],
+     "seen": [
+      "stages/M30"
+     ]
     }
    ],
    "from": {
@@ -12500,7 +13211,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -12524,7 +13235,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -12548,7 +13259,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -12676,7 +13387,8 @@
      "seen": [
       "all/M19",
       "all/M24",
-      "all/M26"
+      "all/M26",
+      "stages/M30"
      ]
     }
    ],
@@ -12686,7 +13398,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -12966,7 +13678,7 @@
      "seen": [
       [
        "all/M25",
-       "m28/QL6"
+       "stages/M30"
       ]
      ]
     }
@@ -12977,7 +13689,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -13001,7 +13713,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -13189,7 +13901,7 @@
       ],
       [
        "all/M24",
-       "m28/QL6"
+       "stages/M30"
       ]
      ]
     },
@@ -13229,7 +13941,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -13261,7 +13973,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -13302,7 +14014,7 @@
      "seen": [
       [
        "all/M02",
-       "m28/QL6"
+       "stages/M30"
       ]
      ]
     }
@@ -13313,7 +14025,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -13457,7 +14169,7 @@
       "all/M25",
       [
        "all/M27",
-       "m28/QL6"
+       "stages/M30"
       ]
      ]
     },
@@ -13577,7 +14289,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -13648,7 +14360,7 @@
       "all/M25",
       [
        "all/M27",
-       "m28/QL6"
+       "stages/M30"
       ]
      ]
     },
@@ -13693,7 +14405,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -13762,7 +14474,7 @@
       "all/M25",
       [
        "all/M27",
-       "m28/QL6"
+       "stages/M30"
       ]
      ]
     },
@@ -13809,7 +14521,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -13835,7 +14547,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -13894,7 +14606,7 @@
      "seen": [
       [
        "all/M07",
-       "m28/QL6"
+       "stages/M30"
       ]
      ]
     }
@@ -13905,7 +14617,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -13931,7 +14643,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -13959,7 +14671,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -13987,7 +14699,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -14013,7 +14725,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -14037,7 +14749,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -14061,7 +14773,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -14085,7 +14797,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -14107,7 +14819,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -14140,7 +14852,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -14167,7 +14879,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -14195,7 +14907,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -14219,7 +14931,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -14247,7 +14959,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -14281,7 +14993,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -14308,7 +15020,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -14336,7 +15048,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -14360,7 +15072,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -14387,7 +15099,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -14413,7 +15125,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -14439,7 +15151,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -14468,7 +15180,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -14492,7 +15204,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -14516,7 +15228,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -14540,7 +15252,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -14564,7 +15276,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -14588,7 +15300,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -14612,7 +15324,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -14634,7 +15346,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -14656,7 +15368,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -14680,7 +15392,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -14704,7 +15416,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -14728,7 +15440,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -14752,7 +15464,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -14776,7 +15488,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -15079,7 +15791,8 @@
       }
      ],
      "seen": [
-      "all/M26"
+      "all/M26",
+      "stages/M30"
      ]
     },
     {
@@ -15124,7 +15837,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -15146,7 +15859,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -15209,7 +15922,7 @@
       "all/M25",
       [
        "all/M27",
-       "m28/QL6"
+       "stages/M30"
       ]
      ]
     },
@@ -15250,7 +15963,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -15303,7 +16016,7 @@
      "seen": [
       [
        "all/M18",
-       "m28/QL6"
+       "stages/M30"
       ]
      ]
     }
@@ -15314,7 +16027,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -15338,7 +16051,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -15366,7 +16079,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -15455,7 +16168,8 @@
      ],
      "seen": [
       "all/M16",
-      "all/M26"
+      "all/M26",
+      "stages/M30"
      ]
     },
     {
@@ -15502,7 +16216,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -15530,7 +16244,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -15559,7 +16273,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -15585,7 +16299,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -15613,7 +16327,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -15637,7 +16351,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -15661,7 +16375,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -15685,7 +16399,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -15735,7 +16449,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -15762,7 +16476,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -15790,7 +16504,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -15814,7 +16528,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -15838,7 +16552,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -15864,7 +16578,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -15888,7 +16602,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -15912,7 +16626,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -15940,7 +16654,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -15964,7 +16678,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -15988,7 +16702,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -16012,7 +16726,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -16036,7 +16750,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -16060,7 +16774,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -16975,6 +17689,53 @@
      "seen": [
       "m28/QL6"
      ]
+    },
+    {
+     "fn": {
+      "layer": "g",
+      "fn": "effBase"
+     },
+     "reads": [
+      "player.g.upgrades",
+      "player.ma.selectionActive",
+      "player.g.unlocked",
+      "player.e.upgrades",
+      "player.e.unlocked",
+      "player.e.buyables.11",
+      "player.q.upgrades",
+      "player.q.unlocked",
+      "player.s.unlocked",
+      "player.h.activeChallenge",
+      "player.sg.unlocked"
+     ],
+     "tmpReads": [
+      "tmp.ma.canBeMastered",
+      "tmp.g.upgrades.12.effect",
+      "tmp.g.upgrades.13.effect",
+      "tmp.e.upgrades.11.effect.g",
+      "tmp.e.buyables.11.power",
+      "tmp.e.freeEnh",
+      "tmp.ma.mastered",
+      "tmp.s.buyables.12.effect",
+      "tmp.q.upgrades.12.effect",
+      "tmp.sg.enEff"
+     ],
+     "members": [
+      "upg:q:12"
+     ],
+     "widened": [
+      {
+       "when": "player.ma.selectionActive=true",
+       "reads": [
+        "tmp.g.row",
+        "tmp.e.row",
+        "tmp.q.row"
+       ]
+      }
+     ],
+     "seen": [
+      "stages/M30"
+     ]
     }
    ],
    "from": {
@@ -16983,7 +17744,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -17953,6 +18714,61 @@
      "seen": [
       "m28/QL6"
      ]
+    },
+    {
+     "fn": {
+      "layer": "g",
+      "fn": "effect"
+     },
+     "reads": [
+      "player.ma.selectionActive",
+      "player.g.unlocked",
+      "player.ne.activeChallenge",
+      "player.g.upgrades",
+      "player.e.upgrades",
+      "player.e.unlocked",
+      "player.e.buyables.11",
+      "player.q.upgrades",
+      "player.q.unlocked",
+      "player.s.unlocked",
+      "player.h.activeChallenge",
+      "player.sg.unlocked",
+      "player.g.points",
+      "player.t.upgrades",
+      "player.t.unlocked",
+      "player.s.upgrades"
+     ],
+     "tmpReads": [
+      "tmp.ma.canBeMastered",
+      "tmp.g.upgrades.12.effect",
+      "tmp.g.upgrades.13.effect",
+      "tmp.e.upgrades.11.effect.g",
+      "tmp.e.buyables.11.power",
+      "tmp.e.freeEnh",
+      "tmp.ma.mastered",
+      "tmp.s.buyables.12.effect",
+      "tmp.q.upgrades.12.effect",
+      "tmp.sg.enEff",
+      "tmp.sg.spectralTotal",
+      "tmp.g.upgrades.21.effect",
+      "tmp.g.upgrades.25.effect",
+      "tmp.t.enEff",
+      "tmp.s.upgrades.12.effect",
+      "tmp.s.upgrades.13.effect",
+      "tmp.q.enEff"
+     ],
+     "members": [],
+     "widened": [
+      {
+       "when": "player.ma.selectionActive=true",
+       "reads": [
+        "tmp.g.row"
+       ]
+      }
+     ],
+     "seen": [
+      "stages/M30"
+     ]
     }
    ],
    "from": {
@@ -17961,7 +18777,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -17985,7 +18801,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -18157,7 +18973,7 @@
       "all/M25",
       [
        "all/M27",
-       "m28/QL6"
+       "stages/M30"
       ]
      ]
     },
@@ -18203,7 +19019,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -18454,7 +19270,7 @@
       "all/M25",
       [
        "all/M27",
-       "m28/QL6"
+       "stages/M30"
       ]
      ]
     }
@@ -18465,7 +19281,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -18709,7 +19525,7 @@
      "seen": [
       [
        "all/M24",
-       "m28/QL6"
+       "stages/M30"
       ]
      ]
     }
@@ -18720,7 +19536,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -18744,7 +19560,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -18772,7 +19588,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -18846,7 +19662,7 @@
       "all/M25",
       [
        "all/M27",
-       "m28/QL6"
+       "stages/M30"
       ]
      ]
     },
@@ -18895,7 +19711,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -19002,7 +19818,7 @@
       "all/M25",
       [
        "all/M27",
-       "m28/QL6"
+       "stages/M30"
       ]
      ]
     },
@@ -19053,7 +19869,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -19079,7 +19895,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -19151,7 +19967,7 @@
       "all/M25",
       [
        "all/M27",
-       "m28/QL6"
+       "stages/M30"
       ]
      ]
     },
@@ -19196,7 +20012,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -19223,7 +20039,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -19249,7 +20065,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -19350,7 +20166,7 @@
       "all/M25",
       [
        "all/M27",
-       "m28/QL6"
+       "stages/M30"
       ]
      ]
     },
@@ -19396,7 +20212,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -19422,7 +20238,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -19448,7 +20264,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -19474,7 +20290,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -19500,7 +20316,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -19524,7 +20340,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -19548,7 +20364,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -19574,7 +20390,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -19604,7 +20420,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -19628,7 +20444,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -19671,7 +20487,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -19705,7 +20521,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -19731,7 +20547,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -19756,7 +20572,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -19780,7 +20596,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -19807,7 +20623,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -19831,7 +20647,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -19859,7 +20675,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -19895,7 +20711,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -19919,7 +20735,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -19946,7 +20762,7 @@
       ],
       [
        "all/M25",
-       "m28/QL6"
+       "stages/M30"
       ]
      ]
     },
@@ -19973,7 +20789,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -20001,7 +20817,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -20082,7 +20898,7 @@
      "seen": [
       [
        "all/M21",
-       "m28/QL6"
+       "stages/M30"
       ]
      ]
     }
@@ -20093,7 +20909,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -20168,7 +20984,7 @@
      "seen": [
       [
        "all/M21",
-       "m28/QL6"
+       "stages/M30"
       ]
      ]
     }
@@ -20179,7 +20995,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -20203,7 +21019,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -20227,7 +21043,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -20251,7 +21067,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -20365,7 +21181,10 @@
      ],
      "seen": [
       "all/M26",
-      "m28/QL6"
+      [
+       "m28/QL6",
+       "stages/M30"
+      ]
      ]
     }
    ],
@@ -20375,7 +21194,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -20399,7 +21218,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -20421,7 +21240,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -20543,7 +21362,7 @@
      "seen": [
       [
        "all/M25",
-       "m28/QL6"
+       "stages/M30"
       ]
      ]
     }
@@ -20554,7 +21373,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -20588,7 +21407,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -20677,7 +21496,7 @@
      "seen": [
       [
        "all/M21",
-       "m28/QL6"
+       "stages/M30"
       ]
      ]
     }
@@ -20688,7 +21507,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -20710,7 +21529,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -20756,7 +21575,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -20787,7 +21606,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -20821,7 +21640,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -20852,7 +21671,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -20880,7 +21699,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -20907,7 +21726,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -20935,7 +21754,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -20963,7 +21782,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -20991,7 +21810,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -21018,7 +21837,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -21046,7 +21865,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -21072,7 +21891,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -21099,7 +21918,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -21127,7 +21946,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -21154,7 +21973,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -21181,7 +22000,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -21207,7 +22026,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -21233,7 +22052,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -21260,7 +22079,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -21284,7 +22103,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -21308,7 +22127,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -21334,7 +22153,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -21381,7 +22200,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -21411,7 +22230,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -21441,7 +22260,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -21471,7 +22290,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -21501,7 +22320,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -21531,7 +22350,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -21561,7 +22380,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -21591,7 +22410,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -21621,7 +22440,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -21651,7 +22470,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -21681,7 +22500,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -21705,7 +22524,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -21727,7 +22546,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -21765,7 +22584,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -21790,7 +22609,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -21816,7 +22635,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -21850,7 +22669,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -21874,7 +22693,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -21898,7 +22717,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -21922,7 +22741,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -21944,7 +22763,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -21966,7 +22785,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -21990,7 +22809,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -22014,7 +22833,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -22038,7 +22857,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -22062,7 +22881,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -22084,7 +22903,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -22108,7 +22927,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -22147,7 +22966,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -22169,7 +22988,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -22193,7 +23012,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -22225,7 +23044,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -22252,7 +23071,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -22276,7 +23095,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -22300,7 +23119,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -22331,7 +23150,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -22362,7 +23181,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -22391,7 +23210,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -22420,7 +23239,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -22449,7 +23268,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -22478,7 +23297,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -22502,7 +23321,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -22524,7 +23343,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -22550,7 +23369,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -22575,7 +23394,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -22600,7 +23419,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -22626,7 +23445,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -22660,7 +23479,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -22684,7 +23503,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -22728,7 +23547,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -22762,7 +23581,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -22786,7 +23605,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -22812,7 +23631,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -22836,7 +23655,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -22862,7 +23681,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -22884,7 +23703,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -22906,7 +23725,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -22960,7 +23779,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -22982,7 +23801,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -23006,7 +23825,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -23032,7 +23851,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -23058,7 +23877,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -23083,7 +23902,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -23105,7 +23924,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -23131,7 +23950,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -23155,7 +23974,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -23194,7 +24013,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -23220,7 +24039,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -23246,7 +24065,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -23270,7 +24089,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -23307,7 +24126,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -23333,7 +24152,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -23357,7 +24176,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -23379,7 +24198,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -23418,7 +24237,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -23452,7 +24271,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -23476,7 +24295,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -23503,7 +24322,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -23527,7 +24346,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -23551,7 +24370,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -23579,7 +24398,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -23605,7 +24424,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -23627,7 +24446,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -23651,7 +24470,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -23678,7 +24497,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -23710,7 +24529,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -23747,7 +24566,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -23774,7 +24593,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -23801,7 +24620,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -23826,7 +24645,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -23861,7 +24680,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -23888,7 +24707,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -23912,7 +24731,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -23936,7 +24755,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -23967,7 +24786,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -23998,7 +24817,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -24028,7 +24847,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -24059,7 +24878,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -24089,7 +24908,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -24119,7 +24938,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -24149,7 +24968,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -24179,7 +24998,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -24209,7 +25028,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -24251,7 +25070,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -24277,7 +25096,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -24314,7 +25133,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -24336,7 +25155,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -24360,7 +25179,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -24384,7 +25203,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -24413,7 +25232,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -24440,7 +25259,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -24464,7 +25283,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -24488,7 +25307,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -24527,7 +25346,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -24558,7 +25377,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -24582,7 +25401,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -24606,7 +25425,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -24700,7 +25519,7 @@
       ],
       [
        "all/M24",
-       "m28/QL6"
+       "stages/M30"
       ]
      ]
     }
@@ -24711,7 +25530,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -25953,6 +26772,62 @@
       "all/M24",
       "all/M26"
      ]
+    },
+    {
+     "fn": {
+      "layer": "p",
+      "fn": "gainMult"
+     },
+     "reads": [
+      "player.a.achievements",
+      "player.ma.selectionActive",
+      "player.a.unlocked",
+      "player.p.upgrades",
+      "player.p.unlocked",
+      "player.b.upgrades",
+      "player.b.unlocked",
+      "player.g.upgrades",
+      "player.g.unlocked",
+      "player.t.unlocked",
+      "player.e.unlocked",
+      "player.s.unlocked",
+      "player.e.upgrades"
+     ],
+     "tmpReads": [
+      "tmp.ma.canBeMastered",
+      "tmp.ma.mastered",
+      "tmp.p.upgrades.23.effect",
+      "tmp.b.upgrades.11.effect",
+      "tmp.g.upgrades.11.effect",
+      "tmp.t.enEff",
+      "tmp.e.buyables.11.effect.first",
+      "tmp.s.buyables.11.effect",
+      "tmp.e.upgrades.12.effect",
+      "tmp.b.upgrades.31.effect"
+     ],
+     "members": [
+      "ach:a:13",
+      "ach:a:32",
+      "upg:p:21",
+      "upg:p:23",
+      "upg:b:31",
+      "upg:e:12"
+     ],
+     "widened": [
+      {
+       "when": "player.ma.selectionActive=true",
+       "reads": [
+        "tmp.a.row",
+        "tmp.p.row",
+        "tmp.b.row",
+        "tmp.g.row",
+        "tmp.e.row"
+       ]
+      }
+     ],
+     "seen": [
+      "stages/M30"
+     ]
     }
    ],
    "from": {
@@ -25961,7 +26836,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -26027,7 +26902,7 @@
       ],
       [
        "all/M17",
-       "m28/QL6"
+       "stages/M30"
       ]
      ]
     }
@@ -26038,7 +26913,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -26221,6 +27096,54 @@
        "m28/QL6"
       ]
      ]
+    },
+    {
+     "fn": {
+      "layer": "p",
+      "group": "upgrades",
+      "item": 12,
+      "fn": "effect"
+     },
+     "reads": [
+      "player.ne.activeChallenge",
+      "player.p.points",
+      "player.g.upgrades",
+      "player.ma.selectionActive",
+      "player.g.unlocked",
+      "player.h.challenges.22",
+      "player.h.unlocked",
+      "player.hn.upgrades",
+      "player.p.upgrades",
+      "player.b.upgrades"
+     ],
+     "tmpReads": [
+      "tmp.ma.canBeMastered",
+      "tmp.h.challenges.22.completionLimit",
+      "tmp.ma.mastered"
+     ],
+     "members": [
+      "upg:g:14",
+      "upg:g:24",
+      "upg:p:14"
+     ],
+     "widened": [
+      {
+       "when": "upg:p:14 added",
+       "reads": [
+        "player.p.unlocked"
+       ]
+      },
+      {
+       "when": "player.ma.selectionActive=true",
+       "reads": [
+        "tmp.g.row",
+        "tmp.h.row"
+       ]
+      }
+     ],
+     "seen": [
+      "stages/M30"
+     ]
     }
    ],
    "from": {
@@ -26229,7 +27152,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -26426,7 +27349,7 @@
       "all/M25",
       [
        "all/M27",
-       "m28/QL6"
+       "stages/M30"
       ]
      ]
     },
@@ -26476,7 +27399,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -26595,7 +27518,7 @@
       ],
       [
        "all/M24",
-       "m28/QL6"
+       "stages/M30"
       ]
      ]
     }
@@ -26606,7 +27529,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -26770,7 +27693,7 @@
       "all/M25",
       [
        "all/M27",
-       "m28/QL6"
+       "stages/M30"
       ]
      ]
     },
@@ -26855,7 +27778,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -26882,7 +27805,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -26909,7 +27832,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -26936,7 +27859,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -26962,7 +27885,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -26988,7 +27911,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -27012,7 +27935,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -27038,7 +27961,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -27060,7 +27983,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -27084,7 +28007,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -27110,7 +28033,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -27137,7 +28060,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -27159,7 +28082,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -27186,7 +28109,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -27211,7 +28134,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -27250,7 +28173,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -27274,7 +28197,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -27310,7 +28233,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -27334,7 +28257,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -27452,7 +28375,8 @@
      "seen": [
       "all/M19",
       "all/M24",
-      "all/M26"
+      "all/M26",
+      "stages/M30"
      ]
     }
    ],
@@ -27462,7 +28386,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -27488,7 +28412,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -27666,7 +28590,8 @@
       }
      ],
      "seen": [
-      "all/M26"
+      "all/M26",
+      "stages/M30"
      ]
     },
     {
@@ -27723,7 +28648,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -27747,7 +28672,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -27783,7 +28708,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -27805,7 +28730,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -27927,7 +28852,7 @@
      "seen": [
       [
        "all/M25",
-       "m28/QL6"
+       "stages/M30"
       ]
      ]
     }
@@ -27938,7 +28863,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -27972,7 +28897,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -28043,7 +28968,7 @@
      "seen": [
       [
        "all/M17",
-       "m28/QL6"
+       "stages/M30"
       ]
      ]
     }
@@ -28054,7 +28979,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -28082,7 +29007,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -28108,7 +29033,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -28136,7 +29061,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -28164,7 +29089,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -28190,7 +29115,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -28218,7 +29143,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -28245,7 +29170,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -28273,7 +29198,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -28297,7 +29222,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -28323,7 +29248,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -28347,7 +29272,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -28372,7 +29297,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -28396,7 +29321,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -28432,7 +29357,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -28459,7 +29384,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -28487,7 +29412,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -28511,7 +29436,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -28535,7 +29460,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -28560,7 +29485,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -28584,7 +29509,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -28610,7 +29535,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -28637,7 +29562,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -28670,7 +29595,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -28703,7 +29628,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -28731,7 +29656,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -28755,7 +29680,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -28781,7 +29706,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -28805,7 +29730,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -28864,7 +29789,7 @@
      "seen": [
       [
        "all/M01",
-       "m28/QL6"
+       "stages/M30"
       ]
      ]
     }
@@ -28875,7 +29800,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -28899,7 +29824,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -29056,7 +29981,7 @@
      "seen": [
       [
        "all/M26",
-       "m28/QL6"
+       "stages/M30"
       ]
      ]
     }
@@ -29067,7 +29992,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -29107,7 +30032,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -29145,7 +30070,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -29183,7 +30108,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -29269,7 +30194,7 @@
       ],
       [
        "all/M18",
-       "m28/QL6"
+       "stages/M30"
       ]
      ]
     }
@@ -29280,7 +30205,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -29363,6 +30288,46 @@
        "m28/QL6"
       ]
      ]
+    },
+    {
+     "fn": {
+      "layer": "s",
+      "group": "buyables",
+      "item": 15,
+      "fn": "effect"
+     },
+     "reads": [
+      "player.s.buyables.15",
+      "player.q.upgrades",
+      "player.ma.selectionActive",
+      "player.q.unlocked",
+      "player.hs.unlocked"
+     ],
+     "tmpReads": [
+      "tmp.s.buyables.15.freeLevels",
+      "tmp.s.buildingPower",
+      "tmp.ma.canBeMastered"
+     ],
+     "members": [
+      "upg:q:32"
+     ],
+     "widened": [
+      {
+       "when": "player.ma.selectionActive=true",
+       "reads": [
+        "tmp.q.row"
+       ]
+      },
+      {
+       "when": "player.hs.unlocked=true",
+       "reads": [
+        "tmp.hs.buyables.25.effect"
+       ]
+      }
+     ],
+     "seen": [
+      "stages/M30"
+     ]
     }
    ],
    "from": {
@@ -29371,7 +30336,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -29409,7 +30374,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -29447,7 +30412,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -29485,7 +30450,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -29523,7 +30488,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -29561,7 +30526,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -29679,7 +30644,7 @@
       ],
       [
        "all/M18",
-       "m28/QL6"
+       "stages/M30"
       ]
      ]
     }
@@ -29690,7 +30655,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -29714,7 +30679,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -30030,7 +30995,8 @@
       }
      ],
      "seen": [
-      "all/M26"
+      "all/M26",
+      "stages/M30"
      ]
     },
     {
@@ -30075,7 +31041,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -30125,7 +31091,7 @@
      "seen": [
       [
        "all/M07",
-       "m28/QL6"
+       "stages/M30"
       ]
      ]
     }
@@ -30136,7 +31102,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -30158,7 +31124,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -30180,7 +31146,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -30213,7 +31179,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -30237,7 +31203,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -30472,6 +31438,48 @@
        "m28/QL6"
       ]
      ]
+    },
+    {
+     "fn": {
+      "layer": "s",
+      "fn": "space"
+     },
+     "reads": [
+      "player.s.best",
+      "player.s.upgrades",
+      "player.ma.selectionActive",
+      "player.s.unlocked",
+      "player.a.achievements",
+      "player.a.unlocked",
+      "player.ss.unlocked",
+      "player.h.activeChallenge",
+      "player.s.spent"
+     ],
+     "tmpReads": [
+      "tmp.ma.canBeMastered"
+     ],
+     "members": [
+      "upg:s:13",
+      "ach:a:53"
+     ],
+     "widened": [
+      {
+       "when": "player.ma.selectionActive=true",
+       "reads": [
+        "tmp.s.row",
+        "tmp.a.row"
+       ]
+      },
+      {
+       "when": "player.ss.unlocked=true",
+       "reads": [
+        "tmp.ss.eff1"
+       ]
+      }
+     ],
+     "seen": [
+      "stages/M30"
+     ]
     }
    ],
    "from": {
@@ -30480,7 +31488,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -30516,7 +31524,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -30542,7 +31550,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -30568,7 +31576,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -30594,7 +31602,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -30620,7 +31628,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -30646,7 +31654,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -30672,7 +31680,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -30698,7 +31706,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -30722,7 +31730,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -30746,7 +31754,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -30905,7 +31913,7 @@
      "seen": [
       [
        "all/M25",
-       "m28/QL6"
+       "stages/M30"
       ]
      ]
     }
@@ -30916,7 +31924,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -31021,7 +32029,7 @@
      "seen": [
       [
        "all/M25",
-       "m28/QL6"
+       "stages/M30"
       ]
      ]
     }
@@ -31032,7 +32040,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -31056,7 +32064,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -31082,7 +32090,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -31106,7 +32114,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -31132,7 +32140,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -31156,7 +32164,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -31180,7 +32188,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -31189,28 +32197,60 @@
   {
    "id": "reads:sg:effect",
    "kind": "multiplier-reads",
-   "fn": {
-    "layer": "sg",
-    "fn": "effect"
-   },
-   "reads": [
-    "player.ma.selectionActive",
-    "player.sg.unlocked"
-   ],
-   "tmpReads": [
-    "tmp.ma.canBeMastered"
-   ],
-   "members": [],
-   "widened": [
+   "variants": [
     {
-     "when": "player.ma.selectionActive=true",
+     "fn": {
+      "layer": "sg",
+      "fn": "effect"
+     },
      "reads": [
-      "tmp.sg.row"
+      "player.ma.selectionActive",
+      "player.sg.unlocked"
+     ],
+     "tmpReads": [
+      "tmp.ma.canBeMastered"
+     ],
+     "members": [],
+     "widened": [
+      {
+       "when": "player.ma.selectionActive=true",
+       "reads": [
+        "tmp.sg.row"
+       ]
+      },
+      {
+       "when": "player.sg.unlocked=true",
+       "reads": [
+        "player.ss.upgrades",
+        "player.e.upgrades",
+        "player.g.upgrades",
+        "player.ba.upgrades",
+        "player.hn.upgrades",
+        "player.mc.unlocked",
+        "player.ne.unlocked",
+        "player.sg.points",
+        "tmp.m.buyables.16.unlocked",
+        "tmp.m.buyables.16.effect",
+        "tmp.h.challenges.31.unlocked",
+        "tmp.h.challenges.31.rewardEffect"
+       ]
+      }
+     ],
+     "seen": [
+      [
+       "fresh",
+       "m28/QL6"
+      ]
      ]
     },
     {
-     "when": "player.sg.unlocked=true",
+     "fn": {
+      "layer": "sg",
+      "fn": "effect"
+     },
      "reads": [
+      "player.ma.selectionActive",
+      "player.sg.unlocked",
       "player.ss.upgrades",
       "player.e.upgrades",
       "player.g.upgrades",
@@ -31218,11 +32258,38 @@
       "player.hn.upgrades",
       "player.mc.unlocked",
       "player.ne.unlocked",
-      "player.sg.points",
+      "player.sg.points"
+     ],
+     "tmpReads": [
+      "tmp.ma.canBeMastered",
       "tmp.m.buyables.16.unlocked",
       "tmp.m.buyables.16.effect",
       "tmp.h.challenges.31.unlocked",
       "tmp.h.challenges.31.rewardEffect"
+     ],
+     "members": [],
+     "widened": [
+      {
+       "when": "player.ma.selectionActive=true",
+       "reads": [
+        "tmp.sg.row"
+       ]
+      },
+      {
+       "when": "player.mc.unlocked=true",
+       "reads": [
+        "tmp.mc.clickables.21.effect"
+       ]
+      },
+      {
+       "when": "player.ne.unlocked=true",
+       "reads": [
+        "tmp.ne.thoughtEff2"
+       ]
+      }
+     ],
+     "seen": [
+      "stages/M30"
      ]
     }
    ],
@@ -31232,7 +32299,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -31279,7 +32346,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -31288,30 +32355,67 @@
   {
    "id": "reads:sg:enEff",
    "kind": "multiplier-reads",
-   "fn": {
-    "layer": "sg",
-    "fn": "enEff"
-   },
-   "reads": [
-    "player.ma.selectionActive",
-    "player.sg.unlocked"
-   ],
-   "tmpReads": [
-    "tmp.ma.canBeMastered"
-   ],
-   "members": [],
-   "widened": [
+   "variants": [
     {
-     "when": "player.ma.selectionActive=true",
+     "fn": {
+      "layer": "sg",
+      "fn": "enEff"
+     },
      "reads": [
-      "tmp.sg.row"
+      "player.ma.selectionActive",
+      "player.sg.unlocked"
+     ],
+     "tmpReads": [
+      "tmp.ma.canBeMastered"
+     ],
+     "members": [],
+     "widened": [
+      {
+       "when": "player.ma.selectionActive=true",
+       "reads": [
+        "tmp.sg.row"
+       ]
+      },
+      {
+       "when": "player.sg.unlocked=true",
+       "reads": [
+        "player.sg.power",
+        "tmp.ma.mastered"
+       ]
+      }
+     ],
+     "seen": [
+      [
+       "fresh",
+       "m28/QL6"
+      ]
      ]
     },
     {
-     "when": "player.sg.unlocked=true",
+     "fn": {
+      "layer": "sg",
+      "fn": "enEff"
+     },
      "reads": [
-      "player.sg.power",
+      "player.ma.selectionActive",
+      "player.sg.unlocked",
+      "player.sg.power"
+     ],
+     "tmpReads": [
+      "tmp.ma.canBeMastered",
       "tmp.ma.mastered"
+     ],
+     "members": [],
+     "widened": [
+      {
+       "when": "player.ma.selectionActive=true",
+       "reads": [
+        "tmp.sg.row"
+       ]
+      }
+     ],
+     "seen": [
+      "stages/M30"
      ]
     }
    ],
@@ -31321,7 +32425,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -31345,7 +32449,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -31371,7 +32475,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -31395,7 +32499,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -31419,7 +32523,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -31443,7 +32547,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -31469,7 +32573,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -31495,7 +32599,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -31522,7 +32626,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -31569,7 +32673,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -31594,7 +32698,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -31639,7 +32743,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -31663,7 +32767,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -31685,7 +32789,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -31717,7 +32821,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -31741,7 +32845,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -31769,7 +32873,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -31797,7 +32901,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -31824,7 +32928,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -31850,7 +32954,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -31876,7 +32980,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -31900,7 +33004,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -31924,7 +33028,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -31970,7 +33074,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -32002,7 +33106,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -32036,7 +33140,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -32062,7 +33166,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -32086,7 +33190,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -32451,6 +33555,46 @@
       "all/M24",
       "all/M26"
      ]
+    },
+    {
+     "fn": {
+      "layer": "t",
+      "fn": "enCapMult"
+     },
+     "reads": [
+      "player.t.upgrades",
+      "player.ma.selectionActive",
+      "player.t.unlocked",
+      "player.h.unlocked",
+      "player.o.unlocked"
+     ],
+     "tmpReads": [
+      "tmp.ma.canBeMastered",
+      "tmp.t.upgrades.12.effect",
+      "tmp.t.upgrades.22.effect",
+      "tmp.h.effect"
+     ],
+     "members": [
+      "upg:t:21",
+      "upg:t:22"
+     ],
+     "widened": [
+      {
+       "when": "player.ma.selectionActive=true",
+       "reads": [
+        "tmp.t.row"
+       ]
+      },
+      {
+       "when": "player.o.unlocked=true",
+       "reads": [
+        "tmp.o.solEnEff2"
+       ]
+      }
+     ],
+     "seen": [
+      "stages/M30"
+     ]
     }
    ],
    "from": {
@@ -32459,7 +33603,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -32652,6 +33796,40 @@
      "seen": [
       "m28/QL6"
      ]
+    },
+    {
+     "fn": {
+      "layer": "t",
+      "fn": "enEff"
+     },
+     "reads": [
+      "player.ma.selectionActive",
+      "player.t.unlocked",
+      "player.t.energy",
+      "player.t.upgrades",
+      "player.q.upgrades",
+      "player.q.unlocked",
+      "player.ma.mastered"
+     ],
+     "tmpReads": [
+      "tmp.ma.canBeMastered",
+      "tmp.ma.mastered"
+     ],
+     "members": [
+      "upg:t:14",
+      "upg:q:24"
+     ],
+     "widened": [
+      {
+       "when": "player.ma.selectionActive=true",
+       "reads": [
+        "tmp.t.row"
+       ]
+      }
+     ],
+     "seen": [
+      "stages/M30"
+     ]
     }
    ],
    "from": {
@@ -32660,7 +33838,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -32774,7 +33952,8 @@
        "all/M16"
       ],
       "all/M24",
-      "all/M26"
+      "all/M26",
+      "stages/M30"
      ]
     },
     {
@@ -32845,7 +34024,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -33065,7 +34244,8 @@
      ],
      "seen": [
       "all/M24",
-      "all/M26"
+      "all/M26",
+      "stages/M30"
      ]
     }
    ],
@@ -33075,7 +34255,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -33099,7 +34279,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -33369,7 +34549,8 @@
       }
      ],
      "seen": [
-      "all/M26"
+      "all/M26",
+      "stages/M30"
      ]
     },
     {
@@ -33413,7 +34594,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -33435,7 +34616,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -33457,7 +34638,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -33549,7 +34730,7 @@
       ],
       [
        "all/M18",
-       "m28/QL6"
+       "stages/M30"
       ]
      ]
     }
@@ -33560,7 +34741,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -33592,7 +34773,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -33616,7 +34797,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -33690,7 +34871,7 @@
       ],
       [
        "all/M18",
-       "m28/QL6"
+       "stages/M30"
       ]
      ]
     }
@@ -33701,7 +34882,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -33727,7 +34908,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -33755,7 +34936,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -33783,7 +34964,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -33811,7 +34992,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -33837,7 +35018,7 @@
     "seen": [
      [
       "fresh",
-      "m28/QL6"
+      "stages/M30"
      ]
     ],
     "loader": "facts.mjs v1"
@@ -34322,441 +35503,118 @@
    }
   },
   {
-   "id": "challenge-inputs:h:32",
+   "id": "challenge-inputs:h:31",
    "kind": "challenge-inputs",
-   "variants": [
-    {
-     "inside": {
-      "layer": "h",
-      "challenge": 32
-     },
-     "goalCurrency": "player.points",
-     "gain": "getPointGen()",
-     "entered": true,
-     "moves": [
-      "upg:p:11 (added)"
-     ],
-     "movesOutside": [
-      "player.p.points",
-      "player.b.points",
-      "player.g.points",
-      "player.t.points",
-      "player.s.points",
-      "player.s.buyables.11",
-      "player.s.buyables.15",
-      "player.h.points",
-      "upg:p:11 (held: removed)",
-      "upg:p:12 (held: removed)",
-      "upg:p:13 (held: removed)",
-      "upg:p:14 (added)",
-      "upg:p:21 (held: removed)",
-      "upg:p:22 (held: removed)",
-      "upg:p:23 (held: removed)",
-      "upg:p:24 (added)",
-      "upg:p:31 (held: removed)",
-      "upg:p:32 (held: removed)",
-      "upg:p:33 (held: removed)",
-      "upg:p:34 (added)",
-      "upg:p:41 (added)",
-      "upg:p:42 (added)",
-      "upg:p:43 (added)",
-      "upg:p:44 (added)",
-      "ach:a:21 (held: removed)",
-      "ach:a:31 (held: removed)",
-      "ach:a:103 (added)"
-     ],
-     "nerfed": [
-      "player.p.points",
-      "player.b.points",
-      "player.g.points",
-      "player.t.points",
-      "player.s.points",
-      "player.s.buyables.11",
-      "player.s.buyables.15",
-      "player.h.points",
-      "upg:p:11 (held: removed)",
-      "upg:p:12 (held: removed)",
-      "upg:p:13 (held: removed)",
-      "upg:p:14 (added)",
-      "upg:p:21 (held: removed)",
-      "upg:p:22 (held: removed)",
-      "upg:p:23 (held: removed)",
-      "upg:p:24 (added)",
-      "upg:p:31 (held: removed)",
-      "upg:p:32 (held: removed)",
-      "upg:p:33 (held: removed)",
-      "upg:p:34 (added)",
-      "upg:p:41 (added)",
-      "upg:p:42 (added)",
-      "upg:p:43 (added)",
-      "upg:p:44 (added)",
-      "ach:a:21 (held: removed)",
-      "ach:a:31 (held: removed)",
-      "ach:a:103 (added)"
-     ],
-     "candidates": 168,
-     "threw": {
-      "inside": [
-       "player.h.activeChallenge: Cannot read properties of undefined (reading 'countsAs')"
-      ],
-      "outside": []
-     },
-     "seen": [
-      [
-       "all/M21",
-       "all/M22"
-      ],
-      "all/M25",
-      "all/M27"
-     ]
-    },
-    {
-     "inside": {
-      "layer": "h",
-      "challenge": 32
-     },
-     "goalCurrency": "player.points",
-     "gain": "getPointGen()",
-     "entered": true,
-     "moves": [
-      "upg:p:11 (added)"
-     ],
-     "movesOutside": [
-      "player.p.points",
-      "player.b.points",
-      "player.g.points",
-      "player.t.points",
-      "player.s.points",
-      "player.s.buyables.11",
-      "player.s.buyables.15",
-      "player.h.points",
-      "upg:p:11 (held: removed)",
-      "upg:p:12 (held: removed)",
-      "upg:p:13 (held: removed)",
-      "upg:p:14 (added)",
-      "upg:p:22 (added)",
-      "ach:a:21 (held: removed)",
-      "ach:a:31 (held: removed)",
-      "ach:a:103 (added)"
-     ],
-     "nerfed": [
-      "player.p.points",
-      "player.b.points",
-      "player.g.points",
-      "player.t.points",
-      "player.s.points",
-      "player.s.buyables.11",
-      "player.s.buyables.15",
-      "player.h.points",
-      "upg:p:11 (held: removed)",
-      "upg:p:12 (held: removed)",
-      "upg:p:13 (held: removed)",
-      "upg:p:14 (added)",
-      "upg:p:22 (added)",
-      "ach:a:21 (held: removed)",
-      "ach:a:31 (held: removed)",
-      "ach:a:103 (added)"
-     ],
-     "candidates": 168,
-     "threw": {
-      "inside": [
-       "player.h.activeChallenge: Cannot read properties of undefined (reading 'countsAs')"
-      ],
-      "outside": []
-     },
-     "seen": [
-      "all/M23"
-     ]
-    },
-    {
-     "inside": {
-      "layer": "h",
-      "challenge": 32
-     },
-     "goalCurrency": "player.points",
-     "gain": "getPointGen()",
-     "entered": true,
-     "moves": [
-      "upg:p:11 (added)"
-     ],
-     "movesOutside": [
-      "player.p.points",
-      "player.b.points",
-      "player.g.points",
-      "player.t.points",
-      "player.t.buyables.11",
-      "player.e.buyables.11",
-      "player.s.points",
-      "player.s.buyables.11",
-      "player.s.buyables.12",
-      "player.s.buyables.15",
-      "player.sb.points",
-      "player.h.points",
-      "upg:p:11 (held: removed)",
-      "upg:p:12 (held: removed)",
-      "upg:p:13 (held: removed)",
-      "upg:p:14 (added)",
-      "upg:p:21 (held: removed)",
-      "upg:p:22 (held: removed)",
-      "upg:p:23 (held: removed)",
-      "upg:p:24 (added)",
-      "upg:p:31 (held: removed)",
-      "upg:p:32 (held: removed)",
-      "upg:p:33 (held: removed)",
-      "upg:p:34 (added)",
-      "upg:p:41 (added)",
-      "upg:p:42 (added)",
-      "upg:p:43 (added)",
-      "upg:p:44 (added)",
-      "upg:b:12 (held: removed)",
-      "upg:b:13 (held: removed)",
-      "upg:b:21 (held: removed)",
-      "upg:b:22 (held: removed)",
-      "upg:b:33 (added)",
-      "ach:a:21 (held: removed)",
-      "ach:a:31 (held: removed)",
-      "ach:a:103 (added)",
-      "ach:a:152 (added)"
-     ],
-     "nerfed": [
-      "player.p.points",
-      "player.b.points",
-      "player.g.points",
-      "player.t.points",
-      "player.t.buyables.11",
-      "player.e.buyables.11",
-      "player.s.points",
-      "player.s.buyables.11",
-      "player.s.buyables.12",
-      "player.s.buyables.15",
-      "player.sb.points",
-      "player.h.points",
-      "upg:p:11 (held: removed)",
-      "upg:p:12 (held: removed)",
-      "upg:p:13 (held: removed)",
-      "upg:p:14 (added)",
-      "upg:p:21 (held: removed)",
-      "upg:p:22 (held: removed)",
-      "upg:p:23 (held: removed)",
-      "upg:p:24 (added)",
-      "upg:p:31 (held: removed)",
-      "upg:p:32 (held: removed)",
-      "upg:p:33 (held: removed)",
-      "upg:p:34 (added)",
-      "upg:p:41 (added)",
-      "upg:p:42 (added)",
-      "upg:p:43 (added)",
-      "upg:p:44 (added)",
-      "upg:b:12 (held: removed)",
-      "upg:b:13 (held: removed)",
-      "upg:b:21 (held: removed)",
-      "upg:b:22 (held: removed)",
-      "upg:b:33 (added)",
-      "ach:a:21 (held: removed)",
-      "ach:a:31 (held: removed)",
-      "ach:a:103 (added)",
-      "ach:a:152 (added)"
-     ],
-     "candidates": 168,
-     "threw": {
-      "inside": [
-       "player.h.activeChallenge: Cannot read properties of undefined (reading 'countsAs')"
-      ],
-      "outside": [
-       "player.h.activeChallenge: Cannot read properties of undefined (reading 'countsAs')"
-      ]
-     },
-     "seen": [
-      "all/M24"
-     ]
-    },
-    {
-     "inside": {
-      "layer": "h",
-      "challenge": 32
-     },
-     "goalCurrency": "player.points",
-     "gain": "getPointGen()",
-     "entered": true,
-     "moves": [
-      "upg:p:11 (added)"
-     ],
-     "movesOutside": [
-      "player.p.points",
-      "player.b.points",
-      "player.g.points",
-      "player.t.points",
-      "player.t.buyables.11",
-      "player.e.buyables.11",
-      "player.s.points",
-      "player.s.buyables.11",
-      "player.s.buyables.12",
-      "player.s.buyables.15",
-      "player.sb.points",
-      "player.h.points",
-      "upg:p:11 (held: removed)",
-      "upg:p:12 (held: removed)",
-      "upg:p:13 (held: removed)",
-      "upg:p:14 (added)",
-      "upg:p:21 (held: removed)",
-      "upg:p:22 (held: removed)",
-      "upg:p:23 (held: removed)",
-      "upg:p:24 (added)",
-      "upg:p:31 (held: removed)",
-      "upg:p:32 (held: removed)",
-      "upg:p:33 (held: removed)",
-      "upg:p:34 (added)",
-      "upg:p:41 (added)",
-      "upg:p:42 (added)",
-      "upg:p:43 (added)",
-      "upg:p:44 (added)",
-      "upg:b:12 (held: removed)",
-      "upg:b:13 (held: removed)",
-      "upg:b:21 (held: removed)",
-      "upg:b:22 (held: removed)",
-      "upg:b:33 (held: removed)",
-      "ach:a:21 (held: removed)",
-      "ach:a:31 (held: removed)",
-      "ach:a:103 (added)",
-      "ach:a:152 (added)"
-     ],
-     "nerfed": [
-      "player.p.points",
-      "player.b.points",
-      "player.g.points",
-      "player.t.points",
-      "player.t.buyables.11",
-      "player.e.buyables.11",
-      "player.s.points",
-      "player.s.buyables.11",
-      "player.s.buyables.12",
-      "player.s.buyables.15",
-      "player.sb.points",
-      "player.h.points",
-      "upg:p:11 (held: removed)",
-      "upg:p:12 (held: removed)",
-      "upg:p:13 (held: removed)",
-      "upg:p:14 (added)",
-      "upg:p:21 (held: removed)",
-      "upg:p:22 (held: removed)",
-      "upg:p:23 (held: removed)",
-      "upg:p:24 (added)",
-      "upg:p:31 (held: removed)",
-      "upg:p:32 (held: removed)",
-      "upg:p:33 (held: removed)",
-      "upg:p:34 (added)",
-      "upg:p:41 (added)",
-      "upg:p:42 (added)",
-      "upg:p:43 (added)",
-      "upg:p:44 (added)",
-      "upg:b:12 (held: removed)",
-      "upg:b:13 (held: removed)",
-      "upg:b:21 (held: removed)",
-      "upg:b:22 (held: removed)",
-      "upg:b:33 (held: removed)",
-      "ach:a:21 (held: removed)",
-      "ach:a:31 (held: removed)",
-      "ach:a:103 (added)",
-      "ach:a:152 (added)"
-     ],
-     "candidates": 168,
-     "threw": {
-      "inside": [
-       "player.h.activeChallenge: Cannot read properties of undefined (reading 'countsAs')"
-      ],
-      "outside": []
-     },
-     "seen": [
-      "all/M26"
-     ]
-    },
-    {
-     "inside": {
-      "layer": "h",
-      "challenge": 32
-     },
-     "goalCurrency": "player.points",
-     "gain": "getPointGen()",
-     "entered": true,
-     "moves": [
-      "upg:p:11 (added)"
-     ],
-     "movesOutside": [
-      "player.p.points",
-      "player.b.points",
-      "player.g.points",
-      "player.t.points",
-      "player.s.points",
-      "player.s.buyables.11",
-      "player.h.points",
-      "upg:p:11 (held: removed)",
-      "upg:p:12 (held: removed)",
-      "upg:p:13 (held: removed)",
-      "upg:p:14 (added)",
-      "upg:p:21 (held: removed)",
-      "upg:p:22 (held: removed)",
-      "upg:p:23 (held: removed)",
-      "upg:p:24 (added)",
-      "upg:p:31 (held: removed)",
-      "upg:p:32 (held: removed)",
-      "upg:p:33 (held: removed)",
-      "upg:p:34 (added)",
-      "upg:p:41 (added)",
-      "upg:p:42 (added)",
-      "upg:p:43 (added)",
-      "upg:p:44 (added)",
-      "ach:a:21 (held: removed)",
-      "ach:a:31 (held: removed)",
-      "ach:a:103 (added)"
-     ],
-     "nerfed": [
-      "player.p.points",
-      "player.b.points",
-      "player.g.points",
-      "player.t.points",
-      "player.s.points",
-      "player.s.buyables.11",
-      "player.h.points",
-      "upg:p:11 (held: removed)",
-      "upg:p:12 (held: removed)",
-      "upg:p:13 (held: removed)",
-      "upg:p:14 (added)",
-      "upg:p:21 (held: removed)",
-      "upg:p:22 (held: removed)",
-      "upg:p:23 (held: removed)",
-      "upg:p:24 (added)",
-      "upg:p:31 (held: removed)",
-      "upg:p:32 (held: removed)",
-      "upg:p:33 (held: removed)",
-      "upg:p:34 (added)",
-      "upg:p:41 (added)",
-      "upg:p:42 (added)",
-      "upg:p:43 (added)",
-      "upg:p:44 (added)",
-      "ach:a:21 (held: removed)",
-      "ach:a:31 (held: removed)",
-      "ach:a:103 (added)"
-     ],
-     "candidates": 168,
-     "threw": {
-      "inside": [
-       "player.h.activeChallenge: Cannot read properties of undefined (reading 'countsAs')"
-      ],
-      "outside": []
-     },
-     "seen": [
-      "m28/QL6"
-     ]
-    }
+   "inside": {
+    "layer": "h",
+    "challenge": 31
+   },
+   "goalCurrency": "player.points",
+   "gain": "getPointGen()",
+   "entered": true,
+   "moves": [
+    "player.p.points",
+    "player.b.points",
+    "player.g.points",
+    "player.t.points",
+    "player.s.points",
+    "player.s.buyables.11",
+    "player.s.buyables.15",
+    "player.h.points",
+    "upg:p:11 (held: removed)",
+    "upg:p:12 (held: removed)",
+    "upg:p:13 (held: removed)",
+    "upg:p:14 (added)",
+    "upg:p:21 (held: removed)",
+    "upg:p:22 (held: removed)",
+    "upg:p:23 (held: removed)",
+    "upg:p:24 (added)",
+    "upg:p:31 (held: removed)",
+    "upg:p:32 (held: removed)",
+    "upg:p:33 (held: removed)",
+    "upg:p:34 (added)",
+    "upg:p:41 (added)",
+    "upg:p:42 (added)",
+    "upg:p:43 (added)",
+    "upg:p:44 (added)",
+    "ach:a:21 (held: removed)",
+    "ach:a:31 (held: removed)",
+    "ach:a:103 (added)",
+    "ach:a:111 (added)"
    ],
+   "movesOutside": [
+    "player.p.points",
+    "player.b.points",
+    "player.g.points",
+    "player.t.points",
+    "player.s.points",
+    "player.s.buyables.11",
+    "player.s.buyables.15",
+    "player.h.points",
+    "upg:p:11 (held: removed)",
+    "upg:p:12 (held: removed)",
+    "upg:p:13 (held: removed)",
+    "upg:p:14 (added)",
+    "upg:p:21 (held: removed)",
+    "upg:p:22 (held: removed)",
+    "upg:p:23 (held: removed)",
+    "upg:p:24 (added)",
+    "upg:p:31 (held: removed)",
+    "upg:p:32 (held: removed)",
+    "upg:p:33 (held: removed)",
+    "upg:p:34 (added)",
+    "upg:p:41 (added)",
+    "upg:p:42 (added)",
+    "upg:p:43 (added)",
+    "upg:p:44 (added)",
+    "ach:a:21 (held: removed)",
+    "ach:a:31 (held: removed)",
+    "ach:a:103 (added)"
+   ],
+   "nerfed": [],
+   "candidates": 169,
+   "threw": {
+    "inside": [
+     "player.h.activeChallenge: Cannot read properties of undefined (reading 'countsAs')"
+    ],
+    "outside": []
+   },
    "from": {
     "how": "probe:in-challenge-sensitivity (×10+1 per number, toggle per member; each in its own excursion, 3 updateTemps; getPointGen())",
-    "state": "all/M21",
+    "state": "stages/M30",
     "seen": [
-     [
-      "all/M21",
-      "m28/QL6"
-     ]
+     "stages/M30"
+    ],
+    "loader": "facts.mjs v1",
+    "probeState": "the challenge entered on the copy through startChallenge"
+   }
+  },
+  {
+   "id": "purchase-budget:h:31:player.h.chall31bought",
+   "kind": "purchase-budget",
+   "inside": {
+    "layer": "h",
+    "challenge": 31
+   },
+   "counter": "player.h.chall31bought",
+   "items": [
+    [
+     "t",
+     "buyable",
+     "11"
+    ],
+    [
+     "e",
+     "buyable",
+     "11"
+    ]
+   ],
+   "limit": "10",
+   "from": {
+    "how": "traceReads(canAfford) + buy raises it by 1 + threshold probe (Pass A)",
+    "state": "stages/M30",
+    "seen": [
+     "stages/M30"
     ],
     "loader": "facts.mjs v1",
     "probeState": "the challenge entered on the copy through startChallenge"
@@ -35119,92 +35977,80 @@
    }
   },
   {
-   "id": "exits-challenge:h:32:h",
+   "id": "exits-challenge:h:31:h",
    "kind": "exits-challenge",
    "inside": {
     "layer": "h",
-    "challenge": 32
+    "challenge": 31
    },
    "reset": "h",
    "exits": true,
    "onGoal": "completes",
    "from": {
     "how": "probe:enter + doReset (each reset in its own excursion; a second one with the goal currency at the goal)",
-    "state": "all/M21",
+    "state": "stages/M30",
     "seen": [
-     [
-      "all/M21",
-      "m28/QL6"
-     ]
+     "stages/M30"
     ],
     "loader": "facts.mjs v1",
     "probeState": "the challenge entered on the copy through startChallenge; requirement injected"
    }
   },
   {
-   "id": "exits-challenge:h:32:o",
+   "id": "exits-challenge:h:31:o",
    "kind": "exits-challenge",
    "inside": {
     "layer": "h",
-    "challenge": 32
+    "challenge": 31
    },
    "reset": "o",
    "exits": true,
    "onGoal": "completes",
    "from": {
     "how": "probe:enter + doReset (each reset in its own excursion; a second one with the goal currency at the goal)",
-    "state": "all/M21",
+    "state": "stages/M30",
     "seen": [
-     [
-      "all/M21",
-      "m28/QL6"
-     ]
+     "stages/M30"
     ],
     "loader": "facts.mjs v1",
     "probeState": "the challenge entered on the copy through startChallenge; requirement injected"
    }
   },
   {
-   "id": "exits-challenge:h:32:q",
+   "id": "exits-challenge:h:31:q",
    "kind": "exits-challenge",
    "inside": {
     "layer": "h",
-    "challenge": 32
+    "challenge": 31
    },
    "reset": "q",
    "exits": true,
    "onGoal": "completes",
    "from": {
     "how": "probe:enter + doReset (each reset in its own excursion; a second one with the goal currency at the goal)",
-    "state": "all/M21",
+    "state": "stages/M30",
     "seen": [
-     [
-      "all/M21",
-      "m28/QL6"
-     ]
+     "stages/M30"
     ],
     "loader": "facts.mjs v1",
     "probeState": "the challenge entered on the copy through startChallenge; requirement injected"
    }
   },
   {
-   "id": "exits-challenge:h:32:ss",
+   "id": "exits-challenge:h:31:ss",
    "kind": "exits-challenge",
    "inside": {
     "layer": "h",
-    "challenge": 32
+    "challenge": 31
    },
    "reset": "ss",
    "exits": true,
    "onGoal": "completes",
    "from": {
     "how": "probe:enter + doReset (each reset in its own excursion; a second one with the goal currency at the goal)",
-    "state": "all/M21",
+    "state": "stages/M30",
     "seen": [
-     [
-      "all/M21",
-      "m28/QL6"
-     ]
+     "stages/M30"
     ],
     "loader": "facts.mjs v1",
     "probeState": "the challenge entered on the copy through startChallenge; requirement injected"

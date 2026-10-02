@@ -127,9 +127,17 @@
   // tmp is NOT a safe reader for `unlocked`: updateTempData skips every `unlocked` outside `upgrades` while the layer's
   // tab is not open (2.2.1 temp.js:96), and setupTemp seeds an un-evaluated function as Decimal(1) — truthy forever.
   // So a locked buyable or challenge reads UNLOCKED out of tmp. Every `unlocked` here is read live from the declaration.
+  // (m31) The ENGINE's reading, not a looser one: setupLayer gives an item that declares no `unlocked` the value true
+  // (2.2.1 layerSupport.js:47-104), and every reader after that tests the value for TRUTH (components.js `v-if`,
+  // utils.js `if (!tmp[l].upgrades[id].unlocked) return`). So an `unlocked()` that RETURNS undefined is LOCKED — PTR's
+  // H32 "Option D" returns `tmp.ps.buyables[11].effects.hindr`, undefined while Pseudo-Boosters are locked, and the
+  // engine hides it. Only a function that THROWS falls back to tmp (the engine would have no value either).
   function itemUnlocked(decl, tmpItem) {
-    var v = live(decl, 'unlocked');
-    if (v !== undefined) return v !== false;
+    if (!decl || decl.unlocked === undefined) return true;
+    if (typeof decl.unlocked !== 'function') return !!decl.unlocked;
+    var v, threw = false;
+    try { v = decl.unlocked.call(decl); } catch (e) { threw = true; }
+    if (!threw) return !!v;
     if (tmpItem && tmpItem.unlocked !== undefined) return !!tmpItem.unlocked;
     return true;
   }
@@ -2422,9 +2430,12 @@
     opts = opts || {};
     var saved = getPath(path), asDec = isDec(saved), pts = [], errors = 0, firstError = null;
     if (!numLike(saved)) return { type: 'unscored', why: path + ' is not a number here' };
+    // (m31) `opts.max`: the field's own DOMAIN, where the engine declares one (a challenge's completions never exceed its
+    // completionLimit) — the grid stops there, so a formula is not fitted over values the game cannot reach.
+    var grid = opts.max === undefined ? F.GRID : F.GRID.filter(function (g) { return g <= opts.max; });
     try {
-      for (var i = 0; i < F.GRID.length; i++) {
-        var v = F.GRID[i];
+      for (var i = 0; i < grid.length; i++) {
+        var v = grid[i];
         setPath(path, asDec ? D(v) : v);
         if (opts.settle) need('updateTemp')();
         var y;
@@ -2434,6 +2445,7 @@
     } finally { setPath(path, saved); if (opts.settle) need('updateTemp')(); }
     var s = fitShape(pts);
     if (errors) { s.errors = errors; s.firstError = firstError; }
+    if (opts.max !== undefined) s.domain = { max: opts.max, why: opts.maxWhy };
     return s;
   };
 
@@ -2504,10 +2516,21 @@
         f.reads = tr.reads.map(function (r) { return r.path; });
         f.tmpReads = tr.tmp;
         f.shapes = {};
+        // (m31) a challenge goal that reads the challenge's OWN completions is probed over the completions the engine
+        // allows (0 … completionLimit), never past it: PTR's H31 goal softcaps its completions at 20 (layers.js "Timeless")
+        // while the limit is 10–30, and the full grid (to 1e6) read that softcap as `irregular`.
+        var own = t.kind === 'challenge' ? 'player.' + t.layer + '.challenges.' + t.id : null, lim = Infinity;
+        if (own && tr.numeric.indexOf(own) >= 0) {
+          lim = live(decl, 'completionLimit');
+          var lt = tmpItem(t.layer, 'challenges', t.id);
+          if (lim === undefined && lt) lim = lt.completionLimit;
+          lim = lim === undefined ? 1 : Number(lim);
+        }
         for (var r = 0; r < tr.numeric.length; r++) {
-          if (!parts) { f.shapes[tr.numeric[r]] = F.shapeIn(tr.numeric[r], call); continue; }
+          var so = tr.numeric[r] === own && isFinite(lim) ? { max: lim, maxWhy: 'the challenge\'s completionLimit' } : undefined;
+          if (!parts) { f.shapes[tr.numeric[r]] = F.shapeIn(tr.numeric[r], call, so); continue; }
           f.shapes[tr.numeric[r]] = {};
-          for (var q2 = 0; q2 < parts.length; q2++) f.shapes[tr.numeric[r]][parts[q2]] = F.shapeIn(tr.numeric[r], (function (pt) { return function () { var v = call(); return v && v[pt]; }; })(parts[q2]));
+          for (var q2 = 0; q2 < parts.length; q2++) f.shapes[tr.numeric[r]][parts[q2]] = F.shapeIn(tr.numeric[r], (function (pt) { return function () { var v = call(); return v && v[pt]; }; })(parts[q2]), so);
         }
         f.from = { how: 'traceReads + probe:exponent' };
       } catch (e) { f.abstain = 'the probe threw: ' + errText(e); f.from = { how: 'probe:exponent' }; }
@@ -2702,6 +2725,12 @@
   // With the automation OFF (what the GAME does on its own): tick `k` game-seconds at diff 1 and find what moved and
   // which fields are CLOCKS (+diff every tick). Then, for each clock a tick actually READS, the exponent probe on the
   // per-tick increment: set the clock to each grid value, tick once, read every moved field's increment.
+  // (m31) an increment `d` of a field that was `b` before the tick is LOST to the number type's precision when it is
+  // below b's last ~8 significant digits (a Decimal's mantissa is a double: ≈ 16 digits, and the fit's tolerance needs
+  // 6 of them to survive the subtraction)
+  function lostTo(d, b) {
+    try { if (D(b).eq(0)) return false; return D(d).abs().lte(D(b).abs().times(1e-8)); } catch (e) { return false; }
+  }
   F.production = function (opts) {
     opts = opts || {};
     var k = Number(opts.k || 10);
@@ -2748,27 +2777,53 @@
         for (var q0 in dd) if (q0 !== Ck && dd[q0] !== base0[q0]) { drivers.push(Ck); break; }
       }
       var out = [];
+      // one tick's increment of every moved field with the clock C at v; `zero` seeds those fields to 0 first
+      var gridRow = function (C, v, zero) {
+        return P.excursion(function () {
+          T.profile('off');
+          var cv = getPath(C);
+          setPath(C, isDec(cv) ? D(v) : v);
+          if (zero) for (var z = 0; z < zero.length; z++) { var zv = getPath(zero[z]); setPath(zero[z], isDec(zv) ? D(0) : 0); }
+          var b = leafMapState(3);
+          T.tick(1, 1);
+          var a = leafMapState(3), d = {};
+          for (var m = 0; m < moved.length; m++) { var q = moved[m]; if (q === C || !(q in a) || !(q in b)) continue; d[q] = { d: a[q].sub(b[q]), lost: lostTo(a[q].sub(b[q]), b[q]) }; }
+          return d;
+        });
+      };
       for (var c = 0; c < drivers.length; c++) {
-        var C = drivers[c], series = {};
+        var C = drivers[c], series = {}, lost = {};
         for (var g = 0; g < F.GRID.length; g++) {
-          var v = F.GRID[g];
-          var row = P.excursion(function () {
-            T.profile('off');
-            var cv = getPath(C);
-            setPath(C, isDec(cv) ? D(v) : v);
-            var b = leafMapState(3);
-            T.tick(1, 1);
-            var a = leafMapState(3), d = {};
-            for (var m = 0; m < moved.length; m++) { var q = moved[m]; if (q === C || !(q in a) || !(q in b)) continue; d[q] = a[q].sub(b[q]); }
-            return d;
-          });
-          for (var q in row) (series[q] || (series[q] = [])).push({ v: v, L: lgOf(row[q]) });
+          var v = F.GRID[g], row = gridRow(C, v, null);
+          for (var q in row) { (series[q] || (series[q] = [])).push({ v: v, L: lgOf(row[q].d) }); if (row[q].lost) (lost[q] || (lost[q] = [])).push(g); }
+        }
+        // (m31) PRECISION: an increment far below its field (PTR's quirk energy ≈ 1e113 at stages/M30, its increment
+        // ≈ 1e96 at q.time 1) is lost in the subtraction `after − before` — the reading is the mantissa's rounding, not
+        // the production. Such a reading is RE-READ with the field seeded to 0, but only where that is measured to be
+        // the same production: at the grid point where the increment is largest against its field, seeding the field
+        // to 0 must leave the increment unchanged (the field does not feed its own production). Otherwise it stays as it
+        // was read (and the fit says what it can).
+        // ⚠ Only where the plain readings FAIL to fit (`irregular`), and the re-read is kept only when it fits a clean
+        // shape (power / exponential): at all/M24 an unrestricted re-read turned flat Prestige-point readings into a
+        // step "fact" in q.time that a direct reading of the same state does not show (measured, m31).
+        var reread = {};
+        for (var lq in lost) {
+          if (fitShape(series[lq]).type !== 'irregular') continue;
+          var top = F.GRID.length - 1, plain = gridRow(C, F.GRID[top], null)[lq], seeded = gridRow(C, F.GRID[top], [lq])[lq];
+          if (!plain || !seeded || plain.lost || !near(lgOf(plain.d), lgOf(seeded.d), 1e-9)) continue;
+          var alt = series[lq].slice();
+          for (var li = 0; li < lost[lq].length; li++) { var gi = lost[lq][li], rr = gridRow(C, F.GRID[gi], [lq])[lq]; if (rr) alt[gi] = { v: F.GRID[gi], L: lgOf(rr.d) }; }
+          var at2 = fitShape(alt).type;
+          if (at2 !== 'power' && at2 !== 'exponential') continue;
+          series[lq] = alt;
+          reread[lq] = lost[lq].map(function (x) { return F.GRID[x]; });
         }
         var qs = Object.keys(series).sort();
         for (var j = 0; j < qs.length; j++) {
           var sh = fitShape(series[qs[j]]);
           if (sh.type === 'flat' || sh.type === 'unscored') continue;
           var fct = { id: 'production:' + qs[j] + ':' + C, kind: 'production', field: qs[j], in: C, rate: sh, from: { how: 'probe:exponent on one tick (diff 1, automation off)' } };
+          if (reread[qs[j]]) fct.from.probeState = 'the field seeded to 0 at ' + C + ' = ' + reread[qs[j]].join(', ') + ' (its increment was below its own precision there; seeding it does not move the increment at ' + C + ' = ' + F.GRID[F.GRID.length - 1] + ')';
           if (sh.type === 'power') fct.integrated = { type: 'power', exponent: sig(Number(sh.exponent) + 1) };
           out.push(fct);
         }
@@ -3108,6 +3163,11 @@
           need('updateTemp')();
         }
         if (!aff()) return null;
+        // (m31) RE-TRACE once affordable: a canAfford written `price && budget` (PTR's Enhancers and Extra Time
+        // Capsules: `points.gte(cost) && (inChallenge("h", 31) ? player.h.chall31bought < 10 : true)`) short-circuits
+        // while the price fails, so the budget counter is read only AFTER the lift — the first trace never saw it.
+        var tr2 = traceReads(aff);
+        if (!tr2.error) for (var c1 = 0; c1 < tr2.numeric.length; c1++) if (tr2.numeric[c1] !== own && cands.indexOf(tr2.numeric[c1]) < 0) cands.push(tr2.numeric[c1]);
         var before = {}, c2;
         for (c2 = 0; c2 < cands.length; c2++) before[cands[c2]] = getPath(cands[c2]);
         if (it.kind === 'buyable') need('buyBuyable')(it.layer, it.id); else need('buyUpgrade')(it.layer, it.id);
