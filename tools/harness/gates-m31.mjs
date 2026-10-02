@@ -322,7 +322,9 @@ async function partStage() {
       theCurrencysZeroersOnlyWhenEmpty: !!S && ownZ.every((f) => S.gates[f] === own) && keys.filter((k) => !ownZ.includes(k)).every((f) => S.gates[f] === base),
       noRequirementLiteral: !!S && literal.length === 0, whenIsState: !!S && /player\.sg\.unlocked/.test(S.when) && /hasUpgrade\('q',\s*33\)/.test(S.when) && /!player\.h\.activeChallenge/.test(S.when),
       cashIn: !!S && S.policies && S.policies['reset:q'] === 'gain>=2x', listedFirst: (t.stages || [])[0] && t.stages[0].id === STAGE,
-      provenance: !!S && Array.isArray(S.provenance) && S.provenance.length > 0 && S.provenance.every((p) => p.gate && p.commit && p.note) };
+      provenance: !!S && Array.isArray(S.provenance) && S.provenance.length > 0 && S.provenance.every((p) => p.gate && p.commit && p.note),
+      // no other entry moved: the shipped table minus this stage is the table before this slice, byte for byte
+      onlyThisStageAdded: (() => { const u = fixture(TABLE); u.stages = (u.stages || []).filter((x) => x.id !== STAGE); return JSON.stringify(u, null, 2) + '\n' === fs.readFileSync(path.join(REPO, PRE_TABLE), 'utf8'); })() };
     row({ gate: `S1 ${STAGE} is the template's answer as DATA: its gates = V4's hold minus the reset it makes, each reads the engine's requirement, none its number; q cashes in by gain>=2x; its when is state`, id: 'ptr', ok: Object.values(checks).every(Boolean),
       notes: `${ck(checks)} — when ${S && S.when}; policies ${JSON.stringify(S && S.policies)}; gates ${JSON.stringify(S && S.gates)}; the template's hold ${JSON.stringify(hold)}; literal hits ${JSON.stringify(literal)}` });
   }
