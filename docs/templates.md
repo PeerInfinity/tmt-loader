@@ -260,6 +260,34 @@ shipped table resets sg at tick 226,986 (gates-yield Y1), with no queue. On the 
 it never met it. **The stage stays**: the yield fix alone (the table without it) reaches M30 from stages/M28 at +26,614
 game-s instead of +9,242 at diff 1, and does not reach it in 20,000 game-s at diff 0.05 (cloud-reports/tmt-yield-1.md).
 
+### The REBUILD — a layer's own currency, zeroed (m31, 2026-10-02)
+
+**The pattern, one level up.** A layer that HAS reset before is walled again when another reset zeroes its own
+currency (`zeroed-by:<z>:player.<l>.points`, `effects: zeroes`) and it holds none: its next reset needs the same base the
+zeroers wipe. Open: shown, reset before, and holding nothing. "Reset before" is the ENGINE's record — a layer starts
+unlocked only when its `startData()` says so (2.2.1 `getStartPlayer`) and `doReset` sets `unlocked` on the first reset
+(game.js:206) — so a layer that starts unlocked (PTR's p) is never a rebuild just because it holds nothing yet (ptr
+fresh: none open, gates-m31 V5). The hold, the check and the verdicts are the first reset's; "the reset happened" is the
+currency back above 0 (`player[l].points.gt(0)`), not `unlocked`, which is already true (mutant D of
+`mutants-m31.sh`). A layer that holds its currency says why it is not open (`holds its currency (…; h, o, q, ss zero
+it)`).
+
+**Measured on ptr (Super Generators past M30):** under the table, sg resets once at M30 and never again — every row-3
+reset zeroes its point, and Generators top out at 196–199 inside a q cycle of ~33 ticks (the requirement is 200). From
+`m31/R95400` (stages/M30 + 879 ticks under the table before this slice: a q reset has just zeroed sg) the template says
+**REBUILD — RESET-AT 520 game-s into the hold** (tick 95,920), confirmed on the copy, and with the zeroers held reset:sg
+makes the reset itself 2 ticks after the reach (sg is unlocked, so it is decided in its own slot). At stages/M30 itself
+it is not open (sg holds its one point).
+
+**Worth it toward M31 — measured, not assumed** (the brief's condition for the extension; cloud-reports/tmt-m31-1.md).
+A held q cycle from a fresh q reset, the row-3 resets held: Generators reach 200 at ~600 ticks, sg resets, and the
+pending quirk gain climbs to 2.3e24 at 4,000 ticks (5.8e20/s) against the table's 1.2e20 every ~33 ticks (3.6e18/s).
+But the held gain grows FASTER than linearly in time (≈ t^1.08 over 1,000–4,000 ticks), so `rate-peak` never sees a peak
+and never cashes in: every stage that held the zeroers under the table's q policy froze total quirks at 2.45e21 for
+30,000 ticks (the hold alone; with the dead cycle members gated; with h, o, ss paused). And it must stay outside the h
+challenges: a hold that names `challenges:h` while an attempt is open holds its give-up too (a deadlock inside H31,
+measured). What wins is the hold WITH a cash-in the hold cannot starve — `sg-keep` (docs/automation.md, "Stages").
+
 ## How a sub-goal reaches the planner (qrate1, 2026-09-30)
 
 A `waiting cannot help` verdict ends in a **sub-goal** — `{kind: 'value', dimension, threshold, why}` — and no queue.
