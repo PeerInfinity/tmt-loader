@@ -31,7 +31,9 @@
 //               as DATA: its gates are exactly the template's hold minus the reset it makes, each predicate states the
 //               engine's requirement expression, and no predicate carries the requirement's number. S3 the stage's
 //               LIMIT: from the wall (past q milestone 6) the shipped table does not reset sg in 3,000 ticks — reset:sg
-//               yields, the gate opens at 200 and q/h wipe Generators (the next slice's input, not a defect of the data).
+//               yields, the gate opens at 200 and q/h wipe Generators (under `nativeYield=always`, the old rule: since
+//               yield-2 the default resets it at 226,986 — gates-yield Y1).
+// ⚖ yield-2: F0's build, O1, VAC's control, EV and S3 name `nativeYield=always` (OLD_YIELD, below).
 // Part grep     X1 no game id and no ptr layer id in the generic code this slice changed.
 // MEASUREMENTS (`.github/workflows/qrate1.yml -f part=m30`, dispatch-only): the acceptance from stages/M28 under the table
 // alone at diff 1 and 0.05, and the whole stretch from all/M26 in both stage orders at diff 1 — each leg TWICE (equal

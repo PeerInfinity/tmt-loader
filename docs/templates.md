@@ -213,9 +213,9 @@ earlier is everything: PTR's gameLoop skips a layer that has never been reset (`
 layer's reset in its FALLBACK pass, after every other layer's slot (the check reads it off `hookStats`: `decidedIn`).
 And at the 226,931 wall the reflex never resets sg even at 200: past q milestone 6 `tmp.sg.autoPrestige` is set, so
 `reset:sg` YIELDS to a native auto-reset (`yielding:native`) — which the engine never performs for a locked layer.
-Generators sat at 200 for 83 ticks with no reset. (yield-1: `--auto-opt nativeYield=slot` makes a reset yield only in
-its own slot; from the wall, `reset:sg` then resets at tick 226,986. ⚖ The default is still the old rule; see
-docs/automation.md, "Where features run".) The check says so (`afterReach`: the zeroing resets still held, the
+Generators sat at 200 for 83 ticks with no reset. (That was the yield rule before yield-1. Since yield-2 the default
+`nativeYield=slot` yields only in a layer's own slot; from the wall `reset:sg` then resets at tick 226,986, and the rows
+above name the old rule, `nativeYield=always`; see docs/automation.md, "Where features run".) The check says so (`afterReach`: the zeroing resets still held, the
 layer's own reset feature freed, ten more ticks — does anyone make the reset?). The queue's hold binds from the next
 tick's first decision (docs/queues.md), and the reset is the queue's own call in its slot: hold → `wait canReset(l)` →
 `call doReset(l)` → `wait player[l].unlocked` → `release`. `canReset` reads `tmp`, which is the tick's START: the wait
@@ -253,10 +253,12 @@ the template's hold minus the reset it makes, as `while` gates that read the eng
 94,521 (+9,242 game-s, diff 1; +7,544.8 at diff 0.05), the template's own tick from the q33 state. The gate opens AT the
 requirement, which is safe because the tick the base reaches it is a row-1 tick (g), after every zeroer's slot, and sg
 is decided in the fallback right after it.
-⚠ **Its limit** (gates-m30 S3): past q milestone 6 the stage cannot do it — reset:sg yields, the gate opens at 200 and q
-and h wipe Generators (from the wall: 14 wipes at 200 in 3,000 ticks, no reset). On the table's own path q33 comes
-first, so it never meets that; a state that reaches q milestone 6 with sg still locked needs the queue (or a yield rule
-that knows the engine skips a locked layer — the next slice's input).
+⚠ **Its limit, under the old yield rule** (gates-m30 S3, which names `nativeYield=always`): past q milestone 6 the stage
+could not do it — reset:sg yielded, the gate opened at 200 and q and h wiped Generators (from the wall: 14 wipes at 200
+in 3,000 ticks, no reset). Under the default since yield-2 (`nativeYield=slot`) that limit is gone: from the wall the
+shipped table resets sg at tick 226,986 (gates-yield Y1), with no queue. On the table's own path q33 comes first, so
+it never met it. **The stage stays**: the yield fix alone (the table without it) reaches M30 from stages/M28 at +26,614
+game-s instead of +9,242 at diff 1, and does not reach it in 20,000 game-s at diff 0.05 (cloud-reports/tmt-yield-1.md).
 
 ## How a sub-goal reaches the planner (qrate1, 2026-09-30)
 

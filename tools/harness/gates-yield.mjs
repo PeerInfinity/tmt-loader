@@ -2,7 +2,8 @@
 // only where the ENGINE performs it, i.e. in the layer's own `automate` slot, which every roster engine calls right after
 // its `if (tmp[layer].autoPrestige && tmp[layer].canReset) doReset(layer)`. In the `au` layer's FALLBACK pass the engine
 // skipped the layer this tick (ptr's `if (!unl(layer)) continue`), so a yield there waits for a reset that never comes.
-// The lever is `--auto-opt nativeYield=slot|always` (`always` = the rule before this slice).
+// The lever is `--auto-opt nativeYield=slot|always` (`always` = the rule before this slice; `slot` is the default since
+// yield-2 — every leg here still names the rule it drives, so D1/D2 keep measuring the old rule and Y1/Y2 the new).
 //   node tools/harness/gates-yield.mjs --part defect|fix|control|grep|push [--pool N] [--no-write] [--assert]
 //   node tools/harness/gates-yield.mjs --part roster [--ticks N] [--deep-ticks N] [--pool N] [--assert]
 //   node tools/harness/gates-yield.mjs --part leg --leg <key> [--assert]     (the measurements: the stage-needed table, the run-on)
