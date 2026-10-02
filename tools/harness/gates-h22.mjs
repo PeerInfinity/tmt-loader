@@ -158,6 +158,9 @@ async function partVerdict() {
   const Q = JSON.parse(fs.readFileSync(path.join(REPO, QUEUE), 'utf8'));
   const C = JSON.parse(JSON.stringify(Q)); C.id = 'ca-ch-h-22-own-layer-only';
   C.steps[0].features = C.steps[0].features.filter((f) => f.endsWith(':h'));
+  // (shipq-1) the control is the GATE's construction, played under `stages=off`: the template's `relies` (the settings ITS
+  // queue was checked under) is not the control's claim, so it goes
+  delete C.relies;
   const cfile = path.join(TMP, 'control.queue.json'); fs.writeFileSync(cfile, JSON.stringify(C));
   const jobs = [
     () => strategize('ptr', ['--from', QL6, '--goal', GOAL, '--auto-opt', CHOFF]),

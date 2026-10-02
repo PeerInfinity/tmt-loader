@@ -12,10 +12,12 @@
 //               (vacuity). V3 a bad stage fails the load by name. V4 the cost: evaluations = loops × stages, and the
 //               ms/tick with and without them over the same pre-QL5 stretch (inert there: equal hashes).
 // Part switch   S1 from all/M26 the state log shows `ql5-quirk-rate` switch on at the QL5 tick and `reset:q`'s rule
-//               change there (gain>=N before, rate-peak after). S2 from all/M26 to H22 + 300 ticks: `ql6-h22-attempt`
-//               and `ql6-hold-for-q32` on at the QL6 tick, ONE uncut H22 attempt, `ql6-h22-attempt` off at the H22 tick,
-//               no challenge entered after it (the hold). S3 mid-attempt the readout NAMES the stage (explain, the reason
-//               text, the block HTML). S4 a player's saved edit beats a stage. S5 a queue hold beats a stage.
+//               change there (gain>=N before, rate-peak after). S2 from all/M26 to H22 + 300 ticks:
+//               `ql6-hold-for-q32` on at the QL6 tick and (shipq-1) the table's shipped queue `ca-ch-h-22` — the H22
+//               attempt that was the stage `ql6-h22-attempt` — starting in that loop, ONE uncut H22 attempt, the queue
+//               done at the H22 tick, no challenge entered after it (the hold). S3 mid-attempt the readout NAMES the
+//               queue (the reason text, the block HTML, its status). S4 a player's saved edit beats a stage. S5 a queue
+//               hold beats a stage.
 // Part pins     P1 the QL5 rebuild (tpl1 O1 / qrate1 F0a) is unmoved. P2 the stage path reaches q23 on the tick and
 //               hash the `--auto-opt` resume of the same winner measured — the table now carries that configuration.
 // Part fixture  F1 stages/M29 and F2 stages/M28 = all/M26 under the shipped table, one ladder run = the committed fixtures.
@@ -59,6 +61,11 @@ const PIN_QL5 = { ticks: 77196, hashGame: '1fb78f9282c77b2b' };          // §17
 const PIN_Q23 = { ticks: 80134, hashGame: 'c2d9442da073bfab' };          // QL5 under `--auto-opt policy:reset:q=<winner>` until q23 (stages-1, measured at f66f217)
 const WINNER = 'rate-peak@0/0|turn@10/30x/5/0/100';                      // qrate1's winner (§17.2)
 const C1 = 'ql5-quirk-rate', C2 = 'ql6-hold-for-q32', C3 = 'ql6-h22-attempt';
+// (shipq-1) C3 is no longer a stage: the H22 attempt ships as the table's conditional QUEUE `ca-ch-h-22` (docs/queues.md,
+// "Shipped queues"), on the same ticks and hashes (gates-shipq). The losing order B is measured on the table BEFORE that
+// slice, kept byte for byte, where C3 was still a stage.
+const H22Q = 'ca-ch-h-22';
+const TABLE_BEFORE_SHIPQ = 'tools/harness/snapshots/ptr/shipq/table-before-shipq.json';
 const QL = 'player.q.buyables[11].plus(tmp.q.freeLayers)';
 const EXITING = ['h', 'q', 'o', 'ss'];                                    // the resets that end an h attempt (h22's exits-challenge facts)
 
@@ -96,7 +103,7 @@ const tableDoc = () => JSON.parse(fs.readFileSync(path.join(REPO, TABLE), 'utf8'
 const fixture = (f) => JSON.parse(fs.readFileSync(path.join(REPO, f), 'utf8'));
 /** The shipped table with the two QL6 stages in the OTHER order (B: hold for q31/q32 first, then H22). */
 function orderBTable() {
-  const t = tableDoc();
+  const t = fixture(TABLE_BEFORE_SHIPQ);
   const i2 = t.stages.findIndex((s) => s.id === C2), i3 = t.stages.findIndex((s) => s.id === C3);
   if (i2 < 0 || i3 < 0) throw new Error('the shipped table has no ' + C2 + ' / ' + C3 + ' stage');
   const s = t.stages.slice(); const lo = Math.min(i2, i3);
@@ -125,7 +132,7 @@ async function partVocab() {
     const checks = {
       schemaFresh: !c.problems.length && c.rows.every((r) => r.ok),
       requiresProvenance: !!st && st.items.required.includes('provenance') && errNoProv.some((e) => /missing "provenance"/.test(e)),
-      shippedHasStages: Array.isArray(t.stages) && [C1, C2, C3].every((id) => t.stages.some((s) => s.id === id)),
+      shippedHasStages: Array.isArray(t.stages) && [C1, C2].every((id) => t.stages.some((s) => s.id === id)) && !t.stages.some((s) => s.id === C3) && (t.queues || []).some((q) => q.id === H22Q),
       gateReadsStageRecords: pv.bad.some((b) => b.startsWith(`stage:${t.stages[0].id}:`)),
     };
     row({ gate: 'V1 the stages schema is ONE source, REQUIRES provenance, and the provenance gate reads a stage\'s records', id: 'ptr', ok: Object.values(checks).every(Boolean),
@@ -186,7 +193,7 @@ async function partSwitch() {
   const m29 = fixture(M29F);
   const log1 = path.join(TMP, 's1.jsonl'), log2 = path.join(TMP, 's2.jsonl');
   const EV_END = "(function(){ var r = function(id){ return tmtLoader.explain().filter(function(x){ return x.id === id; })[0]; }; var ch = r('challenges:h'); return { ql: Number(" + QL + "), h22: Number(player.h.challenges[22]||0), ac: player.h.activeChallenge, chPolicy: ch.policy.inForce, chStage: ch.stage, stages: tmtLoader.stages().map(function(s){ return [s.id, s.active]; }), stats: tmtLoader.stageStats() }; })()";
-  const EV_MID = "(function(){ var R = tmtLoader.advancedRows(); var row = function(id){ return R.filter(function(x){ return x.id === id; })[0]; }; var q = row('reset:q'), ch = row('challenges:h'); return { ac: player.h.activeChallenge, q: { code: q.last && q.last.code, values: q.last && q.last.values, text: tmtLoader.reasonText(q.last), stage: q.stage, html: tmtLoader.featureBlockHTML(q, false) }, ch: { code: ch.last && ch.last.code, text: tmtLoader.reasonText(ch.last), stage: ch.stage, policy: ch.policy.inForce, html: tmtLoader.featureBlockHTML(ch, false) }, ctl: tmtLoader.controlState('reset:q')['while'] }; })()";
+  const EV_MID = "(function(){ var R = tmtLoader.advancedRows(); var row = function(id){ return R.filter(function(x){ return x.id === id; })[0]; }; var q = row('reset:q'), ch = row('challenges:h'); return { ac: player.h.activeChallenge, q: { code: q.last && q.last.code, values: q.last && q.last.values, text: tmtLoader.reasonText(q.last), stage: q.stage, html: tmtLoader.featureBlockHTML(q, false) }, ch: { code: ch.last && ch.last.code, text: tmtLoader.reasonText(ch.last), stage: ch.stage, policy: ch.policy.inForce, html: tmtLoader.featureBlockHTML(ch, false) }, ctl: tmtLoader.controlState('reset:q')['while'], qs: (function(){ var s = tmtLoader.queues.status().queues.filter(function(x){ return x.id === '' + H22Q + ''; })[0]; return s ? { state: s.state, phase: s.shipped && s.shipped.phase, cur: s.current && s.current.do, until: s.wait && s.wait.until } : null; })() }; })()";
   // S4 — the QL5 fixture with a PLAYER's saved edit restoring the table's own reset:q (hashGame excludes `au`)
   const ql5 = fixture(QL5F), pl = JSON.parse(ql5.player);
   pl.au.edits = { 'reset:q': { policy: 'gain>=2|turn@10/30x/5/0/100' } };
@@ -234,35 +241,40 @@ async function partSwitch() {
       if (ac !== null && r.call === 'doReset' && r.did && EXITING.includes(String((r.args || [])[0]))) att.exitingInside++;
       if (!('h.ac' in s)) continue;
       const now = s['h.ac'] === null ? null : String(s['h.ac']);
-      if (now !== null && ac === null) { att.entered.push([r.tick, now, r.by]); if (r.tick >= T22) att.enteredAfter++; }
+      if (now !== null && ac === null) { att.entered.push([r.tick, now, r.by || r.source]); if (r.tick >= T22) att.enteredAfter++; }
       if (ac !== null && now === null && ('h.c.22' in s)) att.completed.push(r.tick);
       ac = now;
     }
-    const want = [[C1, true, PIN_QL5.ticks], [C3, true, T6], [C2, true, T6], [C3, false, T22]];
+    const want = [[C1, true, PIN_QL5.ticks], [C2, true, T6]];
     const got = st.map((x) => [x[0], x[1], x[2]]);
+    // (shipq-1) the attempt is the shipped queue's: it starts in the loop the hold stage switches on, and ends at H22
+    const qr = recs.filter((r) => r.type === 'queue' && r.queue === H22Q);
+    const qTrig = qr.filter((r) => r.do === 'trigger').map((r) => r.tick), qEnd = qr.filter((r) => r.do === 'end').map((r) => r.tick);
     const sameSet = (x, y) => JSON.stringify([...x].map(String).sort()) === JSON.stringify([...y].map(String).sort());
     const e = r2.eval || {};
     const checks = {
       ran: !!r2.ok && !!ql6.ok,
       stageRecordsAtThePredictedTicks: got.length === want.length && sameSet(got, want),
-      oneUncutAttempt: att.entered.length === 1 && att.entered[0][1] === '22' && att.entered[0][2] === 'challenges:h' && att.entered[0][0] >= T6 && att.completed.length === 1 && att.exitingInside === 0,
+      queueStartsWithTheStageAndEndsAtH22: qTrig.length === 1 && qTrig[0] === T6 && qEnd.length === 1 && qEnd[0] === T22,
+      oneUncutAttempt: att.entered.length === 1 && att.entered[0][1] === '22' && att.entered[0][2] === 'queue' && att.entered[0][0] >= T6 && att.completed.length === 1 && att.exitingInside === 0,
       noEntryAfter: att.enteredAfter === 0,
       holdInForceAtTheEnd: e.chPolicy === 'off' && !!e.chStage && e.chStage.policy === C2 && e.h22 === 1,
     };
-    row({ gate: `S2 from all/M26: ${C3} + ${C2} ON at the QL6 tick, ONE uncut H22 attempt, ${C3} OFF at the H22 tick, then the hold`, id: 'ptr', ok: Object.values(checks).every(Boolean),
-      notes: `${ck(checks)} — QL6 at ${T6} (an independent run), H22 at ${T22} (stages/M29); stage records ${JSON.stringify(got)}; entries ${JSON.stringify(att.entered)}, completed ${JSON.stringify(att.completed)}, exiting resets inside ${att.exitingInside}, entries after H22 ${att.enteredAfter}; end ${JSON.stringify({ chPolicy: e.chPolicy, chStage: e.chStage && e.chStage.policy, stages: e.stages })}` });
+    row({ gate: `S2 from all/M26: ${C2} ON at the QL6 tick and the shipped queue ${H22Q} starts in that loop, ONE uncut H22 attempt, the queue done at the H22 tick, then the hold`, id: 'ptr', ok: Object.values(checks).every(Boolean),
+      notes: `${ck(checks)} — QL6 at ${T6} (an independent run), H22 at ${T22} (stages/M29); stage records ${JSON.stringify(got)}; queue trigger ${JSON.stringify(qTrig)} end ${JSON.stringify(qEnd)}; entries ${JSON.stringify(att.entered)}, completed ${JSON.stringify(att.completed)}, exiting resets inside ${att.exitingInside}, entries after H22 ${att.enteredAfter}; end ${JSON.stringify({ chPolicy: e.chPolicy, chStage: e.chStage && e.chStage.policy, stages: e.stages })}` });
   }
   // S3
   {
     const e = mid.eval || {}, q = e.q || {}, ch = e.ch || {};
     const checks = {
       ran: !!mid.ok && e.ac !== null && e.ac !== undefined,
-      reasonNamesTheStage: q.code === 'blocked:stage' && q.values && q.values.stage === C3 && new RegExp(`stage ${C3}`).test(String(q.text)),
-      blockNamesIt: new RegExp(C3).test(String(q.html)) && new RegExp(`STAGE[^]*${C1}`).test(String(q.html)),
-      controlOwner: !!e.ctl && e.ctl.owner === 'stage' && e.ctl.stage === C3,
-      challengeRowNamesIt: ch.policy === 'sequential' && !!ch.stage && ch.stage.policy === C3 && new RegExp(`stage ${C3}`).test(String(ch.text)) && /STAGE/.test(String(ch.html)),
+      // (shipq-1) the attempt is the shipped queue's: every exiting feature says which queue holds it, by name
+      reasonNamesTheQueue: q.code === 'held:queue' && q.values && q.values.queue === H22Q && new RegExp(`queue ${H22Q}`).test(String(q.text)),
+      blockNamesIt: new RegExp(H22Q).test(String(q.html)) && new RegExp(`STAGE[^]*${C1}`).test(String(q.html)),
+      queueRunningOnItsWait: !!e.qs && e.qs.state === 'running' && e.qs.phase === 'running' && e.qs.cur === 'wait' && /canCompleteChallenge/.test(String(e.qs.until)),
+      challengeRowNamesIt: ch.code === 'held:queue' && new RegExp(`queue ${H22Q}`).test(String(ch.text)),
     };
-    row({ gate: 'S3 mid-attempt the readout NAMES the stage: the reason line, the control\'s owner, and the Advanced block (policy and pause)', id: 'ptr', ok: Object.values(checks).every(Boolean),
+    row({ gate: 'S3 mid-attempt the readout NAMES the shipped queue: the reason lines, the Advanced block, and the queue\'s own status', id: 'ptr', ok: Object.values(checks).every(Boolean),
       notes: `${ck(checks)} — tick ${mid.ticks}; reset:q "${String(q.text).slice(0, 160)}"; challenges:h "${String(ch.text).slice(0, 160)}"` });
   }
   // S4
@@ -361,8 +373,8 @@ async function partPage() {
   const checks = {
     loaded: !!out && out.profile === 'all' && /automation=1/.test(out.url) && out.gs < fixture(M29F).gameSeconds + 60,
     // (m30) only the three stages this row is about: a later stage the table lists (q33-sg-unlock) is not in force at M29
-    stagesInForce: !!out && JSON.stringify(out.stages.filter(([id]) => [C1, C2, C3].includes(id))) === JSON.stringify([[C3, false], [C2, true], [C1, true]]) &&
-      out.stages.filter(([id]) => ![C1, C2, C3].includes(id)).every(([, on]) => on === false),
+    stagesInForce: !!out && JSON.stringify(out.stages.filter(([id]) => [C1, C2].includes(id))) === JSON.stringify([[C2, true], [C1, true]]) &&
+      out.stages.filter(([id]) => ![C1, C2].includes(id)).every(([, on]) => on === false),
     viewNamesThem: new RegExp(`STAGE\\s*${C1}`).test(t) && new RegExp(`STAGE\\s*${C2}`).test(t) && new RegExp(`stage ${C2}`).test(t),
     noPageError: !errs.length,
   };

@@ -44,8 +44,8 @@ mutant A-no-provenance-passes "$(rep loader/tmt-auto.js "\"required: ['id', 'whe
 mutant B-throw-reads-true "$(rep loader/tmt-auto.js "'catch (e) { v = false; err[S.id] = '" "'catch (e) { v = true; err[S.id] = '")" vocab 'V2 a stage whose'
 # C — stage precedence ABOVE the player's saved edit
 mutant C-stage-above-edit "$(rep loader/tmt-auto.js "'function basePolicy(f) { return savedPolicyOf(f) || (f.policyOpt !== null ? f.policy0 : (stagePolicyOf(f) || f.policy0)); }'" "'function basePolicy(f) { return f.policyOpt !== null ? f.policy0 : (stagePolicyOf(f) || savedPolicyOf(f) || f.policy0); }'")" switch 'S4 a PLAYER'
-# D — the two QL6 stages in the LOSING order (q31/q32 first, then H22): the shipped table no longer reaches the M29 pin
-mutant D-losing-order "$(printf "import json;p='games-auto/ptr.json';t=json.load(open(p));ids=[s['id'] for s in t['stages']];i2=ids.index('ql6-hold-for-q32');i3=ids.index('ql6-h22-attempt');assert i3<i2;s=t['stages'];s[i2],s[i3]=s[i3],s[i2];open(p,'w').write(json.dumps(t,indent=2,ensure_ascii=False)+'\\\\n')")" fixture 'F1 stages/M29 = all/M26'
+# D — (shipq-1) the H22 attempt, now the shipped queue ca-ch-h-22, shipped OFF: the shipped table no longer reaches the M29 pin
+mutant D-h22-queue-off "$(printf "import json;p='games-auto/ptr.json';t=json.load(open(p));q=[x for x in t['queues'] if x['id']=='ca-ch-h-22'][0];q['enabled']=False;open(p,'w').write(json.dumps(t,indent=2,ensure_ascii=False)+'\\\\n')")" fixture 'F1 stages/M29 = all/M26'
 # E — a game id in the loader
 mutant E-game-id-in-loader "$(rep loader/tmt-auto.js "'  function stageTick() {'" "'  function stageTick() {\n    var FAVOURITE = \\'ptr\\';'")" grep 'X1 no game id'
 

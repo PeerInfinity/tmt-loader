@@ -304,7 +304,8 @@ if (QUEUE_FILES.length || A['queue-runner'] || RUNTIME_HAS_QUEUES || TABLE_HAS_Q
     if (run('!!(tmtLoader.queues && tmtLoader.queues.ready)', 'x') !== true) throw new Error('loader/tmt-queue.js did not define tmtLoader.queues');
     R.queueRunner = { loaded: true, files: QUEUE_FILES.map((f) => path.relative(REPO, f)) };
     if (TABLE_HAS_QUEUES) {
-      R.queueRunner.shipped = run('JSON.parse(JSON.stringify(tmtLoader.autoQueues.filter(function (e) { return e.enabled; }).map(function (e) { return e.id; })))', 'x');
+      R.shippedQueues = run('JSON.parse(JSON.stringify(tmtLoader.autoQueues.filter(function (e) { return e.enabled; }).map(function (e) { return e.id; })))', 'x');
+      R.shippedSkipped = run('JSON.parse(JSON.stringify(tmtLoader.queues.shippedSkipped()))', 'x');
       const se = run('JSON.parse(JSON.stringify(tmtLoader.queues.shippedErrors()))', 'x');
       if (se.length) throw new Error('the table\'s shipped queues were refused: ' + se.map((x) => x.id + ': ' + x.errors.join('; ')).join(' | '));
     }
@@ -313,6 +314,8 @@ if (QUEUE_FILES.length || A['queue-runner'] || RUNTIME_HAS_QUEUES || TABLE_HAS_Q
 R.load_ms = Date.now() - t0;
 const errText = (e) => { const st = String(e && e.stack || ''); const at = (st.match(/^\s+at .*$/m) || [''])[0].trim(); return `${e && e.name || 'Error'}: ${String(e && e.message || e).slice(0, 300)}${at ? ' @ ' + at.slice(0, 160) : ''}`; };
 const fail = (stage, e) => { R.ok = false; R.failed_at = stage; R.error = errText(e); out(R); proc.exit(0); };
+// (shipq-1) a table whose shipped queues the runner REFUSED (or could not load) fails the boot by name, as a bad table does
+if (TABLE_HAS_QUEUES && !(R.queueRunner && R.queueRunner.loaded)) { R.ok = false; R.failed_at = 'automation'; R.error = String(R.queueRunner && R.queueRunner.error); out(R); proc.exit(0); }
 // A global defined only in a skipped file surfaces as a ReferenceError inside load(); report the name and let the
 // parent re-spawn with it pre-stubbed (bounded there).
 try { run(plan.onload && /load\s*\(/.test(plan.onload) ? plan.onload : 'load()', 'onload'); run(`tmtLoader.profile(${JSON.stringify(PROFILE)})`, 'profile'); run('tmtLoader.ready = true', 'x'); }

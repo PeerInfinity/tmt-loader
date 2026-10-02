@@ -984,6 +984,12 @@
   // reached), O1, VAC's control, EV and S3 (each asserts the defect) — name `nativeYield=always` rather than being
   // re-recorded, as the legs before the stages name `stages=off` (cloud-reports/tmt-yield-1.md, tmt-yield-2.md).
   var NATIVE_YIELDS = ['slot', 'always'], NATIVE_YIELD_DEFAULT = 'slot', nativeYieldNow = NATIVE_YIELD_DEFAULT;
+  // (shipq-1) `holdCycle` — what a queue's HOLD does to a reset in the row cycle: `pause` (the default since shipq-1: a held
+  // member stays in the row, paused, as a `while` pauses it, and the cycle keeps its memory) or `leave` (before shipq-1:
+  // a held member LEFT the row, and a row left with fewer than two members dropped its cycle and everything it had
+  // remembered). The lever exists so the pins measured before it can be reproduced by NAME, as `nativeYield=always` and
+  // `stages=off` are: gates-m28 F1 (the Q86K fixture: q23's queue held the row for 38 game-s) names `holdCycle=leave`.
+  var HOLD_CYCLES = ['pause', 'leave'], holdCycleNow = 'pause';
   var curRun = { layer: null, via: null };   // the layer `runLayer` is deciding right now, and where (slot / fallback)
   // A READOUT for the gates (like `fallbackFires`; not runtime memory): per reset feature, how many decisions were
   // taken with the layer's `autoPrestige` set — in the slot, in the fallback, and in the fallback with the engine
@@ -1610,7 +1616,7 @@
   // from the cycle's own pass would stop a feature a game-second before `runLayer` does, and would double-write the
   // `until` latch. This asks the same two questions and changes nothing.
   function cyclePaused(f) {
-    if (queueLink.holds !== null && heldBy(f) !== null) return true;   // (shipq-1) a queue's hold pauses a member
+    if (holdCycleNow === 'pause' && queueLink.holds !== null && heldBy(f) !== null) return true;   // (shipq-1) a queue's hold pauses a member
     if (untilHitOf(f) !== null) return true;
     var c = predicateOf(f, 'while');
     if (!c.src) return false;
@@ -1632,7 +1638,7 @@
       var g = features[i];
       // F1: a member the game pays passively will not reset while it does, so it is OUT of the cycle rather than
       // holding a turn it cannot use — the row's other members take turns without it (or, alone, go dormant).
-      if (g.kind !== 'reset' || !activeUnheld(g) || passiveYieldOf(g.layer) !== null) continue;
+      if (g.kind !== 'reset' || !(holdCycleNow === 'pause' ? activeUnheld(g) : active(g)) || passiveYieldOf(g.layer) !== null) continue;
       var r = rowOf(g);
       if (r === null || r === undefined) continue;
       var key = String(r);
@@ -5502,7 +5508,12 @@
         // (tpl1) THE QUEUES, read-only: each loaded queue, its step and comment, what it holds, and its last outcome
         + '<div v-if="queueState" class="tmtl-queues" style="text-align:left;margin-bottom:6px;font-size:.9em">'
         +   '<div v-for="q in queueState.queues" :key="q.id" class="tmtl-queue" :data-queue="q.id" :data-state="q.state" style="margin:2px 0;overflow-wrap:anywhere">'
-        +     '<b>queue {{ q.id }}</b> — {{ q.stateText }}'
+        // (shipq-1) a SHIPPED queue (the game's table's `queues`) says so, and its state in plain words: armed (waiting for
+        // its condition), running, done — or why it does not start (off, a setting it relies on, cooling off)
+        +     '<b v-if="q.shipped">shipped queue {{ q.name || q.id }}</b><b v-else>queue {{ q.id }}</b> — {{ q.shipped ? q.shipped.text : q.stateText }}'
+        +     '<div v-if="q.shipped" class="tmtl-queue-shipped" style="margin-left:8px;opacity:.8">part of this game\'s automation: {{ q.comment || \'a move the automation makes when its condition holds\' }} ({{ q.shipped.rearm === \'each\' ? \'it runs again each time its condition turns true, at most \' + q.shipped.cap + \' times, \' + q.shipped.coolOff + \' game-s apart\' : \'it runs once per page load\' }})</div>'
+        +     '<div v-if="q.shipped && dev" style="margin-left:8px;opacity:.7">starts when <code>{{ q.shipped.condition }}</code></div>'
+        +     '<div v-if="!q.shipped && q.reliesWhy" style="margin-left:8px">does not start: {{ q.reliesWhy }}</div>'
         +     '<div v-if="q.current" style="margin-left:8px">step {{ q.current.index }} of {{ q.steps }}: <code>{{ q.current.do }}</code> {{ q.current.text }}<span v-if="q.current.comment" style="opacity:.7"> — {{ q.current.comment }}</span></div>'
         // (qedit-1) what a running wait is waiting for, and the time it has left before its timeout
         +     '<div v-if="q.wait" class="tmtl-queue-wait" style="margin-left:8px">waiting for <code>{{ q.wait.until }}</code> — {{ Math.round(q.wait.left * 10) / 10 }} s left of {{ q.wait.timeout }} (then {{ q.wait.onTimeout === \'skip\' ? \'it skips the wait\' : \'the queue stops\' }})</div>'
@@ -5792,6 +5803,9 @@
     var ny = T.autoOptions.nativeYield;
     nativeYieldNow = ny === undefined || ny === '' ? NATIVE_YIELD_DEFAULT : String(ny);
     if (NATIVE_YIELDS.indexOf(nativeYieldNow) < 0) throw new Error(src + ': option nativeYield must be one of ' + NATIVE_YIELDS.join(', ') + ' (got "' + ny + '")');
+    var hc = T.autoOptions.holdCycle;
+    holdCycleNow = hc === undefined || hc === '' ? 'pause' : String(hc);
+    if (HOLD_CYCLES.indexOf(holdCycleNow) < 0) throw new Error(src + ': option holdCycle must be one of ' + HOLD_CYCLES.join(', ') + ' (got "' + hc + '")');
     var cands = candidates(kindOrder);
     var candById = {};
     cands.forEach(function (c) { candById[c.id] = c; });

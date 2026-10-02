@@ -332,7 +332,8 @@
   }
   function heldFeatures(q) {
     var out = [];
-    for (var i = 0; i < q.steps.length; i++) if (q.steps[i].do === 'hold') for (var j = 0; j < q.steps[i].features.length; j++) if (out.indexOf(q.steps[i].features[j]) < 0) out.push(q.steps[i].features[j]);
+    var st = q && Array.isArray(q.steps) ? q.steps : [];
+    for (var i = 0; i < st.length; i++) if (st[i] && st[i].do === 'hold' && Array.isArray(st[i].features)) for (var j = 0; j < st[i].features.length; j++) if (out.indexOf(st[i].features[j]) < 0) out.push(st[i].features[j]);
     return out;
   }
   /** null when a shipped queue may act; else why not, in words */
@@ -371,8 +372,15 @@
   }
   function loadShipped() {
     var errs = [], es = entries();
+    shippedSkip = [];
     for (var i = 0; i < es.length; i++) {
-      var e = es[i], ve = validate(e.queue);
+      var e = es[i];
+      // a configuration that EXCLUDES a feature the queue holds (`exclude=<id>`: the feature is not registered) cannot
+      // play it — the queue is left out, by name (`shippedSkipped`), and the run goes on: that is a configuration, not
+      // a broken table (h22's and m28's legs measure under `exclude=challenges:h`)
+      var exq = heldFeatures(e.queue).filter(function (f) { return T.autoExcluded && T.autoExcluded[f] !== undefined; });
+      if (exq.length) { shippedSkip.push({ id: e.id, why: 'it holds ' + exq.join(', ') + ', which this configuration excludes' }); continue; }
+      var ve = validate(e.queue);
       for (var j = 0; j < loaded.length; j++) if (loaded[j].q.id === e.queue.id) ve.push('a queue "' + e.queue.id + '" is already loaded');
       if (ve.length) { errs.push({ id: e.id, errors: ve }); continue; }
       try { T.predicate(condSrc(freshShipped(e))); } catch (x) { errs.push({ id: e.id, errors: ['when: ' + String(x && x.message || x).slice(0, 160)] }); continue; }
@@ -383,7 +391,7 @@
     shippedErrs = errs;
     for (var k = 0; k < errs.length; k++) if (typeof console !== 'undefined') console.warn('tmt-loader: the shipped queue ' + errs[k].id + ' was refused: ' + errs[k].errors.join('; '));
   }
-  var shippedErrs = [];
+  var shippedErrs = [], shippedSkip = [];
 
   // ---- the memory (runtimeState's `queues` block) --------------------------------------------------------------------
   // (shipq-1) a SHIPPED queue that has done nothing yet (armed, never run) is NOT written: it is the table's, and the
@@ -407,6 +415,7 @@
     for (i = 0; i < es.length; i++) {
       var shippedOk = true;
       for (var k = 0; k < shippedErrs.length; k++) if (shippedErrs[k].id === es[i].id) shippedOk = false;
+      for (var k2 = 0; k2 < shippedSkip.length; k2++) if (shippedSkip[k2].id === es[i].id) shippedOk = false;
       if (!shippedOk) continue;
       var Q = freshShipped(es[i]), x0 = byId[es[i].queue.id];
       if (x0) {
@@ -461,7 +470,10 @@
     return s.text || '';
   }
   function status() {
-    return { ready: true, format: FORMAT, slot: [T.auLayer || 'au', 'queue'], queues: loaded.map(function (Q) {
+    // (shipq-1) the queues loaded by hand (or by the editor) first, then the table's — a caller that loaded ONE queue
+    // finds it at [0], as before the table could ship any
+    var order = loaded.filter(function (Q) { return Q.owner !== 'table'; }).concat(shipped());
+    return { ready: true, format: FORMAT, slot: [T.auLayer || 'au', 'queue'], queues: order.map(function (Q) {
       var cur = Q.state === 'running' || Q.state === 'armed' ? Q.q.steps[Q.pc] : null;
       return { id: Q.q.id, state: Q.state, stateText: (STATE_TEXT[Q.state] || Q.state) + (Q.outcome && Q.state !== 'running' && Q.state !== 'armed' ? ' (' + Q.outcome + ')' : ''),
         steps: Q.q.steps.length, pc: Q.pc, comment: Q.q.comment || null, source: Q.q.source === undefined ? null : Q.q.source,
@@ -478,6 +490,7 @@
   // (shipq-1) the readout's words for a shipped queue: armed (waiting for its condition), running, done — and why it is not
   function shippedView(Q) {
     var t = now(), cooling = Q.state === 'armed' && Q.coolUntil !== null && t < Q.coolUntil;
+    Q.offWhy = shippedOff(Q);   // read now: under the profile `off` the loop's hook does not run at all
     var phase = Q.state === 'running' ? 'running' : Q.state === 'armed' ? (Q.offWhy ? 'off' : Q.relyWhy ? 'relies' : cooling ? 'cooling' : (Q.runs && !Q.sawFalse) ? 'rearmed' : 'armed') : Q.spent ? 'spent' : Q.state;
     var words = { off: 'not running — ' + Q.offWhy, relies: 'its condition holds, but it does not start — ' + Q.relyWhy, cooling: 'armed again, cooling off: ' + round6(Q.coolUntil - t) + ' game-s left',
       rearmed: 'armed again — it starts the next time its condition turns false and then true', armed: 'armed — waiting for its condition', running: 'running',
@@ -506,7 +519,7 @@
   }
 
   T.queues = { ready: true, format: FORMAT, load: load, unload: unload, status: status, validate: function (q) { return validate(q); },
-    copyShipped: copyShipped, shippedErrors: function () { return clone(shippedErrs); } };
+    copyShipped: copyShipped, shippedErrors: function () { return clone(shippedErrs); }, shippedSkipped: function () { return clone(shippedSkip); } };
   loadShipped();
   syncLink();
 })();
