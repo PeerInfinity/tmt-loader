@@ -199,5 +199,5 @@ without `"version": 2`, is refused by name: a field an older runner ignored coul
 `download` / `importText`, `catalog()` / `addGenerated(entry)`, `describe(step)`, `actions()`, and
 `record.{start, stop, status}`. `tmtLoader.qeditLoad()` fetches it.
 
-Gates: `tools/harness/gates-qedit.mjs` (13 page rows + the grep; CI job `qedit`), `tools/harness/mutants-qedit.sh`
+Gates: `tools/harness/gates-qedit.mjs` (14 page rows + the grep; CI job `qedit`), `tools/harness/mutants-qedit.sh`
 (seven mutants), `loader/qedit.test.mjs`; `tools/queues-catalog.mjs --check` in the fast job.

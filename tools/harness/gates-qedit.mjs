@@ -28,6 +28,9 @@
 //                   arguments and the same effects as the same presses made by hand (the two state logs compared)
 //   Q13 phone       at 390 px (with and without `?mobile=1`): nothing in the editor past the edge, no horizontal page
 //                   scroll, and the editor's root is as wide as its pane (the V5 lesson: no vacuous green)
+//   Q14 engines     the other engine families — Something Tree (2.7) and Arc Tree (2.6.6.2): the editor opens, offers the
+//                   game's actions by their own names, a queue made of one of them and a hold runs to its end and
+//                   releases, and at 390 px (`?mobile=1`) nothing is past the edge
 // Part grep   G1 no game id (any manifest) and no ptr layer id in the editor's code.
 // ⛔ EVERY FLAG IS DECLARED; `--assert` requires the exact row count, all green.
 import fs from 'node:fs';
@@ -43,7 +46,7 @@ const KNOWN = new Set(['_', 'part', 'only', 'no-summary', 'no-write', 'assert'])
 for (const k of Object.keys(a)) if (!KNOWN.has(k)) { console.error(`REFUSED: unknown flag --${k}`); process.exit(2); }
 const PART = String(a.part || 'all');
 if (!['page', 'grep', 'all'].includes(PART)) { console.error(`REFUSED: --part ${PART} is not page | grep | all`); process.exit(2); }
-const PAGE_ROWS = ['inert', 'persist', 'names', 'roundtrip', 'refuse', 'start', 'predicate', 'status', 'release', 'generated', 'record', 'replay', 'phone'];
+const PAGE_ROWS = ['inert', 'persist', 'names', 'roundtrip', 'refuse', 'start', 'predicate', 'status', 'release', 'generated', 'record', 'replay', 'phone', 'engines'];
 const ONLY = a.only ? String(a.only).split(',') : null;
 if (ONLY) for (const o of ONLY) if (!PAGE_ROWS.includes(o)) { console.error(`REFUSED: --only ${o} is not one of ${PAGE_ROWS.join(', ')}`); process.exit(2); }
 const commit = headCommit(), dirty = treeDirty();
@@ -569,13 +572,43 @@ async function legPhone(browser) {
     notes: f.length ? f.join('; ') : seen.map((s) => `${s.mobile ? '?mobile=1' : 'plain'}: ${s.n} elements, 0 past, scrollWidth ${s.scrollW}/${s.vw}, editor ${s.root} of pane ${s.pane}`).join(' · ') });
 }
 
+async function legEngines(browser) {
+  const f = [], seen = [];
+  for (const id of ['something', 'arctree']) {
+    const { context, page, errs, ld } = await fresh(browser, { id, width: 390, mobile: true });
+    if (!ld.ready) { f.push(`${id}: did not load ${JSON.stringify(ld.error)}`); await context.close(); continue; }
+    await showQueues(page);
+    const a = await page.evaluate(() => {
+      const acts = tmtLoader.qedit.actions(), all = [].concat(...acts.map((g) => g.actions));
+      const up = all.find((x) => /^Buy upgrade “/.test(x.label)) || all[0];
+      const feat = tmtLoader.features[0] ? tmtLoader.features[0].id : null;
+      return { layers: acts.length, n: all.length, up, feat, raw: all.filter((x) => /“(upgrade|buyable) \d+”/.test(x.label)).length };
+    });
+    if (!a.up) { f.push(`${id}: no actions offered`); await context.close(); continue; }
+    const q = { format: 'tmt-queue/1', version: 2, id: 'eng', name: 'engine', steps: [{ do: 'hold', features: [a.feat] }, { do: 'call', fn: a.up.fn, args: a.up.args }, { do: 'comment', text: 'done' }, { do: 'release' }] };
+    const r = await apiQueue(page, q, true);
+    if (!r.ok) f.push(`${id}: refused ${r.errors}`);
+    await tick(page, 2);
+    const st = await page.evaluate(() => { const x = tmtLoader.queues.status().queues.find((y) => y.id === 'eng'); return x ? { state: x.state, holds: x.holds } : null; });
+    if (!st || st.state !== 'done' || st.holds.length || await page.evaluate(() => tmtLoader.queueLink.holds !== null)) f.push(`${id}: the queue ${JSON.stringify(st)}`);
+    const title = await page.locator('.tmtl-qqueue[data-queue="eng"] .tmtl-qstep-title').nth(1).textContent();
+    const m = await page.evaluate(MEASURE);
+    if (m.none || m.past.length || m.scrollW > m.vw || m.root < m.pane - 1) f.push(`${id}: phone ${JSON.stringify({ past: m.past && m.past.slice(0, 3), scrollW: m.scrollW, root: m.root, pane: m.pane })}`);
+    if (errs.length) f.push(`${id}: page errors ${errs.slice(0, 2).join(' | ')}`);
+    seen.push(`${id}: ${a.n} actions over ${a.layers} layers (${a.raw} with no title of their own), "${title.trim()}" ran to done; 390 px: ${m.n} elements, 0 past`);
+    await context.close();
+  }
+  row({ gate: 'Q14 engines: Something (2.7) and Arc Tree (2.6): names offered, a queue runs and releases, nothing past the edge at 390 px', id: 'something+arctree', ok: !f.length,
+    notes: f.length ? f.join('; ') : seen.join(' · ') });
+}
+
 async function partPage() {
   const { chromium } = await import('playwright');
   ({ openContext, openGame, pageLoadFrom } = await import('./page.mjs'));
   server = await startServer(REPO);
   const browser = await chromium.launch();
   const LEGS = { inert: legInert, persist: legPersist, names: legNames, roundtrip: legRoundtrip, refuse: legRefuse, start: legStart, predicate: legPredicate,
-    status: legStatus, release: legRelease, generated: legGenerated, record: legRecord, replay: legReplay, phone: legPhone };
+    status: legStatus, release: legRelease, generated: legGenerated, record: legRecord, replay: legReplay, phone: legPhone, engines: legEngines };
   try {
     for (const k of PAGE_ROWS) {
       if (!want(k)) continue;

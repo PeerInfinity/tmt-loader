@@ -699,7 +699,7 @@ jobs:
   # invalid import refused in plain words, both triggers, the run-status with its time left and the tools paused,
   # holds released on Off and delete, q23's generated queue run on qrate1/Q308K, recording real clicks with the log
   # off and replaying them equal, the 390 px phone width; then the grep (no game id in the editor).
-  # ⛔ `--assert` holds the run to its exact row count (13 + 1), all green.
+  # ⛔ `--assert` holds the run to its exact row count (14 + 1), all green.
   # ---------------------------------------------------------------------------------------------------------------
   qedit:
     name: qedit — the queue editor
