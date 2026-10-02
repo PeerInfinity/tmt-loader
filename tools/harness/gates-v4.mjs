@@ -597,7 +597,7 @@ async function part6(browser, base) {
       // to `null` when there is none, because Vue RENDERS an attribute bound to `''`: with `|| ''` this selector
       // also matched the strategy picker and read three helper lists where two exist (measured).
       const preds = shape.controls.length - 1;   // `priority` is the one `count`
-      check(shape.rows === shape.controls.length && shape.helpers === preds && shape.boxes === shape.controls.length && shape.comps === 7,
+      check(shape.rows === shape.controls.length && shape.helpers === preds && shape.boxes === shape.controls.length && shape.comps === 8 /* (qedit-1: 7 → 8, the Queues subtab's lazy shell `tmtl-queues`) */,
         `${shape.rows} control row(s) for ${JSON.stringify(shape.controls)}, ${shape.boxes} field(s), ${shape.helpers} helper pick-list(s) (one per predicate, expected ${preds}), ${shape.comps} component(s) — no new component family`);
       // ⚖ V4 Part 4: the watch's label, which R2 owed
       check(/experimental — not a safety net/.test(shape.warn) && shape.warn.length > 80,
@@ -895,7 +895,7 @@ async function part7(browser, base, ids) {
         r.errs = errs.slice(0, 2);
       } finally { await context.close(); }
     } catch (e) { abstained.push(`${id}: ${String(e.message).slice(0, 90)}`); continue; }
-    const ok = r.unknown.length === 0 && r.extra <= 0 && r.scrollX === false && r.components === 7
+    const ok = r.unknown.length === 0 && r.extra <= 0 && r.scrollX === false && r.components === 8   /* (qedit-1: 7 → 8, the Queues subtab's lazy shell `tmtl-queues`) */
       && r.controls === 3 && r.ctlRows === r.editable * 3 && r.helpers === r.editable * 2
       && r.owned.length === 0 && (r.editable === 0 || r.helperSrc > 0) && r.warn;
     judged.push({ id, ok, r });

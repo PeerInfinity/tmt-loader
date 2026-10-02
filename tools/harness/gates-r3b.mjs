@@ -406,7 +406,7 @@ async function part6() {
       const btnOk = seen.buttons.length === seen.mods.length
         && seen.buttons.some((b) => b.mod === `${kind}@W/Kx/N/B/H` && b.on === '1' && /remove/.test(b.text))
         && seen.buttons.some((b) => b.mod === 'stall>=Kx/N' && b.on === '0' && /add/.test(b.text));
-      const ok = !errs.length && !seen.error && seen.components === 7 && fieldsOk && btnOk
+      const ok = !errs.length && !seen.error && seen.components === 8 /* (qedit-1: 7 → 8, the Queues subtab's lazy shell `tmtl-queues`) */ && fieldsOk && btnOk
         && seen.mods.includes('turn@W/Kx/N/B/H') && seen.mods.includes('turn-demand@W/Kx/N/B/H');
       row({ gate: `R3b-6 the page on ${id}: the CYCLE through V2’s GENERIC editors`, id, leg: 'index.html?mod=<id>&automation=1, Advanced, the feature armed', ok,
         ticks: null, gameSeconds: null, diff: null, hash: null,

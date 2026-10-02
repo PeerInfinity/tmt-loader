@@ -455,7 +455,8 @@ async function part2Advanced(id) {
     // ⚠ THREE SINCE V3 (`Progress`), and the ORDER is the load-bearing half: both engines select
     // `Object.keys(tabFormat)[0]` in `getStartPlayer` and repair an old save to it in `fixSave`, so `Simple` being
     // FIRST is what every other leg of this file depends on. A fourth (P2's round log) joins the same way.
-    check(JSON.stringify(shape.subs) === '["Simple","Advanced","Progress"]', `the au tab has exactly the subtabs ${JSON.stringify(shape.subs)}`);
+    // (qedit-1) FOUR: `Queues`, last — the queue editor's lazy shell.
+    check(JSON.stringify(shape.subs) === '["Simple","Advanced","Progress","Queues"]', `the au tab has exactly the subtabs ${JSON.stringify(shape.subs)}`);
     check(shape.sel === 'Simple', `a fresh boot selects ${shape.sel} — the tab every other leg of this file reads`);
     const simple = await page.evaluate(() => ({ text: document.querySelector('#app').innerText, adv: (document.querySelector('#app').innerText || '').indexOf('What each feature decided') >= 0 }));
     check(simple.text.includes('Automation Tools') && !simple.adv, 'Simple still renders the title, and none of the Advanced view');
