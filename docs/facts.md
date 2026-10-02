@@ -74,6 +74,13 @@ tools/harness/snapshots/<id>/facts-states.json
   copy and checks the engine says so; a state already inside one cannot be entered again, and its challenge-inputs fact
   abstains (`the engine did not enter the challenge`). m28's first fixture (Q86K, §17.4's end state) was inside an
   H22 attempt; the declared one (QL6) is the same run 3 ticks later, after the give-up.
+- (m31) ptr declares `stages/M30` second (tick 94,521; Quirk Layers 7, q11–q33 owned, Super Generators just reset,
+  outside every challenge): the first committed state where q34 and H31 "Timeless" are unlocked. + `price:q:upgrade:33`
+  / `:34` (2.5e94·(q.time+1)^15), `price:h:challenge:31` (superexponential 2.5 · 50 · 1e5325 over completions 0…10),
+  `purchase-budget:h:31:player.h.chall31bought` (limit 10, t 11 + e 11), `challenge-inputs:h:31`, `exits-challenge:h:31:*`
+  (h, o, q, ss, each completing), `zeroed-by:sg:*` (before q milestone 6 sg's reset zeroes row 1), `production:player.sg.*`;
+  q.energy's increment there is power 6, coef 2.169e94 = enGainMult^6 (read with the precision re-read below). No value
+  changed at any older state; H32's six facts are gone from every state (the itemUnlocked fix below).
 - ptr declares `m28/QL6` (tick 86,071; Quirk Layers 6, q11–q24 owned): + `price:q:upgrade:31` (1e48·(q.time+1)^8.4),
   `:32` (1e58·(q.time+1)^10), `production:player.sb.points` / `.best`; 12 facts gain a QL6 variant (the quirk-energy
   production E = 5, coef 8.53e45 = enGainMult^5; the Quirk Layer price's h42 read; read ORDER of five getters; H22 /
@@ -123,6 +130,10 @@ evaluated LIVE — `tmp` is not a safe reader for it), owned or not:
   (none fits; the local log-log slopes are kept as the evidence — a cost scaling that kicks in at 25 lands here), or
   `unscored` (fewer than four finite readings). A floored price that fits within 1 is `rounded: true`. A multi-currency
   price (an object of numbers) gets a shape per PART. A constant price is `constant: true`.
+- (m31) **A challenge goal that reads its OWN completions is probed over 0 … its completionLimit** (read live from the
+  declaration, the engine's default 1), never past it; the shape carries `domain: {max, why}`. PTR's H31 goal softcaps
+  its completions at 20 while its limit is 10 (20, 30 with achievements a71/a74), and the full grid read that softcap as
+  `irregular` (facts-1's O2 gap); bounded it reads superexponential 2.5, log10Scale 50, at0 1e5325 — the source.
 - Abstains: the price function throws; its value is neither a number nor an object of numbers.
 
 ### `zeroed-by` — one fact per (reset, field)
@@ -153,6 +164,12 @@ a clock, which drivers it has).
 - ⚠ **Normalise first.** `tmp` is not a pure function of `player`, and every excursion restores through the engine:
   a baseline read before the first restore is a different instant (measured — every clock read as a driver).
 - ⚠ **A tick is never traced**: a tick run under `traceReads`' Proxy lost a whole layer object from ptr's `player`.
+- ⚠ (m31) **Precision.** An increment far below its field is lost in `after − before` (PTR's quirk energy ≈ 1e113 at
+  stages/M30, its increment ≈ 1e96 at q.time 1: the reading is the mantissa's rounding). A reading below the field's
+  last ~8 digits is RE-READ with the field seeded to 0 — only where the plain fit is `irregular`, only when seeding is
+  measured not to move the increment at the grid's top, and kept only when the re-read fits a clean power or
+  exponential (`probeState` names the seeded points). Unrestricted, it turned flat Prestige-point readings at all/M24
+  into a step "fact" in q.time that a direct reading of the same state does not show.
 
 ### `multiplier-reads` — what every numeric getter reads
 Found GENERICALLY: every zero-argument function a layer object declares (action hooks skipped by their contract names;
@@ -191,15 +208,23 @@ challenge declares no goal value). One fact per (challenge, reset): `exits-chall
 - ptr: **20 facts** — h11, h12, h21, h22 and h32 are each left by exactly h, o, q and ss (the shown resets of row 3),
   each completing the challenge with the goal met (gate O8). The q reset is the one that ended §18.5's 125 H22 attempts.
   Cost: ~5–9 s for two states; ptr's full regeneration 218 s (was 211 s).
-- ⚠ **Found here, not fixed (facts-1's `itemUnlocked`)**: an `unlocked()` that RETURNS `undefined` reads as unlocked
-  (`v !== false`). PTR's H32 "Option D" is `tmp.ps.buyables[11].effects.hindr` — undefined while Pseudo-Boosters are
-  locked — so the challenge probes enter H32 in states where the engine hides it (`challenge-inputs:h:32`,
-  `exits-challenge:h:32:*`). The template reads `unlocked` strictly (`!!`) and calls H32 not unlocked at m28/QL6.
+- (m31) **Fixed: `itemUnlocked` reads `unlocked` as the ENGINE does.** setupLayer gives an item with no `unlocked` the
+  value true (2.2.1 layerSupport.js:47-104) and every reader tests the value's TRUTH (components.js `v-if`, utils.js
+  `if (!tmp[l].upgrades[id].unlocked) return`), so an `unlocked()` that RETURNS undefined is locked; only one that
+  THROWS falls back to tmp. Until m31 it read `v !== false`, and the probes entered PTR's H32 "Option D"
+  (`tmp.ps.buyables[11].effects.hindr`, undefined while Pseudo-Boosters are locked) where the engine hides it: its six
+  facts (`price:h:challenge:32`, `challenge-inputs:h:32`, `exits-challenge:h:32:*`) are gone from all/M21…m28/QL6.
+  collection-of-everything loses 18 price facts at fresh for the same reason (`unlocked(){ if (cond) return true }`).
+  ⚖ The fix is the FACT PROBES' (`itemUnlockedEngine`). The planner's knowledge walk keeps its looser `itemUnlocked`:
+  switching it too changes P1a-2's Something goldens (the `itemUnlocked` diagnostic of five already-hidden goals in
+  S03 and S04, no goal set) — a pin, left for the user.
 - Abstains: the engine did not enter the challenge; `doReset` throws.
 
 ### `purchase-budget` — a counter a purchase raises by one, and its limit
 Outside any challenge and inside each open one (entered on the copy): for each unlocked buyable / unowned upgrade with
-a `canAfford`, trace it; make it affordable; buy it through the engine; a numeric read that ROSE BY EXACTLY ONE is a
+a `canAfford`, trace it; make it affordable; (m31) TRACE IT AGAIN — a `price && budget` canAfford short-circuits while
+the price fails, so its budget counter is read only once it is affordable (PTR's Enhancers and Extra Time Capsules:
+`points.gte(cost) && (inChallenge("h", 31) ? player.h.chall31bought < 10 : true)`, facts-1's O7 gap); buy it through the engine; a numeric read that ROSE BY EXACTLY ONE is a
 counter candidate; its limit is the threshold probe's (P1a's Pass A) on `!canAfford()` with the counter alone moving —
 probed twice, with everything else lifted to 1e300 and then 1e600. A BUDGET's limit does not move; a RESOURCE's does
 (ptr's Space buildings raise `player.s.spent` by one, and that "limit" was wherever the lifted space ran out, 3e329), so
@@ -209,8 +234,8 @@ only an exact limit equal in both probes is a fact. Items sharing a counter are 
 
 | part | what it holds |
 |---|---|
-| `oracle` | ptr's §7 rows against the file, each value from the design notes and the game SOURCE (cited per row), never from a probe; state readings from a separate `--eval` boot of every state. q11–q32 prices (exponent, offset 1, coefficient, currency; q31/q32 at the declared m28/QL6) · q33 and H31's goal ABSTAIN (locked in every state — measured) · `q.time` / `q.energy` zeroed by exactly the shown resets of row ≥ 3, writers h, q, o · quirk energy's increment `(q.time·M)^E`, E = Quirk Layers + free − 1, M = `enGainMult` per state · `enGainMult` / q11 / q21 read sets = the source · H22: inside, only Space buildings 11 and 15 among buyables (15 only where the probe's one-building step moves its FLOORED effect — read per state with the source's own effect inside H22; not at m28/QL6), achievements 21/31 and prestige upgrades; b and h nerfed · H31's budget ABSTAINS (locked) · (h22) O8: every h challenge is exited by exactly the shown resets of row ≥ h's (rowReset), each completing it with the goal met, and H22 is covered wherever it is open |
-| `vacuity` | facts per kind per game; a kind with ZERO facts is RED unless declared, and each declaration is measured (ptr budget: H31 locked in every state; something: no challenge unlocked in any state — its challenge-inputs, purchase-budget and (h22) exits-challenge; collection-of-everything budget: its layer sources increment nothing); nothing threw |
+| `oracle` | ptr's §7 rows against the file, each value from the design notes and the game SOURCE (cited per row), never from a probe; state readings from a separate `--eval` boot of every state. q11–q34 prices (exponent, offset 1, coefficient, currency; q31/q32 at the declared m28/QL6, q33/q34 at stages/M30) · (m31) O2 H31's goal: superexponential 2.5 · 50 · 1e5325 over 0…completionLimit (its `domain`), at stages/M30 · `q.time` / `q.energy` zeroed by exactly the shown resets of row ≥ 3, writers h, q, o · quirk energy's increment `(q.time·M)^E`, E = Quirk Layers + free − 1, M = `enGainMult` per state · `enGainMult` / q11 / q21 read sets = the source · H22: inside, only Space buildings 11 and 15 among buyables (15 only where the probe's one-building step moves its FLOORED effect — read per state with the source's own effect inside H22; not at m28/QL6), achievements 21/31 and prestige upgrades; b and h nerfed · (m31) O7 H31's budget: `player.h.chall31bought`, limit 10, exactly t 11 and e 11 · (m31) O9 itemUnlocked: no fact claims H32 where its unlocked() is falsy · (h22) O8: every h challenge is exited by exactly the shown resets of row ≥ h's (rowReset), each completing it with the goal met, and H22 is covered wherever it is open |
+| `vacuity` | facts per kind per game; a kind with ZERO facts is RED unless declared, and each declaration is measured (something: no challenge unlocked in any state — its challenge-inputs, purchase-budget and (h22) exits-challenge; collection-of-everything budget: its layer sources increment nothing); nothing threw |
 | `neutral` | the live hash after the whole extraction = a run extracting nothing, and every kind neutral: ptr fresh / all/M25 / all/M27, something all/S05, collection-of-everything fresh |
 | `determinism` | two regenerations byte-identical to each other and to the committed file |
 | `grep` | no game id and no ptr layer id in the extractor (string literals; `layers` / `player` / `tmp` member access outside comments) |
@@ -226,8 +251,8 @@ classes on known formulas; the probe returns the same object it perturbed).
   `buyMax` with a closed tab reads stale `tmp`), H31's native automation being off inside, the guides' schedules and
   recipes. They will live in their own file with digest citations (§40-R ruling B).
 - **Unlock prerequisites** as facts of their own (the planner's hidden-goal gate probe already measures them).
-- **Anything not reachable from a committed snapshot.** ptr's q33, H31 and its budget, Super Generators' later items:
-  no committed state unlocks them, so they abstain by name. A fact needs a state; a state is never faked — a state past
+- **Anything not reachable from a committed snapshot.** ptr's q41–q44 (they need q34), Super Generators' later items:
+  no committed state unlocks them, so they abstain by name (q33, q34, H31 and its budget since the declared stages/M30). A fact needs a state; a state is never faked — a state past
   the marks is DECLARED (above; q31/q32 since m28).
 - **Games beyond the three committed** (ptr, something, collection-of-everything). The tool runs on any roster game;
   adding one is `facts.mjs <id>` and a vacuity declaration for any kind it has none of.

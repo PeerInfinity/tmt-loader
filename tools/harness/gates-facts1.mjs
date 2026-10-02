@@ -92,12 +92,13 @@ const READ_PTR = `(function () {
   var unl = function (d) { if (!d) return null; var v = d.unlocked; try { return typeof v === 'function' ? !!v.call(d) : v !== false; } catch (e) { return false; } };
   var o = { qUnlocked: !!player.q.unlocked, ql: String(player.q.buyables[11]), free: String(tmp.q.freeLayers), M: String(layers.q.enGainMult()),
     resetsRow3: Object.keys(layers).filter(function (l) { return typeof row(l) === 'number' && row(l) >= row('q') && shown(l) && tmp[l] && tmp[l].type !== 'none'; }).sort(),
-    h: { unlocked: !!player.h.unlocked, c22: unl(layers.h.challenges[22]), c31: unl(layers.h.challenges[31]), done22: Number(player.h.challenges[22] || 0) },
+    h: { unlocked: !!player.h.unlocked, c22: unl(layers.h.challenges[22]), c31: unl(layers.h.challenges[31]), c32: unl(layers.h.challenges[32]), done22: Number(player.h.challenges[22] || 0),
+      lim31: (function () { try { return Number(layers.h.challenges[31].completionLimit()); } catch (e) { return null; } })() },
     qUpg: {} };
   // (m28) s15Steps: does the sensitivity probe's step on Space Building 15 (amount ×10 + 1) move its effect at all? Its
   // effect is floored (layers.js:2133-2137), so from amount 0 one building can leave it unchanged. Read with the SOURCE's
   // own effect function — an instrument separate from the probe (below, inside H22).
-  [11, 12, 13, 14, 21, 22, 23, 24, 31, 32, 33].forEach(function (id) { o.qUpg[id] = !!player.q.unlocked && unl(layers.q.upgrades[id]); });
+  [11, 12, 13, 14, 21, 22, 23, 24, 31, 32, 33, 34].forEach(function (id) { o.qUpg[id] = !!player.q.unlocked && unl(layers.q.upgrades[id]); });
   // LAST, because it changes this throwaway boot: INSIDE H22 (entering is an h reset, which zeroes the buildings, so the
   // amount the probe steps from is the in-challenge one, and whether one building crosses the floor depends on the free
   // levels' parity)
@@ -125,7 +126,7 @@ async function readings(id, expr) {
 // The q upgrades' prices (games/ptr/js/layers.js: q11 :3133, q12 :3146, q13 :3159, q14 :3169, q21 :3207, q22 :3220,
 // q23 :3233, q24 :3243, q31 :3269, q32 :3282, q33 :3292): `base·(q.time+1)^k` in quirk energy (currencyLayer q,
 // currencyInternalName energy), while player.ma.current is not "q" (true in every committed state). Notes §7a.
-const Q_PRICES = { 11: [1.2, 1e2], 12: [1.4, 5e2], 13: [1.8, 7.5e2], 14: [2.4, 1e6], 21: [3.2, 1e8], 22: [4.2, 2e11], 23: [5.4, 5e19], 24: [6.8, 1e24], 31: [8.4, 1e48], 32: [10, 1e58], 33: [12, 1e81] };
+const Q_PRICES = { 11: [1.2, 1e2], 12: [1.4, 5e2], 13: [1.8, 7.5e2], 14: [2.4, 1e6], 21: [3.2, 1e8], 22: [4.2, 2e11], 23: [5.4, 5e19], 24: [6.8, 1e24], 31: [8.4, 1e48], 32: [10, 1e58], 33: [12, 1e81], 34: [15, 2.5e94] };
 // enGainMult (layers.js:2964-2970) + hasUpgrade (utils.js:633-635) + unl (utils.js:918-921) + upgradeEffect (:673-675)
 // + buyableEffect (:681-683): every input it can read, over every branch. Notes §14: "q11 × q21 × o12 × ba".
 const EN_GAIN_MULT = ['player.q.upgrades', 'player.q.unlocked', 'player.ma.selectionActive', 'player.o.unlocked', 'player.ba.unlocked',
@@ -162,12 +163,28 @@ async function partOracle() {
     if (missing.length) probs.push(`no reading at ${missing.join(',')}, where q${id} is unlocked`);
     row({ gate: `O1 price q${id}`, id: 'ptr', ok: !probs.length, notes: probs.length ? probs.join('; ') : `${coef.toExponential().replace('+', '')}·(q.time+1)^${k} in player.q.energy, in ${covered.length} state(s) from ${f.from.state}` });
   }
-  // O2 — H31's goal, superexponential in completions (notes §7d): reachable only once H31 is unlocked
+  // O2 — H31's goal, superexponential in completions (notes §7d): reachable only once H31 is unlocked. (m31) The source
+  // (layers.js "Timeless" goal): 1e50^(c^2.5)·1e5325 below 20 completions (softcapped past 20), so in its OWN completions
+  // log10 goal − 5325 = 50·c^2.5 — exponent 2.5, log10Scale 50, at0 1e5325 — read over 0 … completionLimit (10 here;
+  // +10 per achievement a71/a74), the domain the probe must stop at. Every state where H31 is unlocked must carry it.
   if (want('price')) {
     const at = statesWhere((x) => x.h.c31);
-    const f = fact(doc, 'price:h:challenge:31');
-    row({ gate: 'O2 price H31 goal', id: 'ptr', ok: !at.length ? !f : !!(f && valuesOf(f, order).every(({ v }) => Object.values(v.shapes || {}).some((s) => s.type === 'superexponential'))),
-      notes: !at.length ? `ABSTAIN (unreachable): H31 "Timeless" is locked in all ${R.order.length} committed states (it needs H22; measured), and no fact claims its goal` : JSON.stringify(f && f.shapes) });
+    const f = fact(doc, 'price:h:challenge:31'), probs = [];
+    if (at.length) {
+      if (!f) probs.push('no fact');
+      const covered = [];
+      for (const { v, states } of valuesOf(f, order)) {
+        covered.push(...states);
+        const sh = v.shapes && v.shapes['player.h.challenges.31'];
+        if (v.currency !== 'player.points') probs.push(`currency ${v.currency} at ${states[0]}`);
+        if (!sh || sh.type !== 'superexponential' || !near(sh.exponent, 2.5, 1e-6) || !near(sh.log10Scale, 50, 1e-6) || !near(log10s(sh.at0), 5325, 1e-9)) probs.push(`shape ${JSON.stringify(sh)} at ${states[0]}`);
+        for (const s of states) if (!sh || !sh.domain || sh.domain.max !== R.at[s].h.lim31) probs.push(`domain ${JSON.stringify(sh && sh.domain)} at ${s}, completionLimit ${R.at[s].h.lim31}`);
+      }
+      const miss = at.filter((s) => !covered.includes(s));
+      if (miss.length) probs.push(`no reading at ${miss.join(',')}, where H31 is unlocked`);
+    }
+    row({ gate: 'O2 price H31 goal', id: 'ptr', ok: !at.length ? !f : !probs.length,
+      notes: !at.length ? `ABSTAIN (unreachable): H31 "Timeless" is locked in all ${R.order.length} committed states (it needs H22; measured), and no fact claims its goal` : probs.length ? probs.join('; ') : `1e5325·10^(50·c^2.5) in player.points over completions 0…${at.map((s) => R.at[s].h.lim31).join('/')} (the completionLimit), at ${at.join(',')}` });
   }
   // O3 — zeroed-by: q.time and q.energy (layers.js:2957-2958 q, :2649-2650 h, :3577-3578 o; game.js:126-136 rowReset
   // runs every doReset of rows ≤ the resetting row). So EVERY shown reset of row ≥ q's zeroes both, and each one's
@@ -260,15 +277,31 @@ async function partOracle() {
   if (want('purchase-budget')) {
     const at = statesWhere((x) => x.h.c31);
     const fs3 = doc.facts.filter((f) => f.kind === 'purchase-budget' && /^purchase-budget:h:31:/.test(f.id));
-    row({ gate: 'O7 purchase-budget H31', id: 'ptr', ok: !at.length ? !fs3.length : fs3.some((f) => f.limit === '10'),
-      notes: !at.length ? `ABSTAIN (unreachable): H31 is locked in all ${R.order.length} committed states (measured); no budget fact claims it` : JSON.stringify(fs3.map((f) => [f.counter, f.limit])) });
+    // (m31) exactly ONE budget, the counter the source names, limit 10, on exactly the two buyables whose canAfford reads it
+    // (layers.js:1251 t 11 Extra Time Capsules, :1536 e 11 Enhancers), seen in every state where H31 is unlocked
+    const ITEMS = ['e/buyable/11', 't/buyable/11'];
+    const ok7 = fs3.length === 1 && fs3[0].counter === 'player.h.chall31bought' && fs3[0].limit === '10' && JSON.stringify((fs3[0].items || []).map((x) => x.join('/')).sort()) === JSON.stringify(ITEMS) &&
+      at.every((s) => valuesOf(fs3[0], order).some(({ states }) => states.includes(s)));
+    row({ gate: 'O7 purchase-budget H31', id: 'ptr', ok: !at.length ? !fs3.length : ok7,
+      notes: !at.length ? `ABSTAIN (unreachable): H31 is locked in all ${R.order.length} committed states (measured); no budget fact claims it` : JSON.stringify(fs3.map((f) => [f.counter, f.limit, f.items, f.from && f.from.seen])) + ` — the source: ${ITEMS.join(', ')} under player.h.chall31bought < 10; H31 unlocked at ${at.join(',')}` });
+  }
+  // O9 (m31) — itemUnlocked reads `unlocked()` as the ENGINE does (layerSupport.js: undeclared → true; components.js /
+  // utils.js test the value's truth): H32 "Option D" returns tmp.ps.buyables[11].effects.hindr, undefined while
+  // Pseudo-Boosters are locked, so wherever the engine hides it NO fact may claim it (no price, no challenge entered).
+  if (want('price') || want('challenge-inputs') || want('exits-challenge') || want('purchase-budget')) {
+    const hidden = statesWhere((x) => x.h.unlocked && x.h.c32 === false);
+    const claims = [];
+    for (const f of doc.facts.filter((x) => /^(price:h:challenge:32|challenge-inputs:h:32|exits-challenge:h:32(:|$)|purchase-budget:h:32:)/.test(x.id)))
+      for (const { states } of valuesOf(f, order)) for (const s of states) if (hidden.includes(s)) claims.push(`${f.id}@${s}`);
+    row({ gate: 'O9 itemUnlocked H32 (undefined is locked)', id: 'ptr', ok: hidden.length > 0 && !claims.length,
+      notes: claims.length ? `facts claim H32 where the engine hides it: ${claims.slice(0, 8).join(', ')}${claims.length > 8 ? ' …' : ''}` : `H32's unlocked() is falsy in ${hidden.length} state(s) where h is unlocked (${hidden[0]}…${hidden[hidden.length - 1]}), and no fact claims it` });
   }
 }
 
 // ---- Part vacuity ----------------------------------------------------------------------------------------------------
 // ⛔ A KIND WITH ZERO FACTS IS RED unless declared here, and each declaration is MEASURED by the `check` it names.
 const DECLARED = {
-  ptr: { 'purchase-budget': { why: 'the only budget in the source is H31\'s (layers.js:1251, :1536), and H31 is locked in every committed state', check: 'h31-locked' } },
+  // (m31) ptr's purchase-budget declaration is gone: the declared state stages/M30 unlocks H31, and its budget is a fact (O7)
   something: { 'challenge-inputs': { why: 'no challenge is unlocked in any committed state', check: 'no-challenges' }, 'exits-challenge': { why: 'no challenge is unlocked in any committed state, so none is entered', check: 'no-challenges' }, 'purchase-budget': { why: 'no challenge is unlocked in any committed state, and no purchase outside one raises a counter its canAfford reads', check: 'no-challenges' } },
   'collection-of-everything': { 'purchase-budget': { why: 'its layer sources increment nothing (no ++ / += 1 outside a for header in js/layers*.js), so no purchase can raise a counter by one', check: 'no-increment' } },
 };
@@ -349,7 +382,7 @@ function partGrep() {
   row({ gate: 'X1 no game or layer id in the extractor', id: 'ptr', ok: !hits.length, notes: hits.length ? hits.join('; ') : `${srcs.length} sources, ${ids.length} game ids and ${ptrLayers.length} ptr layer ids checked against every string literal and every layers/player/tmp member access` });
 }
 
-const EXPECT = { oracle: () => 1 + (want('price') ? Object.keys(Q_PRICES).length + 1 : 0) + (want('zeroed-by') ? 2 : 0) + (want('production') ? 1 : 0) + (want('multiplier-reads') ? 3 : 0) + (want('challenge-inputs') ? 1 : 0) + (want('purchase-budget') ? 1 : 0) + (want('exits-challenge') ? 1 : 0),
+const EXPECT = { oracle: () => 1 + (want('price') ? Object.keys(Q_PRICES).length + 1 : 0) + (want('zeroed-by') ? 2 : 0) + (want('production') ? 1 : 0) + (want('multiplier-reads') ? 3 : 0) + (want('challenge-inputs') ? 1 : 0) + (want('purchase-budget') ? 1 : 0) + (want('exits-challenge') ? 1 : 0) + (want('price') || want('challenge-inputs') || want('exits-challenge') || want('purchase-budget') ? 1 : 0),
   vacuity: () => GAMES.length * 2, neutral: () => NEUTRAL_LEGS.length, determinism: () => GAMES.length, grep: () => 1 };
 const FN = { oracle: partOracle, vacuity: partVacuity, neutral: partNeutral, determinism: partDeterminism, grep: partGrep };
 let expected = 0;

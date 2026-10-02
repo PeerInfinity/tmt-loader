@@ -273,9 +273,15 @@ async function partOracle() {
   // VACUITY — the run's row: the oracles above were reached, and the pattern finds the time-priced q upgrades at all
   {
     const pf = pfresh.counts && pfresh.counts['time-priced-purchase'];
-    // (m28) 10, not 8: the facts carry q31 and q32 since the declared state m28/QL6 (games-facts/ptr.json; docs/facts.md)
-    const ok = verdictCounts['waiting-cannot-help'] === 1 && verdictCounts['buy-at'] === 2 && Object.keys(verdictCounts).length === 2 && !!pf && pf.matches === 10 && pf.open === 0;
-    row({ gate: 'V vacuity: the verdicts COUNTED — one waiting-cannot-help (O1), two buy-at (O2 and its control), nothing else; ptr fresh matches its 10 time-priced q upgrades (q11–q24, q31, q32), none open', id: 'ptr', ok,
+    // (m31) DERIVED from the facts file, no longer a literal: every q upgrade whose price fact (any state) is a POWER in
+    // player.q.time — 10 (q11–q24, q31, q32) since m28/QL6, 12 (+ q33, q34) since the declared stages/M30 (⚖ the count
+    // moved because a facts state was declared, not because the template did). The SET must equal the template's goals.
+    const ptrFacts = JSON.parse(fs.readFileSync(path.join(REPO, 'games-facts/ptr.json'), 'utf8'));
+    const timePriced = ptrFacts.facts.filter((f) => /^price:q:upgrade:/.test(f.id) && (f.variants || [f]).some((v) => v.shapes && v.shapes['player.q.time'] && v.shapes['player.q.time'].type === 'power'))
+      .map((f) => 'upg:q:' + f.id.split(':').pop()).sort();
+    const goals = (pfresh.results || []).filter((x) => x.template === 'time-priced-purchase').map((x) => x.goal).sort();
+    const ok = verdictCounts['waiting-cannot-help'] === 1 && verdictCounts['buy-at'] === 2 && Object.keys(verdictCounts).length === 2 && !!pf && timePriced.length >= 10 && pf.matches === timePriced.length && JSON.stringify(goals) === JSON.stringify(timePriced) && pf.open === 0;
+    row({ gate: `V vacuity: the verdicts COUNTED — one waiting-cannot-help (O1), two buy-at (O2 and its control), nothing else; ptr fresh matches exactly the ${timePriced.length} q upgrades the facts price as a power in q.time, none open`, id: 'ptr', ok,
       notes: `verdicts ${JSON.stringify(verdictCounts)}; ptr fresh ${pf ? `${pf.matches} matches, ${pf.open} open, ${JSON.stringify(pf.verdicts)} — goals ${pfresh.results.map((x) => x.goal).join(' ')}` : pfresh.error}` });
   }
 }

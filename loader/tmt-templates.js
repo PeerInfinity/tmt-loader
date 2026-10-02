@@ -739,6 +739,10 @@
     return s === true;
   }
   function rrRow(l) { var t = G.tmp[l]; return t && t.row !== undefined ? t.row : G.layers[l] && G.layers[l].row; }
+  // (m31) "the reset happened": a layer's FIRST reset unlocks it; a REBUILD (a layer reset before, whose own currency
+  // another reset zeroed) is done when its currency is back above zero — the engine's own fields, never a number
+  function rrDoneExpr(b) { var l = JSON.stringify(b.layer); return b.rebuild ? 'player[' + l + '].points.gt(0)' : 'player[' + l + '].unlocked'; }
+  function rrDone(b) { var p = player[b.layer]; if (!p) return false; if (!b.rebuild) return !!p.unlocked; try { return N(p.points).gt(0); } catch (e) { return false; } }
 
   /** The features a hold must cover: each zeroing layer's `reset` and `challenges` features (entering or leaving a
    *  challenge resets the layer), and this layer's own `reset` feature — the reset is the queue's, at the moment the
@@ -807,10 +811,25 @@
       if (!pressed.length) continue;
       fun.zeroedByAutomation++;
       var shown = rrShown(l), unl = !!(player[l] && player[l].unlocked), row = rrRow(l);
+      // (m31) the REBUILD case — the same requirement, one level up: a layer reset before whose OWN currency another
+      // reset zeroes (`zeroed-by:<z>:player.<l>.points`) is walled again while it holds none — its next reset needs the
+      // same base the zeroers wipe. On PTR: Super Generators past M30, zeroed by every row-3 reset while Generators,
+      // their base, never reach the requirement inside one quirk cycle (measured, cloud-reports/tmt-m31-1.md).
+      var own = 'player.' + l + '.points';
+      var ozf = zs.filter(function (z) { return z.field === own && z.reset !== l && (z.effect || (lastVariant(z) || {}).effect) === 'zeroes'; });
+      var held0 = false; try { held0 = unl && N(player[l].points).lte(0); } catch (e) { held0 = false; }
+      // "reset before" is the ENGINE's record: a layer starts unlocked only when its startData() says so (2.2.1
+      // getStartPlayer), and doReset sets `unlocked` on its first reset (game.js:206) — so a layer that STARTS unlocked
+      // (PTR's p) is never read as a rebuild just because it holds nothing yet
+      var startsUnl = false; try { var sd = G.layers[l].startData; startsUnl = typeof sd !== 'function' || !!sd.call(G.layers[l]).unlocked; } catch (e) { startsUnl = true; }
+      var rebuild = unl && !startsUnl && ozf.length > 0;
       var b = { template: RR.id, goal: 'reset:' + l, layer: l, type: G.layers[l].type, row: row, base: base, requirement: reqExpr, zeroers: zeroers, pressed: pressed,
-        siblings: zeroers.filter(function (z) { return rrRow(z) === row; }),
-        hold: rrHoldSet(zeroers, l), facts: { base: bf.id, zeroedBy: zf.map(function (z) { return z.id; }) },
-        open: shown && !unl, why: !shown ? 'the layer is not shown here' : unl ? 'the layer has been reset before here (unlocked): its requirement is not a wall' : null };
+        siblings: zeroers.filter(function (z) { return rrRow(z) === row; }), rebuild: rebuild,
+        hold: rrHoldSet(zeroers, l), facts: { base: bf.id, zeroedBy: zf.map(function (z) { return z.id; }), ownZeroedBy: ozf.map(function (z) { return z.id; }) },
+        open: shown && (!unl || (rebuild && held0)),
+        why: !shown ? 'the layer is not shown here' : !unl ? null : startsUnl ? 'the layer starts unlocked (its startData): it has no first reset to wait for, and holding nothing is not read as a rebuild'
+          : !rebuild ? 'the layer has been reset before here (unlocked) and no other reset zeroes its currency: its requirement is not a wall'
+          : held0 ? null : 'the layer has been reset before here and holds its currency (' + String(player[l].points) + '; ' + ozf.map(function (z) { return z.reset; }).join(', ') + ' zero it): its requirement is not a wall until then' };
       if (opts.logRecords) b.evidence = rrEvidence(opts.logRecords, b);
       out.push(b);
     }
@@ -862,7 +881,7 @@
       var r = T.queues.load(q); if (!r.ok) throw new Error('the after-reach queue was refused: ' + r.errors.join('; '));
       T.tick(DIFF, k);
       var ap = !!(G.tmp[b.layer] && G.tmp[b.layer].autoPrestige), at = null;
-      for (var i = 1; i <= extra; i++) { T.tick(DIFF, 1); if (player[b.layer].unlocked) { at = i; break; } }
+      for (var i = 1; i <= extra; i++) { T.tick(DIFF, 1); if (rrDone(b)) { at = i; break; } }
       return { ticks: extra, freed: own, autoPrestige: ap, reset: at !== null, afterTicks: at };
     });
   }
@@ -875,6 +894,7 @@
     if (!b.open) return { template: RR.id, goal: b.goal, verdict: 'abstain', reasoning: [b.why], queue: null };
     var window = Number(opts.window) || Number(opts.horizon) || RR_HORIZON_CAP;
     var where = rrWhere(b);
+    if (b.rebuild) why.push('a REBUILD: ' + b.layer + ' was reset before, and its currency is zeroed by ' + b.facts.ownZeroedBy.map(function (z) { return z.split(':')[1]; }).join(', ') + ' (' + b.facts.ownZeroedBy.join(', ') + '); it holds none here, so its next reset is walled again');
     why.push('the facts: ' + b.goal + ' needs ' + b.requirement + ' (now ' + String(rrReq(b.layer)) + ') of ' + b.base + ' (' + b.facts.base + '), which a reset of ' + b.zeroers.join(', ') + ' zeroes (pressed by ' + b.pressed.join(', ') + ')' +
       (b.siblings.length ? '; ' + b.siblings.join(', ') + ' share its row' : '') + '; holding ' + b.hold.join(', '));
     if (where === 'fallback') why.push('the automation decides ' + b.layer + ' in its FALLBACK pass (the engine skips the layer\'s own tick): every zeroing reset decides earlier in the same tick');
@@ -898,7 +918,7 @@
         var at = null, st = null, lim = run.reach.k + Math.round(20 / DIFF);
         for (var k = 1; k <= lim; k++) {
           T.tick(DIFF, 1);
-          if (at === null && player[b.layer].unlocked) at = { tick: T.ticks, gameSeconds: T.gameSeconds, base: String(getPath(b.base)), points: String(player[b.layer].points) };
+          if (at === null && rrDone(b)) at = { tick: T.ticks, gameSeconds: T.gameSeconds, base: String(getPath(b.base)), points: String(player[b.layer].points) };
           st = T.queues.status().queues.filter(function (x) { return x.id === q.id; })[0];
           if (st && st.state !== 'armed' && st.state !== 'running') break;
         }
@@ -947,7 +967,7 @@
       { 'do': 'wait', until: 'canReset(' + l + ')', timeout: { gs: sig(v.tStar.gameSeconds) + 10 }, onTimeout: 'abort',
         comment: 'the rollback measured ' + b.base + ' at ' + b.requirement + ' ' + v.tStar.gameSeconds + ' game-s into the hold (diff ' + DIFF + ')' },
       { 'do': 'call', fn: 'doReset', args: [b.layer], comment: 'reset ' + b.layer },
-      { 'do': 'wait', until: 'player[' + l + '].unlocked', timeout: { gs: 2 }, onTimeout: 'abort', comment: 'the reset happened' },
+      { 'do': 'wait', until: rrDoneExpr(b), timeout: { gs: 2 }, onTimeout: 'abort', comment: 'the reset happened' },
       { 'do': 'release', comment: 'the reflexes resume' },
     ];
     return { format: 'tmt-queue/1', id: 'rr-' + b.goal.replace(/[^A-Za-z0-9_.-]/g, '-'), trigger: { on: 'start' },

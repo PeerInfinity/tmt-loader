@@ -258,15 +258,18 @@ async function partVerdict() {
   {
     const legs = [['something fresh', s0], ['something all/S05', s5], ['collection-of-everything fresh', coe], ['ptr fresh', pfresh]];
     const c = (r) => r && r.counts && r.counts['challenge-attempt'];
+    const EXITS_CHALLENGES = [...new Set(JSON.parse(fs.readFileSync(path.join(REPO, 'games-facts/ptr.json'), 'utf8')).facts.filter((f) => f.kind === 'exits-challenge' && !f.abstain).map((f) => f.id.split(':').slice(1, 3).join(':')))].sort();
     const coeV = ca(coe)[0];
     const checks = {
       noThrow: legs.every(([, r]) => r && !r.error && r.exit === 0 && r.results.every((x) => x.verdict !== 'threw')),
       somethingHasNoChallenge: [s0, s5].every((r) => c(r) && c(r).matches === 0 && c(r).funnel.challengesWithExits === 0),
       coeShortUnpriced: !!coeV && coeV.verdict === 'short' && coeV.short && coeV.short.log10 === null,
-      ptrFreshNoneOpen: !!c(pfresh) && c(pfresh).matches === 5 && c(pfresh).open === 0,
+      // (m31) DERIVED from the facts file: one match per challenge the exits-challenge facts name (h11, h12, h21, h22 and
+      // h32 until m31; h31 replaces h32 since the declared stages/M30 and the itemUnlocked fix — still 5)
+      ptrFreshNoneOpen: !!c(pfresh) && c(pfresh).matches === EXITS_CHALLENGES.length && EXITS_CHALLENGES.length >= 5 && c(pfresh).open === 0,
     };
     row({ gate: 'O3 generality: something and collection-of-everything run with no throw; the funnel names why', id: 'something+coe+ptr', ok: Object.values(checks).every(Boolean),
-      notes: `${ck(checks)} — ` + legs.map(([n, r]) => (c(r) ? `${n}: ${c(r).matches} match(es), ${c(r).open} open, funnel ${JSON.stringify(c(r).funnel)}, verdicts ${JSON.stringify(c(r).verdicts)}` : `${n}: ${r && r.error}`)).join(' | ') + (coeV ? ` — coe: ${coeV.reasoning.slice(-1)[0]}` : '') });
+      notes: `${ck(checks)} — ` + legs.map(([n, r]) => (c(r) ? `${n}: ${c(r).matches} match(es), ${c(r).open} open, funnel ${JSON.stringify(c(r).funnel)}, verdicts ${JSON.stringify(c(r).verdicts)}` : `${n}: ${r && r.error}`)).join(' | ') + (coeV ? ` — coe: ${coeV.reasoning.slice(-1)[0]}` : '') + ` — ptr's facts name the exits of ${EXITS_CHALLENGES.join(', ')}` });
   }
 }
 

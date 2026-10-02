@@ -5,6 +5,10 @@
   {
    "file": "m28/QL6.json",
    "why": "past q24 (Quirk Layers 6, q11-q24 owned, outside any challenge): the first committed state where q31 and q32 are unlocked, so their price facts get shapes (tmt-m28-1)"
+  },
+  {
+   "file": "stages/M30.json",
+   "why": "past q33 (Quirk Layers 7, q11-q33 owned, Super Generators just unlocked, outside every challenge): the first committed state where q34 and H31 \"Timeless\" are unlocked, so q34's price, H31's goal (bounded by its completionLimit) and H31's purchase budget get facts (tmt-m31-1)"
   }
  ]
 }

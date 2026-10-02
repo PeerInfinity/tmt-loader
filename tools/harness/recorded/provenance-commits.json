@@ -46,6 +46,11 @@
       "date": "2026-10-01",
       "subject": "feat(stages): ptr's three stages — QL5 quirk rate, QL6 H22 attempt, QL6 hold for q31/q32 (provenance pending CI)"
     },
+    "7dc963f": {
+      "commit": "7dc963fad4fdfbf8f37591520a9e4b8a3d58902a",
+      "date": "2026-10-02",
+      "subject": "feat(stages): sg-keep — past M30, the resets that zero Super Generators' base act only while sg holds its currency or Generators meet its requirement; the resets that zero the currency itself only when it is empty and at the requirement; q cashes in by gain>=2x (provenance pending)"
+    },
     "8f59717": {
       "commit": "8f59717fb8a31dbe4be0f2cb72eda27470438606",
       "date": "2026-10-01",

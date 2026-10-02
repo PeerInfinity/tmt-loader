@@ -6188,3 +6188,16 @@ Reading this section: each leg ran TWICE (equal or RED); gameSeconds is the game
 | m30-first@1 M-merge | ptr | shipped from all/M26 | 94521 | 94521 | 1 | `132127d4d5573106` | GREEN | M30 +17590 game-s from M26.json (diff 1); M31 null · M32 null · M33 null; commit 8f59717; twice equal true |
 | m30-last@1 M-merge | ptr | last from all/M26 | 94521 | 94521 | 1 | `132127d4d5573106` | GREEN | M30 +17590 game-s from M26.json (diff 1); M31 null · M32 null · M33 null; commit 393b702; twice equal true |
 | m30-order q33-sg-unlock FIRST (shipped) reaches M30 no later than LAST, from all/M26 at diff 1 — and the shipped path's M30 = the acceptance's | ptr | — | — | — | — | — | GREEN | first: M30 tick 94521 (132127d4d5573106); last: tick 94521 (132127d4d5573106); acceptance 94521 |
+
+## 2026-10-02T05:14:10Z — Gate m31 merge — toward M31 (`node tools/harness/gates-m31.mjs --part merge --summary`) — commit `7dc963f` (tree DIRTY) — 6/6 green
+
+Reading this section: each leg ran TWICE (equal or RED); gameSeconds is the game clock at the stop; the merged legs' own commit is in each row's notes.
+
+| gate | game | leg | ticks | gameSeconds | diff | hash | result | notes |
+|---|---|---|---|---|---|---|---|---|
+| m31-A@1 M-merge | ptr | shipped from stages/M30 | 124521 | 124521 | 1 | `41ed4f4f303019da` | GREEN | M31 NOT reached game-s (diff 1); end total quirks 5.103998705401289e25; {"total":"5.103998705401289e25","qms":["0","1","2","3","4","5","6"],"autoBld":false,"ql":7,"sg":"1","q34":false,"h31":0,"ac":null,"g":"205"}; commit 7dc963f; twice equal true |
+| m31-A@0.05 M-merge | ptr | shipped from stages/M30 | 214521 | 100521 | 0.05 | `e8f1c845e0c70429` | GREEN | M31 NOT reached game-s (diff 0.05); end total quirks 1.7887644102907139e24; {"total":"1.7887644102907139e24","qms":["0","1","2","3","4","5","6"],"autoBld":false,"ql":7,"sg":"1","q34":false,"h31":0,"ac":null,"g":"204"}; commit 7dc963f; twice equal true |
+| m31-ctl@1 M-merge | ptr | before from stages/M30 | 124521 | 124521 | 1 | `ef3ec3df273c0e45` | GREEN | M31 NOT reached game-s (diff 1); end total quirks 1.8558653642102338e23; {"total":"1.8558653642102338e23","qms":["0","1","2","3","4","5","6"],"autoBld":false,"ql":7,"sg":"0","q34":false,"h31":0,"ac":null,"g":"199"}; commit 7dc963f; twice equal true |
+| m31-ctl@0.05 M-merge | ptr | before from stages/M30 | 214521 | 100521 | 0.05 | `a0e5a023d501d565` | GREEN | M31 NOT reached game-s (diff 0.05); end total quirks 9.848839980917063e21; {"total":"9.848839980917063e21","qms":["0","1","2","3","4","5"],"autoBld":false,"ql":7,"sg":"0","q34":false,"h31":0,"ac":null,"g":"199"}; commit 7dc963f; twice equal true |
+| m31-last@1 M-merge | ptr | last from stages/M30 | 124521 | 124521 | 1 | `c0735b89e2ad312c` | GREEN | M31 NOT reached game-s (diff 1); end total quirks 2.452820437376558e21; {"total":"2.452820437376558e21","qms":["0","1","2","3","4","5"],"autoBld":false,"ql":7,"sg":"1","q34":false,"h31":0,"ac":null,"g":"205"}; commit 7dc963f; twice equal true |
+| m31-stage sg-keep (shipped) ends each stretch with MORE total quirks than the table before this slice, at diff 1 and 0.05; FIRST no worse than LAST | ptr | — | — | — | — | — | GREEN | diff 1: shipped 10^25.708 vs before 10^23.269; diff 0.05: 10^24.253 vs 10^21.993; last 10^21.390 |

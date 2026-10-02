@@ -164,8 +164,11 @@ function zeroingsFromLog(recs) {
   return o;
 }
 const preTableHash = () => fs.readFileSync(path.join(REPO, PRE_TABLE), 'utf8');
-/** The shipped table without this slice's stage — must equal PRE_TABLE (no other entry moved). */
-function shippedMinusStage() { const t = fixture(TABLE); t.stages = (t.stages || []).filter((s) => s.id !== STAGE); return JSON.stringify(t, null, 2) + '\n'; }
+/** The shipped table without this slice's stage — must equal PRE_TABLE (no other entry moved). (m31) A later slice's
+ *  stage is dropped too, by name: `sg-keep` (tmt-m31-1) is the only other change since this slice, and gates-m31 S1
+ *  checks the same thing from its side (its own table-before = the shipped table minus `sg-keep`). */
+const LATER_STAGES = ['sg-keep'];
+function shippedMinusStage() { const t = fixture(TABLE); t.stages = (t.stages || []).filter((s) => s.id !== STAGE && !LATER_STAGES.includes(s.id)); return JSON.stringify(t, null, 2) + '\n'; }
 const writeTmp = (name, obj) => { const f = path.join(TMP, name); fs.writeFileSync(f, JSON.stringify(obj, null, 1)); return f; };
 /** The shipped table with this slice's stage moved to the END of the list (the other order). */
 function stageLastTable() {

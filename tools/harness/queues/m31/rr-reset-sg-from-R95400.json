@@ -1,0 +1,71 @@
+{
+ "format": "tmt-queue/1",
+ "id": "rr-reset-sg",
+ "trigger": {
+  "on": "start"
+ },
+ "source": {
+  "template": "reset-requirement",
+  "goal": "reset:sg",
+  "facts": [
+   "reads:sg:baseAmount",
+   "zeroed-by:e:player.g.points",
+   "zeroed-by:h:player.g.points",
+   "zeroed-by:o:player.g.points",
+   "zeroed-by:q:player.g.points",
+   "zeroed-by:s:player.g.points",
+   "zeroed-by:sb:player.g.points",
+   "zeroed-by:ss:player.g.points",
+   "zeroed-by:t:player.g.points"
+  ]
+ },
+ "comment": "reset:sg needs tmp[\"sg\"].nextAt of player.g.points, which a reset of e, h, o, q, s, sb, ss, t zeroes. Hold every one, wait for the engine's canReset, reset, release.",
+ "steps": [
+  {
+   "do": "hold",
+   "features": [
+    "reset:t",
+    "reset:e",
+    "reset:s",
+    "reset:sb",
+    "reset:sg",
+    "reset:h",
+    "challenges:h",
+    "reset:q",
+    "reset:o",
+    "reset:ss"
+   ],
+   "comment": "these zero player.g.points (zeroed-by:e:player.g.points, zeroed-by:h:player.g.points, zeroed-by:o:player.g.points, zeroed-by:q:player.g.points, zeroed-by:s:player.g.points, zeroed-by:sb:player.g.points, zeroed-by:ss:player.g.points, zeroed-by:t:player.g.points), and the reset is the queue's"
+  },
+  {
+   "do": "wait",
+   "until": "canReset(\"sg\")",
+   "timeout": {
+    "gs": 530
+   },
+   "onTimeout": "abort",
+   "comment": "the rollback measured player.g.points at tmp[\"sg\"].nextAt 520 game-s into the hold (diff 1)"
+  },
+  {
+   "do": "call",
+   "fn": "doReset",
+   "args": [
+    "sg"
+   ],
+   "comment": "reset sg"
+  },
+  {
+   "do": "wait",
+   "until": "player[\"sg\"].points.gt(0)",
+   "timeout": {
+    "gs": 2
+   },
+   "onTimeout": "abort",
+   "comment": "the reset happened"
+  },
+  {
+   "do": "release",
+   "comment": "the reflexes resume"
+  }
+ ]
+}

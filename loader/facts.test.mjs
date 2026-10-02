@@ -71,3 +71,18 @@ test('shapeIn puts the field back — the same object — and measures through t
   assert.equal(s.exponent, 2);
 });
 function vmPlayer() { return P.get('player'); }
+
+// (m31) MUTANT m31-A "the completions probe unbounded": a goal that softcaps past its completion limit must be fitted over
+// the DOMAIN the engine allows (0 … completionLimit), and the shape says which domain it was read over. (PTR H31's
+// 1e50^(c^2.5)·1e5325, softcapped from 20 under a limit of 10, scaled into the stub's plain numbers: softcap at 6,
+// limit 5.)
+test('shapeIn with a domain (max): a goal softcapped past its completion limit reads superexponential over 0…limit, irregular unbounded', () => {
+  const goal = (c) => { let x = c; if (x >= 6) x = Math.pow(x - 5, 1.95) + 5; return new Decimal(Math.pow(10, 0.01 * Math.pow(x, 2.5) + 3)); };
+  vmPlayer().a.points = new Decimal(0);
+  const bounded = F.shapeIn('player.a.points', () => goal(vmPlayer().a.points.v), { max: 5, maxWhy: 'the challenge\'s completionLimit' });
+  assert.equal(bounded.type, 'superexponential');
+  assert.equal(bounded.exponent, 2.5);
+  assert.equal(bounded.log10Scale, 0.01);
+  assert.deepEqual(J(bounded.domain), { max: 5, why: 'the challenge\'s completionLimit' });
+  assert.equal(F.shapeIn('player.a.points', () => goal(vmPlayer().a.points.v)).type, 'irregular');
+});
