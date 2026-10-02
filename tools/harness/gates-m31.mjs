@@ -239,11 +239,13 @@ async function partFacts() {
 // ---- Part verdict ----------------------------------------------------------------------------------------------------
 async function partVerdict() {
   const Q = fs.existsSync(path.join(REPO, QUEUE)) ? fixture(QUEUE) : null;
-  const [m30, rb, s0, coe, pfresh, fx] = await pool([
+  const STARTS_UNLOCKED = "Object.keys(layers).filter(function (l) { var d = layers[l].startData; try { return typeof d !== 'function' || !!d.call(layers[l]).unlocked; } catch (e) { return true; } })";
+  const [m30, rb, s0, coe, pfresh, fx, su] = await pool([
     () => strategize('ptr', ['--from', M30F, '--timeout-s', '3000']),
     () => strategize('ptr', ['--from', REBUILD, '--goal', 'reset:sg', '--auto-table', PRE_TABLE]),
     () => strategize('something', []), () => strategize('collection-of-everything', []), () => strategize('ptr', []),
     () => run('ptr', { 'from-snapshot': M30F, profile: 'all', 'auto-table': PRE_TABLE, ticks: PIN_R.ticks - PIN_M30.ticks, eval: "({sg: String(player.sg.points), sgu: !!player.sg.unlocked, qt: String(player.q.time), ac: player.h.activeChallenge})" }),
+    () => run('collection-of-everything', { ticks: 0, eval: STARTS_UNLOCKED }),
   ]);
   // V1 — q34
   {
@@ -294,10 +296,14 @@ async function partVerdict() {
     const c = (r) => r && r.counts && r.counts['reset-requirement'];
     const legs = [['something fresh', s0], ['collection-of-everything fresh', coe], ['ptr fresh', pfresh]];
     const pv = byTpl(pfresh, 'reset-requirement');
+    // the witness: collection-of-everything's layers that START unlocked (its startData, read by a separate boot) and whose
+    // own points another reset zeroes (met11) — unlocked with nothing held, never a rebuild
+    const startsUnl = (su && su.ok && Array.isArray(su.eval)) ? su.eval : [];
+    const witness = byTpl(coe, 'reset-requirement').filter((x) => x.binding && startsUnl.includes(x.binding.layer) && (x.binding.facts.ownZeroedBy || []).length > 0);
     const checks = { noThrow: legs.every(([, r]) => r && !r.error && r.exit === 0 && r.results.every((x) => x.verdict !== 'threw')),
-      ptrFreshNoneOpen: !!c(pfresh) && c(pfresh).open === 0, startsUnlockedIsNoRebuild: pv.every((x) => !x.binding || !x.binding.rebuild) };
+      ptrFreshNoneOpen: !!c(pfresh) && c(pfresh).open === 0, startsUnlockedIsNoRebuild: pv.every((x) => !x.binding || !x.binding.rebuild) && witness.length > 0 && witness.every((x) => x.binding.rebuild === false) };
     row({ gate: 'V5 the extension\'s reach: a layer that STARTS unlocked is never a rebuild (ptr fresh: none open); something and collection-of-everything run with no throw', id: 'something+coe+ptr', ok: Object.values(checks).every(Boolean),
-      notes: `${ck(checks)} — ` + legs.map(([n, r]) => (c(r) ? `${n}: ${c(r).matches} match(es), ${c(r).open} open, verdicts ${JSON.stringify(c(r).verdicts)}` : `${n}: ${r && r.error}`)).join(' | ') });
+      notes: `${ck(checks)} — ` + legs.map(([n, r]) => (c(r) ? `${n}: ${c(r).matches} match(es), ${c(r).open} open, verdicts ${JSON.stringify(c(r).verdicts)}` : `${n}: ${r && r.error}`)).join(' | ') + ` — coe's layers that start unlocked with their points zeroed by another reset: ${witness.map((x) => x.binding.layer + (x.binding.rebuild ? ' REBUILD' : '')).join(', ')}` });
   }
 }
 

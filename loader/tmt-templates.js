@@ -827,7 +827,8 @@
         siblings: zeroers.filter(function (z) { return rrRow(z) === row; }), rebuild: rebuild,
         hold: rrHoldSet(zeroers, l), facts: { base: bf.id, zeroedBy: zf.map(function (z) { return z.id; }), ownZeroedBy: ozf.map(function (z) { return z.id; }) },
         open: shown && (!unl || (rebuild && held0)),
-        why: !shown ? 'the layer is not shown here' : !unl ? null : !rebuild ? 'the layer has been reset before here (unlocked) and no other reset zeroes its currency: its requirement is not a wall'
+        why: !shown ? 'the layer is not shown here' : !unl ? null : startsUnl ? 'the layer starts unlocked (its startData): it has no first reset to wait for, and holding nothing is not read as a rebuild'
+          : !rebuild ? 'the layer has been reset before here (unlocked) and no other reset zeroes its currency: its requirement is not a wall'
           : held0 ? null : 'the layer has been reset before here and holds its currency (' + String(player[l].points) + '; ' + ozf.map(function (z) { return z.reset; }).join(', ') + ' zero it): its requirement is not a wall until then' };
       if (opts.logRecords) b.evidence = rrEvidence(opts.logRecords, b);
       out.push(b);
