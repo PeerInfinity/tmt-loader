@@ -295,12 +295,19 @@ if (A.planner) {
 // automation core's `queueLink` slot stays null.
 const QUEUE_FILES = A.queues ? JSON.parse(A.queues) : [];
 const RUNTIME_HAS_QUEUES = (() => { try { const r = A.runtime ? JSON.parse(fs.readFileSync(A.runtime, 'utf8')) : null; return !!(r && r.auto && r.auto.queues); } catch { return false; } })();
-if (QUEUE_FILES.length || A['queue-runner'] || RUNTIME_HAS_QUEUES) {
+// (shipq-1) and when the game's TABLE ships queues (its `queues` section, an enabled entry): the runner loads them itself
+const TABLE_HAS_QUEUES = AUTOMATION && run('!!(tmtLoader.autoQueues && tmtLoader.autoQueues.some(function (e) { return e.enabled; }))', 'x') === true;
+if (QUEUE_FILES.length || A['queue-runner'] || RUNTIME_HAS_QUEUES || TABLE_HAS_QUEUES) {
   if (!AUTOMATION) { console.error('--queue / --queue-runner need the automation core (its queue slot); drop --no-automation'); proc.exit(2); }
   try {
     run(fs.readFileSync(path.join(REPO, 'loader/tmt-queue.js'), 'utf8'), 'loader/tmt-queue.js');
     if (run('!!(tmtLoader.queues && tmtLoader.queues.ready)', 'x') !== true) throw new Error('loader/tmt-queue.js did not define tmtLoader.queues');
     R.queueRunner = { loaded: true, files: QUEUE_FILES.map((f) => path.relative(REPO, f)) };
+    if (TABLE_HAS_QUEUES) {
+      R.queueRunner.shipped = run('JSON.parse(JSON.stringify(tmtLoader.autoQueues.filter(function (e) { return e.enabled; }).map(function (e) { return e.id; })))', 'x');
+      const se = run('JSON.parse(JSON.stringify(tmtLoader.queues.shippedErrors()))', 'x');
+      if (se.length) throw new Error('the table\'s shipped queues were refused: ' + se.map((x) => x.id + ': ' + x.errors.join('; ')).join(' | '));
+    }
   } catch (e) { R.file_errors.push({ file: 'loader/tmt-queue.js', error: String(e.message).slice(0, 200) }); R.queueRunner = { loaded: false, error: String(e.message).slice(0, 300) }; }
 }
 R.load_ms = Date.now() - t0;
