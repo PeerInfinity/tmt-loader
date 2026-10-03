@@ -439,7 +439,19 @@ async function legMemory(browser) {
     if (errs.length) f.push(`(e) page errors ${errs.slice(0, 2).join(' | ')}`);
     await context.close();
   }
-  row({ gate: 'S6 memory: resumes mid-queue (control restarts), a once queue stays done, the row cycle survives, a different save / an import / a hard reset discard it and the tab says so; cost per save', id: 'ptr', ok: !f.length,
+  // (g) the other engines: 2.7 (Something) and 2.6 (Arc Tree) — the fingerprint survives their own load, and the record
+  // comes back deep-equal
+  for (const id of ['something', 'arctree']) {
+    const { context, page, errs } = await fresh(browser, { id });
+    const b = await page.evaluate(() => { tmtLoader.tick(0.05, 400); tmtLoader.save(); return { rt: JSON.stringify(tmtLoader.runtimeState()), st: tmtLoader.autoMemory.status(), fp: tmtLoader.autoMemory.fingerprint() }; });
+    await reload(page);
+    const c = await page.evaluate(() => ({ rt: JSON.stringify(tmtLoader.runtimeState()), st: tmtLoader.autoMemory.status(), fp: tmtLoader.autoMemory.fingerprint() }));
+    if (b.st.writes !== 1 || c.st.state !== 'restored' || b.fp !== c.fp || b.rt !== c.rt) f.push(`(g) ${id}: ${JSON.stringify({ writes: b.st.writes, state: c.st.state, why: c.st.why, fp: b.fp === c.fp, rt: b.rt === c.rt })}`);
+    else seen.push(`(g) ${id}: restored deep-equal after a reload (${b.rt.length} bytes, ${b.st.lastMs} ms)`);
+    if (errs.length) f.push(`(g) ${id}: page errors ${errs.slice(0, 2).join(' | ')}`);
+    await context.close();
+  }
+  row({ gate: 'S6 memory: resumes mid-queue (control restarts), a once queue stays done, the row cycle survives, a different save / an import / a hard reset discard it and the tab says so; 2.7 and 2.6 restore too; cost per save', id: 'ptr+something+arctree', ok: !f.length,
     notes: f.length ? f.join('; ') : seen.join(' · ') });
 }
 
