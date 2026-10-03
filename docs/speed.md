@@ -63,13 +63,21 @@ the automation's own before/after hooks — run back to back. It is NOT the engi
 - **It runs while the tab is visible.** A hidden tab gets no animation frames; the fast-forward waits, and no time is
   invented or lost.
 
-**Measured ticks per second (faithful, Max, Chromium headless in this container, one page):**
+**Measured ticks per second (faithful, Max, 600 ticks, profile all, Chromium headless in this container, one page —
+`ms/tick` is the same page's plain `tick(0.05)`):**
 
-| state | ticks/s | game-s per real s |
-|---|---|---|
-| ptr fresh, profile all | ~100–130 | ~5–6.5 |
-| ptr m28/QL6 (Quirk Layers 6, H22 queue running) | ~100–120 | ~5–6 |
-| Something Tree fresh | ~180–190 | ~9–9.5 |
+| ptr state | ticks/s | game-s per real s | ms/tick (plain) | longest frame |
+|---|---|---|---|---|
+| fresh | 104 | 5.2 | 8.1 | 63 ms |
+| all/M08 | 43 | 2.1 | 14.8 | 146 ms |
+| all/M16 | 83 | 4.1 | 9.5 | 75 ms |
+| all/M25 | 87 | 4.4 | 9.2 | 60 ms |
+| m28/QL6 | 82 | 4.1 | 9.3 | 73 ms |
+| *Something Tree fresh* | *~180* | *~9* | | |
+
+So on ptr ×10 is out of reach and Max is ×2–×5; the faithful drive costs what the game's own tick costs, and no more
+(the plain tick and the driven one agree to within the frame overhead). A frame can exceed the 40 ms budget by one
+tick, never by more.
 
 (gate S1's and S2's notes carry the numbers of each run; the CI runner's are its own.)
 
