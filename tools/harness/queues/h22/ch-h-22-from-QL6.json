@@ -41,7 +41,7 @@
    "do": "wait",
    "until": "String(player[\"h\"].activeChallenge) === \"22\"",
    "timeout": {
-    "gs": 2
+    "ticks": 2
    },
    "onTimeout": "abort",
    "comment": "the engine entered it"
@@ -73,14 +73,14 @@
    "do": "wait",
    "until": "hasChallenge(\"h\", 22)",
    "timeout": {
-    "gs": 2
+    "ticks": 2
    },
    "onTimeout": "abort",
    "comment": "a completion was recorded"
   }
  ],
  "comment": "ch:h:22 is ended by a reset of h, o, q, ss (the exits-challenge facts). Hold every one, enter, wait for the goal, finish, release. It starts whenever ch:h:22 is unlocked, not completed, and no other challenge of its layer is running.",
- "version": 3,
+ "version": 4,
  "name": "attempt Descension (hindrance)",
  "relies": {
   "options": {

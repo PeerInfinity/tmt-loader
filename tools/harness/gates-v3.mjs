@@ -297,7 +297,7 @@ async function part5(browser, base) {
     try {
       // ---- the three subtabs, in the ENGINE's own order, with Simple still first -------------------------------
       const tabs = await page.evaluate(() => ({ keys: Object.keys(layers[tmtLoader.auLayer].tabFormat), on: player.subtabs[tmtLoader.auLayer].mainTabs, comps: tmtLoader.componentNames }));
-      check(tabs.keys[0] === 'Simple' && tabs.keys.length === 4 && tabs.keys[2] === 'Progress' && tabs.keys[3] === 'Queues' && tabs.on === 'Simple',
+      check(tabs.keys[0] === 'Simple' && tabs.keys.length === 4 && tabs.keys[2] === 'Progress' && tabs.keys[3] === 'Parts' && tabs.on === 'Simple',
         `the au tab has four subtabs (qedit-1 added Queues, last) with Simple FIRST (both engines take Object.keys(tabFormat)[0]): ${JSON.stringify(tabs.keys)}, showing ${tabs.on}; components ${JSON.stringify(tabs.comps)}`);
 
       // ---- the OPTION toggles and persists ----------------------------------------------------------------------

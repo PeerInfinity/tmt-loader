@@ -184,6 +184,8 @@
   "stages": [
     {
       "id": "sg-keep",
+      "name": "Let Super Generators grow",
+      "note": "Once you own Generated Progression and super generators are unlocked (and no hindrance is running), the resets that would wipe your generators wait until the next super generator is in reach, and the quirk reset waits until it at least doubles your quirks. Without it, super generators reset once and then never again. Measured: 5.1e25 total quirks after 30,000 game-seconds, against 1.9e23 without it.",
       "when": "hasUpgrade('q',33) && player.sg.unlocked && !player.h.activeChallenge",
       "policies": {
         "reset:q": "gain>=2x"
@@ -219,6 +221,8 @@
     },
     {
       "id": "q33-sg-unlock",
+      "name": "Save up for the first super generator",
+      "note": "Once you own Generated Progression and super generators are still locked, every reset that would wipe your generators waits until you have enough of them to unlock super generators. Measured: super generators unlock 642 game-seconds after Generated Progression; without it they never did.",
       "when": "hasUpgrade('q',33) && !player.sg.unlocked",
       "gates": {
         "reset:e": "player.g.points.gte(tmp.sg.nextAt)",
@@ -254,6 +258,8 @@
     },
     {
       "id": "ql6-hold-for-q32",
+      "name": "No hindrances until Quinary Superspace",
+      "note": "From your 6th Quirk Layer until you own Quinary Superspace, the automation does not start hindrances, so your quirks can pile up for the upgrades. Measured: with hindrances re-entered after every quirk reset, Quinary Superspace was not bought in 30,000 game-seconds; held, it was.",
       "when": "player.q.buyables[11].plus(tmp.q.freeLayers).gte(6) && !hasUpgrade('q',32)",
       "policies": {
         "challenges:h": "off"
@@ -275,6 +281,8 @@
     },
     {
       "id": "ql5-quirk-rate",
+      "name": "Reset quirks at their fastest rate",
+      "note": "From your 5th Quirk Layer, the quirk reset fires when quirks per second peak, instead of waiting until it gains 2 quirks, still taking turns with the other row-3 resets. Measured: it reaches 308,372 total quirks 38 times sooner; as a rule for the whole game it loses, which is why it is a stage.",
       "when": "player.q.buyables[11].plus(tmp.q.freeLayers).gte(5)",
       "policies": {
         "reset:q": "rate-peak@0/0|turn@10/30x/5/0/100"
@@ -344,7 +352,7 @@
             "do": "wait",
             "until": "String(player[\"h\"].activeChallenge) === \"22\"",
             "timeout": {
-              "gs": 2
+              "ticks": 2
             },
             "onTimeout": "abort",
             "comment": "the engine entered it"
@@ -376,14 +384,14 @@
             "do": "wait",
             "until": "hasChallenge(\"h\", 22)",
             "timeout": {
-              "gs": 2
+              "ticks": 2
             },
             "onTimeout": "abort",
             "comment": "a completion was recorded"
           }
         ],
         "comment": "ch:h:22 is ended by a reset of h, o, q, ss (the exits-challenge facts). Hold every one, enter, wait for the goal, finish, release. It starts whenever ch:h:22 is unlocked, not completed, and no other challenge of its layer is running.",
-        "version": 3,
+        "version": 4,
         "name": "attempt Descension (hindrance)",
         "relies": {
           "options": {

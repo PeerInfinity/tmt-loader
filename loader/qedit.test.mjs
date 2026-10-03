@@ -134,7 +134,7 @@ test('the recorder folds a run of the same press into `times`, and a gap of a ga
 test('the runner\'s version 2: `times` calls N times in one slot; `times` or `name` without version 2 and an unknown version are refused by name', () => {
   const { ctx, T } = boot();
   const v = (q) => T.queues.validate(Object.assign({ format: 'tmt-queue/1', id: 'v', steps: [{ do: 'comment', text: 'x' }] }, q));
-  assert.match(v({ version: 4 }).join(), /"version" must be one of 1 \| 2 \| 3/);   // (shipq-1) version 3 adds `relies`
+  assert.match(v({ version: 5 }).join(), /"version" must be one of 1 \| 2 \| 3 \| 4/);   // (shipq-1) version 3 adds `relies`; (parts-1) 4 a limit in ticks
   assert.match(v({ name: 'n' }).join(), /"name" needs "version": 2/);
   assert.match(v({ steps: [{ do: 'call', fn: 'buyBuyable', args: ['a', 11], times: 2 }] }).join(), /"times" needs "version": 2/);
   assert.match(v({ version: 2, steps: [{ do: 'call', fn: 'buyBuyable', args: ['a', 11], times: 0 }] }).join(), /"times"/);

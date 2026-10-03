@@ -303,10 +303,10 @@ async function partTpl() {
     const all = [...CATALOG.map((f) => [f, fixture(f)]), [`${TABLE} queues[${H22Q}]`, s.queue], ['strategize m28/QL6 (now)', st.queue || {}]];
     const res = all.map(([f, q]) => {
       const w = q.trigger && q.trigger.when, lits = w ? stateLiterals(w, goalIds(q)) : ['(no when)'];
-      const okv = q.trigger && q.trigger.on === 'predicate' && !lits.length && q.version === 3 && !!q.relies && !!q.relies.options;
+      const okv = q.trigger && q.trigger.on === 'predicate' && !lits.length && q.version >= 3 /* (parts-1) the H22 queue is version 4: its confirmations' limits in ticks */ && !!q.relies && !!q.relies.options;
       return [f, okv, lits];
     });
-    row({ gate: 'T2 every template-written queue (4 in the catalog, the shipped one, and T1\'s emitted now) starts on a predicate with NO numeric literal but its item\'s id, is version 3 and carries `relies`', id: 'ptr', ok: res.every((r) => r[1]),
+    row({ gate: 'T2 every template-written queue (4 in the catalog, the shipped one, and T1\'s emitted now) starts on a predicate with NO numeric literal but its item\'s id, is version 3 or later and carries `relies`', id: 'ptr', ok: res.every((r) => r[1]),
       notes: res.map((r) => `${path.basename(r[0])} ${r[1] ? '✓' : '✗'}${r[2].length ? ' literals ' + JSON.stringify(r[2]) : ''}`).join('; ') });
   }
   // T3

@@ -516,7 +516,7 @@ async function part6(browser, base, ids) {
     } catch (e) { abstained.push(`${id}: ${String(e.message).slice(0, 90)}`); continue; }
     // ⚠ THREE SUBTABS SINCE V3 (`Progress`), and `Simple` FIRST is the load-bearing half: both engines select
     // `Object.keys(tabFormat)[0]`. A fourth (P2's round log) joins the same way and this literal moves again.
-    const ok = r.rendered && r.sub === 'Advanced' && JSON.stringify(r.subs) === '["Simple","Advanced","Progress","Queues"]'   /* (qedit-1) the fourth, `Queues`, last */
+    const ok = r.rendered && r.sub === 'Advanced' && JSON.stringify(r.subs) === '["Simple","Advanced","Progress","Parts"]'   /* (qedit-1) the fourth, `Queues`, last */
       && r.blocks === r.rows - r.collapsed && r.unknown.length === 0 && r.extra <= 0 && r.scrollX === false;
     judged.push({ id, ok, r });
     if (!ok) row({ gate: 'V1-6 roster: the Advanced subtab', id, leg: 'profile all, 60 ticks', ok: false, notes: JSON.stringify(r) });

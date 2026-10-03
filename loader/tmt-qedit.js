@@ -173,6 +173,8 @@
     return id;
   }
   function secs(x) { var n = Number(x); return (Math.round(n * 10) / 10) + ' s'; }
+  // (parts-1) a wait's limit in words: game-seconds, or (format version 4) the game's ticks
+  function limit(t) { return t && t.ticks !== undefined ? t.ticks + ' tick' + (Number(t.ticks) === 1 ? '' : 's') : secs(t && t.gs); }
   function isPause(s) { return s.do === 'wait' && String(s.until).trim() === 'false' && s.onTimeout === 'skip'; }
   /** One step in the player's words: {kind, title, detail} — `detail` is the raw form, shown with developer details. */
   function describe(s) {
@@ -186,12 +188,12 @@
         t = 'Press “' + p.slice(-1)[0] + '” of ' + (p[3] && layers[p[1]] && layers[p[1]][p[2]] ? itemName(p[1], p[2], p[3]) : p.slice(2, -1).join(' ')) + (layers[p[1]] ? ' (' + layerName(p[1]) + ')' : '');
       } else t = 'Call ' + s.fn + '(' + a.map(function (x) { return JSON.stringify(x); }).join(', ') + ')';
       if (s.times > 1) t += ' × ' + s.times;
-      if (s['if']) t += ' — only if ' + s['if'];
+      if (s['if']) t += ' — only if ' + condWords(s['if']);
       return { kind: 'action', title: t, detail: s.fn + '(' + a.map(function (x) { return JSON.stringify(x); }).join(', ') + ')' };
     }
     if (s.do === 'wait') {
       if (isPause(s)) return { kind: 'pause', title: 'Pause for ' + secs(s.timeout && s.timeout.gs) + ' of game time', detail: 'wait until false, ' + (s.timeout && s.timeout.gs) + ' s, then skip' };
-      return { kind: 'wait', title: 'Wait until ' + (s.until || '…') + ' — at most ' + secs(s.timeout && s.timeout.gs) + ', then ' + (s.onTimeout === 'skip' ? 'carry on' : 'stop the queue'), detail: 'wait ' + (s.until || '') };
+      return { kind: 'wait', title: 'Wait until ' + (s.until ? condWords(s.until) : '…') + ' — at most ' + limit(s.timeout) + ', then ' + (s.onTimeout === 'skip' ? 'carry on' : 'stop the queue'), detail: 'wait ' + (s.until || '') };
     }
     if (s.do === 'hold') return { kind: 'pause tools', title: 'Pause the automation’s ' + (s.features || []).map(featureTitle).join(', '), detail: 'hold ' + (s.features || []).join(', ') };
     if (s.do === 'release') return { kind: 'resume tools', title: s.features ? 'Let the automation’s ' + s.features.map(featureTitle).join(', ') + ' run again' : 'Let every tool this queue paused run again', detail: 'release ' + (s.features || []).join(', ') };
@@ -464,7 +466,7 @@
   /** Queues the runner holds that are not in this list (a `?autoOpt=queue=` file, the console): shown, read-only. */
   function others() {
     var L = loadedIds(), o = [];
-    for (var id in L) if (!find(id)) o.push({ id: id, words: STATE_WORDS[L[id].state] || L[id].state, holds: L[id].holds.map(featureTitle), last: L[id].last });
+    for (var id in L) if (!find(id) && !L[id].shipped) o.push({ id: id, words: STATE_WORDS[L[id].state] || L[id].state, holds: L[id].holds.map(featureTitle), last: L[id].last });
     return o;
   }
 
@@ -486,6 +488,158 @@
     return booted;
   }
   var bootReport = null;
+
+  // ---- (parts-1) THE GAME'S OWN PARTS: its stages and the queues its table ships -----------------------------------
+  // ⚖ the user's goal (2026-10-02): a player SEES every part shaping their game, reads it in plain words, and can turn
+  // it off (or, for a stage, give it their own condition) FOR THEMSELVES. The parts are the table's DATA, read through
+  // the core (`T.stages()`, `T.autoQueues`, the runner's `status()`); the player's switches go through the core's ONE
+  // declared key (`T.parts`, `tmt-loader:<id>:parts`) — never the table, never the save. This file only shows them.
+
+  // A CONDITION, READABLY: split at its top-level `&&` (only where there is no top-level `||`), and each clause read in
+  // words where it is one of the engines' own questions (an upgrade owned, a milestone, a challenge open or completed, a
+  // layer unlocked, a challenge running, a currency against a reset's requirement) — by the GAME's names. A clause it
+  // cannot read stays code. Each clause carries its truth NOW (✓ / ✗ / ⚠), read through the same compiled predicates.
+  function splitTop(src, op) {
+    var out = [], depth = 0, q = null, start = 0;
+    for (var i = 0; i < src.length; i++) {
+      var c = src.charAt(i);
+      if (q) { if (c === '\\') i++; else if (c === q) q = null; continue; }
+      if (c === '"' || c === "'" || c === '`') { q = c; continue; }
+      if (c === '(' || c === '[' || c === '{') depth++;
+      else if (c === ')' || c === ']' || c === '}') depth--;
+      else if (depth === 0 && src.substr(i, op.length) === op) { out.push(src.slice(start, i)); start = i + op.length; i += op.length - 1; }
+    }
+    out.push(src.slice(start));
+    return out.map(function (x) { return x.trim(); }).filter(Boolean);
+  }
+  function unwrap(x) {
+    x = x.trim();
+    while (x.charAt(0) === '(' && x.charAt(x.length - 1) === ')' && balanced(x.slice(1, -1))) x = x.slice(1, -1).trim();
+    return x;
+  }
+  function balanced(x) { var d = 0, q = null; for (var i = 0; i < x.length; i++) { var c = x.charAt(i); if (q) { if (c === '\\') i++; else if (c === q) q = null; continue; } if (c === '"' || c === "'") q = c; else if (c === '(') d++; else if (c === ')') { d--; if (d < 0) return false; } } return d === 0; }
+  function clauses(src) {
+    var x = unwrap(String(src || ''));
+    if (!x) return [];
+    if (splitTop(x, '||').length > 1) return [x];
+    var parts = splitTop(x, '&&');
+    var out = [];
+    for (var i = 0; i < parts.length; i++) { var u = unwrap(parts[i]); var sub = splitTop(u, '||').length > 1 ? [u] : splitTop(u, '&&'); out.push.apply(out, sub.length > 1 ? clauses(u) : [u]); }
+    return out;
+  }
+  var ID = '["\']?([A-Za-z0-9_]+)["\']?';
+  var L_ = '(?:\\.([A-Za-z_][A-Za-z0-9_]*)|\\[["\']([^"\']+)["\']\\])';   // player.x  |  player["x"]
+  function lay(m, i) { return m[i] || m[i + 1]; }
+  function milestoneName(l, id) { return guarded(function () { var d = layers[l] && layers[l].milestones ? layers[l].milestones[id] : null; return d ? text(d.requirementDescription) : ''; }) || 'milestone ' + id; }
+  function resourceName(l) { return guarded(function () { return text((tmp[l] && tmp[l].resource) || (layers[l] && layers[l].resource)); }) || layerName(l) + ' points'; }
+  var CLAUSE = [
+    [new RegExp('^hasUpgrade\\(\\s*' + ID + '\\s*,\\s*' + ID + '\\s*\\)$'), function (m, neg) { return (neg ? 'you do not own ' : 'you own ') + '“' + itemName(m[1], 'upgrades', m[2]) + '” (' + layerName(m[1]) + ')'; }],
+    [new RegExp('^hasMilestone\\(\\s*' + ID + '\\s*,\\s*' + ID + '\\s*\\)$'), function (m, neg) { return (neg ? 'you do not have ' : 'you have ') + 'the ' + layerName(m[1]) + ' milestone “' + milestoneName(m[1], m[2]) + '”'; }],
+    [new RegExp('^hasChallenge\\(\\s*' + ID + '\\s*,\\s*' + ID + '\\s*\\)$'), function (m, neg) { return '“' + itemName(m[1], 'challenges', m[2]) + '” (' + layerName(m[1]) + ') is ' + (neg ? 'not ' : '') + 'completed'; }],
+    [new RegExp('^maxedChallenge\\(\\s*' + ID + '\\s*,\\s*' + ID + '\\s*\\)$'), function (m, neg) { return '“' + itemName(m[1], 'challenges', m[2]) + '” (' + layerName(m[1]) + ') is ' + (neg ? 'not yet fully' : 'fully') + ' completed'; }],
+    [new RegExp('^canCompleteChallenge\\(\\s*' + ID + '\\s*,\\s*' + ID + '\\s*\\)$'), function (m, neg) { return 'the goal of “' + itemName(m[1], 'challenges', m[2]) + '” is ' + (neg ? 'not ' : '') + 'met'; }],
+    [new RegExp('^player' + L_ + '\\.unlocked$'), function (m, neg) { return layerName(lay(m, 1)) + ' is ' + (neg ? 'not yet ' : '') + 'unlocked'; }],
+    [new RegExp('^player' + L_ + '\\.activeChallenge$'), function (m, neg) { return neg ? 'no ' + layerName(lay(m, 1)) + ' challenge is running' : 'you are inside a ' + layerName(lay(m, 1)) + ' challenge'; }],
+    [new RegExp('^String\\(player' + L_ + '\\.activeChallenge\\)\\s*(===|!==)\\s*["\']([^"\']+)["\']$'), function (m, neg) { var inside = (m[3] === '===') !== neg; return 'you are ' + (inside ? '' : 'not ') + 'inside “' + itemName(lay(m, 1), 'challenges', m[4]) + '”'; }],
+    [new RegExp('^tmp' + L_ + '\\.challenges\\[' + ID + '\\]\\.unlocked$'), function (m, neg) { return '“' + itemName(lay(m, 1), 'challenges', m[3]) + '” (' + layerName(lay(m, 1)) + ') is ' + (neg ? 'not yet ' : '') + 'open'; }],
+    [new RegExp('^tmp' + L_ + '\\.layerShown\\s*===\\s*true$'), function (m, neg) { return layerName(lay(m, 1)) + ' is ' + (neg ? 'not ' : '') + 'shown'; }],
+    [new RegExp('^player' + L_ + '\\.points\\.(gt|eq|lte)\\(0\\)$'), function (m, neg) { var some = (m[3] === 'gt') !== neg; return 'you have ' + (some ? 'some' : 'no') + ' ' + resourceName(lay(m, 1)); }],
+    [new RegExp('^player' + L_ + '\\.points\\.gte\\(tmp' + L_ + '\\.nextAt\\)$'), function (m, neg) { return 'your ' + resourceName(lay(m, 1)) + ' ' + (neg ? 'do not yet reach' : 'reach') + ' what ' + layerName(lay(m, 3)) + ' needs for its next reset'; }],
+    [new RegExp('^canReset\\(\\s*' + ID + '\\s*\\)$'), function (m, neg) { return layerName(m[1]) + ' can ' + (neg ? 'not yet ' : '') + 'reset'; }],
+    [new RegExp('^player' + L_ + '\\.buyables\\[' + ID + '\\](\\.plus\\(tmp' + L_ + '\\.[A-Za-z0-9_]+\\))?\\.(gte|gt)\\((\\d+(?:\\.\\d+)?)\\)$'), function (m, neg) {
+      var l = lay(m, 1), n = Number(m[8]) + (m[7] === 'gt' ? 1 : 0);
+      return '“' + itemName(l, 'buyables', m[3]) + '” (' + layerName(l) + ')' + (m[4] ? ', counting the free ones,' : '') + (neg ? ' is below ' : ' is at least ') + n; }],
+  ];
+  /** One clause in words, or null when it is not one of the questions this page can read. */
+  function clauseWords(c) {
+    var x = unwrap(c), neg = false;
+    var ors = splitTop(x, '||');
+    if (ors.length > 1) { var ws = ors.map(clauseWords); return ws.every(function (w) { return w; }) ? ws.join(', or ') : null; }
+    while (x.charAt(0) === '!' && x.charAt(1) !== '=') { neg = !neg; x = unwrap(x.slice(1)); }
+    for (var i = 0; i < CLAUSE.length; i++) { var m = CLAUSE[i][0].exec(x); if (m) { try { return CLAUSE[i][1](m, neg); } catch (e) { return null; } } }
+    return null;
+  }
+  /** (parts-1) a condition in words when every clause of it can be read, else its code */
+  function condWords(src) {
+    var r = clauses(src).map(clauseWords);
+    return r.length && r.every(function (x) { return x; }) ? r.join(' and ') : String(src);
+  }
+  function truth(src) { try { return T.predicate(src)() ? 'yes' : 'no'; } catch (e) { return 'error'; } }
+  /** A condition as a list of {words, code, now}: `words` null where only the code can say it. */
+  function readable(src) {
+    return clauses(src).map(function (c) { return { words: clauseWords(c), code: c, now: truth(c) }; });
+  }
+  function provLines(recs) {
+    return [].concat(recs || []).map(function (r) {
+      return { note: r.note || '', where: r.unverified ? 'no measured row behind it' : 'gate ' + r.gate + (r.run ? ', CI run ' + r.run : '') + ', at ' + String(r.commit || '').slice(0, 9) };
+    });
+  }
+  function featureWithLayer(id) { return featureTitle(id); }
+  function kindOf(id) { var i = String(id).indexOf(':'); return i < 0 ? '' : String(id).slice(0, i); }
+  /** The table's stages, for a player: name, note, condition in words, in force now, what it sets by TITLES, evidence. */
+  function stagesView() {
+    var st = typeof T.stages === 'function' ? T.stages() : [];
+    return st.map(function (S) {
+      var sets = [];
+      for (var f in S.policies) sets.push({ id: f, title: featureWithLayer(f), what: 'decides by “' + (T.policyStringWords ? T.policyStringWords(kindOf(f), S.policies[f]) : S.policies[f]) + '”', raw: S.policies[f] });
+      for (var g in S.gates) {
+        var rw = readable(S.gates[g]), words = rw.every(function (x) { return x.words; }) ? rw.map(function (x) { return x.words; }).join(' and ') : null;
+        sets.push({ id: g, title: featureWithLayer(g), what: 'acts only while ' + (words || S.gates[g]), raw: S.gates[g], code: !words });
+      }
+      var state = S.off ? 'option-off' : S.offByYou ? 'yours-off' : S.error ? 'error' : S.active ? 'on' : 'waiting';
+      return { id: S.id, name: S.name || S.id, note: S.note || '', state: state,
+        stateWords: { 'option-off': 'not in force — this run has the stages switched off (an option)', 'yours-off': 'switched off by you — the game’s own settings apply to what it sets',
+          error: '⚠ its condition could not be read (' + S.error + '), so it is not in force', on: 'in force now', waiting: 'not in force now — waiting for its condition' }[state],
+        when: S.whenInForce, whenTable: S.when, whenYours: S.whenYours, condition: readable(S.whenInForce), sets: sets, evidence: provLines(S.provenance), offByYou: S.offByYou,
+        since: S.since };
+    });
+  }
+  /** The queues the game's table ships, for a player: name, what for, state in words, condition, steps, evidence. */
+  function shippedView() {
+    var es = Array.isArray(T.autoQueues) ? T.autoQueues : [], R = runner(), L = loadedIds();
+    var skipped = {}, refused = {};
+    if (R && R.shippedSkipped) R.shippedSkipped().forEach(function (x) { skipped[x.id] = x; });
+    if (R && R.shippedErrors) R.shippedErrors().forEach(function (x) { refused[x.id] = x; });
+    var tw = function (t) { return T.titleIds ? T.titleIds(t) : t; };
+    return es.map(function (e) {
+      var q = e.queue, st = L[e.id] && L[e.id].shipped ? L[e.id] : null, off = !!(T.parts && T.parts.queueOff(e.id));
+      var cond = (e.when ? '(' + e.when + ')' : '') + (q.trigger && q.trigger.on === 'predicate' ? (e.when ? ' && ' : '') + '(' + q.trigger.when + ')' : '');
+      var state, words;
+      if (off) { state = 'yours-off'; words = 'switched off by you — it will not start in this browser until you switch it back on'; }
+      else if (e.enabled === false) { state = 'shipped-off'; words = 'the game ships it switched off'; }
+      else if (skipped[e.id]) { state = 'skipped'; words = 'not part of this run — ' + tw(skipped[e.id].why); }
+      else if (refused[e.id]) { state = 'refused'; words = 'refused: ' + refused[e.id].errors.join('; '); }
+      else if (!st) { state = R ? 'none' : 'loading'; words = R ? 'not loaded' : 'loading…'; }
+      else { state = st.shipped.phase; words = tw(st.shipped.text); }
+      var cur = null;
+      if (st && st.current && st.state === 'running') { var d = describe(q.steps[st.current.index - 1] || {}); cur = { index: st.current.index, title: d.title, comment: st.current.comment }; }
+      return { id: e.id, name: q.name || e.id, comment: q.comment || '', state: state, words: words, offByYou: off,
+        rearm: e.rearm === 'each' ? 'again each time its condition turns true, at most ' + e.cap + ' times, ' + (e.coolOff && e.coolOff.gs) + ' game-s apart' : 'once per page load',
+        condition: readable(cond || 'true'), conditionCode: cond,
+        steps: q.steps.map(function (x, k) { var d = describe(x); return { i: k, title: d.title, detail: d.detail, comment: x.comment || '' }; }),
+        run: st ? { state: st.state, current: cur, wait: st.wait, holds: st.holds.map(featureTitle), last: lastWords(tw(st.last)), steps: st.steps } : null,
+        evidence: provLines(T.autoQueueProvenance && T.autoQueueProvenance[e.id]) };
+    });
+  }
+  // the runner's last-outcome line names the condition a wait met or a call skipped on: in words where it can be read
+  function lastWords(t) {
+    if (typeof t !== 'string') return t;
+    var m = /^(.*? until )(.+)$/.exec(t) || /^(did not call \S+: )(.+)( is false)$/.exec(t);
+    return m ? m[1] + condWords(m[2]) + (m[3] || '') : t;
+  }
+  function setStageOff(id, off) { return T.parts ? T.parts.setStageOff(id, off) : { ok: false, error: 'not available on this page' }; }
+  function setStageWhen(id, src) { return T.parts ? T.parts.setStageWhen(id, src) : { ok: false, error: 'not available on this page' }; }
+  function setShippedOff(id, off) { return T.parts ? T.parts.setQueueOff(id, off) : { ok: false, error: 'not available on this page' }; }
+  /** Copy a shipped queue into the player's own queues (switched Off): the runner's `copyShipped`, the editor's import. */
+  function copyShipped(id) {
+    return ensureRunner().then(function (R) {
+      if (!R || typeof R.copyShipped !== 'function') return { ok: false, errors: ['The queue runner is not loaded.'] };
+      var c = R.copyShipped(id);
+      if (!c.ok) return { ok: false, errors: [plain(c.error)] };
+      if (find(c.id)) return { ok: false, errors: ['You already have the copy “' + (c.queue.name || c.id) + '” — it is in your queues below.'], id: c.id };
+      return importText(JSON.stringify(c.queue), { from: 'shipped:' + id });
+    });
+  }
 
   // ---- the components -------------------------------------------------------------------------------------------
   var BTN = K.BTN_STYLE, SEL = K.SELECT_STYLE, ROOT = K.ROOT_STYLE;
@@ -681,6 +835,94 @@
         + '</div>'
         + '</div>',
     },
+    // (parts-1) ONE CONDITION, readably: each clause in words (or its code) with its truth now
+    'tmtl-qcond': {
+      props: ['data'],
+      template: '<div class="tmtl-qcond" style="' + SUB + '">'
+        + '<div v-for="(c, k) in data.c" :key="k" class="tmtl-qcond-clause" :data-now="c.now" style="' + ROW + '">'
+        +   '<span :style="c.now === \'yes\' ? \'color:#4f9a6a\' : c.now === \'no\' ? \'opacity:.7\' : \'color:#d07a7a\'">{{ c.now === \'yes\' ? \'✓\' : c.now === \'no\' ? \'✗\' : \'⚠\' }}</span>'
+        +   '<span v-if="c.words" class="tmtl-qcond-words" style="min-width:0;overflow-wrap:anywhere;flex:1 1 12em;text-align:left">{{ c.words }}</span>'
+        +   '<code v-else class="tmtl-qcond-code" style="min-width:0;overflow-wrap:anywhere;flex:1 1 12em;text-align:left;font-size:.85em">{{ c.code }}</code>'
+        +   '<code v-if="c.words && data.dev" style="min-width:0;overflow-wrap:anywhere;flex:1 1 100%;text-align:left;font-size:.8em;opacity:.6">{{ c.code }}</code>'
+        + '</div>'
+        + '</div>',
+    },
+    // (parts-1) ONE STAGE of the game's table: name, note, in force now, its condition, what it sets by TITLES, its
+    // evidence; switch off for me, my own condition
+    'tmtl-qstage': {
+      props: ['data'],
+      data: function () { return { err: null, showEv: false, editWhen: false }; },
+      computed: { s: function () { return this.data.s; } },
+      methods: {
+        done: function (r) { this.err = r && !r.ok ? (r.error || (r.errors || []).join(' ')) : null; this.$emit('changed'); return r; },
+        toggle: function () { this.done(setStageOff(this.s.id, !this.s.offByYou)); },
+        setWhen: function (v) { var r = setStageWhen(this.s.id, v); this.$emit('changed'); return { ok: r.ok, errors: r.ok ? [] : ['The game does not understand this condition (' + r.error + ').'] }; },
+        gameWhen: function () { this.done(setStageWhen(this.s.id, null)); },
+      },
+      template: '<div class="tmtl-qstage tmtl-part" :data-part="\'stage:\' + s.id" :data-stage="s.id" :data-state="s.state" style="' + BLOCK + ';border-left-color:#5f8f6a">'
+        + '<div style="' + ROW + '">'
+        +   '<b class="tmtl-qstage-name" style="min-width:0;overflow-wrap:anywhere;flex:1 1 10em;text-align:left">{{ s.name }}</b>'
+        +   '<button type="button" class="tmtl-qstage-onoff" :data-off="s.offByYou ? 1 : 0" style="' + BTN + '" @click="toggle" @keydown.stop>{{ s.offByYou ? \'switch back on\' : \'switch off for me\' }}</button>'
+        + '</div>'
+        + '<div class="tmtl-qstage-state" :style="s.state === \'on\' ? \'color:#4f9a6a;text-align:left\' : s.state === \'error\' ? \'' + ERR + '\' : s.state === \'yours-off\' ? \'color:#c08a3e;text-align:left\' : \'' + DIM + '\'"><b>{{ s.stateWords }}</b></div>'
+        + '<div v-if="s.note" class="tmtl-qstage-note" style="text-align:left;min-width:0;overflow-wrap:anywhere">{{ s.note }}</div>'
+        + '<div style="' + DIM + ';margin-top:3px">{{ s.whenYours ? \'in force while (your own condition):\' : \'in force while:\' }}</div>'
+        + '<tmtl-qcond :data="{ c: s.condition, dev: data.dev }"></tmtl-qcond>'
+        + '<div style="' + DIM + ';margin-top:3px">while it is in force, it sets:</div>'
+        + '<div v-for="x in s.sets" :key="x.id + x.what" class="tmtl-qstage-sets" :data-feature="x.id" style="' + SUB + ';overflow-wrap:anywhere">• <b>{{ x.title }}</b> {{ x.what }}<span v-if="data.dev" style="opacity:.6;font-size:.85em"> ({{ x.id }}: {{ x.raw }})</span></div>'
+        + '<div style="' + ROW + ';margin-top:3px">'
+        +   '<button type="button" class="tmtl-qstage-evidence" style="' + BTN + '" @click="showEv = !showEv" @keydown.stop>{{ showEv ? \'hide the evidence\' : \'why: the measurements behind it\' }}</button>'
+        +   '<button type="button" class="tmtl-qstage-editwhen" style="' + BTN + '" @click="editWhen = !editWhen" @keydown.stop>{{ editWhen ? \'done\' : \'change its condition for me\' }}</button>'
+        +   '<button v-if="s.whenYours" type="button" class="tmtl-qstage-gamewhen" style="' + BTN + '" @click="gameWhen" @keydown.stop>use the game’s condition</button>'
+        + '</div>'
+        + '<div v-if="showEv" class="tmtl-qstage-ev" style="' + SUB + '"><div v-for="(e, k) in s.evidence" :key="k" style="' + SUB + ';overflow-wrap:anywhere;border-bottom:1px solid rgba(127,178,217,.15)">{{ e.note }} <span style="opacity:.6;font-size:.85em">({{ e.where }})</span></div></div>'
+        + '<div v-if="editWhen" style="' + SUB + '">'
+        +   '<tmtl-qtext :data="{ value: s.whenYours || s.whenTable, label: \'in force while (the same language as the feature conditions; empty = the game’s own)\', kind: \'predicate\', cls: \'tmtl-qstage-when\', commit: setWhen }" @changed="$emit(\'changed\')"></tmtl-qtext>'
+        +   '<div style="' + DIM + '">the game’s own: <code style="overflow-wrap:anywhere">{{ s.whenTable }}</code></div>'
+        + '</div>'
+        + '<div v-if="data.dev" style="' + DIM + '">id {{ s.id }}</div>'
+        + '<div v-if="err" class="tmtl-error" style="' + ERR + '">{{ err }}</div>'
+        + '</div>',
+    },
+    // (parts-1) ONE QUEUE THE GAME'S TABLE SHIPS: read-only, marked as part of the game's automation, its live state;
+    // copy to my queues, switch off for me
+    'tmtl-qshipped': {
+      props: ['data'],
+      data: function () { return { err: null, note: null, showSteps: false, showEv: false }; },
+      computed: { q: function () { return this.data.q; } },
+      methods: {
+        toggle: function () { var r = setShippedOff(this.q.id, !this.q.offByYou); this.err = r.ok ? null : r.error; this.$emit('changed'); },
+        copy: function () {
+          var self = this;
+          copyShipped(self.q.id).then(function (r) { self.err = r.ok ? null : r.errors.join(' '); self.note = r.ok ? 'copied into your queues (below), switched Off — edit it there' : null; self.$emit('changed'); });
+        },
+      },
+      template: '<div class="tmtl-qshipped tmtl-part" :data-part="\'queue:\' + q.id" :data-queue="q.id" :data-state="q.state" style="' + BLOCK + ';border-left-color:#8a7fd9">'
+        + '<div style="' + ROW + '">'
+        +   '<b class="tmtl-qshipped-name" style="min-width:0;overflow-wrap:anywhere;flex:1 1 10em;text-align:left">{{ q.name }}</b>'
+        +   '<button type="button" class="tmtl-qshipped-copy" style="' + BTN + '" @click="copy" @keydown.stop>copy to my queues</button>'
+        +   '<button type="button" class="tmtl-qshipped-onoff" :data-off="q.offByYou ? 1 : 0" style="' + BTN + '" @click="toggle" @keydown.stop>{{ q.offByYou ? \'switch back on\' : \'switch off for me\' }}</button>'
+        + '</div>'
+        + '<div style="' + DIM + '">part of this game’s automation — a move it makes by itself, {{ q.rearm }}</div>'
+        + '<div class="tmtl-qshipped-state" :style="q.state === \'running\' ? \'color:#4f9a6a;text-align:left\' : q.state === \'yours-off\' ? \'color:#c08a3e;text-align:left\' : \'text-align:left\'"><b>{{ q.words }}</b></div>'
+        + '<div v-if="q.run && q.run.current" class="tmtl-qrun-step" style="' + SUB + '">step {{ q.run.current.index }} of {{ q.run.steps }}: {{ q.run.current.title }}<span v-if="q.run.current.comment" style="opacity:.7"> — {{ q.run.current.comment }}</span></div>'
+        + '<div v-if="q.run && q.run.wait" class="tmtl-qrun-wait" style="' + SUB + '">waiting — <b>{{ Math.round(q.run.wait.left * 10) / 10 }} {{ q.run.wait.unit === \'ticks\' ? \'tick(s)\' : \'s\' }}</b> left of {{ q.run.wait.timeout }}</div>'
+        + '<div v-if="q.run && q.run.holds.length" class="tmtl-qrun-holds" style="' + SUB + '">has paused: {{ q.run.holds.join(\', \') }}</div>'
+        + '<div v-if="q.run && q.run.last" class="tmtl-qrun-last" style="' + SUB + ';' + DIM + '">last: {{ q.run.last }}</div>'
+        + '<div v-if="q.comment" class="tmtl-qshipped-comment" style="text-align:left;min-width:0;overflow-wrap:anywhere;margin-top:3px">{{ q.comment }}</div>'
+        + '<div style="' + DIM + ';margin-top:3px">it starts when:</div>'
+        + '<tmtl-qcond :data="{ c: q.condition, dev: data.dev }"></tmtl-qcond>'
+        + '<div style="' + ROW + ';margin-top:3px">'
+        +   '<button type="button" class="tmtl-qshipped-steps-toggle" style="' + BTN + '" @click="showSteps = !showSteps" @keydown.stop>{{ showSteps ? \'hide its steps\' : \'its \' + q.steps.length + \' steps\' }}</button>'
+        +   '<button type="button" class="tmtl-qshipped-evidence" style="' + BTN + '" @click="showEv = !showEv" @keydown.stop>{{ showEv ? \'hide the evidence\' : \'why: the measurements behind it\' }}</button>'
+        + '</div>'
+        + '<div v-if="showSteps" class="tmtl-qshipped-steps" style="' + SUB + '"><div v-for="st in q.steps" :key="st.i" class="tmtl-qshipped-step" style="' + SUB + ';overflow-wrap:anywhere;border-bottom:1px solid rgba(127,178,217,.15)">{{ st.i + 1 }}. {{ st.title }}<span v-if="st.comment" style="opacity:.7"> — {{ st.comment }}</span><div v-if="data.dev" style="opacity:.6;font-family:monospace;font-size:.8em">{{ st.detail }}</div></div></div>'
+        + '<div v-if="showEv" class="tmtl-qshipped-ev" style="' + SUB + '"><div v-for="(e, k) in q.evidence" :key="k" style="' + SUB + ';overflow-wrap:anywhere;border-bottom:1px solid rgba(127,178,217,.15)">{{ e.note }} <span style="opacity:.6;font-size:.85em">({{ e.where }})</span></div></div>'
+        + '<div v-if="data.dev" style="' + DIM + '">id {{ q.id }}</div>'
+        + '<div v-if="note" class="tmtl-qnote" style="color:#4f9a6a;text-align:left">{{ note }}</div>'
+        + '<div v-if="err" class="tmtl-error" style="' + ERR + '">{{ err }}</div>'
+        + '</div>',
+    },
     // THE TAB
     'tmtl-qedit': {
       props: ['layer', 'data'],
@@ -695,10 +937,28 @@
         recording: function () { void this.clock; void this.gen; return recStatus(); },
         cat: function () { void this.gen; return { loading: catalogState.loading, error: catalogState.error, entries: catalogState.entries }; },
         boot: function () { void this.gen; return bootReport; },
+        // (parts-1) the game's own parts, re-read every redraw (live: in force now, running, the time left)
+        stages: function () { void this.clock; void this.gen; return stagesView(); },
+        shipped: function () { void this.clock; void this.gen; return shippedView(); },
+        stagesOn: function () { return this.stages.filter(function (x) { return x.state === 'on'; }).length; },
       },
       created: function () { var self = this; ensureRunner().then(function () { self.gen++; }); },
+      // (parts-1) a part's name pressed in the readout (`T.showPart`) brings its entry into sight, once
+      mounted: function () { this.focusPart(); },
+      updated: function () { this.focusPart(); },
       methods: {
         bump: function () { this.gen++; },
+        focusPart: function () {
+          var f = T.partFocus;
+          if (!f || f.done || !this.$el || !this.$el.querySelector) return;
+          var el = this.$el.querySelector('[data-part="' + f.kind + ':' + String(f.id).replace(/"/g, '') + '"]');
+          if (!el) return;
+          f.done = true;
+          try { el.scrollIntoView({ block: 'start' }); } catch (e) { /* no layout */ }
+          el.setAttribute('data-focused', '1');
+          el.style.outline = '2px solid #7fb2d9';
+          setTimeout(function () { try { el.style.outline = ''; el.removeAttribute('data-focused'); } catch (e) { /* gone */ } }, 2500);
+        },
         done: function (r, okNote) { this.err = r && !r.ok ? r.errors.join(' ') : null; this.note = r && r.ok && okNote ? okNote : null; this.gen++; return r; },
         create: function (v) { var r = this.done(create(v || 'my queue'), 'added “' + (v || 'my queue') + '” — it is Off until you switch it On'); return r; },
         createNow: function () { this.create(''); },
@@ -720,6 +980,17 @@
         addGen: function (entry) { var self = this; addGenerated(entry).then(function (r) { self.done(r, 'added — it is Off until you switch it On'); }); },
       },
       template: '<div class="tmtl-root tmtl-qedit" style="' + ROOT + '">'
+        // (parts-1) THE PARTS — the game's own first (what is shaping this game now), then the player's own queues
+        + '<div class="tmtl-parts-intro" style="' + DIM + ';margin-bottom:6px;text-align:left">This game’s automation is built from <b>parts</b>: its <b>stages</b> change how some features decide while a condition holds, its <b>moves</b> are one-off queues it plays when their moment comes, and <b>your queues</b> are your own. You can switch any of the game’s parts off for yourself — that is kept in this browser for this game, never in your save, and the game’s own data is not changed.</div>'
+        + '<div v-if="stages.length" class="tmtl-parts-stages" style="text-align:left;min-width:0;margin-bottom:8px">'
+        +   '<div style="text-align:left"><b>Stages</b> <span style="' + DIM + '">— {{ stages.length }}, {{ stagesOn }} in force now. The first stage in this list that is in force wins where two set the same thing.</span></div>'
+        +   '<tmtl-qstage v-for="x in stages" :key="x.id" :data="{ s: x, dev: dev }" @changed="bump"></tmtl-qstage>'
+        + '</div>'
+        + '<div v-if="shipped.length" class="tmtl-parts-shipped" style="text-align:left;min-width:0;margin-bottom:8px">'
+        +   '<div style="text-align:left"><b>Moves this game makes</b> <span style="' + DIM + '">— queues that ship with this game’s automation. Read-only here: copy one to your queues to change it.</span></div>'
+        +   '<tmtl-qshipped v-for="x in shipped" :key="x.id" :data="{ q: x, dev: dev }" @changed="bump"></tmtl-qshipped>'
+        + '</div>'
+        + '<div class="tmtl-parts-mine" style="text-align:left"><b>Your queues</b></div>'
         + '<div style="' + DIM + ';margin-bottom:6px;text-align:left">A <b>queue</b> is a list of steps the automation takes in order: press one of the game’s own buttons, wait for something, pause or resume the automation’s own tools, or just a note. Each queue starts when the game starts or when a condition you type holds, and is kept by this browser for this game (not in your save). Export one to keep it or share it.</div>'
         // the recorder
         + '<div class="tmtl-qrec" style="' + ROW + ';margin-bottom:6px">'
@@ -773,6 +1044,9 @@
     addStep: addStep, setStep: setStep, moveStep: moveStep, deleteStep: deleteStep,
     exportText: exportText, download: download, importText: importText, fileName: fileName,
     catalog: catalog, addGenerated: addGenerated,
+    // (parts-1) the game's own parts, as the Parts subtab shows them, and the player's switches on them
+    stages: stagesView, shipped: shippedView, readable: readable, condWords: condWords,
+    setStageOff: setStageOff, setStageWhen: setStageWhen, setShippedOff: setShippedOff, copyShipped: copyShipped,
     record: { start: recStart, stop: recStop, status: recStatus, fold: foldPresses },
   };
 })();

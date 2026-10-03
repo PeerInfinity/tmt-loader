@@ -746,8 +746,15 @@
     else { last.until = 'String(' + x.path + '.activeChallenge) !== ' + cid; last.comment = 'the attempt is over (a repeatable challenge: the completion count it started from is not an engine value)'; }
     var notDone = typeof maxedChallenge === 'function' ? '!maxedChallenge(' + x.l + ', ' + x.id + ')' : '!hasChallenge(' + x.l + ', ' + x.id + ')';
     var when = x.path + '.unlocked && tmp[' + x.l + '].challenges[' + x.id + '].unlocked && ' + notDone + ' && (!' + x.path + '.activeChallenge || String(' + x.path + '.activeChallenge) === ' + cid + ')';
+    // (parts-1) the two CONFIRMATIONS — "the engine entered it" and "a completion was recorded" — are met in the slot of
+    // the call they confirm, or never: their limit is TICKS (queue format version 4), not game-seconds, which were a
+    // different number of loops at every tick size (2 at diff 1, 40 at the page's 0.05). The measurement plan
+    // (`caQueue` on the copy) keeps its game-seconds: what it measured is unchanged.
+    q.steps.forEach(function (st) { if (st.do === 'wait' && st.timeout && st.timeout.gs === 2 && (st === last || /activeChallenge\) === /.test(st.until))) st.timeout = { ticks: 2 }; });
     var cd = chalDecl(b.challenge), L0 = G.layers[b.challenge.layer];
-    return conditional(q, when, b.hold, 'attempt ' + (plain(cd && cd.name, cd) || b.goal) + ' (' + (plain(L0 && L0.name, L0) || b.challenge.layer) + ')');
+    var out = conditional(q, when, b.hold, 'attempt ' + (plain(cd && cd.name, cd) || b.goal) + ' (' + (plain(L0 && L0.name, L0) || b.challenge.layer) + ')');
+    out.version = 4;
+    return out;
   };
 
   // ---- reset-requirement (m30) ---------------------------------------------------------------------------------------

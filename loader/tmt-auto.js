@@ -904,7 +904,8 @@
   /** stages-1: the reason line's tail when a stage made (or failed to make) the decision; '' otherwise. */
   function stageSuffix(st) {
     if (!st) return '';
-    return (st.id ? ' — stage ' + st.id : '') + (st.error ? ' — ⚠ stage ' + st.error.stage + ' could not be evaluated (' + st.error.message + '), so it is not in force' : '');
+    return (st.id ? ' — stage ' + st.id : '') + (st.error ? ' — ⚠ stage ' + st.error.stage + ' could not be evaluated (' + st.error.message + '), so it is not in force' : '')
+      + (st.offByYou ? ' — stage ' + st.offByYou.join(', ') + ' switched off by you' : '');
   }
 
   // `f.last` — the last decision. OUTSIDE `player` (it is not the player's game) and OUTSIDE `runtimeState()` (it
@@ -2597,6 +2598,89 @@
   // V4's mistyped predicate again.
   // ⚠ Nothing here is in `player` or in `runtimeState()`: the answer is recomputed from the game every loop, so a
   // snapshot, a restore and a planner's excursion need no memory of it.
+  // ---- (parts-1) THE PLAYER'S OWN SWITCHES ON THE TABLE'S PARTS ----------------------------------------------------
+  // ⚖ the user's goal (2026-10-02): every part shaping a player's game — a stage, a shipped queue — is visible, and the
+  // player can turn it off (or, for a stage, give it their own condition) FOR THEMSELVES. ⛔ Never a table edit and never
+  // in `player` (a key there changes every save's full hash): ONE declared key in the loader's own per-game namespace,
+  // `tmt-loader:<id>:parts` through `T.storage.raw`, `{format: 'tmt-parts/1', stagesOff: [id…], queuesOff: [id…],
+  // when: {<stage id>: <expression>}}`; an empty record removes the key. Read once, lazily (the first stage evaluation
+  // or the runner's load); in Node there is no `storage.raw`, so it is memory only and every harness run is unmoved.
+  // Precedence: where the player's saved choices sit — a switched-off stage is not in force (its features fall to the
+  // next stage or the table), a switched-off shipped queue is skipped by name. Every read and write is wrapped.
+  var PARTS_KEY = 'parts', PARTS_FORMAT = 'tmt-parts/1';
+  var partsMem = null, partsWrites = 0, partsListeners = [];
+  function partsKey() { var st = T.storage; return st && st.prefix && st.raw ? st.prefix + PARTS_KEY : null; }
+  function partsBlank() { return { stagesOff: {}, queuesOff: {}, when: {} }; }
+  function partsRead() {
+    if (partsMem) return partsMem;
+    partsMem = partsBlank();
+    try {
+      var k = partsKey(), raw = k ? T.storage.raw.getItem.call(localStorage, k) : null, v = raw ? JSON.parse(raw) : null;
+      if (v && v.format === PARTS_FORMAT) {
+        (Array.isArray(v.stagesOff) ? v.stagesOff : []).forEach(function (id) { if (typeof id === 'string') partsMem.stagesOff[id] = true; });
+        (Array.isArray(v.queuesOff) ? v.queuesOff : []).forEach(function (id) { if (typeof id === 'string') partsMem.queuesOff[id] = true; });
+        if (v.when && typeof v.when === 'object') for (var w in v.when) if (typeof v.when[w] === 'string' && v.when[w]) partsMem.when[w] = v.when[w];
+      }
+    } catch (e) { partsMem = partsBlank(); }
+    return partsMem;
+  }
+  function partsWrite() {
+    partsWrites++;
+    var p = partsRead(), o = { format: PARTS_FORMAT, stagesOff: Object.keys(p.stagesOff).sort(), queuesOff: Object.keys(p.queuesOff).sort(), when: p.when };
+    var empty = !o.stagesOff.length && !o.queuesOff.length && !Object.keys(p.when).length;
+    try {
+      var k = partsKey();
+      if (k) { if (empty) T.storage.raw.removeItem.call(localStorage, k); else T.storage.raw.setItem.call(localStorage, k, JSON.stringify(o)); }
+    } catch (e) { /* a full or read-only store: the switch holds for this page load */ }
+    for (var i = 0; i < partsListeners.length; i++) { try { partsListeners[i](); } catch (e) { /* a listener's own problem */ } }
+    invalidateView();
+  }
+  function stageById(id) { for (var i = 0; i < stagesNow.length; i++) if (stagesNow[i].id === id) return stagesNow[i]; return null; }
+  function shippedById(id) { var q = T.autoQueues || []; for (var i = 0; i < q.length; i++) if (q[i].id === id) return q[i]; return null; }
+  function stageOffByYou(id) { return partsMem !== null && partsMem.stagesOff[id] === true; }
+  /** The player's own condition for a stage, if they gave one that still compiles (else the table's: an unreadable one is
+   *  IGNORED, not run — the saved-policy rule). */
+  function stageWhenYours(id) {
+    if (partsMem === null || typeof partsMem.when[id] !== 'string') return null;
+    return checkPredicate(partsMem.when[id]) ? null : partsMem.when[id];
+  }
+  T.parts = {
+    key: function () { return partsKey(); }, format: PARTS_FORMAT, writes: function () { return partsWrites; },
+    /** what this player has switched: {stagesOff: [id…], queuesOff: [id…], when: {id: expr}} */
+    get: function () { var p = partsRead(); return { stagesOff: Object.keys(p.stagesOff).sort(), queuesOff: Object.keys(p.queuesOff).sort(), when: Object.assign({}, p.when) }; },
+    stageOff: function (id) { partsRead(); return stageOffByYou(id); },
+    queueOff: function (id) { return partsRead().queuesOff[id] === true; },
+    stageWhen: function (id) { partsRead(); return stageWhenYours(id); },
+    setStageOff: function (id, off) {
+      if (!stageById(id)) return { ok: false, error: 'this game\'s automation has no stage "' + id + '"' };
+      var p = partsRead();
+      if (off) p.stagesOff[id] = true; else delete p.stagesOff[id];
+      partsWrite();
+      return { ok: true, error: null };
+    },
+    /** the player's own condition for a stage (null or '' gives it back to the game's) — checked like a gate */
+    setStageWhen: function (id, src) {
+      if (!stageById(id)) return { ok: false, error: 'this game\'s automation has no stage "' + id + '"' };
+      var p = partsRead();
+      if (src === null || src === undefined || String(src).trim() === '') { delete p.when[id]; partsWrite(); return { ok: true, error: null }; }
+      src = String(src).trim();
+      var w = checkPredicate(src);
+      if (w) return { ok: false, error: w };
+      p.when[id] = src;
+      partsWrite();
+      return { ok: true, error: null };
+    },
+    setQueueOff: function (id, off) {
+      if (!shippedById(id)) return { ok: false, error: 'this game\'s automation ships no queue "' + id + '"' };
+      var p = partsRead();
+      if (off) p.queuesOff[id] = true; else delete p.queuesOff[id];
+      partsWrite();
+      return { ok: true, error: null };
+    },
+    /** the runner listens: a shipped queue switched off is unloaded (its holds released), switched on is armed fresh */
+    onChange: function (fn) { partsListeners.push(fn); },
+  };
+
   var stagesNow = [], stagesOff = false;
   var stagePol = {}, stageGate = {}, stageOn = {}, stageErr = {}, stageSeen = false, stageHist = [];
   var stageStats = { loops: 0, evals: 0 };
@@ -2604,11 +2688,15 @@
   function stageTick() {
     if (!stagesNow.length || stagesOff) return;
     stageStats.loops++;
+    if (partsMem === null) partsRead();
     var pol = {}, gat = {}, on = {}, err = {};
     for (var i = 0; i < stagesNow.length; i++) {
       var S = stagesNow[i], v = false;
+      // (parts-1) a stage the PLAYER switched off is not in force and not evaluated; one they gave their own condition
+      // is evaluated by that condition instead of the table's
+      if (stageOffByYou(S.id)) continue;
       stageStats.evals++;
-      try { v = !!T.predicate(S.when)(); } catch (e) { v = false; err[S.id] = String((e && e.message) || e); }
+      try { v = !!T.predicate(stageWhenYours(S.id) || S.when)(); } catch (e) { v = false; err[S.id] = String((e && e.message) || e); }
       if (!v) continue;
       on[S.id] = i;
       for (var fp in S.policies) if (pol[fp] === undefined) pol[fp] = i;
@@ -2623,6 +2711,7 @@
       var rec = { stage: id, on: is, tick: T.ticks, gs: Math.round((Number(player.timePlayed) || 0) * 1e6) / 1e6 };
       if (!stageSeen) rec.first = true;
       if (errIs) rec.error = errIs;
+      if (!is && stageOffByYou(id)) rec.by = 'you';   // (parts-1) it went out of force because the player switched it off
       stageHist.push(rec);
       if (stageHist.length > STAGE_HIST) stageHist.shift();
       if (logLink.stage !== null) logLink.stage(rec);
@@ -2653,7 +2742,21 @@
     var gate = controlOwner(f, 'while') === 'stage' ? stageIdOf(f, 'while') : null;
     var shadow = null;
     if (stagePol[f.id] !== undefined && !pol) shadow = f.policyRuntime !== null ? 'runtime' : watchPolicy(f) ? 'watch' : savedPolicyOf(f) ? 'you' : f.policyOpt !== null ? 'option' : null;
-    return { named: named, policy: pol, 'while': gate, shadowedBy: shadow, off: stagesOff, errors: errs };
+    var o = { named: named, policy: pol, 'while': gate, shadowedBy: shadow, off: stagesOff, errors: errs };
+    // (parts-1) only a player who switched a stage off grows the key, so every pinned row is byte-identical
+    var yours = offByYouNaming(f);
+    if (yours.length) o.offByYou = yours;
+    return o;
+  }
+  /** (parts-1) the stages the PLAYER switched off that name this feature (its policy or its `while`) */
+  function offByYouNaming(f) {
+    var out = [];
+    if (partsMem === null) return out;
+    for (var i = 0; i < stagesNow.length; i++) {
+      var S = stagesNow[i];
+      if (stageOffByYou(S.id) && (S.policies[f.id] !== undefined || S.gates[f.id] !== undefined)) out.push(S.id);
+    }
+    return out;
   }
   /** What `say()` attaches to a decision: the stage(s) it was made under, and a stage whose `when` threw. */
   function stageNoteOf(f) {
@@ -2665,10 +2768,12 @@
       for (var i = 0; i < stagesNow.length; i++) if (stagesNow[i].id === k) S = stagesNow[i];
       if (S && (S.policies[f.id] !== undefined || S.gates[f.id] !== undefined)) { e = { stage: k, message: stageErr[k] }; break; }
     }
-    if (!p && !g && !e) return null;
-    var o = { id: p || g };
+    var yours = offByYouNaming(f);
+    if (!p && !g && !e && !yours.length) return null;
+    var o = { id: p || g || null };
     if (p && g && p !== g) o.id = p + ', ' + g;
     if (e) o.error = e;
+    if (yours.length) o.offByYou = yours;   // (parts-1) the reason line says the player switched it off
     return o;
   }
   /** The stages as data: each with its `when`, whether it is in force, since when, and the error its `when` threw. */
@@ -2678,7 +2783,10 @@
       var S = stagesNow[i], since = null;
       for (var h = stageHist.length - 1; h >= 0; h--) if (stageHist[h].stage === S.id) { since = stageHist[h]; break; }
       out.push({ id: S.id, when: S.when, policies: Object.assign({}, S.policies), gates: Object.assign({}, S.gates), active: stageOn[S.id] !== undefined,
-        error: stageErr[S.id] || null, since: since && since.on ? { tick: since.tick, gs: since.gs } : null, off: stagesOff });
+        error: stageErr[S.id] || null, since: since && since.on ? { tick: since.tick, gs: since.gs } : null, off: stagesOff,
+        // (parts-1) what the Parts subtab shows: the stage's name and plain-words note, its evidence, and the player's own switches
+        name: S.name, note: S.note, provenance: JSON.parse(JSON.stringify(S.provenance)),
+        offByYou: stageOffByYou(S.id), whenYours: stageWhenYours(S.id), whenInForce: stageWhenYours(S.id) || S.when });
     }
     return out;
   };
@@ -4294,7 +4402,7 @@
   // — the same string, formatted once.
   function lastRow(L) {
     var ps = codeParts(L.code, L.values), o = { code: L.code, text: joinParts(ps), values: jsonValues(L.values), tick: L.tick, at: L.at, parts: ps };
-    if (L.stage) { o.stage = { id: L.stage.id || null, error: L.stage.error ? { stage: L.stage.error.stage, message: L.stage.error.message } : null }; o.text += stageSuffix(L.stage); }
+    if (L.stage) { o.stage = { id: L.stage.id || null, error: L.stage.error ? { stage: L.stage.error.stage, message: L.stage.error.message } : null }; if (L.stage.offByYou) o.stage.offByYou = L.stage.offByYou.slice(); o.text += stageSuffix(L.stage); }
     return o;
   }
   T.explain = function () {
@@ -4476,9 +4584,21 @@
   // ⚠ ENGINE COMPONENTS ONLY, and `loader/tmt-auto.js` still never touches the DOM (docs/contract.md). This builds
   // a STRING that the engines' own `display-text` renders; it queries no element and holds no reference to one.
   function queuesShown() {
-    try { return (player.tab === AU || player.navTab === AU) && !!player.subtabs && !!player.subtabs[AU] && player.subtabs[AU].mainTabs === 'Queues'; } catch (e) { return false; }
+    try { return (player.tab === AU || player.navTab === AU) && !!player.subtabs && !!player.subtabs[AU] && player.subtabs[AU].mainTabs === PARTS_TAB; } catch (e) { return false; }
   }
   T.queuesShown = queuesShown;
+  // (parts-1) THE `Parts` SUBTAB (qedit-1's `Queues`, renamed): every part of this game's automation — its stages, the
+  // queues its table ships and the player's own queues — in one place. `showPart(kind, id)` is what a part's name in
+  // the readout presses: it opens the subtab and asks the view to bring that part's entry into sight.
+  var PARTS_TAB = 'Parts';
+  T.partsTab = PARTS_TAB;
+  T.partFocus = null;
+  T.showPart = function (kind, id) {
+    T.partFocus = { kind: String(kind), id: String(id), at: Date.now() };
+    try { if (typeof showTab === 'function') showTab(AU); player.subtabs[AU].mainTabs = PARTS_TAB; } catch (e) { /* no tab here */ }
+    invalidateView();
+    return T.partFocus;
+  };
   function advancedShown() {
     try { return (player.tab === AU || player.navTab === AU) && !!player.subtabs && !!player.subtabs[AU] && player.subtabs[AU].mainTabs === 'Advanced'; } catch (e) { return false; }
   }
@@ -4600,6 +4720,13 @@
     return out;
   }
   T.policyWords = policyWords;
+  /** (parts-1) a policy STRING (a stage's, a table's) in the same words the strategy line uses */
+  T.policyStringWords = function (kind, str) {
+    var pp = parsePolicy(kind, str);
+    return pp ? policyWords(kind, { strategy: pp.id, params: pp.params, modifier: pp.modifier, inForce: str }) || str : str;
+  };
+  /** (parts-1) every feature id in a text replaced by the feature's title — the player view's rule (shipq-2) */
+  T.titleIds = function (text) { return titleIds(text); };
   /** The control switch for gates-v5 part 2's CONTROL rows — a page-side flag, never saved. */
   T.setViewFloors = function (on) { FLOORS_ON = !!on; invalidateView(); return FLOORS_ON; };
   T.newFloors = function () { return { w: Object.create(null), g: Object.create(null) }; };
@@ -4658,8 +4785,22 @@
   /** stages-1: the reason line's stage tail — the stage this decision was made under, and a stage that threw. */
   function stageNowHTML(L) {
     if (!L || !L.stage) return '';
-    return (L.stage.id ? ' <span style="opacity:.8">· stage <b>' + esc(L.stage.id) + '</b></span>' : '')
-      + (L.stage.error ? ' <span style="color:#d07a7a">· ⚠ stage ' + esc(L.stage.error.stage) + ' could not be evaluated — not in force</span>' : '');
+    return (L.stage.id ? ' <span style="opacity:.8">· stage <b>' + partLinks('stage', L.stage.id) + '</b></span>' : '')
+      + (L.stage.error ? ' <span style="color:#d07a7a">· ⚠ stage ' + partLinks('stage', L.stage.error.stage) + ' could not be evaluated — not in force</span>' : '')
+      + (L.stage.offByYou ? ' <span class="tmtl-stage-yours" style="color:#c08a3e">· stage ' + partLinks('stage', L.stage.offByYou.join(', ')) + ' switched off by you</span>' : '');
+  }
+  // (parts-1) A PART'S NAME IS A LINK TO ITS ENTRY in the Parts subtab (`T.showPart`): the readout says which stage or
+  // shipped queue shaped a decision, and one press shows what that part is, why it exists and how to switch it off.
+  // The text stays the part's id (the gates and the reason line read it), the part's own name rides as the tooltip.
+  function partLink(kind, id) {
+    var nm = partName(kind, id);
+    return '<a href="#" class="tmtl-part-link" data-part="' + esc(kind + ':' + id) + '" title="' + esc((nm ? nm + ' — ' : '') + 'show this part of the automation') + '"'
+      + ' style="color:inherit;text-decoration:underline dotted" onclick="tmtLoader.showPart(\'' + esc(kind) + '\', \'' + esc(id) + '\'); return false">' + esc(id) + '</a>';
+  }
+  function partLinks(kind, ids) { return String(ids).split(', ').map(function (x) { return partLink(kind, x); }).join(', '); }
+  function partName(kind, id) {
+    if (kind === 'stage') { var S = stageById(id); return S && S.name ? S.name : null; }
+    var q = shippedById(id); return q && q.queue && q.queue.name ? q.queue.name : null;
   }
   function featureBlock(r, F) {
     var p = r.policy, bits = [], id = r.id;
@@ -4673,8 +4814,9 @@
     if (p.escalated) bits.push(chip('ESCALATED', '#a06a3e') + ' by the stall watch · its own rule is ' + esc(r.escalation ? r.escalation.primary : '?'));
     // stages-1: a STAGE that set this strategy is named on the strategy line — and so is one that is in force but
     // SHADOWED (the player's edit, an option or the runtime beat it), so nobody wonders why the table's stage "did nothing"
-    if (r.stage && r.stage.policy) bits.push(chip('STAGE', '#5f8f6a') + ' ' + esc(r.stage.policy) + ' sets this');
-    else if (r.stage && r.stage.shadowedBy) bits.push('stage ' + esc(r.stage.named.join(', ')) + ' is in force, but ' + esc(r.stage.shadowedBy === 'you' ? 'your choice' : r.stage.shadowedBy === 'option' ? 'a run option' : r.stage.shadowedBy === 'watch' ? 'the stall watch' : 'a runtime setting') + ' beats it');
+    if (r.stage && r.stage.policy) bits.push(chip('STAGE', '#5f8f6a') + ' ' + partLink('stage', r.stage.policy) + ' sets this');
+    else if (r.stage && r.stage.shadowedBy) bits.push('stage ' + partLinks('stage', r.stage.named.join(', ')) + ' is in force, but ' + esc(r.stage.shadowedBy === 'you' ? 'your choice' : r.stage.shadowedBy === 'option' ? 'a run option' : r.stage.shadowedBy === 'watch' ? 'the stall watch' : 'a runtime setting') + ' beats it');
+    if (r.stage && r.stage.offByYou) bits.push('<span class="tmtl-stage-yours" style="color:#c08a3e">stage ' + partLinks('stage', r.stage.offByYou.join(', ')) + ' switched off by you — the game’s own setting applies</span>');
     if (r.stage && r.stage.errors.length) bits.push('<span style="color:#d07a7a">⚠ stage ' + esc(r.stage.errors[0].stage) + ' could not be evaluated (' + esc(r.stage.errors[0].message) + ') — not in force</span>');
     // ⚠ the table's entry and the generic derivation's shown BESIDE what is in force, and only when they DIFFER —
     // survey §4.5. Developer details since U16.
@@ -5446,6 +5588,7 @@
         pressAll: function () { T.pressAll(); this.gen++; },
         // U16: the developer-details switch — page-side, never saved (see DEV)
         setDev: function () { T.setDevDetails(!T.devDetails()); this.gen++; },
+        showPart: function (kind, id) { T.showPart(kind, id); this.gen++; },
         // (log-1) the STATE LOG's switch and download (docs/log.md). `loader/tmt-log.js` is fetched on the FIRST press,
         // never before — a page that never presses it requests nothing new (the host's `fetchStateLog` door).
         logToggle: function () {
@@ -5541,16 +5684,18 @@
         // (shipq-1) a SHIPPED queue (the game's table's `queues`) says so, and its state in plain words: armed (waiting for
         // its condition), running, done — or why it does not start (off, a setting it relies on, cooling off)
         +     '<b v-if="q.shipped">shipped queue {{ q.name || q.id }}</b><b v-else>queue {{ q.id }}</b> — {{ q.shipped ? q.shipped.text : q.stateText }}'
+        // (parts-1) the shipped queue's entry in the Parts subtab: what it does, its evidence, and switching it off for you
+        +     '<span v-if="q.shipped"> · <a href="#" class="tmtl-part-link" :data-part="\'queue:\' + q.id" style="color:inherit;text-decoration:underline dotted" @click.prevent="showPart(\'queue\', q.id)" @keydown.stop>see this part</a></span>'
         +     '<div v-if="q.shipped" class="tmtl-queue-shipped" style="margin-left:8px;opacity:.8">a move this game\'s automation makes by itself when its moment comes — {{ q.shipped.rearm === \'each\' ? \'again each time, at most \' + q.shipped.cap + \' times, \' + q.shipped.coolOff + \' game-s apart\' : \'once per page load\' }}</div>'
         +     '<div v-if="q.shipped && dev" style="margin-left:8px;opacity:.7">{{ q.comment }} Starts when <code>{{ q.shipped.condition }}</code></div>'
         +     '<div v-if="!q.shipped && q.reliesWhy" style="margin-left:8px">does not start: {{ q.reliesWhy }}</div>'
         +     '<div v-if="q.current" style="margin-left:8px">step {{ q.current.index }} of {{ q.steps }}: <code>{{ q.current.do }}</code> {{ q.current.text }}<span v-if="q.current.comment" style="opacity:.7"> — {{ q.current.comment }}</span></div>'
         // (qedit-1) what a running wait is waiting for, and the time it has left before its timeout
-        +     '<div v-if="q.wait" class="tmtl-queue-wait" style="margin-left:8px">waiting for <code>{{ q.wait.until }}</code> — {{ Math.round(q.wait.left * 10) / 10 }} s left of {{ q.wait.timeout }} (then {{ q.wait.onTimeout === \'skip\' ? \'it skips the wait\' : \'the queue stops\' }})</div>'
+        +     '<div v-if="q.wait" class="tmtl-queue-wait" style="margin-left:8px">waiting for <code>{{ q.wait.until }}</code> — {{ Math.round(q.wait.left * 10) / 10 }} {{ q.wait.unit === \'ticks\' ? \'tick(s)\' : \'s\' }} left of {{ q.wait.timeout }} (then {{ q.wait.onTimeout === \'skip\' ? \'it skips the wait\' : \'the queue stops\' }})</div>'
         +     '<div v-if="q.holds.length" style="margin-left:8px">holding: {{ q.holds.join(\', \') }}</div>'
         +     '<div v-if="q.last" style="margin-left:8px;opacity:.7">last: {{ q.last }}</div>'
         +   '</div>'
-        +   '<div style="opacity:.7">edit, add or record queues in the <b>Queues</b> tab</div>'
+        +   '<div style="opacity:.7">see every part of this game\'s automation, and edit, add or record your own queues, in the <b>Parts</b> tab</div>'
         + '</div>'
         // ⚖ Q1's second half: expand all / collapse all, and they set EVERY block including the ones whose default is
         // the other way — `collapse all` then `expand all` has to be reachable from any state.
@@ -5630,7 +5775,7 @@
   // between the two marker comments, writes `schemas/games-auto.schema.json` from TABLE_SCHEMA (`--check` fails if
   // the committed file differs) and validates every `games-auto/<id>.json` with the SAME `schemaErrors`. The key list
   // the derivation checks (`TABLE_KEYS`) is read off TABLE_SCHEMA.properties, so there is no second list to drift.
-  // The schema is a JSON Schema (draft 2020-12) subset: type, const, enum, pattern, minItems, required, properties,
+  // The schema is a JSON Schema (draft 2020-12) subset: type, const, enum, pattern, maxLength (parts-1), minItems, required, properties,
   // additionalProperties, items, oneOf. `x-experimental` marks what is ACCEPTED but NOT FROZEN: the cycle / give-up
   // modifiers inside a policy string, and every `challenges:*` entry — the next rungs may still move them.
   var TABLE_FORMAT_VERSIONS = [1];
@@ -5677,6 +5822,9 @@
       stages: { type: 'array', description: 'stage-gated entries: while `when` holds, its `policies` / `gates` replace the table\'s own (first holding stage wins per feature and slot; below `--auto-opt` and the player\'s edit)',
         items: { type: 'object', required: ['id', 'when', 'provenance'], additionalProperties: false, properties: {
           id: { type: 'string', pattern: '^[a-z0-9][a-z0-9-]*$' },
+          // (parts-1) what a PLAYER reads in the Parts subtab: a short name and, in plain words, what the stage does and why
+          name: { type: 'string', pattern: '^\\S', maxLength: 80, description: 'the stage\'s name, in the game\'s own words (the Parts subtab, the readout\'s tooltip)' },
+          note: { type: 'string', pattern: '^\\S', description: 'in plain words: what the stage does while it is in force, and why' },
           when: { type: 'string', pattern: '^\\S', description: 'a JavaScript expression over the engine\'s globals (the `gates` language); a throw reads as FALSE' },
           policies: { type: 'object', additionalProperties: { type: 'string', pattern: '^\\S' } },
           gates: { type: 'object', additionalProperties: { type: 'string', pattern: '^\\S' } },
@@ -5720,6 +5868,7 @@
       if (!ok) return [p + ': must be ' + [].concat(s.type).join(' or ') + ', not ' + t];
     }
     if (s.pattern && typeof v === 'string' && !new RegExp(s.pattern).test(v)) out.push(p + ': does not match ' + s.pattern);
+    if (s.maxLength && typeof v === 'string' && v.length > s.maxLength) out.push(p + ': is longer than ' + s.maxLength + ' characters');
     if (Array.isArray(v)) {
       if (s.minItems && v.length < s.minItems) out.push(p + ': needs at least ' + s.minItems + ' items');
       if (s.items) for (i = 0; i < v.length; i++) out = out.concat(schemaErrors(v[i], s.items, p + '[' + i + ']'));
@@ -5894,7 +6043,8 @@
         var gw = checkPredicate(s.gates[sg]);
         if (gw) throw new Error(at + ': gate ' + sg + ' — ' + gw);
       }
-      stagesNow.push({ id: s.id, when: s.when, policies: Object.assign({}, s.policies || {}), gates: Object.assign({}, s.gates || {}), provenance: [].concat(s.provenance) });
+      stagesNow.push({ id: s.id, when: s.when, policies: Object.assign({}, s.policies || {}), gates: Object.assign({}, s.gates || {}), provenance: [].concat(s.provenance),
+        name: typeof s.name === 'string' ? s.name : null, note: typeof s.note === 'string' ? s.note : null });
     });
     // ---- shipq-1: the SHIPPED QUEUES (schema above). The entry is checked here; the queue itself by the runner when it
     // loads them (it knows the step vocabulary). `--auto-opt shippedQueues=off` measures the table without them.
@@ -5902,6 +6052,7 @@
     if (sqo !== undefined && sqo !== '' && sqo !== 'on' && sqo !== 'off') throw new Error(src + ': option shippedQueues must be "on" or "off" (got "' + sqo + '")');
     var qids = {};
     T.autoQueues = [];
+    T.autoQueueProvenance = {};
     (table.queues || []).forEach(function (e, qi) {
       var at = src + ': queues[' + qi + '] "' + e.id + '"';
       if (qids[e.id]) throw new Error(at + ': the id is used twice');
@@ -5913,6 +6064,7 @@
       if (!each && (e.cap !== undefined || e.coolOff !== undefined)) throw new Error(at + ': "cap" and "coolOff" belong to rearm "each"');
       if (sqo === 'off') return;
       T.autoQueues.push(JSON.parse(JSON.stringify({ id: e.id, when: e.when, rearm: e.rearm || 'once', cap: e.cap, coolOff: e.coolOff, enabled: e.enabled !== false, queue: e.queue })));
+      T.autoQueueProvenance[e.id] = JSON.parse(JSON.stringify([].concat(e.provenance)));   // (parts-1) the Parts subtab's evidence
     });
     T.autoStages = stagesNow.map(function (s) { return { id: s.id, when: s.when, policies: Object.assign({}, s.policies), gates: Object.assign({}, s.gates) }; });
     stagesOff = so === 'off';
@@ -6189,7 +6341,7 @@
       ] },
       // (qedit-1) THE FOURTH KEY, LAST — `Simple` stays first, so a first load still shows it. The bare component form
       // again (no `null` anywhere in the tab format). Its content is the lazy editor's SHELL (`tmtl-queues`).
-      Queues: { content: [
+      Parts: { content: [
         'tmtl-queues',
       ] },
       },
