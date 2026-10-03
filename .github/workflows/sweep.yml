@@ -762,7 +762,9 @@ jobs:
   # shipped queue and a stage switched off for me surviving a reload in the ONE declared key and never in `player`, my
   # own condition for a stage, the readout's links, the 390 px phone width, two other engines; then v4 (the H22
   # queue's tick limits move no pin, at diff 1 and 0.05) and the grep.
-  # ⛔ `--assert` holds the run to its exact row count (9 + 1 + 1), all green.
+  # (speed-2) S10 reads every readout under a 6× slowed CPU (the lag CI's S4 caught), S11 a save with the game's
+  # developer speed set.
+  # ⛔ `--assert` holds the run to its exact row count (11 + 1 + 1), all green.
   # ---------------------------------------------------------------------------------------------------------------
   parts:
     name: parts — every automation part visible and editable
@@ -825,7 +827,9 @@ jobs:
   # (resume mid-queue, a once queue stays done, the row cycle survives, a different save / an import / a hard reset
   # discard it and the tab says so), the 390 px phone width, inertness, the options tab's door; then the roster (every
   # game's loop is found) and the grep.
-  # ⛔ `--assert` holds the run to its exact row count (9 + 1 + 1), all green.
+  # (speed-2) S10 reads every readout under a 6× slowed CPU (the lag CI's S4 caught), S11 a save with the game's
+  # developer speed set.
+  # ⛔ `--assert` holds the run to its exact row count (11 + 1 + 1), all green.
   # ---------------------------------------------------------------------------------------------------------------
   speed:
     name: speed — speed controls and the automation's memory across a reload

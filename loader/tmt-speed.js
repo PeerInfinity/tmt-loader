@@ -103,6 +103,34 @@
   function startClock() { if (clockId === null) clockId = G.setInterval(setTime, 250); setTime(); }
   function stopClock() { if (clockId !== null) { G.clearInterval(clockId); clockId = null; } }
 
+  // ---- (speed-2) A SAVE THAT CARRIES `player.devSpeed` ----------------------------------------------------------------
+  // The engines multiply the tick by `player.devSpeed` when the save has it set. WHERE is read from their SOURCE, as the
+  // loop is found: 2.2.1 does it in its interval AND inside `gameLoop` (so even the faithful `gameLoop(0.05)` is N×
+  // bigger, and the game's own speed is N²), 2.7 in its interval only (faithful ticks stay 0.05, the game's own loop
+  // runs N× faster). Either way a faithful fast-forward is not how THIS save plays, and the panel says so.
+  // ⛔ The loader never writes it: it is a setting inside the player's save.
+  var devWhere = null;
+  function devSpeedWhere() {
+    if (devWhere) return devWhere;
+    var inTick = safe(function () { return typeof gameLoop === 'function' && /\bdevSpeed\b/.test(String(gameLoop)); }, false);
+    var L = findLoop(), inLoop = false;
+    if (L.how === 'found' && typeof T.timers.find === 'function') inLoop = T.timers.find(/\bdevSpeed\b/).some(function (x) { return L.ids.indexOf(x.id) >= 0; });
+    devWhere = { inTick: inTick, inLoop: inLoop };
+    return devWhere;
+  }
+  function devSpeedNow() {
+    var v = safe(function () { return player.devSpeed; }, undefined), n = Number(v);
+    if (!v || n === 1) return null;              // the engine's own test is `if (player.devSpeed)`
+    var w = devSpeedWhere();
+    if (!w.inTick && !w.inLoop) return null;     // an engine that never reads it: the key is inert
+    return { n: n, inTick: w.inTick, inLoop: w.inLoop };
+  }
+  function devSpeedText(d) {
+    var tail = ' It is a setting inside your save; the loader does not change it.';
+    if (d.inTick) return 'This save has the game\'s developer speed set (×' + d.n + '), so even faithful ticks are ' + d.n + '× bigger — results differ from normal play.' + tail;
+    return 'This save has the game\'s developer speed set (×' + d.n + '): the game\'s own loop runs ' + d.n + '× faster, while faithful ticks stay 0.05 s — so a fast-forward differs from how this save plays.' + tail;
+  }
+
   // ---- state ----------------------------------------------------------------------------------------------------------
   var speed = 1;                 // 0 (pause) | 1 | 2 | 10 | 'max'
   var mode = 'faithful';         // 'faithful' | 'coarse'
@@ -265,6 +293,7 @@
       target: t ? { kind: t.kind, label: t.label, ticks: t.ticks, gs: t.gs, of: t.of, cap: t.cap, src: t.src || null, throws: t.throws, lastThrow: t.lastThrow,
         frac: t.kind === 'gs' ? t.ticks / t.of : Math.min(1, t.gs / t.cap), pace: t.pace } : null,
       last: lastStop, offline: safe(function () { return player.offTime ? Number(player.offTime.remain) || 0 : 0; }, 0),
+      devSpeed: devSpeedNow(),
     };
   }
   function findLoopInfo() { var L = findLoop(); return { how: L.how, ids: L.ids.slice() }; }
@@ -304,6 +333,7 @@
     '#' + ID + ' select.tmts-mark{flex:1 1 10em}',
     '#' + ID + ' .tmts-read{opacity:.9;flex:1 1 10em;min-width:0}',
     '#' + ID + ' .tmts-approx{color:#e7b75a}',
+    '#' + ID + ' .tmts-dev{color:#e7b75a;font-size:.92em}',
     '#' + ID + ' .tmts-bar{height:6px;flex:1 1 8em;min-width:4em;border:1px solid rgba(127,178,217,.45);border-radius:3px;overflow:hidden}',
     '#' + ID + ' .tmts-bar>div{display:block;margin:0;height:100%;background:rgba(127,178,217,.75);width:0}',   // margin 0: the game centres a bare div
     '#' + ID + ' .tmts-more{border-top:1px solid rgba(127,178,217,.3);margin-top:4px;padding-top:4px}',
@@ -318,6 +348,7 @@
     (kids || []).forEach(function (c) { if (c) e.appendChild(c); });
     return e;
   }
+  var FAITH_WORDS = 'Faithful: the game\'s own 0.05 s ticks — the same result as playing normally';
   var SPEED_WORDS = { 0: 'Pause', 1: '×1', 2: '×2', 10: '×10', max: 'Max' };
   var UNITS = [['s', 1, 'seconds'], ['min', 60, 'minutes'], ['h', 3600, 'hours']];
   function build() {
@@ -341,6 +372,7 @@
     var stopBtn = el('button', { type: 'button', class: 'tmts-stop', hidden: '', text: 'Stop', onclick: function () { stop(); } });
     var row3 = el('div', { class: 'tmts-row' }, [bar, stopBtn]);
     var last = el('div', { class: 'tmts-last' });
+    var dev = el('div', { class: 'tmts-dev', role: 'note', hidden: '' });
 
     // the targets
     var amt = el('input', { class: 'tmts-num', type: 'number', min: '0', step: 'any', value: '10', 'aria-label': 'Amount of game time' });
@@ -358,17 +390,18 @@
     var stepSel = el('select', { 'aria-label': 'Approximate tick' }); COARSE_STEPS.forEach(function (s) { var o = el('option', { value: String(s), text: s + ' s ticks' }); if (s === coarseStep) o.selected = true; stepSel.appendChild(o); });
     function modeChange() { try { setMode(coarse.checked ? 'coarse' : 'faithful', Number(stepSel.value)); } catch (e) { faith.checked = mode === 'faithful'; coarse.checked = mode === 'coarse'; } }
     faith.addEventListener('change', modeChange); coarse.addEventListener('change', modeChange); stepSel.addEventListener('change', function () { if (coarse.checked) modeChange(); });
+    var faithLabel = el('label', { for: ID + '-faithful', text: FAITH_WORDS });
     var more = el('div', { class: 'tmts-more', hidden: '' }, [
       el('div', { class: 'tmts-row' }, [el('span', { text: 'Fast-forward' }), amt, unit, el('span', { text: 'of game time' }), goT]),
       el('div', { class: 'tmts-row' }, [el('span', { text: 'Until' }), cond, goC]),
       markRow,
       el('div', { class: 'tmts-row' }, [el('span', { text: '…stopping after at most' }), capA, capU, el('span', { text: 'of game time' })]),
-      el('div', { class: 'tmts-row' }, [faith, el('label', { for: ID + '-faithful', text: 'Faithful: the game\'s own 0.05 s ticks — the same result as playing normally' })]),
+      el('div', { class: 'tmts-row' }, [faith, faithLabel]),
       el('div', { class: 'tmts-row' }, [coarse, el('label', { for: ID + '-coarse', class: 'tmts-approx', text: 'Approximate: bigger ticks, much faster — results can differ from normal play' }), stepSel]),
       el('div', { class: 'tmts-note', text: 'Added by tmt-loader. Nothing here is saved in the game; a reload is always normal speed. Fast-forward runs while this tab is visible.' }),
     ]);
-    root.append(row1, row2, row3, last, more);
-    ui = { root: root, speedBtns: speedBtns, read: read, bar: bar, stopBtn: stopBtn, last: last, more: more, moreBtn: moreBtn, moreOpen: false, markSel: markSel, markRow: markRow,
+    root.append(row1, row2, dev, row3, last, more);
+    ui = { root: root, dev: dev, faithLabel: faithLabel, speedBtns: speedBtns, read: read, bar: bar, stopBtn: stopBtn, last: last, more: more, moreBtn: moreBtn, moreOpen: false, markSel: markSel, markRow: markRow,
       faith: faith, coarse: coarse, stepSel: stepSel, amt: amt, unit: unit, cond: cond, capA: capA, capU: capU };
   }
   function showMore(on) {
@@ -394,11 +427,14 @@
     var s = status(), p = s.pace;
     for (var k in ui.speedBtns) { var on = String(p) === k || (s.target === null && String(s.speed) === k); var v = on ? 'true' : 'false'; if (ui.speedBtns[k].getAttribute('aria-pressed') !== v) ui.speedBtns[k].setAttribute('aria-pressed', v); }
     var words = (s.speed === 0 && !s.target ? 'Paused' : p === 1 ? 'Normal speed (the game\'s own loop)' : p === 'max' ? 'Max speed' : '×' + p)
-      + ' · ' + (s.approximate ? 'approximate ticks of ' + s.step + ' s — results can differ from normal play' : 'faithful ticks');
+      + ' · ' + (s.approximate ? 'approximate ticks of ' + s.step + ' s — results can differ from normal play' : 'faithful ticks' + (s.devSpeed ? ' (not faithful on this save: developer speed ×' + s.devSpeed.n + ')' : ''));
     if (s.held && (s.speed !== 0 || s.target)) words += ' · ' + s.gameSecondsPerSec + ' game-s per second (' + s.ticksPerSec.toLocaleString('en-US') + ' ticks/s)';
     if (s.loop.how === 'pause-all' && s.held) words += ' · every game timer is paused while this runs';
     setText(ui.read, words);
     ui.read.classList.toggle('tmts-approx', s.approximate);
+    if (s.devSpeed) { setText(ui.dev, devSpeedText(s.devSpeed)); if (ui.dev.hidden) ui.dev.hidden = false; }
+    else if (!ui.dev.hidden) ui.dev.hidden = true;
+    setText(ui.faithLabel, s.devSpeed ? 'Faithful: the game\'s own 0.05 s ticks — not faithful on this save (its developer speed is ×' + s.devSpeed.n + ')' : FAITH_WORDS);
     if (s.target) {
       ui.bar.removeAttribute('hidden'); ui.stopBtn.removeAttribute('hidden');
       ui.bar.firstChild.style.width = Math.round(s.target.frac * 1000) / 10 + '%';
@@ -412,9 +448,11 @@
     }
   }
   function setText(e, t) { if (e.textContent !== t) e.textContent = t; }
-  var renderQueued = false;
-  function queueRender() { if (renderQueued) return; renderQueued = true; G.requestAnimationFrame(function () { renderQueued = false; render(); }); }
-  listeners.push(queueRender);
+  // (speed-2) THE PANEL RENDERS IN THE SAME TASK AS THE CHANGE. It used to queue the render for the next animation frame,
+  // so for up to a frame (longer on a slow CPU, and never in a hidden tab) the readout still said the old speed or mode,
+  // and anything reading the page then — a script, a screen reader, gate S4 on CI — read the old words. A render is a
+  // status() and a few text compares; `notify` runs once per change and once per driven frame, so this costs nothing.
+  listeners.push(render);
   function open(remember) {
     if (!ui) build();
     if (!ui.root.isConnected) document.body.appendChild(ui.root);

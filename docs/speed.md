@@ -117,12 +117,50 @@ into faithful ticks — a real change to what offline time gives, which is the e
 first would make every fast-forward start with an unannounced coarse burst. (A future control could offer "spend my
 offline time faithfully" as a target of its own.)
 
+### The panel renders in the same task as the change (speed-2)
+
+The readout, the mode label and the outcome line are rewritten the moment the state changes — `setSpeed`, `setMode`,
+the radio and the step, a run starting, progressing (once per driven frame) and ending. speed-1 queued that render for
+the next animation frame, so for up to a frame (longer on a slow CPU, never in a hidden tab) the panel still showed the
+old words: CI's S4 read *"Normal speed … faithful ticks"* after the switch to approximate, and here S4 read the outcome
+line still at *"Fast-forwarding … 98 s of 100 s"* after the run had resolved. Gate S10 reads every readout under a CPU
+slowed 6× (CDP `Emulation.setCPUThrottlingRate`), both in the same task as the change and from the next evaluate, in
+every speed state (paused, ×2 held, ×1). `gates-speed --throttle <rate>` runs any leg on a slowed CPU.
+
 ### Coarse mode, and `devSpeed`
 
 Coarse ticks are `tmtLoader.tick(step)` with the player's step (0.25 / 1 / 5 game-seconds). ⛔ **`player.devSpeed` is
 not used**: it is the ENGINE's key, it lives in the SAVE, and it multiplies the engine's variable diff rather than
 fixing it. Writing it would put the speed into the save, which the ruling forbids. Every place the coarse mode shows —
 the readout, the choice, the outcome — says *approximate — results can differ from normal play*.
+
+### A save that carries `player.devSpeed` (speed-2)
+
+`devSpeed` is the engine's developer speed: a number in the SAVE that multiplies the tick when set (the engines test
+`if (player.devSpeed)`). The two engine families apply it in different places, read in each `js/game.js`:
+
+| | where | so, with devSpeed N |
+|---|---|---|
+| 2.2.1 (`ptr`) | TWICE: in the interval (`game.js:408`, `diff *= player.devSpeed`, before `gameLoop(diff)`) AND inside `gameLoop` (`game.js:331`, before the `maxTickLength()` cap and `addTime(diff)`) | the game's own speed is ×N²; the faithful `gameLoop(0.05)` (and the harness's tick) is 0.05 × N game-s |
+| 2.7 (`something`) | once, in the interval (`game.js:419`) | the game's own speed is ×N; the faithful tick stays 0.05 game-s |
+
+Measured by gate S11 on a save with devSpeed 2 (`player.timePlayed` per tick; ptr from m28/QL6, because 2.2.1's
+`addTime` does not advance `timePlayed` before the first layer is unlocked): ptr — 0.1 game-s per faithful tick, 4.00
+game-s per real second of its own loop (0.2 per engine tick); Something — 0.05 per faithful tick, 2.03 per real second
+(0.10 per engine tick).
+
+So on such a save a faithful fast-forward is not how the save plays (on 2.2.1 even its ticks are N× bigger). The panel
+finds where the engine reads it by SOURCE, as it finds the loop (`gameLoop`'s source, and the held interval's), and,
+when the loaded save has a truthy `devSpeed` other than 1 that the engine reads, shows a plain warning under the
+readout — *"This save has the game's developer speed set (×N), so even faithful ticks are N× bigger — results differ
+from normal play. It is a setting inside your save; the loader does not change it."* on 2.2.1, and on 2.7 *"…: the
+game's own loop runs N× faster, while faithful ticks stay 0.05 s — so a fast-forward differs from how this save
+plays."* — and the faithful label and the readout say *not faithful on this save*. `status().devSpeed` is
+`{n, inTick, inLoop}` or `null`.
+
+⛔ **The loader never changes it.** There is no button to clear it: it is the player's (or the game author's) setting
+in the save, the only `player` write the controls make is the engine's own `player.time`, and gate S8 holds them to
+that. A player who wants it gone can clear it in the game (or its console).
 
 ### Never in `player`
 

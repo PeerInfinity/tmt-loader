@@ -2,7 +2,7 @@
 // speed-1 — THE SPEED CONTROLS AND THE AUTOMATION'S MEMORY ACROSS A RELOAD (docs/speed.md; docs/automation.md, "Memory
 // across a reload"), driven through the PAGE (Playwright) and compared against the Node harness.
 //
-//   node tools/harness/gates-speed.mjs --part page|roster|grep|all [--only <row-key>[,…]] [--no-summary] [--no-write] [--assert]
+//   node tools/harness/gates-speed.mjs --part page|roster|grep|all [--only <row-key>[,…]] [--throttle <rate>] [--no-summary] [--no-write] [--assert]
 //
 // Part page
 //   S1 faithful   a FAITHFUL fast-forward of N ticks on the page — the engine's loop HELD, every other timer live — lands
@@ -31,6 +31,12 @@
 //                 `player` (the key paths before and after every speed and a coarse run are the same)
 //   S9 door       the options tab's "Speed controls" button opens them, and they come back open after a reload (the one
 //                 declared key `tmt-loader:<id>:ui.speed`); closing them removes the key and returns to ×1
+//   S10 throttled (speed-2) under a CPU slowed 6× (CDP), every readout S2, S3 and S4 read — the speed line, the mode,
+//                 the outcome — is current the moment it changes, in the same task and from the next evaluate, paused
+//                 and held included
+//   S11 devSpeed  (speed-2) a save with `player.devSpeed` 2: the warning shows, the faithful label and the readout say
+//                 "not faithful on this save"; game-s per faithful tick and per real second of the game's own loop,
+//                 measured (ptr ×2 and ×4, something ×1 and ×2); devSpeed never changed; the control save shows nothing
 // Part roster
 //   L1 loop       every game on the roster: the plain page's timer recorder holds exactly the interval(s) that call
 //                 `gameLoop(` — the one the speed controls hold — at least one per game
@@ -46,11 +52,11 @@ import { appendSection } from './summary.mjs';
 entryOnly(import.meta.url);
 
 const a = parseArgs(process.argv.slice(2), ['no-summary', 'no-write', 'assert']);
-const KNOWN = new Set(['_', 'part', 'only', 'no-summary', 'no-write', 'assert', 'ids']);
+const KNOWN = new Set(['_', 'part', 'only', 'no-summary', 'no-write', 'assert', 'ids', 'throttle']);
 for (const k of Object.keys(a)) if (!KNOWN.has(k)) { console.error(`REFUSED: unknown flag --${k}`); process.exit(2); }
 const PART = String(a.part || 'all');
 if (!['page', 'roster', 'grep', 'all'].includes(PART)) { console.error(`REFUSED: --part ${PART} is not page | roster | grep | all`); process.exit(2); }
-const PAGE_ROWS = ['faithful', 'multiplier', 'targets', 'coarse', 'no-gap', 'memory', 'phone', 'inert', 'door'];
+const PAGE_ROWS = ['faithful', 'multiplier', 'targets', 'coarse', 'no-gap', 'memory', 'phone', 'inert', 'door', 'throttled', 'devspeed'];
 const ONLY = a.only ? String(a.only).split(',') : null;
 if (ONLY) for (const o of ONLY) if (!PAGE_ROWS.includes(o)) { console.error(`REFUSED: --only ${o} is not one of ${PAGE_ROWS.join(', ')}`); process.exit(2); }
 const commit = headCommit(), dirty = treeDirty();
@@ -58,6 +64,10 @@ const rows = [];
 const row = (r) => { rows.push(r); console.log(`${r.ok ? 'GREEN' : 'RED  '} ${r.gate} ${r.id} ${String(r.notes || '').slice(0, 1600)}`); };
 const TMP = fs.mkdtempSync(path.join(os.tmpdir(), 'tmt-speed-'));
 const want = (k) => !ONLY || ONLY.includes(k);
+// --throttle <rate>: every page of the run under Chromium's CPU throttling (CDP `Emulation.setCPUThrottlingRate`) — a
+// slow CI runner, reproduced here. The throttled row (S10) throttles its own pages whatever this says.
+const THROTTLE = a.throttle !== undefined ? Number(a.throttle) : 1;
+if (!(THROTTLE >= 1)) { console.error(`REFUSED: --throttle ${a.throttle} is not a rate of 1 or more`); process.exit(2); }
 
 // ⚠ This file is the ORACLE, and the games' ids are its data (the loader may not name them — part grep).
 const QL6 = 'tools/harness/snapshots/ptr/m28/QL6.json';
@@ -87,9 +97,15 @@ async function run(id, flags) {
 // ---- page helpers ------------------------------------------------------------------------------------------------------
 let openContext, openGame, pageLoadFrom, waitReady;
 let server = null;
-async function fresh(browser, { id = 'ptr', width = 1280, height = 900, managed = true, automation = true, profile = 'all', extra = '' } = {}) {
+async function throttle(context, page, rate) {
+  if (!(rate > 1)) return;
+  const cdp = await context.newCDPSession(page);
+  await cdp.send('Emulation.setCPUThrottlingRate', { rate });
+}
+async function fresh(browser, { id = 'ptr', width = 1280, height = 900, managed = true, automation = true, profile = 'all', extra = '', cpu = THROTTLE } = {}) {
   const { context, stats } = await openContext(browser, { contextOptions: { viewport: { width, height } } });
   const page = await context.newPage();
+  await throttle(context, page, cpu);
   const errs = [];
   page.on('pageerror', (e) => errs.push(String(e.message).slice(0, 200)));
   const q = `index.html?mod=${id}${managed ? '&managed=1' : ''}${automation ? '&automation=1' : ''}${automation && profile ? `&profile=${profile}` : ''}${extra}`;
@@ -290,6 +306,115 @@ async function legCoarse(browser) {
   if (errs.length) f.push(`page errors ${errs.slice(0, 2).join(' | ')}`);
   row({ gate: 'S4 coarse: approximate ticks are labelled approximate everywhere (readout, choice, outcome) and land on a different state than the faithful run (expected)', id: 'ptr', ok: !f.length,
     notes: f.length ? f.join('; ') : `100 game-s: coarse 100 ticks of 1 s → ${c.hashGame}; faithful 2000 ticks → ${fa.hashGame}; readout "${ui.read.slice(0, 80)}"` });
+}
+
+// ---- S10 --------------------------------------------------------------------------------------------------------------
+// (speed-2) THE READOUT UNDER A SLOW CPU. CI's S4 read "Normal speed … faithful ticks" after the switch to approximate:
+// the panel re-rendered on the NEXT animation frame, and a slow runner read the DOM before that frame came. So this leg
+// throttles the CPU (CDP `Emulation.setCPUThrottlingRate`) and reads every readout S2, S3 and S4 read — the speed line,
+// the mode, the outcome — at once after the change: once from a separate evaluate (what S4 did on CI) and once in the
+// SAME task as the change (no frame can come between), in every speed state, paused and held included.
+const READ = `(() => { const q = (s) => { const e = document.querySelector('#tmt-speed ' + s); return e ? e.textContent : null; }; return { read: q('.tmts-read'), last: q('.tmts-last') }; })()`;
+async function legThrottled(browser) {
+  const f = [], seen = [], RATE = Math.max(THROTTLE, 6);
+  const { context, page, errs } = await fresh(browser, { id: 'ptr', cpu: RATE });
+  await speedUp(page);
+  await page.evaluate(() => { tmtLoader.speed.open(false); tmtLoader.speed.showMore(true); });
+  const now = (fn) => page.evaluate(`(() => { (${fn})(); return ${READ}; })()`);   // the change and the read in one task
+  const later = async (fn) => { await page.evaluate(`(${fn})()`); return page.evaluate(READ); };   // two round trips, as S4
+  const check = (tag, got, re, field = 'read') => { if (!re.test(got[field] || '')) f.push(`${tag}: ${field} "${got[field]}" (wanted ${re})`); };
+  for (const [how, go] of [['same task', now], ['next evaluate', later]]) {
+    await page.evaluate(() => { document.querySelector('#tmt-speed select[aria-label="Approximate tick"]').value = '1'; });   // the step the radio picks up
+    // S4's reads: the mode, through the panel's own controls (the radio, the step) and through the API
+    check(`${how} approximate (radio)`, await go(`() => document.getElementById('tmt-speed-coarse').click()`), /approximate ticks of 1 s — results can differ from normal play/);
+    check(`${how} step 5 (select)`, await go(`() => { const s = document.querySelector('#tmt-speed select[aria-label="Approximate tick"]'); s.value = '5'; s.dispatchEvent(new Event('change')); }`), /approximate ticks of 5 s/);
+    check(`${how} faithful (radio)`, await go(`() => document.getElementById('tmt-speed-faithful').click()`), /· faithful ticks/);
+    check(`${how} approximate (API)`, await go(`() => tmtLoader.speed.setMode('coarse', 1)`), /approximate ticks of 1 s/);
+    // …in every speed state: paused (the drive owes no ticks, so no frame of its own), held at ×2, and back at ×1
+    check(`${how} paused`, await go(`() => document.querySelector('#tmt-speed button[data-speed="0"]').click()`), /^Paused · approximate ticks of 1 s/);
+    check(`${how} paused → faithful`, await go(`() => tmtLoader.speed.setMode('faithful')`), /^Paused · faithful ticks/);
+    check(`${how} ×2`, await go(`() => tmtLoader.speed.setSpeed(2)`), /^×2 · faithful ticks/);
+    check(`${how} ×2 → approximate`, await go(`() => tmtLoader.speed.setMode('coarse', 1)`), /^×2 · approximate ticks of 1 s/);
+    check(`${how} ×1`, await go(`() => tmtLoader.speed.setSpeed(1)`), /^Normal speed \(the game's own loop\) · approximate/);
+    check(`${how} ×1 → faithful`, await go(`() => tmtLoader.speed.setMode('faithful')`), /^Normal speed \(the game's own loop\) · faithful ticks/);
+  }
+  // S3's and S4's outcome line: read in the same task as the run's promise resolving
+  const out = await page.evaluate(`(async () => { tmtLoader.speed.setMode('coarse', 1); const r = await tmtLoader.speed.run({ gs: 5 }); const a = ${READ}; tmtLoader.speed.setMode('faithful');
+    const p = tmtLoader.speed.run({ gs: 1e6 }); await new Promise((res) => setTimeout(res, 300)); const during = ${READ}; document.querySelector('#tmt-speed .tmts-stop').click(); const b = ${READ}; await p; return { r: r.why, a, during, b }; })()`);
+  check('the coarse outcome', out.a, /Approximate ticks of 1 s: results can differ from normal play/, 'last');
+  check('during a run', out.during, /Fast-forwarding to/, 'last');
+  check('Stop pressed', out.b, /Stopped by you/, 'last');
+  check('Stop pressed', out.b, /^Normal speed/);
+  // S2's read: the pause readout after a while held, the panel at ×10 then paused
+  const s2 = await page.evaluate(`(async () => { tmtLoader.speed.setSpeed(10); await new Promise((r) => setTimeout(r, 400)); tmtLoader.speed.setSpeed(0); const a = ${READ}; tmtLoader.speed.setSpeed(1); return a; })()`);
+  check('×10 → pause', s2, /^Paused/);
+  if (errs.length) f.push(`page errors ${errs.slice(0, 2).join(' | ')}`);
+  seen.push(`CPU ${RATE}× slower: 2 × 10 mode/speed changes read at once (same task and next evaluate), the coarse outcome, a run's progress, Stop and ×10 → pause all current; e.g. "${out.b.read}" / "${out.b.last.slice(0, 50)}"`);
+  await context.close();
+  row({ gate: 'S10 throttled: under a slowed CPU the readout, the mode and the outcome are current the moment they change (S2, S3, S4\'s reads), paused and held included', id: 'ptr', ok: !f.length,
+    notes: f.length ? f.slice(0, 8).join('; ') + (f.length > 8 ? ` (+${f.length - 8} more)` : '') : seen.join(' · ') });
+}
+
+// ---- S11 --------------------------------------------------------------------------------------------------------------
+// (speed-2) A SAVE THAT CARRIES `player.devSpeed`. The engines multiply the tick by it where their source says so:
+// 2.2.1 (ptr) in its interval AND inside `gameLoop` (so ×N is ×N² at the game's own speed, and even the faithful
+// `gameLoop(0.05)` is N× bigger); 2.7 (something) in its interval only. Measured here, not assumed: a save with
+// devSpeed 2 → the panel's warning shows and the faithful label says "not faithful on this save"; game-s per faithful
+// tick (the panel's drive) and per engine tick (the game's own loop at ×1); devSpeed itself is never changed. Control:
+// the same page on a save without it shows no warning.
+async function legDevSpeed(browser) {
+  const f = [], seen = [], N = 2;
+  // expected multipliers per engine — the oracle's data: [in the faithful tick, in the game's own loop]
+  const EXPECT = { ptr: [N, N * N], something: [1, N] };
+  const PANEL = `(() => { const r = document.getElementById('tmt-speed'), w = r && r.querySelector('.tmts-dev'), l = r && r.querySelector('label[for="tmt-speed-faithful"]');
+    return { warn: w && !w.hidden && w.offsetParent !== null ? w.textContent : null, label: l ? l.textContent : null, read: r ? r.querySelector('.tmts-read').textContent : null }; })()`;
+  for (const id of Object.keys(EXPECT)) {
+    const width = id === 'ptr' ? 390 : 1280;   // the warning at a phone's width too
+    const { context, page, errs } = await fresh(browser, { id, managed: false, profile: 'off', width, height: 844 });
+    await speedUp(page);
+    await page.evaluate(() => { tmtLoader.speed.open(false); tmtLoader.speed.showMore(true); });
+    const ctl = await page.evaluate(PANEL);
+    if (ctl.warn !== null || /not faithful/.test(ctl.label || '')) f.push(`${id} control (no devSpeed): ${JSON.stringify(ctl)}`);
+    // game time is read from `player.timePlayed`, which 2.2.1 advances only once its first layer is unlocked: ptr uses
+    // the m28/QL6 save. The save's clock is set to now, so the load credits no offline time to the measurement.
+    const p = id === 'ptr' ? JSON.parse(JSON.parse(fs.readFileSync(path.join(REPO, QL6), 'utf8')).player) : await page.evaluate(() => JSON.parse(JSON.stringify(player)));
+    p.devSpeed = N; p.time = Date.now(); delete p.offTime;
+    await pageLoadFrom(page, p);
+    await speedUp(page);
+    await page.evaluate(() => { tmtLoader.speed.open(false); tmtLoader.speed.showMore(true); });
+    const ui = await page.evaluate(PANEL);
+    const m = await page.evaluate(async () => {
+      const S = tmtLoader.speed, gl = window.gameLoop;
+      S.setSpeed(0);
+      const t0 = Number(player.timePlayed); await S.run({ ticks: 40, pace: 'max' }); S.setSpeed(0);
+      const perFaithful = (Number(player.timePlayed) - t0) / 40;
+      S.setSpeed(1);
+      // the game's own loop: game-s per engine tick over the real seconds between them (each engine tick's real diff varies)
+      const real = []; let last = null;
+      window.gameLoop = function (d) { const now = performance.now(); if (last !== null) real.push(now - last); last = now; return gl.apply(this, arguments); };
+      await new Promise((r) => setTimeout(r, 300));
+      const g0 = Number(player.timePlayed), n0 = real.length, w0 = performance.now();
+      await new Promise((r) => setTimeout(r, 3000));
+      const g1 = Number(player.timePlayed), n1 = real.length, w1 = performance.now();
+      window.gameLoop = gl;
+      return { perFaithful, perRealS: (g1 - g0) * 1000 / (w1 - w0), perEngineTick: (g1 - g0) / (n1 - n0), engineTicks: n1 - n0, dev: player.devSpeed, st: S.status().devSpeed };
+    });
+    const m390 = width === 390 ? await page.evaluate(MEASURE) : null;
+    const [inTick, inLoop] = EXPECT[id];
+    if (!ui.warn || !new RegExp(`developer speed set \\(×${N}\\)`).test(ui.warn) || !/the loader does not change it/.test(ui.warn)) f.push(`${id}: the warning ${JSON.stringify(ui.warn)}`);
+    if (inTick > 1 && !/even faithful ticks are 2× bigger/.test(ui.warn || '')) f.push(`${id}: the warning does not say faithful ticks are bigger: "${ui.warn}"`);
+    if (!/not faithful on this save/.test(ui.label || '') || !/not faithful on this save/.test(ui.read || '')) f.push(`${id}: the faithful label / readout "${ui.label}" / "${ui.read}"`);
+    if (Math.abs(m.perFaithful - 0.05 * inTick) > 1e-9) f.push(`${id}: ${m.perFaithful} game-s per faithful tick, expected 0.05 × ${inTick}`);
+    if (!(Math.abs(m.perRealS / inLoop - 1) < 0.2)) f.push(`${id}: the game's own loop gives ${m.perRealS.toFixed(2)} game-s per real s, expected ×${inLoop}`);
+    if (m.dev !== N) f.push(`${id}: devSpeed is now ${m.dev} — the loader changed the save's setting`);
+    if (!m.st || m.st.n !== N || m.st.inTick !== (inTick > 1) || m.st.inLoop !== (inLoop / inTick > 1)) f.push(`${id}: status().devSpeed ${JSON.stringify(m.st)}`);
+    if (m390 && (m390.past.length || m390.nowrap.length || m390.scrollW > m390.vw)) f.push(`${id} at 390 px: ${JSON.stringify({ past: m390.past.slice(0, 3), nowrap: m390.nowrap, scrollW: m390.scrollW })}`);
+    if (errs.length) f.push(`${id}: page errors ${errs.slice(0, 2).join(' | ')}`);
+    seen.push(`${id} devSpeed ${N}: faithful tick ${+m.perFaithful.toFixed(6)} game-s (0.05 × ${+(m.perFaithful / 0.05).toFixed(3)}); the game's own loop ${m.perRealS.toFixed(2)} game-s per real s (×${inLoop} expected), ${+m.perEngineTick.toFixed(4)} game-s per engine tick over ${m.engineTicks}; devSpeed still ${m.dev}; warning "${(ui.warn || '').slice(0, 70)}…"${m390 ? ', fits 390 px' : ''}`);
+    await context.close();
+  }
+  row({ gate: 'S11 devSpeed: a save with the game\'s developer speed set shows the warning and the faithful label says "not faithful on this save"; measured game-s per tick (ptr ×N in the tick and ×N² in its loop, 2.7 ×N in its loop only); devSpeed never changed', id: 'ptr+something', ok: !f.length,
+    notes: f.length ? f.join('; ') : seen.join(' · ') });
 }
 
 // ---- S5 ---------------------------------------------------------------------------------------------------------------
@@ -577,7 +702,7 @@ async function partPage() {
   ({ openContext, openGame, pageLoadFrom, waitReady } = await import('./page.mjs'));
   server = await startServer(REPO);
   const browser = await chromium.launch();
-  const LEGS = { faithful: legFaithful, multiplier: legMultiplier, targets: legTargets, coarse: legCoarse, 'no-gap': legNoGap, memory: legMemory, phone: legPhone, inert: legInert, door: legDoor };
+  const LEGS = { faithful: legFaithful, multiplier: legMultiplier, targets: legTargets, coarse: legCoarse, 'no-gap': legNoGap, memory: legMemory, phone: legPhone, inert: legInert, door: legDoor, throttled: legThrottled, devspeed: legDevSpeed };
   try {
     for (const k of PAGE_ROWS) {
       if (!want(k)) continue;

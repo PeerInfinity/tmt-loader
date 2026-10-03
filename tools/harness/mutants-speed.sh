@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# The speed-1 mutants — each breaks one promise of the speed controls or the automation's memory across a reload
+# The speed-1 and speed-2 mutants — each breaks one promise of the speed controls or the automation's memory across a reload
 # (docs/speed.md; docs/automation.md, "Memory across a reload") and REQUIRES the gates-speed row that can see it to go red.
 #
 #   tools/harness/mutants-speed.sh <out-dir> [name-filter]
@@ -47,6 +47,10 @@ mutant D-speed-in-player "$(rep loader/tmt-speed.js "'    else speed = x;\n'" "'
 mutant E-nowrap-row "$(rep loader/tmt-speed.js "\"' .tmts-row{display:flex;flex-wrap:wrap;\"" "\"' .tmts-row{display:flex;flex-wrap:nowrap;white-space:nowrap;\"")" page:phone 'S7 phone'
 # F — a game id in the generic code
 mutant F-game-id "$(rep loader/tmt-speed.js "\"  var PREF = 'ui.speed';\"" "\"  var PREF = 'ui.speed'; var HOME = 'ptr';\"")" grep: 'X1 no game'
+# (speed-2) G — the readout re-rendered only on the NEXT animation frame (the lag CI's S4 caught): the throttled leg
+mutant G-readout-next-frame "$(rep loader/tmt-speed.js "'  listeners.push(render);'" "'  listeners.push(function () { G.requestAnimationFrame(render); });'")" page:throttled 'S10 throttled'
+# (speed-2) H — the developer-speed warning never shown
+mutant H-devspeed-warning-hidden "$(rep loader/tmt-speed.js "'if (ui.dev.hidden) ui.dev.hidden = false; }'" "'}'")" page:devspeed 'S11 devSpeed'
 
-echo "speed-1 mutants: $KILLED killed, $SURVIVED survived"
+echo "speed mutants: $KILLED killed, $SURVIVED survived"
 [ "$SURVIVED" -eq 0 ]
