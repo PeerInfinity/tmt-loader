@@ -191,6 +191,29 @@
     var t = String(v).replace(/<br\s*\/?>/gi, ' ').replace(/<[^>]*>/g, '').replace(/&nbsp;/g, ' ').replace(/&amp;/g, '&').replace(/\s+/g, ' ').trim();
     return t || null;
   }
+  // (whole-1) THE PLAYER'S WORDS in what a template writes: an item by its own title, a layer by its name, a feature by
+  // its title, a field by what it means. The fact ids and the expressions stay in each step's `dev` (developer details),
+  // never in the `comment` the player view shows.
+  function layerWords(l) { var L = G.layers[l]; return plain(L && L.name, L) || String(l); }
+  function featWords(id) { return typeof T.titleIds === 'function' ? T.titleIds(id) : id; }
+  function featList(ids) { return ids.map(featWords).join(', '); }
+  function layerList(ls) { return ls.map(layerWords).join(', '); }
+  function goalWords(goal) {
+    var g = String(goal).split(':');
+    if (g.length < 2) return String(goal);
+    if (g[0] === 'reset') return 'a ' + layerWords(g[1]) + ' reset';
+    var group = { upg: 'upgrades', ch: 'challenges', buy: 'buyables', ms: 'milestones' }[g[0]], L = G.layers[g[1]];
+    var d = group && L && L[group] ? L[group][g.slice(2).join(':')] : null;
+    var name = d ? plain(d.title !== undefined ? d.title : d.name, d) || plain(d.name, d) : null;
+    return name ? '“' + name + '” (' + layerWords(g[1]) + ')' : String(goal);
+  }
+  function cap(t) { t = String(t); var i = t.charAt(0) === '“' ? 1 : 0; return t.slice(0, i) + t.charAt(i).toUpperCase() + t.slice(i + 1); }
+  function fieldWords(field) {
+    var m = /^player(?:\.|\[")(\w+)(?:"\])?\.(\w+)$/.exec(String(field));
+    if (m && m[2] === 'time') return 'the time since the last ' + layerWords(m[1]) + ' reset';
+    if (m && m[2] === 'points') return 'your ' + layerWords(m[1]);
+    return String(field);
+  }
   function conditional(q, when, hold, name) {
     q.version = 3;
     if (name) q.name = name.slice(0, 80);
@@ -439,20 +462,26 @@
     var have = it.kind === 'upgrade' ? 'hasUpgrade(' + JSON.stringify(it.layer) + ', ' + JSON.stringify(argId(it.id)) + ')' : null;
     var id = 'tpp-' + b.goal.replace(/[^A-Za-z0-9_.-]/g, '-');
     var steps = [
-      { 'do': 'hold', features: b.hold.slice(), comment: 'these zero ' + b.field + ' (' + b.facts.zeroedBy.join(', ') + '), and the purchase is the queue\'s' },
+      { 'do': 'hold', features: b.hold.slice(), comment: 'hold what would reset ' + fieldWords(b.field) + ' — ' + featList(b.hold) + ' — so the purchase is the queue\'s',
+        dev: 'these zero ' + b.field + ' (' + b.facts.zeroedBy.join(', ') + '), and the purchase is the queue\'s' },
       { 'do': 'wait', until: afford, timeout: { gs: v.rollback.horizon }, onTimeout: 'abort',
-        comment: 'the rollback found it affordable ' + sig(v.tStar.afterTicks * DIFF) + ' s into the hold, at ' + b.field + ' = ' + v.tStar.field + ' (diff ' + DIFF + '); the time limit is the check\'s horizon, ' + v.rollback.horizon + ' game-s' },
-      { 'do': 'call', fn: buyCall(it), args: [it.layer, argId(it.id)], comment: 'buy ' + b.goal },
+        comment: 'wait until it is affordable — a check on a copy of the game found it affordable ' + sig(v.tStar.afterTicks * DIFF) + ' game-s into the hold; it gives up after ' + v.rollback.horizon + ' game-s',
+        dev: 'the rollback found it affordable ' + sig(v.tStar.afterTicks * DIFF) + ' s into the hold, at ' + b.field + ' = ' + v.tStar.field + ' (diff ' + DIFF + '); the time limit is the check\'s horizon, ' + v.rollback.horizon + ' game-s' },
+      { 'do': 'call', fn: buyCall(it), args: [it.layer, argId(it.id)], comment: 'buy ' + goalWords(b.goal), dev: 'buy ' + b.goal },
     ];
-    if (have) steps.push({ 'do': 'wait', until: have, timeout: { gs: 2 }, onTimeout: 'abort', comment: 'the purchase happened' });
+    // (whole-1) the confirmation is met in the slot of the call it confirms, or never: its limit is TICKS (version 4)
+    if (have) steps.push({ 'do': 'wait', until: have, timeout: { ticks: 2 }, onTimeout: 'abort', comment: 'the purchase happened' });
     void d;
     var L = JSON.stringify(it.layer), I = JSON.stringify(argId(it.id));
     var when = 'player[' + L + '].unlocked && tmp[' + L + '].' + GROUP[it.kind] + '[' + I + '].unlocked' + (have ? ' && !' + have : '');
-    return conditional({ format: 'tmt-queue/1', id: id, trigger: { on: 'start' },
+    var q = conditional({ format: 'tmt-queue/1', id: id, trigger: { on: 'start' },
       source: { template: TPP.id, goal: b.goal, facts: [b.facts.price, b.facts.production].concat(b.facts.zeroedBy) },
-      comment: b.goal + '\'s price grows with ' + b.field + ' (exponent ' + (v.static.priceExponent === null ? '?' : v.static.priceExponent) + '), the purse as ' + b.field + '^' + (v.static.integratedExponent === null ? '?' : v.static.integratedExponent) +
+      comment: 'The price of ' + goalWords(b.goal) + ' grows with ' + fieldWords(b.field) + '. The queue holds every reset that would zero it and buys at the moment the check measured. It starts whenever ' + goalWords(b.goal) + ' is unlocked and not owned.',
+      dev: b.goal + '\'s price grows with ' + b.field + ' (exponent ' + (v.static.priceExponent === null ? '?' : v.static.priceExponent) + '), the purse as ' + b.field + '^' + (v.static.integratedExponent === null ? '?' : v.static.integratedExponent) +
         '. Hold every reset that zeroes ' + b.field + ' and buy at the moment the rollback measured. It starts whenever ' + b.goal + ' is unlocked and not owned.',
       steps: steps }, when, b.hold, 'buy ' + (plain(d && d.title, d) || b.goal) + ' (' + (plain(G.layers[it.layer] && G.layers[it.layer].name, G.layers[it.layer]) || it.layer) + ')');
+    q.version = 4;
+    return q;
   };
 
   // ---- challenge-attempt (h22) ---------------------------------------------------------------------------------------
@@ -557,14 +586,17 @@
   function caQueue(b, id, waitGs, n0, purpose) {
     var x = chalExpr(b.challenge);
     var steps = [
-      { 'do': 'hold', features: b.hold.slice(), comment: 'these end an attempt at ' + b.goal + ' (' + b.facts.exits.join(', ') + '); the queue owns the attempt' },
+      { 'do': 'hold', features: b.hold.slice(), comment: 'hold what would end an attempt at ' + goalWords(b.goal) + ' — ' + featList(b.hold) + ' — so the queue owns the attempt',
+        dev: 'these end an attempt at ' + b.goal + ' (' + b.facts.exits.join(', ') + '); the queue owns the attempt' },
       { 'do': 'call', fn: 'startChallenge', args: [b.challenge.layer, argId(b.challenge.id)], 'if': 'String(' + x.path + '.activeChallenge) !== ' + JSON.stringify(String(b.challenge.id)),
-        comment: 'enter ' + b.goal + ' — unless a reflex already did in the tick before the hold bound (pressed inside, startChallenge LEAVES)' },
-      { 'do': 'wait', until: 'String(' + x.path + '.activeChallenge) === ' + JSON.stringify(String(b.challenge.id)), timeout: { gs: 2 }, onTimeout: 'abort', comment: 'the engine entered it' },
+        comment: 'enter ' + goalWords(b.goal) + ' — unless the automation already did just before the hold (pressed inside, the button leaves)',
+        dev: 'enter ' + b.goal + ' — unless a reflex already did in the tick before the hold bound (pressed inside, startChallenge LEAVES)' },
+      { 'do': 'wait', until: 'String(' + x.path + '.activeChallenge) === ' + JSON.stringify(String(b.challenge.id)), timeout: { gs: 2 }, onTimeout: 'abort', comment: 'the game entered it' },
       { 'do': 'wait', until: 'canCompleteChallenge(' + x.l + ', ' + x.id + ')', timeout: { gs: waitGs }, onTimeout: 'skip', comment: purpose },
       { 'do': 'call', fn: 'startChallenge', args: [b.challenge.layer, argId(b.challenge.id)], 'if': 'String(' + x.path + '.activeChallenge) === ' + JSON.stringify(String(b.challenge.id)),
-        comment: 'finish it (the engine completes a challenge whose goal is met as it leaves; otherwise this only leaves) — only while inside: pressed outside, it would ENTER again' },
-      { 'do': 'release', comment: 'the reflexes resume' },
+        comment: 'finish it — the game completes a challenge whose goal is met as you leave it (otherwise this only leaves); only while inside, because pressed outside it would enter again',
+        dev: 'finish it (the engine completes a challenge whose goal is met as it leaves; otherwise this only leaves) — only while inside: pressed outside, it would ENTER again' },
+      { 'do': 'release', comment: 'let go: the automation\'s own moves resume' },
       { 'do': 'wait', until: 'Number(' + x.path + '.challenges[' + x.id + '] || 0) > ' + n0, timeout: { gs: 2 }, onTimeout: 'abort', comment: 'a completion was recorded' },
     ];
     return { format: 'tmt-queue/1', id: id, trigger: { on: 'start' }, source: { template: CA.id, goal: b.goal, facts: b.facts.exits.concat([b.facts.inputs]) }, steps: steps };
@@ -737,7 +769,10 @@
     var id = 'ca-' + b.goal.replace(/[^A-Za-z0-9_.-]/g, '-');
     var q = caQueue(b, id, v.window, completions(b.challenge),
       'the rollback measured the goal met ' + v.tStar.gameSeconds + ' game-s after entry (diff ' + DIFF + '); the time limit is the check\'s window, ' + v.window + ' game-s');
-    q.comment = b.goal + ' is ended by a reset of ' + b.exits.join(', ') + ' (the exits-challenge facts). Hold every one, enter, wait for the goal, finish, release. It starts whenever ' + b.goal + ' is unlocked, not completed, and no other challenge of its layer is running.';
+    var wg = q.steps.filter(function (st) { return st.do === 'wait' && /canCompleteChallenge/.test(st.until); })[0];
+    if (wg) { wg.dev = wg.comment; wg.comment = 'wait for the goal — a check on a copy of the game met it ' + v.tStar.gameSeconds + ' game-s after entering; it gives up after ' + v.window + ' game-s'; }
+    q.comment = cap(goalWords(b.goal)) + ' is ended by a reset of ' + layerList(b.exits) + '. The queue holds every one, enters, waits for the goal, finishes and lets go. It starts whenever ' + goalWords(b.goal) + ' is unlocked, not completed, and no other challenge of its layer is running.';
+    q.dev = b.goal + ' is ended by a reset of ' + b.exits.join(', ') + ' (the exits-challenge facts). Hold every one, enter, wait for the goal, finish, release. It starts whenever ' + b.goal + ' is unlocked, not completed, and no other challenge of its layer is running.';
     var x = chalExpr(b.challenge), cid = JSON.stringify(String(b.challenge.id)), lim = completionLimit(b.challenge);
     // the completion check, with no count read off this state: a one-completion challenge is `hasChallenge`; a
     // repeatable one can only say the attempt LEFT (the count it started from is not an engine value)
@@ -1015,20 +1050,26 @@
     if (!v || v.verdict !== 'reset-at' || !v.tStar) return null;
     var l = JSON.stringify(b.layer);
     var steps = [
-      { 'do': 'hold', features: b.hold.slice(), comment: 'these zero ' + b.base + ' (' + b.facts.zeroedBy.join(', ') + '), and the reset is the queue\'s' +
+      { 'do': 'hold', features: b.hold.slice(), comment: 'hold what would reset ' + fieldWords(b.base) + ' — ' + featList(b.hold) + ' — so the reset is the queue\'s',
+        dev: 'these zero ' + b.base + ' (' + b.facts.zeroedBy.join(', ') + '), and the reset is the queue\'s' +
         (v.decidedIn === 'fallback' ? ' — ' + b.layer + ' is decided in the automation\'s fallback pass, after every one of them' : '') +
         (v.afterReach && !v.afterReach.reset && v.afterReach.autoPrestige ? '; its own reset feature would yield to a native auto-reset that does not happen' : '') },
       { 'do': 'wait', until: 'canReset(' + l + ')', timeout: { gs: v.window }, onTimeout: 'abort',
-        comment: 'the rollback measured ' + b.base + ' at ' + b.requirement + ' ' + v.tStar.gameSeconds + ' game-s into the hold (diff ' + DIFF + '); the time limit is the check\'s window, ' + v.window + ' game-s' },
-      { 'do': 'call', fn: 'doReset', args: [b.layer], comment: 'reset ' + b.layer },
-      { 'do': 'wait', until: rrDoneExpr(b), timeout: { gs: 2 }, onTimeout: 'abort', comment: 'the reset happened' },
-      { 'do': 'release', comment: 'the reflexes resume' },
+        comment: 'wait until the game allows the reset — a check on a copy of the game got there ' + v.tStar.gameSeconds + ' game-s into the hold; it gives up after ' + v.window + ' game-s',
+        dev: 'the rollback measured ' + b.base + ' at ' + b.requirement + ' ' + v.tStar.gameSeconds + ' game-s into the hold (diff ' + DIFF + '); the time limit is the check\'s window, ' + v.window + ' game-s' },
+      { 'do': 'call', fn: 'doReset', args: [b.layer], comment: 'reset ' + layerWords(b.layer), dev: 'reset ' + b.layer },
+      // (whole-1) the confirmation is met in the slot of the call it confirms, or never: its limit is TICKS (version 4)
+      { 'do': 'wait', until: rrDoneExpr(b), timeout: { ticks: 2 }, onTimeout: 'abort', comment: 'the reset happened' },
+      { 'do': 'release', comment: 'let go: the automation\'s own moves resume' },
     ];
     var when = 'tmp[' + l + '].layerShown === true && ' + (b.rebuild ? '(!player[' + l + '].unlocked || player[' + l + '].points.lte(0))' : '!player[' + l + '].unlocked');
-    return conditional({ format: 'tmt-queue/1', id: 'rr-' + b.goal.replace(/[^A-Za-z0-9_.-]/g, '-'), trigger: { on: 'start' },
+    var q = conditional({ format: 'tmt-queue/1', id: 'rr-' + b.goal.replace(/[^A-Za-z0-9_.-]/g, '-'), trigger: { on: 'start' },
       source: { template: RR.id, goal: b.goal, facts: [b.facts.base].concat(b.facts.zeroedBy) },
-      comment: b.goal + ' needs ' + b.requirement + ' of ' + b.base + ', which a reset of ' + b.zeroers.join(', ') + ' zeroes. Hold every one, wait for the engine\'s canReset, reset, release. It starts whenever the layer is shown and ' + (b.rebuild ? 'holds none of its currency' : 'has never been reset') + '.',
+      comment: cap(goalWords(b.goal)) + ' needs enough of ' + fieldWords(b.base) + ', which a reset of ' + layerList(b.zeroers) + ' zeroes. The queue holds every one, waits until the game allows the reset, resets and lets go. It starts whenever the layer is shown and ' + (b.rebuild ? 'holds none of its currency' : 'has never been reset') + '.',
+      dev: b.goal + ' needs ' + b.requirement + ' of ' + b.base + ', which a reset of ' + b.zeroers.join(', ') + ' zeroes. Hold every one, wait for the engine\'s canReset, reset, release. It starts whenever the layer is shown and ' + (b.rebuild ? 'holds none of its currency' : 'has never been reset') + '.',
       steps: steps }, when, b.hold, (b.rebuild ? 'rebuild ' : 'first reset of ') + (plain(G.layers[b.layer] && G.layers[b.layer].name, G.layers[b.layer]) || b.layer));
+    q.version = 4;
+    return q;
   };
 
   var TEMPLATES = { 'time-priced-purchase': TPP, 'challenge-attempt': CA, 'reset-requirement': RR };

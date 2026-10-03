@@ -11,7 +11,7 @@
     "goal": "upg:q:23",
     "state": "ptr qrate1/Q308K (the q23 purchase, m28)",
     "steps": 4,
-    "comment": "upg:q:23's price grows with player.q.time (exponent 5.4), the purse as player.q.time^5. Hold every reset that zeroes player.q.time and buy at the moment the rollback measured. It starts whenever upg:q:23 is unlocked and not owned."
+    "comment": "The price of “The Waiting Game” (quirks) grows with the time since the last quirks reset. The queue holds every reset that would zero it and buys at the moment the check measured. It starts whenever “The Waiting Game” (quirks) is unlocked and not owned."
    },
    {
     "file": "tools/harness/queues/h22/ch-h-22-from-QL6.json",
@@ -21,7 +21,7 @@
     "goal": "ch:h:22",
     "state": "ptr h22/QL6 (the H22 attempt)",
     "steps": 7,
-    "comment": "ch:h:22 is ended by a reset of h, o, q, ss (the exits-challenge facts). Hold every one, enter, wait for the goal, finish, release. It starts whenever ch:h:22 is unlocked, not completed, and no other challenge of its layer is running."
+    "comment": "“Descension” (hindrance) is ended by a reset of hindrance, solarity, quirks, subspace. The queue holds every one, enters, waits for the goal, finishes and lets go. It starts whenever “Descension” (hindrance) is unlocked, not completed, and no other challenge of its layer is running."
    },
    {
     "file": "tools/harness/queues/m30/rr-reset-sg-from-W226931.json",
@@ -31,7 +31,7 @@
     "goal": "reset:sg",
     "state": "ptr m30/W226931 (the sg reset, m30)",
     "steps": 5,
-    "comment": "reset:sg needs tmp[\"sg\"].nextAt of player.g.points, which a reset of e, h, o, q, s, sb, ss, t zeroes. Hold every one, wait for the engine's canReset, reset, release. It starts whenever the layer is shown and has never been reset."
+    "comment": "A super generators reset needs enough of your generators, which a reset of enhance, hindrance, solarity, quirks, space, super boosters, subspace, time zeroes. The queue holds every one, waits until the game allows the reset, resets and lets go. It starts whenever the layer is shown and has never been reset."
    },
    {
     "file": "tools/harness/queues/m31/rr-reset-sg-from-R95400.json",
@@ -41,7 +41,7 @@
     "goal": "reset:sg",
     "state": "ptr m31/R95400 (the sg reset, m31)",
     "steps": 5,
-    "comment": "reset:sg needs tmp[\"sg\"].nextAt of player.g.points, which a reset of e, h, o, q, s, sb, ss, t zeroes. Hold every one, wait for the engine's canReset, reset, release. It starts whenever the layer is shown and holds none of its currency."
+    "comment": "A super generators reset needs enough of your generators, which a reset of enhance, hindrance, solarity, quirks, space, super boosters, subspace, time zeroes. The queue holds every one, waits until the game allows the reset, resets and lets go. It starts whenever the layer is shown and holds none of its currency."
    }
   ]
  }

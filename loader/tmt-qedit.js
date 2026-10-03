@@ -614,10 +614,10 @@
       else { state = st.shipped.phase; words = tw(st.shipped.text); }
       var cur = null;
       if (st && st.current && st.state === 'running') { var d = describe(q.steps[st.current.index - 1] || {}); cur = { index: st.current.index, title: d.title, comment: st.current.comment }; }
-      return { id: e.id, name: q.name || e.id, comment: q.comment || '', state: state, words: words, offByYou: off,
+      return { id: e.id, name: q.name || e.id, comment: q.comment || '', dev: q.dev || '', state: state, words: words, offByYou: off,
         rearm: e.rearm === 'each' ? 'again each time its condition turns true, at most ' + e.cap + ' times, ' + (e.coolOff && e.coolOff.gs) + ' game-s apart' : 'once per page load',
         condition: readable(cond || 'true'), conditionCode: cond,
-        steps: q.steps.map(function (x, k) { var d = describe(x); return { i: k, title: d.title, detail: d.detail, comment: x.comment || '' }; }),
+        steps: q.steps.map(function (x, k) { var d = describe(x); return { i: k, title: d.title, detail: d.detail, comment: x.comment || '', dev: x.dev || '' }; }),
         run: st ? { state: st.state, current: cur, wait: st.wait, holds: st.holds.map(featureTitle), last: lastWords(tw(st.last)), steps: st.steps } : null,
         evidence: provLines(T.autoQueueProvenance && T.autoQueueProvenance[e.id]) };
     });
@@ -911,13 +911,14 @@
         + '<div v-if="q.run && q.run.holds.length" class="tmtl-qrun-holds" style="' + SUB + '">has paused: {{ q.run.holds.join(\', \') }}</div>'
         + '<div v-if="q.run && q.run.last" class="tmtl-qrun-last" style="' + SUB + ';' + DIM + '">last: {{ q.run.last }}</div>'
         + '<div v-if="q.comment" class="tmtl-qshipped-comment" style="text-align:left;min-width:0;overflow-wrap:anywhere;margin-top:3px">{{ q.comment }}</div>'
+        + '<div v-if="data.dev && q.dev" class="tmtl-qshipped-dev" style="' + DIM + ';overflow-wrap:anywhere;font-size:.85em">{{ q.dev }}</div>'
         + '<div style="' + DIM + ';margin-top:3px">it starts when:</div>'
         + '<tmtl-qcond :data="{ c: q.condition, dev: data.dev }"></tmtl-qcond>'
         + '<div style="' + ROW + ';margin-top:3px">'
         +   '<button type="button" class="tmtl-qshipped-steps-toggle" style="' + BTN + '" @click="showSteps = !showSteps" @keydown.stop>{{ showSteps ? \'hide its steps\' : \'its \' + q.steps.length + \' steps\' }}</button>'
         +   '<button type="button" class="tmtl-qshipped-evidence" style="' + BTN + '" @click="showEv = !showEv" @keydown.stop>{{ showEv ? \'hide the evidence\' : \'why: the measurements behind it\' }}</button>'
         + '</div>'
-        + '<div v-if="showSteps" class="tmtl-qshipped-steps" style="' + SUB + '"><div v-for="st in q.steps" :key="st.i" class="tmtl-qshipped-step" style="' + SUB + ';overflow-wrap:anywhere;border-bottom:1px solid rgba(127,178,217,.15)">{{ st.i + 1 }}. {{ st.title }}<span v-if="st.comment" style="opacity:.7"> — {{ st.comment }}</span><div v-if="data.dev" style="opacity:.6;font-family:monospace;font-size:.8em">{{ st.detail }}</div></div></div>'
+        + '<div v-if="showSteps" class="tmtl-qshipped-steps" style="' + SUB + '"><div v-for="st in q.steps" :key="st.i" class="tmtl-qshipped-step" style="' + SUB + ';overflow-wrap:anywhere;border-bottom:1px solid rgba(127,178,217,.15)">{{ st.i + 1 }}. {{ st.title }}<span v-if="st.comment" style="opacity:.7"> — {{ st.comment }}</span><div v-if="data.dev" style="opacity:.6;font-family:monospace;font-size:.8em">{{ st.detail }}</div><div v-if="data.dev && st.dev" class="tmtl-qstep-dev" style="opacity:.6;font-size:.8em">{{ st.dev }}</div></div></div>'
         + '<div v-if="showEv" class="tmtl-qshipped-ev" style="' + SUB + '"><div v-for="(e, k) in q.evidence" :key="k" style="' + SUB + ';overflow-wrap:anywhere;border-bottom:1px solid rgba(127,178,217,.15)">{{ e.note }} <span style="opacity:.6;font-size:.85em">({{ e.where }})</span></div></div>'
         + '<div v-if="data.dev" style="' + DIM + '">id {{ q.id }}</div>'
         + '<div v-if="note" class="tmtl-qnote" style="color:#4f9a6a;text-align:left">{{ note }}</div>'
