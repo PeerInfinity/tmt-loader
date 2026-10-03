@@ -41,6 +41,7 @@
   var section = null;
   var buttons = Object.create(null);
   var noteEl = null;
+  var speedBtn = null;   // (speed-1) the speed controls' door, where this page has one
 
   // ---------------------------------------------------------------- where the section goes
   /** The options tab's own HARD RESET button, or failing that any option button that is not one of ours. */
@@ -102,6 +103,25 @@
     });
     body.appendChild(tr);
     table.appendChild(body);
+    // (speed-1) THE SPEED CONTROLS' DOOR — a tool, not a flag: no reload, nothing remembered for every game, and its
+    // own row so the three flags (and gate O1's reading of them, `button[data-flag]`) are exactly what they were.
+    // Pressing it fetches loader/tmt-speed.js (the first time) and opens the controls over the game.
+    if (typeof T.fetchSpeed === 'function') {
+      var str = document.createElement('tr'), std = document.createElement('td');
+      std.colSpan = ENTRIES.length;
+      speedBtn = document.createElement('button');
+      speedBtn.type = 'button';
+      speedBtn.className = 'opt';
+      speedBtn.dataset.tool = 'speed';
+      speedBtn.textContent = 'Speed controls';
+      speedBtn.title = 'Pause, speed up or fast-forward the game, in its own ticks. No reload; the game\u2019s save is untouched.';
+      speedBtn.addEventListener('click', function () {
+        T.fetchSpeed().then(function (S) { if (S) S.open(); }).catch(function (e) { console.warn('tmt-loader: the speed controls did not load', e); });
+      });
+      std.appendChild(speedBtn);
+      str.appendChild(std);
+      body.appendChild(str);
+    }
     noteEl = document.createElement('div');
     noteEl.className = ID + '-note';
     // (U15) the way back to the list of games, which is the census (⚖ user, 2026-09-23: the loader's own page is
@@ -225,6 +245,7 @@
       entries: ENTRIES.map(function (e) { return e.flag; }),
       section: function () { return section && section.isConnected ? section : null; },
       button: function (flag) { return buttons[flag] || null; },
+      speedButton: function () { return speedBtn; },
       refresh: refresh,
       press: press,
       anchor: anchorButton

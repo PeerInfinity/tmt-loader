@@ -240,6 +240,20 @@ async function build({ id, manifest, gameHref, plan, table }) {
   if (plan.onload) new Function(plan.onload).call(window);
   step(`profile ${PROFILE}`);
   T.profile(PROFILE);
+  // (speed-1) THE AUTOMATION'S MEMORY, restored onto the save that just loaded — only when the record's fingerprint is
+  // that save's (docs/automation.md, "Memory across a reload"). Before the first tick: the game's interval is running
+  // from here on, so a record that needs the queue runner pauses every timer while the runner is fetched, and nothing
+  // ticks between the load and the restore. A page with no record does nothing here.
+  if (T.autoMemory) {
+    step('automation memory');
+    let m = T.autoMemory.atLoad();
+    if (m.state === 'waiting' && typeof T.fetchQueueRunner === 'function') {
+      T.pause();
+      try { await T.fetchQueueRunner(); } catch (e) { console.warn('tmt-loader: the queue runner did not load for the automation memory', e); }
+      m = T.autoMemory.atLoad(true);
+      T.resume();
+    }
+  }
   if (MANAGED) T.pause();
   T.ready = true;
   step('ready');

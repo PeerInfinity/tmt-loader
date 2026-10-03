@@ -33,6 +33,11 @@ changes the game itself:
 | **Nav bar** | a bar along the bottom of the screen. Its *Layers* button lists every layer as a card, grouped by tree row, with its reset button, its counters and a button for everything you can buy there. Useful on a desktop too. |
 | **Automation tools** | an extra *AU* tab that can reset layers and buy upgrades and buyables for you. Every feature starts off and you choose which to turn on; it only presses the game's own buttons. Its developer details can record a **state log** of every action — yours, the automation's and the game's — to download ([docs/log.md](docs/log.md)). |
 
+**Speed controls** are there too, under the same buttons, with no reload: pause, ×2, ×10 or as fast as your device
+allows, or fast-forward an amount of game time or until something happens — in the game's own ticks, so the result is
+what playing normally would give. An *approximate* mode with bigger ticks is there for more speed, and says so. Nothing
+about the speed is saved in the game ([docs/speed.md](docs/speed.md)).
+
 **To turn one on:** open any game, open its options (the game's settings button) and use the **tmt-loader** buttons
 at the bottom. The page reloads, and the choice is remembered in this browser for every game.
 
@@ -93,6 +98,7 @@ in an existing clone). The history before the games moved out is in
 | [docs/planner.md](docs/planner.md) | the planner built on top of the automation registry |
 | [docs/log.md](docs/log.md) | the state log — every action with the state it acted on, the download, and the harness's exact replay |
 | [docs/mobile.md](docs/mobile.md) | `?mobile=1` and `?navbar=1` — the mobile layout, the nav bar, the layer list, and their gate |
+| [docs/speed.md](docs/speed.md) | the speed controls — pause, ×N, fast-forward to a target, faithful and approximate ticks; and gate S |
 | [docs/options.md](docs/options.md) | the Options section — the three opt-ins as buttons, the remembered preference, and gate O1 |
 | [docs/embed.md](docs/embed.md) | embed mode `v1` — the extras on an author's own page: the tag, `tmt-loader.json`, and gate E1 (at the end) |
 | [docs/link.md](docs/link.md) | link mode — `?repo=<owner>/<name>[@<commit>]`: the sources and their order, `&source=`, pinning, the limits; gate L1 is in harness.md |

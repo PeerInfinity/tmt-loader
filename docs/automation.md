@@ -1010,6 +1010,50 @@ than as a configuration.
 `q33-sg-unlock` is listed second and its order does not matter: while it holds, no other stage holds that names its slots (C2 and C3 end at q32 and H22, C1 names `reset:q`'s POLICY, it names the `while`) — both orders measured equal (gates-m30 M-order). The other three are listed in that order: at QL6 the H22 attempt wins `challenges:h` over the hold until H22 is completed — the order the
 whole-stretch measurement chose (§21).
 
+## Memory across a reload (speed-1)
+
+⚖ **user, 2026-10-03: the automation's memory survives a page reload — in browser storage, TIED TO THE SAVE.**
+
+Everything `tmtLoader.runtimeState()` carries — each interval reset's clock, the row cycle, the stall watch, the
+challenge give-up records, the queue runner's position and holds, the progress tracker, a runtime override — lived only
+in the page's memory, so a reload restarted all of it: a queue half way through its steps began again, and a `once`
+queue the table ships armed itself again. Now (`loader/tmt-auto.js`, block `(speed-1) THE AUTOMATION'S MEMORY`):
+
+- **On every save** — the engine's own `save`, which its autosave calls too, wrapped with the call passed through
+  untouched — the record `{format: 'tmt-automem/1', fp, at, gs, runtime}` is written to ONE declared key,
+  **`tmt-loader:<id>:automem`**, beside the save. `fp` is the **fingerprint of the save just written**: a hash of
+  exactly what `hashGame` hashes (`stateJSON(gameState)` — the game without `player.au`, `time` and `offTime`), two
+  53-bit string hashes plus the length, computed SYNCHRONOUSLY in the save's own call (`tmtLoader.hash` is a promise,
+  and a tick could land between it and the save it describes).
+- **At load** (`loader/page.js`, after the game's `onload` and the profile, before the first tick) the record is
+  restored with `restoreRuntime` **only when its fingerprint is the fingerprint of the save that loaded**. A record
+  with queues needs the queue runner: the page pauses every timer, fetches it, restores, and resumes — nothing ticks in
+  between.
+- **Otherwise it is discarded and the automation tab says so**, on the Simple subtab's disclosure line:
+  *"The automation's memory belonged to a different save; it starts fresh."* (also: an unreadable record, and a record
+  `restoreRuntime` refuses).
+- **An import or a hard reset discards it.** Both engines write a save and reload, so without this the record would be
+  written with the NEW save's fingerprint and restored onto it. `importSave` and `hardReset` are wrapped: the save they
+  write replaces the record with a TOMBSTONE (only where there was a record), and the next load says *"A save was
+  imported …"* / *"The game was reset …"*. A refused import or a cancelled reset writes no save and changes nothing.
+- ⛔ **Nothing new is stored by a page whose automation has nothing to remember**: a record is written only when the
+  runtime carries something beyond the loop counter (a feature acted, an interval clock, a cycle, a queue, the tracker,
+  an override); otherwise the save REMOVES a stale record. A plain page, a profile-`off` page and the Node harness (no
+  `storage.raw`) write nothing; an author's page (embed) never installs the wrappers.
+- Saves, the player's queues and parts, and every pin are untouched: the record is written beside the save, never into
+  it. `T.ticks` / `T.gameSeconds` are not in the record (they are reset by a page load, as the contract says).
+
+**Proofs (gate `gates-speed --part page`, row S6, on ptr):** from m28/QL6 with the H22 queue running, a save and a
+reload restore a runtime record that is deep-equal to the one before it — the queue on the same step, the row cycle's
+memory equal — while the control without the record has the queue back at step 1; the H22 queue run to its end (the
+table's `once` queue) stays done across a reload and 40 ticks, while the control re-arms it; a save that moved on
+behind the record (the engine's own save, unwrapped) is discarded with the notice on screen; an import, and a hard
+reset, discard it. **Cost per save** at QL6: median ~0.6 ms, max ~2.5 ms (a ~6.5 KB record).
+
+`tmtLoader.autoMemory`: `key()`, `fingerprint()`, `record()`, `status()` (`state` none / restored / discarded /
+waiting, `why`, `notice`, write and save counts, the last and longest write in ms), `notice()`, `dismiss()`,
+`hooks()` (which of `save` / `importSave` / `hardReset` were wrapped), `write()` and `atLoad(final)` (the page's).
+
 ## Derivation
 
 After the game's scripts (and the table), `tmt-auto.js` walks `layers`. For every **tree layer** — a numeric `row`, not a

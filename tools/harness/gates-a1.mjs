@@ -165,7 +165,8 @@ async function part2Page(id) {
     await page.screenshot({ path: path.join(shotDir, `${id}-au-all.png`) });
     await page.evaluate(() => save());
     const afterAll = await saved();
-    const featuresOf = (st) => { const k = Object.keys(st).find((x) => !x.endsWith('_options')); try { let j = JSON.parse(atob(st[k])); if (j[j.set]) j = j[j.set]; return JSON.stringify(j.au && j.au.features); } catch (e) { return 'unparsed ' + e.message; } };
+    // the GAME's save key: not its options, and (speed-1) not the loader's own declared `automem` key beside it
+    const featuresOf = (st) => { const k = Object.keys(st).find((x) => !x.endsWith('_options') && !x.endsWith(':automem')); try { let j = JSON.parse(atob(st[k])); if (j[j.set]) j = j[j.set]; return JSON.stringify(j.au && j.au.features); } catch (e) { return 'unparsed ' + e.message; } };
     check(featuresOf(afterAll) === '{}' && featuresOf(before) === '{}', `?profile=all did not write the save (saved au.features ${featuresOf(afterAll)})`);
 
     await open('');

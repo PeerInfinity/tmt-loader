@@ -142,7 +142,10 @@ export async function attachScripts(ctx) {
       return T.currencyAsked;
     };
   }
-  if (AUTOMATION) {
+  // (speed-1) THE LADDER DOOR EXISTS ON EVERY PAGE NOW, NOT ONLY WITH AUTOMATION: the speed controls' "until the mark"
+  // reads the same marks, and they work on a plain page. ⛔ It is still LAZY and still asks the INDEX first, so a page
+  // whose player never opens a fast-forward's targets (or the Progress subtab) requests exactly what it did before.
+  {
     // ---- the LADDER, where this game has one (V3) ------------------------------------------------------------------
     // ⚠ TWO OF THE 171 GAMES HAVE A LADDER (`tools/harness/ladder/<id>.json`, ptr and something), and the Progress
     // timeline uses its mark NAMES as labels on the events that satisfy them. ⛔ `loader/tmt-auto.js` fetches nothing
@@ -283,6 +286,34 @@ export async function attachScripts(ctx) {
     try { savedQueues = T.storage && T.storage.raw && T.storage.prefix ? T.storage.raw.getItem.call(localStorage, T.storage.prefix + 'queues') : null; } catch (e) { savedQueues = null; }
     if (savedQueues !== null) {
       const go = () => { T.fetchQueueEditor().catch((e) => console.warn('tmt-loader: the saved queues were not loaded', e)); };
+      if (T.ready) go(); else window.addEventListener('tmt-loader:ready', go, { once: true });
+    }
+  }
+  // ---- (speed-1) THE SPEED CONTROLS, on demand (docs/speed.md) --------------------------------------------------------
+  // ⛔ LAZY, as the log, the runner and the editor are: `loader/tmt-speed.js` is requested only when the player presses
+  // "Speed controls" in the options tab (loader/options.js calls this door), when they left the controls OPEN in this
+  // browser (the one declared key `tmt-loader:<id>:ui.speed`, read here — a page without it requests nothing), or when a
+  // runner calls `tmtLoader.fetchSpeed()`. ⛔ HOSTED PAGE ONLY: the controls hold the engine's game loop through the
+  // timer recorder (`T.timers`), which an author's own page (embed mode) does not have — there the door is absent and
+  // the options tab offers no button.
+  if (T.timers && typeof T.timers.hold === 'function') {
+    T.fetchSpeed = (function () {
+      let asked = null;
+      return function () {
+        if (asked) return asked;
+        asked = (async () => {
+          await insertScript({ src: abs('loader/tmt-speed.js') }, 'loader/tmt-speed.js');
+          T.loaded.push('loader/tmt-speed.js');
+          return T.speed || null;
+        })();
+        asked.catch(() => { asked = null; });
+        return asked;
+      };
+    })();
+    let speedOpen = null;
+    try { speedOpen = T.storage && T.storage.raw && T.storage.prefix ? T.storage.raw.getItem.call(localStorage, T.storage.prefix + 'ui.speed') : null; } catch (e) { speedOpen = null; }
+    if (speedOpen !== null) {
+      const go = () => { T.fetchSpeed().then((S) => { if (S) S.open(false); }).catch((e) => console.warn('tmt-loader: the speed controls were not loaded', e)); };
       if (T.ready) go(); else window.addEventListener('tmt-loader:ready', go, { once: true });
     }
   }
