@@ -417,10 +417,16 @@ async function partPage() {
       await page.evaluate(() => tmtLoader.pause());
       await page.evaluate(() => tmtLoader.tick(0.05, 40));
       const running = await view();
+      // (shipq-2) the PLAYER view names the held features by their titles; developer details show the raw ids
+      const qTitle = await page.evaluate(() => (tmtLoader.features.find((x) => x.id === 'reset:q') || {}).title || null);
+      await page.evaluate(() => tmtLoader.setDevDetails(true));
+      const runningDev = await view();
+      await page.evaluate(() => tmtLoader.setDevDetails(false));
       const copy = await page.evaluate(() => { const c = tmtLoader.queues.copyShipped('ca-ch-h-22'); return { ok: c.ok, id: c.id, name: c.queue && c.queue.name, trigger: c.queue && c.queue.trigger, valid: c.queue ? tmtLoader.queues.validate(c.queue) : null }; });
       const keyAfter = await page.evaluate((k) => tmtLoader.storage.raw.getItem.call(localStorage, k), KEY);
       if (!armed.block || !/shipped queue/.test(armed.block) || !/armed — waiting for its condition/.test(armed.block)) f.push(`armed view: ${JSON.stringify(armed.block)}`);
-      if (!running.block || !/running/.test(running.block) || running.state !== 'running' || !/holding: [^\n]*reset:q/.test(running.block)) f.push(`running view: ${JSON.stringify(running.block)}`);
+      if (!running.block || !/running/.test(running.block) || running.state !== 'running' || !qTitle || !String(running.block).split('\n').some((l) => l.startsWith('holding: ') && l.includes(qTitle)) || /reset:q/.test(running.block)) f.push(`running view (player: the title "${qTitle}", never the id reset:q): ${JSON.stringify(running.block)}`);
+      if (!runningDev.block || !/holding: [^\n]*reset:q/.test(runningDev.block)) f.push(`running view with developer details (the raw id reset:q): ${JSON.stringify(runningDev.block)}`);
       if (!/Held by queue ca-ch-h-22/.test(running.body)) f.push('no feature says it is held by the shipped queue');
       if (!copy.ok || copy.id !== 'ca-ch-h-22-copy' || !/^copy of/.test(String(copy.name)) || !copy.valid || copy.valid.length || !/gte\(6\)/.test(String(copy.trigger && copy.trigger.when))) f.push(`copy ${JSON.stringify(copy)}`);
       if (keyAfter !== null) f.push(`the player's store was written: ${String(keyAfter).slice(0, 80)}`);
