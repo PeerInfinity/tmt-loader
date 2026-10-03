@@ -818,6 +818,69 @@ jobs:
           retention-days: 14
 
   # ---------------------------------------------------------------------------------------------------------------
+  # speed — THE SPEED CONTROLS AND THE AUTOMATION'S MEMORY ACROSS A RELOAD (`gates-speed.mjs`, docs/speed.md,
+  # docs/automation.md "Memory across a reload"), driven through the PAGE: a faithful fast-forward of N ticks = the
+  # harness at diff 0.05 for N ticks by hashGame (ptr fresh and from m28/QL6, Something, Arc Tree plain), the
+  # multiplier and pause, every target with its cap, the approximate label, no phantom offline gap, the reload memory
+  # (resume mid-queue, a once queue stays done, the row cycle survives, a different save / an import / a hard reset
+  # discard it and the tab says so), the 390 px phone width, inertness, the options tab's door; then the roster (every
+  # game's loop is found) and the grep.
+  # ⛔ `--assert` holds the run to its exact row count (9 + 1 + 1), all green.
+  # ---------------------------------------------------------------------------------------------------------------
+  speed:
+    name: speed — speed controls and the automation's memory across a reload
+    needs: fast
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true   # games/ is the tmt-loader-games submodule; the roster leg boots every game
+          fetch-depth: 1
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - run: npm ci
+
+      - name: Cache the Playwright browser
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+
+      - run: npx playwright install --with-deps chromium
+
+      - name: The battery — the page legs, the roster and the grep
+        shell: bash
+        run: |
+          set -o pipefail
+          node tools/harness/gates-speed.mjs --part all --no-summary --assert | tee speed.txt
+
+      - name: Summary
+        if: always()
+        shell: bash
+        run: |
+          {
+            echo '## speed — speed controls and the automation memory across a reload'
+            echo ''
+            echo '```'
+            cat speed.txt 2>/dev/null | grep -aE '^(GREEN|RED|VERDICT)' | cut -c1-400 || echo 'no output'
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload the rows
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: speed
+          path: tools/harness/results/tmp/gates-speed-part*-last.json
+          if-no-files-found: warn
+          retention-days: 14
+
+  # ---------------------------------------------------------------------------------------------------------------
   # p1a — THE PLANNER'S KNOWLEDGE WALK AND GOAL SOURCES (`gates-p1a.mjs --part 2` / `--part 3`, docs/planner.md).
   # Until qrate1 this ran in NO CI job, and its goldens went stale unseen (design notes §16.1: nine reds, all expected
   # drift). ⚖ Ruling (A), user 2026-09-30: the rows NAME the configuration they measure (Something's four under

@@ -3679,6 +3679,142 @@
     return true;
   };
 
+  // ---- (speed-1) THE AUTOMATION'S MEMORY ACROSS A RELOAD (docs/automation.md, "Memory across a reload") -------------
+  // ⚖ user, 2026-10-03: in browser storage, TIED TO THE SAVE. Everything `runtimeState()` carries (the interval resets'
+  // clocks, the row cycle, the stall watch, the give-up records, the queue runner's position) lived only in the page's
+  // memory, so a reload restarted all of it — a queue half way through its steps began again, a `once` queue that had
+  // run armed itself again. Now:
+  //   · ON EVERY SAVE (the engine's own `save`, which its autosave calls too — wrapped here, the call passed through
+  //     untouched) the record is written to ONE declared key, `tmt-loader:<id>:automem`, beside the save:
+  //     `{format, fp, at, gs, runtime}`, where `fp` is the FINGERPRINT of the save just written — a hash of exactly
+  //     what `hashGame` hashes (`stateJSON(gameState)`: the game's state without `player.au`, `time` or `offTime`),
+  //     computed synchronously so it is the save's and not a later tick's;
+  //   · AT LOAD (loader/page.js, after the game's `onload` and before the first tick) it is restored with
+  //     `restoreRuntime` ONLY when the fingerprint matches the save that loaded. Otherwise it is discarded, and the
+  //     automation tab says so — "the automation's memory belonged to a different save; it starts fresh";
+  //   · AN IMPORT OR A HARD RESET DISCARDS IT: both engines write a save and reload, so without this the record would
+  //     be written with the NEW save's fingerprint and restored onto it. The import / reset leaves a tombstone, and the
+  //     next load says why the memory is gone.
+  // ⛔ NOTHING NEW IS STORED BY A PAGE WHOSE AUTOMATION HAS NOTHING TO REMEMBER: a record is written only when
+  // `runtimeState()` carries something beyond the loop counter — a feature acted, an interval clock is running, a
+  // cycle, a queue, the tracker, a runtime override. A plain page, a profile-`off` page and the harness (no
+  // `storage.raw`) write nothing, and an author's page (embed) never installs the wrappers at all. Saves, the
+  // player's queues and every pin are untouched: this file never writes the save, only beside it.
+  var AUTOMEM = 'automem', AUTOMEM_FORMAT = 'tmt-automem/1';
+  var mem = { state: 'none', why: null, notice: null, writes: 0, removes: 0, tombstones: 0, lastMs: 0, maxMs: 0, totalMs: 0, saves: 0, bytes: 0, restored: null };
+  var memDiscarding = null;    // 'import' | 'reset' once one of those wrote its save: nothing more is written before the reload
+  function memKey() { return T.storage && T.storage.raw && T.storage.prefix && !T.storage.embed ? T.storage.prefix + AUTOMEM : null; }
+  function memGet() { var k = memKey(); if (!k) return null; try { return T.storage.raw.getItem.call(G.localStorage, k); } catch (e) { return null; } }
+  function memSet(v) { var k = memKey(); if (!k) return false; try { T.storage.raw.setItem.call(G.localStorage, k, v); return true; } catch (e) { return false; } }
+  function memRemove() { var k = memKey(); if (!k) return; try { if (T.storage.raw.getItem.call(G.localStorage, k) !== null) { T.storage.raw.removeItem.call(G.localStorage, k); mem.removes++; } } catch (e) { /* */ } }
+  // a 53-bit string hash (cyrb53), twice with two seeds: synchronous, so the fingerprint is taken in the same call as
+  // the save it describes (`T.hash` is a promise — the page's `crypto.subtle` — and a tick could land in between)
+  function h53(str, seed) {
+    var h1 = 0xdeadbeef ^ seed, h2 = 0x41c6ce57 ^ seed;
+    for (var i = 0; i < str.length; i++) { var c = str.charCodeAt(i); h1 = Math.imul(h1 ^ c, 2654435761); h2 = Math.imul(h2 ^ c, 1597334677); }
+    h1 = Math.imul(h1 ^ (h1 >>> 16), 2246822507) ^ Math.imul(h2 ^ (h2 >>> 13), 3266489909);
+    h2 = Math.imul(h2 ^ (h2 >>> 16), 2246822507) ^ Math.imul(h1 ^ (h1 >>> 13), 3266489909);
+    var n = 4294967296 * (2097151 & h2) + (h1 >>> 0);
+    return ('0000000000000' + n.toString(16)).slice(-14);
+  }
+  function memFingerprint() { var j = T.stateJSON(T.gameState); return h53(j, 1) + h53(j, 2) + '.' + j.length; }
+  function memWorth(rt) {
+    for (var k in rt) if (k !== 'lastReset' && k !== 'loopNo' && k !== 'ranAt' && k !== 'stats') return true;
+    for (var l in rt.lastReset || {}) return true;
+    var a = (rt.stats && rt.stats.actions) || {};
+    for (var f in a) if (Number(a[f]) > 0) return true;
+    return false;
+  }
+  function memWrite() {
+    if (!memKey()) return null;
+    var t0 = Date.now(), p0 = typeof G.performance === 'object' && G.performance ? G.performance.now() : t0;
+    mem.saves++;
+    if (memDiscarding) { memTombstone(memDiscarding); return 'discarding'; }
+    var rt = T.runtimeState();
+    if (!memWorth(rt)) { memRemove(); return 'nothing'; }
+    var rec = JSON.stringify({ format: AUTOMEM_FORMAT, fp: memFingerprint(), at: Date.now(), gs: Number(player.timePlayed) || 0, runtime: rt });
+    if (memSet(rec)) { mem.writes++; mem.bytes = rec.length; }
+    var ms = (typeof G.performance === 'object' && G.performance ? G.performance.now() : Date.now()) - p0;
+    mem.lastMs = Math.round(ms * 1000) / 1000; mem.totalMs += ms; if (ms > mem.maxMs) mem.maxMs = mem.lastMs;
+    return 'written';
+  }
+  function memTombstone(why) {
+    // only where there WAS a record: an import on a page that remembered nothing stores nothing
+    var had = memGet();
+    if (had === null) return;
+    try { if (JSON.parse(had).discarded) return; } catch (e) { /* replace an unreadable record */ }
+    if (memSet(JSON.stringify({ format: AUTOMEM_FORMAT, discarded: why, at: Date.now() }))) mem.tombstones++;
+  }
+  // the wrappers: the original with the caller's own `this` and every argument, its return value and its throws
+  // untouched; ours inside a try/catch. Each carries the original as `tmtLoaderAutomem`, so it is never installed twice.
+  function memWrap(name, after) {
+    var orig = G[name];
+    if (typeof orig !== 'function' || orig.tmtLoaderAutomem) return false;
+    var w = function () {
+      var r = after.before ? after.before() : null;
+      try { return orig.apply(this, arguments); }
+      finally { try { after.after(r); } catch (e) { /* the memory never costs the game its call */ } }
+    };
+    w.tmtLoaderAutomem = orig;
+    try { G[name] = w; } catch (e) { return false; }
+    return G[name] === w;
+  }
+  var memInSave = 0, memSavedDuring = 0;
+  function memInstall() {
+    if (!memKey()) return { save: false, importSave: false, hardReset: false };
+    return {
+      save: memWrap('save', { before: function () { memInSave++; return null; }, after: function () { memInSave--; memSavedDuring++; if (memInSave === 0) { try { memWrite(); } catch (e) { /* */ } } } }),
+      importSave: memWrap('importSave', { before: function () { var was = memDiscarding; memDiscarding = 'import'; return { was: was, n: memSavedDuring }; },
+        after: function (r) { if (memSavedDuring === r.n) memDiscarding = r.was; } }),   // a refused import wrote no save: nothing is discarded
+      hardReset: memWrap('hardReset', { before: function () { var was = memDiscarding; memDiscarding = 'reset'; return { was: was, n: memSavedDuring }; },
+        after: function (r) { if (memSavedDuring === r.n) memDiscarding = r.was; } }),   // a cancelled reset (its confirm) changes nothing
+    };
+  }
+  var MEM_WORDS = {
+    other: 'The automation’s memory belonged to a different save; it starts fresh.',
+    'import': 'A save was imported, so the automation’s memory was discarded; it starts fresh.',
+    reset: 'The game was reset, so the automation’s memory was discarded; it starts fresh.',
+    unreadable: 'The automation’s memory could not be read; it starts fresh.',
+    failed: 'The automation’s memory could not be restored on this save; it starts fresh.',
+  };
+  function memDiscard(why, detail) {
+    memRemove();
+    mem.state = 'discarded'; mem.why = why; mem.notice = MEM_WORDS[why] || MEM_WORDS.other; mem.detail = detail || null;
+    invalidateView();
+    return { state: 'discarded', why: why };
+  }
+  // At load: what the stored record says about the save that just loaded. Restores at once when it can; says
+  // `waiting` when the record carries queues and the queue runner is not loaded yet (the page fetches it and asks again).
+  function memAtLoad(final) {
+    if (!memKey()) return { state: 'none' };
+    var raw = memGet();
+    if (raw === null) { mem.state = 'none'; return { state: 'none' }; }
+    var rec = null;
+    try { rec = JSON.parse(raw); } catch (e) { return memDiscard('unreadable'); }
+    if (!rec || rec.format !== AUTOMEM_FORMAT) return memDiscard('unreadable');
+    if (rec.discarded) return memDiscard(rec.discarded === 'reset' ? 'reset' : 'import');
+    var fp = memFingerprint();
+    if (rec.fp !== fp) return memDiscard('other', { stored: rec.fp, loaded: fp });
+    if (rec.runtime && rec.runtime.queues && T.queueLink.set === null) {
+      if (final) return memDiscard('failed', 'the queue runner did not load');
+      mem.state = 'waiting'; return { state: 'waiting', needsRunner: true };
+    }
+    try { T.restoreRuntime(rec.runtime); }
+    catch (e) { return memDiscard('failed', String(e && e.message || e).slice(0, 200)); }
+    mem.state = 'restored'; mem.why = null; mem.notice = null; mem.restored = { at: rec.at, gs: rec.gs, keys: Object.keys(rec.runtime || {}) };
+    invalidateView();
+    return { state: 'restored' };
+  }
+  var memHooks = memInstall();
+  T.autoMemory = {
+    key: memKey, format: AUTOMEM_FORMAT, hooks: function () { return Object.assign({}, memHooks); },
+    fingerprint: memFingerprint, write: memWrite, atLoad: memAtLoad,
+    record: function () { var r = memGet(); try { return r === null ? null : JSON.parse(r); } catch (e) { return { unreadable: r }; } },
+    status: function () { return JSON.parse(JSON.stringify(mem)); },
+    notice: function () { return mem.notice; },
+    dismiss: function () { mem.notice = null; invalidateView(); },
+  };
+
   // ⛔ A POLICY IS VALID WHEN THE GRAMMAR *AND* THE DECLARED BOUNDS ACCEPT IT, and both come from the same table
   // row. The first cut checked only the grammar, and `rate-peak@2/0` sailed through: a value buffer of 2 puts the
   // threshold at `best × (1 − 2)`, a NEGATIVE rate, which no rate can ever be under — so the strategy would have
@@ -6290,7 +6426,9 @@
           for (var i = 0; i < features.length; i++) if (active(features[i])) on++;
           return 'Profile: <b>' + T.profileName + '</b> — ' + on + ' of ' + features.length + ' registered features running';
         }],
-        ['display-text', function () { return player[AU] && player[AU].disclosed ? DISCLOSURE : ''; }],
+        // (speed-1) the reload memory's notice rides on the disclosure line — no new tabFormat entry, so nothing in the
+        // tab's structure (the grid's ids, U1's flatten) moves; '' and the line is what it always was
+        ['display-text', function () { var n = T.autoMemory && T.autoMemory.notice(); return (n ? '<span class="tmtl-automem-notice" style="color:#e7b75a">' + esc(n) + '</span>' + (player[AU] && player[AU].disclosed ? '<br>' : '') : '') + (player[AU] && player[AU].disclosed ? DISCLOSURE : ''); }],
         // THE SETTING, and it is a `toggle`, not a clickable (⚖ user, 2026-09-19). That distinction is the whole
         // reason it is here: `buildClickables` lays the feature buttons out in a fixed grid whose `rows` / `cols`
         // it computes from `features.length + 1`, and U1's mobile CSS flattens THOSE boxes with `display: contents`

@@ -17,12 +17,17 @@ export function installTimers(win) {
   const intervals = new Map(); // logical id → {fn, ms, args, realId|null, createdAt}
   const counts = { setInterval: 0, clearInterval: 0, setTimeout: 0, requestAnimationFrame: 0 };
   let paused = false;
+  // (speed-1) HELD intervals: stopped one by one, and left stopped by resume(). The speed controls (loader/tmt-speed.js)
+  // hold the ENGINE'S GAME LOOP ALONE while they drive its ticks — the autosave, the canvas flag and every component
+  // timer keep running. Empty unless a speed control is used; with nothing held, pause() / resume() are what they were.
+  const held = new Set();
 
   const clearLogical = (id) => {
     const rec = intervals.get(id);
     if (!rec) return false;
     if (rec.realId != null) real.clearInterval(rec.realId);
     intervals.delete(id);
+    held.delete(id);
     counts.clearInterval++;
     return true;
   };
@@ -30,7 +35,7 @@ export function installTimers(win) {
     counts.setInterval++;
     const id = ++next;
     const rec = { fn, ms, args, realId: null };
-    if (!paused) rec.realId = real.setInterval(fn, ms, ...args);
+    if (!paused) rec.realId = real.setInterval(fn, ms, ...args);   // a NEW interval is never born held
     intervals.set(id, rec);
     return id;
   };
@@ -42,7 +47,7 @@ export function installTimers(win) {
   return {
     get paused() { return paused; },
     counts,
-    list: () => [...intervals.entries()].map(([id, r]) => ({ id, ms: r.ms, running: r.realId != null })),
+    list: () => [...intervals.entries()].map(([id, r]) => ({ id, ms: r.ms, running: r.realId != null, held: held.has(id) })),
     pause() {
       for (const r of intervals.values()) if (r.realId != null) { real.clearInterval(r.realId); r.realId = null; }
       paused = true;
@@ -50,8 +55,26 @@ export function installTimers(win) {
     },
     resume() {
       paused = false;
-      for (const r of intervals.values()) if (r.realId == null) r.realId = real.setInterval(r.fn, r.ms, ...r.args);
+      for (const [id, r] of intervals) if (r.realId == null && !held.has(id)) r.realId = real.setInterval(r.fn, r.ms, ...r.args);
       return intervals.size;
     },
+    // (speed-1) the intervals whose callback's SOURCE matches `re` — how the speed controls find the engine's game loop
+    // (the one interval that calls `gameLoop(`) without knowing any engine's variable name
+    find(re) { const out = []; for (const [id, r] of intervals) { let src = ''; try { src = String(r.fn); } catch (e) { /* */ } if (re.test(src)) out.push({ id, ms: r.ms }); } return out; },
+    hold(id) {
+      const r = intervals.get(id);
+      if (!r) return false;
+      if (r.realId != null) { real.clearInterval(r.realId); r.realId = null; }
+      held.add(id);
+      return true;
+    },
+    release(id) {
+      const r = intervals.get(id);
+      held.delete(id);
+      if (!r) return false;
+      if (!paused && r.realId == null) r.realId = real.setInterval(r.fn, r.ms, ...r.args);
+      return true;
+    },
+    held: () => [...held],
   };
 }

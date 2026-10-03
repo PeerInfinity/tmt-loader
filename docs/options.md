@@ -125,6 +125,16 @@ and labelled `Nav bar: ON (with the mobile layout)`, with a title saying to turn
 back. A press on it writes nothing and reloads nothing. That is the one control here that does not act, and it
 says why on its face rather than accepting a press and ignoring it.
 
+## The Speed controls button (speed-1) — a tool, not a flag
+
+A fourth button sits on its own row under the three flags: **Speed controls** (docs/speed.md). It is NOT a flag: it
+needs no reload, it is not remembered "for every game", and it carries `data-tool="speed"` rather than `data-flag`, so
+the three flag buttons, their labels and gate O1's reading of them (`button[data-flag]`) are exactly what they were.
+Pressing it fetches `loader/tmt-speed.js` the first time and opens the controls over the game; the panel stays open
+across reloads until it is closed, in the one per-game key `tmt-loader:<id>:ui.speed` (inside what "clear this game's
+save" clears). `optionsUI.speedButton()` returns it. On an author's page (embed) there is no button: the controls need
+the hosted page's timer recorder.
+
 ## What `tmtLoader` gained
 
 `flags`, `flagSource`, `prefs` and `optionsUI` — see [contract.md](contract.md). `flagSource` is the interesting
