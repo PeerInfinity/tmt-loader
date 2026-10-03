@@ -694,7 +694,7 @@ jobs:
 
   # ---------------------------------------------------------------------------------------------------------------
   # qedit — THE QUEUE EDITOR (`gates-qedit.mjs`, docs/queues.md "The editor"), driven through the PAGE: inert until
-  # the Queues subtab is opened (no request, no key), a queue of every step kind persisting in the ONE declared key
+  # the Parts subtab (qedit-1: Queues) is opened (no request, no key), a queue of every step kind persisting in the ONE declared key
   # and never in `player`, the game's own names, export → import byte-equal (and the harness playing the export), an
   # invalid import refused in plain words, both triggers, the run-status with its time left and the tools paused,
   # holds released on Off and delete, q23's generated queue run on qrate1/Q308K, recording real clicks with the log
@@ -751,6 +751,69 @@ jobs:
         with:
           name: qedit
           path: tools/harness/results/tmp/gates-qedit-part*-last.json
+          if-no-files-found: warn
+          retention-days: 14
+
+  # ---------------------------------------------------------------------------------------------------------------
+  # parts — EVERY AUTOMATION PART VISIBLE AND EDITABLE (`gates-parts.mjs`, docs/queues.md "The Parts subtab",
+  # docs/automation.md "Switched off by you"), driven through the PAGE: inert until the Parts subtab is opened (no
+  # request, no key, the switch store never written), every stage listed with its name, note, condition, titles,
+  # in-force and evidence and the shipped queue with its live state (no raw feature id), copy then edit the copy, a
+  # shipped queue and a stage switched off for me surviving a reload in the ONE declared key and never in `player`, my
+  # own condition for a stage, the readout's links, the 390 px phone width, two other engines; then v4 (the H22
+  # queue's tick limits move no pin, at diff 1 and 0.05) and the grep.
+  # ⛔ `--assert` holds the run to its exact row count (9 + 1 + 1), all green.
+  # ---------------------------------------------------------------------------------------------------------------
+  parts:
+    name: parts — every automation part visible and editable
+    needs: fast
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true   # games/ is the tmt-loader-games submodule; every leg boots ptr
+          fetch-depth: 1
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - run: npm ci
+
+      - name: Cache the Playwright browser
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+
+      - run: npx playwright install --with-deps chromium
+
+      - name: The battery — the page legs, v4 and the grep
+        shell: bash
+        run: |
+          set -o pipefail
+          node tools/harness/gates-parts.mjs --part all --no-summary --assert | tee parts.txt
+
+      - name: Summary
+        if: always()
+        shell: bash
+        run: |
+          {
+            echo '## parts — every automation part visible and editable'
+            echo ''
+            echo '```'
+            cat parts.txt 2>/dev/null | grep -aE '^(GREEN|RED|VERDICT)' | cut -c1-400 || echo 'no output'
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload the rows
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: parts
+          path: tools/harness/results/tmp/gates-parts-part*-last.json
           if-no-files-found: warn
           retention-days: 14
 

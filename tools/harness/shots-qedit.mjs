@@ -26,7 +26,7 @@ async function open(view) {
   return { ctx, page };
 }
 async function queuesTab(page) {
-  await page.evaluate(() => { showTab('au'); player.subtabs[tmtLoader.auLayer].mainTabs = 'Queues'; });
+  await page.evaluate(() => { showTab('au'); player.subtabs[tmtLoader.auLayer].mainTabs = 'Parts'; });
   await redraw(page);
   await page.waitForSelector('.tmtl-qedit', { timeout: 15000 });
   await page.waitForFunction(() => tmtLoader.queues && tmtLoader.queues.ready, null, { timeout: 15000 });

@@ -37,7 +37,13 @@
   // two fields and nothing else: a queue's `name` (what the editor shows; the `id` stays the key) and a call's `times`
   // (the call made N times in a row in one slot — the recorder folds a run of identical presses into one step). A
   // version this runner does not know is REFUSED by name: a field it would ignore could change what a queue does.
-  var VERSIONS = [1, 2, 3];
+  var VERSIONS = [1, 2, 3, 4];
+  // (parts-1) VERSION 4 adds ONE thing: a wait's time limit in TICKS, `timeout: {ticks: N}` — the game's own loops (one
+  // queue slot each), not game-seconds. It is for a CONFIRMATION ("the engine entered it", "a completion was recorded"):
+  // a wait that is met in the slot of the call it confirms, or never. In game-seconds such a limit is a different number
+  // of loops at every tick size (2 game-s = 2 loops at diff 1, 40 at the page's 0.05). An older runner would read a
+  // `{ticks}` timeout as no timeout at all — refused by name without the version.
+  var MAX_TICKS = 100000;
   var MAX_TIMES = 1000;
   // (shipq-1) VERSION 3 adds ONE field, `relies`: the automation settings the queue was CHECKED under (the template
   // writes it from the configuration its rollback ran in) — `{options: {<lever>: <value>}, policies: {<feature id>:
@@ -121,7 +127,11 @@
         var we = typeof s.until === 'string' && s.until ? compiles(s.until) : 'a wait needs "until", a predicate';
         if (we) errs.push(at + 'until: ' + we);
         // ⛔ A WAIT WITH NO TIMEOUT IS REFUSED: a queue that can wait forever is a silent stall with a hold in force
-        if (!s.timeout || !(Number(s.timeout.gs) > 0)) errs.push(at + 'a wait needs "timeout": {"gs": <game-seconds > 0>}');
+        var tk = s.timeout && typeof s.timeout === 'object' ? s.timeout.ticks : undefined;
+        if (tk !== undefined) {
+          if (ver < 4) errs.push(at + 'a "timeout": {"ticks": …} needs "version": 4');
+          else if (!(tk === Math.floor(tk) && tk >= 1 && tk <= MAX_TICKS) || s.timeout.gs !== undefined) errs.push(at + 'a "timeout": {"ticks": N} is a whole number of ticks from 1 to ' + MAX_TICKS + ', and not also "gs"');
+        } else if (!s.timeout || !(Number(s.timeout.gs) > 0)) errs.push(at + 'a wait needs "timeout": {"gs": <game-seconds > 0>}' + (ver >= 4 ? ' or {"ticks": <ticks ≥ 1>}' : ''));
         if (ON_TIMEOUT.indexOf(s.onTimeout) < 0) errs.push(at + '"onTimeout" must be one of ' + ON_TIMEOUT.join(' | '));
       } else if (s.do === 'call') {
         var t = target(s.fn, s.self);
@@ -172,7 +182,7 @@
     Q.state = state;
     Q.endedAt = round6(now());
     Q.outcome = why || state;
-    Q.waitFrom = null;
+    Q.waitFrom = null; Q.waitTicks = null;
     setLast(Q, state + (why ? ' — ' + why : '') + (n ? '; released ' + n + ' hold(s)' : ''));
     note(Q, state === 'done' ? 'end' : 'abort', { why: why || null, released: n });
     if (Q.owner === 'table') afterRun(Q);
@@ -236,17 +246,22 @@
         // its timeout looking exactly like a condition not yet met
         if (err !== null) { finish(Q, 'aborted', 'step ' + (Q.pc + 1) + ': the wait condition threw: ' + err); return; }
         var waited = round6(t0 - Q.waitFrom);
+        // (parts-1, version 4) a limit in TICKS counts this queue's slots since the wait began (0 in the first)
+        var inTicks = s.timeout.ticks !== undefined;
+        if (inTicks && (Q.waitTicks === null || Q.waitTicks === undefined)) Q.waitTicks = 0;
+        var wx = inTicks ? { waitedTicks: Q.waitTicks } : null;
         if (v) {
-          note(Q, 'wait-met', { until: s.until, waited: waited });
-          setLast(Q, 'waited ' + waited + ' s until ' + s.until);
-          Q.waitFrom = null; Q.pc++;
-        } else if (waited >= Number(s.timeout.gs)) {
-          note(Q, 'wait-timeout', { until: s.until, waited: waited, onTimeout: s.onTimeout });
-          Q.waitFrom = null;
-          if (s.onTimeout === 'abort') { finish(Q, 'aborted', 'step ' + (Q.pc + 1) + ': timed out after ' + waited + ' s waiting for ' + s.until); return; }
-          setLast(Q, 'skipped a wait after ' + waited + ' s: ' + s.until);
+          note(Q, 'wait-met', Object.assign({ until: s.until, waited: waited }, wx));
+          setLast(Q, 'waited ' + waited + ' s' + (inTicks ? ' (' + Q.waitTicks + ' tick(s))' : '') + ' until ' + s.until);
+          Q.waitFrom = null; Q.waitTicks = null; Q.pc++;
+        } else if (inTicks ? Q.waitTicks >= Number(s.timeout.ticks) : waited >= Number(s.timeout.gs)) {
+          note(Q, 'wait-timeout', Object.assign({ until: s.until, waited: waited, onTimeout: s.onTimeout }, wx));
+          var span = inTicks ? Q.waitTicks + ' tick(s)' : waited + ' s';
+          Q.waitFrom = null; Q.waitTicks = null;
+          if (s.onTimeout === 'abort') { finish(Q, 'aborted', 'step ' + (Q.pc + 1) + ': timed out after ' + span + ' waiting for ' + s.until); return; }
+          setLast(Q, 'skipped a wait after ' + span + ': ' + s.until);
           Q.pc++;
-        } else return;   // not yet: the next tick's slot asks again
+        } else { if (inTicks) Q.waitTicks++; return; }   // not yet: the next tick's slot asks again
       }
     }
   }
@@ -372,7 +387,7 @@
     if (Q.rearm !== 'each') return;
     if (Q.runs >= Q.cap) { Q.spent = true; note(Q, 'spent', { runs: Q.runs, cap: Q.cap }); setLast(Q, 'ran ' + Q.runs + ' time(s), its cap: it will not start again in this page load'); return; }
     Q.holds = {};
-    Q.state = 'armed'; Q.pc = 0; Q.waitFrom = null;
+    Q.state = 'armed'; Q.pc = 0; Q.waitFrom = null; Q.waitTicks = null;
     Q.coolUntil = round6(now() + Q.coolOff);
     note(Q, 'rearm', { runs: Q.runs, cap: Q.cap, coolUntil: Q.coolUntil });
     setLast(Q, 'run ' + Q.runs + ' ' + Q.outcome + '; armed again: it starts when its condition turns false and then true, not before ' + Q.coolOff + ' game-s');
@@ -388,6 +403,9 @@
       // left out, by name (`shippedSkipped`), and the run goes on: that is a configuration, not a broken table (h22's
       // and m28's legs measure under `exclude=challenges:h`). A feature the game does not derive AT ALL is still refused
       // by `validate` below.
+      // (parts-1) SWITCHED OFF BY THE PLAYER (`T.parts`, their own browser's store — never the table, never the save):
+      // left out by name, exactly as a configuration that leaves out a feature is, and switched back on the same way
+      if (offByYou(e.id)) { shippedSkip.push({ id: e.id, why: 'switched off by you', byYou: true }); continue; }
       var named = absentNamed(e.queue);
       if (named.excluded.length || named.outOfKinds.length) {
         shippedSkip.push({ id: e.id, why: 'it ' + [named.excluded.length ? 'needs ' + named.excluded.join(', ') + ', which this configuration excludes' : null,
@@ -406,6 +424,42 @@
     for (var k = 0; k < errs.length; k++) if (typeof console !== 'undefined') console.warn('tmt-loader: the shipped queue ' + errs[k].id + ' was refused: ' + errs[k].errors.join('; '));
   }
   var shippedErrs = [], shippedSkip = [];
+  function offByYou(id) { try { return !!(T.parts && typeof T.parts.queueOff === 'function' && T.parts.queueOff(id)); } catch (e) { return false; } }
+  // (parts-1) the player switched a shipped queue OFF or back ON (`T.parts.setQueueOff`): off unloads it — ⛔ every hold
+  // it placed is released, as `unload` does — and leaves it out by name; on arms it FRESH (from the top, holding nothing,
+  // as a page load would). The table's queues stay first, in the table's order.
+  function partsChanged() {
+    var es = entries(), i, k, changed = false;
+    for (i = 0; i < es.length; i++) {
+      var id = es[i].id, off = offByYou(id), at = -1, sk = -1;
+      for (k = 0; k < loaded.length; k++) if (loaded[k].owner === 'table' && loaded[k].q.id === id) at = k;
+      for (k = 0; k < shippedSkip.length; k++) if (shippedSkip[k].id === id) sk = k;
+      if (off && at >= 0) {
+        var Q = loaded[at], n = releaseAll(Q);
+        note(Q, 'unload', { state: Q.state, released: n, by: 'you' });
+        loaded.splice(at, 1);
+        shippedSkip.push({ id: id, why: 'switched off by you', byYou: true });
+        changed = true;
+      } else if (!off && sk >= 0 && shippedSkip[sk].byYou) {
+        shippedSkip.splice(sk, 1);
+        var named = absentNamed(es[i].queue), bad = false;
+        for (k = 0; k < shippedErrs.length; k++) if (shippedErrs[k].id === id) bad = true;
+        if (named.excluded.length || named.outOfKinds.length) { shippedSkip.push({ id: id, why: 'it needs a feature this configuration leaves out' }); continue; }
+        if (bad) continue;
+        var F = freshShipped(es[i]);
+        setLast(F, 'switched back on by you; waiting for its condition');
+        loaded.push(F);
+        note(F, 'load', { steps: F.q.steps.length, trigger: 'condition', from: 'table', by: 'you' });
+        changed = true;
+      }
+    }
+    if (!changed) return;
+    // the table's first, in the table's order; then everything else as it was
+    var mine = loaded.filter(function (Q) { return Q.owner !== 'table'; }), tab = [];
+    for (i = 0; i < es.length; i++) for (k = 0; k < loaded.length; k++) if (loaded[k].owner === 'table' && loaded[k].q.id === es[i].id) tab.push(loaded[k]);
+    loaded = tab.concat(mine);
+    syncLink();
+  }
 
   // ---- the memory (runtimeState's `queues` block) --------------------------------------------------------------------
   // (shipq-1) a SHIPPED queue that has done nothing yet (armed, never run) is NOT written: it is the table's, and the
@@ -416,6 +470,8 @@
     return { format: FORMAT, loaded: keep.map(function (Q) {
       var o = { q: JSON.parse(JSON.stringify(Q.q)), state: Q.state, pc: Q.pc, waitFrom: Q.waitFrom, holds: Object.assign({}, Q.holds),
         firedAt: Q.firedAt, endedAt: Q.endedAt, outcome: Q.outcome, last: Q.last ? Object.assign({}, Q.last) : null };
+      // (parts-1) a version-4 wait in progress: its tick count (absent otherwise, so every older record is unchanged)
+      if (Q.waitTicks !== null && Q.waitTicks !== undefined) o.waitTicks = Q.waitTicks;
       if (Q.owner === 'table') { o.owner = 'table'; o.runs = Q.runs; o.sawFalse = Q.sawFalse; o.coolUntil = Q.coolUntil; o.spent = Q.spent; }
       return o;
     }) };
@@ -437,6 +493,7 @@
         Q.holds = Object.assign({}, x0.holds || {}); Q.firedAt = x0.firedAt === undefined ? null : x0.firedAt; Q.endedAt = x0.endedAt === undefined ? null : x0.endedAt;
         Q.outcome = x0.outcome === undefined ? null : x0.outcome; Q.last = x0.last || null; Q.runs = Number(x0.runs) || 0; Q.sawFalse = x0.sawFalse !== false;
         Q.coolUntil = x0.coolUntil === undefined ? null : x0.coolUntil; Q.spent = !!x0.spent;
+        Q.waitTicks = typeof x0.waitTicks === 'number' ? x0.waitTicks : null;
       } else setLast(Q, 'shipped with the game\'s table; waiting for its condition');
       loaded.push(Q);
     }
@@ -445,7 +502,7 @@
       if (x.owner === 'table') continue;
       loaded.push({ q: JSON.parse(JSON.stringify(x.q)), state: x.state, pc: Number(x.pc) || 0, waitFrom: x.waitFrom === null || x.waitFrom === undefined ? null : Number(x.waitFrom),
         holds: Object.assign({}, x.holds || {}), firedAt: x.firedAt === undefined ? null : x.firedAt, endedAt: x.endedAt === undefined ? null : x.endedAt,
-        outcome: x.outcome === undefined ? null : x.outcome, last: x.last || null, relyWhy: null });
+        outcome: x.outcome === undefined ? null : x.outcome, last: x.last || null, relyWhy: null, waitTicks: typeof x.waitTicks === 'number' ? x.waitTicks : null });
     }
     syncLink();
   }
@@ -479,10 +536,11 @@
   var STATE_TEXT = { armed: 'waiting for its trigger', running: 'running', done: 'finished', aborted: 'aborted' };
   function stepText(s) {
     if (s.do === 'call') return s.fn + '(' + (s.args || []).map(function (a) { return JSON.stringify(a); }).join(', ') + ')' + (s.times > 1 ? ' ×' + s.times : '');
-    if (s.do === 'wait') return 'until ' + s.until + ' (at most ' + s.timeout.gs + ' s, then ' + s.onTimeout + ')';
+    if (s.do === 'wait') return 'until ' + s.until + ' (at most ' + limitText(s.timeout) + ', then ' + s.onTimeout + ')';
     if (s.do === 'hold' || s.do === 'release') return (s.features || ['every hold of this queue']).join(', ');
     return s.text || '';
   }
+  function limitText(t) { return t && t.ticks !== undefined ? t.ticks + ' tick(s)' : (t ? t.gs : '?') + ' s'; }
   function status() {
     // (shipq-1) the queues loaded by hand (or by the editor) first, then the table's — a caller that loaded ONE queue
     // finds it at [0], as before the table could ship any
@@ -494,8 +552,11 @@
         current: cur ? { index: Q.pc + 1, 'do': cur.do, text: stepText(cur), comment: cur.comment || null } : null,
         waiting: Q.waitFrom === null ? null : round6(now() - Q.waitFrom),
         // (qedit-1) the run-status view: what a running wait is waiting for, and how long it has left before its timeout
-        wait: cur && cur.do === 'wait' && Q.state === 'running' ? { until: cur.until, timeout: Number(cur.timeout.gs), onTimeout: cur.onTimeout,
-          waited: Q.waitFrom === null ? 0 : round6(now() - Q.waitFrom), left: round6(Math.max(0, Number(cur.timeout.gs) - (Q.waitFrom === null ? 0 : now() - Q.waitFrom))) } : null,
+        wait: cur && cur.do === 'wait' && Q.state === 'running' ? (cur.timeout.ticks !== undefined
+          // (parts-1, version 4) a limit in ticks: the same fields, counted in ticks, and `unit` says so
+          ? { until: cur.until, timeout: Number(cur.timeout.ticks), onTimeout: cur.onTimeout, unit: 'ticks', waited: Q.waitTicks || 0, left: Math.max(0, Number(cur.timeout.ticks) - (Q.waitTicks || 0)) }
+          : { until: cur.until, timeout: Number(cur.timeout.gs), onTimeout: cur.onTimeout,
+          waited: Q.waitFrom === null ? 0 : round6(now() - Q.waitFrom), left: round6(Math.max(0, Number(cur.timeout.gs) - (Q.waitFrom === null ? 0 : now() - Q.waitFrom))) }) : null,
         name: typeof Q.q.name === 'string' ? Q.q.name : null, trigger: Q.q.trigger || { on: 'start' },
         holds: Object.keys(Q.holds).sort(), firedAt: Q.firedAt, endedAt: Q.endedAt, outcome: Q.outcome, last: Q.last ? Q.last.text : null,
         relies: Q.q.relies || null, reliesWhy: Q.relyWhy || null, shipped: Q.owner === 'table' ? shippedView(Q) : null };
@@ -516,9 +577,11 @@
   /** (shipq-1) a COPY of a shipped queue for the player's own store: a new id, a name that says where it came from. It is
    *  never written anywhere by the runner — the editor (`tmtLoader.qedit`) is what stores it. */
   function copyShipped(id) {
-    for (var i = 0; i < loaded.length; i++) {
-      var Q = loaded[i];
-      if (Q.q.id !== id || Q.owner !== 'table') continue;
+    // (parts-1) read off the TABLE's entry, so a shipped queue the player switched off can still be copied
+    var es = Array.isArray(T.autoQueues) ? T.autoQueues : [];
+    for (var i = 0; i < es.length; i++) {
+      var Q = { q: es[i].queue, when: es[i].when || null };
+      if (!es[i] || es[i].id !== id) continue;
       var c = clone(Q.q);
       c.id = (c.id + '-copy').slice(0, 80);
       c.version = Math.max(2, c.version || 1);
@@ -535,5 +598,6 @@
   T.queues = { ready: true, format: FORMAT, load: load, unload: unload, status: status, validate: function (q) { return validate(q); },
     copyShipped: copyShipped, shippedErrors: function () { return clone(shippedErrs); }, shippedSkipped: function () { return clone(shippedSkip); } };
   loadShipped();
+  if (T.parts && typeof T.parts.onChange === 'function') T.parts.onChange(partsChanged);
   syncLink();
 })();

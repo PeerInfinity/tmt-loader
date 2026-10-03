@@ -282,6 +282,17 @@
             "type": "string",
             "pattern": "^[a-z0-9][a-z0-9-]*$"
           },
+          "name": {
+            "type": "string",
+            "pattern": "^\\S",
+            "maxLength": 80,
+            "description": "the stage's name, in the game's own words (the Parts subtab, the readout's tooltip)"
+          },
+          "note": {
+            "type": "string",
+            "pattern": "^\\S",
+            "description": "in plain words: what the stage does while it is in force, and why"
+          },
           "when": {
             "type": "string",
             "pattern": "^\\S",

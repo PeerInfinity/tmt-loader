@@ -70,7 +70,7 @@ async function redraw(page) {
 }
 async function tick(page, n, diff = 1) { await page.evaluate(([d, k]) => tmtLoader.tick(d, k), [diff, n]); await redraw(page); }
 async function showQueues(page) {
-  await page.evaluate(() => { showTab('au'); player.subtabs[tmtLoader.auLayer].mainTabs = 'Queues'; });
+  await page.evaluate(() => { showTab('au'); player.subtabs[tmtLoader.auLayer].mainTabs = 'Parts'; });
   await redraw(page);   // no tick: opening the tab must not move the game (Q10 arms its queue before the first tick)
   await page.waitForSelector('.tmtl-qedit', { timeout: 15000 });
   await page.waitForFunction(() => tmtLoader.queues && tmtLoader.queues.ready, null, { timeout: 15000 });
@@ -130,7 +130,7 @@ async function legInert(browser) {
     if (t.qedit !== 'undefined') f.push('tmtLoader.qedit exists');
     if (t.door !== 'function') f.push('no fetchQueueEditor door');
     if (!t.shell) f.push('the Queues shell is not registered');
-    if (JSON.stringify(t.subs) !== '["Simple","Advanced","Progress","Queues"]') f.push(`subtabs ${JSON.stringify(t.subs)}`);
+    if (JSON.stringify(t.subs) !== '["Simple","Advanced","Progress","Parts"]') f.push(`subtabs ${JSON.stringify(t.subs)}`);
     const k1 = await keys(page);
     if (JSON.stringify(k0) !== JSON.stringify(k1)) f.push(`stored keys moved: ${JSON.stringify(k0)} → ${JSON.stringify(k1)}`);
     n = stats.of(page).urls.length;
@@ -148,7 +148,7 @@ async function legInert(browser) {
     await context.close();
   }
   row({ gate: 'Q1 inert: no Queues tab opened → no editor request, no new key, no qedit; the plain page has no door', id: 'ptr', ok: !f.length,
-    notes: f.length ? f.join('; ') : `0 editor requests among ${n}; stored keys unchanged; subtabs Simple/Advanced/Progress/Queues; the plain page has no fetchQueueEditor, qedit or componentNames` });
+    notes: f.length ? f.join('; ') : `0 editor requests among ${n}; stored keys unchanged; subtabs Simple/Advanced/Progress/Parts; the plain page has no fetchQueueEditor, qedit or componentNames` });
 }
 
 async function legPersist(browser) {
@@ -376,7 +376,7 @@ async function legStatus(browser) {
   await tick(page, 1);
   const adv = await page.evaluate(() => { const e = document.querySelector('.tmtl-queue[data-queue="status"] .tmtl-queue-wait'); return e ? e.textContent.replace(/\s+/g, ' ').trim() : null; });
   if (!adv || !/s left of 100/.test(adv)) f.push(`the Advanced block's wait line "${adv}"`);
-  await page.evaluate(() => { player.subtabs[tmtLoader.auLayer].mainTabs = 'Queues'; });
+  await page.evaluate(() => { player.subtabs[tmtLoader.auLayer].mainTabs = 'Parts'; });
   await tick(page, 20);
   const end = await page.evaluate(() => ({ st: tmtLoader.queues.status().queues.find((q) => q.id === 'status').state, link: tmtLoader.queueLink.holds, holdsShown: !!document.querySelector('.tmtl-qqueue[data-queue="status"] .tmtl-qrun-holds') }));
   if (end.st !== 'done' || end.link !== null || end.holdsShown) f.push(`at the end ${JSON.stringify(end)}`);
