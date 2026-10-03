@@ -73,6 +73,24 @@ the automation's own before/after hooks — run back to back. It is NOT the engi
 
 (gate S1's and S2's notes carry the numbers of each run; the CI runner's are its own.)
 
+### The engines' own loops, compared (2.2.1 `ptr` against 2.7 `something`)
+
+Both run `setInterval(…, 50)` with `diff = (Date.now() − player.time) / 1000`, offline catch-up in chunks of
+`max(remain / 10, diff)`, `diff *= player.devSpeed` when set, `player.time = now`, then `updateTemp(); gameLoop(diff);
+fixNaNs()`. The differences, read in each `js/game.js`:
+
+| | 2.2.1 (`ptr`) | 2.7 (`something`) |
+|---|---|---|
+| ended | global `gameEnded` | `tmp.gameEnded` |
+| offline switch | `player.offlineProd` (in the save) | `options.offlineProd` (the options key) |
+| offline cap | `offlineLimit * 3600000` against a `remain` in SECONDS — a cap 1000× the stated hours (an engine quirk, left alone) | `offlineLimit * 3600`, seconds |
+| done offline | `player.offTime = null` | `player.offTime = undefined` |
+| diff floor | `Math.max(…, 0)` | none |
+| besides the tick | `if (needCanvasUpdate) resizeCanvas()` | the canvas (and resets the flag), `tmp.scrolled`, `updateOomps(diff)`, `updateWidth()`, `updateTabFormats()`, and after the tick `adjustPopupTime(trueDiff)` / `updateParticles(trueDiff)` in REAL time |
+
+The faithful drive is the harness tick in both; the display-only lines are run once per frame (above). Both engines
+call `gameLoop` by its bare name from that one interval, which is how the controls find it (gate L1 over the roster).
+
 ### Returning to ×1 — `player.time`
 
 The engine's next tick after the fast-forward would otherwise see `now − player.time` = the whole fast-forward as one
