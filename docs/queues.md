@@ -24,7 +24,7 @@ hand is the escape hatch and says so (`"source": "authored"`). Either way a queu
   what each loaded queue is doing; `tmtLoader.queues.unload(<id>)` removes one.
 - While a queue is loaded, the **Advanced** view of the automation tab shows a block per queue: its state, the step it is
   on and that step's comment, what a running wait waits for and its time left (qedit-1), which features it is holding,
-  and what it did last. The **Queues** subtab (below) is where queues are made and edited.
+  and what it did last. The **Parts** subtab (qedit-1's *Queues*, renamed by parts-1; below) is where queues are made and edited.
 - A feature a queue is **holding** says so in its own block: *"Held by queue X (step N) — it is released when the queue
   ends, aborts or is unloaded"*, and its on/off button reads **Off** with a **HELD** line naming the queue. Your own
   saved on/off choice is not changed; the queue only overrides it while it holds.
@@ -48,7 +48,7 @@ hand is the escape hatch and says so (`"source": "authored"`). Either way a queu
 | `id` | 1–80 letters, digits, `_ . : -`; unique among the loaded queues |
 | `trigger` | `{"on": "start"}` (default) — the first tick after it is loaded; `{"on": "predicate", "when": "<expression>"}` — the first tick on which the expression holds |
 | `source` | `"authored"`, or `{template, goal, facts}` for a generated queue |
-| `version` | (qedit-1) absent = 1; `2` allows `name` and a call's `times` (below, "Version 2 of the format"); (shipq-1) `3` also allows `relies` |
+| `version` | (qedit-1) absent = 1; `2` allows `name` and a call's `times` (below, "Version 2 of the format"); (shipq-1) `3` also allows `relies`; (parts-1) `4` also allows a wait's limit in ticks (below, "Version 4") |
 | `relies` | (version 3) `{options?: {<setting>: <value>}, policies?: {<feature id>: <policy>}}` — the automation settings the queue was checked under (below, "relies") |
 | `name` | (version 2) what the editor shows, ≤ 80 characters |
 | `steps` | a non-empty list, run in order |
@@ -60,7 +60,7 @@ hand is the escape hatch and says so (`"source": "authored"`). Either way a queu
 | `call` | `fn`, `args`, (`self`), (`if`), (`times`, version 2) | calls an engine function: a global (`buyUpgrade`, `doReset`, `startChallenge`, `buyBuyable`, …) or a layer path in the state log's form (`layers.s.buyables.11.sellOne`; `self: "layers"` calls it on the declaration rather than its `tmp` copy). A call that changes nothing is not an error — the next `wait` is where a queue checks; a call that THROWS aborts the queue. (h22) **`if`**: an expression; the call is made only when it holds — otherwise the step is skipped and recorded (`call-skipped`), and an `if` that throws aborts the queue by name. It exists for TOGGLES: `startChallenge` pressed inside the challenge LEAVES it, so a plan that enters one says `"if": "String(player[\"h\"].activeChallenge) !== \"22\""` (a reflex may have entered it in the tick before the hold bound) |
 | `hold` | `features` | holds those automation features (ids as the Advanced view shows them: `reset:q`, `upgrades:q`, …) until released |
 | `release` | (`features`) | releases those, or every hold of this queue when `features` is left out |
-| `wait` | `until`, `timeout: {gs}`, `onTimeout: abort \| skip` | waits until the expression holds, at most `gs` game-seconds; then aborts the queue or skips to the next step. A wait with no timeout is refused (a queue that can wait forever is a silent stall with its holds in force). An expression that throws aborts the queue, by name (a throw is not a false) |
+| `wait` | `until`, `timeout: {gs}` (or, version 4, `{ticks}`), `onTimeout: abort \| skip` | waits until the expression holds, at most `gs` game-seconds; then aborts the queue or skips to the next step. A wait with no timeout is refused (a queue that can wait forever is a silent stall with its holds in force). An expression that throws aborts the queue, by name (a throw is not a false) |
 | `comment` | `text` | a note; recorded in the state log and shown in the readout |
 
 Any step may carry a `comment`. Expressions are the language the table's gates and the ladder already use: a
@@ -132,7 +132,7 @@ two other games ticked with and without it), part `runner` (hold → wait → ca
 mid-queue; the held reason; replay equal), part `oracle` (the template, `docs/templates.md`), part `grep`.
 `tools/harness/mutants-tpl1.sh`; `loader/queue.test.mjs`.
 
-## The editor (qedit-1) — the `Queues` subtab
+## The editor (qedit-1) — the `Parts` subtab (qedit-1's `Queues`, renamed by parts-1)
 
 ⚖ The user's rulings (2026-10-02) are the spec: steps are ENGINE actions, shown by the GAME's own names; the queues are
 kept in **browser storage, per game**, plus export / import as JSON files — ⛔ never in the save (a `player` key changes
@@ -141,7 +141,8 @@ the player's presses.
 
 ### For players
 
-Open a game with the automation tools (`&automation=1`), go to the **AU** tab and choose **Queues**.
+Open a game with the automation tools (`&automation=1`), go to the **AU** tab and choose **Parts**; your own queues are
+under **Your queues**, after the game's own parts (below, "The Parts subtab").
 
 1. **new queue** (or type a name and press Enter) adds a queue, switched **Off**. Open it (`+`) to name it, say what it
    is for, and choose when it **starts**: *when the game starts* (on every load, or as soon as it is switched on) or
@@ -168,7 +169,7 @@ press *run again from the top*, to run it again). A queue the game's table ships
 
 ### The architecture, and why
 
-- **Lazy** (`loader/tmt-qedit.js`), like the state log and the runner. The `Queues` subtab holds one small shell
+- **Lazy** (`loader/tmt-qedit.js`), like the state log and the runner. The `Parts` subtab (qedit-1: `Queues`) holds one small shell
   component (`tmtl-queues`, registered at boot with the other `tmtl-*`); opening the tab fetches the editor through
   the host's `fetchQueueEditor` door, which then registers its own components (`tmtl-qedit`, `tmtl-qqueue`,
   `tmtl-qstep`, `tmtl-qtext`). The only other door is **this game having saved queues** (the key below exists): then
@@ -197,6 +198,25 @@ press *run again from the top*, to run it again). A queue the game's table ships
 - **Phone**: every row is a wrapping flex row, no `white-space:nowrap`, inside the same fixed-layout table at 100 % as
   the other roots (V5) — measured at 390 px with and without `?mobile=1` (gate Q13).
 
+### Version 4 of the format (parts-1) — a limit in ticks
+
+`"version": 4` adds ONE thing: a wait's time limit may be `{"ticks": N}` (a whole number, 1–100,000) instead of
+`{"gs": …}` — the game's own loops, one queue slot each, counted from the wait's first slot (0) exactly as game-seconds
+are. It is for a **confirmation**: a wait that is met in the slot of the call it confirms, or never (*the engine entered
+it*, *a completion was recorded*). In game-seconds such a limit is a different number of loops at every tick size (2
+game-s is 2 loops at diff 1 and 40 at the page's 0.05). A `{ticks}` limit without `"version": 4`, one that is not a
+whole number, and one that also names `gs`, are refused by name — an older runner would read it as no limit at all. A
+tick wait in progress writes `waitTicks` into the runner's memory (absent otherwise, so every older record is
+unchanged); the run-status says *N tick(s) left of M* (`status().queues[].wait.unit === 'ticks'`).
+
+The `challenge-attempt` template writes its two confirmations as `{ticks: 2}` and the queue as version 4 (its
+measurement plan on the copy keeps game-seconds: what it measured is unchanged). PTR's shipped `ca-ch-h-22` and the
+catalog's `ch-h-22-from-QL6.json` were regenerated by the template (`strategize`), and the only differences are those
+two limits and the version. **No pin moved**: both waits are met in their call's slot (0 ticks waited, the state log's
+`wait-met` records carry `waitedTicks: 0`), and from m28/QL6 until H22 is completed the queue ends on the same tick and
+hash as the same queue in game-seconds, at diff 1 (87,055) and at 0.05 (gates-parts V1); gates-shipq A1 (M29 / M28 /
+M30 from all/M26) and gates-h22 are unmoved.
+
 ### Version 2 of the format
 
 `"version": 2` (absent = 1, exactly tpl1's format) adds two fields and nothing else: a queue's **`name`** (≤ 80
@@ -213,6 +233,53 @@ without `"version": 2`, is refused by name: a field an older runner ignored coul
 
 Gates: `tools/harness/gates-qedit.mjs` (14 page rows + the grep; CI job `qedit`), `tools/harness/mutants-qedit.sh`
 (seven mutants), `loader/qedit.test.mjs`; `tools/queues-catalog.mjs --check` in the fast job.
+
+## The Parts subtab (parts-1) — every part of the automation, visible and editable
+
+⚖ The user's goal (2026-10-02): a player SEES every part that is shaping their game, reads it in plain words, and can
+turn it off or change it for themselves. The **Parts** subtab of the automation tab lists, in this order:
+
+1. **Stages** — every stage of the game's table (docs/automation.md, "Stages"): its NAME and plain-words NOTE, whether
+   it is in force now, its condition as a list of clauses (each in words where it is one of the engines' own questions
+   — an upgrade owned, a milestone, a challenge open or completed, a layer unlocked, a challenge running, a currency
+   against a reset's requirement, a buyable's count — by the game's own names, else its code) with each clause's truth
+   now (✓ / ✗ / ⚠), what it sets by the features' TITLES (a policy in the strategy line's words, a gate as *acts only
+   while …*), and *why*: its evidence (the provenance notes, feature ids drawn as titles). **switch off for me** /
+   **switch back on**; **change its condition for me** / **use the game's condition**.
+2. **Moves this game makes** — every shipped queue, read-only and marked *part of this game's automation*: its name,
+   what it is for, its LIVE state in words (armed — waiting for its condition / running, with its step, its time left
+   and the tools it has paused / done / not starting and why / switched off by you / not part of this run, and why),
+   when it starts (the entry's `when` AND the queue's trigger, as clauses), its steps (as the editor describes them),
+   its evidence. **copy to my queues** (the runner's `copyShipped(id)` through the editor's import: a copy, switched
+   Off, *copy of …*, the table's boundary in its trigger — refused by name if the copy is already there) and **switch
+   off for me** / **switch back on**.
+3. **Your queues** — the editor, as qedit-1 built it.
+
+**Why one subtab, and this order.** The user's word for all of these is *parts*, and a player asking "what is the
+automation doing?" should not have to know which mechanism a part is to find it. The game's parts come first because
+they are what is shaping the game right now; the player's own queues follow, where the copy lands. Renaming qedit-1's
+`Queues` keeps four subtabs (a fifth would be a fifth button on a phone); `Simple` stays first. A save whose open
+subtab was `Queues` is repaired to `Simple` by both engines' own `fixSave` (an unknown subtab key goes to the first).
+
+**Switched off by you.** A per-player switch in the core's ONE declared key `tmt-loader:<id>:parts` (docs/automation.md,
+"Switched off by you") — never in `player`, never a table edit. A switched-off shipped queue is **skipped by name**
+(`shippedSkipped()`: `{id, why: 'switched off by you', byYou: true}`) at the runner's load; switched off while it RUNS,
+⛔ every hold it placed is released at once (as `unload` does) and the runner records `unload` with `by: 'you'`;
+switched back on, it is armed FRESH (from the top, holding nothing, as a page load would) and records `load` with
+`by: 'you'`. The table's queues stay first in the runner's list, in the table's order. `copyShipped(id)` reads the
+TABLE's entry, so a switched-off queue can still be copied.
+
+**The links.** The Advanced view's shipped-queue block has *see this part* and every stage id is a link
+(`a.tmtl-part-link`); `tmtLoader.showPart(kind, id)` opens the Parts subtab and brings that entry into sight (it is
+outlined for a moment, `data-focused`).
+
+**Lazy, as before (G1).** The list is part of the lazily-fetched editor (`loader/tmt-qedit.js`): a page that never opens
+the subtab requests nothing new and stores nothing new; the core only READS the switch key, once.
+
+`tmtLoader.qedit` adds `stages()`, `shipped()`, `readable(src)`, `condWords(src)`, `setStageOff`, `setStageWhen`,
+`setShippedOff`, `copyShipped`; components `tmtl-qcond`, `tmtl-qstage`, `tmtl-qshipped`. Gates:
+`tools/harness/gates-parts.mjs` (page P1–P9, v4 V1, grep X1; CI job `parts`), `tools/harness/mutants-parts.sh`,
+`loader/parts.test.mjs`; screenshots `tools/harness/shots-parts.mjs`.
 
 ## Shipped queues (shipq-1) — queues as parts of a game's automation
 
@@ -233,7 +300,7 @@ or why it does not start (*the automation is off*, *a feature it takes over is s
 that is different*, *cooling off*). It acts only where the automation does: never under the profile `off`, and under
 your own choices (`saved`) only while every feature it holds is switched on. It is never written into your own queues;
 `tmtLoader.queues.copyShipped(<id>)` gives you a copy (a new id, *copy of …*, its condition written into its trigger)
-that the Queues tab can import and you can edit (the editor's own button is the next slice's).
+that the Parts tab imports and you can edit — since parts-1 its **copy to my queues** button.
 
 ### The table's `queues` section
 

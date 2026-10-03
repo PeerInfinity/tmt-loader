@@ -317,6 +317,13 @@ each one carries, besides its steps (queue format version 3):
   211 s of its 984 (the points grow linearly), so a progress rule here needs its own measurement first. The two 2-game-s
   waits that confirm a call took effect (the entry, the completion) stay: the call is applied in the same slot and the
   wait is met at once (measured: waited 0).
+- **(parts-1) The two confirmations are in TICKS.** `challenge-attempt`'s plan writes *the engine entered it* and *a
+  completion was recorded* as `timeout: {ticks: 2}` and the queue as format version 4 (docs/queues.md, "Version 4"):
+  a confirmation is met in the slot of its call or never, and a limit in game-seconds was a different number of loops
+  at every tick size. The measurement plan on the copy keeps game-seconds (what it measured is unchanged). No pin
+  moved (gates-parts V1, gates-shipq A1, gates-h22). ⚖ The other templates' confirmations (`time-priced-purchase`'s
+  *the purchase happened*, `reset-requirement`'s *the reset happened*) are still `{gs: 2}`: moving them re-writes the
+  m28 / m30 / m31 fixtures, which the brief did not ask for — the next input.
 
 `strategize` turns the table's shipped queues OFF on the copy (`shippedQueues=off`): a check measures its own plan.
 The four catalog queues were regenerated with their old commands (h22: `--auto-opt` the winner + `exclude=challenges:h`;

@@ -763,7 +763,7 @@ field, and `hashGame` is unmoved.
 |---|---|---|
 | the generic derivation | — | `defaultPolicy(kind, layer)` |
 | the game's table | the derivation | `autoTable.policies[<id>]` |
-| **a stage in force** (stages-1) | the table | `autoTable.stages[i].policies[<id>]`, while that stage's `when` holds — see "Stages" |
+| **a stage in force** (stages-1) | the table | `autoTable.stages[i].policies[<id>]`, while that stage's `when` holds (or the player's own `when` for it) and the player has not switched it off (parts-1) — see "Stages" |
 | `--auto-opt policy:<id>=` | the table and its stages | how a harness leg or a sweep pins a configuration for a whole run (applied at registration) |
 | **the player's saved choice** | all of the above | `player.au.edits[<id>].policy` |
 | **a runtime override** | everything | `tmtLoader.setPolicy(id, policy)` — the A/B lever and the planner's committed epoch. `setPolicy(id, null)` gives the feature back to the save |
@@ -931,6 +931,7 @@ its ORDER is the precedence between stages:
 | the derivation < the table < **a stage in force** | |
 | `--auto-opt policy:<id>=` / `while:<id>=` | the stage — a leg that pins a configuration pins it whatever the stages say |
 | the player's saved edit (`player.au.edits[<id>]`) | the stage, for that feature and slot — the player's choice always wins |
+| (parts-1) the player's switch on the STAGE itself (`tmt-loader:<id>:parts`) | the stage, for every feature and slot it names — switched off, it is not in force; given the player's own `when`, it is in force by that |
 | the stall watch's rung, a runtime override (`setPolicy`, `setControl`) | as before |
 | a queue's HOLD | everything: a held feature does not decide at all (`held:queue`) |
 
@@ -953,6 +954,39 @@ says `(stage <id>)`; the reason line ends `· stage <id>`; a stage in force but 
 a runtime setting says which. `explain()` rows of a game whose table HAS stages carry `stage: {named, policy, while,
 shadowedBy, errors}` (no other game's rows change); `tmtLoader.stages()`, `stageHistory()` and `stageStats()` read them
 as data; the state log writes a `stage` record at every switch (`docs/log.md`).
+
+**Names and notes (parts-1).** A stage may carry a `name` (≤ 80 characters) and a `note` — in plain words, what it
+does while it is in force and why, with its measured result. They are what a player reads in the **Parts** subtab
+(docs/queues.md, "The Parts subtab"); the id stays the key and the readout's text. PTR's four carry both.
+
+### Switched off by you — the player's own switches on a stage (parts-1)
+
+⚖ The user's goal (2026-10-02): every part shaping a player's game is visible, explained, and can be turned off or
+changed FOR THAT PLAYER. In the **Parts** subtab each stage has **switch off for me** and **change its condition for
+me** (a per-player `when`, checked like a gate: one that does not compile is refused with the reason and nothing is
+stored; *use the game's condition* gives it back).
+
+- **Where they live.** ONE declared key in the loader's own per-game namespace, `tmt-loader:<id>:parts`
+  (`T.storage.raw`, docs/contract.md): `{format: 'tmt-parts/1', stagesOff: [id…], queuesOff: [id…], when: {<stage id>:
+  <expression>}}`. ⛔ Never in `player` (a key there changes every save's full hash), never a table edit; an empty
+  record removes the key. It is read once, lazily (the first stage evaluation, or the runner's load); in Node there is
+  no `storage.raw`, so every harness run and every pin is unmoved by construction. A stored condition that no longer
+  compiles is IGNORED (the table's `when` applies), as a saved policy this build cannot validate is.
+- **Precedence: where the player's saved choices sit.** A switched-off stage is NOT IN FORCE and is not evaluated
+  (evaluations = loops × stages not switched off); per feature and slot the next stage that holds and names it wins,
+  else the table's own entry — the features fall to the next layer, exactly as when the stage's `when` is false. A
+  player's own `when` replaces the table's for that stage only. Everything above a stage stays above it (`--auto-opt
+  policy:` / `while:`, the player's saved edit, the stall watch's rung, a runtime override, a queue's hold).
+- **The readout says so.** A feature a switched-off stage names says it on its strategy line (*stage X switched off by
+  you — the game's own setting applies*) and its reason line ends `— stage X switched off by you`; `explain()` rows grow
+  `stage.offByYou` ONLY while the player has switched one off (every other row is byte-identical), and the stage's
+  `stage` history record when it goes out of force carries `by: 'you'`.
+- `tmtLoader.parts`: `get()`, `stageOff(id)`, `stageWhen(id)`, `queueOff(id)`, `setStageOff(id, on)`,
+  `setStageWhen(id, src | null)`, `setQueueOff(id, on)` (each `{ok, error}`), `key()`, `writes()`, `onChange(fn)`.
+  `tmtLoader.stages()` rows carry `name`, `note`, `provenance`, `offByYou`, `whenYours` and `whenInForce`.
+- **The links.** A stage's id in the Advanced view (the `STAGE <id>` chip, the reason line's `stage <id>`, a shadowed
+  or switched-off stage) is a link (`a.tmtl-part-link`, the stage's name as its tooltip) to its entry in the Parts
+  subtab (`tmtLoader.showPart('stage', id)`): one press shows what the stage is, why, and how to switch it off.
 
 **Load-time checks** (a failure fails the load by name, like every other table entry): an id used twice, a feature the
 derivation does not produce, a policy the kind cannot run, a `when` or a gate that does not compile, a stage that sets

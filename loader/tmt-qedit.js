@@ -571,7 +571,8 @@
   }
   function provLines(recs) {
     return [].concat(recs || []).map(function (r) {
-      return { note: r.note || '', where: r.unverified ? 'no measured row behind it' : 'gate ' + r.gate + (r.run ? ', CI run ' + r.run : '') + ', at ' + String(r.commit || '').slice(0, 9) };
+      // the measurement's own words, with every feature id drawn as its title (the player view's rule, shipq-2)
+      return { note: T.titleIds ? T.titleIds(r.note || '') : r.note || '', where: r.unverified ? 'no measured row behind it' : 'gate ' + r.gate + (r.run ? ', CI run ' + r.run : '') + ', at ' + String(r.commit || '').slice(0, 9) };
     });
   }
   function featureWithLayer(id) { return featureTitle(id); }
