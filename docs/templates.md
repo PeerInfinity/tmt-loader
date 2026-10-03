@@ -321,9 +321,21 @@ each one carries, besides its steps (queue format version 3):
   completion was recorded* as `timeout: {ticks: 2}` and the queue as format version 4 (docs/queues.md, "Version 4"):
   a confirmation is met in the slot of its call or never, and a limit in game-seconds was a different number of loops
   at every tick size. The measurement plan on the copy keeps game-seconds (what it measured is unchanged). No pin
-  moved (gates-parts V1, gates-shipq A1, gates-h22). ⚖ The other templates' confirmations (`time-priced-purchase`'s
-  *the purchase happened*, `reset-requirement`'s *the reset happened*) are still `{gs: 2}`: moving them re-writes the
-  m28 / m30 / m31 fixtures, which the brief did not ask for — the next input.
+  moved (gates-parts V1, gates-shipq A1, gates-h22). (whole-1 moved the other two templates' confirmations as well — below.)
+
+- **(whole-1) Their words are the player's.** The comments a template writes — the queue's and each step's — name things
+  by their TITLES: the item (*“Descension” (hindrance)*, *“The Waiting Game” (quirks)*), the features a hold pauses
+  (*Hindrance reset, Quirks reset, …*), the layers whose resets end an attempt, and a field by what it means (*the time
+  since the last quirks reset*, *your generators*). The fact ids, the expressions and the measurement's own terms
+  (*the rollback*, *diff 1*) are kept, word for word as before, in a developer-only field `dev` beside the comment
+  (queue format: `dev` on the queue and on any step, a string; the Parts subtab shows it under the developer details).
+  Gate `gates-whole --part tpl` A1 greps every template-written queue's comments for a fact id and finds each hold's
+  fact ids in a `dev`; A2 is shipq's T1 again (the template writes the shipped queue, words included).
+- **(whole-1) `time-priced-purchase` and `reset-requirement` confirm in ticks too.** *The purchase happened* and *the
+  reset happened* are `timeout: {ticks: 2}` and both queues are version 4, as `challenge-attempt`'s are: each is met in
+  the slot of its call. The catalog's q23 (m28) and the two sg resets (m30, m31) were regenerated with their old
+  commands; the only differences are the words, the `dev` fields, those limits and the version. No pin moved (the
+  batteries that play them — m28 F1, m30, m31, qrate1 T3, qedit — are unchanged; cloud-reports/tmt-whole-1.md).
 
 `strategize` turns the table's shipped queues OFF on the copy (`shippedQueues=off`): a check measures its own plan.
 The four catalog queues were regenerated with their old commands (h22: `--auto-opt` the winner + `exclude=challenges:h`;

@@ -17,6 +17,8 @@
 //     (`stageHistory()`, the queue runner's records) at its stop.
 // The run ends at the cap (`--cap-gs`, game-seconds since the fresh save), when every mark holds, or on an error.
 // `--resume` continues a chain from the last line of `--progress`.
+// `--summarize <out.json>`: write the RECORD of a finished chain (the marks, the stop, the legs' wall time, the stages'
+// switches and the queues' runs, de-duplicated across legs) from `--progress` — what gates-whole reads.
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
@@ -25,7 +27,7 @@ import { runNode } from './run.mjs';
 entryOnly(import.meta.url);
 
 const a = parseArgs(process.argv.slice(2), ['resume']);
-const KNOWN = new Set(['_', 'dir', 'diff', 'leg-gs', 'cap-gs', 'profile', 'resume', 'legs-dir', 'progress', 'ladder', 'auto-opt']);
+const KNOWN = new Set(['_', 'dir', 'diff', 'leg-gs', 'cap-gs', 'profile', 'resume', 'legs-dir', 'progress', 'ladder', 'auto-opt', 'summarize']);
 for (const k of Object.keys(a)) if (!KNOWN.has(k)) { console.error(`REFUSED: unknown flag --${k}`); process.exit(2); }
 const id = a._[0];
 if (!id || !a.dir) { console.error('usage: node whole.mjs <id> --dir <snapshots dir> [--diff 0.05] [--leg-gs 2000] [--cap-gs 130000]'); process.exit(2); }
@@ -36,9 +38,43 @@ const DIFF = Number(a.diff ?? 0.05), LEG_GS = Number(a['leg-gs'] ?? 2000), CAP_G
 const LADDER = path.resolve(String(a.ladder || path.join(REPO, `tools/harness/ladder/${id}.json`)));
 const L = JSON.parse(fs.readFileSync(LADDER, 'utf8'));
 const MARKS = Array.isArray(L) ? L : L.marks;
+if (a.summarize) { summarize(String(a.summarize)); process.exit(0); }
 fs.mkdirSync(DIR, { recursive: true }); fs.mkdirSync(LEGS, { recursive: true });
 
 // the chain's state: the marks reached so far, and where the next leg starts
+function summarize(out) {
+  const lines = fs.readFileSync(PROGRESS, 'utf8').split('\n').filter(Boolean).map((l) => JSON.parse(l));
+  if (lines.some((l) => !l.ok)) throw new Error('the chain has a failed leg');
+  const names = Object.fromEntries(MARKS.map((m) => [m.id, String(m.name || '').replace(/\*/g, '')]));
+  let wall = 0;
+  const marks = [], stages = [], queues = [], state = {}, qseen = {};
+  for (const l of lines) {
+    for (const m of l.marks) marks.push({ id: m.id, name: names[m.id], ticks: m.ticks, gameSeconds: m.gameSeconds, hashGame: m.hashGame, wallMs: wall + m.wallMs, leg: l.leg });
+    for (const r of (l.parts && l.parts.stages) || []) {
+      // a process's FIRST evaluation records what it finds in force: a switch only where the state changed
+      if (state[r.stage] === r.on && !r.error) continue;
+      state[r.stage] = r.on;
+      stages.push({ stage: r.stage, on: r.on, ticks: r.tick, gameSeconds: Math.round(r.tick * DIFF * 1e6) / 1e6, ...(r.error ? { error: r.error } : {}) });
+    }
+    for (const q of (l.parts && l.parts.queues) || []) {
+      const k = `${q.id}@${q.firedAt}`;
+      if (q.firedAt === null || q.firedAt === undefined) continue;
+      if (!qseen[k]) { qseen[k] = { id: q.id, startedAt: q.firedAt, endedAt: null, outcome: null }; queues.push(qseen[k]); }
+      if (q.endedAt !== null && q.endedAt !== undefined) { qseen[k].endedAt = q.endedAt; qseen[k].outcome = q.outcome; qseen[k].state = q.state; }
+    }
+    wall += l.wallMs;
+  }
+  const last = lines[lines.length - 1];
+  const rec = { format: 'tmt-whole/1', id: path.basename(LADDER, '.json'), note: 'written by tools/harness/whole.mjs --summarize: the whole-game run from a fresh save under the shipped table alone, chained in one-process legs (a resumed leg = the uninterrupted run, to the hash)',
+    diff: DIFF, legGs: LEG_GS, capGs: CAP_GS, profile: String(a.profile || 'all'), commit: JSON.parse(fs.readFileSync(path.join(DIR, `${marks[0].id}.json`), 'utf8')).commit,
+    marks: marks.sort((x, y) => x.ticks - y.ticks), notReached: MARKS.map((m) => m.id).filter((id) => !marks.some((x) => x.id === id)),
+    stop: { ticks: last.ticks, gameSeconds: last.gameSeconds, hashGame: last.hashGame, wallMs: wall, inForce: last.parts && last.parts.inForce, points: last.parts && last.parts.points },
+    stages, queues, legs: lines.map((l) => ({ leg: l.leg, ticks: l.ticks, gameSeconds: l.gameSeconds, wallMs: l.wallMs, ticksPerSec: l.ticksPerSec })) };
+  fs.mkdirSync(path.dirname(path.resolve(out)), { recursive: true });
+  fs.writeFileSync(path.resolve(out), JSON.stringify(rec, null, 1) + '\n');
+  console.log(`wrote ${out}: ${marks.length} marks, ${stages.length} stage switches, ${queues.length} queue runs, stop ${last.gameSeconds} game-s`);
+}
+
 let reached = {}, from = null, legNo = 0, gs = 0;
 if (a.resume && fs.existsSync(PROGRESS)) {
   const lines = fs.readFileSync(PROGRESS, 'utf8').split('\n').filter(Boolean).map((l) => JSON.parse(l));

@@ -885,6 +885,67 @@ jobs:
           retention-days: 14
 
   # ---------------------------------------------------------------------------------------------------------------
+  # whole — THE WHOLE-GAME RUN, THE RUN TIMELINE AND THE TEMPLATES' WORDS (`gates-whole.mjs`, cloud-reports/tmt-whole-1.md,
+  # docs/automation.md "The run timeline"): the record's early marks rebuilt fresh at diff 0.05 and a resumed stretch, to
+  # the tick and the hash (the bounded push row; the whole chain is `qrate1.yml -f part=whole`); the timeline through the
+  # page (every kind, a reload, the bound, plain words, 390 px); the templates' comments in titles, T1, the confirmations
+  # in ticks; the grep.
+  # ⛔ `--assert` holds each part to its exact row count (2 + 5 + 3 + 1), all green.
+  # ---------------------------------------------------------------------------------------------------------------
+  whole:
+    name: whole — the whole-game run (bounded), the run timeline, the templates' words
+    needs: fast
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+          fetch-depth: 1
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - run: npm ci
+
+      - name: Cache the Playwright browser
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+
+      - run: npx playwright install --with-deps chromium
+
+      - name: The battery — chain, timeline, tpl, grep
+        shell: bash
+        run: |
+          set -o pipefail
+          for p in chain timeline tpl grep; do node tools/harness/gates-whole.mjs --part $p --no-summary --assert | tee -a whole.txt; done
+
+      - name: Summary
+        if: always()
+        shell: bash
+        run: |
+          {
+            echo '## whole — the whole-game run (bounded), the run timeline, the templates words'
+            echo ''
+            echo '```'
+            cat whole.txt 2>/dev/null | grep -aE '^(GREEN|RED|VERDICT)' | cut -c1-400 || echo 'no output'
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload the rows
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: whole
+          path: tools/harness/results/tmp/gates-whole-part*-last.json
+          if-no-files-found: warn
+          retention-days: 14
+
+  # ---------------------------------------------------------------------------------------------------------------
   # p1a — THE PLANNER'S KNOWLEDGE WALK AND GOAL SOURCES (`gates-p1a.mjs --part 2` / `--part 3`, docs/planner.md).
   # Until qrate1 this ran in NO CI job, and its goldens went stale unseen (design notes §16.1: nine reds, all expected
   # drift). ⚖ Ruling (A), user 2026-09-30: the rows NAME the configuration they measure (Something's four under
