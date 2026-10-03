@@ -13,12 +13,15 @@
 import { gamePath } from './lib.mjs';
 
 /** The loader files an author's page may request, for the flags it resolved. */
-export function declaredLoaderFiles({ mobile, navbar, automation }, { id = null, auto = null, currency = false, fromFile = false } = {}) {
+// (shipq-2) `queues`: the table IN FORCE ships an enabled queue (its `queues` section) — the page then asks for the queue
+// runner, `loader/tmt-queue.js`, once (attach.mjs); a table without one, or no table at all, asks for nothing more.
+export function declaredLoaderFiles({ mobile, navbar, automation }, { id = null, auto = null, currency = false, fromFile = false, queues = false } = {}) {
   const want = new Set(['v1/embed.js', 'loader/embed.mjs', 'loader/flags.mjs', 'loader/attach.mjs', 'loader/options.js']);
   if (mobile) want.add('loader/mobile.css');
   if (navbar || mobile) for (const f of ['loader/navbar.css', 'loader/layerlist.css', 'loader/navbar.js', 'loader/layerlist.js']) want.add(f);
   if (automation) {
     want.add('loader/tmt-auto.js');
+    if (queues) want.add('loader/tmt-queue.js');
     if (id) {
       if (!fromFile) want.add(`manifests/${id}.json`);
       if (auto && !fromFile) want.add(auto);

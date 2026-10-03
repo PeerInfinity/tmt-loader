@@ -4556,6 +4556,32 @@
     return String(w).replace(/\s*\(plan §[^)]*\)/g, '').replace(/`/g, '').replace(/this game’s table declares no /g, 'this game has no ');
   }
   T.playerWhy = playerWhy;
+  // (shipq-2) the queues' words in a player's terms: every registered feature id → its title, longest id first, an id
+  // only where it stands alone (never inside a longer token: `reset:h` is not replaced inside `reset:hb`)
+  function titleIds(text) {
+    if (text === null || text === undefined || typeof text !== 'string') return text;
+    var byId = {};
+    features.forEach(function (f) { byId[f.id] = f; });
+    var ids = Object.keys(byId).sort(function (a, b) { return b.length - a.length; });
+    var out = text;
+    for (var i = 0; i < ids.length; i++) {
+      if (out.indexOf(ids[i]) < 0) continue;
+      var f = byId[ids[i]];
+      var esc = ids[i].replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      out = out.replace(new RegExp('(^|[^\\w:])' + esc + '(?![\\w:])', 'g'), function (m, pre) { return pre + (f && f.title ? f.title : ids[i]); });
+    }
+    return out;
+  }
+  function queueWords(st) {
+    var o = JSON.parse(JSON.stringify(st));
+    o.queues.forEach(function (q) {
+      q.stateText = titleIds(q.stateText); q.last = titleIds(q.last); q.reliesWhy = titleIds(q.reliesWhy);
+      q.holds = (q.holds || []).map(titleIds);
+      if (q.current) q.current.text = titleIds(q.current.text);
+      if (q.shipped) q.shipped.text = titleIds(q.shipped.text);
+    });
+    return o;
+  }
   /** A layer's own display name, falling back to its id — the name the game shows, never a second naming scheme. */
   function layerName(l) { try { return layers[l] && layers[l].name ? String(layers[l].name) : String(l); } catch (e) { return String(l); } }
   /** A policy in words — the strategy's own label with its parameters filled in, then the modifier's label. */
@@ -5478,11 +5504,15 @@
         },
         // (tpl1) THE QUEUES — READ-ONLY (the editor is a later slice). Re-read on every redraw like the log's counts;
         // `null` (and nothing rendered) unless the runner is loaded AND holds at least one queue.
+        // (shipq-2) the PLAYER view names features by their TITLES (as `held:queue` and the reason lines do): every feature
+        // id in the queues' words — a hold step, what a queue holds, why it does not start, its last outcome — is
+        // replaced by the feature's title; the raw ids only under developer details (gate A1-2, the 390 px player view)
         queueState: function () {
           void this.blocks; void this.gen;
           if (!T.queues || typeof T.queues.status !== 'function' || !T.queues.ready) return null;
           var st = T.queues.status();
-          return st && st.queues && st.queues.length ? st : null;
+          if (!st || !st.queues || !st.queues.length) return null;
+          return T.devDetails() ? st : queueWords(st);
         },
       },
       template: '<div class="tmtl-root" style="' + ROOT_STYLE + '">'
@@ -5943,11 +5973,14 @@
       off[id] = 'excluded by --auto-opt / ?autoOpt= exclude=' + id;
     });
     T.autoExcluded = {};
+    // (shipq-2) the derived features a `kinds` restriction leaves out, by id → kind: the table stays valid under any
+    // `kinds`, so a shipped queue that holds one of them is SKIPPED by name, like `exclude=` (tmt-queue.js loadShipped)
+    T.autoOutOfKinds = {};
     T.autoDerivation = { kindOrder: kindOrder.slice(), kinds: kinds ? kinds.slice() : KINDS_ALL.slice(), candidates: cands.length, registered: 0, excluded: 0, outOfKinds: 0, multiTogglesSkipped: 0, unlockOrder: uo };
     for (var i = 0; i < cands.length; i++) {
       var c = cands[i], l = c.layer, id = c.id;
       if (c.kind === 'toggles') T.autoDerivation.multiTogglesSkipped += c.multiSkipped;
-      if (kinds && kinds.indexOf(c.kind) < 0) { T.autoDerivation.outOfKinds++; continue; }
+      if (kinds && kinds.indexOf(c.kind) < 0) { T.autoDerivation.outOfKinds++; T.autoOutOfKinds[id] = c.kind; continue; }
       if (off[id] !== undefined) {
         if (typeof off[id] !== 'string' || !off[id]) throw new Error(src + ': off.' + id + ' needs a reason string');
         T.autoExcluded[id] = off[id];

@@ -330,6 +330,13 @@
     if (tr.on === 'predicate') parts.push('(' + tr.when + ')');
     return parts.length ? parts.join(' && ') : 'true';
   }
+  // (shipq-2) the features a queue names that this run's configuration left out: excluded, or outside its `kinds`
+  function absentNamed(q) {
+    var names = heldFeatures(q), rp = q && q.relies && q.relies.policies && typeof q.relies.policies === 'object' ? q.relies.policies : {};
+    for (var r in rp) if (names.indexOf(r) < 0) names.push(r);
+    var ex = T.autoExcluded || {}, ok = T.autoOutOfKinds || {};
+    return { excluded: names.filter(function (f) { return ex[f] !== undefined; }), outOfKinds: names.filter(function (f) { return ok[f] !== undefined; }) };
+  }
   function heldFeatures(q) {
     var out = [];
     var st = q && Array.isArray(q.steps) ? q.steps : [];
@@ -375,11 +382,18 @@
     shippedSkip = [];
     for (var i = 0; i < es.length; i++) {
       var e = es[i];
-      // a configuration that EXCLUDES a feature the queue holds (`exclude=<id>`: the feature is not registered) cannot
-      // play it — the queue is left out, by name (`shippedSkipped`), and the run goes on: that is a configuration, not
-      // a broken table (h22's and m28's legs measure under `exclude=challenges:h`)
-      var exq = heldFeatures(e.queue).filter(function (f) { return T.autoExcluded && T.autoExcluded[f] !== undefined; });
-      if (exq.length) { shippedSkip.push({ id: e.id, why: 'it holds ' + exq.join(', ') + ', which this configuration excludes' }); continue; }
+      // a configuration that leaves out a feature the queue names (held, or in its `relies.policies`) cannot play it:
+      // EXCLUDED (`exclude=<id>`, or the table's `off`) or outside a `kinds=` restriction (shipq-2: the S1 anchors run
+      // `kinds=reset,upgrades,buyables`) — the feature is a derived one, just not registered in this run. The queue is
+      // left out, by name (`shippedSkipped`), and the run goes on: that is a configuration, not a broken table (h22's
+      // and m28's legs measure under `exclude=challenges:h`). A feature the game does not derive AT ALL is still refused
+      // by `validate` below.
+      var named = absentNamed(e.queue);
+      if (named.excluded.length || named.outOfKinds.length) {
+        shippedSkip.push({ id: e.id, why: 'it ' + [named.excluded.length ? 'needs ' + named.excluded.join(', ') + ', which this configuration excludes' : null,
+          named.outOfKinds.length ? 'needs ' + named.outOfKinds.join(', ') + ', which this configuration\'s kinds= leaves out' : null].filter(Boolean).join(', and ') });
+        continue;
+      }
       var ve = validate(e.queue);
       for (var j = 0; j < loaded.length; j++) if (loaded[j].q.id === e.queue.id) ve.push('a queue "' + e.queue.id + '" is already loaded');
       if (ve.length) { errs.push({ id: e.id, errors: ve }); continue; }

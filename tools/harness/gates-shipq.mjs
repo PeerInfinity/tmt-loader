@@ -156,6 +156,29 @@ async function partVocab() {
     row({ gate: 'K2 a bad shipped-queue entry fails the load BY NAME (twice, id ≠ queue id, each without cap/cool-off, once with one, a queue the runner refuses)', id: 'ptr', ok: got.every((g) => g[1]),
       notes: got.map((g) => `${g[0]} ${g[1] ? '✓' : '✗'} (${g[2]})`).join('; ') });
   }
+  // K4 (shipq-2) — a run's `kinds` restriction leaves out a feature the queue holds (the S1 anchors run
+  // `kinds=reset,upgrades,buyables`: no `challenges:h`): the queue is SKIPPED by name and the load goes on, as under
+  // `exclude=`; a feature the game does not derive AT ALL is still refused, under the same `kinds`
+  {
+    const KINDS = 'kinds=reset,upgrades,buyables';
+    const t = tableDoc();
+    const unknown = JSON.parse(JSON.stringify(t)); unknown.queues[0].queue.steps[0].features = ['reset:nowhere'];
+    const EVS = '(function(){ return { skipped: tmtLoader.queues.shippedSkipped(), refused: tmtLoader.queues.shippedErrors(), loaded: tmtLoader.queues.status().queues.map(function (q) { return q.id; }) }; })()';
+    const [k, ex, un] = await pool([
+      () => run('ptr', { profile: 'all', ticks: 1, 'auto-opt': KINDS, eval: EVS }),
+      () => run('ptr', { profile: 'all', ticks: 1, 'auto-opt': 'exclude=challenges:h', eval: EVS }),
+      () => run('ptr', { profile: 'all', ticks: 1, 'auto-opt': KINDS, 'auto-table': writeTmp('bad-unknown-kinds.json', unknown) }),
+    ]);
+    const sk = (r) => (r.eval && r.eval.skipped || []).find((x) => x.id === H22Q);
+    const checks = {
+      kindsLoads: !!k.ok && !!k.eval && !k.eval.refused.length,
+      kindsSkippedByName: !!sk(k) && /challenges:h/.test(sk(k).why) && /kinds=/.test(sk(k).why) && !k.eval.loaded.includes(H22Q),
+      excludeStillSkipped: !!ex.ok && !!sk(ex) && /excludes/.test(sk(ex).why),
+      unknownStillRefused: !un.ok && /shipped queues were refused[^]*no automation feature "reset:nowhere"/.test(String(un.error || '')),
+    };
+    row({ gate: 'K4 a `kinds` restriction that leaves out a held feature SKIPS the shipped queue by name (as `exclude=` does); a feature the game does not derive is still refused', id: 'ptr', ok: Object.values(checks).every(Boolean),
+      notes: `${ck(checks)} — ${KINDS}: skipped ${JSON.stringify(sk(k) || null)}, refused ${JSON.stringify(k.eval && k.eval.refused)}, load ${k.ok ? 'ok' : String(k.error).slice(0, 160)}; exclude: ${JSON.stringify(sk(ex) || null)}; unknown under kinds: ${String(un.error || 'LOADED').slice(0, 160)}` });
+  }
   // K3 — the runtime record: unchanged while the queue never started; written once it ran; re-created on restore
   {
     const EV = "(function(){ var rt = tmtLoader.runtimeState(); var t = JSON.stringify(rt); return { hasQueues: t.indexOf('\"owner\":\"table\"') >= 0, keys: Object.keys(rt.auto || rt).sort() }; })()";
@@ -478,7 +501,7 @@ function partMerge() {
   }
 }
 
-const EXPECT = { vocab: 3, rearm: 4, tpl: 3, relies: 2, accept: 2, grep: 1, page: 2, leg: 1, merge: MERGED.length + (a.only ? 0 : 2) };
+const EXPECT = { vocab: 4, rearm: 4, tpl: 3, relies: 2, accept: 2, grep: 1, page: 2, leg: 1, merge: MERGED.length + (a.only ? 0 : 2) };
 const FN = { vocab: partVocab, rearm: partRearm, tpl: partTpl, relies: partRelies, accept: partAccept, grep: partGrep, page: partPage, leg: partLeg, merge: partMerge };
 const RUN = PART === 'push' ? GATE_PARTS : [PART];
 let expected = 0;

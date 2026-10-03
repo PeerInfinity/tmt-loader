@@ -135,6 +135,8 @@ const FP = () => {
     pageErrors: T && T.pageErrors ? T.pageErrors.length : 0,
     settingsFrom: T && T.settings ? T.settings.from : null, tableFrom: T ? T.tableFrom || null : null,
     autoTable: T && T.autoTable !== undefined ? JSON.stringify(T.autoTable) : null,
+    // (shipq-2) the table in force ships an enabled queue: the page then loads the queue runner (attach.mjs)
+    tableQueues: !!(T && Array.isArray(T.autoQueues) && T.autoQueues.some((e) => e && e.enabled)),
     features: T && T.features ? T.features.length : 0,
     storagePrefix: T && T.storage ? T.storage.prefix : null,
   };
@@ -142,10 +144,15 @@ const FP = () => {
 // what "the same page" means between the embed page and its hosted twin (the hosted page is built by boot(); these are
 // the fields attach decides). ⚠ loaderFiles is compared WITHOUT tmt-auto.js on a page without automation: the hosted
 // page carries the harness contract on every page, an author's page only with automation (attach.mjs, `contract`).
+// ⚠ (shipq-2) and WITHOUT tmt-queue.js, which follows the page's TABLE, not its flags: the hosted twin always plays the
+// loader's table for the game (ptr's ships a queue), an author's page without `data-game` plays none. Instead EACH page
+// must hold the runner exactly when its own table in force ships an enabled queue (`runnerAsTable`) — never one
+// without the other.
 const RENDER_KEYS = ['flags', 'htmlClasses', 'mobileCss', 'navbarCss', 'layerListCss', 'nav', 'navButtons', 'layerListUI', 'navbarUI', 'auNodes', 'playerAu'];
 const render = (f) => ({ ...Object.fromEntries(RENDER_KEYS.map((k) => [k, f[k]])),
-  loaderFiles: f.loaderFiles.filter((x) => (f.flags && f.flags.automation) || x !== 'loader/tmt-auto.js') });
-const same = (a, b) => JSON.stringify(render(a)) === JSON.stringify(render(b));
+  loaderFiles: f.loaderFiles.filter((x) => ((f.flags && f.flags.automation) || x !== 'loader/tmt-auto.js') && x !== 'loader/tmt-queue.js') });
+const runnerAsTable = (f) => f.loaderFiles.includes('loader/tmt-queue.js') === !!(f.flags && f.flags.automation && f.tableQueues);
+const same = (a, b) => JSON.stringify(render(a)) === JSON.stringify(render(b)) && runnerAsTable(a) && runnerAsTable(b);
 const settle = (p) => p.evaluate(() => new Promise((res) => requestAnimationFrame(() => requestAnimationFrame(res))));
 const OPT = '#tmt-loader-options';
 const openOptions = async (p) => {
@@ -193,8 +200,8 @@ async function gameRow(browser, S, id) {
         const currency = await p.evaluate(() => !!(window.tmtLoader && window.tmtLoader.currencyData));
         const fromFile = f.tableFrom === 'author';
         const gid = def.attrs && def.attrs.game || (def.file && def.file.game) || null;
-        const declared = new Set([...declaredLoaderFiles(f.flags || {}, { id: gid, auto: man.auto, currency, fromFile }),
-          ...declaredLoaderFiles(first.flags || {}, { id: gid, auto: man.auto, currency, fromFile })]);
+        const declared = new Set([...declaredLoaderFiles(f.flags || {}, { id: gid, auto: man.auto, currency, fromFile, queues: f.tableQueues }),
+          ...declaredLoaderFiles(first.flags || {}, { id: gid, auto: man.auto, currency, fromFile, queues: first.tableQueues })]);
         const j = judgeEmbed({ urls: pw.urls, failed: pw.failed, loaderBase: S.loaderBase, gameBase: pageUrl.split('?')[0], external,
           declared, settings: !!(def.attrs && def.attrs.settings), missing });
         row.requests.push({ label, ok: j.ok, loaderAsked: j.loaderAsked, undeclared: j.undeclared, gameFromLoader: j.gameFromLoader,

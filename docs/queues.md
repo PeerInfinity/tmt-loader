@@ -285,9 +285,13 @@ from starting, by name (*it relies on the setting nativeYield = slot, and it is 
 until they agree. Measured: the catalog's H22 queue was checked with `exclude=challenges:h`; under the shipped table it
 does not start (the challenge reflex would race it), and under its own configuration it does (gate L1).
 
-**A configuration that excludes a held feature** (`exclude=<id>`) cannot play the queue: it is left out, by name
-(`tmtLoader.queues.shippedSkipped()`), and the run goes on — that is a configuration, not a broken table. A queue the
-runner REFUSES for any other reason fails the load by name, like a bad table entry.
+**A configuration that leaves out a feature the queue names** (one it holds, or one in its `relies.policies`) cannot
+play the queue: EXCLUDED (`exclude=<id>`, or the table's own `off`) or outside a `kinds=` restriction (the S1 anchors run
+`kinds=reset,upgrades,buyables`, so no `challenges:h`). The feature is a derived one, only not registered in this run —
+the table stays valid under any `kinds`, as its own feature ids are checked against the whole derived set. The queue is
+left out, by name (`tmtLoader.queues.shippedSkipped()`, which says which feature and why), and the run goes on — that is
+a configuration, not a broken table. A feature the game does not derive at all, and a queue the runner REFUSES for any
+other reason, fail the load by name, like a bad table entry (gate shipq K2, K4).
 
 **Memory.** A shipped queue that has done nothing yet is NOT written into `runtimeState()` — the table re-creates it —
 so a run whose shipped queues never started writes exactly the record it wrote before (gate K3). Once one has run it is
@@ -305,5 +309,15 @@ the check's window, 3,600 game-s); finish it; release. From `all/M26` the table 
 (`be1df4037cbb5804`), M28 at 85,279 (`827cf164da85a931`) and M30 at 94,521 (`132127d4d5573106`)** — the stage's ticks
 and hashes (gates-shipq A1, A0; at diff 0.05 the `shipq-equal@0.05` merge row).
 
-Gates: `tools/harness/gates-shipq.mjs` (push: vocab K1–K3, rearm R1–R4, tpl T1–T3, relies L1–L2, accept A1/A0, grep X1;
+**The readout, in a player's words (shipq-2).** With developer details off, every feature id in the queues' readout —
+a hold step, what a queue holds, why it does not start, its last outcome — is drawn as the feature's TITLE, as
+`held:queue` and the reason lines are; the raw ids appear only under *show developer details* (gate A1-2, the 390 px
+player view).
+
+**On an author's page (embed mode, shipq-2).** The runner is fetched from the loader's origin (`attach.mjs`, the same
+`fetchQueueRunner`), and only when the table IN FORCE ships an enabled queue: `data-game="ptr"` with automation on asks
+for `loader/tmt-queue.js` once; a page without `data-game`, or with an author's table that ships none, never does. Gate
+E1 declares it that way (`embedverdict.mjs`, `declaredLoaderFiles(…, {queues})`).
+
+Gates: `tools/harness/gates-shipq.mjs` (push: vocab K1–K4, rearm R1–R4, tpl T1–T3, relies L1–L2, accept A1/A0, grep X1;
 page: PG, G1; the measurement legs A@1/ctl@1/A@0.05/ctl@0.05 in `qrate1.yml -f part=shipq`), `tools/harness/mutants-shipq.sh`.
