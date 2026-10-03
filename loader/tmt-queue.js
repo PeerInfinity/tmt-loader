@@ -95,6 +95,7 @@
     if (typeof q.id !== 'string' || !/^[A-Za-z0-9_.:-]{1,80}$/.test(q.id)) errs.push('"id" must be 1–80 characters of letters, digits and _ . : -');
     var ver = q.version === undefined ? 1 : q.version;
     if (VERSIONS.indexOf(ver) < 0) errs.push('"version" must be one of ' + VERSIONS.join(' | ') + ' (got ' + JSON.stringify(q.version) + ')');
+    if (q.dev !== undefined && typeof q.dev !== 'string') errs.push('"dev" must be a string');
     if (q.name !== undefined && (ver < 2 || typeof q.name !== 'string' || q.name.length > 80)) errs.push('"name" needs "version": 2 and is text of at most 80 characters');
     if (q.relies !== undefined) {
       var rv = q.relies;
@@ -119,6 +120,8 @@
       var s = q.steps[i], at = 'step ' + (i + 1) + ': ';
       if (!s || STEP_KINDS.indexOf(s.do) < 0) { errs.push(at + '"do" must be one of ' + STEP_KINDS.join(' | ')); continue; }
       if (s.comment !== undefined && typeof s.comment !== 'string') errs.push(at + '"comment" must be a string');
+      // (whole-1) `dev`: developer details beside the comment (a template keeps its fact ids here, never in the comment)
+      if (s.dev !== undefined && typeof s.dev !== 'string') errs.push(at + '"dev" must be a string');
       if (s.do === 'hold' || s.do === 'release') {
         if (s.do === 'hold' && (!Array.isArray(s.features) || !s.features.length)) { errs.push(at + 'a hold names its "features"'); continue; }
         if (s.features !== undefined && !Array.isArray(s.features)) { errs.push(at + '"features" must be an array of feature ids'); continue; }
@@ -172,6 +175,8 @@
     if (s && s.comment) r.comment = s.comment;
     if (extra) for (var k in extra) r[k] = extra[k];
     if (logLink && logLink.exec !== null && typeof logLink.exec.qnote === 'function') logLink.exec.qnote(r);
+    // (whole-1) the run timeline: a queue started, finished or stopped
+    if (T.timeline && typeof T.timeline.note === 'function') T.timeline.note('queue', Q, what, extra && extra.why);
   }
   function setLast(Q, text) { Q.last = { text: text, at: round6(now()), tick: Number(T.ticks) || 0 }; }
 

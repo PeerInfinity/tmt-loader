@@ -2715,6 +2715,7 @@
       stageHist.push(rec);
       if (stageHist.length > STAGE_HIST) stageHist.shift();
       if (logLink.stage !== null) logLink.stage(rec);
+      tlStage(rec, stagesNow[j]);   // (whole-1) the run timeline
     }
     stageSeen = true;
     stagePol = pol; stageGate = gat; stageOn = on; stageErr = err;
@@ -3368,7 +3369,7 @@
     // ⚠ R3b: THE CYCLE STEPS BESIDE THE WATCH, and AFTER it on purpose — the watch may change a feature's policy
     // this tick, and whether a feature CARRIES the cycle modifier is read from the policy in force.
     // stages-1: the STAGES first — the watch's escalation list and the cycle both read the policy in force
-    if (watchLoop !== loopNo) { watchLoop = loopNo; stageTick(); if (queueLink.loopStart !== null) queueLink.loopStart(); watchTick(); orderLoop = -1; cycleTick(); }
+    if (watchLoop !== loopNo) { watchLoop = loopNo; stageTick(); if (queueLink.loopStart !== null) queueLink.loopStart(); watchTick(); orderLoop = -1; cycleTick(); tlTick(); }
     var list = layerOrder(l);
     for (var i = 0; i < list.length; i++) {
       var f = list[i];
@@ -3679,6 +3680,127 @@
     return true;
   };
 
+  // ---- (whole-1) THE RUN TIMELINE (docs/automation.md, "The run timeline") ------------------------------------------
+  // What happened in this run, in game time and in the player's words: the ladder's marks reached, the table's stages
+  // switching on and off, the shipped moves (the table's queues) and the player's own queues starting and ending (and
+  // how), the fast-forwards, and a reload that carried the automation's memory over.
+  // ⛔ IT OBSERVES AND NEVER DECIDES. Nothing here writes `player`, and nothing here is in `runtimeState()`: every
+  // snapshot and every pinned record is exactly what it was. It lives in the page's memory, and travels across a
+  // reload in the automation's memory record (`automem`, beside `runtime`, tied to the same save fingerprint).
+  // ⛔ BOUNDED: the newest TL_CAP events are kept; the counts per kind and the marks reached are kept whole.
+  // ⚠ MARKS ONLY WHERE THE LADDER IS ALREADY HERE. This file fetches nothing, and the host's door is lazy (S8: a page
+  // that never asks requests no ladder) — the ladder arrives when the Progress subtab opens, when a fast-forward to a
+  // mark is set up, or at a reload whose restored timeline was reading marks. A mark that already held the first time
+  // the marks were read is listed as such (`late`), never with an invented time.
+  var TL_CAP = 200, TL_KINDS = ['mark', 'stage', 'shipped', 'queue', 'ff', 'reload'];
+  var tl = { events: [], dropped: 0, counts: {}, marks: {}, stageState: {}, marksRead: false };
+  var tlFns = {}, tlStats = { markChecks: 0 };
+  function tlGs() { return Math.round((Number(player && player.timePlayed) || 0) * 1000) / 1000; }
+  function tlPush(e, at) {
+    e.at = at === undefined ? tlGs() : at;
+    e.tick = Number(T.ticks) || 0;
+    tl.events.push(e);
+    tl.counts[e.kind] = (tl.counts[e.kind] || 0) + 1;
+    while (tl.events.length > TL_CAP) { tl.events.shift(); tl.dropped++; }
+    if (typeof invalidateView === 'function') invalidateView();
+  }
+  // once per game loop, beside the stages: the marks not yet reached (compiled once each)
+  function tlTick() {
+    var L = T.ladder, ms = L && L.marks && typeof L.marks.length === 'number' ? L.marks : null;
+    if (!ms) return;
+    var first = !tl.marksRead;
+    tl.marksRead = true;
+    for (var i = 0; i < ms.length; i++) {
+      var m = ms[i];
+      if (!m || !m.id || typeof m.predicate !== 'string' || tl.marks[m.id] !== undefined) continue;
+      var fn = tlFns[m.id];
+      if (fn === undefined) { try { fn = T.predicate(m.predicate); } catch (e) { fn = null; } tlFns[m.id] = fn; }
+      if (fn === null) continue;
+      tlStats.markChecks++;
+      var v = false;
+      try { v = !!fn(); } catch (e) { v = false; }
+      if (!v) continue;
+      var late = first && tlGs() >= 1;
+      tl.marks[m.id] = tlGs();
+      var ev = { kind: 'mark', id: m.id, name: String(m.name || '').replace(/\*/g, '') };
+      if (late) ev.late = true;
+      tlPush(ev);
+    }
+  }
+  function tlStage(rec, S) {
+    var was = tl.stageState[rec.stage];
+    // the first evaluation of a process records what it finds in force; a timeline carried over a reload knows it already
+    if (rec.first && was === rec.on && !rec.error) return;
+    tl.stageState[rec.stage] = rec.on;
+    var ev = { kind: 'stage', id: rec.stage, name: S && S.name ? String(S.name) : rec.stage, on: !!rec.on };
+    if (rec.by) ev.by = rec.by;
+    if (rec.error) ev.error = String(rec.error).slice(0, 160);
+    tlPush(ev);
+  }
+  /** what the queue runner reports: a queue started, finished or stopped (the runner calls it from its own records) */
+  function tlQueue(Q, what, why) {
+    if (what !== 'trigger' && what !== 'end' && what !== 'abort') return;
+    var ev = { kind: Q.owner === 'table' ? 'shipped' : 'queue', id: Q.q.id, name: String(Q.q.name || Q.q.id), what: what === 'trigger' ? 'start' : what };
+    if (why) ev.why = String(why).slice(0, 200);
+    tlPush(ev);
+  }
+  /** what the speed controls report when a fast-forward ends (`at` = the game time it started from) */
+  function tlFastForward(o) {
+    tlPush({ kind: 'ff', why: String(o.why), label: String(o.label || ''), gs: Number(o.gs) || 0, ticks: Number(o.ticks) || 0, mode: o.mode === 'coarse' ? 'coarse' : 'faithful', step: Number(o.step) || 0 },
+      typeof o.startGs === 'number' ? Math.round(o.startGs * 1000) / 1000 : undefined);
+  }
+  function tlTime(s) {
+    s = Math.max(0, Number(s) || 0);
+    if (s < 10) return (Math.round(s * 100) / 100) + 's';
+    s = Math.floor(s);
+    var h = Math.floor(s / 3600), m = Math.floor(s / 60) % 60, x = s % 60;
+    return h ? h + 'h ' + (m < 10 ? '0' : '') + m + 'm ' + (x < 10 ? '0' : '') + x + 's' : m ? m + 'm ' + (x < 10 ? '0' : '') + x + 's' : x + 's';
+  }
+  /** the event in the player's words — the ONLY place they are written */
+  function tlText(e) {
+    if (e.kind === 'mark') return e.late ? 'Already past “' + e.name + '” when the marks were first read' : 'Reached “' + e.name + '”';
+    if (e.kind === 'stage') {
+      if (e.error) return 'The stage “' + e.name + '” could not check its condition: ' + e.error;
+      return 'The stage “' + e.name + '” switched ' + (e.on ? 'on' : 'off') + (e.by === 'you' ? ' (you switched it off)' : '');
+    }
+    if (e.kind === 'shipped' || e.kind === 'queue') {
+      var who = e.kind === 'shipped' ? 'The shipped move “' : 'Your queue “';
+      if (e.what === 'start') return who + e.name + '” started';
+      if (e.what === 'end') return who + e.name + '” finished';
+      return who + e.name + '” stopped' + (e.why ? ': ' + e.why : '');
+    }
+    if (e.kind === 'ff') {
+      var how = e.mode === 'coarse' ? 'approximate ticks of ' + e.step + ' s — results can differ from normal play' : 'faithful ticks';
+      var span = tlTime(e.gs) + ' of game time';
+      if (e.why === 'reached') return 'Fast-forwarded ' + span + ' (' + how + ')' + (e.label && !/of game time$/.test(e.label) ? ' and reached ' + e.label : '');
+      if (e.why === 'cap') return 'Fast-forwarded ' + span + ' (' + how + ') and stopped at the limit before ' + e.label;
+      if (e.why === 'stopped') return 'Fast-forwarded ' + span + ' (' + how + '); you stopped it';
+      return 'Fast-forwarded ' + span + ' (' + how + '); it stopped (' + e.why + ')';
+    }
+    if (e.kind === 'reload') return 'The page was reloaded; the automation carried on from where it was';
+    return e.kind;
+  }
+  T.timeline = function () {
+    var ev = tl.events.slice().reverse().map(function (e) { var o = Object.assign({}, e); o.text = tlText(e); o.time = tlTime(e.at); return o; });
+    return { events: ev, total: tl.events.length + tl.dropped, dropped: tl.dropped, cap: TL_CAP, counts: Object.assign({}, tl.counts), marks: Object.assign({}, tl.marks),
+      marksRead: tl.marksRead, kinds: TL_KINDS.slice(), stats: Object.assign({}, tlStats) };
+  };
+  T.timeline.note = function (kind, a, b, c) {
+    if (kind === 'queue') return tlQueue(a, b, c);
+    if (kind === 'ff') return tlFastForward(a);
+  };
+  T.timeline.text = tlText;
+  T.timeline.memory = function () { return tl.events.length || tl.dropped || Object.keys(tl.marks).length ? JSON.parse(JSON.stringify(tl)) : null; };
+  T.timeline.restore = function (m) {
+    if (!m || !Array.isArray(m.events)) return false;
+    tl = { events: m.events.slice(-TL_CAP), dropped: Number(m.dropped) || 0, counts: Object.assign({}, m.counts || {}), marks: Object.assign({}, m.marks || {}),
+      stageState: Object.assign({}, m.stageState || {}), marksRead: !!m.marksRead };
+    if (tl.marksRead) requestLadder();   // it was reading marks before the reload: it goes on reading them
+    if (typeof invalidateView === 'function') invalidateView();
+    return true;
+  };
+  T.timeline.clear = function () { tl = { events: [], dropped: 0, counts: {}, marks: {}, stageState: {}, marksRead: false }; if (typeof invalidateView === 'function') invalidateView(); };
+
   // ---- (speed-1) THE AUTOMATION'S MEMORY ACROSS A RELOAD (docs/automation.md, "Memory across a reload") -------------
   // ⚖ user, 2026-10-03: in browser storage, TIED TO THE SAVE. Everything `runtimeState()` carries (the interval resets'
   // clocks, the row cycle, the stall watch, the give-up records, the queue runner's position) lived only in the page's
@@ -3730,9 +3852,11 @@
     var t0 = Date.now(), p0 = typeof G.performance === 'object' && G.performance ? G.performance.now() : t0;
     mem.saves++;
     if (memDiscarding) { memTombstone(memDiscarding); return 'discarding'; }
-    var rt = T.runtimeState();
-    if (!memWorth(rt)) { memRemove(); return 'nothing'; }
-    var rec = JSON.stringify({ format: AUTOMEM_FORMAT, fp: memFingerprint(), at: Date.now(), gs: Number(player.timePlayed) || 0, runtime: rt });
+    var rt = T.runtimeState(), tlm = T.timeline.memory();   // (whole-1) the run timeline travels beside the runtime
+    if (!memWorth(rt) && tlm === null) { memRemove(); return 'nothing'; }
+    var body = { format: AUTOMEM_FORMAT, fp: memFingerprint(), at: Date.now(), gs: Number(player.timePlayed) || 0, runtime: rt };
+    if (tlm !== null) body.timeline = tlm;
+    var rec = JSON.stringify(body);
     if (memSet(rec)) { mem.writes++; mem.bytes = rec.length; }
     var ms = (typeof G.performance === 'object' && G.performance ? G.performance.now() : Date.now()) - p0;
     mem.lastMs = Math.round(ms * 1000) / 1000; mem.totalMs += ms; if (ms > mem.maxMs) mem.maxMs = mem.lastMs;
@@ -3801,6 +3925,9 @@
     }
     try { T.restoreRuntime(rec.runtime); }
     catch (e) { return memDiscard('failed', String(e && e.message || e).slice(0, 200)); }
+    // (whole-1) the run timeline: what it had, then the reload itself as an event
+    if (rec.timeline) T.timeline.restore(rec.timeline);
+    tlPush({ kind: 'reload' });
     mem.state = 'restored'; mem.why = null; mem.notice = null; mem.restored = { at: rec.at, gs: rec.gs, keys: Object.keys(rec.runtime || {}) };
     invalidateView();
     return { state: 'restored' };
@@ -4746,6 +4873,8 @@
   // words a player reads rather than a plan §). It names the MECHANISM, because the number belongs to one game and
   // the mechanism belongs to every patient default there is.
   var WATCH_WARN = 'A feature whose strategy is correctly waiting looks exactly like one that is stuck, so the watch can switch a feature that was doing the right thing to a worse strategy. Tested on Prestige Tree Rewritten, turning it on made far less progress than leaving it off. Do not leave it on unattended.';
+  // (whole-1) the timeline's one line of introduction, in the player's words
+  var TL_INTRO = 'the marks reached, the stages switching on and off, the shipped moves and your own queues starting and ending, and the fast-forwards, in game time. It is kept across a reload with the automation\u2019s memory.';
   var PROG_INTRO = 'Everything this session has held for the first time, newest first — an unlock, an upgrade, a milestone, an achievement, a challenge completion or a buyable past its own best. Re-buying what a reset took away is not progress, which is what makes a stall visible.';
   // ⚠ THE PLAYER'S WORDS FOR THE SIX KINDS, and the only place they are written. The IDs beside them are the GAME's own.
   var PROG_LABEL = { unlocked: 'unlocked', upg: 'upgrade', ms: 'milestone', ach: 'achievement', ch: 'challenge', buy: 'buyable' };
@@ -5639,12 +5768,23 @@
           });
           p.watch = T.watchState();
           p.dev = T.devDetails();
+          p.tl = T.timeline();
           return p;
         },
       },
       created: function () { T.requestLadder(); },   // the one place that WANTS the mark names
       methods: { arm: function () { T.setWatchOption('track', true); } },
       template: '<div class="tmtl-root" style="' + ROOT_STYLE + '">'
+        // (whole-1) THE RUN TIMELINE: what happened, newest first, in game time and plain words (T.timeline())
+        + '<div class="tmtl-timeline" style="text-align:left;margin-bottom:10px">'
+        +   '<div style="text-align:left"><b>What happened in this run</b> <span style="opacity:.75;font-size:.9em">\u2014 ' + TL_INTRO + '</span></div>'
+        +   '<div v-if="p.tl.dropped" style="text-align:left;font-size:.85em;opacity:.7">showing the newest {{ p.tl.cap }} \u2014 {{ p.tl.dropped }} older event(s) are not listed</div>'
+        +   '<div v-for="(e, i) in p.tl.events" :key="e.tick + \':\' + i + \':\' + e.kind" class="tmtl-tl-row" :data-kind="e.kind" style="text-align:left;padding:1px 0;border-bottom:1px solid rgba(127,178,217,.12);overflow-wrap:anywhere">'
+        +     '<span style="opacity:.65;font-size:.85em">{{ e.time }}</span> <span>{{ e.text }}</span>'
+        +     '<span v-if="p.dev" class="tmtl-tl-dev" style="opacity:.55;font-size:.85em"> {{ e.kind }} {{ e.id || \'\' }} tick {{ e.tick }}</span>'
+        +   '</div>'
+        +   '<div v-if="!p.tl.events.length" style="opacity:.7;text-align:left">nothing yet \u2014 a stage switching, a shipped move, a fast-forward or a mark reached will show here.</div>'
+        + '</div>'
         + '<div style="opacity:.75;font-size:.9em;margin-bottom:6px;text-align:left">' + '' + PROG_INTRO + '</div>'
         + '<div v-if="!p.armed" style="text-align:left">'
         +   '<button type="button" class="tmtl-track-on" style="' + BTN_STYLE + '" @click="arm" @keydown.stop>start tracking progress</button>'
