@@ -13,7 +13,8 @@
     "the `|turn@…` and `|give-up@…` modifiers inside a `policies` / `alternatives` string (R3b, R3a)",
     "every `challenges:*` entry of `policies`, `alternatives`, `order` and `gates`",
     "whether a table may state `until` / `priority` — today only `while` has a table form, `gates` (unanswered, left open)",
-    "the `stages` list (stages-1): its shape, and whether a stage may carry more than `policies` / `gates`"
+    "the `stages` list (stages-1): its shape, and whether a stage may carry more than `policies` / `gates`",
+    "the `queues` list (shipq-1): its shape, `rearm`, and the inline queue (`tmt-queue/1`, checked by the runner at load)"
   ],
   "properties": {
     "formatVersion": {
@@ -298,6 +299,193 @@
             "additionalProperties": {
               "type": "string",
               "pattern": "^\\S"
+            }
+          },
+          "provenance": {
+            "oneOf": [
+              {
+                "oneOf": [
+                  {
+                    "type": "object",
+                    "required": [
+                      "gate",
+                      "commit",
+                      "note"
+                    ],
+                    "additionalProperties": false,
+                    "description": "A measured entry: the SUMMARY gate id that measured it (or, for a gate that ran only in CI, `run`), the commit it was measured at (must be an ancestor of HEAD), the digest step where there is one, and one line of text.",
+                    "properties": {
+                      "gate": {
+                        "type": "string",
+                        "pattern": "^\\S.*$"
+                      },
+                      "commit": {
+                        "type": "string",
+                        "pattern": "^[0-9a-f]{7,40}$"
+                      },
+                      "digest": {
+                        "type": "string"
+                      },
+                      "run": {
+                        "type": "string",
+                        "pattern": "^[0-9]+$",
+                        "description": "the CI run whose job output holds the rows, for a gate that writes none to results/SUMMARY.md"
+                      },
+                      "note": {
+                        "type": "string",
+                        "pattern": "^\\S"
+                      }
+                    }
+                  },
+                  {
+                    "type": "object",
+                    "required": [
+                      "unverified",
+                      "note"
+                    ],
+                    "additionalProperties": false,
+                    "description": "An entry that predates provenance and has no measured row behind it — listed, never given an invented gate id.",
+                    "properties": {
+                      "unverified": {
+                        "const": true
+                      },
+                      "note": {
+                        "type": "string",
+                        "pattern": "^\\S"
+                      }
+                    }
+                  }
+                ]
+              },
+              {
+                "type": "array",
+                "minItems": 1,
+                "items": {
+                  "oneOf": [
+                    {
+                      "type": "object",
+                      "required": [
+                        "gate",
+                        "commit",
+                        "note"
+                      ],
+                      "additionalProperties": false,
+                      "description": "A measured entry: the SUMMARY gate id that measured it (or, for a gate that ran only in CI, `run`), the commit it was measured at (must be an ancestor of HEAD), the digest step where there is one, and one line of text.",
+                      "properties": {
+                        "gate": {
+                          "type": "string",
+                          "pattern": "^\\S.*$"
+                        },
+                        "commit": {
+                          "type": "string",
+                          "pattern": "^[0-9a-f]{7,40}$"
+                        },
+                        "digest": {
+                          "type": "string"
+                        },
+                        "run": {
+                          "type": "string",
+                          "pattern": "^[0-9]+$",
+                          "description": "the CI run whose job output holds the rows, for a gate that writes none to results/SUMMARY.md"
+                        },
+                        "note": {
+                          "type": "string",
+                          "pattern": "^\\S"
+                        }
+                      }
+                    },
+                    {
+                      "type": "object",
+                      "required": [
+                        "unverified",
+                        "note"
+                      ],
+                      "additionalProperties": false,
+                      "description": "An entry that predates provenance and has no measured row behind it — listed, never given an invented gate id.",
+                      "properties": {
+                        "unverified": {
+                          "const": true
+                        },
+                        "note": {
+                          "type": "string",
+                          "pattern": "^\\S"
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+        }
+      }
+    },
+    "queues": {
+      "type": "array",
+      "description": "shipped queues: one-off moves the automation plays when their condition holds (docs/queues.md, \"Shipped queues\")",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "queue",
+          "provenance"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[a-z0-9][a-z0-9.:-]*$",
+            "description": "the queue's own `id`"
+          },
+          "when": {
+            "type": "string",
+            "pattern": "^\\S",
+            "description": "the table's start boundary, ANDed with the queue's trigger; a throw reads as FALSE"
+          },
+          "rearm": {
+            "enum": [
+              "once",
+              "each"
+            ]
+          },
+          "cap": {
+            "type": "integer",
+            "description": "`each`: the most runs in one page load"
+          },
+          "coolOff": {
+            "type": "object",
+            "required": [
+              "gs"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "gs": {
+                "type": "number"
+              }
+            },
+            "description": "`each`: game-seconds after a run ends before the next may start"
+          },
+          "enabled": {
+            "type": "boolean"
+          },
+          "queue": {
+            "type": "object",
+            "required": [
+              "format",
+              "id",
+              "steps"
+            ],
+            "properties": {
+              "format": {
+                "const": "tmt-queue/1"
+              },
+              "id": {
+                "type": "string"
+              },
+              "steps": {
+                "type": "array",
+                "minItems": 1
+              }
             }
           },
           "provenance": {

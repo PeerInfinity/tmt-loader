@@ -104,9 +104,12 @@ async function partInert() {
   const jobs = [{ k: 'open' }, ...['something', 'collection-of-everything'].flatMap((id) => [{ k: 'pair', id, runner: true }, { k: 'pair', id, runner: false }])];
   const res = await pool(jobs, POOL, (j) => (j.k === 'open' ? run('ptr', open) : run(j.id, { profile: 'all', diff: 1, ticks: 300, eval: EV, 'queue-runner': j.runner })));
   const o = res[0], m = o.marks && o.marks[PIN.mark];
-  const ok = !!(o.ok && m && m.gameSeconds === PIN.gs && m.hashGame === PIN.hashGame && o.queueStatus && o.queueStatus.queues.length === 0);
+  // (shipq-1) ptr's TABLE ships a queue (the H22 attempt); it is armed from the start and its condition never holds
+  // before M12 — so the pin also says a shipped queue that never starts moves nothing. "No queue" = none loaded by hand.
+  const own = o.queueStatus ? o.queueStatus.queues.filter((q) => !q.shipped) : null, shp = o.queueStatus ? o.queueStatus.queues.filter((q) => q.shipped) : [];
+  const ok = !!(o.ok && m && m.gameSeconds === PIN.gs && m.hashGame === PIN.hashGame && own && own.length === 0 && shp.every((q) => q.state === 'armed' && q.shipped.runs === 0));
   row({ gate: 'I1 inert: the runner LOADED with no queue — ptr fresh → M12 lands on the pin (gates-c1c O)', id: 'ptr', ok,
-    notes: ok ? `${PIN.mark} ${PIN.gs} / ${PIN.hashGame}; runner loaded, 0 queues (${Math.round(o.wallMs / 1000)} s)` : `EXPECTED ${PIN.mark} ${PIN.gs} / ${PIN.hashGame}, GOT ${m ? m.gameSeconds + ' / ' + m.hashGame : 'no ' + PIN.mark}; runner ${JSON.stringify(o.queueRunner)} ${o.error || ''}` });
+    notes: ok ? `${PIN.mark} ${PIN.gs} / ${PIN.hashGame}; runner loaded, 0 queues of its own, the table's ${shp.map((q) => q.id + ' ' + q.state).join(', ') || 'none'} (${Math.round(o.wallMs / 1000)} s)` : `EXPECTED ${PIN.mark} ${PIN.gs} / ${PIN.hashGame}, GOT ${m ? m.gameSeconds + ' / ' + m.hashGame : 'no ' + PIN.mark}; runner ${JSON.stringify(o.queueRunner)} ${o.error || ''}` });
   for (let i = 0; i < 2; i++) {
     const w = res[1 + 2 * i], wo = res[2 + 2 * i], id = jobs[1 + 2 * i].id;
     const ok2 = !!(w.ok && wo.ok && w.hashGame === wo.hashGame && w.hash === wo.hash && JSON.stringify(w.eval.rt) === JSON.stringify(wo.eval.rt) && w.eval.slot && w.eval.runner && !wo.eval.runner);
@@ -157,9 +160,9 @@ async function partRunner() {
   {
     const r = R.R3, rs = recs('R3'), u = qrec(rs, 'unload')[0];
     const after = u ? pResets(rs, u.tick) : 0, before = u ? count(rs, (x) => x.type === 'action' && x.source === 'auto' && x.by === 'reset:p' && x.tick >= 1 && x.tick < u.tick) : null;
-    const ok = !!(r.ok && r.eval && r.eval.ok === true && r.eval.released === 1 && r.eval.state === 'running' && u && u.released === 1 && r.queueStatus && r.queueStatus.queues.length === 0 && before === 0 && after > 0);
+    const ok = !!(r.ok && r.eval && r.eval.ok === true && r.eval.released === 1 && r.eval.state === 'running' && u && u.released === 1 && r.queueStatus && r.queueStatus.queues.filter((q) => !q.shipped).length === 0 && before === 0 && after > 0);
     row({ gate: 'R3 UNLOAD mid-queue (tick 30, mid-wait) releases the hold', id: 'ptr', ok,
-      notes: `unload() → ${JSON.stringify(r.eval)}; the unload record at tick ${u && u.tick} released ${u && u.released}; queues loaded at the stop ${r.queueStatus && r.queueStatus.queues.length}; reset:p by the reflex before the unload (from tick 1) ${before}, after it ${after}` });
+      notes: `unload() → ${JSON.stringify(r.eval)}; the unload record at tick ${u && u.tick} released ${u && u.released}; queues loaded at the stop ${r.queueStatus && r.queueStatus.queues.filter((q) => !q.shipped).length} (+ the table's ${r.queueStatus && r.queueStatus.queues.filter((q) => q.shipped).length}); reset:p by the reflex before the unload (from tick 1) ${before}, after it ${after}` });
   }
   // R4
   {

@@ -2,7 +2,8 @@
  "format": "tmt-queue/1",
  "id": "tpp-upg-q-23",
  "trigger": {
-  "on": "start"
+  "on": "predicate",
+  "when": "player[\"q\"].unlocked && tmp[\"q\"].upgrades[23].unlocked && !hasUpgrade(\"q\", 23)"
  },
  "source": {
   "template": "time-priced-purchase",
@@ -16,7 +17,7 @@
    "zeroed-by:ss:player.q.time"
   ]
  },
- "comment": "upg:q:23's price grows with player.q.time (exponent 5.4), the purse as player.q.time^5. Hold every reset that zeroes player.q.time and buy at the moment the rollback measured.",
+ "comment": "upg:q:23's price grows with player.q.time (exponent 5.4), the purse as player.q.time^5. Hold every reset that zeroes player.q.time and buy at the moment the rollback measured. It starts whenever upg:q:23 is unlocked and not owned.",
  "steps": [
   {
    "do": "hold",
@@ -34,10 +35,10 @@
    "do": "wait",
    "until": "canAffordUpgrade(\"q\", 23)",
    "timeout": {
-    "gs": 48
+    "gs": 300
    },
    "onTimeout": "abort",
-   "comment": "the rollback found it affordable 38 s into the hold, at player.q.time = 38"
+   "comment": "the rollback found it affordable 38 s into the hold, at player.q.time = 38 (diff 1); the time limit is the check's horizon, 300 game-s"
   },
   {
    "do": "call",
@@ -57,5 +58,18 @@
    "onTimeout": "abort",
    "comment": "the purchase happened"
   }
- ]
+ ],
+ "version": 3,
+ "name": "buy The Waiting Game (quirks)",
+ "relies": {
+  "options": {
+   "nativeYield": "slot",
+   "stages": "off",
+   "passiveYield": "0",
+   "resetDefault": "",
+   "turnMark": "high-act",
+   "exclude": "",
+   "include": ""
+  }
+ }
 }

@@ -73,6 +73,12 @@ kinds of record.
   The first evaluation of a process records the stages it finds in force (`first: true`). A reading like `event` and
   `queue`: not re-applied and not compared by the replay (the decisions a stage changes ARE actions, and those are
   compared). `docs/automation.md`, "Stages".
+- **`queue`** records of a SHIPPED queue (shipq-1; the table's `queues`, docs/queues.md, "Shipped queues") are the same
+  `queue` records any queue writes, plus `relies` (it would start and a setting it relies on differs — once per change),
+  `condition` (its condition started or stopped throwing, `error`), `rearm` (an `each` queue armed again, `runs`,
+  `coolUntil`) and `spent` (its cap reached). Its `trigger` carries `on: "condition"` and the run's number. Readings,
+  like every `queue` record: not re-applied and not compared; the calls it makes are `action` records with
+  `source: "queue"`, re-applied in the queue's slot like any queue's.
 - **Checkpoints** are taken only at the END of a tick: at the start, every `every` game-seconds, the first tick each
   ladder mark holds (the same test the harness's ladder uses), and at the stop. On the page they also carry `wall`
   (milliseconds since the log started) on every record.

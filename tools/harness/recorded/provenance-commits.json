@@ -41,6 +41,11 @@
       "date": "2026-10-01",
       "subject": "test(m30): m30/W226931 — the wall: stages/M28 under the table before this slice for 141,652 ticks (226,931 / e09f367518a8fb2d)"
     },
+    "6243411878966bc3b20f30c360c6313ccb29a66d": {
+      "commit": "6243411878966bc3b20f30c360c6313ccb29a66d",
+      "date": "2026-10-02",
+      "subject": "ci(shipq): a sweep job for the shipq battery (push + page); qrate1.yml part=shipq — the queue against the stage it replaced at diff 1 and 0.05"
+    },
     "769e7523eab4f3f79c0b236e85e610a402b39b5d": {
       "commit": "769e7523eab4f3f79c0b236e85e610a402b39b5d",
       "date": "2026-10-01",

@@ -253,6 +253,33 @@
       ]
     },
     {
+      "id": "ql6-h22-attempt",
+      "when": "player.q.buyables[11].plus(tmp.q.freeLayers).gte(6) && tmp.h.challenges[22].unlocked && !hasChallenge('h',22)",
+      "policies": {
+        "challenges:h": "sequential"
+      },
+      "gates": {
+        "reset:q": "!player.h.activeChallenge",
+        "reset:h": "!player.h.activeChallenge",
+        "reset:o": "!player.h.activeChallenge",
+        "reset:ss": "!player.h.activeChallenge"
+      },
+      "provenance": [
+        {
+          "gate": "h22 M-leg table@1",
+          "run": "36895219233",
+          "commit": "b016d49d065a8dcd7c78fa7401e862e6e2d04c9a",
+          "note": "h22 (design notes §20): from m28/QL6 this entry — challenges:h `sequential` with no give-up, the row-3 resets paused while an h challenge is active — completes H22 in ONE uncut attempt at +984 game-s (diff 1, tick 87,055) and +960.65 (diff 0.05), twice equal, on the tick of the template's own queue. The table's give-up would concede that attempt at 211 s, and the qrate1 winner's resets cut every attempt (13 of 13 in 600 s)."
+        },
+        {
+          "gate": "stages M-order",
+          "run": "36905262237",
+          "commit": "769e7523eab4f3f79c0b236e85e610a402b39b5d",
+          "note": "stages-1 (design notes §21), the whole stretch from all/M26 under the table alone, every leg twice equal: listed BEFORE the hold, it reaches M29 at +4,848 and then M28 at +8,348 game-s (diff 1), M29 +3,592.85 and M28 +5,489.65 (diff 0.05). In the other order (the hold first) M28 lands at +59,180 and M29 at +59,230 (diff 1): H22's reward is what makes q31 and q32 fast."
+        }
+      ]
+    },
+    {
       "id": "ql6-hold-for-q32",
       "when": "player.q.buyables[11].plus(tmp.q.freeLayers).gte(6) && !hasUpgrade('q',32)",
       "policies": {
@@ -291,134 +318,6 @@
           "run": "36905262237",
           "commit": "769e7523eab4f3f79c0b236e85e610a402b39b5d",
           "note": "stages-1 (design notes §21): switched on at the QL5 tick (77,196) the table reaches q23 on exactly the tick and hash of QL5 resumed under `--auto-opt policy:reset:q=<winner>` (80,134 / c2d9442da073bfab); the whole stretch reaches M29 and M28 (above)."
-        }
-      ]
-    }
-  ],
-  "queues": [
-    {
-      "id": "ca-ch-h-22",
-      "when": "player.q.buyables[11].plus(tmp.q.freeLayers).gte(6)",
-      "rearm": "once",
-      "queue": {
-        "format": "tmt-queue/1",
-        "id": "ca-ch-h-22",
-        "trigger": {
-          "on": "predicate",
-          "when": "player[\"h\"].unlocked && tmp[\"h\"].challenges[22].unlocked && !maxedChallenge(\"h\", 22) && (!player[\"h\"].activeChallenge || String(player[\"h\"].activeChallenge) === \"22\")"
-        },
-        "source": {
-          "template": "challenge-attempt",
-          "goal": "ch:h:22",
-          "facts": [
-            "exits-challenge:h:22:h",
-            "exits-challenge:h:22:o",
-            "exits-challenge:h:22:q",
-            "exits-challenge:h:22:ss",
-            "challenge-inputs:h:22"
-          ]
-        },
-        "steps": [
-          {
-            "do": "hold",
-            "features": [
-              "reset:h",
-              "challenges:h",
-              "reset:q",
-              "reset:o",
-              "reset:ss"
-            ],
-            "comment": "these end an attempt at ch:h:22 (exits-challenge:h:22:h, exits-challenge:h:22:o, exits-challenge:h:22:q, exits-challenge:h:22:ss); the queue owns the attempt"
-          },
-          {
-            "do": "call",
-            "fn": "startChallenge",
-            "args": [
-              "h",
-              22
-            ],
-            "if": "String(player[\"h\"].activeChallenge) !== \"22\"",
-            "comment": "enter ch:h:22 — unless a reflex already did in the tick before the hold bound (pressed inside, startChallenge LEAVES)"
-          },
-          {
-            "do": "wait",
-            "until": "String(player[\"h\"].activeChallenge) === \"22\"",
-            "timeout": {
-              "gs": 2
-            },
-            "onTimeout": "abort",
-            "comment": "the engine entered it"
-          },
-          {
-            "do": "wait",
-            "until": "canCompleteChallenge(\"h\", 22)",
-            "timeout": {
-              "gs": 3600
-            },
-            "onTimeout": "skip",
-            "comment": "the rollback measured the goal met 984 game-s after entry (diff 1); the time limit is the check's window, 3600 game-s"
-          },
-          {
-            "do": "call",
-            "fn": "startChallenge",
-            "args": [
-              "h",
-              22
-            ],
-            "if": "String(player[\"h\"].activeChallenge) === \"22\"",
-            "comment": "finish it (the engine completes a challenge whose goal is met as it leaves; otherwise this only leaves) — only while inside: pressed outside, it would ENTER again"
-          },
-          {
-            "do": "release",
-            "comment": "the reflexes resume"
-          },
-          {
-            "do": "wait",
-            "until": "hasChallenge(\"h\", 22)",
-            "timeout": {
-              "gs": 2
-            },
-            "onTimeout": "abort",
-            "comment": "a completion was recorded"
-          }
-        ],
-        "comment": "ch:h:22 is ended by a reset of h, o, q, ss (the exits-challenge facts). Hold every one, enter, wait for the goal, finish, release. It starts whenever ch:h:22 is unlocked, not completed, and no other challenge of its layer is running.",
-        "version": 3,
-        "name": "attempt Descension (hindrance)",
-        "relies": {
-          "options": {
-            "nativeYield": "slot",
-            "stages": "on",
-            "passiveYield": "0",
-            "resetDefault": "",
-            "turnMark": "high-act",
-            "exclude": "",
-            "include": ""
-          }
-        }
-      },
-      "provenance": [
-        {
-          "gate": "h22 M-leg table@1",
-          "run": "36895219233",
-          "commit": "b016d49d065a8dcd7c78fa7401e862e6e2d04c9a",
-          "note": "h22 (design notes §20): from m28/QL6 this entry — challenges:h `sequential` with no give-up, the row-3 resets paused while an h challenge is active — completes H22 in ONE uncut attempt at +984 game-s (diff 1, tick 87,055) and +960.65 (diff 0.05), twice equal, on the tick of the template's own queue. The table's give-up would concede that attempt at 211 s, and the qrate1 winner's resets cut every attempt (13 of 13 in 600 s)."
-        },
-        {
-          "gate": "stages M-order",
-          "run": "36905262237",
-          "commit": "769e7523eab4f3f79c0b236e85e610a402b39b5d",
-          "note": "stages-1 (design notes §21), the whole stretch from all/M26 under the table alone, every leg twice equal: listed BEFORE the hold, it reaches M29 at +4,848 and then M28 at +8,348 game-s (diff 1), M29 +3,592.85 and M28 +5,489.65 (diff 0.05). In the other order (the hold first) M28 lands at +59,180 and M29 at +59,230 (diff 1): H22's reward is what makes q31 and q32 fast."
-        },
-        {
-          "gate": "shipq-equal@1",
-          "commit": "6243411878966bc3b20f30c360c6313ccb29a66d",
-          "note": "shipq-1 (cloud-reports/tmt-shipq-1.md; measured in the cloud session, every leg twice equal — CI qrate1 part=shipq to reproduce): the H22 attempt moved from the stage ql6-h22-attempt into this shipped queue — the challenge-attempt template's own queue from m28/QL6 under this table, with the stage's boundary (6 Quirk Layers). From all/M26 the table alone reaches M29 at 81,779 (be1df4037cbb5804), M28 at 85,279 (827cf164da85a931) and M30 at 94,521 (132127d4d5573106), the stage's ticks and hashes (shipq-A@1 = shipq-ctl@1)."
-        },
-        {
-          "gate": "shipq-equal@0.05",
-          "commit": "6243411878966bc3b20f30c360c6313ccb29a66d",
-          "note": "shipq-1: the same at the page's diff 0.05 — M29 +3,592.85 (ee381821c137ac68) and M28 +5,489.65 (5c7dd56ad8d00e17) from all/M26, the stage's (shipq-A@0.05 = shipq-ctl@0.05)."
         }
       ]
     }

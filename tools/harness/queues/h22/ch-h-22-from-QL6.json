@@ -2,7 +2,8 @@
  "format": "tmt-queue/1",
  "id": "ca-ch-h-22",
  "trigger": {
-  "on": "start"
+  "on": "predicate",
+  "when": "player[\"h\"].unlocked && tmp[\"h\"].challenges[22].unlocked && !maxedChallenge(\"h\", 22) && (!player[\"h\"].activeChallenge || String(player[\"h\"].activeChallenge) === \"22\")"
  },
  "source": {
   "template": "challenge-attempt",
@@ -49,10 +50,10 @@
    "do": "wait",
    "until": "canCompleteChallenge(\"h\", 22)",
    "timeout": {
-    "gs": 994
+    "gs": 3600
    },
    "onTimeout": "skip",
-   "comment": "the rollback measured the goal met 984 game-s after entry (diff 1)"
+   "comment": "the rollback measured the goal met 984 game-s after entry (diff 1); the time limit is the check's window, 3600 game-s"
   },
   {
    "do": "call",
@@ -70,7 +71,7 @@
   },
   {
    "do": "wait",
-   "until": "Number(player[\"h\"].challenges[22] || 0) > 0",
+   "until": "hasChallenge(\"h\", 22)",
    "timeout": {
     "gs": 2
    },
@@ -78,5 +79,18 @@
    "comment": "a completion was recorded"
   }
  ],
- "comment": "ch:h:22 is ended by a reset of h, o, q, ss (the exits-challenge facts). Hold every one, enter, wait for the goal, finish, release."
+ "comment": "ch:h:22 is ended by a reset of h, o, q, ss (the exits-challenge facts). Hold every one, enter, wait for the goal, finish, release. It starts whenever ch:h:22 is unlocked, not completed, and no other challenge of its layer is running.",
+ "version": 3,
+ "name": "attempt Descension (hindrance)",
+ "relies": {
+  "options": {
+   "nativeYield": "slot",
+   "stages": "on",
+   "passiveYield": "0",
+   "resetDefault": "",
+   "turnMark": "high-act",
+   "exclude": "challenges:h",
+   "include": ""
+  }
+ }
 }

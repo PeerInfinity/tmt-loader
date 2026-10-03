@@ -53,7 +53,9 @@ if (a.log) {
 fs.writeFileSync(drive, `var FACTS = ${facts};\nvar OPTS = ${JSON.stringify(opts)};\n${logRecords ? `OPTS.logRecords = ${JSON.stringify(logRecords)};\n` : ''}return tmtLoader.planner.templates.run(FACTS, OPTS);\n`);
 const o = { profile: 'all', diff: opts.diff || 1, ticks: 0, planner: true, templates: true, 'queue-runner': true, 'planner-script': drive };
 if (a.from) o['from-snapshot'] = a.from;
-if (a['auto-opt']) o['auto-opt'] = a['auto-opt'];
+// (shipq-1) the table's SHIPPED queues are off on the copy: a check measures ITS plan alone (a shipped queue that started
+// during it would be measured with it — and the plan it confirms may be that very queue, under the same id)
+o['auto-opt'] = (a['auto-opt'] ? a['auto-opt'] + ';' : '') + 'shippedQueues=off';
 if (a['auto-table']) { if (!fs.existsSync(a['auto-table'])) { console.error(`strategize: no table ${a['auto-table']}`); process.exit(2); } o['auto-table'] = a['auto-table']; }
 if (a['timeout-s'] !== undefined) { if (!(Number(a['timeout-s']) > 0)) { console.error('strategize: --timeout-s needs a number > 0'); process.exit(2); } o.timeoutMs = Number(a['timeout-s']) * 1000; }
 const res = runNode(game, o);

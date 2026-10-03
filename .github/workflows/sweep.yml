@@ -1041,6 +1041,77 @@ jobs:
           if-no-files-found: warn
           retention-days: 14
 
+  # shipq — SHIPPED CONDITIONAL QUEUES (`gates-shipq.mjs --part push` + `--part page`; docs/queues.md "Shipped queues").
+  # vocab: the table's `queues` schema is one source and requires provenance, a bad entry fails the load by name, the
+  # runtime record is unchanged while a shipped queue never started. rearm: `once` vs `each` under a flickering condition
+  # (the cap, the cool-off, the edge), a throwing condition, the profile off. tpl: the template writes the shipped queue,
+  # every template-written `when` carries no state literal, the table's boundary. relies: read at start. accept: the
+  # table alone from all/M26 reaches M29/M28/M30 on today's ticks and hashes (diff 1), and so does the table before.
+  # page: the readout and G1 (the runner requested only where a table declares a queue; nothing stored).
+  # The MEASUREMENT (diff 1 and 0.05, the queue against the stage it replaced) is `qrate1.yml -f part=shipq`.
+  # ⛔ `--assert` holds each run to its exact row count (15 + 2), all green.
+  # ---------------------------------------------------------------------------------------------------------------
+  shipq:
+    name: shipq — shipped conditional queues
+    needs: fast
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true   # games/ is the tmt-loader-games submodule
+          fetch-depth: 1
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - run: npm ci
+
+      - name: The battery — vocab, rearm, tpl, relies, accept, grep
+        shell: bash
+        run: |
+          set -o pipefail
+          s=$(date +%s)
+          node tools/harness/gates-shipq.mjs --part push --pool 4 --assert | tee shipq.txt
+          echo "TIME shipq push: $(( $(date +%s) - s )) s" | tee -a shipq.txt
+
+      - name: Cache the Playwright browser
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+
+      - run: npx playwright install --with-deps chromium
+
+      - name: Part page — the readout and the requests
+        shell: bash
+        run: |
+          set -o pipefail
+          node tools/harness/gates-shipq.mjs --part page --assert | tee -a shipq.txt
+
+      - name: Summary
+        if: always()
+        shell: bash
+        run: |
+          {
+            echo '## shipq — shipped conditional queues'
+            echo ''
+            echo '```'
+            cat shipq.txt 2>/dev/null | grep -aE '^(GREEN|RED|VERDICT|TIME)' | cut -c1-600 || echo 'no output'
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload the rows
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: shipq
+          path: tools/harness/results/tmp/gates-shipq-part-*-last.json
+          if-no-files-found: warn
+          retention-days: 14
+
   # m30 — Super Generators (`gates-m30.mjs --part push`; docs/templates.md "reset-requirement", docs/automation.md
   # "Stages"). Fixture: the wall (stages/M28 under the table before this slice, 141,652 ticks: q33 owned, sg never reset)
   # and stages/M30 (stages/M28 under the shipped table alone) rebuild to their pins. Verdict: from the wall the

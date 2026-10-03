@@ -132,6 +132,10 @@ test('E1 request verdict: exactly the loader files the resolved features need, a
   const auto = declaredLoaderFiles({ automation: true }, { id: 'ptr', auto: 'games-auto/ptr.json', currency: true });
   assert.ok(auto.has('loader/tmt-auto.js') && auto.has('manifests/ptr.json') && auto.has('games-auto/ptr.json') && auto.has('games-data/ptr.json'));
   assert.ok(!declaredLoaderFiles({ automation: true }).has('games-data/index.json'), 'no game id: no loader data asked for');
+  // (shipq-2) the queue runner: only when the table in force ships an enabled queue, and only with automation on
+  assert.ok(!auto.has('loader/tmt-queue.js'), 'a table without queues: no runner');
+  assert.ok(declaredLoaderFiles({ automation: true }, { id: 'ptr', auto: 'games-auto/ptr.json', queues: true }).has('loader/tmt-queue.js'));
+  assert.ok(!declaredLoaderFiles({ automation: false }, { id: 'ptr', auto: 'games-auto/ptr.json', queues: true }).has('loader/tmt-queue.js'), 'automation off: nothing');
   assert.ok(!declaredLoaderFiles({ automation: true }, { id: 'ptr', auto: 'games-auto/ptr.json', fromFile: true }).has('games-auto/ptr.json'), 'the author\'s table replaces the loader\'s');
 
   const L = 'http://127.0.0.1:1/', G = 'http://127.0.0.1:2/f/x/';

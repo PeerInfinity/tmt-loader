@@ -958,16 +958,17 @@ as data; the state log writes a `stage` record at every switch (`docs/log.md`).
 derivation does not produce, a policy the kind cannot run, a `when` or a gate that does not compile, a stage that sets
 nothing; the SCHEMA requires `provenance` on every stage, and `tools/auto-tables.mjs --provenance` checks each stage's
 records as `stage:<id>`. `--auto-opt stages=off` measures the table WITHOUT its stages (`on`, or absent, is the default);
+(shipq-1) `--auto-opt shippedQueues=off` measures it without its shipped queues;
 `--auto-table <file>` (harness) hands in a whole other table — how the losing stage ORDER was measured as a table rather
 than as a configuration.
 
-**PTR's five** (gate rows: `tools/harness/gates-stages.mjs`, `tools/harness/gates-m30.mjs` for `q33-sg-unlock` and `tools/harness/gates-m31.mjs` for `sg-keep`; the measurement and the order decisions: design notes §21, and the slices' reports `cloud-reports/tmt-m30-1.md`, `cloud-reports/tmt-m31-1.md`):
+**PTR's four** — five until shipq-1 moved the H22 attempt into the table's `queues` (gate rows: `tools/harness/gates-stages.mjs`, `tools/harness/gates-m30.mjs` for `q33-sg-unlock` and `tools/harness/gates-m31.mjs` for `sg-keep`; the measurement and the order decisions: design notes §21, and the slices' reports `cloud-reports/tmt-m30-1.md`, `cloud-reports/tmt-m31-1.md`):
 
 | stage | when (state) | sets | why this boundary |
 |---|---|---|---|
 | `sg-keep` | q33 owned, Super Generators unlocked (past M30), outside every h challenge | `reset:q` = `gain>=2x`; the resets that zero sg's BASE (`reset:e`, `reset:s`, `reset:sb`, `reset:t`, `reset:q`) act only while `player.sg.points.gt(0) \|\| player.g.points.gte(tmp.sg.nextAt)`; the resets that zero sg's own CURRENCY and not the goal's (`reset:h`, `reset:o`, `reset:ss`, `challenges:h`) only while `player.sg.points.eq(0) && player.g.points.gte(tmp.sg.nextAt)` | the `reset-requirement` REBUILD (docs/templates.md): under the table sg resets once at M30 and never again (every row-3 reset zeroes its point; Generators top out at 196–199 inside a ~33-tick q cycle). Held, a rebuild takes ~520 game-s and the q cycle's pending gain then grows faster than linearly, so the q reset cashes in by the derived default's ratio rule — `rate-peak` never sees a peak (every hold measured with it froze total quirks). From stages/M30: **5.10e25 total quirks at +30,000 game-s against the table's 1.86e23** (diff 1, twice equal), and **1.79e24 against 9.85e21 at +6,000 game-s at diff 0.05** (gates-m31 m31-A@…/m31-ctl@…). The gates are the engine's requirement, never its number; `!player.h.activeChallenge` keeps the hold off an open attempt (a hold that names `challenges:h` inside one holds its give-up: a deadlock in H31, measured). ⚠ It pauses H31 attempts for as long as it holds — H31 is SHORT by 10^1158 of points at M30 (challenge-attempt), and M33 needs the stage to end first. Listed FIRST: after `ql5-quirk-rate` it loses `reset:q`'s policy and total quirks freeze (m31-last@1) |
 | `q33-sg-unlock` | q33 owned, Super Generators not yet unlocked (M30) | the eight resets that zero Generators (`reset:e`, `reset:s`, `reset:sb`, `reset:t` — sg's row siblings — and `reset:h`, `reset:o`, `reset:q`, `reset:ss`) and `challenges:h` act only while `player.g.points.gte(tmp.sg.nextAt)` | the `reset-requirement` template (docs/templates.md): sg's requirement (200 Generators at 0 Super Generators) sits on a base those resets zero, and a never-reset layer is decided in the automation's fallback pass, after every one of them; held, the base reaches it 642 game-s after q33 and `reset:sg` makes the reset (M30 at +9,242 from stages/M28). The gate is the engine's requirement, never its number. ⚠ Past q milestone 6 it could not under the yield rule before yield-1 (`nativeYield=always`: reset:sg yielded to an auto-reset the engine skips for a locked layer, gates-m30 S3); under the default `slot` reset:sg makes the reset there too (tick 226,986 from the wall, gates-yield Y1). The stage stays: without it the fix alone reaches M30 at +26,614 instead of +9,242 (diff 1), and not in 20,000 game-s at diff 0.05 (cloud-reports/tmt-yield-1.md) |
-| `ql6-h22-attempt` | 6 Quirk Layers, H22 open and not completed | `challenges:h` = `sequential` (no give-up); the row-3 resets (`reset:q`, `reset:h`, `reset:o`, `reset:ss`) paused while an h challenge is active | the h22 measurement (§20): from QL6 ONE uncut attempt completes H22 in ~1,000 game-s; every exiting reset (h22's `exits-challenge` facts: h, o, q, ss) is held by the pause, and the table's give-up would concede the attempt at 211 s |
+| ~~`ql6-h22-attempt`~~ | (shipq-1: no longer a stage) | — | the H22 attempt ships as the table's conditional QUEUE `ca-ch-h-22` since shipq-1 (docs/queues.md, "Shipped queues"): the same move, said directly — hold the resets that end it, enter, wait, finish — on the same ticks and hashes (M29 81,779, M28 85,279, M30 94,521 from all/M26; gates-shipq A1). The table before that slice is `tools/harness/snapshots/ptr/shipq/table-before-shipq.json` |
 | `ql6-hold-for-q32` | 6 Quirk Layers, q32 not owned (M28) | `challenges:h` = `off` (attempts held) | the m28 measurement (§18): past QL6 the challenge reflex re-entered H22 after every q reset and the quirk rate collapsed; with attempts held q31 and q32 are bought |
 | `ql5-quirk-rate` | 5 Quirk Layers | `reset:q` = `rate-peak@0/0\|turn@10/30x/5/0/100` | the qrate1 measurement (§17): at QL5 the rate-peak reset reaches the q23 threshold ×38 sooner than the table's `gain>=2`; as a WHOLE-GAME default it loses from M15 (§17.7), so it is a stage |
 
@@ -1864,10 +1865,18 @@ The au tab still shows ONE line per feature: the loader renders it from the reco
 records joined with ` — `) into `tmtLoader.autoProvenance`; `tmtLoader.autoProvenanceRecords` keeps the records. It is
 author-written text rendered through `v-html`, and the loader escapes it.
 
+**Shipped queues (shipq-1).** `queues` is a list of one-off moves the automation plays when their condition holds —
+`{id, when?, rearm?: once|each, cap?, coolOff?: {gs}, enabled?, queue: <tmt-queue/1, inline>, provenance}`, provenance
+REQUIRED as for a stage. The core checks each entry at load (an id used twice, an entry id that is not its queue's, `each`
+without a cap and a cool-off or `once` with one, a `when` that does not compile — each a hard fail by name); the queue
+runner, which the page then fetches with the table, checks the queue itself. Their starting, re-arming, `relies` and
+readout are docs/queues.md, "Shipped queues". `--auto-opt shippedQueues=off` measures the table without them;
+`--auto-opt holdCycle=leave` names the row-cycle behaviour under a hold from before that slice (docs/queues.md, "Holds").
+
 **What the schema deliberately leaves EXPERIMENTAL** (`x-experimental`: accepted, not frozen — the next rungs may still
 move them): the `|turn@…` and `|give-up@…` modifiers inside a `policies` / `alternatives` string, every `challenges:*`
 entry of `policies`, `alternatives`, `order` and `gates`, the `stages` list (its shape, and whether a stage may carry
-more than `policies` / `gates` — see "Stages"), and — unanswered, and left so — whether a table may state
+more than `policies` / `gates` — see "Stages"), the `queues` list (shipq-1: its shape and `rearm`), and — unanswered, and left so — whether a table may state
 `until` / `priority` (today only `while` has a table form, `gates`).
 
 **Predicates** (`gates`, clickable `when`) are JavaScript expressions over the engine's globals, compiled once with
@@ -1897,7 +1906,7 @@ table, verbatim.
 | ptr | `reset:h` | `always\|turn@1/30x/5/0/100` | R3b-2 (R3b2-2, CI run 35553187707): `always` inside its turn; on its own it is the starvation the user hit by hand |
 | ptr | `challenges:h` | `sequential\|give-up@0.1/30/2x` + gate `hasMilestone('q',5)` | R3a (R3a-1): the EXIT rule, and the digest's own advice (L3.9) minus the half measurement showed to be wrong |
 
-| ptr | stage `ql6-h22-attempt` (6 Quirk Layers, H22 open and not completed) | `challenges:h` = `sequential`; `reset:q` / `reset:h` / `reset:o` / `reset:ss` paused while an h challenge is active | h22 (CI run 36895219233): ONE uncut H22 attempt from m28/QL6 at +984 game-s; stages-1 (CI run 36905262237): listed first, the whole stretch from all/M26 reaches M29 +4,848 and M28 +8,348 (diff 1), +3,592.85 / +5,489.65 (diff 0.05); the other order +59,230 for both |
+| ptr | shipped queue `ca-ch-h-22` (6 Quirk Layers; the template's match: H22 open, not completed, no other h challenge running) — the stage `ql6-h22-attempt` before shipq-1 | hold `reset:h`, `challenges:h`, `reset:q`, `reset:o`, `reset:ss`; enter H22; wait for its goal (at most the check's window, 3,600 game-s); finish; release | h22 (CI run 36895219233): ONE uncut H22 attempt from m28/QL6 at +984 game-s; stages-1 (CI run 36905262237): the whole stretch from all/M26 reaches M29 +4,848 and M28 +8,348 (diff 1), +3,592.85 / +5,489.65 (diff 0.05); shipq-1: the queue on the stage's ticks and hashes (gates-shipq) |
 | ptr | stage `ql6-hold-for-q32` (6 Quirk Layers, q32 not owned) | `challenges:h` = `off` | m28 (CI run 36822076088): attempts held, q31 +2,696 / q32 +54,688 from m28/QL6, never with them allowed; stages-1: after H22, q32 +3,500 game-s |
 | ptr | stage `ql5-quirk-rate` (5 Quirk Layers) | `reset:q` = `rate-peak@0/0\|turn@10/30x/5/0/100` | qrate1 (CI run 36812038216): 308,372 total quirks at +2,872 vs `gain>=2`'s +109,590 (diff 1), +1,223.65 at diff 0.05; a whole-game default loses from all/M15 (R2-S1) |
 

@@ -6,6 +6,7 @@
 // Part page  every row drives the real page (ptr unless it says otherwise), managed (`?managed=1`: ticks are the gate's):
 //   Q1  inert       an automation page whose Queues subtab is never opened — Simple and Advanced shown, 200 ticks —
 //                   requests neither `loader/tmt-qedit.js`, `loader/tmt-queue.js` nor `games-queues/`, stores no new key,
+//                   (shipq-1: the runner exactly once when the game's table ships a queue — declared, as ptr's does)
 //                   has no `tmtLoader.qedit`; and the PLAIN page has no editor door at all
 //   Q2  persist     a queue with EVERY step kind (an action, a wait, a pause, pause-tools, resume-tools, a comment) and a
 //                   queue comment, made through the UI; reloaded, it is still there — in the ONE declared key
@@ -118,8 +119,13 @@ async function legInert(browser) {
     await tick(page, 100);
     await page.evaluate(() => { player.subtabs[tmtLoader.auLayer].mainTabs = 'Advanced'; });
     await tick(page, 100);
-    const asked = stats.of(page).urls.filter((u) => EDITOR_FILES.test(u));
+    // (shipq-1) ptr's TABLE ships a queue (its `queues` section), so the RUNNER is requested at boot — DECLARED by the
+    // table, and exactly once; the editor and the catalog still are not
+    const shipsQueues = (JSON.parse(fs.readFileSync(path.join(REPO, 'games-auto/ptr.json'), 'utf8')).queues || []).some((e) => e.enabled !== false);
+    const asked = stats.of(page).urls.filter((u) => EDITOR_FILES.test(u) && !(shipsQueues && /loader\/tmt-queue\.js/.test(u)));
     if (asked.length) f.push(`requested without the Queues tab: ${asked.join(', ')}`);
+    const runnerAsked = stats.of(page).urls.filter((u) => /loader\/tmt-queue\.js/.test(u)).length;
+    if (runnerAsked !== (shipsQueues ? 1 : 0)) f.push(`the runner was requested ${runnerAsked} time(s) (the table ${shipsQueues ? 'ships' : 'ships no'} queue)`);
     const t = await page.evaluate(() => ({ qedit: typeof tmtLoader.qedit, door: typeof tmtLoader.fetchQueueEditor, shell: (tmtLoader.componentNames || []).includes('tmtl-queues'), subs: Object.keys(layers[tmtLoader.auLayer].tabFormat) }));
     if (t.qedit !== 'undefined') f.push('tmtLoader.qedit exists');
     if (t.door !== 'function') f.push('no fetchQueueEditor door');
@@ -388,10 +394,11 @@ async function legRelease(browser) {
   await tick(page, 2);
   const h0 = await page.evaluate(() => JSON.stringify(tmtLoader.queueLink.holds));
   await block(page, 'off-me').locator('button.tmtl-qqueue-onoff').click(); await tick(page, 1);
-  const h1 = await page.evaluate(() => ({ holds: tmtLoader.queueLink.holds, loaded: tmtLoader.queues.status().queues.map((q) => q.id) }));
+  // (shipq-1) the editor's queues: ptr's table ships one (the H22 attempt), armed and holding nothing here
+  const h1 = await page.evaluate(() => ({ holds: tmtLoader.queueLink.holds, loaded: tmtLoader.queues.status().queues.filter((q) => !q.shipped).map((q) => q.id) }));
   await block(page, 'delete-me').locator('button.tmtl-qqueue-del').click(); await redraw(page);
   await block(page, 'delete-me').locator('button.tmtl-qqueue-del-go').click(); await tick(page, 1);
-  const h2 = await page.evaluate(() => ({ holds: tmtLoader.queueLink.holds, loaded: tmtLoader.queues.status().queues.map((q) => q.id), stored: tmtLoader.qedit.list().map((q) => q.id) }));
+  const h2 = await page.evaluate(() => ({ holds: tmtLoader.queueLink.holds, loaded: tmtLoader.queues.status().queues.filter((q) => !q.shipped).map((q) => q.id), stored: tmtLoader.qedit.list().map((q) => q.id) }));
   if (!/reset:p/.test(h0)) f.push(`nothing held to begin with: ${h0}`);
   if (h1.loaded.includes('off-me') || !h1.holds || h1.holds['reset:p'].queue !== 'delete-me') f.push(`after Off: ${JSON.stringify(h1)}`);
   if (h2.holds !== null || h2.loaded.length || h2.stored.includes('delete-me')) f.push(`after delete: ${JSON.stringify(h2)}`);

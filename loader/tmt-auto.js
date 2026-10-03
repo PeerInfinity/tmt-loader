@@ -984,6 +984,12 @@
   // reached), O1, VAC's control, EV and S3 (each asserts the defect) — name `nativeYield=always` rather than being
   // re-recorded, as the legs before the stages name `stages=off` (cloud-reports/tmt-yield-1.md, tmt-yield-2.md).
   var NATIVE_YIELDS = ['slot', 'always'], NATIVE_YIELD_DEFAULT = 'slot', nativeYieldNow = NATIVE_YIELD_DEFAULT;
+  // (shipq-1) `holdCycle` — what a queue's HOLD does to a reset in the row cycle: `pause` (the default since shipq-1: a held
+  // member stays in the row, paused, as a `while` pauses it, and the cycle keeps its memory) or `leave` (before shipq-1:
+  // a held member LEFT the row, and a row left with fewer than two members dropped its cycle and everything it had
+  // remembered). The lever exists so the pins measured before it can be reproduced by NAME, as `nativeYield=always` and
+  // `stages=off` are: gates-m28 F1 (the Q86K fixture: q23's queue held the row for 38 game-s) names `holdCycle=leave`.
+  var HOLD_CYCLES = ['pause', 'leave'], holdCycleNow = 'pause';
   var curRun = { layer: null, via: null };   // the layer `runLayer` is deciding right now, and where (slot / fallback)
   // A READOUT for the gates (like `fallbackFires`; not runtime memory): per reset feature, how many decisions were
   // taken with the layer's `autoPrestige` set — in the slot, in the fallback, and in the fallback with the engine
@@ -1045,7 +1051,11 @@
   //   · `step`   () — the runner's turn, ONCE per gameLoop, in the `au` layer's automate AFTER its fallback pass: after
   //              every reflex of the tick has decided, inside the tick (so a replay re-applies it in the same place).
   //   · `get` / `set` — the runner's memory for `runtimeState()` / `restoreRuntime()` (the `queues` block).
-  var queueLink = T.queueLink = { holds: null, step: null, get: null, set: null };
+  //   · `loopStart` () — (shipq-1) ONCE per gameLoop, right after the stages are evaluated: where the runner reads a
+  //              SHIPPED queue's condition (the table's `queues`), so it starts exactly when a stage would switch on.
+  //   · `featureOn` (id) — filled HERE: whether a feature is switched on, ignoring holds and whether it is unlocked yet
+  //              (the profile, a runtime override, the player's saved choice). A shipped queue acts only where it is.
+  var queueLink = T.queueLink = { holds: null, step: null, get: null, set: null, loopStart: null, featureOn: null };
   function heldBy(f) { return queueLink.holds !== null && queueLink.holds[f.id] !== undefined ? queueLink.holds[f.id] : null; }
 
   // Predicate strings (table gates, clickable `when`) compiled ONCE in the engine's global scope — the same scope as the
@@ -1123,6 +1133,21 @@
   function active(f) {
     if (T.profileName === 'off') return false;
     if (queueLink.holds !== null && heldBy(f) !== null) return false;   // (tpl1) a queue's hold
+    return activeUnheld(f);
+  }
+  // (shipq-1) `active` without the queue's hold: whether the feature is ON. The row cycle reads this — a HELD member is a
+  // PAUSED member (as a stage's or a table's `while` pauses it), never a member that left the row: leaving would drop the
+  // row's cycle and its memory (`for (k in cycles) if (!seen[k]) delete …`), and the reflexes would resume after the
+  // queue with a cycle that starts from nothing — measured: the H22 attempt as a queue reached M29 on the stage's tick
+  // and hash, and M28 180 ticks away, because the row-3 cycle had been erased by the hold.
+  queueLink.featureOn = function (id) {
+    var f = byId[id];
+    if (!f || T.profileName === 'off') return false;
+    if (enableOverride[f.id] !== undefined) return !!enableOverride[f.id];
+    return T.profileName === 'all' || isOnSaved(f);
+  };
+  function activeUnheld(f) {
+    if (T.profileName === 'off') return false;
     if (enableOverride[f.id] !== undefined) return enableOverride[f.id] && featureUnlocked(f);
     if (T.profileName === 'all') return featureUnlocked(f);
     return isOnSaved(f) && featureUnlocked(f);
@@ -1591,6 +1616,7 @@
   // from the cycle's own pass would stop a feature a game-second before `runLayer` does, and would double-write the
   // `until` latch. This asks the same two questions and changes nothing.
   function cyclePaused(f) {
+    if (holdCycleNow === 'pause' && queueLink.holds !== null && heldBy(f) !== null) return true;   // (shipq-1) a queue's hold pauses a member
     if (untilHitOf(f) !== null) return true;
     var c = predicateOf(f, 'while');
     if (!c.src) return false;
@@ -1612,7 +1638,7 @@
       var g = features[i];
       // F1: a member the game pays passively will not reset while it does, so it is OUT of the cycle rather than
       // holding a turn it cannot use — the row's other members take turns without it (or, alone, go dormant).
-      if (g.kind !== 'reset' || !active(g) || passiveYieldOf(g.layer) !== null) continue;
+      if (g.kind !== 'reset' || !(holdCycleNow === 'pause' ? activeUnheld(g) : active(g)) || passiveYieldOf(g.layer) !== null) continue;
       var r = rowOf(g);
       if (r === null || r === undefined) continue;
       var key = String(r);
@@ -2657,6 +2683,14 @@
     return out;
   };
   T.stageHistory = function () { return stageHist.map(function (r) { return Object.assign({}, r); }); };
+  /** (shipq-1) The automation settings in force, as a queue's `relies` names them (the runner compares them at start). */
+  T.autoConfig = function () {
+    var o = T.autoOptions || {};
+    return { nativeYield: nativeYieldNow, stages: stagesOff ? 'off' : 'on', passiveYield: passiveYieldNow === null ? 'off' : String(passiveYieldNow),
+      resetDefault: resetDefaultNow === null ? '' : resetDefaultNow, turnMark: String(turnMarkNow),
+      exclude: o.exclude === undefined ? '' : String(o.exclude).split(',').filter(Boolean).sort().join(','),
+      include: o.include === undefined ? '' : String(o.include).split(',').filter(Boolean).sort().join(',') };
+  };
   T.stageStats = function () { return { stages: stagesNow.length, off: stagesOff, loops: stageStats.loops, evals: stageStats.evals }; };
 
   // ---- the tick: poll the tracker, then decide whether to escalate -------------------------------------------------
@@ -3226,7 +3260,7 @@
     // ⚠ R3b: THE CYCLE STEPS BESIDE THE WATCH, and AFTER it on purpose — the watch may change a feature's policy
     // this tick, and whether a feature CARRIES the cycle modifier is read from the policy in force.
     // stages-1: the STAGES first — the watch's escalation list and the cycle both read the policy in force
-    if (watchLoop !== loopNo) { watchLoop = loopNo; stageTick(); watchTick(); orderLoop = -1; cycleTick(); }
+    if (watchLoop !== loopNo) { watchLoop = loopNo; stageTick(); if (queueLink.loopStart !== null) queueLink.loopStart(); watchTick(); orderLoop = -1; cycleTick(); }
     var list = layerOrder(l);
     for (var i = 0; i < list.length; i++) {
       var f = list[i];
@@ -4522,6 +4556,32 @@
     return String(w).replace(/\s*\(plan §[^)]*\)/g, '').replace(/`/g, '').replace(/this game’s table declares no /g, 'this game has no ');
   }
   T.playerWhy = playerWhy;
+  // (shipq-2) the queues' words in a player's terms: every registered feature id → its title, longest id first, an id
+  // only where it stands alone (never inside a longer token: `reset:h` is not replaced inside `reset:hb`)
+  function titleIds(text) {
+    if (text === null || text === undefined || typeof text !== 'string') return text;
+    var byId = {};
+    features.forEach(function (f) { byId[f.id] = f; });
+    var ids = Object.keys(byId).sort(function (a, b) { return b.length - a.length; });
+    var out = text;
+    for (var i = 0; i < ids.length; i++) {
+      if (out.indexOf(ids[i]) < 0) continue;
+      var f = byId[ids[i]];
+      var esc = ids[i].replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      out = out.replace(new RegExp('(^|[^\\w:])' + esc + '(?![\\w:])', 'g'), function (m, pre) { return pre + (f && f.title ? f.title : ids[i]); });
+    }
+    return out;
+  }
+  function queueWords(st) {
+    var o = JSON.parse(JSON.stringify(st));
+    o.queues.forEach(function (q) {
+      q.stateText = titleIds(q.stateText); q.last = titleIds(q.last); q.reliesWhy = titleIds(q.reliesWhy);
+      q.holds = (q.holds || []).map(titleIds);
+      if (q.current) q.current.text = titleIds(q.current.text);
+      if (q.shipped) q.shipped.text = titleIds(q.shipped.text);
+    });
+    return o;
+  }
   /** A layer's own display name, falling back to its id — the name the game shows, never a second naming scheme. */
   function layerName(l) { try { return layers[l] && layers[l].name ? String(layers[l].name) : String(l); } catch (e) { return String(l); } }
   /** A policy in words — the strategy's own label with its parameters filled in, then the modifier's label. */
@@ -5444,11 +5504,15 @@
         },
         // (tpl1) THE QUEUES — READ-ONLY (the editor is a later slice). Re-read on every redraw like the log's counts;
         // `null` (and nothing rendered) unless the runner is loaded AND holds at least one queue.
+        // (shipq-2) the PLAYER view names features by their TITLES (as `held:queue` and the reason lines do): every feature
+        // id in the queues' words — a hold step, what a queue holds, why it does not start, its last outcome — is
+        // replaced by the feature's title; the raw ids only under developer details (gate A1-2, the 390 px player view)
         queueState: function () {
           void this.blocks; void this.gen;
           if (!T.queues || typeof T.queues.status !== 'function' || !T.queues.ready) return null;
           var st = T.queues.status();
-          return st && st.queues && st.queues.length ? st : null;
+          if (!st || !st.queues || !st.queues.length) return null;
+          return T.devDetails() ? st : queueWords(st);
         },
       },
       template: '<div class="tmtl-root" style="' + ROOT_STYLE + '">'
@@ -5474,7 +5538,12 @@
         // (tpl1) THE QUEUES, read-only: each loaded queue, its step and comment, what it holds, and its last outcome
         + '<div v-if="queueState" class="tmtl-queues" style="text-align:left;margin-bottom:6px;font-size:.9em">'
         +   '<div v-for="q in queueState.queues" :key="q.id" class="tmtl-queue" :data-queue="q.id" :data-state="q.state" style="margin:2px 0;overflow-wrap:anywhere">'
-        +     '<b>queue {{ q.id }}</b> — {{ q.stateText }}'
+        // (shipq-1) a SHIPPED queue (the game's table's `queues`) says so, and its state in plain words: armed (waiting for
+        // its condition), running, done — or why it does not start (off, a setting it relies on, cooling off)
+        +     '<b v-if="q.shipped">shipped queue {{ q.name || q.id }}</b><b v-else>queue {{ q.id }}</b> — {{ q.shipped ? q.shipped.text : q.stateText }}'
+        +     '<div v-if="q.shipped" class="tmtl-queue-shipped" style="margin-left:8px;opacity:.8">a move this game\'s automation makes by itself when its moment comes — {{ q.shipped.rearm === \'each\' ? \'again each time, at most \' + q.shipped.cap + \' times, \' + q.shipped.coolOff + \' game-s apart\' : \'once per page load\' }}</div>'
+        +     '<div v-if="q.shipped && dev" style="margin-left:8px;opacity:.7">{{ q.comment }} Starts when <code>{{ q.shipped.condition }}</code></div>'
+        +     '<div v-if="!q.shipped && q.reliesWhy" style="margin-left:8px">does not start: {{ q.reliesWhy }}</div>'
         +     '<div v-if="q.current" style="margin-left:8px">step {{ q.current.index }} of {{ q.steps }}: <code>{{ q.current.do }}</code> {{ q.current.text }}<span v-if="q.current.comment" style="opacity:.7"> — {{ q.current.comment }}</span></div>'
         // (qedit-1) what a running wait is waiting for, and the time it has left before its timeout
         +     '<div v-if="q.wait" class="tmtl-queue-wait" style="margin-left:8px">waiting for <code>{{ q.wait.until }}</code> — {{ Math.round(q.wait.left * 10) / 10 }} s left of {{ q.wait.timeout }} (then {{ q.wait.onTimeout === \'skip\' ? \'it skips the wait\' : \'the queue stops\' }})</div>'
@@ -5586,7 +5655,7 @@
     title: 'tmt-loader per-game automation table (games-auto/<id>.json)',
     description: 'DATA only: what a game does not declare to the engine. Every key is documented in docs/automation.md, "The table (measured defaults)".',
     type: 'object', required: ['formatVersion', 'id'], additionalProperties: false,
-    'x-experimental': ['the `|turn@…` and `|give-up@…` modifiers inside a `policies` / `alternatives` string (R3b, R3a)', 'every `challenges:*` entry of `policies`, `alternatives`, `order` and `gates`', 'whether a table may state `until` / `priority` — today only `while` has a table form, `gates` (unanswered, left open)', 'the `stages` list (stages-1): its shape, and whether a stage may carry more than `policies` / `gates`'],
+    'x-experimental': ['the `|turn@…` and `|give-up@…` modifiers inside a `policies` / `alternatives` string (R3b, R3a)', 'every `challenges:*` entry of `policies`, `alternatives`, `order` and `gates`', 'whether a table may state `until` / `priority` — today only `while` has a table form, `gates` (unanswered, left open)', 'the `stages` list (stages-1): its shape, and whether a stage may carry more than `policies` / `gates`', 'the `queues` list (shipq-1): its shape, `rearm`, and the inline queue (`tmt-queue/1`, checked by the runner at load)'],
     properties: {
       formatVersion: { enum: TABLE_FORMAT_VERSIONS, description: 'the loader refuses a version it does not know, by name' },
       id: { type: 'string', pattern: '^[a-z0-9-]+$' },
@@ -5611,6 +5680,25 @@
           when: { type: 'string', pattern: '^\\S', description: 'a JavaScript expression over the engine\'s globals (the `gates` language); a throw reads as FALSE' },
           policies: { type: 'object', additionalProperties: { type: 'string', pattern: '^\\S' } },
           gates: { type: 'object', additionalProperties: { type: 'string', pattern: '^\\S' } },
+          provenance: { oneOf: [PROVENANCE_RECORD, { type: 'array', minItems: 1, items: PROVENANCE_RECORD }] } } } },
+      // ⚖ shipq-1: a SHIPPED QUEUE is a one-off move the table plays — a `tmt-queue/1` queue, written INLINE (the table is
+      // ONE document the page fetches before the automation runs, and its provenance is about exactly these steps; a
+      // reference would be a second request at boot and a second file that could drift from the measured one — the
+      // generated-queue catalog `games-queues/` stays the player's library, and a gate checks the inline copy against
+      // the template's output). It starts when `when` (the table's measured boundary) AND the queue's own trigger (the
+      // template's match) hold, read once per loop with the stages; `rearm` `once` (the default) or `each` (again each
+      // time the condition turns false → true, at most `cap` runs, `coolOff.gs` game-seconds after a run ends — both
+      // required for `each`, refused for `once`). Its provenance is REQUIRED, as a stage's is. `enabled: false` ships it
+      // switched off. The runner validates the queue itself at load (features, functions, expressions), by name.
+      queues: { type: 'array', description: 'shipped queues: one-off moves the automation plays when their condition holds (docs/queues.md, "Shipped queues")',
+        items: { type: 'object', required: ['id', 'queue', 'provenance'], additionalProperties: false, properties: {
+          id: { type: 'string', pattern: '^[a-z0-9][a-z0-9.:-]*$', description: 'the queue\'s own `id`' },
+          when: { type: 'string', pattern: '^\\S', description: 'the table\'s start boundary, ANDed with the queue\'s trigger; a throw reads as FALSE' },
+          rearm: { enum: ['once', 'each'] },
+          cap: { type: 'integer', description: '`each`: the most runs in one page load' },
+          coolOff: { type: 'object', required: ['gs'], additionalProperties: false, properties: { gs: { type: 'number' } }, description: '`each`: game-seconds after a run ends before the next may start' },
+          enabled: { type: 'boolean' },
+          queue: { type: 'object', required: ['format', 'id', 'steps'], properties: { format: { const: 'tmt-queue/1' }, id: { type: 'string' }, steps: { type: 'array', minItems: 1 } } },
           provenance: { oneOf: [PROVENANCE_RECORD, { type: 'array', minItems: 1, items: PROVENANCE_RECORD }] } } } },
     },
   };
@@ -5745,6 +5833,9 @@
     var ny = T.autoOptions.nativeYield;
     nativeYieldNow = ny === undefined || ny === '' ? NATIVE_YIELD_DEFAULT : String(ny);
     if (NATIVE_YIELDS.indexOf(nativeYieldNow) < 0) throw new Error(src + ': option nativeYield must be one of ' + NATIVE_YIELDS.join(', ') + ' (got "' + ny + '")');
+    var hc = T.autoOptions.holdCycle;
+    holdCycleNow = hc === undefined || hc === '' ? 'pause' : String(hc);
+    if (HOLD_CYCLES.indexOf(holdCycleNow) < 0) throw new Error(src + ': option holdCycle must be one of ' + HOLD_CYCLES.join(', ') + ' (got "' + hc + '")');
     var cands = candidates(kindOrder);
     var candById = {};
     cands.forEach(function (c) { candById[c.id] = c; });
@@ -5805,6 +5896,24 @@
       }
       stagesNow.push({ id: s.id, when: s.when, policies: Object.assign({}, s.policies || {}), gates: Object.assign({}, s.gates || {}), provenance: [].concat(s.provenance) });
     });
+    // ---- shipq-1: the SHIPPED QUEUES (schema above). The entry is checked here; the queue itself by the runner when it
+    // loads them (it knows the step vocabulary). `--auto-opt shippedQueues=off` measures the table without them.
+    var sqo = T.autoOptions.shippedQueues;
+    if (sqo !== undefined && sqo !== '' && sqo !== 'on' && sqo !== 'off') throw new Error(src + ': option shippedQueues must be "on" or "off" (got "' + sqo + '")');
+    var qids = {};
+    T.autoQueues = [];
+    (table.queues || []).forEach(function (e, qi) {
+      var at = src + ': queues[' + qi + '] "' + e.id + '"';
+      if (qids[e.id]) throw new Error(at + ': the id is used twice');
+      qids[e.id] = true;
+      if (e.queue.id !== e.id) throw new Error(at + ': the queue\'s own id is "' + e.queue.id + '" — the entry and its queue carry one id');
+      if (e.when !== undefined) { var qw = checkPredicate(e.when); if (qw) throw new Error(at + ': when — ' + qw); }
+      var each = e.rearm === 'each';
+      if (each && (!(e.cap >= 1) || !e.coolOff || !(Number(e.coolOff.gs) > 0))) throw new Error(at + ': rearm "each" needs "cap" (≥ 1) and "coolOff": {"gs": > 0} — a condition that flickers must not loop');
+      if (!each && (e.cap !== undefined || e.coolOff !== undefined)) throw new Error(at + ': "cap" and "coolOff" belong to rearm "each"');
+      if (sqo === 'off') return;
+      T.autoQueues.push(JSON.parse(JSON.stringify({ id: e.id, when: e.when, rearm: e.rearm || 'once', cap: e.cap, coolOff: e.coolOff, enabled: e.enabled !== false, queue: e.queue })));
+    });
     T.autoStages = stagesNow.map(function (s) { return { id: s.id, when: s.when, policies: Object.assign({}, s.policies), gates: Object.assign({}, s.gates) }; });
     stagesOff = so === 'off';
     T.autoProvenance = {};
@@ -5864,11 +5973,14 @@
       off[id] = 'excluded by --auto-opt / ?autoOpt= exclude=' + id;
     });
     T.autoExcluded = {};
+    // (shipq-2) the derived features a `kinds` restriction leaves out, by id → kind: the table stays valid under any
+    // `kinds`, so a shipped queue that holds one of them is SKIPPED by name, like `exclude=` (tmt-queue.js loadShipped)
+    T.autoOutOfKinds = {};
     T.autoDerivation = { kindOrder: kindOrder.slice(), kinds: kinds ? kinds.slice() : KINDS_ALL.slice(), candidates: cands.length, registered: 0, excluded: 0, outOfKinds: 0, multiTogglesSkipped: 0, unlockOrder: uo };
     for (var i = 0; i < cands.length; i++) {
       var c = cands[i], l = c.layer, id = c.id;
       if (c.kind === 'toggles') T.autoDerivation.multiTogglesSkipped += c.multiSkipped;
-      if (kinds && kinds.indexOf(c.kind) < 0) { T.autoDerivation.outOfKinds++; continue; }
+      if (kinds && kinds.indexOf(c.kind) < 0) { T.autoDerivation.outOfKinds++; T.autoOutOfKinds[id] = c.kind; continue; }
       if (off[id] !== undefined) {
         if (typeof off[id] !== 'string' || !off[id]) throw new Error(src + ': off.' + id + ' needs a reason string');
         T.autoExcluded[id] = off[id];

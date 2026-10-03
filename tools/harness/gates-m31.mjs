@@ -327,7 +327,8 @@ async function partStage() {
       cashIn: !!S && S.policies && S.policies['reset:q'] === 'gain>=2x', listedFirst: (t.stages || [])[0] && t.stages[0].id === STAGE,
       provenance: !!S && Array.isArray(S.provenance) && S.provenance.length > 0 && S.provenance.every((p) => p.gate && p.commit && p.note),
       // no other entry moved: the shipped table minus this stage is the table before this slice, byte for byte
-      onlyThisStageAdded: (() => { const u = fixture(TABLE); u.stages = (u.stages || []).filter((x) => x.id !== STAGE); return JSON.stringify(u, null, 2) + '\n' === fs.readFileSync(path.join(REPO, PRE_TABLE), 'utf8'); })() };
+      // (shipq-1) "the shipped table" as it was before shipq-1 moved the H22 attempt into `queues` (kept byte for byte)
+      onlyThisStageAdded: (() => { const u = fixture('tools/harness/snapshots/ptr/shipq/table-before-shipq.json'); u.stages = (u.stages || []).filter((x) => x.id !== STAGE); return JSON.stringify(u, null, 2) + '\n' === fs.readFileSync(path.join(REPO, PRE_TABLE), 'utf8'); })() };
     row({ gate: `S1 ${STAGE} is the template's answer as DATA: its gates = V4's hold minus the reset it makes, each reads the engine's requirement, none its number; q cashes in by gain>=2x; its when is state`, id: 'ptr', ok: Object.values(checks).every(Boolean),
       notes: `${ck(checks)} — when ${S && S.when}; policies ${JSON.stringify(S && S.policies)}; gates ${JSON.stringify(S && S.gates)}; the template's hold ${JSON.stringify(hold)}; literal hits ${JSON.stringify(literal)}` });
   }

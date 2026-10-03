@@ -168,7 +168,9 @@ const preTableHash = () => fs.readFileSync(path.join(REPO, PRE_TABLE), 'utf8');
  *  stage is dropped too, by name: `sg-keep` (tmt-m31-1) is the only other change since this slice, and gates-m31 S1
  *  checks the same thing from its side (its own table-before = the shipped table minus `sg-keep`). */
 const LATER_STAGES = ['sg-keep'];
-function shippedMinusStage() { const t = fixture(TABLE); t.stages = (t.stages || []).filter((s) => s.id !== STAGE && !LATER_STAGES.includes(s.id)); return JSON.stringify(t, null, 2) + '\n'; }
+// (shipq-1) "the shipped table" is the one BEFORE shipq-1 moved the H22 attempt from a stage into the table's `queues`
+// (kept byte for byte): that change is not this slice's, and the comparison is about this slice's stage only
+function shippedMinusStage() { const t = fixture('tools/harness/snapshots/ptr/shipq/table-before-shipq.json'); t.stages = (t.stages || []).filter((s) => s.id !== STAGE && !LATER_STAGES.includes(s.id)); return JSON.stringify(t, null, 2) + '\n'; }
 const writeTmp = (name, obj) => { const f = path.join(TMP, name); fs.writeFileSync(f, JSON.stringify(obj, null, 1)); return f; };
 /** The shipped table with this slice's stage moved to the END of the list (the other order). */
 function stageLastTable() {
@@ -222,6 +224,12 @@ async function partVerdict() {
   // the controls: the same queue with the ROW-3 zeroers free (VAC), and with the row SIBLINGS free (SIB)
   const C = JSON.parse(JSON.stringify(Q)); C.id = 'rr-reset-sg-row3-free';
   C.steps[0].features = C.steps[0].features.filter((f) => !ROW3.some((s) => f === `reset:${s}`) && f !== 'challenges:h');
+  // ⚖ shipq-1: the emitted queue's long wait is now the CHECK's window (3,600 game-s), no longer the measured moment + 10.
+  // The control keeps the question it was built to ask — in the time the FULL hold needs (the reset 55 game-s into it:
+  // PIN_RESET), does the row-3-free hold reset sg? — so its limit is that moment + 10, as the emitted queue's was. (Given
+  // the whole window it does, at tick 227,268, 337 ticks after the wall: a slower route, measured, not this row's claim.)
+  const cw = C.steps.find((x) => x.do === 'wait' && /canReset/.test(x.until));
+  if (cw) cw.timeout = { gs: PIN_RESET.ticks - PIN_W.ticks + 10 };
   const cfile = path.join(TMP, 'control.queue.json'); fs.writeFileSync(cfile, JSON.stringify(C));
   const B = JSON.parse(JSON.stringify(Q)); B.id = Q.id;   // the same id: the leg must be the held leg to the hash
   B.steps[0].features = B.steps[0].features.filter((f) => !SIBLINGS.some((s) => f === `reset:${s}`));
@@ -232,8 +240,11 @@ async function partVerdict() {
     () => strategize('ptr', ['--from', WALL, '--goal', GOAL, '--auto-table', PRE_TABLE, '--auto-opt', OLD_YIELD]),
     () => strategize('ptr', ['--from', WALL, '--goal', GOAL, '--auto-table', PRE_TABLE, '--window', String(WINDOW_SHORT)]),
     () => strategize('ptr', ['--from', Q33F, '--goal', GOAL, '--auto-table', PRE_TABLE]),
-    () => run('ptr', { 'from-snapshot': WALL, profile: 'all', ...T, queue: bfile, ticks: 3000, until: 'player.sg.unlocked', log: slog, eval: "({sg: !!player.sg.unlocked})" }),
-    () => run('ptr', { 'from-snapshot': WALL, profile: 'all', ...T, queue: QUEUE, ticks: 3000, until: 'player.sg.unlocked', log, eval: "({sg: !!player.sg.unlocked, sgp: String(player.sg.points), g: String(player.g.points)})" }),
+    // (shipq-1) the emitted queue RELIES on the configuration it was checked under (`relies`: nativeYield=always), and
+    // its runner refuses to start it under another — so it is played under that configuration, and so is its
+    // sibling-free twin (SIB compares the two to the hash)
+    () => run('ptr', { 'from-snapshot': WALL, profile: 'all', ...T, 'auto-opt': OLD_YIELD, queue: bfile, ticks: 3000, until: 'player.sg.unlocked', log: slog, eval: "({sg: !!player.sg.unlocked})" }),
+    () => run('ptr', { 'from-snapshot': WALL, profile: 'all', ...T, 'auto-opt': OLD_YIELD, queue: QUEUE, ticks: 3000, until: 'player.sg.unlocked', log, eval: "({sg: !!player.sg.unlocked, sgp: String(player.sg.points), g: String(player.g.points)})" }),
     () => run('ptr', { 'from-snapshot': WALL, profile: 'all', ...T, queue: cfile, 'auto-opt': OLD_YIELD, ticks: 3000, until: 'player.sg.unlocked', log: clog, eval: "({sg: !!player.sg.unlocked})" }),
     () => run('ptr', { 'from-snapshot': WALL, profile: 'all', ...T, 'auto-opt': OLD_YIELD, ticks: EV_TICKS, log: elog, eval: "({sg: !!player.sg.unlocked, g: String(player.g.points)})" }),
     () => run('ptr', { 'from-snapshot': WALL, profile: 'all', ...T, ticks: 0, eval: "({next: String(tmp.sg.nextAt), req: String(tmp.sg.requires), base: Number(layers.sg.base()), exp: Number(layers.sg.exponent()), sgp: String(player.sg.points), type: tmp.sg.type, row: tmp.sg.row, gm: String(tmp.sg.gainMult)})" }),

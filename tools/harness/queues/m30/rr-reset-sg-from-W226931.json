@@ -2,7 +2,8 @@
  "format": "tmt-queue/1",
  "id": "rr-reset-sg",
  "trigger": {
-  "on": "start"
+  "on": "predicate",
+  "when": "tmp[\"sg\"].layerShown === true && !player[\"sg\"].unlocked"
  },
  "source": {
   "template": "reset-requirement",
@@ -19,7 +20,7 @@
    "zeroed-by:t:player.g.points"
   ]
  },
- "comment": "reset:sg needs tmp[\"sg\"].nextAt of player.g.points, which a reset of e, h, o, q, s, sb, ss, t zeroes. Hold every one, wait for the engine's canReset, reset, release.",
+ "comment": "reset:sg needs tmp[\"sg\"].nextAt of player.g.points, which a reset of e, h, o, q, s, sb, ss, t zeroes. Hold every one, wait for the engine's canReset, reset, release. It starts whenever the layer is shown and has never been reset.",
  "steps": [
   {
    "do": "hold",
@@ -41,10 +42,10 @@
    "do": "wait",
    "until": "canReset(\"sg\")",
    "timeout": {
-    "gs": 65
+    "gs": 3600
    },
    "onTimeout": "abort",
-   "comment": "the rollback measured player.g.points at tmp[\"sg\"].nextAt 55 game-s into the hold (diff 1)"
+   "comment": "the rollback measured player.g.points at tmp[\"sg\"].nextAt 55 game-s into the hold (diff 1); the time limit is the check's window, 3600 game-s"
   },
   {
    "do": "call",
@@ -67,5 +68,18 @@
    "do": "release",
    "comment": "the reflexes resume"
   }
- ]
+ ],
+ "version": 3,
+ "name": "first reset of super generators",
+ "relies": {
+  "options": {
+   "nativeYield": "always",
+   "stages": "on",
+   "passiveYield": "0",
+   "resetDefault": "",
+   "turnMark": "high-act",
+   "exclude": "",
+   "include": ""
+  }
+ }
 }

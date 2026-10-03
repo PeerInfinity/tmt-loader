@@ -232,6 +232,12 @@ export async function attachScripts(ctx) {
       unload: (id) => ({ ok: false, id, error: 'no queue is loaded' }),
       status: () => ({ ready: false, queues: [] }),
     };
+    // (shipq-1) the game's TABLE ships queues (its `queues` section): the runner is fetched now, before ready, and loads
+    // them itself — beside the player's own store, never into it. A table without an enabled one requests nothing new.
+    if (Array.isArray(T.autoQueues) && T.autoQueues.some((e) => e.enabled)) {
+      step('script loader/tmt-queue.js (the table\'s queues)');
+      await T.fetchQueueRunner();
+    }
     const queueOpt = T.options && T.options.queue;
     if (queueOpt) {
       step('script loader/tmt-queue.js');
