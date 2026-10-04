@@ -360,7 +360,8 @@ async function partWrite() {
   const rec = { ...S, note: 'written by gates-climb --part write: the whole-game run under the shipped table (climb-1), legs 1–' + seed.leg + ' whole-1\'s own (recorded/whole-ptr.json — the new parts are not in force before them), then the chain resumed from whole/legs/' + seed.name + ' under the shipped table at diff 0.05',
     climbFromLeg: seed.leg, table: TABLE, tableBefore: TABLE_BEFORE,
     marks: [...base.marks, ...S.marks.map((m) => ({ ...m, wallMs: m.wallMs + wall0 }))].sort((x, y) => x.ticks - y.ticks),
-    stages: [...base.stages, ...S.stages], queues: [...base.queues, ...S.queues.filter((q) => !base.queues.some((b) => b.id === q.id && b.startedAt === q.startedAt))],
+    // the chain's first process records the stages it finds in force: only a CHANGE from whole-1's state is a switch
+    stages: (() => { const st = {}; for (const x of base.stages) st[x.stage] = x.on; const out = base.stages.slice(); for (const x of S.stages) { if (st[x.stage] === x.on && !x.error) continue; st[x.stage] = x.on; out.push(x); } return out; })(), queues: [...base.queues, ...S.queues.filter((q) => !base.queues.some((b) => b.id === q.id && b.startedAt === q.startedAt))],
     legs: [...base.legs, ...S.legs],
     stop: { ...S.stop, wallMs: S.stop.wallMs + wall0, totalQuirks: String(P.q.total), quirks: String(P.q.points), quirkLayers: String(P.q.buyables[11]), quirkUpgrades: P.q.upgrades.slice(),
       superBoosters: String(P.sb.points), superGenerators: String(P.sg.points), space: String(P.s.points), hindrances: P.h.challenges },
