@@ -113,52 +113,58 @@ async function partChain() {
   row({ gate: `W1 fresh → ${early.length} marks at diff 0.05 under the shipped table, one process = the record and the whole/ fixtures (ticks and hashGame)`, id: 'ptr', ok: !!r.ok && !bad.length && !fx.length,
     ticks: r.ticks, gameSeconds: r.gameSeconds, diff: 0.05, hash: r.hashGame,
     notes: `${early.map((m) => `${m.id} ${m.ticks}${got[m.id] && got[m.id].ticks === m.ticks && got[m.id].hashGame === m.hashGame ? '✓' : `✗(${got[m.id] ? got[m.id].ticks + '/' + got[m.id].hashGame : 'not reached'})`}`).join(' ')}${fx.length ? ` · fixtures differ: ${fx.map((m) => m.id).join(', ')}` : ''} ${r.error || ''}` });
-  // W2: a resumed stretch — the first pair after the opening with a short span
-  const order = R.marks.slice().sort((x, y) => x.ticks - y.ticks);
-  let A = null, B = null;
-  for (let i = 0; i + 1 < order.length; i++) if (order[i].ticks > BOUND && order[i + 1].ticks - order[i].ticks >= 2000 && order[i + 1].ticks - order[i].ticks <= 15000) { A = order[i]; B = order[i + 1]; break; }
-  if (!A) { row({ gate: 'W2 a resumed stretch = the record', id: 'ptr', ok: false, notes: 'no short stretch in the record' }); return; }
-  const s = await run('ptr', { 'from-snapshot': `${WHOLE}/${A.id}.json`, profile: 'all', ticks: B.ticks - A.ticks + 1, ladder: LADDER, from: A.id, to: B.id, stall: 1e9 });
-  const sb = s.ladder && s.ladder.reached.find((m) => m.id === B.id);
-  row({ gate: `W2 whole/${A.id} → ${B.id} resumed at diff 0.05 = the record`, id: 'ptr', ok: !!s.ok && !!sb && sb.ticks === B.ticks && sb.hashGame === B.hashGame,
-    ticks: sb && sb.ticks, gameSeconds: sb && sb.gameSeconds, diff: 0.05, hash: sb && sb.hashGame,
-    notes: `${B.id} ${sb ? `${sb.ticks} / ${sb.hashGame}` : 'not reached'} (record ${B.ticks} / ${B.hashGame}; +${B.ticks - A.ticks} ticks) ${s.error || ''}` });
+  // W2: one leg of the chain replayed from the first committed leg fixture (the chain's own boundary)
+  const lf = legFixtures();
+  if (!lf.length) { row({ gate: 'W2 one leg replayed = the record', id: 'ptr', ok: false, notes: `no leg fixture under ${LEGFIX}` }); return; }
+  const x = await replay(R, lf[0], lf[0] + 1);
+  row({ gate: `W2 leg ${lf[0] + 1} replayed from whole/legs/${R.legs[lf[0] - 1].name} at 0.05 = the record (its marks and its end, ticks and hashGame)`, id: 'ptr', ok: x.ok,
+    ticks: x.end && x.end.ticks, gameSeconds: x.end && x.end.gameSeconds, diff: 0.05, hash: x.end && x.end.hashGame,
+    notes: `end ${x.end ? `${x.end.ticks} / ${x.end.hashGame}` : 'none'} (record ${R.legs[lf[0]].ticks} / ${R.legs[lf[0]].hashGame}); marks ${x.exp.map((m) => `${m.id}${x.got[m.id] && x.got[m.id].hashGame === m.hashGame ? '✓' : '✗'}`).join(' ') || 'none'} ${x.r.code ? x.r.out.slice(-300) : ''}` });
 }
 
 // ---- Part full -------------------------------------------------------------------------------------------------------
-// The whole chain in SEGMENTS, each from a committed whole/ fixture (or the fresh save) to the next segment's start, one
-// process each — a resumed leg equals the uninterrupted run exactly, so the segments together are the chain, and CI runs
-// them side by side (`--seg k --segs N`; the boundaries are the record's marks nearest to N equal shares of its ticks).
+// The whole chain again, in SEGMENTS, each REPLAYING the chain's own legs from a committed leg fixture
+// (`whole/legs/L<n>.json`, the stop snapshot of leg n) — ⚠ a load is not neutral on ptr (the first tick after it
+// computes from a one-pass `tmp`; cloud-reports/tmt-whole-1.md "a load is not neutral"), so only the chain's own leg
+// boundaries reproduce it to the hash. CI runs the segments side by side (`--seg k --segs N`).
+const LEGFIX = `${WHOLE}/legs`;
+function legFixtures() { const d = path.join(REPO, LEGFIX); return fs.existsSync(d) ? fs.readdirSync(d).filter((f) => /^L\d+\.json$/.test(f)).map((f) => Number(f.slice(1, -5))).sort((x, y) => x - y) : []; }
 function segments(R, n) {
-  const order = R.marks.slice().sort((x, y) => x.ticks - y.ticks);
-  const cuts = [null];
-  for (let k = 1; k < n; k++) {
-    const goal = R.stop.ticks * k / n;
-    const m = order.reduce((b, x) => (Math.abs(x.ticks - goal) < Math.abs((b ? b.ticks : Infinity) - goal) ? x : b), null);
-    if (m && !cuts.includes(m) && (!cuts[cuts.length - 1] || m.ticks > cuts[cuts.length - 1].ticks)) cuts.push(m);
-  }
-  return cuts.map((c, i) => ({ from: c, to: cuts[i + 1] || null }));
+  const fx = legFixtures(), starts = [0];
+  for (let k = 1; k < n; k++) { const goal = Math.round(R.legs.length * k / n); const c = fx.reduce((b, x) => (Math.abs(x - goal) < Math.abs(b - goal) ? x : b), Infinity); if (isFinite(c) && c > starts[starts.length - 1] && c < R.legs.length) starts.push(c); }
+  return starts.map((s0, i) => ({ fromLeg: s0, toLeg: i + 1 < starts.length ? starts[i + 1] : R.legs.length }));
+}
+/** Replay legs fromLeg+1 … toLeg of the record's chain; compare every mark in them and each leg's end. */
+async function replay(R, fromLeg, toLeg) {
+  const dir = path.join(TMP, `rp${fromLeg}`), legs = path.join(dir, 'legs');
+  fs.mkdirSync(legs, { recursive: true });
+  const prog = path.join(legs, 'progress.jsonl');
+  if (fromLeg > 0) {
+    const L = R.legs[fromLeg - 1];
+    fs.writeFileSync(prog, JSON.stringify({ leg: fromLeg, name: L.name, ok: true, ticks: L.ticks, gameSeconds: L.gameSeconds, hashGame: L.hashGame,
+      marks: R.marks.filter((m) => m.leg <= fromLeg), stop: path.join(REPO, LEGFIX, `${L.name}.json`) }) + '\n');
+  } else fs.writeFileSync(prog, '');
+  const r = await child([path.join(REPO, 'tools/harness/whole.mjs'), 'ptr', '--dir', path.join(dir, 'marks'), '--legs-dir', legs, '--progress', prog, '--leg-gs', String(R.legGs), '--cap-gs', String(R.capGs),
+    ...(fromLeg > 0 ? ['--resume'] : []), '--max-legs', String(toLeg - fromLeg)], { timeoutMs: 20 * 3600e3 });
+  const lines = fs.readFileSync(prog, 'utf8').split('\n').filter(Boolean).map((l) => JSON.parse(l)).filter((l) => l.leg > fromLeg);
+  const got = {}; for (const l of lines) for (const m of l.marks || []) got[m.id] = m;
+  const exp = R.marks.filter((m) => m.leg > fromLeg && m.leg <= toLeg);
+  const bad = exp.filter((m) => !got[m.id] || got[m.id].ticks !== m.ticks || got[m.id].hashGame !== m.hashGame);
+  const extra = Object.keys(got).filter((id) => !exp.some((m) => m.id === id));
+  const legBad = lines.filter((l) => !R.legs[l.leg - 1] || R.legs[l.leg - 1].hashGame !== l.hashGame || R.legs[l.leg - 1].ticks !== l.ticks);
+  const end = lines[lines.length - 1];
+  return { r, lines, exp, got, bad, extra, legBad, end, ok: r.code === 0 && lines.length === toLeg - fromLeg && !bad.length && !extra.length && !legBad.length };
 }
 async function partFull() {
   const R = record(), N = Number(a.segs || 1), SEG = a.seg === undefined ? null : Number(a.seg);
   const segs = segments(R, N);
   for (let k = 0; k < segs.length; k++) {
     if (SEG !== null && k !== SEG) continue;
-    const { from, to } = segs[k];
-    const t0 = from ? from.ticks : 0, t1 = to ? to.ticks : R.stop.ticks;
-    // the marks still to come at the segment's start, behind a placeholder named after the start (run.mjs slices after it)
-    const todo = R.marks.filter((m) => m.ticks > t0).map((m) => m.id);
-    const L = fixture(LADDER), lf = path.join(TMP, `seg${k}-ladder.json`);
-    fs.writeFileSync(lf, JSON.stringify({ marks: [...(from ? [{ id: from.id, name: 'start', predicate: 'false' }] : []), ...L.marks.filter((m) => todo.includes(m.id))] }));
-    const r = await run('ptr', { ...(from ? { 'from-snapshot': `${WHOLE}/${from.id}.json` } : {}), profile: 'all', diff: 0.05, ticks: t1 - t0, ladder: lf, stall: 1e9, 'wall-ms': 6 * 3600e3 });
-    const got = Object.fromEntries((r.ladder ? r.ladder.reached : []).map((m) => [m.id, m]));
-    const exp = R.marks.filter((m) => m.ticks > t0 && m.ticks <= t1);
-    const bad = exp.filter((m) => !got[m.id] || got[m.id].ticks !== m.ticks || got[m.id].hashGame !== m.hashGame);
-    const extra = Object.keys(got).filter((id) => !exp.some((m) => m.id === id));
-    const endOk = to ? true : r.hashGame === R.stop.hashGame;
-    row({ gate: `WF segment ${k + 1}/${segs.length}: ${from ? `whole/${from.id}` : 'fresh'} → ${to ? to.id : `the cap (${R.stop.gameSeconds} game-s)`} at 0.05 = the record, every mark (ticks and hashGame)`, id: 'ptr',
-      ok: !!r.ok && !bad.length && !extra.length && endOk, ticks: r.ticks, gameSeconds: r.gameSeconds, diff: 0.05, hash: r.hashGame,
-      notes: `${exp.length} marks; differ ${bad.map((m) => `${m.id} (${got[m.id] ? got[m.id].ticks + '/' + got[m.id].hashGame : 'not reached'} vs ${m.ticks}/${m.hashGame})`).join(', ') || 'none'}; not in the record ${extra.join(', ') || 'none'}${to ? '' : `; stop ${r.hashGame} (record ${R.stop.hashGame})`} ${r.error || ''}` });
+    const { fromLeg, toLeg } = segs[k];
+    const x = await replay(R, fromLeg, toLeg);
+    row({ gate: `WF segment ${k + 1}/${segs.length}: legs ${fromLeg + 1}–${toLeg} replayed from ${fromLeg ? `whole/legs/${R.legs[fromLeg - 1].name}` : 'a fresh save'} at 0.05 = the record, every mark and every leg's end (ticks and hashGame)`, id: 'ptr',
+      ok: x.ok, ticks: x.end && x.end.ticks, gameSeconds: x.end && x.end.gameSeconds, diff: 0.05, hash: x.end && x.end.hashGame,
+      notes: `${x.exp.length} marks (${x.exp.map((m) => m.id).join(' ') || 'none'}); differ ${x.bad.map((m) => `${m.id} (${x.got[m.id] ? x.got[m.id].ticks + '/' + x.got[m.id].hashGame : 'not reached'} vs ${m.ticks}/${m.hashGame})`).join(', ') || 'none'}; not in the record ${x.extra.join(', ') || 'none'}; legs differ ${x.legBad.map((l) => l.name).join(', ') || 'none'} of ${x.lines.length} ${x.r.code ? x.r.out.slice(-300) : ''}` });
   }
 }
 
@@ -204,7 +210,16 @@ function checkpoints(R) {
 // ---- P1 --------------------------------------------------------------------------------------------------------------
 async function legCheckpoints(browser) {
   const R = record(), f = [], seen = [], rates = [];
-  for (const c of checkpoints(R)) {
+  // the harness from the SAME checkpoint, uninterrupted (the record's span may cross the chain's leg boundaries, and a
+  // load is not neutral), run beside the page legs
+  const cps = checkpoints(R);
+  const refs = Promise.all(cps.map((c) => {
+    const lf = path.join(TMP, `cp-${c.from.id}.json`);
+    fs.writeFileSync(lf, JSON.stringify({ marks: [{ id: c.from.id, name: 'start', predicate: 'false' }, fixture(LADDER).marks.find((m) => m.id === c.to.id)] }));
+    return run('ptr', { 'from-snapshot': `${WHOLE}/${c.from.id}.json`, profile: 'all', ticks: Math.round((c.to.ticks - c.from.ticks) * 1.5 + 2000), ladder: lf, stall: 1e9, 'wall-ms': 6 * 3600e3 });
+  }));
+  const pageRes = [];
+  for (const c of cps) {
     const ref = c.to.ticks - c.from.ticks;
     const { context, page, errs, ld } = await fresh(browser);
     if (!ld.ready) { f.push(`${c.from.id}: did not load`); await context.close(); continue; }
@@ -214,13 +229,20 @@ async function legCheckpoints(browser) {
     const r = await runFF(page, { mark: c.to.id, cap: capGs });
     const tps = Math.round(r.ticks * 1000 / r.wall);
     rates.push({ from: c.from.id, to: c.to.id, ticks: r.ticks, tps });
-    const d = r.ticks - ref, rel = ref ? Math.abs(d) / ref : 0;
-    // drift is allowed (the two V8s); the mark must be reached, and within 2 % of the harness's span
-    if (r.why !== 'reached') f.push(`${c.from.id} → ${c.to.id}: ${r.why} after ${r.ticks} ticks (harness ${ref})`);
-    else if (rel > 0.02) f.push(`${c.from.id} → ${c.to.id}: page ${r.ticks} ticks against the harness's ${ref} (${(rel * 100).toFixed(2)} %)`);
+    // drift is allowed (the two V8s); the mark must be reached, and within 2 % of the harness's span from the same save
+    if (r.why !== 'reached') f.push(`${c.from.id} → ${c.to.id}: ${r.why} after ${r.ticks} ticks (the record's span ${ref})`);
     if (errs.length) f.push(`${c.from.id}: page errors ${errs.slice(0, 2).join(' | ')}`);
-    seen.push(`${c.from.id} → ${c.to.id}: page ${r.ticks} ticks, harness ${ref} (${d >= 0 ? '+' : ''}${d}, ${(rel * 100).toFixed(3)} %), ${tps} ticks/s, ${Math.round(r.wall / 1000)} s`);
+    pageRes.push({ c, r, tps });
     await context.close();
+  }
+  const H = await refs;
+  for (let i = 0; i < pageRes.length; i++) {
+    const { c, r, tps } = pageRes[i], h = H[i], hm = h.ladder && h.ladder.reached.find((m) => m.id === c.to.id);
+    const href = hm ? hm.ticks - c.from.ticks : null, rec = c.to.ticks - c.from.ticks, d = href === null ? null : r.ticks - href;
+    if (href === null) f.push(`${c.from.id} → ${c.to.id}: the harness from the same save did not reach it (${h.error || h.ladder && h.ladder.stoppedAt.why})`);
+    else if (Math.abs(d) / href > 0.02) f.push(`${c.from.id} → ${c.to.id}: page ${r.ticks} against the harness's ${href} from the same save`);
+    seen.push(`${c.from.id} → ${c.to.id}: page ${r.ticks} ticks · harness from the same save ${href} (${d === null ? '—' : (d >= 0 ? '+' : '') + d}) · the chain's record ${rec} · ${tps} ticks/s on the page, ${Math.round(r.wall / 1000)} s`);
+    rates[i].harness = href; rates[i].record = rec;
   }
   if (!seen.length) f.push('no checkpoint in the record');
   writeJSON(path.join(REPO, 'tools/harness/results/tmp/whole-page-rates.json'), rates);
@@ -232,7 +254,11 @@ async function legCheckpoints(browser) {
 async function legReload(browser) {
   const R = record(), M = byMark(R), f = [];
   if (!M.M26 || !M.M29) { row({ gate: 'P2 reload mid-queue', id: 'ptr', ok: false, notes: 'the record has no M26 → M29' }); return; }
-  const ref = M.M29.ticks - M.M26.ticks;
+  const rec = M.M29.ticks - M.M26.ticks;
+  const lf = path.join(TMP, 'p2-ladder.json');
+  fs.writeFileSync(lf, JSON.stringify({ marks: [{ id: 'M26', name: 'start', predicate: 'false' }, fixture(LADDER).marks.find((m) => m.id === 'M29')] }));
+  const href = run('ptr', { 'from-snapshot': `${WHOLE}/M26.json`, profile: 'all', ticks: Math.round(rec * 1.5 + 2000), ladder: lf, stall: 1e9, 'wall-ms': 6 * 3600e3 });
+  const ref = rec;
   const { context, page, errs } = await fresh(browser);
   await atSnapshot(page, `${WHOLE}/M26.json`);
   await ready(page);
@@ -241,21 +267,22 @@ async function legReload(browser) {
   const r2 = await runFF(page, { ticks: 200 });
   const before = await qstate(page);
   await page.evaluate(() => tmtLoader.save());
-  const rec = await page.evaluate(() => tmtLoader.autoMemory.record());
+  const memRec = await page.evaluate(() => tmtLoader.autoMemory.record());
   await reload(page);
   const after = await qstate(page);
   const mem = await page.evaluate(() => tmtLoader.autoMemory.status());
   const tlAfter = await page.evaluate(() => tmtLoader.timeline());
   await ready(page);
   const r3 = await runFF(page, { mark: 'M29', cap: ref * 0.05 + 3600 });
-  const total = r1.ticks + r2.ticks + r3.ticks, d = total - ref, rel = Math.abs(d) / ref;
+  const H = await href, hm = H.ladder && H.ladder.reached.find((m) => m.id === 'M29'), hspan = hm ? hm.ticks - M.M26.ticks : null;
+  const total = r1.ticks + r2.ticks + r3.ticks, d = hspan === null ? Infinity : total - hspan, rel = hspan === null ? Infinity : Math.abs(d) / hspan;
   const h22 = await page.evaluate(() => hasChallenge('h', 22));
-  const checks = { running: !!before && before.state === 'running', recordHasQueue: !!rec && !!rec.runtime && !!rec.runtime.queues,
+  const checks = { running: !!before && before.state === 'running', recordHasQueue: !!memRec && !!memRec.runtime && !!memRec.runtime.queues,
     restored: mem.state === 'restored', sameStep: !!after && !!before && after.state === 'running' && after.pc === before.pc,
     timelineSaysReload: tlAfter.events.length > 0 && tlAfter.events[0].kind === 'reload' && tlAfter.events.some((e) => e.kind === 'shipped' && e.what === 'start'),
     reachedM29: r3.why === 'reached' && h22, within2pc: rel <= 0.02, noErrors: !errs.length };
   row({ gate: 'P2 the page reloaded in the MIDDLE of the H22 queue: the queue resumes on the same step (the reload memory), the timeline says so, and the run reaches M29 (tick against the harness)', id: 'ptr', ok: Object.values(checks).every(Boolean),
-    notes: `${ck(checks)} — queue ${JSON.stringify(before)} → ${JSON.stringify(after)}; memory ${mem.state}; ${r1.ticks} + ${r2.ticks} + ${r3.ticks} = ${total} ticks against the harness's ${ref} (${d >= 0 ? '+' : ''}${d}, ${(rel * 100).toFixed(3)} %); ${Math.round(total * 1000 / (r1.wall + r2.wall + r3.wall))} ticks/s ${errs.slice(0, 2).join(' | ')}` });
+    notes: `${ck(checks)} — queue ${JSON.stringify(before)} → ${JSON.stringify(after)}; memory ${mem.state}; ${r1.ticks} + ${r2.ticks} + ${r3.ticks} = ${total} ticks against the harness's ${hspan} from the same save (${d >= 0 ? '+' : ''}${d}, ${(rel * 100).toFixed(3)} %; the chain's record ${rec}); ${Math.round(total * 1000 / (r1.wall + r2.wall + r3.wall))} ticks/s ${errs.slice(0, 2).join(' | ')}` });
   await context.close();
 }
 
