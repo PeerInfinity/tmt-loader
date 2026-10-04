@@ -318,6 +318,41 @@ M11, M14 = M11 (6815), M26 after M27. The ladder's `diff` fields are H1's coarse
 ⚠ A HARNESS TRAP carried from the milestone arc, not fixed here (not in F1's path): with `--until` AND marks together,
 `boot.mjs:347` does not record a mark that first holds ON THE STOPPING TICK.
 
+## The whole-game run (whole-1) — a fresh save, the shipped table alone, the page's tick
+
+    node tools/harness/whole.mjs ptr --dir tools/harness/snapshots/ptr/whole --leg-gs 2000 --cap-gs 130000
+    node tools/harness/whole.mjs ptr … --summarize tools/harness/recorded/whole-ptr.json
+
+`whole.mjs` chains ONE-PROCESS LEGS of a fixed game-time (2,000 game-s = 40,000 ticks at 0.05), each resumed from the
+previous leg's stop snapshot, each watching every ladder mark NOT YET REACHED (a ladder of those alone, behind a
+placeholder named after the leg's start — so a mark that holds out of ladder order is recorded at its own tick). A
+mark's snapshot is written into `--dir` at the first tick it holds; each leg appends a line to `progress.jsonl` (its
+wall time, ticks/s, the marks, the stages' transitions and the queues' state at its stop). `--summarize` writes the
+RECORD gates-whole reads. The fixtures are in a NEW directory, `snapshots/ptr/whole/` — no selector reads it
+(`deepestSnapshot` reads `frontier/`, `all/`, `pinned/`; `snapshotOf` reads `all/`), so no derived roster moves.
+
+⛔ **A LOAD IS NOT NEUTRAL ON PTR — measured by whole-1, and it is the GAME's property.** A resumed leg is NOT the
+uninterrupted run past the opening: from a fresh save, the chain with 2,000-game-s legs, the same chain with 3,000-game-s
+legs and one uninterrupted process agree to the hash through M16 (43,160 ticks) and then differ — by 120,000 ticks the
+three `hashGame`s are three different values, and from M17 on every mark of the two chains is ONE TICK apart. The save
+round-trips exactly (the player JSON, every Decimal's sign/layer/mag, and `hashGame` at 0 ticks are equal), and no
+automation action fires in the stretch where they part (M16 → M17 is 6,000 game-s of passive growth). What differs is
+the engine's TEMPORARY values: after a load, `tmp` is ONE `updateTemp` pass from the loaded player, while in a running
+game it has converged over thousands of passes — and PTR's `updateTemp` reads other layers' `tmp` before they are
+recomputed (measured at tick 45,000: `tmp.b.upgrades[11]`'s exponent 6.09 in the running game, 5.91 after a load;
+`tmp.pointGen`, `tmp.p.gainMult`, `tmp.b.nextAt` all differ). The first ticks after a load therefore produce slightly
+less, and a mark shifts by a tick. A real page reload does exactly the same (the page's load is the same `load()`).
+⇒ The chain is what the page does with a reload every leg; every check of it REPLAYS its own leg boundaries
+(`gates-whole` W2, WF — from committed leg fixtures `snapshots/ptr/whole/legs/L<n>.json`); a comparison across different
+resume points (the page from a mark's save against the chain) is a drift, stated, never a hash.
+⚖ Settling `tmp` at load (a few extra `updateTemp` passes) would make a load neutral here and move every resumed pin
+in this repository — the user's call, not this slice's.
+
+The results — every mark at 0.05 against diff 1, where the page alone stops and why, the page checks — are in
+cloud-reports/tmt-whole-1.md. Gates: `gates-whole --part chain` (push: the opening fresh, one leg replayed), `--part
+full --seg k --segs 8` (`qrate1.yml -f part=whole`), `--part page` (the real page from four checkpoints, a reload in
+the middle of the H22 queue).
+
 ## Scoring a DEFAULT: over WHOLE STRETCHES, never from the fixture the old default wrote (R2)
 
 ⛔ **A fixture bakes in the policy that produced it, and a layer UNLOCKS ON ITS FIRST RESET.** The two together make
