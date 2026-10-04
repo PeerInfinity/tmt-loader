@@ -324,7 +324,11 @@ async function partStage() {
     const checks = { present: !!S, gatesAreTheHold: !!S && !!Q && JSON.stringify(keys) === JSON.stringify(hold), everyGateReadsTheRequirement: !!S && Object.values(S.gates).every((g) => /tmp\.sg\.nextAt/.test(g)),
       theCurrencysZeroersOnlyWhenEmpty: !!S && ownZ.every((f) => S.gates[f] === own) && keys.filter((k) => !ownZ.includes(k)).every((f) => S.gates[f] === base),
       noRequirementLiteral: !!S && literal.length === 0, whenIsState: !!S && /player\.sg\.unlocked/.test(S.when) && /hasUpgrade\('q',\s*33\)/.test(S.when) && /!player\.h\.activeChallenge/.test(S.when),
-      cashIn: !!S && S.policies && S.policies['reset:q'] === 'gain>=2x', listedFirst: (t.stages || [])[0] && t.stages[0].id === STAGE,
+      cashIn: !!S && S.policies && S.policies['reset:q'] === 'gain>=2x', // (climb-1) the order m31 measured is sg-keep BEFORE ql5-quirk-rate (m31-last@1); climb-1 lists its own stage ahead
+      // of both (it shares reset:q's policy only between q42 and q43, past every m31 leg). So: first in the table this
+      // slice wrote (the committed copy before climb-1), and before ql5-quirk-rate in the shipped one
+      listedFirst: (() => { const ids = (t.stages || []).map((x) => x.id), before = fixture('tools/harness/snapshots/ptr/whole-climb1/table-before-climb1.json').stages || [];
+        return !!before[0] && before[0].id === STAGE && ids.indexOf(STAGE) >= 0 && ids.indexOf(STAGE) < ids.indexOf('ql5-quirk-rate'); })(),
       provenance: !!S && Array.isArray(S.provenance) && S.provenance.length > 0 && S.provenance.every((p) => p.gate && p.commit && p.note),
       // no other entry moved: the shipped table minus this stage is the table before this slice, byte for byte
       // (shipq-1) "the shipped table" as it was before shipq-1 moved the H22 attempt into `queues` (kept byte for byte)
