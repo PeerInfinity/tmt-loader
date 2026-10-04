@@ -176,7 +176,7 @@ async function partSwitch() {
 function unchangedSegments(old) {
   const m30 = byMark(old).M30.leg;
   const fx = fs.readdirSync(path.join(REPO, WHOLE, 'legs')).filter((f) => /^L\d+\.json$/.test(f)).map((f) => Number(f.slice(1, -5))).filter((n) => n < m30).sort((x, y) => x - y);
-  const starts = [0, ...fx.filter((n) => n % 5 === 0 || n === fx[0])].filter((v, i, s) => s.indexOf(v) === i);
+  const starts = [0, ...fx.filter((n) => n % 5 === 0)];
   return starts.map((s, i) => ({ fromLeg: s, toLeg: i + 1 < starts.length ? starts[i + 1] : m30 }));
 }
 async function partUnchanged() {

@@ -17,6 +17,11 @@
 #             gh workflow run qrate1.yml -R PeerInfinity/tmt-loader --ref <branch> -f part=m31  (m31's levers + legs, below)
 #             gh workflow run qrate1.yml -R PeerInfinity/tmt-loader --ref <branch> -f part=shipq  (shipq-1's legs, below)
 #             gh workflow run qrate1.yml -R PeerInfinity/tmt-loader --ref <branch> -f part=whole  (whole-1: the chain in 8 segments + the page checks)
+#             gh workflow run qrate1.yml -R PeerInfinity/tmt-loader --ref <branch> -f part=climb  (climb-1: M01–M30 unchanged, the climb chain, the rows, the timeline)
+# climb (tmt-climb-1, `gates-climb.mjs`): the shipped table past M30 — `--part unchanged --seg k` (whole-1's legs to the M30
+# leg replayed under the SHIPPED table: M01–M30 on whole-1's ticks and hashes), `--part full --seg k --segs 4` (the climb
+# chain's own legs from its committed fixtures = tools/harness/recorded/whole-ptr-climb1.json), and the bounded parts
+# (rows, switch, accept, timeline, grep) in one job.
 # whole (tmt-whole-1, `gates-whole.mjs --part full --seg k --segs 8` and `--part page`): the whole-game run from a fresh save
 # under the shipped table at diff 0.05, each segment from a committed whole/ fixture = the record (tools/harness/recorded/whole-ptr.json),
 # every mark to the tick and the hash; the page from four checkpoints to the next mark, and a reload in the middle of the H22 queue.
@@ -56,9 +61,9 @@ on:
   workflow_dispatch:
     inputs:
       part:
-        description: 'qrate1 (the quirk-rate cells, the default), m28 (the legs toward q32; design notes §18), h22 (M29 at diff 1 and 0.05; §20), stages (M28 + M29 from all/M26 under the table alone; §21), m30 (M30 under the table alone, both stage orders) m31 (toward M31 from stages/M30: the levers and the legs) shipq (the H22 queue against the stage it replaced, diff 1 and 0.05) or whole (whole-1: the whole-game chain from a fresh save at 0.05 in segments, and the real-page checks)'
+        description: 'qrate1 (the quirk-rate cells, the default), m28 (the legs toward q32; design notes §18), h22 (M29 at diff 1 and 0.05; §20), stages (M28 + M29 from all/M26 under the table alone; §21), m30 (M30 under the table alone, both stage orders) m31 (toward M31 from stages/M30: the levers and the legs) shipq (the H22 queue against the stage it replaced, diff 1 and 0.05), whole (whole-1: the whole-game chain from a fresh save at 0.05 in segments, and the real-page checks) or climb (climb-1: M01–M30 unchanged under the shipped table, the climb chain past M30 in segments, the rows and the timeline)'
         type: choice
-        options: [qrate1, m28, h22, stages, m30, m31, shipq, whole]
+        options: [qrate1, m28, h22, stages, m30, m31, shipq, whole, climb]
         default: qrate1
       leg:
         description: 'm28 / h22 / stages / m30 / m31 / shipq only: run just this leg (a key of gates-m28.mjs / gates-h22.mjs / gates-stages.mjs / gates-m30.mjs / gates-m31.mjs / gates-shipq.mjs LEGS); empty = every leg'
@@ -751,3 +756,99 @@ jobs:
         shell: bash
         run: |
           { echo '## whole — the page checks'; echo ''; echo '```'; grep -aE '^(GREEN|RED|VERDICT)' page.txt | cut -c1-3000 || echo 'no output'; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
+
+  climb-unchanged:
+    name: climb — M01–M30 unchanged, segment ${{ matrix.seg }} of 5
+    if: ${{ inputs.part == 'climb' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 350
+    strategy:
+      fail-fast: false
+      matrix:
+        seg: [0, 1, 2, 3, 4]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+          fetch-depth: 1
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+      - run: npm ci
+      - name: The segment
+        shell: bash
+        run: |
+          set -o pipefail
+          s=$(date +%s)
+          node tools/harness/gates-climb.mjs --part unchanged --seg ${{ matrix.seg }} --no-summary --assert | tee seg.txt
+          echo "TIME segment ${{ matrix.seg }}: $(( $(date +%s) - s )) s" | tee -a seg.txt
+      - name: Summary
+        if: always()
+        shell: bash
+        run: |
+          { echo '## climb — unchanged, segment ${{ matrix.seg }}'; echo ''; echo '```'; grep -aE '^(GREEN|RED|VERDICT|TIME)' seg.txt | cut -c1-3000 || echo 'no output'; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
+
+  climb-full:
+    name: climb — the climb chain, segment ${{ matrix.seg }} of 4
+    if: ${{ inputs.part == 'climb' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 350
+    strategy:
+      fail-fast: false
+      matrix:
+        seg: [0, 1, 2, 3]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+          fetch-depth: 1
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+      - run: npm ci
+      - name: The segment
+        shell: bash
+        run: |
+          set -o pipefail
+          s=$(date +%s)
+          node tools/harness/gates-climb.mjs --part full --seg ${{ matrix.seg }} --segs 4 --no-summary --assert | tee seg.txt
+          echo "TIME segment ${{ matrix.seg }}: $(( $(date +%s) - s )) s" | tee -a seg.txt
+      - name: Summary
+        if: always()
+        shell: bash
+        run: |
+          { echo '## climb — the chain, segment ${{ matrix.seg }}'; echo ''; echo '```'; grep -aE '^(GREEN|RED|VERDICT|TIME)' seg.txt | cut -c1-3000 || echo 'no output'; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
+
+  climb-rows:
+    name: climb — the rows, the switch, the acceptance, the timeline, the grep
+    if: ${{ inputs.part == 'climb' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+          fetch-depth: 1
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+      - run: npm ci
+      - name: Cache the Playwright browser
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+      - run: npx playwright install --with-deps chromium
+      - name: The bounded parts
+        shell: bash
+        run: |
+          set -o pipefail
+          node tools/harness/gates-climb.mjs --part all --no-summary --assert | tee rows.txt
+      - name: Summary
+        if: always()
+        shell: bash
+        run: |
+          { echo '## climb — the bounded parts'; echo ''; echo '```'; grep -aE '^(GREEN|RED|VERDICT)' rows.txt | cut -c1-3000 || echo 'no output'; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
