@@ -316,7 +316,7 @@ async function partTimeline(browser) {
 // ---- Part grep -------------------------------------------------------------------------------------------------------
 function partGrep() {
   const srcs = [['loader/tmt-auto.js', 'loader/tmt-auto.js'], ['loader/tmt-speed.js', 'loader/tmt-speed.js'], ['loader/tmt-qedit.js', 'loader/tmt-qedit.js'], ['tools/harness/whole.mjs', 'tools/harness/whole.mjs']];
-  const ids = fs.readdirSync(path.join(REPO, GAMES)).filter((d) => fs.existsSync(path.join(REPO, GAMES, d, 'index.html')) || fs.existsSync(path.join(REPO, GAMES, d, 'js'))).filter((d) => d.length > 3);
+  const ids = GAMES();
   const ptrLayers = ['sg', 'sb', 'ss', 'hn', 'ps', 'hs', 'ma', 'ge', 'mc', 'en', 'ne', 'id', 'ai', 'ba'];
   const marks = (fixture('tools/harness/ladder/ptr.json').marks || []).map((m) => m.id);
   const watch = fixture(WATCH).map((m) => m.id);
