@@ -130,7 +130,10 @@ function partRows() {
     seen.push(`${c.id} ${c.scoreText || rs[0] && rs[0].score}${eq ? '' : ' ✗'}`);
   }
   const scored = C.candidates.filter((c) => c.runs && c.runs.length);
-  const best = scored.slice().sort((x, y) => (y.runs[0].score - x.runs[0].score))[0];
+  // the score is the game-second the 8th Quirk Layer was reached (lower is better; a cell that never reached it by its
+  // horizon scores Infinity)
+  const sc = (c) => (c.runs[0].score === null || c.runs[0].score === undefined ? Infinity : c.runs[0].score);
+  const best = scored.slice().sort((x, y) => sc(x) - sc(y))[0];
   if (!best || best.id !== C.winner) f.push(`the best score is ${best && best.id}, the record names ${C.winner}`);
   const st = (t.stages || []).find((s) => s.id === NEW_STAGE);
   const shipped = st && best && best.policy && st.policies && st.policies['reset:q'] === best.policy;
@@ -203,14 +206,19 @@ async function partUnchanged() {
 
 // ---- Part accept -------------------------------------------------------------------------------------------------------
 function partAccept() {
-  const R = fixture(RECORD), old = fixture(OLD_RECORD), M = byMark(R), O = byMark(old);
+  const R = fixture(RECORD), old = fixture(OLD_RECORD), M = byMark(R), C = fixture(CANDIDATES);
+  // the table before climb-1 past whole-1's cap: the control chain (twice equal) the candidates record keeps
+  const O = { ...byMark(old), ...Object.fromEntries((C.control.marks || []).map((m) => [m.id, m])) };
   const m30 = M.M30, past = R.marks.filter((m) => m.ticks > m30.ticks).sort((x, y) => x.ticks - y.ticks);
   const f = [], seen = [];
   for (let i = 0; i < old.marks.length; i++) { const m = old.marks[i]; if (m.ticks > O.M30.ticks) continue; if (!M[m.id] || M[m.id].ticks !== m.ticks || M[m.id].hashGame !== m.hashGame) f.push(`${m.id} differs from whole-1's`); }
+  // before the new part switches on the chain IS the table before's (equal, tick and hash); after it, every state is earlier
+  const sw = (R.stages || []).find((x) => x.stage === NEW_STAGE && x.on), swTick = sw ? sw.ticks : Infinity;
   for (const m of past) {
     const o = O[m.id];
-    if (o && o.ticks <= m.ticks) f.push(`${m.id} at ${m.gameSeconds} is not earlier than before climb-1 (${o.gameSeconds})`);
-    seen.push(`${m.id} ${m.gameSeconds}${o ? ` (before ${o.gameSeconds})` : ` (before: not by ${old.capGs})`}`);
+    if (m.ticks <= swTick) { if (!o || o.ticks !== m.ticks || o.hashGame !== m.hashGame) f.push(`${m.id} before the switch differs from the table before (${o ? o.ticks + '/' + o.hashGame : 'not reached'} vs ${m.ticks}/${m.hashGame})`); }
+    else if (o && o.ticks <= m.ticks) f.push(`${m.id} at ${m.gameSeconds} is not earlier than before climb-1 (${o.gameSeconds})`);
+    seen.push(`${m.id} ${m.gameSeconds}${o ? ` (before ${o.gameSeconds})` : ` (before: not by ${C.control.capGs})`}`);
   }
   if (!M.QL8) f.push('QL8 is not reached by the cap');
   if (!R.wall || !R.wall.text) f.push('the record names no wall');
