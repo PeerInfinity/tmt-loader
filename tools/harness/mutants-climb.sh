@@ -35,8 +35,8 @@ mutant() {
 }
 rep() { printf "p='%s';s=open(p).read();o=%s;assert o in s,'mutation site gone';s=s.replace(o,%s,1);open(p,'w').write(s)" "$1" "$2" "$3"; }
 # the new stage moved after sg-keep (the losing order: sg-keep names the same slot and wins it)
-LOSING="import json;p='games-auto/ptr.json';t=json.load(open(p));st=t['stages'];s=[x for x in st if x['id']=='q-cash-in-stalled'][0];st.remove(s);i=[x['id'] for x in st].index('sg-keep');st.insert(i+1,s);open(p,'w').write(json.dumps(t,indent=2,ensure_ascii=False)+'\n')"
-NOPROV="import json;p='games-auto/ptr.json';t=json.load(open(p));s=[x for x in t['stages'] if x['id']=='q-cash-in-stalled'][0];s['provenance']=[];open(p,'w').write(json.dumps(t,indent=2,ensure_ascii=False)+'\n')"
+LOSING="import json;p='games-auto/ptr.json';t=json.load(open(p));st=t['stages'];s=[x for x in st if x['id']=='q43-longer-quirk-runs'][0];st.remove(s);i=[x['id'] for x in st].index('sg-keep');st.insert(i+1,s);open(p,'w').write(json.dumps(t,indent=2,ensure_ascii=False)+'\n')"
+NOPROV="import json;p='games-auto/ptr.json';t=json.load(open(p));s=[x for x in t['stages'] if x['id']=='q43-longer-quirk-runs'][0];s['provenance']=[];open(p,'w').write(json.dumps(t,indent=2,ensure_ascii=False)+'\n')"
 
 # A — the new stage in the losing order
 mutant A-losing-order "$LOSING" rows 'C2 the ORDER'

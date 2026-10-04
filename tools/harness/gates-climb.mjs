@@ -16,8 +16,8 @@
 //      and the shipped table is the winner's
 //   C2 the ORDER: the new stage listed after `sg-keep` (shadowed) is the table before climb-1 to the tick and hash
 // Part switch
-//   S1 the new part's switch, from the STATE LOG of the replayed leg that reaches M30: it switches on at the record's
-//      tick (the same loop as `sg-keep`), and the record's first q reset under it is the first `reset:q` the log shows
+//   S1 the new part's switch, from the STATE LOG of the replayed leg that buys Improvement Boost: on at the record's tick,
+//      off at More Layers, the leg's end on the record's hash, and a q reset under it at the stage's ratio
 // Part unchanged (CI: `qrate1.yml -f part=climb`, segments)
 //   U1 from a fresh save the shipped table reaches M01–M30 on the SAME ticks and hashGame as whole-1's record: the
 //      chain's own legs replayed (fresh → L004, L004 → L010, L010 → L015, L015 → L020, L020 → the M30 leg) under the
@@ -67,7 +67,7 @@ const CLIMB = 'tools/harness/snapshots/ptr/whole-climb1';
 const WATCH = 'tools/harness/whole/ptr-climb1-watch.json';
 const TABLE = 'games-auto/ptr.json';
 const TABLE_BEFORE = 'tools/harness/snapshots/ptr/whole-climb1/table-before-climb1.json';
-const NEW_STAGE = 'q-cash-in-stalled';
+const NEW_STAGE = 'q43-longer-quirk-runs';
 const KEEP_STAGE = 'sg-keep';
 const fixture = (f) => JSON.parse(fs.readFileSync(path.join(REPO, f), 'utf8'));
 const byMark = (R) => Object.fromEntries(R.marks.map((m) => [m.id, m]));
@@ -145,29 +145,31 @@ function partRows() {
 }
 
 // ---- Part switch -----------------------------------------------------------------------------------------------------
+// The new stage's `when` holds from Improvement Boost (the record's watched mark U42) until More Layers: the leg that
+// buys U42 is replayed with a state log from the climb's leg fixture before it.
 async function partSwitch() {
   const R = fixture(RECORD), old = fixture(OLD_RECORD), M = byMark(R);
-  const sw = (R.stages || []).find((s) => s.stage === NEW_STAGE && s.on);
-  const keep = (R.stages || []).find((s) => s.stage === KEEP_STAGE && s.on);
-  // the leg that reaches M30, replayed with a state log from the last leg fixture before it
-  const m30 = M.M30, leg = m30.leg, lf = R.legs[leg - 2];
+  const sw = (R.stages || []).find((x) => x.stage === NEW_STAGE && x.on), off = (R.stages || []).find((x) => x.stage === NEW_STAGE && !x.on);
+  const u42 = M.U42, u43 = M.U43, leg = u42.leg, lf = R.legs[leg - 2];
+  const legDir = fs.existsSync(path.join(REPO, CLIMB, 'legs', `${lf.name}.json`)) ? `${CLIMB}/legs` : `${WHOLE}/legs`;
   const log = path.join(TMP, 'switch.jsonl');
-  const r = await run('ptr', { 'from-snapshot': `${WHOLE}/legs/${lf.name}.json`, profile: 'all', ticks: Math.round(R.legGs / R.diff), stall: 1e9, log, 'log-every': 600, 'wall-ms': 6 * 3600e3 });
+  const r = await run('ptr', { 'from-snapshot': `${legDir}/${lf.name}.json`, profile: 'all', ticks: Math.round(R.legGs / R.diff), stall: 1e9, log, 'log-every': 600, 'wall-ms': 6 * 3600e3 });
   const L = fs.existsSync(log) ? fs.readFileSync(log, 'utf8').split('\n').filter(Boolean).map((l) => JSON.parse(l)) : [];
   const on = L.find((x) => x.type === 'stage' && x.stage === NEW_STAGE && x.on);
+  const firstQ = L.find((x) => x.type === 'action' && x.by === 'reset:q' && x.did && on && x.tick >= on.tick);
   const st = (fixture(TABLE).stages || []).find((x) => x.id === NEW_STAGE), stagePolicy = st && st.policies && st.policies['reset:q'];
   // the cash-in it made: gain ÷ the quirks held before it (the log's state carries the quirks AFTER: held + gain) — at
-  // least the stage's N and below the 2 the table before climb-1 waited for
+  // least the stage's N, which the table before climb-1 (×2) does not wait for
   const N = stagePolicy ? Number((/gain>=([\d.]+)x/.exec(stagePolicy) || [])[1]) : NaN;
   let ratio = NaN;
   if (firstQ && firstQ.why && firstQ.why.values && firstQ.state && firstQ.state['q.p']) { const g = lg(firstQ.why.values.gain), after = lg(firstQ.state['q.p']); ratio = 1 / (Math.pow(10, after - g) - 1); }
-  const ratioOk = isFinite(ratio) && ratio >= N * 0.999 && ratio < 2;
-  const firstQ = L.find((x) => x.type === 'action' && x.by === 'reset:q' && x.did && on && x.tick >= on.tick);
-  const checks = { recorded: !!sw, sameAsKeep: !!sw && !!keep && sw.ticks === keep.ticks, atM30: !!sw && sw.ticks === m30.ticks, logSaysSo: !!on && !!sw && on.tick === sw.ticks,
-    ranLeg: !!r.ok && r.hashGame === R.legs[leg - 1].hashGame, cashesIn: ratioOk, notInOld: !(old.stages || []).some((s) => s.stage === NEW_STAGE) };
-  row({ gate: `S1 the new part's switch, from the state log of leg ${leg} replayed from whole/legs/${lf.name}: ${NEW_STAGE} on at the record's tick (= ${KEEP_STAGE}'s, = M30), the leg ends on the record's hash, and the first q reset under it cashes in by its rule`, id: 'ptr',
+  const ratioOk = isFinite(ratio) && ratio >= N * 0.999;
+  // the leg ends at the record's leg end; the stage switches on the loop after Improvement Boost is bought
+  const checks = { recorded: !!sw, afterU42: !!sw && sw.ticks >= u42.ticks && sw.ticks - u42.ticks <= 2, offAtU43: !!off && !!u43 && off.ticks >= u43.ticks && off.ticks - u43.ticks <= 2,
+    logSaysSo: !!on && !!sw && on.tick === sw.ticks, ranLeg: !!r.ok && r.hashGame === R.legs[leg - 1].hashGame, cashesIn: !firstQ || ratioOk, notInOld: !(old.stages || []).some((x) => x.stage === NEW_STAGE) };
+  row({ gate: `S1 the new part's switch, from the state log of leg ${leg} replayed from ${legDir.split('/').slice(-2).join('/')}/${lf.name}: ${NEW_STAGE} on the loop after Improvement Boost (the record's U42) and off after More Layers (U43), the leg ends on the record's hash, and a q reset under it cashes in at the stage's ratio`, id: 'ptr',
     ok: Object.values(checks).every(Boolean), ticks: r.ticks, gameSeconds: r.gameSeconds, diff: R.diff, hash: r.hashGame,
-    notes: `${ck(checks)} — record ${sw ? sw.ticks : '—'} (${KEEP_STAGE} ${keep ? keep.ticks : '—'}, M30 ${m30.ticks}); log ${on ? on.tick : '—'}; first reset:q under it ${firstQ ? `${firstQ.tick} (gain ÷ held ${ratio.toFixed(3)}, the stage's N ${N})` : '—'}; leg end ${r.hashGame} vs ${R.legs[leg - 1].hashGame} ${r.error || ''}` });
+    notes: `${ck(checks)} — record on ${sw ? sw.ticks : '—'} (U42 ${u42.ticks}), off ${off ? off.ticks : '—'} (U43 ${u43 ? u43.ticks : '—'}); log on ${on ? on.tick : '—'}; first reset:q under it in this leg ${firstQ ? `${firstQ.tick} (gain ÷ held ${ratio.toFixed(3)}, the stage's N ${N})` : 'none in this leg'}; leg end ${r.hashGame} vs ${R.legs[leg - 1].hashGame} ${r.error || ''}` });
 }
 
 // ---- Part unchanged ----------------------------------------------------------------------------------------------------

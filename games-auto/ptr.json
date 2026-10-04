@@ -183,12 +183,12 @@
   },
   "stages": [
     {
-      "id": "q-cash-in-stalled",
-      "name": "Cash in quirks when the wait stalls",
-      "note": "From your first super generator until you own Booster Madness, the quirk reset still waits until it at least doubles your quirks, but when that wait has taken twice as long as the recent quirk resets did, it cashes in what it has. Without it the wait for a doubling grows to hours and your total quirks stop rising; Booster Madness, the next Quirk upgrades and the 8th Quirk Layer then come much later. Measured: PENDING.",
-      "when": "hasUpgrade('q',33) && player.sg.unlocked && !player.h.activeChallenge && !hasUpgrade('q',34)",
+      "id": "q43-longer-quirk-runs",
+      "name": "Longer quirk runs for More Layers",
+      "note": "From Improvement Boost until you own More Layers, the quirk reset waits until it would give you four times your quirks instead of twice. More Layers costs a fixed amount of quirk energy, and quirk energy only builds up inside one quirk run, so longer runs reach it sooner. Measured: PENDING.",
+      "when": "hasUpgrade('q',42) && !hasUpgrade('q',43) && player.sg.unlocked && !player.h.activeChallenge",
       "policies": {
-        "reset:q": "gain>=2x|stall>=2x/5"
+        "reset:q": "gain>=4x"
       },
       "provenance": [
         {
