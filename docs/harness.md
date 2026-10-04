@@ -353,6 +353,29 @@ cloud-reports/tmt-whole-1.md. Gates: `gates-whole --part chain` (push: the openi
 full --seg k --segs 8` (`qrate1.yml -f part=whole`), `--part page` (the real page from four checkpoints, a reload in
 the middle of the H22 queue).
 
+### Past M30 (climb-1) — the climb record, the watched states, a chain under another table
+
+    node tools/harness/whole.mjs ptr … --watch tools/harness/whole/ptr-climb1-watch.json --auto-table <table.json>
+    node tools/harness/gates-climb.mjs --part write --chain <chain dir> --wall "<text>"
+
+- **`--watch <file>`** records states that are not ladder marks — the q34 and q41–q43 purchases, the 8th–10th Quirk
+  Layers, 1e60 total quirks — exactly like marks (the first tick each holds, a fixture in `--dir`), `watched: true` in
+  the record. They sit BEFORE the ladder's marks in each leg's ladder so a leg still stops only where the ladder's last
+  mark holds.
+- **`--auto-table <file>`** runs the chain under a whole other table (a candidate, or the table before a slice), named
+  in the record (`autoTable`). ⛔ A control that runs WITHOUT it reads `games-auto/<id>.json` at each leg's boot — an
+  edit to the shipped table during a long control run changes the control from that leg on (measured, climb-1: the
+  control's second run was restarted under `snapshots/ptr/whole-climb1/table-before-climb1.json`).
+- **The climb record** `recorded/whole-ptr-climb1.json` is whole-1's legs and marks up to its leg 35 (the new part is not
+  in force before Improvement Boost, at 90,327.85 game-s), then the chain resumed from `whole/legs/L035` under the
+  shipped table to the cap; its fixtures (the watched states, the marks past M30, every 5th leg) are under
+  `snapshots/ptr/whole-climb1/`. No selector reads that directory. `gates-climb --part full` replays its legs;
+  `--part unchanged` replays whole-1's legs up to the M30 leg under the shipped table (M01–M30 on whole-1's ticks).
+- ⛔ **A diff-1 screen pointed the wrong way, twice.** Past M30 the cash-in rules that won at diff 1 by thousands of
+  game-seconds (a stall fallback before q34: q34 at 76,234 against 89,394) LOST at 0.05 (92,254.3 against 88,001.15):
+  the total q34 needs is a different number at each tick size (its price is charged at the tick's start, one tick
+  behind). F1's rule held: only the 0.05 rows decided.
+
 ## Scoring a DEFAULT: over WHOLE STRETCHES, never from the fixture the old default wrote (R2)
 
 ⛔ **A fixture bakes in the policy that produced it, and a layer UNLOCKS ON ITS FIRST RESET.** The two together make
