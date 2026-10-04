@@ -228,7 +228,7 @@
     if (t.mode === 'coarse') text += ' Approximate ticks of ' + t.step + ' s: results can differ from normal play.';
     lastStop = { why: why, text: text, at: Date.now(), kind: t.kind, label: t.label, ticks: t.ticks, gs: t.gs, mode: t.mode, step: t.step, throws: t.throws, lastThrow: t.lastThrow, error: err ? msg(err) : null };
     // (whole-1) the run timeline: the fast-forward, at the game time it started from
-    try { if (T.timeline && typeof T.timeline.note === 'function') T.timeline.note('ff', { why: why, label: t.label, gs: t.gs, ticks: t.ticks, mode: t.mode, step: t.step, startGs: t.startGs }); } catch (e) { /* the record never costs the run */ }
+    try { if (T.timeline && typeof T.timeline.note === 'function') T.timeline.note('ff', { why: why, label: t.label, target: t.kind, src: t.src || '', name: t.markName || '', gs: t.gs, ticks: t.ticks, mode: t.mode, step: t.step, startGs: t.startGs }); } catch (e) { /* the record never costs the run */ }
     var r = resolveRun; resolveRun = null;
     speed = t.before;          // the speed in force before the run comes back (×1 = the engine's own loop)
     sync();
@@ -252,7 +252,7 @@
       if (spec.mark !== undefined) {
         var L = T.ladder, m = L && L.marks ? L.marks.filter(function (x) { return x.id === spec.mark; })[0] : null;
         if (!m) return Promise.resolve({ why: 'refused', text: 'This game has no ladder mark "' + spec.mark + '" (fetch the ladder first).' });
-        src = m.predicate; label = 'the mark ' + m.id + ' (' + m.name + ')';
+        src = m.predicate; label = 'the mark ' + m.id + ' (' + m.name + ')'; t.markName = String(m.name || '').replace(/\*/g, '');
       } else label = 'the condition ' + src;
       if (typeof src !== 'string' || !src.trim()) return Promise.resolve({ why: 'refused', text: 'Type a condition first.' });
       try { t.fn = compile(src); } catch (e) { return Promise.resolve({ why: 'refused', text: 'The condition is not something the game understands: ' + msg(e) }); }

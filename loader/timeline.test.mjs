@@ -95,3 +95,55 @@ test('NOT in runtimeState(): every snapshot and pinned record is what it was', (
   assert.equal(JSON.stringify(rt).includes('timeline'), false);
   assert.equal(JSON.stringify(rt).includes('Hold alpha'), false);
 });
+
+// ---- (climb-1) the polish: the "already past" fold, a fast-forward's condition in words, strict game-time order ----
+test('TL6: the marks already past when first read fold into ONE row, its marks listed under it (MUTANT: the fold removed)', () => {
+  const ctx = boot();
+  ctx.flag = true; ctx.flag2 = true;
+  ctx.player.timePlayed = 500;
+  ctx.tmtLoader.ladder = { marks: [{ id: 'X1', name: 'first', predicate: 'flag' }, { id: 'X2', name: 'second', predicate: 'flag2 === true' }, { id: 'X3', name: 'third', predicate: 'flag' }] };
+  tick(ctx, 1);
+  const tl = T(ctx).timeline();
+  assert.equal(tl.events.filter((e) => e.kind === 'mark' && e.late).length, 3, 'the events stay whole');
+  const late = tl.rows.filter((r) => r.kind === 'late');
+  assert.equal(late.length, 1);
+  assert.equal(late[0].text, 'Already past 3 marks when the marks were first read');
+  assert.equal(late[0].marks.map((m) => m.name).join('|'), 'first|second|third');
+  assert.equal(tl.rows.filter((r) => r.kind === 'mark').length, 0);
+});
+
+test('TL7: a fast-forward never prints a raw condition — words where every clause reads, else "a condition" (MUTANT: the raw label)', () => {
+  const ctx = boot();
+  const note = (o) => T(ctx).timeline.note('ff', Object.assign({ why: 'reached', gs: 10, ticks: 200, mode: 'faithful', step: 0.05, startGs: 1 }, o));
+  note({ label: 'the condition player.a.points.gte(1e10) && Math.random() < 2', target: 'until', src: 'player.a.points.gte(1e10) && Math.random() < 2' });
+  note({ label: 'the condition player.a.unlocked', target: 'until', src: 'player.a.unlocked', startGs: 2 });
+  note({ label: 'the condition player.points.gte(5)', startGs: 3 });   // recorded before climb-1: only the label
+  note({ label: 'the mark X9 (**ninth**)', target: 'mark', src: 'flag', name: 'ninth', startGs: 4, why: 'cap' });
+  const ev = T(ctx).timeline().events;
+  for (const e of ev) assert.ok(!/player\.|Math\.|\.gte\(/.test(e.text), `no code in "${e.text}"`);
+  assert.equal(ev[3].text, 'Fast-forwarded 10s of game time (faithful ticks) and reached a condition');
+  assert.equal(ev[3].code, 'player.a.points.gte(1e10) && Math.random() < 2', 'the code is kept for the developer details');
+  assert.equal(ev[2].text, 'Fast-forwarded 10s of game time (faithful ticks) and reached the point where alpha is unlocked');
+  assert.equal(ev[1].text, 'Fast-forwarded 10s of game time (faithful ticks) and reached a condition');
+  assert.equal(ev[1].code, 'player.points.gte(5)');
+  assert.equal(ev[0].text, 'Fast-forwarded 10s of game time (faithful ticks) and stopped at the limit before reaching “ninth”');
+  assert.ok(!ev[0].code, 'a mark has no code line');
+});
+
+test('TL8: newest first strictly by game time; events at the same game time keep their recorded order (MUTANT: recorded order)', () => {
+  const ctx = boot();
+  ctx.player.timePlayed = 100;
+  ctx.flag = true; tick(ctx, 1);   // the stage switches on at ~100
+  // a fast-forward that STARTED at 50 is recorded after it
+  T(ctx).timeline.note('ff', { why: 'reached', label: '1m 00s of game time', target: 'gs', gs: 60, ticks: 1200, mode: 'faithful', step: 0.05, startGs: 50 });
+  // two at the same game time, recorded in this order
+  T(ctx).timeline.note('ff', { why: 'reached', label: 'A', target: 'gs', gs: 1, ticks: 20, mode: 'faithful', step: 0.05, startGs: 20 });
+  T(ctx).timeline.note('ff', { why: 'stopped', label: 'B', target: 'gs', gs: 2, ticks: 40, mode: 'faithful', step: 0.05, startGs: 20 });
+  const ev = T(ctx).timeline().events;
+  const at = ev.map((e) => e.at);
+  for (let i = 1; i < at.length; i++) assert.ok(at[i - 1] >= at[i], `ordered by game time: ${at.join(', ')}`);
+  assert.equal(ev[0].kind, 'stage');
+  assert.equal(ev[1].at, 50);
+  assert.equal(ev[2].why, 'reached', 'the tie keeps its recorded order');
+  assert.equal(ev[3].why, 'stopped');
+});
