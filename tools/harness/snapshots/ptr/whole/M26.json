@@ -1,0 +1,242 @@
+{
+ "mark": "M26",
+ "commit": "c4b2dfe",
+ "dirty": false,
+ "ticks": 606522,
+ "gameSeconds": 30326.1,
+ "diff": 0.05,
+ "hash": "1dcbc52a84aa66e5",
+ "hashGame": "c7530929442a627d",
+ "config": {
+  "profile": "all",
+  "auto-opt": null,
+  "from": "tools/harness/results/whole-legs/L015.json"
+ },
+ "player": "{\"tab\":\"none\",\"navTab\":\"tree-tab\",\"time\":1791072137120,\"autosave\":true,\"notify\":{},\"msDisplay\":\"always\",\"offlineProd\":true,\"versionType\":\"ptr\",\"version\":\"1.3\",\"timePlayed\":30326.049999698946,\"keepGoing\":false,\"hasNaN\":false,\"hideChallenges\":false,\"tapNerd\":false,\"anim\":true,\"grad\":true,\"milNotify\":true,\"optTab\":\"mainOpt\",\"slightGlow\":\"normal\",\"redGlowActive\":true,\"spaceGlow\":\"normal\",\"solGlow\":\"normal\",\"majGlow\":\"uncasted\",\"shellGlow\":true,\"scShown\":true,\"oldStyle\":false,\"hideStars\":false,\"showStory\":true,\"saveMenuOpen\":false,\"points\":\"2.080227475393059e5199\",\"subtabs\":{\"q\":{\"mainTabs\":\"Main Tab\"},\"ps\":{\"mainTabs\":\"Main Tab\"},\"n\":{},\"ma\":{\"mainTabs\":\"Mastery\"},\"mc\":{\"mainTabs\":\"The Shell\"},\"au\":{\"mainTabs\":\"Simple\"}},\"lastSafeTab\":\"none\",\"infoboxes\":{},\"info-tab\":{\"unlocked\":true,\"buyables\":{},\"clickables\":{},\"spentOnBuyables\":\"0\",\"upgrades\":[],\"milestones\":[],\"primeMiles\":[],\"achievements\":[],\"challenges\":{}},\"options-tab\":{\"unlocked\":true,\"buyables\":{},\"clickables\":{},\"spentOnBuyables\":\"0\",\"upgrades\":[],\"milestones\":[],\"primeMiles\":[],\"achievements\":[],\"challenges\":{}},\"blank\":{\"unlocked\":true,\"buyables\":{},\"clickables\":{},\"spentOnBuyables\":\"0\",\"upgrades\":[],\"milestones\":[],\"primeMiles\":[],\"achievements\":[],\"challenges\":{}},\"tree-tab\":{\"unlocked\":true,\"buyables\":{},\"clickables\":{},\"spentOnBuyables\":\"0\",\"upgrades\":[],\"milestones\":[],\"primeMiles\":[],\"achievements\":[],\"challenges\":{}},\"p\":{\"unlocked\":true,\"points\":\"7.133062600776716e3440\",\"best\":\"7.133062600776716e3440\",\"total\":\"7.133062600776716e3440\",\"pseudoUpgs\":[],\"first\":0.05,\"buyables\":{},\"clickables\":{},\"spentOnBuyables\":\"0\",\"upgrades\":[11,12,21,13,22,23,31,32,33],\"milestones\":[],\"primeMiles\":[],\"achievements\":[],\"challenges\":{},\"activeChallenge\":null},\"b\":{\"unlocked\":true,\"points\":\"127\",\"best\":\"127\",\"total\":\"127\",\"pseudoUpgs\":[],\"first\":846.1499999997782,\"auto\":true,\"buyables\":{},\"clickables\":{},\"spentOnBuyables\":\"0\",\"upgrades\":[11,12,13,21,22,23,31,32,33],\"milestones\":[\"0\",\"1\"],\"primeMiles\":[\"0\",\"1\"],\"achievements\":[],\"challenges\":{},\"unlockOrder\":1,\"activeChallenge\":null},\"g\":{\"unlocked\":true,\"points\":\"131\",\"best\":\"131\",\"total\":\"131\",\"power\":\"7.1507485826440425e724\",\"pseudoUpgs\":[],\"first\":129.8999999999953,\"auto\":true,\"buyables\":{},\"clickables\":{},\"spentOnBuyables\":\"0\",\"upgrades\":[11,12,13,14,15,21,24,22,23,25],\"milestones\":[\"0\",\"1\",\"2\"],\"primeMiles\":[\"0\",\"1\",\"2\"],\"achievements\":[],\"challenges\":{},\"activeChallenge\":null},\"t\":{\"unlocked\":true,\"points\":\"17\",\"best\":\"17\",\"energy\":\"2.98323951439174e50\",\"first\":1906.6999999988136,\"auto\":true,\"pseudoUpgs\":[],\"autoExt\":true,\"buyables\":{\"11\":\"20\"},\"clickables\":{},\"spentOnBuyables\":\"0\",\"upgrades\":[11,12,13,14,15,22,21,24,25],\"milestones\":[\"0\",\"1\",\"2\",\"3\",\"4\"],\"primeMiles\":[\"0\",\"1\",\"2\",\"3\",\"4\"],\"achievements\":[],\"challenges\":{},\"unlockOrder\":0,\"activeChallenge\":null},\"e\":{\"unlocked\":true,\"points\":\"4.446029160343172e108\",\"best\":\"4.446029160343172e108\",\"total\":\"4.446029160343172e108\",\"first\":1996.449999998732,\"auto\":true,\"pseudoUpgs\":[],\"buyables\":{\"11\":\"36\"},\"clickables\":{},\"spentOnBuyables\":\"0\",\"upgrades\":[11,12,13,21,23,14,24],\"milestones\":[\"1\",\"0\",\"2\"],\"primeMiles\":[\"0\",\"1\",\"2\"],\"achievements\":[],\"challenges\":{},\"unlockOrder\":0,\"activeChallenge\":null},\"s\":{\"unlocked\":true,\"points\":\"17\",\"best\":\"17\",\"spent\":\"69\",\"first\":1662.5999999990356,\"auto\":true,\"autoBld\":false,\"pseudoUpgs\":[],\"buyables\":{\"11\":\"54\",\"12\":\"15\",\"13\":\"0\",\"14\":\"0\",\"15\":\"0\",\"16\":\"0\",\"17\":\"0\",\"18\":\"0\",\"19\":\"0\",\"20\":\"0\"},\"clickables\":{},\"spentOnBuyables\":\"0\",\"upgrades\":[11,12,13,14,15,23,24,22,25,21],\"milestones\":[\"0\",\"1\",\"2\",\"3\",\"4\"],\"primeMiles\":[\"0\",\"1\",\"2\",\"3\",\"4\"],\"achievements\":[],\"challenges\":{},\"activeChallenge\":null,\"unlockOrder\":0},\"sb\":{\"unlocked\":true,\"points\":\"4\",\"best\":\"4\",\"first\":2104.34999999889,\"auto\":true,\"buyables\":{},\"clickables\":{},\"spentOnBuyables\":\"0\",\"upgrades\":[],\"milestones\":[],\"primeMiles\":[],\"achievements\":[],\"challenges\":{},\"activeChallenge\":null},\"sg\":{\"unlocked\":false,\"points\":\"0\",\"best\":\"0\",\"power\":\"0\",\"first\":30326.099999698945,\"auto\":false,\"time\":\"0\",\"buyables\":{},\"clickables\":{},\"spentOnBuyables\":\"0\",\"upgrades\":[],\"milestones\":[],\"primeMiles\":[],\"achievements\":[],\"challenges\":{},\"activeChallenge\":null},\"h\":{\"unlocked\":true,\"points\":\"566350\",\"best\":\"566350\",\"chall31bought\":0,\"first\":9743.649999998457,\"auto\":false,\"buyables\":{},\"clickables\":{},\"spentOnBuyables\":\"0\",\"upgrades\":[],\"milestones\":[],\"primeMiles\":[],\"achievements\":[],\"challenges\":{\"11\":1,\"12\":1,\"21\":1,\"22\":0,\"31\":0,\"32\":0,\"41\":0,\"42\":0},\"activeChallenge\":null},\"q\":{\"unlocked\":true,\"points\":\"30477\",\"best\":\"30477\",\"total\":\"30614\",\"energy\":\"2797525410590.9365\",\"time\":\"12.900000000000048\",\"auto\":false,\"first\":8308.65000001934,\"pseudoUpgs\":[],\"buyables\":{\"11\":\"4\"},\"clickables\":{},\"spentOnBuyables\":\"0\",\"upgrades\":[11,12,13,14,21,22],\"milestones\":[\"0\",\"1\",\"2\",\"3\",\"4\",\"5\"],\"primeMiles\":[\"0\",\"1\",\"2\",\"3\",\"4\",\"5\"],\"achievements\":[],\"challenges\":{},\"activeChallenge\":null},\"o\":{\"unlocked\":false,\"points\":\"0\",\"best\":\"0\",\"total\":\"0\",\"energy\":\"0\",\"first\":30326.099999698945,\"buyables\":{\"11\":\"0\",\"12\":\"0\",\"13\":\"0\",\"21\":\"0\",\"22\":\"0\",\"23\":\"0\",\"31\":\"0\",\"32\":\"0\",\"33\":\"0\"},\"clickables\":{},\"spentOnBuyables\":\"0\",\"upgrades\":[],\"milestones\":[],\"primeMiles\":[],\"achievements\":[],\"challenges\":{},\"activeChallenge\":null},\"ss\":{\"unlocked\":false,\"points\":\"0\",\"best\":\"0\",\"subspace\":\"0\",\"auto\":false,\"first\":30326.099999698945,\"buyables\":{},\"clickables\":{},\"spentOnBuyables\":\"0\",\"upgrades\":[],\"milestones\":[],\"primeMiles\":[],\"achievements\":[],\"challenges\":{},\"activeChallenge\":null},\"m\":{\"unlocked\":false,\"points\":\"0\",\"best\":\"0\",\"total\":\"0\",\"spellTimes\":{\"11\":\"0\",\"12\":\"0\",\"13\":\"0\",\"14\":\"0\",\"15\":\"0\",\"16\":\"0\"},\"spellInputs\":{\"11\":\"1\",\"12\":\"1\",\"13\":\"1\",\"14\":\"1\",\"15\":\"1\",\"16\":\"1\"},\"spellInput\":\"1\",\"distrAll\":false,\"hexes\":\"0\",\"auto\":false,\"first\":30326.099999698945,\"buyables\":{\"11\":\"0\",\"12\":\"0\",\"13\":\"0\",\"14\":\"0\",\"15\":\"0\",\"16\":\"0\"},\"clickables\":{},\"spentOnBuyables\":\"0\",\"upgrades\":[],\"milestones\":[],\"primeMiles\":[],\"achievements\":[],\"challenges\":{}},\"ba\":{\"unlocked\":false,\"points\":\"0\",\"best\":\"0\",\"total\":\"0\",\"allotted\":0.5,\"pos\":\"0\",\"neg\":\"0\",\"keepPosNeg\":false,\"first\":30326.099999698945,\"buyables\":{},\"clickables\":{\"11\":\"0\",\"12\":\"0\",\"21\":\"0\",\"22\":\"0\",\"31\":\"0\"},\"spentOnBuyables\":\"0\",\"upgrades\":[],\"milestones\":[],\"primeMiles\":[],\"achievements\":[],\"challenges\":{}},\"ps\":{\"unlocked\":false,\"points\":\"0\",\"best\":\"0\",\"prevH\":\"0\",\"souls\":\"0\",\"power\":\"0\",\"auto\":false,\"autoW\":false,\"autoGhost\":false,\"first\":30326.099999698945,\"buyables\":{\"11\":\"0\",\"21\":\"0\"},\"clickables\":{},\"spentOnBuyables\":\"0\",\"upgrades\":[],\"milestones\":[],\"primeMiles\":[],\"achievements\":[],\"challenges\":{}},\"hn\":{\"unlocked\":false,\"points\":\"0\",\"best\":\"0\",\"total\":\"0\",\"first\":30326.099999698945,\"buyables\":{},\"clickables\":{},\"spentOnBuyables\":\"0\",\"upgrades\":[],\"milestones\":[],\"primeMiles\":[],\"achievements\":[],\"challenges\":{}},\"n\":{\"unlocked\":false,\"points\":\"0\",\"best\":\"0\",\"total\":\"0\",\"purpleDust\":\"0\",\"blueDust\":\"0\",\"orangeDust\":\"0\",\"activeSecondaries\":{\"purpleBlue\":false,\"blueOrange\":false,\"orangePurple\":false},\"first\":30326.099999698945,\"buyables\":{\"11\":\"0\"},\"clickables\":{\"11\":\"0\",\"12\":\"0\",\"13\":\"0\",\"14\":\"0\"},\"spentOnBuyables\":\"0\",\"upgrades\":[],\"milestones\":[],\"primeMiles\":[],\"achievements\":[],\"challenges\":{}},\"hs\":{\"unlocked\":false,\"points\":\"0\",\"best\":\"0\",\"total\":\"0\",\"spentHS\":\"0\",\"buildLim\":\"1\",\"first\":30326.099999698945,\"auto\":false,\"buyables\":{\"11\":\"0\",\"21\":\"0\",\"22\":\"0\",\"23\":\"0\",\"24\":\"0\",\"25\":\"0\",\"26\":\"0\",\"27\":\"0\",\"28\":\"0\",\"29\":\"0\",\"30\":\"0\"},\"clickables\":{},\"spentOnBuyables\":\"0\",\"upgrades\":[],\"milestones\":[],\"primeMiles\":[],\"achievements\":[],\"challenges\":{}},\"i\":{\"unlocked\":false,\"points\":\"0\",\"best\":\"0\",\"nb\":\"0\",\"hb\":\"0\",\"auto\":false,\"first\":30326.099999698945,\"buyables\":{\"11\":\"0\",\"12\":\"0\",\"13\":\"0\",\"14\":\"0\"},\"clickables\":{},\"spentOnBuyables\":\"0\",\"upgrades\":[],\"milestones\":[],\"primeMiles\":[],\"achievements\":[],\"challenges\":{}},\"ma\":{\"unlocked\":false,\"points\":\"0\",\"best\":\"0\",\"first\":30326.099999698945,\"mastered\":[],\"selectionActive\":false,\"current\":null,\"buyables\":{},\"clickables\":{\"11\":\"0\"},\"spentOnBuyables\":\"0\",\"upgrades\":[],\"milestones\":[],\"primeMiles\":[],\"achievements\":[],\"challenges\":{}},\"ge\":{\"unlocked\":false,\"points\":\"0\",\"best\":\"0\",\"total\":\"0\",\"first\":30326.099999698945,\"rotations\":\"0\",\"energy\":\"0\",\"toothPower\":\"0\",\"shrinkPower\":\"0\",\"boosted\":\"0\",\"maxToggle\":false,\"auto\":false,\"autoTime\":\"0\",\"buyables\":{\"11\":\"0\"},\"clickables\":{\"11\":\"0\",\"12\":\"0\",\"13\":\"0\",\"21\":\"0\"},\"spentOnBuyables\":\"0\",\"upgrades\":[],\"milestones\":[],\"primeMiles\":[],\"achievements\":[],\"challenges\":{}},\"mc\":{\"unlocked\":false,\"points\":\"0\",\"best\":\"0\",\"total\":\"0\",\"first\":30326.099999698945,\"mechEn\":\"0\",\"autoSE\":false,\"auto\":false,\"buyables\":{\"11\":\"0\",\"12\":\"0\"},\"clickables\":{\"11\":\"0\",\"12\":\"0\",\"21\":\"0\",\"22\":\"0\"},\"spentOnBuyables\":\"0\",\"upgrades\":[],\"milestones\":[],\"primeMiles\":[],\"achievements\":[],\"challenges\":{}},\"en\":{\"unlocked\":false,\"points\":\"0\",\"best\":\"0\",\"bestOnReset\":\"0\",\"total\":\"0\",\"stored\":\"0\",\"target\":0,\"tw\":\"0\",\"ow\":\"0\",\"sw\":\"0\",\"mw\":\"0\",\"first\":30326.099999698945,\"buyables\":{},\"clickables\":{\"11\":\"0\",\"12\":\"0\"},\"spentOnBuyables\":\"0\",\"upgrades\":[],\"milestones\":[],\"primeMiles\":[],\"achievements\":[],\"challenges\":{}},\"ne\":{\"unlocked\":false,\"points\":\"0\",\"best\":\"0\",\"first\":30326.099999698945,\"signals\":\"0\",\"thoughts\":\"0\",\"auto\":false,\"autoNN\":false,\"buyables\":{\"11\":\"0\"},\"clickables\":{},\"spentOnBuyables\":\"0\",\"upgrades\":[],\"milestones\":[],\"primeMiles\":[],\"achievements\":[],\"challenges\":{\"11\":0}},\"id\":{\"unlocked\":false,\"points\":\"0\",\"best\":\"0\",\"first\":30326.099999698945,\"auto\":false,\"buyables\":{},\"clickables\":{},\"spentOnBuyables\":\"0\",\"upgrades\":[],\"milestones\":[],\"primeMiles\":[],\"achievements\":[],\"challenges\":{}},\"r\":{\"unlocked\":false,\"points\":\"0\",\"best\":\"0\",\"total\":\"0\",\"allotted\":{\"breeders\":\"0\",\"farmers\":\"0\",\"builders\":\"0\",\"growers\":\"0\",\"producers\":\"0\"},\"maxMinibots\":\"0\",\"spentMinibots\":\"0\",\"grownMinibots\":\"0\",\"fuel\":\"0\",\"buildings\":\"1\",\"growTime\":\"0\",\"deathTime\":\"0\",\"first\":30326.099999698945,\"buyables\":{},\"clickables\":{\"11\":\"0\",\"12\":\"0\",\"13\":\"0\",\"14\":\"0\",\"15\":\"0\",\"16\":\"0\",\"21\":\"0\",\"22\":\"0\",\"23\":\"0\",\"24\":\"0\",\"25\":\"0\"},\"spentOnBuyables\":\"0\",\"upgrades\":[],\"milestones\":[],\"primeMiles\":[],\"achievements\":[],\"challenges\":{}},\"ai\":{\"unlocked\":false,\"points\":\"0\",\"best\":\"0\",\"total\":\"0\",\"first\":30326.099999698945,\"time\":\"0\",\"consc\":\"0\",\"buyables\":{\"11\":\"0\"},\"clickables\":{\"11\":\"0\"},\"spentOnBuyables\":\"0\",\"upgrades\":[],\"milestones\":[],\"primeMiles\":[],\"achievements\":[],\"challenges\":{}},\"c\":{\"unlocked\":false,\"points\":\"0\",\"assigned\":[\"0\",\"0\",\"0\",\"0\",\"0\"],\"gainedPower\":[\"0\",\"0\",\"0\",\"0\",\"0\"],\"first\":30326.099999698945,\"buyables\":{\"11\":\"0\"},\"clickables\":{\"11\":\"0\",\"12\":\"0\",\"13\":\"0\",\"14\":\"0\",\"15\":\"0\"},\"spentOnBuyables\":\"0\",\"upgrades\":[],\"milestones\":[],\"primeMiles\":[],\"achievements\":[],\"challenges\":{}},\"a\":{\"unlocked\":true,\"buyables\":{},\"clickables\":{},\"spentOnBuyables\":\"0\",\"upgrades\":[],\"milestones\":[],\"primeMiles\":[],\"achievements\":[\"11\",\"12\",\"21\",\"13\",\"14\",\"22\",\"23\",\"24\",\"31\",\"32\",\"33\",\"42\",\"41\",\"34\",\"43\",\"51\"],\"challenges\":{}},\"sc\":{\"unlocked\":true,\"buyables\":{},\"clickables\":{},\"spentOnBuyables\":\"0\",\"upgrades\":[],\"milestones\":[],\"primeMiles\":[],\"achievements\":[],\"challenges\":{}},\"ab\":{\"unlocked\":true,\"buyables\":{},\"clickables\":{\"11\":\"0\",\"12\":\"0\",\"13\":\"0\",\"14\":\"0\",\"21\":\"0\",\"22\":\"0\",\"23\":\"0\",\"24\":\"0\",\"31\":\"0\",\"32\":\"0\",\"33\":\"0\",\"34\":\"0\",\"41\":\"0\",\"42\":\"0\",\"43\":\"0\",\"44\":\"0\",\"51\":\"0\",\"52\":\"0\",\"53\":\"0\",\"54\":\"0\",\"61\":\"0\",\"62\":\"0\",\"63\":\"0\"},\"spentOnBuyables\":\"0\",\"upgrades\":[],\"milestones\":[],\"primeMiles\":[],\"achievements\":[],\"challenges\":{}},\"au\":{\"unlocked\":true,\"points\":\"0\",\"features\":{},\"disclosed\":false,\"armLocked\":false,\"edits\":{},\"buyables\":{},\"clickables\":{\"11\":\"0\",\"12\":\"0\",\"13\":\"0\",\"14\":\"0\",\"21\":\"0\",\"22\":\"0\",\"23\":\"0\",\"24\":\"0\",\"31\":\"0\",\"32\":\"0\",\"33\":\"0\",\"34\":\"0\",\"41\":\"0\",\"42\":\"0\",\"43\":\"0\",\"44\":\"0\",\"51\":\"0\",\"52\":\"0\",\"53\":\"0\",\"54\":\"0\",\"61\":\"0\",\"62\":\"0\",\"63\":\"0\",\"64\":\"0\",\"71\":\"0\",\"72\":\"0\",\"73\":\"0\",\"74\":\"0\",\"81\":\"0\",\"82\":\"0\",\"83\":\"0\",\"84\":\"0\",\"91\":\"0\",\"92\":\"0\",\"93\":\"0\",\"94\":\"0\",\"101\":\"0\",\"102\":\"0\",\"103\":\"0\",\"104\":\"0\",\"111\":\"0\",\"112\":\"0\",\"113\":\"0\",\"114\":\"0\",\"121\":\"0\",\"122\":\"0\",\"123\":\"0\",\"124\":\"0\",\"131\":\"0\",\"132\":\"0\",\"133\":\"0\",\"134\":\"0\",\"141\":\"0\",\"142\":\"0\",\"143\":\"0\",\"144\":\"0\",\"151\":\"0\",\"152\":\"0\",\"153\":\"0\",\"154\":\"0\",\"161\":\"0\",\"162\":\"0\",\"163\":\"0\",\"164\":\"0\",\"171\":\"0\",\"172\":\"0\",\"173\":\"0\",\"174\":\"0\",\"181\":\"0\",\"182\":\"0\",\"183\":\"0\",\"184\":\"0\",\"191\":\"0\",\"192\":\"0\",\"193\":\"0\",\"194\":\"0\",\"201\":\"0\",\"202\":\"0\",\"203\":\"0\"},\"spentOnBuyables\":\"0\",\"upgrades\":[],\"milestones\":[],\"primeMiles\":[],\"achievements\":[],\"challenges\":{}},\"offTime\":{\"remain\":4541.295999999999}}",
+ "runtime": {
+  "auto": {
+   "lastReset": {
+    "reset:p": 2158.9499999990885,
+    "reset:g": 1900.4499999988193,
+    "reset:b": 1969.049999998757,
+    "reset:s": 8441.050000017412,
+    "reset:t": 8439.950000017428,
+    "reset:e": 8423.600000017666,
+    "reset:sb": 8479.300000016856,
+    "reset:q": 30313.149999699133,
+    "reset:h": 30303.14999969928
+   },
+   "loopNo": 606522,
+   "ranAt": {
+    "p": 606521,
+    "b": 606521,
+    "g": 606521,
+    "t": 606521,
+    "e": 606521,
+    "s": 606521,
+    "sb": 606521,
+    "sg": 606521,
+    "h": 606521,
+    "q": 606521,
+    "o": 606521,
+    "ss": 606521,
+    "m": 606521,
+    "ba": 606521,
+    "ps": 606521,
+    "en": 606521,
+    "ne": 606521,
+    "hn": 606521,
+    "n": 606521,
+    "hs": 606521,
+    "i": 606521,
+    "id": 606521,
+    "r": 606521,
+    "ma": 606521,
+    "ge": 606521,
+    "mc": 606521,
+    "ai": 606521,
+    "c": 606521
+   },
+   "stats": {
+    "calls": {
+     "p": 606522,
+     "b": 606522,
+     "g": 606522,
+     "t": 606522,
+     "e": 606522,
+     "s": 606522,
+     "sb": 606522,
+     "sg": 606522,
+     "h": 606522,
+     "q": 606522,
+     "o": 606522,
+     "ss": 606522,
+     "m": 606522,
+     "ba": 606522,
+     "ps": 606522,
+     "en": 606522,
+     "ne": 606522,
+     "hn": 606522,
+     "n": 606522,
+     "hs": 606522,
+     "i": 606522,
+     "id": 606522,
+     "r": 606522,
+     "ma": 606522,
+     "ge": 606522,
+     "mc": 606522,
+     "ai": 606522,
+     "c": 606522
+    },
+    "viaSlot": {
+     "p": 606521,
+     "g": 603924,
+     "b": 589599,
+     "s": 573270,
+     "t": 568388,
+     "e": 566593,
+     "sb": 564435,
+     "q": 440349,
+     "h": 411649
+    },
+    "viaFallback": {
+     "p": 1,
+     "b": 16923,
+     "g": 2598,
+     "t": 38134,
+     "e": 39929,
+     "s": 33252,
+     "sb": 42087,
+     "sg": 606522,
+     "h": 194873,
+     "q": 166173,
+     "o": 606522,
+     "ss": 606522,
+     "m": 606522,
+     "ba": 606522,
+     "ps": 606522,
+     "en": 606522,
+     "ne": 606522,
+     "hn": 606522,
+     "n": 606522,
+     "hs": 606522,
+     "i": 606522,
+     "id": 606522,
+     "r": 606522,
+     "ma": 606522,
+     "ge": 606522,
+     "mc": 606522,
+     "ai": 606522,
+     "c": 606522
+    },
+    "doubles": 0,
+    "loops": 606522,
+    "actions": {
+     "reset:p": 871,
+     "upgrades:p": 539,
+     "reset:g": 327,
+     "upgrades:g": 90,
+     "reset:b": 623,
+     "upgrades:b": 132,
+     "reset:s": 93,
+     "buyables:s": 787,
+     "upgrades:s": 20,
+     "toggles:s": 1,
+     "reset:t": 102,
+     "buyables:t": 42,
+     "upgrades:t": 19,
+     "toggles:t": 1,
+     "reset:e": 209,
+     "upgrades:e": 15,
+     "buyables:e": 70,
+     "reset:sb": 25,
+     "reset:q": 1615,
+     "buyables:q": 4,
+     "toggles:q": 5,
+     "reset:h": 179,
+     "challenges:h": 44,
+     "upgrades:q": 6
+    },
+    "challenges": {
+     "challenges:h": {
+      "enter": 25,
+      "exit": 3,
+      "gaveUp": 16
+     }
+    },
+    "slotAt": {
+     "p": 606521,
+     "g": 606521,
+     "b": 606521,
+     "s": 606521,
+     "t": 606521,
+     "e": 606521,
+     "sb": 606521,
+     "q": 606521,
+     "h": 606521
+    }
+   },
+   "stallSince": {
+    "reset:o": 9743.599999998458
+   },
+   "cycle": {
+    "3": {
+     "holder": "reset:o",
+     "left": 1,
+     "since": 30313.149999699133,
+     "acted": null,
+     "closer": 30313.199999699133,
+     "round": 528,
+     "at": 2,
+     "mem": {
+      "reset:h": [
+       10.5,
+       210.15,
+       10.5,
+       210.15,
+       10.5
+      ],
+      "reset:q": [
+       1,
+       1,
+       1,
+       1,
+       1
+      ]
+     },
+     "skip": {
+      "reset:o": 526,
+      "reset:ss": 527,
+      "reset:q": 512
+     },
+     "arm": {
+      "reset:h": 8480.800000016834,
+      "reset:o": 9958.749999995327,
+      "reset:ss": 10061.399999993833
+     },
+     "mark": {
+      "reset:o": 0.3571428571428571,
+      "reset:ss": 0.6071428571428571
+     },
+     "prev": {
+      "reset:o": 0.2857142857142857,
+      "reset:ss": 0.6071428571428571
+     }
+    }
+   },
+   "challengeFailed": {
+    "challenges:h": {
+     "12": "4",
+     "21": "5733",
+     "22": "531141"
+    }
+   }
+  },
+  "monitor": {
+   "seen": [],
+   "bmax": {},
+   "lastTick": 606522,
+   "lastGs": 30326.1
+  }
+ }
+}
