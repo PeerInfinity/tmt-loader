@@ -131,12 +131,17 @@ function partRows() {
   const st = (t.stages || []).find((s) => s.id === NEW_STAGE);
   const shipped = st && best && best.policy && st.policies && st.policies['reset:q'] === best.policy;
   if (!shipped) f.push(`the shipped stage ${NEW_STAGE} does not carry the winner's ${best && best.policy}`);
+  // a part ships with its evidence: a provenance record at the page's tick
+  const prov = st && Array.isArray(st.provenance) ? st.provenance : [];
+  if (!prov.some((r) => /0\.05/.test(String(r.gate)) && r.commit && r.note)) f.push(`${NEW_STAGE} has no provenance row at diff 0.05`);
+  if (!st || !st.name || !st.note) f.push(`${NEW_STAGE} has no plain name and note`);
   row({ gate: `C1 every candidate's 0.05 rows twice equal, the winner the best ${C.scoreName}, and the shipped table carries it`, id: 'ptr', ok: !f.length,
     notes: `${f.length ? f.join('; ') + ' · ' : ''}${seen.join(' · ')} · horizon ${C.horizon}` });
   const o = C.order || {};
-  const oeq = o.losing && o.before && o.losing.length >= 2 && o.losing.every((x) => x.hashGame === o.before.hashGame && x.ticks === o.before.ticks && x.score === o.before.score);
+  const ids = (t.stages || []).map((x) => x.id), shippedFirst = ids.indexOf(NEW_STAGE) >= 0 && ids.indexOf(NEW_STAGE) < ids.indexOf(KEEP_STAGE);
+  const oeq = shippedFirst && o.losing && o.before && o.losing.length >= 2 && o.losing.every((x) => x.hashGame === o.before.hashGame && x.ticks === o.before.ticks && x.score === o.before.score);
   row({ gate: `C2 the ORDER: ${NEW_STAGE} listed AFTER ${KEEP_STAGE} (which names the same slot) is the table before climb-1, to the tick and hash, twice; listed first it is the winner`, id: 'ptr', ok: !!oeq,
-    notes: o.losing ? `losing ${o.losing.map((x) => `${x.ticks}/${x.hashGame}/${x.scoreText || x.score}`).join(', ')} · before ${o.before.ticks}/${o.before.hashGame}/${o.before.scoreText || o.before.score} · ${o.note || ''}` : 'no order rows in the record' });
+    notes: (shippedFirst ? '' : `the shipped table lists ${NEW_STAGE} AFTER ${KEEP_STAGE} (the losing order) · `) + (o.losing ? `losing ${o.losing.map((x) => `${x.ticks}/${x.hashGame}/${x.scoreText || x.score}`).join(', ')} · before ${o.before.ticks}/${o.before.hashGame}/${o.before.scoreText || o.before.score} · ${o.note || ''}` : 'no order rows in the record') });
 }
 
 // ---- Part switch -----------------------------------------------------------------------------------------------------
@@ -150,12 +155,19 @@ async function partSwitch() {
   const r = await run('ptr', { 'from-snapshot': `${WHOLE}/legs/${lf.name}.json`, profile: 'all', ticks: Math.round(R.legGs / R.diff), stall: 1e9, log, 'log-every': 600, 'wall-ms': 6 * 3600e3 });
   const L = fs.existsSync(log) ? fs.readFileSync(log, 'utf8').split('\n').filter(Boolean).map((l) => JSON.parse(l)) : [];
   const on = L.find((x) => x.type === 'stage' && x.stage === NEW_STAGE && x.on);
+  const st = (fixture(TABLE).stages || []).find((x) => x.id === NEW_STAGE), stagePolicy = st && st.policies && st.policies['reset:q'];
+  // the cash-in it made: gain ÷ the quirks held before it (the log's state carries the quirks AFTER: held + gain) — at
+  // least the stage's N and below the 2 the table before climb-1 waited for
+  const N = stagePolicy ? Number((/gain>=([\d.]+)x/.exec(stagePolicy) || [])[1]) : NaN;
+  let ratio = NaN;
+  if (firstQ && firstQ.why && firstQ.why.values && firstQ.state && firstQ.state['q.p']) { const g = lg(firstQ.why.values.gain), after = lg(firstQ.state['q.p']); ratio = 1 / (Math.pow(10, after - g) - 1); }
+  const ratioOk = isFinite(ratio) && ratio >= N * 0.999 && ratio < 2;
   const firstQ = L.find((x) => x.type === 'action' && x.by === 'reset:q' && x.did && on && x.tick >= on.tick);
   const checks = { recorded: !!sw, sameAsKeep: !!sw && !!keep && sw.ticks === keep.ticks, atM30: !!sw && sw.ticks === m30.ticks, logSaysSo: !!on && !!sw && on.tick === sw.ticks,
-    ranLeg: !!r.ok && r.hashGame === R.legs[leg - 1].hashGame, cashesIn: !!firstQ && firstQ.why && /gain>=/.test(String(firstQ.why.values && firstQ.why.values.rule)), notInOld: !(old.stages || []).some((s) => s.stage === NEW_STAGE) };
+    ranLeg: !!r.ok && r.hashGame === R.legs[leg - 1].hashGame, cashesIn: ratioOk, notInOld: !(old.stages || []).some((s) => s.stage === NEW_STAGE) };
   row({ gate: `S1 the new part's switch, from the state log of leg ${leg} replayed from whole/legs/${lf.name}: ${NEW_STAGE} on at the record's tick (= ${KEEP_STAGE}'s, = M30), the leg ends on the record's hash, and the first q reset under it cashes in by its rule`, id: 'ptr',
     ok: Object.values(checks).every(Boolean), ticks: r.ticks, gameSeconds: r.gameSeconds, diff: R.diff, hash: r.hashGame,
-    notes: `${ck(checks)} — record ${sw ? sw.ticks : '—'} (${KEEP_STAGE} ${keep ? keep.ticks : '—'}, M30 ${m30.ticks}); log ${on ? on.tick : '—'}; first reset:q under it ${firstQ ? `${firstQ.tick} (${JSON.stringify(firstQ.why.values)})` : '—'}; leg end ${r.hashGame} vs ${R.legs[leg - 1].hashGame} ${r.error || ''}` });
+    notes: `${ck(checks)} — record ${sw ? sw.ticks : '—'} (${KEEP_STAGE} ${keep ? keep.ticks : '—'}, M30 ${m30.ticks}); log ${on ? on.tick : '—'}; first reset:q under it ${firstQ ? `${firstQ.tick} (gain ÷ held ${ratio.toFixed(3)}, the stage's N ${N})` : '—'}; leg end ${r.hashGame} vs ${R.legs[leg - 1].hashGame} ${r.error || ''}` });
 }
 
 // ---- Part unchanged ----------------------------------------------------------------------------------------------------
