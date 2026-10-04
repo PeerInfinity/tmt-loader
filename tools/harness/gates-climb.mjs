@@ -273,7 +273,7 @@ const SHOTS = path.join(REPO, 'cloud-reports/tmt-climb-1');
 async function openProgress(page) {
   await page.evaluate(() => { showTab(tmtLoader.auLayer); player.subtabs[tmtLoader.auLayer].mainTabs = 'Progress'; });
   // the pictures only: the game's tree-branch canvas is drawn over every tab
-  await page.addStyleTag({ content: 'canvas{visibility:hidden !important}' }).catch(() => {});
+  await page.addStyleTag({ content: 'canvas, #treeCanvas, .treeCanvas, svg line{display:none !important}' }).catch(() => {});
   await page.waitForSelector('.tmtl-timeline .tmtl-tl-row', { timeout: 15000 });
 }
 async function partTimeline(browser) {
