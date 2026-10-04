@@ -952,6 +952,66 @@ jobs:
   # SOMETHING_OLD_TABLE, the Time-Energy row under PIN_A2); only ptr's four goals() goldens were re-recorded.
   # ⛔ `--assert` holds each part to its exact row count (10 / 9), all green.
   # ---------------------------------------------------------------------------------------------------------------
+  climb:
+    name: climb — past M30 by parts (the rows, the switch, the acceptance), the timeline's polish, the grep
+    needs: fast
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+          fetch-depth: 1
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - run: npm ci
+
+      - name: Cache the Playwright browser
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+
+      - run: npx playwright install --with-deps chromium
+
+      - name: The battery — rows, switch, accept, timeline, grep
+        shell: bash
+        run: |
+          set -o pipefail
+          node tools/harness/gates-climb.mjs --part all --no-summary --assert | tee climb.txt
+
+      - name: Summary
+        if: always()
+        shell: bash
+        run: |
+          {
+            echo '## climb — past M30 by parts, the timeline polish'
+            echo ''
+            echo '```'
+            cat climb.txt 2>/dev/null | grep -aE '^(GREEN|RED|VERDICT)' | cut -c1-400 || echo 'no output'
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload the rows
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: whole
+          path: tools/harness/results/tmp/gates-whole-part*-last.json
+          if-no-files-found: warn
+          retention-days: 14
+
+  # ---------------------------------------------------------------------------------------------------------------
+  # p1a — THE PLANNER'S KNOWLEDGE WALK AND GOAL SOURCES (`gates-p1a.mjs --part 2` / `--part 3`, docs/planner.md).
+  # Until qrate1 this ran in NO CI job, and its goldens went stale unseen (design notes §16.1: nine reds, all expected
+  # drift). ⚖ Ruling (A), user 2026-09-30: the rows NAME the configuration they measure (Something's four under
+  # SOMETHING_OLD_TABLE, the Time-Energy row under PIN_A2); only ptr's four goals() goldens were re-recorded.
+  # ⛔ `--assert` holds each part to its exact row count (10 / 9), all green.
+  # ---------------------------------------------------------------------------------------------------------------
   p1a:
     name: p1a — knowledge walk and goal sources
     needs: fast
