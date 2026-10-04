@@ -183,6 +183,22 @@
   },
   "stages": [
     {
+      "id": "q-cash-in-stalled",
+      "name": "Cash in quirks when the wait stalls",
+      "note": "From your first super generator until you own Booster Madness, the quirk reset still waits until it at least doubles your quirks, but when that wait has taken twice as long as the recent quirk resets did, it cashes in what it has. Without it the wait for a doubling grows to hours and your total quirks stop rising; Booster Madness, the next Quirk upgrades and the 8th Quirk Layer then come much later. Measured: PENDING.",
+      "when": "hasUpgrade('q',33) && player.sg.unlocked && !player.h.activeChallenge && !hasUpgrade('q',34)",
+      "policies": {
+        "reset:q": "gain>=2x|stall>=2x/5"
+      },
+      "provenance": [
+        {
+          "gate": "climb1-pending",
+          "commit": "0000000",
+          "note": "PENDING"
+        }
+      ]
+    },
+    {
       "id": "sg-keep",
       "name": "Let Super Generators grow",
       "note": "Once you own Generated Progression and super generators are unlocked (and no hindrance is running), the resets that would wipe your generators wait until the next super generator is in reach, and the quirk reset waits until it at least doubles your quirks. Without it, super generators reset once and then never again. Measured: 5.1e25 total quirks after 30,000 game-seconds, against 1.9e23 without it.",

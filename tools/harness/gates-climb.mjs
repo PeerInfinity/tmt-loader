@@ -67,7 +67,7 @@ const CLIMB = 'tools/harness/snapshots/ptr/whole-climb1';
 const WATCH = 'tools/harness/whole/ptr-climb1-watch.json';
 const TABLE = 'games-auto/ptr.json';
 const TABLE_BEFORE = 'tools/harness/snapshots/ptr/whole-climb1/table-before-climb1.json';
-const NEW_STAGE = 'q-cash-in-often';
+const NEW_STAGE = 'q-cash-in-stalled';
 const KEEP_STAGE = 'sg-keep';
 const fixture = (f) => JSON.parse(fs.readFileSync(path.join(REPO, f), 'utf8'));
 const byMark = (R) => Object.fromEntries(R.marks.map((m) => [m.id, m]));
