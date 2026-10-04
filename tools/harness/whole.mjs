@@ -4,7 +4,7 @@
 // "The whole-game run").
 //
 //   node tools/harness/whole.mjs <id> --dir <snapshots dir> [--diff 0.05] [--leg-gs 2000] [--cap-gs 130000]
-//        [--profile all] [--resume] [--legs-dir <dir>] [--progress <file.jsonl>]
+//        [--profile all] [--resume] [--legs-dir <dir>] [--progress <file.jsonl>] [--auto-table <table.json>]
 //
 // ⛔ A resumed leg equals the uninterrupted run exactly (measured whole-1: fresh → M04 at 0.05 in one process and as
 // fresh → M02 + M02 → M04 land on the same tick and the same FULL hash at M02, M03 and M04), so the chain is the run.
@@ -29,7 +29,7 @@ import { runNode } from './run.mjs';
 entryOnly(import.meta.url);
 
 const a = parseArgs(process.argv.slice(2), ['resume']);
-const KNOWN = new Set(['_', 'dir', 'diff', 'leg-gs', 'cap-gs', 'profile', 'resume', 'legs-dir', 'progress', 'ladder', 'auto-opt', 'summarize', 'max-legs']);
+const KNOWN = new Set(['_', 'dir', 'diff', 'leg-gs', 'cap-gs', 'profile', 'resume', 'legs-dir', 'progress', 'ladder', 'auto-opt', 'auto-table', 'summarize', 'max-legs']);
 for (const k of Object.keys(a)) if (!KNOWN.has(k)) { console.error(`REFUSED: unknown flag --${k}`); process.exit(2); }
 const id = a._[0];
 if (!id || !a.dir) { console.error('usage: node whole.mjs <id> --dir <snapshots dir> [--diff 0.05] [--leg-gs 2000] [--cap-gs 130000]'); process.exit(2); }
@@ -68,7 +68,7 @@ function summarize(out) {
   }
   const last = lines[lines.length - 1];
   const rec = { format: 'tmt-whole/1', id: path.basename(LADDER, '.json'), note: 'written by tools/harness/whole.mjs --summarize: the whole-game run from a fresh save under the shipped table alone, chained in one-process legs (a resumed leg = the uninterrupted run, to the hash)',
-    diff: DIFF, legGs: LEG_GS, capGs: CAP_GS, profile: String(a.profile || 'all'), commit: JSON.parse(fs.readFileSync(path.join(DIR, `${marks[0].id}.json`), 'utf8')).commit,
+    diff: DIFF, legGs: LEG_GS, capGs: CAP_GS, profile: String(a.profile || 'all'), ...(a['auto-table'] ? { autoTable: path.relative(REPO, path.resolve(String(a['auto-table']))) } : {}), commit: JSON.parse(fs.readFileSync(path.join(DIR, `${marks[0].id}.json`), 'utf8')).commit,
     marks: marks.sort((x, y) => x.ticks - y.ticks), notReached: MARKS.map((m) => m.id).filter((id) => !marks.some((x) => x.id === id)),
     stop: { ticks: last.ticks, gameSeconds: last.gameSeconds, hashGame: last.hashGame, wallMs: wall, inForce: last.parts && last.parts.inForce, points: last.parts && last.parts.points },
     stages, queues, legs: lines.map((l) => ({ leg: l.leg, name: l.name, ticks: l.ticks, gameSeconds: l.gameSeconds, hashGame: l.hashGame, wallMs: l.wallMs, ticksPerSec: l.ticksPerSec })) };
@@ -106,6 +106,7 @@ while (gs < CAP_GS && (a['max-legs'] === undefined || legsRun < Number(a['max-le
   const o = { profile: String(a.profile || 'all'), diff: DIFF, ticks, ladder: ladderFile, stall: 1e9, snapshots: DIR,
     'stop-snapshot': LEGS, 'stop-snapshot-name': name, eval: EVAL, 'wall-ms': 6 * 3600e3 };
   if (a['auto-opt']) o['auto-opt'] = String(a['auto-opt']);
+  if (a['auto-table']) o['auto-table'] = path.resolve(String(a['auto-table']));   // (climb-1) a whole other table: a candidate, or the table before a slice
   if (from) o['from-snapshot'] = from;
   const t0 = Date.now();
   const r = runNode(id, o);
