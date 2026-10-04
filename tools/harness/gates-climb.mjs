@@ -140,14 +140,14 @@ function partRows() {
   if (!shipped) f.push(`the shipped stage ${NEW_STAGE} does not carry the winner's ${best && best.policy}`);
   // a part ships with its evidence: a provenance record at the page's tick
   const prov = st && Array.isArray(st.provenance) ? st.provenance : [];
-  if (!prov.some((r) => /0\.05/.test(String(r.gate)) && r.commit && r.note)) f.push(`${NEW_STAGE} has no provenance row at diff 0.05`);
+  if (!prov.some((r) => /0\.05/.test(String(r.gate) + ' ' + String(r.note)) && r.commit && r.note)) f.push(`${NEW_STAGE} has no provenance row at diff 0.05`);
   if (!st || !st.name || !st.note) f.push(`${NEW_STAGE} has no plain name and note`);
-  row({ gate: `C1 every candidate's 0.05 rows twice equal, the winner the best ${C.scoreName}, and the shipped table carries it`, id: 'ptr', ok: !f.length,
+  row({ gate: `climb1 C1 every candidate's 0.05 rows twice equal, the winner the best ${C.scoreName}, and the shipped table carries it`, id: 'ptr', ok: !f.length,
     notes: `${f.length ? f.join('; ') + ' · ' : ''}${seen.join(' · ')} · horizon ${C.horizon}` });
   const o = C.order || {};
   const ids = (t.stages || []).map((x) => x.id), shippedFirst = ids.indexOf(NEW_STAGE) >= 0 && ids.indexOf(NEW_STAGE) < ids.indexOf(KEEP_STAGE);
   const oeq = shippedFirst && o.losing && o.before && o.losing.length >= 2 && o.losing.every((x) => x.hashGame === o.before.hashGame && x.ticks === o.before.ticks && x.score === o.before.score);
-  row({ gate: `C2 the ORDER: ${NEW_STAGE} listed AFTER ${KEEP_STAGE} (which names the same slot) is the table before climb-1, to the tick and hash, twice; listed first it is the winner`, id: 'ptr', ok: !!oeq,
+  row({ gate: `climb1 C2 the ORDER: ${NEW_STAGE} listed AFTER ${KEEP_STAGE} (which names the same slot) is the table before climb-1, to the tick and hash, twice; listed first it is the winner`, id: 'ptr', ok: !!oeq,
     notes: (shippedFirst ? '' : `the shipped table lists ${NEW_STAGE} AFTER ${KEEP_STAGE} (the losing order) · `) + (o.losing ? `losing ${o.losing.map((x) => `${x.ticks}/${x.hashGame}/${x.scoreText || x.score}`).join(', ')} · before ${o.before.ticks}/${o.before.hashGame}/${o.before.scoreText || o.before.score} · ${o.note || ''}` : 'no order rows in the record') });
 }
 

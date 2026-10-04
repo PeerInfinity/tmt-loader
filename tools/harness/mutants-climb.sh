@@ -39,9 +39,9 @@ LOSING="import json;p='games-auto/ptr.json';t=json.load(open(p));st=t['stages'];
 NOPROV="import json;p='games-auto/ptr.json';t=json.load(open(p));s=[x for x in t['stages'] if x['id']=='q43-longer-quirk-runs'][0];s['provenance']=[];open(p,'w').write(json.dumps(t,indent=2,ensure_ascii=False)+'\n')"
 
 # A — the new stage in the losing order
-mutant A-losing-order "$LOSING" rows 'C2 the ORDER'
+mutant A-losing-order "$LOSING" rows 'climb1 C2 the ORDER'
 # B — the new part shipped with no provenance
-mutant B-no-provenance "$NOPROV" rows 'C1 every candidate'
+mutant B-no-provenance "$NOPROV" rows 'climb1 C1 every candidate'
 # C — the "Already past" fold removed: every late mark its own row again
 mutant C-fold-removed "$(rep loader/tmt-auto.js "'    if (late.length < 2) return ev.map('" "'    if (late.length < 2e9) return ev.map('")" timeline:fold 'TL6 the marks already past'
 # D — a raw condition in a player's line

@@ -1,0 +1,305 @@
+{
+ "format": "tmt-climb1-candidates/1",
+ "diff": 0.05,
+ "scoreName": "game-second of the 8th Quirk Layer (lower is better)",
+ "horizon": "each cell to the game-second named in its row (the winner and the control to 130,000)",
+ "note": "climb-1: every candidate part past M30, scored over WHOLE STRETCHES of the chain at diff 0.05 — each cell resumed at one of the chain's own leg fixtures (whole/legs/L020 or L035, or the control chain's L045, which is the same chain: the parts below are not in force before them), every cell twice; the runs' QL8 tick and hashGame (or the end leg's, where QL8 was not reached by the horizon) equal or RED.",
+ "winner": "q43-x4",
+ "candidates": [
+  {
+   "id": "before",
+   "what": "the table before climb-1 (whole-1's shipped table), past its cap",
+   "policy": null,
+   "from": "whole/legs/L035 → 130,000",
+   "runs": [
+    {
+     "chain": "ctl",
+     "ticks": 1997792,
+     "hashGame": "36e9c8b0cd2c18e1",
+     "score": 99889.6,
+     "marks": "U34@88001.15 U41@88285.9 U42@90327.85 U43@99889.55 QL8@99889.6 QL9@99889.6 QL10@109942.45 M32@114018.5"
+    },
+    {
+     "chain": "ctl2",
+     "ticks": 1997792,
+     "hashGame": "36e9c8b0cd2c18e1",
+     "score": 99889.6,
+     "marks": "U34@88001.15 U41@88285.9 U42@90327.85 U43@99889.55 QL8@99889.6 QL9@99889.6 QL10@109942.45 M32@114018.5"
+    }
+   ],
+   "scoreText": "QL8 at 99889.6 game-s (U34@88001.15 U41@88285.9 U42@90327.85 U43@99889.55 QL8@99889.6 QL9@99889.6 QL10@109942.45 M32@114018.5)"
+  },
+  {
+   "id": "q43-x4",
+   "what": "q43-longer-quirk-runs: from Improvement Boost until More Layers, reset:q waits for ×4 (SHIPPED)",
+   "policy": "gain>=4x",
+   "from": "whole/legs/L035 → 130,000",
+   "runs": [
+    {
+     "chain": "sx4a",
+     "ticks": 1953293,
+     "hashGame": "41a311e65aa5cb55",
+     "score": 97664.65,
+     "marks": "U34@88001.15 U41@88285.9 U42@90327.85 U43@97664.6 QL8@97664.65 QL9@97664.65 QL10@108119.6"
+    },
+    {
+     "chain": "sx4b",
+     "ticks": 1953293,
+     "hashGame": "41a311e65aa5cb55",
+     "score": 97664.65,
+     "marks": "U34@88001.15 U41@88285.9 U42@90327.85 U43@97664.6 QL8@97664.65 QL9@97664.65 QL10@108119.6"
+    }
+   ],
+   "scoreText": "QL8 at 97664.65 game-s (U34@88001.15 U41@88285.9 U42@90327.85 U43@97664.6 QL8@97664.65 QL9@97664.65 QL10@108119.6)"
+  },
+  {
+   "id": "q43-x3",
+   "what": "the same stage at ×3",
+   "policy": "gain>=3x",
+   "from": "whole/legs/L035 → 122,000",
+   "runs": [
+    {
+     "chain": "sx3a",
+     "ticks": 1994304,
+     "hashGame": "c612a582ddc2f9d1",
+     "score": 99715.2,
+     "marks": "U34@88001.15 U41@88285.9 U42@90327.85 U43@99715.15 QL8@99715.2 QL9@99715.2 QL10@109776.6 M32@113863.15"
+    },
+    {
+     "chain": "sx3b",
+     "ticks": 1994304,
+     "hashGame": "c612a582ddc2f9d1",
+     "score": 99715.2,
+     "marks": "U34@88001.15 U41@88285.9 U42@90327.85 U43@99715.15 QL8@99715.2 QL9@99715.2 QL10@109776.6 M32@113863.15"
+    }
+   ],
+   "scoreText": "QL8 at 99715.2 game-s (U34@88001.15 U41@88285.9 U42@90327.85 U43@99715.15 QL8@99715.2 QL9@99715.2 QL10@109776.6 M32@113863.15)"
+  },
+  {
+   "id": "q34-stall",
+   "what": "before Booster Madness: reset:q = gain>=2x|stall>=2x/5 (a stall fallback for the ×2 wait)",
+   "policy": "gain>=2x|stall>=2x/5",
+   "from": "whole/legs/L020 → 104,000",
+   "runs": [
+    {
+     "chain": "wA1",
+     "ticks": 2074453,
+     "hashGame": "7a4b32c7298db923",
+     "score": 103722.65,
+     "marks": "M30@44948.25 U34@92254.3 U41@92572 U42@94603.3 U43@103722.6 QL8@103722.65 QL9@103722.65"
+    },
+    {
+     "chain": "wA2",
+     "ticks": 2074453,
+     "hashGame": "7a4b32c7298db923",
+     "score": 103722.65,
+     "marks": "M30@44948.25 U34@92254.3 U41@92572 U42@94603.3 U43@103722.6 QL8@103722.65 QL9@103722.65"
+    }
+   ],
+   "scoreText": "QL8 at 103722.65 game-s (M30@44948.25 U34@92254.3 U41@92572 U42@94603.3 U43@103722.6 QL8@103722.65 QL9@103722.65)"
+  },
+  {
+   "id": "q34-x1-stall",
+   "what": "before Booster Madness: reset:q = gain>=1x|stall>=2x/5",
+   "policy": "gain>=1x|stall>=2x/5",
+   "from": "whole/legs/L020 → 88,000",
+   "runs": [
+    {
+     "chain": "wB1",
+     "ticks": 1760000,
+     "hashGame": "152f3a40f88f5f22",
+     "score": null,
+     "horizon": 88000,
+     "marks": "M30@44948.25"
+    },
+    {
+     "chain": "wB2",
+     "ticks": 1760000,
+     "hashGame": "152f3a40f88f5f22",
+     "score": null,
+     "horizon": 88000,
+     "marks": "M30@44948.25"
+    }
+   ],
+   "scoreText": "QL8 not by 88000 game-s (M30@44948.25)"
+  }
+ ],
+ "order": {
+  "note": "q43-longer-quirk-runs listed AFTER sg-keep (which names reset:q's policy too, and wins it): the control chain's legs 46–48 (Improvement Boost is bought in leg 46), from its L045, twice",
+  "before": {
+   "ticks": 1920000,
+   "hashGame": "3ae9473d06b45b15",
+   "score": null,
+   "scoreText": "the table before at leg 48"
+  },
+  "losing": [
+   {
+    "chain": "lo1",
+    "ticks": 1920000,
+    "hashGame": "3ae9473d06b45b15",
+    "score": null,
+    "scoreText": "legs 46–48 d4bc07db359c9b5d e6c3fffa8e93501f 3ae9473d06b45b15"
+   },
+   {
+    "chain": "lo2",
+    "ticks": 1920000,
+    "hashGame": "3ae9473d06b45b15",
+    "score": null,
+    "scoreText": "legs 46–48 d4bc07db359c9b5d e6c3fffa8e93501f 3ae9473d06b45b15"
+   }
+  ]
+ },
+ "control": {
+  "capGs": 130000,
+  "note": "the table before climb-1 resumed from whole/legs/L035 under snapshots/ptr/whole-climb1/table-before-climb1.json to 130,000 game-s, twice equal (legs 36–40 = whole-1's record, to the hash)",
+  "stop": {
+   "ticks": 2600000,
+   "hashGame": "82b55adfcc76405d",
+   "twin": "82b55adfcc76405d"
+  },
+  "marks": [
+   {
+    "id": "U34",
+    "ticks": 1760023,
+    "gameSeconds": 88001.15,
+    "hashGame": "1a300be51690f740",
+    "leg": 45
+   },
+   {
+    "id": "U41",
+    "ticks": 1765718,
+    "gameSeconds": 88285.9,
+    "hashGame": "3790876dea14313d",
+    "leg": 45
+   },
+   {
+    "id": "U42",
+    "ticks": 1806557,
+    "gameSeconds": 90327.85,
+    "hashGame": "8d82c0c4a4a2c5b2",
+    "leg": 46
+   },
+   {
+    "id": "U43",
+    "ticks": 1997791,
+    "gameSeconds": 99889.55,
+    "hashGame": "163eeaaf039df144",
+    "leg": 50
+   },
+   {
+    "id": "QL8",
+    "ticks": 1997792,
+    "gameSeconds": 99889.6,
+    "hashGame": "36e9c8b0cd2c18e1",
+    "leg": 50
+   },
+   {
+    "id": "QL9",
+    "ticks": 1997792,
+    "gameSeconds": 99889.6,
+    "hashGame": "36e9c8b0cd2c18e1",
+    "leg": 50
+   },
+   {
+    "id": "QL10",
+    "ticks": 2198849,
+    "gameSeconds": 109942.45,
+    "hashGame": "df1fe74dd57ade22",
+    "leg": 55
+   },
+   {
+    "id": "M32",
+    "ticks": 2280370,
+    "gameSeconds": 114018.5,
+    "hashGame": "ba16abfdf747105b",
+    "leg": 58
+   }
+  ]
+ },
+ "screens": [
+  {
+   "diff": 0.05,
+   "runs": 1,
+   "from": "control chain L045 → 112,000",
+   "what": "q43-longer-quirk-runs at ×3.5",
+   "result": "q43 + QL8 at 100,514"
+  },
+  {
+   "diff": 0.05,
+   "runs": 2,
+   "from": "control chain L046 (q42 already owned; the stage in force from 92,000) → 102,000",
+   "what": "the q42→q43 phase by ratio",
+   "result": "q43 + QL8: ×2 99,889.6 (the chain) · ×2.5 101,038.95 · ×3 98,137.3 · ×3.5 98,243.45 · ×4 98,384.6 · ×6 99,001.45 · ×10 100,323.2 (×3, ×3.5, ×4 twice equal; the rest once)"
+  },
+  {
+   "diff": 0.05,
+   "runs": 1,
+   "from": "control chain L046 → 102,000",
+   "what": "the q42→q43 phase cashing in MORE often",
+   "result": "×1, ×0.5, ×0.2, always: no q43 by 102,000 (total quirks 1.25e30, 1.37e30, 1.08e30, 8.2e28 against the control's 2.4e33)"
+  },
+  {
+   "diff": 0.05,
+   "runs": 1,
+   "from": "whole/legs/L020",
+   "what": "sg-keep's reset:q at ×0.3 / ×0.5 / ×1 for the whole stretch past M30",
+   "result": "no q34 by 86,000 / 86,000 / 58,000 (8.3e25 / 1.01e26 / 9.1e24 total quirks); the control buys q34 at 88,001.15"
+  },
+  {
+   "diff": 0.05,
+   "runs": 1,
+   "from": "whole/legs/L020",
+   "what": "sg-keep's reset:q at ×3 / ×4 / ×10 for the whole stretch past M30",
+   "result": "×4: total quirks 8.27e25 from 70,000 to 96,000, no q34 (the ×4 wait never ends in time); ×3: 1.74e25 at 64,000 (control 2.2e25 at 60,000); ×10: 1.62e25 at 70,000 (control 6.63e25)"
+  },
+  {
+   "diff": 0.05,
+   "runs": 1,
+   "from": "whole/legs/L035 → 76,000",
+   "what": "before q34, cash in at ×0.5 / ×0.3 / ×1 from the control's long run",
+   "result": "the ×0.5 cash-in at 74,704 brings total quirks to 9.94e25, which does NOT open q34 at 0.05 (its charged price needs ~3e26: the energy at 0.8 game-s after the reset is 3.1e97 against 1.1e98); the long run is lost"
+  },
+  {
+   "diff": 1,
+   "runs": 1,
+   "from": "whole/legs/L035 → 80,000",
+   "what": "sg-keep's reset:q ratio sweep",
+   "result": "total quirks: ×2 and ×1 6.6e25 (no reset in 10,000 game-s) · ×0.7 3.3e27 · ×0.5 1.4e28 · ×0.3 3.5e28 · ×0.2 3.5e27 · ×0.1 2.2e27 · ×0.03 4.0e26 · always 7.5e25 — screens only; at 0.05 the same rules lose"
+  },
+  {
+   "diff": 1,
+   "runs": 1,
+   "from": "whole/legs/L025 → 110,000",
+   "what": "stage before q34 with a stall fallback",
+   "result": "q34 / QL8: ×2 (control) 89,394 / 101,065 · ×2|stall K=2 76,234 / 87,931 · ×1|stall K=2 77,807 / 89,501 · K=1.5 79,304 / 91,000 · K=3 87,190 / 98,861 — at 0.05 K=2 LOSES (92,254.3 / 103,722.65)"
+  },
+  {
+   "diff": 1,
+   "runs": 1,
+   "from": "whole/legs/L025 → 110,000",
+   "what": "a stage that holds every quirk reset until More Layers is affordable (energy ≥ its price), q42→q43",
+   "result": "never buys q43 by 110,000: energy reached 2.9e173 of 1e175 at 7,273 s into the held run, and the reset that came next zeroed it — cash-ins raise the energy multiplier faster than holding builds energy"
+  },
+  {
+   "diff": 1,
+   "runs": 1,
+   "from": "whole/legs/L035 → 80,000",
+   "what": "letting Hindrance Spirit run (sg-keep without its reset:h gate)",
+   "result": "8.6e25 total quirks against 3.5e28 with the gate (×0.3 policy both): h resets wipe the Super Generator and the run; the freeze wins"
+  },
+  {
+   "diff": 1,
+   "runs": 1,
+   "from": "whole/legs/L035 → 80,000",
+   "what": "harvesting Hindrance Spirit on the quirk reset's own tick (reset:h gated on the q cash-in, reset:q also allowed right after a row-3 reset)",
+   "result": "the h reset fires first in the tick (h is decided before q) and the q decision reads the gain LIVE, now zero: q never cashed in (6.6e25 unchanged), h 1.7e14 → 2.4e15, Space 23 → 20"
+  },
+  {
+   "diff": 1,
+   "runs": 1,
+   "from": "whole/legs/L035, q reset held 20,000 game-s",
+   "what": "letting row 2 accumulate (one long hold)",
+   "result": "points e13839 → e14034 (concave: +53 orders in the first 1,000 s, +21 in the last 2,000); Space stays 23 (the 24th needs e14248), Time 23, Generators 205 → 206"
+  }
+ ]
+}
