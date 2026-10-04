@@ -1,0 +1,10 @@
+[
+ {"id": "U34", "name": "Booster Madness bought (quirks)", "predicate": "hasUpgrade('q',34)"},
+ {"id": "U41", "name": "Quirkier bought — Quirk Improvements (quirks)", "predicate": "hasUpgrade('q',41)"},
+ {"id": "U42", "name": "Improvement Boost bought (quirks)", "predicate": "hasUpgrade('q',42)"},
+ {"id": "U43", "name": "More Layers bought (quirks)", "predicate": "hasUpgrade('q',43)"},
+ {"id": "QL8", "name": "the 8th Quirk Layer", "predicate": "player.q.buyables[11].gte(8)"},
+ {"id": "QL9", "name": "the 9th Quirk Layer", "predicate": "player.q.buyables[11].gte(9)"},
+ {"id": "QL10", "name": "the 10th Quirk Layer", "predicate": "player.q.buyables[11].gte(10)"},
+ {"id": "Q1E60", "name": "1e60 total quirks (q milestone 7's requirement)", "predicate": "player.q.total.gte(1e60)"}
+]
