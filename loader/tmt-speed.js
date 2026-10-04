@@ -227,6 +227,8 @@
     if (t.throws) text += ' The condition threw ' + t.throws + ' time' + (t.throws === 1 ? '' : 's') + ' (' + t.lastThrow + ') and was read as false.';
     if (t.mode === 'coarse') text += ' Approximate ticks of ' + t.step + ' s: results can differ from normal play.';
     lastStop = { why: why, text: text, at: Date.now(), kind: t.kind, label: t.label, ticks: t.ticks, gs: t.gs, mode: t.mode, step: t.step, throws: t.throws, lastThrow: t.lastThrow, error: err ? msg(err) : null };
+    // (whole-1) the run timeline: the fast-forward, at the game time it started from
+    try { if (T.timeline && typeof T.timeline.note === 'function') T.timeline.note('ff', { why: why, label: t.label, gs: t.gs, ticks: t.ticks, mode: t.mode, step: t.step, startGs: t.startGs }); } catch (e) { /* the record never costs the run */ }
     var r = resolveRun; resolveRun = null;
     speed = t.before;          // the speed in force before the run comes back (×1 = the engine's own loop)
     sync();
@@ -239,7 +241,7 @@
     spec = spec || {};
     if (target) return Promise.resolve({ why: 'refused', text: 'A fast-forward is already running — stop it first.' });
     var d = step(), t = { kind: null, of: 0, cap: 0, ticks: 0, gs: 0, throws: 0, lastThrow: null, fn: null, label: '', mode: mode, step: d,
-      before: speed === 0 ? 0 : speed, pace: spec.pace || (speed === 2 || speed === 10 ? speed : 'max'), startedAt: Date.now(), startTicks: T.ticks };
+      before: speed === 0 ? 0 : speed, pace: spec.pace || (speed === 2 || speed === 10 ? speed : 'max'), startedAt: Date.now(), startTicks: T.ticks, startGs: Number(player && player.timePlayed) || 0 };
     if (SPEEDS.indexOf(t.pace) < 1) return Promise.resolve({ why: 'refused', text: 'pace must be 1, 2, 10 or max' });
     if (spec.ticks !== undefined || spec.gs !== undefined) {
       var ticks = spec.ticks !== undefined ? Math.round(Number(spec.ticks)) : Math.round(Number(spec.gs) / d);

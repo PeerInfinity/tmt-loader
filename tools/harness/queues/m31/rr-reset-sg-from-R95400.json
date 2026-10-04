@@ -20,7 +20,8 @@
    "zeroed-by:t:player.g.points"
   ]
  },
- "comment": "reset:sg needs tmp[\"sg\"].nextAt of player.g.points, which a reset of e, h, o, q, s, sb, ss, t zeroes. Hold every one, wait for the engine's canReset, reset, release. It starts whenever the layer is shown and holds none of its currency.",
+ "comment": "A super generators reset needs enough of your generators, which a reset of enhance, hindrance, solarity, quirks, space, super boosters, subspace, time zeroes. The queue holds every one, waits until the game allows the reset, resets and lets go. It starts whenever the layer is shown and holds none of its currency.",
+ "dev": "reset:sg needs tmp[\"sg\"].nextAt of player.g.points, which a reset of e, h, o, q, s, sb, ss, t zeroes. Hold every one, wait for the engine's canReset, reset, release. It starts whenever the layer is shown and holds none of its currency.",
  "steps": [
   {
    "do": "hold",
@@ -36,7 +37,8 @@
     "reset:o",
     "reset:ss"
    ],
-   "comment": "these zero player.g.points (zeroed-by:e:player.g.points, zeroed-by:h:player.g.points, zeroed-by:o:player.g.points, zeroed-by:q:player.g.points, zeroed-by:s:player.g.points, zeroed-by:sb:player.g.points, zeroed-by:ss:player.g.points, zeroed-by:t:player.g.points), and the reset is the queue's"
+   "comment": "hold what would reset your generators — Time reset, Enhance reset, Space reset, Super boosters reset, Super generators reset, Hindrance reset, Hindrance challenges, Quirks reset, Solarity reset, Subspace reset — so the reset is the queue's",
+   "dev": "these zero player.g.points (zeroed-by:e:player.g.points, zeroed-by:h:player.g.points, zeroed-by:o:player.g.points, zeroed-by:q:player.g.points, zeroed-by:s:player.g.points, zeroed-by:sb:player.g.points, zeroed-by:ss:player.g.points, zeroed-by:t:player.g.points), and the reset is the queue's"
   },
   {
    "do": "wait",
@@ -45,7 +47,8 @@
     "gs": 3600
    },
    "onTimeout": "abort",
-   "comment": "the rollback measured player.g.points at tmp[\"sg\"].nextAt 520 game-s into the hold (diff 1); the time limit is the check's window, 3600 game-s"
+   "comment": "wait until the game allows the reset — a check on a copy of the game got there 520 game-s into the hold; it gives up after 3600 game-s",
+   "dev": "the rollback measured player.g.points at tmp[\"sg\"].nextAt 520 game-s into the hold (diff 1); the time limit is the check's window, 3600 game-s"
   },
   {
    "do": "call",
@@ -53,23 +56,24 @@
    "args": [
     "sg"
    ],
-   "comment": "reset sg"
+   "comment": "reset super generators",
+   "dev": "reset sg"
   },
   {
    "do": "wait",
    "until": "player[\"sg\"].points.gt(0)",
    "timeout": {
-    "gs": 2
+    "ticks": 2
    },
    "onTimeout": "abort",
    "comment": "the reset happened"
   },
   {
    "do": "release",
-   "comment": "the reflexes resume"
+   "comment": "let go: the automation's own moves resume"
   }
  ],
- "version": 3,
+ "version": 4,
  "name": "rebuild super generators",
  "relies": {
   "options": {

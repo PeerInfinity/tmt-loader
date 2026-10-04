@@ -336,7 +336,8 @@
               "reset:o",
               "reset:ss"
             ],
-            "comment": "these end an attempt at ch:h:22 (exits-challenge:h:22:h, exits-challenge:h:22:o, exits-challenge:h:22:q, exits-challenge:h:22:ss); the queue owns the attempt"
+            "comment": "hold what would end an attempt at “Descension” (hindrance) — Hindrance reset, Hindrance challenges, Quirks reset, Solarity reset, Subspace reset — so the queue owns the attempt",
+            "dev": "these end an attempt at ch:h:22 (exits-challenge:h:22:h, exits-challenge:h:22:o, exits-challenge:h:22:q, exits-challenge:h:22:ss); the queue owns the attempt"
           },
           {
             "do": "call",
@@ -346,7 +347,8 @@
               22
             ],
             "if": "String(player[\"h\"].activeChallenge) !== \"22\"",
-            "comment": "enter ch:h:22 — unless a reflex already did in the tick before the hold bound (pressed inside, startChallenge LEAVES)"
+            "comment": "enter “Descension” (hindrance) — unless the automation already did just before the hold (pressed inside, the button leaves)",
+            "dev": "enter ch:h:22 — unless a reflex already did in the tick before the hold bound (pressed inside, startChallenge LEAVES)"
           },
           {
             "do": "wait",
@@ -355,7 +357,7 @@
               "ticks": 2
             },
             "onTimeout": "abort",
-            "comment": "the engine entered it"
+            "comment": "the game entered it"
           },
           {
             "do": "wait",
@@ -364,7 +366,8 @@
               "gs": 3600
             },
             "onTimeout": "skip",
-            "comment": "the rollback measured the goal met 984 game-s after entry (diff 1); the time limit is the check's window, 3600 game-s"
+            "comment": "wait for the goal — a check on a copy of the game met it 984 game-s after entering; it gives up after 3600 game-s",
+            "dev": "the rollback measured the goal met 984 game-s after entry (diff 1); the time limit is the check's window, 3600 game-s"
           },
           {
             "do": "call",
@@ -374,11 +377,12 @@
               22
             ],
             "if": "String(player[\"h\"].activeChallenge) === \"22\"",
-            "comment": "finish it (the engine completes a challenge whose goal is met as it leaves; otherwise this only leaves) — only while inside: pressed outside, it would ENTER again"
+            "comment": "finish it — the game completes a challenge whose goal is met as you leave it (otherwise this only leaves); only while inside, because pressed outside it would enter again",
+            "dev": "finish it (the engine completes a challenge whose goal is met as it leaves; otherwise this only leaves) — only while inside: pressed outside, it would ENTER again"
           },
           {
             "do": "release",
-            "comment": "the reflexes resume"
+            "comment": "let go: the automation's own moves resume"
           },
           {
             "do": "wait",
@@ -390,7 +394,8 @@
             "comment": "a completion was recorded"
           }
         ],
-        "comment": "ch:h:22 is ended by a reset of h, o, q, ss (the exits-challenge facts). Hold every one, enter, wait for the goal, finish, release. It starts whenever ch:h:22 is unlocked, not completed, and no other challenge of its layer is running.",
+        "comment": "“Descension” (hindrance) is ended by a reset of hindrance, solarity, quirks, subspace. The queue holds every one, enters, waits for the goal, finishes and lets go. It starts whenever “Descension” (hindrance) is unlocked, not completed, and no other challenge of its layer is running.",
+        "dev": "ch:h:22 is ended by a reset of h, o, q, ss (the exits-challenge facts). Hold every one, enter, wait for the goal, finish, release. It starts whenever ch:h:22 is unlocked, not completed, and no other challenge of its layer is running.",
         "version": 4,
         "name": "attempt Descension (hindrance)",
         "relies": {

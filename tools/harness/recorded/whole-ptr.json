@@ -1,0 +1,727 @@
+{
+ "format": "tmt-whole/1",
+ "id": "ptr",
+ "note": "written by tools/harness/whole.mjs --summarize: the whole-game run from a fresh save under the shipped table alone, chained in one-process legs (a resumed leg = the uninterrupted run, to the hash)",
+ "diff": 0.05,
+ "legGs": 2000,
+ "capGs": 80000,
+ "profile": "all",
+ "commit": "c4b2dfe",
+ "marks": [
+  {
+   "id": "M01",
+   "name": "p unlocked",
+   "ticks": 1,
+   "gameSeconds": 0.05,
+   "hashGame": "76411795c01b9bef",
+   "wallMs": 7,
+   "leg": 1
+  },
+  {
+   "id": "M02",
+   "name": "b and g unlocked",
+   "ticks": 16923,
+   "gameSeconds": 846.15,
+   "hashGame": "7394aedae2e97baa",
+   "wallMs": 112628,
+   "leg": 1
+  },
+  {
+   "id": "M03",
+   "name": "keep-upgrade milestones",
+   "ticks": 24672,
+   "gameSeconds": 1233.6,
+   "hashGame": "c092ec0e46052460",
+   "wallMs": 164201,
+   "leg": 1
+  },
+  {
+   "id": "M04",
+   "name": "passive PP",
+   "ticks": 26480,
+   "gameSeconds": 1324,
+   "hashGame": "790db38400bbe06f",
+   "wallMs": 176234,
+   "leg": 1
+  },
+  {
+   "id": "M05",
+   "name": "buy-max b/g",
+   "ticks": 28933,
+   "gameSeconds": 1446.65,
+   "hashGame": "581bcf8b2291b526",
+   "wallMs": 192559,
+   "leg": 1
+  },
+  {
+   "id": "M06",
+   "name": "row-2 threshold",
+   "ticks": 33242,
+   "gameSeconds": 1662.1,
+   "hashGame": "eee471fa2981e8df",
+   "wallMs": 221237,
+   "leg": 1
+  },
+  {
+   "id": "M07",
+   "name": "first row-2 layer",
+   "ticks": 33252,
+   "gameSeconds": 1662.6,
+   "hashGame": "f9918d06c6c699cb",
+   "wallMs": 221304,
+   "leg": 1
+  },
+  {
+   "id": "M13",
+   "name": "Space pool used right",
+   "ticks": 37949,
+   "gameSeconds": 1897.45,
+   "hashGame": "0f5e46be716c8620",
+   "wallMs": 252564,
+   "leg": 1
+  },
+  {
+   "id": "M08",
+   "name": "auto-generators available",
+   "ticks": 38019,
+   "gameSeconds": 1900.95,
+   "hashGame": "3692cba81049ea5b",
+   "wallMs": 253030,
+   "leg": 1
+  },
+  {
+   "id": "M10",
+   "name": "native toggles adopted",
+   "ticks": 39391,
+   "gameSeconds": 1969.55,
+   "hashGame": "f42013026980266b",
+   "wallMs": 262161,
+   "leg": 1
+  },
+  {
+   "id": "M09",
+   "name": "all three (a33)",
+   "ticks": 39929,
+   "gameSeconds": 1996.45,
+   "hashGame": "4f6f8d074fdb05f4",
+   "wallMs": 265741,
+   "leg": 1
+  },
+  {
+   "id": "M11",
+   "name": "e11 before Enhancers",
+   "ticks": 40307,
+   "gameSeconds": 2015.35,
+   "hashGame": "6b2f749f10011893",
+   "wallMs": 268282,
+   "leg": 2
+  },
+  {
+   "id": "M14",
+   "name": "keep b/g upgrades; resets-nothing",
+   "ticks": 40385,
+   "gameSeconds": 2019.25,
+   "hashGame": "c66b69a24d61623d",
+   "wallMs": 268808,
+   "leg": 2
+  },
+  {
+   "id": "M12",
+   "name": "tax refunded",
+   "ticks": 40435,
+   "gameSeconds": 2021.75,
+   "hashGame": "4c7011ffd4269b7b",
+   "wallMs": 269145,
+   "leg": 2
+  },
+  {
+   "id": "M15",
+   "name": "Super Boosters",
+   "ticks": 42087,
+   "gameSeconds": 2104.35,
+   "hashGame": "f65c98fcf224c7be",
+   "wallMs": 280275,
+   "leg": 2
+  },
+  {
+   "id": "M16",
+   "name": "row-2 push",
+   "ticks": 43160,
+   "gameSeconds": 2158,
+   "hashGame": "831067716125b35d",
+   "wallMs": 287505,
+   "leg": 2
+  },
+  {
+   "id": "M17",
+   "name": "Quirks",
+   "ticks": 166173,
+   "gameSeconds": 8308.65,
+   "hashGame": "2abdf7f7eb24594a",
+   "wallMs": 1134236,
+   "leg": 5
+  },
+  {
+   "id": "M18",
+   "name": "q ms 0–1",
+   "ticks": 168503,
+   "gameSeconds": 8425.15,
+   "hashGame": "30e518a722f4d41f",
+   "wallMs": 1150601,
+   "leg": 5
+  },
+  {
+   "id": "M19",
+   "name": "q ms 3",
+   "ticks": 168875,
+   "gameSeconds": 8443.75,
+   "hashGame": "070943b092408bdb",
+   "wallMs": 1153214,
+   "leg": 5
+  },
+  {
+   "id": "M20",
+   "name": "Hindrances visible",
+   "ticks": 169616,
+   "gameSeconds": 8480.8,
+   "hashGame": "156b4ae4b3d13fe7",
+   "wallMs": 1158418,
+   "leg": 5
+  },
+  {
+   "id": "M21",
+   "name": "h unlocked",
+   "ticks": 194873,
+   "gameSeconds": 9743.65,
+   "hashGame": "05056fe0db2e3bfd",
+   "wallMs": 1335817,
+   "leg": 5
+  },
+  {
+   "id": "M22",
+   "name": "q ms 5",
+   "ticks": 197681,
+   "gameSeconds": 9884.05,
+   "hashGame": "8e9c2de582df9421",
+   "wallMs": 1355540,
+   "leg": 5
+  },
+  {
+   "id": "M23",
+   "name": "H11 Upgrade Desert",
+   "ticks": 198413,
+   "gameSeconds": 9920.65,
+   "hashGame": "2e93eea1388626a5",
+   "wallMs": 1360681,
+   "leg": 5
+  },
+  {
+   "id": "M24",
+   "name": "q11–q13",
+   "ticks": 200066,
+   "gameSeconds": 10003.3,
+   "hashGame": "dcc231f40a3ec756",
+   "wallMs": 1372286,
+   "leg": 6
+  },
+  {
+   "id": "M25",
+   "name": "H12 Speed Demon",
+   "ticks": 208522,
+   "gameSeconds": 10426.1,
+   "hashGame": "fb4321811301df1f",
+   "wallMs": 1431023,
+   "leg": 6
+  },
+  {
+   "id": "M27",
+   "name": "H21 Out of Room",
+   "ticks": 296471,
+   "gameSeconds": 14823.55,
+   "hashGame": "084849e244695acf",
+   "wallMs": 2140661,
+   "leg": 8
+  },
+  {
+   "id": "M26",
+   "name": "q14, q21, q22",
+   "ticks": 606522,
+   "gameSeconds": 30326.1,
+   "hashGame": "c7530929442a627d",
+   "wallMs": 4592636,
+   "leg": 16
+  },
+  {
+   "id": "M29",
+   "name": "H22 Descension",
+   "ticks": 701825,
+   "gameSeconds": 35091.25,
+   "hashGame": "cd27950b08592467",
+   "wallMs": 5320370,
+   "leg": 18
+  },
+  {
+   "id": "M28",
+   "name": "q24, q31, q32",
+   "ticks": 739607,
+   "gameSeconds": 36980.35,
+   "hashGame": "8e141b1de801a0b0",
+   "wallMs": 5604122,
+   "leg": 19
+  },
+  {
+   "id": "M30",
+   "name": "Super Generators",
+   "ticks": 898965,
+   "gameSeconds": 44948.25,
+   "hashGame": "5ee9a2ba4f47e4ee",
+   "wallMs": 7228590,
+   "leg": 23
+  }
+ ],
+ "notReached": [
+  "M31",
+  "M32",
+  "M33",
+  "M34",
+  "M35",
+  "M36",
+  "M37",
+  "M38",
+  "M39",
+  "M40",
+  "M41",
+  "M42",
+  "M43",
+  "M44",
+  "M45",
+  "M46",
+  "M47",
+  "M48",
+  "M49",
+  "M50",
+  "M51",
+  "M52",
+  "M53"
+ ],
+ "stop": {
+  "ticks": 1600000,
+  "gameSeconds": 80000,
+  "hashGame": "5e8e63215968ed84",
+  "wallMs": 11989740,
+  "inForce": [
+   "sg-keep",
+   "ql5-quirk-rate"
+  ],
+  "points": "3.7566378642580265e14057"
+ },
+ "stages": [
+  {
+   "stage": "ql5-quirk-rate",
+   "on": true,
+   "ticks": 627445,
+   "gameSeconds": 31372.25
+  },
+  {
+   "stage": "ql6-hold-for-q32",
+   "on": true,
+   "ticks": 682100,
+   "gameSeconds": 34105
+  },
+  {
+   "stage": "ql6-hold-for-q32",
+   "on": false,
+   "ticks": 739607,
+   "gameSeconds": 36980.35
+  },
+  {
+   "stage": "q33-sg-unlock",
+   "on": true,
+   "ticks": 885453,
+   "gameSeconds": 44272.65
+  },
+  {
+   "stage": "sg-keep",
+   "on": true,
+   "ticks": 898965,
+   "gameSeconds": 44948.25
+  },
+  {
+   "stage": "q33-sg-unlock",
+   "on": false,
+   "ticks": 898965,
+   "gameSeconds": 44948.25
+  }
+ ],
+ "queues": [
+  {
+   "id": "ca-ch-h-22",
+   "startedAt": 34105,
+   "endedAt": 35091.2,
+   "outcome": "done",
+   "state": "done"
+  }
+ ],
+ "legs": [
+  {
+   "leg": 1,
+   "name": "L001",
+   "ticks": 40000,
+   "gameSeconds": 2000,
+   "hashGame": "d5ccf6986efa2bd8",
+   "wallMs": 266214,
+   "ticksPerSec": 150
+  },
+  {
+   "leg": 2,
+   "name": "L002",
+   "ticks": 80000,
+   "gameSeconds": 4000,
+   "hashGame": "542cebb838ed51c0",
+   "wallMs": 269506,
+   "ticksPerSec": 148
+  },
+  {
+   "leg": 3,
+   "name": "L003",
+   "ticks": 120000,
+   "gameSeconds": 6000,
+   "hashGame": "05c80724b8942927",
+   "wallMs": 275520,
+   "ticksPerSec": 145
+  },
+  {
+   "leg": 4,
+   "name": "L004",
+   "ticks": 160000,
+   "gameSeconds": 8000,
+   "hashGame": "1cd02b8c4f94f1ef",
+   "wallMs": 279638,
+   "ticksPerSec": 143
+  },
+  {
+   "leg": 5,
+   "name": "L005",
+   "ticks": 200000,
+   "gameSeconds": 10000,
+   "hashGame": "2c191b8c89478c1d",
+   "wallMs": 280950,
+   "ticksPerSec": 142
+  },
+  {
+   "leg": 6,
+   "name": "L006",
+   "ticks": 240000,
+   "gameSeconds": 12000,
+   "hashGame": "a50efeb865145510",
+   "wallMs": 277845,
+   "ticksPerSec": 144
+  },
+  {
+   "leg": 7,
+   "name": "L007",
+   "ticks": 280000,
+   "gameSeconds": 14000,
+   "hashGame": "9303a61734e2206c",
+   "wallMs": 367417,
+   "ticksPerSec": 109
+  },
+  {
+   "leg": 8,
+   "name": "L008",
+   "ticks": 320000,
+   "gameSeconds": 16000,
+   "hashGame": "b3cfa56aa814f60f",
+   "wallMs": 300093,
+   "ticksPerSec": 133
+  },
+  {
+   "leg": 9,
+   "name": "L009",
+   "ticks": 360000,
+   "gameSeconds": 18000,
+   "hashGame": "0a5bc42db55ce558",
+   "wallMs": 353909,
+   "ticksPerSec": 113
+  },
+  {
+   "leg": 10,
+   "name": "L010",
+   "ticks": 400000,
+   "gameSeconds": 20000,
+   "hashGame": "136b4ecafa028a21",
+   "wallMs": 318024,
+   "ticksPerSec": 126
+  },
+  {
+   "leg": 11,
+   "name": "L011",
+   "ticks": 440000,
+   "gameSeconds": 22000,
+   "hashGame": "b5441b85c3792563",
+   "wallMs": 354240,
+   "ticksPerSec": 113
+  },
+  {
+   "leg": 12,
+   "name": "L012",
+   "ticks": 480000,
+   "gameSeconds": 24000,
+   "hashGame": "78d4028502c25b41",
+   "wallMs": 323930,
+   "ticksPerSec": 123
+  },
+  {
+   "leg": 13,
+   "name": "L013",
+   "ticks": 520000,
+   "gameSeconds": 26000,
+   "hashGame": "7da5263bad427c19",
+   "wallMs": 290164,
+   "ticksPerSec": 138
+  },
+  {
+   "leg": 14,
+   "name": "L014",
+   "ticks": 560000,
+   "gameSeconds": 28000,
+   "hashGame": "e9ab2d5faae9f980",
+   "wallMs": 295067,
+   "ticksPerSec": 136
+  },
+  {
+   "leg": 15,
+   "name": "L015",
+   "ticks": 600000,
+   "gameSeconds": 30000,
+   "hashGame": "61ee8a83f0758627",
+   "wallMs": 288570,
+   "ticksPerSec": 139
+  },
+  {
+   "leg": 16,
+   "name": "L016",
+   "ticks": 640000,
+   "gameSeconds": 32000,
+   "hashGame": "d7639605c22680ee",
+   "wallMs": 316156,
+   "ticksPerSec": 127
+  },
+  {
+   "leg": 17,
+   "name": "L017",
+   "ticks": 680000,
+   "gameSeconds": 34000,
+   "hashGame": "4546322ef83cc23d",
+   "wallMs": 299595,
+   "ticksPerSec": 134
+  },
+  {
+   "leg": 18,
+   "name": "L018",
+   "ticks": 720000,
+   "gameSeconds": 36000,
+   "hashGame": "c9d29ef41237092d",
+   "wallMs": 299715,
+   "ticksPerSec": 133
+  },
+  {
+   "leg": 19,
+   "name": "L019",
+   "ticks": 760000,
+   "gameSeconds": 38000,
+   "hashGame": "a27f339d67753d88",
+   "wallMs": 301053,
+   "ticksPerSec": 133
+  },
+  {
+   "leg": 20,
+   "name": "L020",
+   "ticks": 800000,
+   "gameSeconds": 40000,
+   "hashGame": "db88d13339b4824b",
+   "wallMs": 345051,
+   "ticksPerSec": 116
+  },
+  {
+   "leg": 21,
+   "name": "L021",
+   "ticks": 840000,
+   "gameSeconds": 42000,
+   "hashGame": "e02f5fdc40dd7039",
+   "wallMs": 443526,
+   "ticksPerSec": 90
+  },
+  {
+   "leg": 22,
+   "name": "L022",
+   "ticks": 880000,
+   "gameSeconds": 44000,
+   "hashGame": "48956443127dc3e2",
+   "wallMs": 497382,
+   "ticksPerSec": 80
+  },
+  {
+   "leg": 23,
+   "name": "L023",
+   "ticks": 920000,
+   "gameSeconds": 46000,
+   "hashGame": "af6867c8405e112b",
+   "wallMs": 390246,
+   "ticksPerSec": 102
+  },
+  {
+   "leg": 24,
+   "name": "L024",
+   "ticks": 960000,
+   "gameSeconds": 48000,
+   "hashGame": "fe51a191cd77bb88",
+   "wallMs": 312110,
+   "ticksPerSec": 128
+  },
+  {
+   "leg": 25,
+   "name": "L025",
+   "ticks": 1000000,
+   "gameSeconds": 50000,
+   "hashGame": "0321dffc7f28a422",
+   "wallMs": 276936,
+   "ticksPerSec": 144
+  },
+  {
+   "leg": 26,
+   "name": "L026",
+   "ticks": 1040000,
+   "gameSeconds": 52000,
+   "hashGame": "484c9600c363226a",
+   "wallMs": 270168,
+   "ticksPerSec": 148
+  },
+  {
+   "leg": 27,
+   "name": "L027",
+   "ticks": 1080000,
+   "gameSeconds": 54000,
+   "hashGame": "26688ce94f95fd37",
+   "wallMs": 279953,
+   "ticksPerSec": 143
+  },
+  {
+   "leg": 28,
+   "name": "L028",
+   "ticks": 1120000,
+   "gameSeconds": 56000,
+   "hashGame": "c5516b8218a17203",
+   "wallMs": 276438,
+   "ticksPerSec": 145
+  },
+  {
+   "leg": 29,
+   "name": "L029",
+   "ticks": 1160000,
+   "gameSeconds": 58000,
+   "hashGame": "bc925a78c49f6793",
+   "wallMs": 273937,
+   "ticksPerSec": 146
+  },
+  {
+   "leg": 30,
+   "name": "L030",
+   "ticks": 1200000,
+   "gameSeconds": 60000,
+   "hashGame": "c414af8328d155c1",
+   "wallMs": 263084,
+   "ticksPerSec": 152
+  },
+  {
+   "leg": 31,
+   "name": "L031",
+   "ticks": 1240000,
+   "gameSeconds": 62000,
+   "hashGame": "77fd2203d353cc0b",
+   "wallMs": 269789,
+   "ticksPerSec": 148
+  },
+  {
+   "leg": 32,
+   "name": "L032",
+   "ticks": 1280000,
+   "gameSeconds": 64000,
+   "hashGame": "03aa44f122b2a3fa",
+   "wallMs": 254605,
+   "ticksPerSec": 157
+  },
+  {
+   "leg": 33,
+   "name": "L033",
+   "ticks": 1320000,
+   "gameSeconds": 66000,
+   "hashGame": "4d625392368745a7",
+   "wallMs": 256601,
+   "ticksPerSec": 156
+  },
+  {
+   "leg": 34,
+   "name": "L034",
+   "ticks": 1360000,
+   "gameSeconds": 68000,
+   "hashGame": "3b13d0f7bceb4174",
+   "wallMs": 254602,
+   "ticksPerSec": 157
+  },
+  {
+   "leg": 35,
+   "name": "L035",
+   "ticks": 1400000,
+   "gameSeconds": 70000,
+   "hashGame": "3455092fbd791b98",
+   "wallMs": 258660,
+   "ticksPerSec": 155
+  },
+  {
+   "leg": 36,
+   "name": "L036",
+   "ticks": 1440000,
+   "gameSeconds": 72000,
+   "hashGame": "031016cb0c04a5ab",
+   "wallMs": 261900,
+   "ticksPerSec": 153
+  },
+  {
+   "leg": 37,
+   "name": "L037",
+   "ticks": 1480000,
+   "gameSeconds": 74000,
+   "hashGame": "f355a8ac4ebf813a",
+   "wallMs": 265645,
+   "ticksPerSec": 151
+  },
+  {
+   "leg": 38,
+   "name": "L038",
+   "ticks": 1520000,
+   "gameSeconds": 76000,
+   "hashGame": "6dafb611586cb1f0",
+   "wallMs": 255338,
+   "ticksPerSec": 157
+  },
+  {
+   "leg": 39,
+   "name": "L039",
+   "ticks": 1560000,
+   "gameSeconds": 78000,
+   "hashGame": "84c4efb3077690da",
+   "wallMs": 255481,
+   "ticksPerSec": 157
+  },
+  {
+   "leg": 40,
+   "name": "L040",
+   "ticks": 1600000,
+   "gameSeconds": 80000,
+   "hashGame": "5e8e63215968ed84",
+   "wallMs": 270682,
+   "ticksPerSec": 148
+  }
+ ]
+}

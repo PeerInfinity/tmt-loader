@@ -1050,9 +1050,54 @@ table's `once` queue) stays done across a reload and 40 ticks, while the control
 behind the record (the engine's own save, unwrapped) is discarded with the notice on screen; an import, and a hard
 reset, discard it. **Cost per save** at QL6: median ~0.6 ms, max ~2.5 ms (a ~6.5 KB record).
 
+(whole-1) The record also carries the RUN TIMELINE (below) beside `runtime` — `{…, runtime, timeline}` — restored
+with it, under the same fingerprint, and a restore adds a *reload* event to it. A save with nothing in the runtime but
+a timeline writes a record too (a profile-`off` page records nothing, so it still writes none).
+
 `tmtLoader.autoMemory`: `key()`, `fingerprint()`, `record()`, `status()` (`state` none / restored / discarded /
 waiting, `why`, `notice`, write and save counts, the last and longest write in ms), `notice()`, `dismiss()`,
 `hooks()` (which of `save` / `importSave` / `hardReset` were wrapped), `write()` and `atLoad(final)` (the page's).
+
+## The run timeline (whole-1)
+
+**For players.** The automation tab's **Progress** subtab opens with *What happened in this run*: newest first, in
+game time and plain words —
+
+- *Reached “H22 Descension”* — a ladder mark (on the two games with a ladder), the first tick it held;
+- *The stage “Let Super Generators grow” switched on / off* (and *(you switched it off)* when it was the player's switch);
+- *The shipped move “attempt Descension (hindrance)” started / finished / stopped: …* — the table's queues;
+- *Your queue “…” started / finished / stopped: …* — the player's own;
+- *Fast-forwarded 3m 20s of game time (faithful ticks) and reached the mark …* — the speed controls, at the game time
+  the fast-forward started; an approximate one says *approximate ticks of N s — results can differ from normal play*;
+- *The page was reloaded; the automation carried on from where it was* — the reload memory restored it.
+
+It is kept across a reload (with the automation's memory, above), and it is bounded: the newest 200 events, with a line
+saying how many older ones are not listed. The ids (a stage's, a queue's, a mark's, the tick) show only under the
+developer details.
+
+**How (`loader/tmt-auto.js`, block `(whole-1) THE RUN TIMELINE`).** ⛔ It observes and never decides: nothing in it
+writes `player`, and nothing in it is in `runtimeState()`, so every snapshot and pinned record is what it was
+(`loader/timeline.test.mjs`). Its sources: the stages' transition records (the same records `stageHistory()` keeps — a
+process's FIRST evaluation of a stage already in force is not recorded again when the carried-over timeline knows it is
+on), the queue runner's own records (`trigger`, `end`, `abort`, through `T.timeline.note('queue', …)`), the speed
+controls' outcome (`T.timeline.note('ff', …)`), and the ladder's marks, checked once per game loop beside the stages —
+each compiled once, only the ones not yet reached.
+
+⚠ **Marks only where the ladder is already here.** The core fetches nothing and the host's door is lazy (speed-1's S8:
+a page that never asks requests no ladder), so the marks are read once the ladder has arrived: the Progress subtab
+asks for it when it opens, a fast-forward to a mark does, and a reload whose carried-over timeline was reading marks
+asks again at once. A mark that already held the first time the marks were read is listed as *Already past “…” when the
+marks were first read* — never with an invented time. ⚠ A mark is a STATE predicate: one that held when first read is
+recorded then, and one that did not hold at that moment (e.g. points inside a challenge) is recorded when it next holds.
+In the Node harness `T.ladder` is set only with `--log` or the planner, so a plain harness leg reads no marks at all.
+
+`tmtLoader.timeline()` → `{events (newest first, each with its words in `text` and `time`), total, dropped, cap, counts,
+marks, marksRead, kinds, stats}`; `timeline.note(kind, …)`, `timeline.memory()`, `timeline.restore(m)`,
+`timeline.clear()`, `timeline.text(e)`.
+
+**Gates:** `gates-whole --part timeline` (TL1 every kind, on ptr from m28/QL6: a mark, a stage on and off, a shipped move
+starting and ending, the player's queue starting and ending, a fast-forward; TL2 across a reload; TL3 the bound; TL4 no
+id in a player's line; TL5 390 px), `loader/timeline.test.mjs`, mutants `tools/harness/mutants-whole.sh`.
 
 ## Derivation
 

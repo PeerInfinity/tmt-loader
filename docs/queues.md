@@ -217,6 +217,10 @@ two limits and the version. **No pin moved**: both waits are met in their call's
 hash as the same queue in game-seconds, at diff 1 (87,055) and at 0.05 (gates-parts V1); gates-shipq A1 (M29 / M28 /
 M30 from all/M26) and gates-h22 are unmoved.
 
+(whole-1) `time-priced-purchase` and `reset-requirement` write theirs in ticks too (version 4), and every template
+keeps its fact ids in `dev` — a string on the queue and on any step, the developer-only twin of `comment` (the runner
+refuses a `dev` that is not a string; the Parts subtab shows it under the developer details). docs/templates.md.
+
 ### Version 2 of the format
 
 `"version": 2` (absent = 1, exactly tpl1's format) adds two fields and nothing else: a queue's **`name`** (≤ 80

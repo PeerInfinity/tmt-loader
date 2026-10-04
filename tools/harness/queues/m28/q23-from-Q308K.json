@@ -17,7 +17,8 @@
    "zeroed-by:ss:player.q.time"
   ]
  },
- "comment": "upg:q:23's price grows with player.q.time (exponent 5.4), the purse as player.q.time^5. Hold every reset that zeroes player.q.time and buy at the moment the rollback measured. It starts whenever upg:q:23 is unlocked and not owned.",
+ "comment": "The price of “The Waiting Game” (quirks) grows with the time since the last quirks reset. The queue holds every reset that would zero it and buys at the moment the check measured. It starts whenever “The Waiting Game” (quirks) is unlocked and not owned.",
+ "dev": "upg:q:23's price grows with player.q.time (exponent 5.4), the purse as player.q.time^5. Hold every reset that zeroes player.q.time and buy at the moment the rollback measured. It starts whenever upg:q:23 is unlocked and not owned.",
  "steps": [
   {
    "do": "hold",
@@ -29,7 +30,8 @@
     "reset:o",
     "reset:ss"
    ],
-   "comment": "these zero player.q.time (zeroed-by:h:player.q.time, zeroed-by:o:player.q.time, zeroed-by:q:player.q.time, zeroed-by:ss:player.q.time), and the purchase is the queue's"
+   "comment": "hold what would reset the time since the last quirks reset — Hindrance reset, Hindrance challenges, Quirks reset, Quirks upgrades, Solarity reset, Subspace reset — so the purchase is the queue's",
+   "dev": "these zero player.q.time (zeroed-by:h:player.q.time, zeroed-by:o:player.q.time, zeroed-by:q:player.q.time, zeroed-by:ss:player.q.time), and the purchase is the queue's"
   },
   {
    "do": "wait",
@@ -38,7 +40,8 @@
     "gs": 300
    },
    "onTimeout": "abort",
-   "comment": "the rollback found it affordable 38 s into the hold, at player.q.time = 38 (diff 1); the time limit is the check's horizon, 300 game-s"
+   "comment": "wait until it is affordable — a check on a copy of the game found it affordable 38 game-s into the hold; it gives up after 300 game-s",
+   "dev": "the rollback found it affordable 38 s into the hold, at player.q.time = 38 (diff 1); the time limit is the check's horizon, 300 game-s"
   },
   {
    "do": "call",
@@ -47,19 +50,20 @@
     "q",
     23
    ],
-   "comment": "buy upg:q:23"
+   "comment": "buy “The Waiting Game” (quirks)",
+   "dev": "buy upg:q:23"
   },
   {
    "do": "wait",
    "until": "hasUpgrade(\"q\", 23)",
    "timeout": {
-    "gs": 2
+    "ticks": 2
    },
    "onTimeout": "abort",
    "comment": "the purchase happened"
   }
  ],
- "version": 3,
+ "version": 4,
  "name": "buy The Waiting Game (quirks)",
  "relies": {
   "options": {
