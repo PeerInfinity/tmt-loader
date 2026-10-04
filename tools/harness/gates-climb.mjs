@@ -32,6 +32,10 @@
 //   TL7 a fast-forward to a condition: words where every clause reads, else "a condition"; no code in a player's line;
 //       the code under the developer details
 //   TL8 newest first strictly by game time (a fast-forward recorded at its end sits at its start), ties in recorded order
+// Part write (the WRITER, not a gate): `--part write --chain <dir> [--wall <text>]` — the climb record from a chain
+//   `tools/harness/whole.mjs` ran from whole-1's leg fixture under the shipped table: whole-1's legs and marks up to the
+//   chain's first leg, then the chain's own (summarized by whole.mjs), the total quirks at the stop, the wall; the mark
+//   fixtures past M30 and every 5th leg fixture copied under snapshots/ptr/whole-climb1/
 // Part grep
 //   X1 no game id, ptr layer id or ladder mark id in the code this slice added
 // ⛔ EVERY FLAG IS DECLARED; `--assert` requires the exact row count, all green.
@@ -44,10 +48,10 @@ import { appendSection } from './summary.mjs';
 entryOnly(import.meta.url);
 
 const a = parseArgs(process.argv.slice(2), ['no-summary', 'no-write', 'assert']);
-const KNOWN = new Set(['_', 'part', 'only', 'no-summary', 'no-write', 'assert', 'seg', 'segs']);
+const KNOWN = new Set(['_', 'part', 'only', 'no-summary', 'no-write', 'assert', 'seg', 'segs', 'chain', 'wall']);
 for (const k of Object.keys(a)) if (!KNOWN.has(k)) { console.error(`REFUSED: unknown flag --${k}`); process.exit(2); }
 const PART = String(a.part || 'all');
-const PARTS = ['rows', 'switch', 'unchanged', 'accept', 'full', 'timeline', 'grep'];
+const PARTS = ['rows', 'switch', 'unchanged', 'accept', 'full', 'timeline', 'grep', 'write'];
 if (![...PARTS, 'all'].includes(PART)) { console.error(`REFUSED: --part ${PART} is not ${PARTS.join(' | ')} | all`); process.exit(2); }
 const TL_ROWS = ['fold', 'words', 'order'];
 const ONLY = a.only ? String(a.only).split(',') : null;
@@ -327,6 +331,41 @@ async function partTimeline(browser) {
   await c2.close();
 }
 
+// ---- Part write (the record) -------------------------------------------------------------------------------------------
+async function partWrite() {
+  const dir = path.resolve(String(a.chain || '')), legs = path.join(dir, 'legs'), prog = path.join(legs, 'progress.jsonl');
+  if (!a.chain || !fs.existsSync(prog)) { console.error('REFUSED: --part write needs --chain <dir> with legs/progress.jsonl'); process.exit(2); }
+  const old = fixture(OLD_RECORD), lines = fs.readFileSync(prog, 'utf8').split('\n').filter(Boolean).map((l) => JSON.parse(l));
+  const seed = lines[0];
+  // whole.mjs summarizes the chain's own legs (the seed line carries whole-1's marks: they are taken from whole-1's record)
+  const own = path.join(TMP, 'own.jsonl');
+  fs.writeFileSync(own, lines.slice(1).map((l) => JSON.stringify(l)).join('\n') + '\n');
+  const sumf = path.join(TMP, 'sum.json');
+  const r = await child([path.join(REPO, 'tools/harness/whole.mjs'), 'ptr', '--dir', path.join(dir, 'marks'), '--legs-dir', legs, '--progress', own, '--leg-gs', String(old.legGs),
+    '--cap-gs', String(lines[lines.length - 1].gameSeconds), '--watch', path.join(REPO, WATCH), '--summarize', sumf]);
+  if (r.code) { console.error(r.out); process.exit(1); }
+  const S = JSON.parse(fs.readFileSync(sumf, 'utf8'));
+  const base = { legs: old.legs.filter((l) => l.leg <= seed.leg), marks: old.marks.filter((m) => m.leg <= seed.leg), stages: old.stages.filter((x) => x.ticks <= seed.ticks), queues: old.queues };
+  const wall0 = base.legs.reduce((x, l) => x + l.wallMs, 0);
+  const stopSnap = JSON.parse(fs.readFileSync(path.join(legs, `${lines[lines.length - 1].name}.json`), 'utf8'));
+  const P = typeof stopSnap.player === 'string' ? JSON.parse(stopSnap.player) : stopSnap.player;
+  const rec = { ...S, note: 'written by gates-climb --part write: the whole-game run under the shipped table (climb-1), legs 1–' + seed.leg + ' whole-1\'s own (recorded/whole-ptr.json — the new parts are not in force before them), then the chain resumed from whole/legs/' + seed.name + ' under the shipped table at diff 0.05',
+    climbFromLeg: seed.leg, table: TABLE, tableBefore: TABLE_BEFORE,
+    marks: [...base.marks, ...S.marks.map((m) => ({ ...m, wallMs: m.wallMs + wall0 }))].sort((x, y) => x.ticks - y.ticks),
+    stages: [...base.stages, ...S.stages], queues: [...base.queues, ...S.queues.filter((q) => !base.queues.some((b) => b.id === q.id && b.startedAt === q.startedAt))],
+    legs: [...base.legs, ...S.legs],
+    stop: { ...S.stop, wallMs: S.stop.wallMs + wall0, totalQuirks: String(P.q.total), quirks: String(P.q.points), quirkLayers: String(P.q.buyables[11]), quirkUpgrades: P.q.upgrades.slice(),
+      superBoosters: String(P.sb.points), superGenerators: String(P.sg.points), space: String(P.s.points), hindrances: P.h.challenges },
+    wall: a.wall ? { text: String(a.wall) } : null };
+  rec.notReached = (S.notReached || []).filter((id) => !rec.marks.some((m) => m.id === id));
+  writeJSON(path.join(REPO, RECORD), rec);
+  // the fixtures: marks past M30 (and the watched states), and every 5th leg
+  fs.mkdirSync(path.join(REPO, CLIMB, 'legs'), { recursive: true });
+  for (const m of S.marks) fs.copyFileSync(path.join(dir, 'marks', `${m.id}.json`), path.join(REPO, CLIMB, `${m.id}.json`));
+  for (const l of S.legs) if (l.leg % 5 === 0) fs.copyFileSync(path.join(legs, `${l.name}.json`), path.join(REPO, CLIMB, 'legs', `${l.name}.json`));
+  console.log(`wrote ${RECORD}: ${rec.marks.length} marks (${S.marks.map((m) => m.id + '@' + m.gameSeconds).join(' ')}), ${rec.legs.length} legs, stop ${rec.stop.gameSeconds} game-s, ${rec.stop.totalQuirks} total quirks`);
+}
+
 // ---- Part grep -------------------------------------------------------------------------------------------------------
 function partGrep() {
   const srcs = [['loader/tmt-auto.js', 'loader/tmt-auto.js'], ['loader/tmt-speed.js', 'loader/tmt-speed.js'], ['loader/tmt-qedit.js', 'loader/tmt-qedit.js'], ['tools/harness/whole.mjs', 'tools/harness/whole.mjs']];
@@ -365,7 +404,8 @@ async function withBrowser(fn) {
   const browser = await chromium.launch();
   try { await fn(browser); } finally { await browser.close(); server.stop(); }
 }
-const doPart = (p) => PART === p || (PART === 'all' && p !== 'full' && p !== 'unchanged');
+const doPart = (p) => PART === p || (PART === 'all' && p !== 'full' && p !== 'unchanged' && p !== 'write');
+if (PART === 'write') { await partWrite(); fs.rmSync(TMP, { recursive: true, force: true }); process.exit(0); }
 let expected = 0;
 if (doPart('rows')) { partRows(); expected += 2; }
 if (doPart('switch')) { await partSwitch(); expected += 1; }
