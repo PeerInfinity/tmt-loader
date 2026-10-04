@@ -1071,6 +1071,19 @@ game time and plain words —
   the fast-forward started; an approximate one says *approximate ticks of N s — results can differ from normal play*;
 - *The page was reloaded; the automation carried on from where it was* — the reload memory restored it.
 
+(climb-1) Three rules for how it reads:
+- **The marks already past fold into ONE line.** When the marks are first read late in a game, every mark that already
+  held is one row — *Already past 24 marks when the marks were first read* — that opens (a `<details>`) to list them by
+  name. One such mark alone keeps its own line. `tmtLoader.timeline().rows` is what the subtab draws (the fold included);
+  `.events` stays whole.
+- **A fast-forward never prints a raw condition.** Its target is said in words — a mark by its name (*and reached
+  “H22 Descension”*), a condition through the Parts subtab's clause reader where every clause is one it can read (*and
+  reached the point where you own “Generated Progression” (quirks)*), otherwise *a condition*. The code is kept on the
+  event (`code`) and shown only under the developer details. The clause reader moved from `tmt-qedit.js` into the core
+  (`tmtLoader.conditionWords`) so the timeline does not wait for the lazy editor; the editor uses the same one.
+- **Strictly by game time, newest first.** A fast-forward is recorded when it ends but placed at the game time it started;
+  events at the same game time keep the order they were recorded in.
+
 It is kept across a reload (with the automation's memory, above), and it is bounded: the newest 200 events, with a line
 saying how many older ones are not listed. The ids (a stage's, a queue's, a mark's, the tick) show only under the
 developer details.
@@ -1097,7 +1110,8 @@ marks, marksRead, kinds, stats}`; `timeline.note(kind, …)`, `timeline.memory()
 
 **Gates:** `gates-whole --part timeline` (TL1 every kind, on ptr from m28/QL6: a mark, a stage on and off, a shipped move
 starting and ending, the player's queue starting and ending, a fast-forward; TL2 across a reload; TL3 the bound; TL4 no
-id in a player's line; TL5 390 px), `loader/timeline.test.mjs`, mutants `tools/harness/mutants-whole.sh`.
+id in a player's line; TL5 390 px), (climb-1) `gates-climb --part timeline` (TL6 the fold, TL7 a condition in words or
+"a condition", TL8 the order — on the real page), `loader/timeline.test.mjs`, mutants `tools/harness/mutants-whole.sh`.
 
 ## Derivation
 
