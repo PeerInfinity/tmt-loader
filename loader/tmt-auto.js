@@ -2608,6 +2608,10 @@
   // Precedence: where the player's saved choices sit — a switched-off stage is not in force (its features fall to the
   // next stage or the table), a switched-off shipped queue is skipped by name. Every read and write is wrapped.
   var PARTS_KEY = 'parts', PARTS_FORMAT = 'tmt-parts/1';
+  // ⚖ climb-2: a stage the table ships switched off (`enabled: false`) is NOT the player's to switch on — the same as a
+  // shipped queue the game ships off. It was measured to help in one run and not yet confirmed from other start points;
+  // the table's author switches it on once it is. So the store has no "on" for it, and its condition cannot be given.
+  var SHIPPED_OFF_WHY = 'this stage is switched off in this game\'s table — it was measured but is not yet confirmed to help everywhere, so it cannot be switched on here';
   var partsMem = null, partsWrites = 0, partsListeners = [];
   function partsKey() { var st = T.storage; return st && st.prefix && st.raw ? st.prefix + PARTS_KEY : null; }
   function partsBlank() { return { stagesOff: {}, queuesOff: {}, when: {} }; }
@@ -2653,6 +2657,7 @@
     stageWhen: function (id) { partsRead(); return stageWhenYours(id); },
     setStageOff: function (id, off) {
       if (!stageById(id)) return { ok: false, error: 'this game\'s automation has no stage "' + id + '"' };
+      if (off && !stageById(id).enabled) return { ok: false, error: SHIPPED_OFF_WHY };
       var p = partsRead();
       if (off) p.stagesOff[id] = true; else delete p.stagesOff[id];
       partsWrite();
@@ -2663,6 +2668,7 @@
       if (!stageById(id)) return { ok: false, error: 'this game\'s automation has no stage "' + id + '"' };
       var p = partsRead();
       if (src === null || src === undefined || String(src).trim() === '') { delete p.when[id]; partsWrite(); return { ok: true, error: null }; }
+      if (!stageById(id).enabled) return { ok: false, error: SHIPPED_OFF_WHY };
       src = String(src).trim();
       var w = checkPredicate(src);
       if (w) return { ok: false, error: w };
@@ -2693,8 +2699,9 @@
     for (var i = 0; i < stagesNow.length; i++) {
       var S = stagesNow[i], v = false;
       // (parts-1) a stage the PLAYER switched off is not in force and not evaluated; one they gave their own condition
-      // is evaluated by that condition instead of the table's
-      if (stageOffByYou(S.id)) continue;
+      // is evaluated by that condition instead of the table's. (climb-2) A stage the TABLE ships switched off
+      // (`enabled: false`) is never in force and never evaluated, whatever the player's store says.
+      if (!S.enabled || stageOffByYou(S.id)) continue;
       stageStats.evals++;
       try { v = !!T.predicate(stageWhenYours(S.id) || S.when)(); } catch (e) { v = false; err[S.id] = String((e && e.message) || e); }
       if (!v) continue;
@@ -2734,7 +2741,7 @@
     var named = [], errs = [];
     for (var i = 0; i < stagesNow.length; i++) {
       var S = stagesNow[i];
-      if (S.policies[f.id] === undefined && S.gates[f.id] === undefined) continue;
+      if (!S.enabled || (S.policies[f.id] === undefined && S.gates[f.id] === undefined)) continue;   // (climb-2) a stage shipped off names nothing
       named.push(S.id);
       if (stageErr[S.id]) errs.push({ stage: S.id, message: stageErr[S.id] });
     }
@@ -2755,7 +2762,7 @@
     if (partsMem === null) return out;
     for (var i = 0; i < stagesNow.length; i++) {
       var S = stagesNow[i];
-      if (stageOffByYou(S.id) && (S.policies[f.id] !== undefined || S.gates[f.id] !== undefined)) out.push(S.id);
+      if (S.enabled && stageOffByYou(S.id) && (S.policies[f.id] !== undefined || S.gates[f.id] !== undefined)) out.push(S.id);
     }
     return out;
   }
@@ -2783,11 +2790,14 @@
     for (var i = 0; i < stagesNow.length; i++) {
       var S = stagesNow[i], since = null;
       for (var h = stageHist.length - 1; h >= 0; h--) if (stageHist[h].stage === S.id) { since = stageHist[h]; break; }
-      out.push({ id: S.id, when: S.when, policies: Object.assign({}, S.policies), gates: Object.assign({}, S.gates), active: stageOn[S.id] !== undefined,
+      var o = { id: S.id, when: S.when, policies: Object.assign({}, S.policies), gates: Object.assign({}, S.gates), active: stageOn[S.id] !== undefined,
         error: stageErr[S.id] || null, since: since && since.on ? { tick: since.tick, gs: since.gs } : null, off: stagesOff,
         // (parts-1) what the Parts subtab shows: the stage's name and plain-words note, its evidence, and the player's own switches
         name: S.name, note: S.note, provenance: JSON.parse(JSON.stringify(S.provenance)),
-        offByYou: stageOffByYou(S.id), whenYours: stageWhenYours(S.id), whenInForce: stageWhenYours(S.id) || S.when });
+        offByYou: stageOffByYou(S.id), whenYours: stageWhenYours(S.id), whenInForce: stageWhenYours(S.id) || S.when };
+      // (climb-2) only a stage the table ships switched off grows the key, so every pinned row is byte-identical
+      if (!S.enabled) o.enabled = false;
+      out.push(o);
     }
     return out;
   };
@@ -6250,6 +6260,9 @@
           // (parts-1) what a PLAYER reads in the Parts subtab: a short name and, in plain words, what the stage does and why
           name: { type: 'string', pattern: '^\\S', maxLength: 80, description: 'the stage\'s name, in the game\'s own words (the Parts subtab, the readout\'s tooltip)' },
           note: { type: 'string', pattern: '^\\S', description: 'in plain words: what the stage does while it is in force, and why' },
+          // (climb-2) the shipped queues' meaning: `enabled: false` ships the stage SWITCHED OFF — measured and kept with
+          // its provenance, never in force, shown in the Parts subtab with the plain line that says so
+          enabled: { type: 'boolean', description: 'false: the stage is shipped switched off — never in force (absent = true)' },
           when: { type: 'string', pattern: '^\\S', description: 'a JavaScript expression over the engine\'s globals (the `gates` language); a throw reads as FALSE' },
           policies: { type: 'object', additionalProperties: { type: 'string', pattern: '^\\S' } },
           gates: { type: 'object', additionalProperties: { type: 'string', pattern: '^\\S' } },
@@ -6469,7 +6482,7 @@
         if (gw) throw new Error(at + ': gate ' + sg + ' — ' + gw);
       }
       stagesNow.push({ id: s.id, when: s.when, policies: Object.assign({}, s.policies || {}), gates: Object.assign({}, s.gates || {}), provenance: [].concat(s.provenance),
-        name: typeof s.name === 'string' ? s.name : null, note: typeof s.note === 'string' ? s.note : null });
+        name: typeof s.name === 'string' ? s.name : null, note: typeof s.note === 'string' ? s.note : null, enabled: s.enabled !== false });
     });
     // ---- shipq-1: the SHIPPED QUEUES (schema above). The entry is checked here; the queue itself by the runner when it
     // loads them (it knows the step vocabulary). `--auto-opt shippedQueues=off` measures the table without them.
@@ -6491,7 +6504,7 @@
       T.autoQueues.push(JSON.parse(JSON.stringify({ id: e.id, when: e.when, rearm: e.rearm || 'once', cap: e.cap, coolOff: e.coolOff, enabled: e.enabled !== false, queue: e.queue })));
       T.autoQueueProvenance[e.id] = JSON.parse(JSON.stringify([].concat(e.provenance)));   // (parts-1) the Parts subtab's evidence
     });
-    T.autoStages = stagesNow.map(function (s) { return { id: s.id, when: s.when, policies: Object.assign({}, s.policies), gates: Object.assign({}, s.gates) }; });
+    T.autoStages = stagesNow.map(function (s) { return Object.assign({ id: s.id, when: s.when, policies: Object.assign({}, s.policies), gates: Object.assign({}, s.gates) }, s.enabled ? {} : { enabled: false }); });
     stagesOff = so === 'off';
     T.autoProvenance = {};
     T.autoProvenanceRecords = {};

@@ -497,6 +497,8 @@
   }
   function featureWithLayer(id) { return featureTitle(id); }
   function kindOf(id) { var i = String(id).indexOf(':'); return i < 0 ? '' : String(id).slice(0, i); }
+  // (climb-2) the plain line a stage shipped switched off (`enabled: false`) carries in place of its state
+  var TABLE_OFF_WORDS = 'measured but switched off in this game’s table — not yet confirmed to help everywhere';
   /** The table's stages, for a player: name, note, condition in words, in force now, what it sets by TITLES, evidence. */
   function stagesView() {
     var st = typeof T.stages === 'function' ? T.stages() : [];
@@ -507,9 +509,10 @@
         var rw = readable(S.gates[g]), words = rw.every(function (x) { return x.words; }) ? rw.map(function (x) { return x.words; }).join(' and ') : null;
         sets.push({ id: g, title: featureWithLayer(g), what: 'acts only while ' + (words || S.gates[g]), raw: S.gates[g], code: !words });
       }
-      var state = S.off ? 'option-off' : S.offByYou ? 'yours-off' : S.error ? 'error' : S.active ? 'on' : 'waiting';
+      // (climb-2) a stage the TABLE ships switched off says so first: it is never in force, whatever else holds
+      var state = S.enabled === false ? 'table-off' : S.off ? 'option-off' : S.offByYou ? 'yours-off' : S.error ? 'error' : S.active ? 'on' : 'waiting';
       return { id: S.id, name: S.name || S.id, note: S.note || '', state: state,
-        stateWords: { 'option-off': 'not in force — this run has the stages switched off (an option)', 'yours-off': 'switched off by you — the game’s own settings apply to what it sets',
+        stateWords: { 'table-off': TABLE_OFF_WORDS, 'option-off': 'not in force — this run has the stages switched off (an option)', 'yours-off': 'switched off by you — the game’s own settings apply to what it sets',
           error: '⚠ its condition could not be read (' + S.error + '), so it is not in force', on: 'in force now', waiting: 'not in force now — waiting for its condition' }[state],
         when: S.whenInForce, whenTable: S.when, whenYours: S.whenYours, condition: readable(S.whenInForce), sets: sets, evidence: provLines(S.provenance), offByYou: S.offByYou,
         since: S.since };
@@ -783,17 +786,17 @@
       template: '<div class="tmtl-qstage tmtl-part" :data-part="\'stage:\' + s.id" :data-stage="s.id" :data-state="s.state" style="' + BLOCK + ';border-left-color:#5f8f6a">'
         + '<div style="' + ROW + '">'
         +   '<b class="tmtl-qstage-name" style="min-width:0;overflow-wrap:anywhere;flex:1 1 10em;text-align:left">{{ s.name }}</b>'
-        +   '<button type="button" class="tmtl-qstage-onoff" :data-off="s.offByYou ? 1 : 0" style="' + BTN + '" @click="toggle" @keydown.stop>{{ s.offByYou ? \'switch back on\' : \'switch off for me\' }}</button>'
+        +   '<button v-if="s.state !== \'table-off\'" type="button" class="tmtl-qstage-onoff" :data-off="s.offByYou ? 1 : 0" style="' + BTN + '" @click="toggle" @keydown.stop>{{ s.offByYou ? \'switch back on\' : \'switch off for me\' }}</button>'
         + '</div>'
         + '<div class="tmtl-qstage-state" :style="s.state === \'on\' ? \'color:#4f9a6a;text-align:left\' : s.state === \'error\' ? \'' + ERR + '\' : s.state === \'yours-off\' ? \'color:#c08a3e;text-align:left\' : \'' + DIM + '\'"><b>{{ s.stateWords }}</b></div>'
         + '<div v-if="s.note" class="tmtl-qstage-note" style="text-align:left;min-width:0;overflow-wrap:anywhere">{{ s.note }}</div>'
-        + '<div style="' + DIM + ';margin-top:3px">{{ s.whenYours ? \'in force while (your own condition):\' : \'in force while:\' }}</div>'
+        + '<div style="' + DIM + ';margin-top:3px">{{ s.state === \'table-off\' ? \'it would be in force while:\' : s.whenYours ? \'in force while (your own condition):\' : \'in force while:\' }}</div>'
         + '<tmtl-qcond :data="{ c: s.condition, dev: data.dev }"></tmtl-qcond>'
-        + '<div style="' + DIM + ';margin-top:3px">while it is in force, it sets:</div>'
+        + '<div style="' + DIM + ';margin-top:3px">{{ s.state === \'table-off\' ? \'if the game switched it on, it would set:\' : \'while it is in force, it sets:\' }}</div>'
         + '<div v-for="x in s.sets" :key="x.id + x.what" class="tmtl-qstage-sets" :data-feature="x.id" style="' + SUB + ';overflow-wrap:anywhere">• <b>{{ x.title }}</b> {{ x.what }}<span v-if="data.dev" style="opacity:.6;font-size:.85em"> ({{ x.id }}: {{ x.raw }})</span></div>'
         + '<div style="' + ROW + ';margin-top:3px">'
         +   '<button type="button" class="tmtl-qstage-evidence" style="' + BTN + '" @click="showEv = !showEv" @keydown.stop>{{ showEv ? \'hide the evidence\' : \'why: the measurements behind it\' }}</button>'
-        +   '<button type="button" class="tmtl-qstage-editwhen" style="' + BTN + '" @click="editWhen = !editWhen" @keydown.stop>{{ editWhen ? \'done\' : \'change its condition for me\' }}</button>'
+        +   '<button v-if="s.state !== \'table-off\'" type="button" class="tmtl-qstage-editwhen" style="' + BTN + '" @click="editWhen = !editWhen" @keydown.stop>{{ editWhen ? \'done\' : \'change its condition for me\' }}</button>'
         +   '<button v-if="s.whenYours" type="button" class="tmtl-qstage-gamewhen" style="' + BTN + '" @click="gameWhen" @keydown.stop>use the game’s condition</button>'
         + '</div>'
         + '<div v-if="showEv" class="tmtl-qstage-ev" style="' + SUB + '"><div v-for="(e, k) in s.evidence" :key="k" style="' + SUB + ';overflow-wrap:anywhere;border-bottom:1px solid rgba(127,178,217,.15)">{{ e.note }} <span style="opacity:.6;font-size:.85em">({{ e.where }})</span></div></div>'
