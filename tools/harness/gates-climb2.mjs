@@ -324,6 +324,9 @@ async function partFull() {
 // ---- Part robust -------------------------------------------------------------------------------------------------------
 // The score: the game-second of the 8th Quirk Layer (lower is better; not by the horizon = Infinity), and the total quirks
 // at the horizon (higher is better). A cell's runs must end on the same tick and hash.
+// the run of a cell that carries the probe's rows (the first runs from the 90,000-s start ran before the probe read ptr's
+// run clock, so their list is empty; the probe only reads, and both runs end on the same hash)
+const probed = (c) => c.runs.find((r) => (r.resets || []).length) || c.runs[0];
 const ql8Of = (run) => { const m = (run.marks || []).find((x) => x.id === 'QL8'); return m ? m.gameSeconds : Infinity; };
 /** The summary, computed from the cells alone — the writer stores it, RB2 recomputes it. */
 function summarize(Rb) {
@@ -382,7 +385,7 @@ function partRobust() {
     const [A, B] = P.cells.map((k) => Rb.cells.find((c) => `${c.start}:${c.ratio}` === k));
     if (!A || !B) f3.push('the probe names cells the record does not have');
     else {
-      const ra = A.runs[0].resets || [], rb = B.runs[0].resets || [];
+      const ra = probed(A).resets || [], rb = probed(B).resets || [];
       let i = 0; while (i < ra.length && i < rb.length && ra[i][0] === rb[i][0]) i++;
       if (P.partAt !== i) f3.push(`the cells part at reset ${i}, the record says ${P.partAt}`);
       if (!ra.length || !rb.length) f3.push('a cell has no resets recorded');
@@ -491,7 +494,7 @@ function partRobustWrite() {
   Rb.probe = spec.probe || null;
   if (Rb.probe) {
     const [A, B] = Rb.probe.cells.map((k) => cells.find((c) => `${c.start}:${c.ratio}` === k));
-    const ra = A.runs[0].resets, rb = B.runs[0].resets;
+    const ra = probed(A).resets, rb = probed(B).resets;
     let i = 0; while (i < ra.length && i < rb.length && ra[i][0] === rb[i][0]) i++;
     Rb.probe.partAt = i;
   }
