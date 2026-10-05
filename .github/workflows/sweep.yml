@@ -952,6 +952,55 @@ jobs:
   # SOMETHING_OLD_TABLE, the Time-Energy row under PIN_A2); only ptr's four goals() goldens were re-recorded.
   # ⛔ `--assert` holds each part to its exact row count (10 / 9), all green.
   # ---------------------------------------------------------------------------------------------------------------
+  # climb-2 — climb-1's stage SHIPPED OFF (`enabled: false`), the standing record to 130,000 game-s, and the stage scored
+  # from several starts (`gates-climb2.mjs`). The bounded parts on every push: the tables, the state log of the leg that
+  # buys Improvement Boost (OFF1), the Parts subtab (OFF2), the record and its states replayed from its own legs (REC1,
+  # REC2 — five legs side by side), the robustness rows from the record (RB1–RB3), the grep. The record's whole chain
+  # and one robustness cell run again are `qrate1.yml -f part=climb2`.
+  climb2:
+    name: climb2 — the stage shipped off, the standing record to 130,000, the robustness rows, the grep
+    needs: fast
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+          fetch-depth: 1
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - run: npm ci
+
+      - name: Cache the Playwright browser
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+
+      - run: npx playwright install --with-deps chromium
+
+      - name: The battery — table, record, robust, grep, off, page, replay
+        shell: bash
+        run: |
+          set -o pipefail
+          node tools/harness/gates-climb2.mjs --part all --no-summary --assert | tee climb2.txt
+
+      - name: Summary
+        if: always()
+        shell: bash
+        run: |
+          {
+            echo '## climb2 — the stage shipped off, the standing record, the robustness rows'
+            echo ''
+            echo '```'
+            cat climb2.txt 2>/dev/null | grep -aE '^(GREEN|RED|VERDICT)' | cut -c1-400 || echo 'no output'
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
   climb:
     name: climb — past M30 by parts (the rows, the switch, the acceptance), the timeline's polish, the grep
     needs: fast
