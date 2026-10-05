@@ -7,21 +7,22 @@
 //
 // THE RECORDS:
 //   `tools/harness/recorded/whole-ptr.json`         — the chain under the table BEFORE climb-1 (whole-1's, unchanged)
-//   `tools/harness/recorded/whole-ptr-climb1.json`  — the chain under the shipped table (climb-1's), legs 1–20 the same
+//   `tools/harness/recorded/whole-ptr-climb1.json`  — the chain under climb-1's table (stage ON; now the committed copy
+//                                                     whole-climb1/table-climb1.json), legs 1–20 the same
 //                                                     legs as whole-1's (the new part is not in force before M30), then
 //                                                     its own legs from `whole/legs/L020` to the cap
 //   `tools/harness/recorded/climb1-candidates.json` — every candidate part's 0.05 rows (whole stretches, twice each)
 // Part rows
 //   C1 every candidate's rows: each cell's two runs equal (ticks, hashGame, the score), the winner is the best score,
-//      and the shipped table is the winner's
+//      and climb-1's table (the committed copy) is the winner's
 //   C2 the ORDER: the new stage listed after `sg-keep` (shadowed) is the table before climb-1 to the tick and hash
 // Part switch
 //   S1 the new part's switch, from the STATE LOG of the replayed leg that buys Improvement Boost: on at the record's tick,
 //      off at More Layers, the leg's end on the record's hash, and a q reset under it at the stage's ratio
 // Part unchanged (CI: `qrate1.yml -f part=climb`, segments)
-//   U1 from a fresh save the shipped table reaches M01–M30 on the SAME ticks and hashGame as whole-1's record: the
+//   U1 from a fresh save climb-1's table reaches M01–M30 on the SAME ticks and hashGame as whole-1's record: the
 //      chain's own legs replayed (fresh → L004, L004 → L010, L010 → L015, L015 → L020, L020 → the M30 leg) under the
-//      shipped table, every mark compared
+//      climb-1's table, every mark compared
 // Part accept
 //   A1 past M30 the new chain reaches the watched climb (QL8, …) and every mark it reaches before the cap is earlier
 //      than the chain before climb-1 (or that chain never reached it); the wall where it stops is named in the record
@@ -33,7 +34,7 @@
 //       the code under the developer details
 //   TL8 newest first strictly by game time (a fast-forward recorded at its end sits at its start), ties in recorded order
 // Part write (the WRITER, not a gate): `--part write --chain <dir> [--wall <text>]` — the climb record from a chain
-//   `tools/harness/whole.mjs` ran from whole-1's leg fixture under the shipped table: whole-1's legs and marks up to the
+//   `tools/harness/whole.mjs` ran from whole-1's leg fixture under climb-1's table: whole-1's legs and marks up to the
 //   chain's first leg, then the chain's own (summarized by whole.mjs), the total quirks at the stop, the wall; the mark
 //   fixtures past M30 and every 5th leg fixture copied under snapshots/ptr/whole-climb1/
 // Part grep
@@ -69,7 +70,10 @@ const CANDIDATES = 'tools/harness/recorded/climb1-candidates.json';
 const WHOLE = 'tools/harness/snapshots/ptr/whole';
 const CLIMB = 'tools/harness/snapshots/ptr/whole-climb1';
 const WATCH = 'tools/harness/whole/ptr-climb1-watch.json';
-const TABLE = 'games-auto/ptr.json';
+// ⚖ climb-2 (the user, 2026-10-05: ship it off, test robustness): the shipped table now carries climb-1's stage
+// SWITCHED OFF, so every row here that measured or asserted climb-1's table names the committed copy of the table the
+// climb ran under (games-auto/ptr.json at 30bbad5, byte for byte; gates-climb2 R0 checks the copy) — never the shipped one.
+const TABLE = 'tools/harness/snapshots/ptr/whole-climb1/table-climb1.json';
 const TABLE_BEFORE = 'tools/harness/snapshots/ptr/whole-climb1/table-before-climb1.json';
 const NEW_STAGE = 'q43-longer-quirk-runs';
 const KEEP_STAGE = 'sg-keep';
@@ -137,18 +141,18 @@ function partRows() {
   if (!best || best.id !== C.winner) f.push(`the best score is ${best && best.id}, the record names ${C.winner}`);
   const st = (t.stages || []).find((s) => s.id === NEW_STAGE);
   const shipped = st && best && best.policy && st.policies && st.policies['reset:q'] === best.policy;
-  if (!shipped) f.push(`the shipped stage ${NEW_STAGE} does not carry the winner's ${best && best.policy}`);
+  if (!shipped) f.push(`climb-1's stage ${NEW_STAGE} does not carry the winner's ${best && best.policy}`);
   // a part ships with its evidence: a provenance record at the page's tick
   const prov = st && Array.isArray(st.provenance) ? st.provenance : [];
   if (!prov.some((r) => /0\.05/.test(String(r.gate) + ' ' + String(r.note)) && r.commit && r.note)) f.push(`${NEW_STAGE} has no provenance row at diff 0.05`);
   if (!st || !st.name || !st.note) f.push(`${NEW_STAGE} has no plain name and note`);
-  row({ gate: `climb1 C1 every candidate's 0.05 rows twice equal, the winner the best ${C.scoreName}, and the shipped table carries it`, id: 'ptr', ok: !f.length,
+  row({ gate: `climb1 C1 every candidate's 0.05 rows twice equal, the winner the best ${C.scoreName}, and climb-1's table carries it`, id: 'ptr', ok: !f.length,
     notes: `${f.length ? f.join('; ') + ' · ' : ''}${seen.join(' · ')} · horizon ${C.horizon}` });
   const o = C.order || {};
   const ids = (t.stages || []).map((x) => x.id), shippedFirst = ids.indexOf(NEW_STAGE) >= 0 && ids.indexOf(NEW_STAGE) < ids.indexOf(KEEP_STAGE);
   const oeq = shippedFirst && o.losing && o.before && o.losing.length >= 2 && o.losing.every((x) => x.hashGame === o.before.hashGame && x.ticks === o.before.ticks && x.score === o.before.score);
   row({ gate: `climb1 C2 the ORDER: ${NEW_STAGE} listed AFTER ${KEEP_STAGE} (which names the same slot) is the table before climb-1, to the tick and hash, twice; listed first it is the winner`, id: 'ptr', ok: !!oeq,
-    notes: (shippedFirst ? '' : `the shipped table lists ${NEW_STAGE} AFTER ${KEEP_STAGE} (the losing order) · `) + (o.losing ? `losing ${o.losing.map((x) => `${x.ticks}/${x.hashGame}/${x.scoreText || x.score}`).join(', ')} · before ${o.before.ticks}/${o.before.hashGame}/${o.before.scoreText || o.before.score} · ${o.note || ''}` : 'no order rows in the record') });
+    notes: (shippedFirst ? '' : `climb-1's table lists ${NEW_STAGE} AFTER ${KEEP_STAGE} (the losing order) · `) + (o.losing ? `losing ${o.losing.map((x) => `${x.ticks}/${x.hashGame}/${x.scoreText || x.score}`).join(', ')} · before ${o.before.ticks}/${o.before.hashGame}/${o.before.scoreText || o.before.score} · ${o.note || ''}` : 'no order rows in the record') });
 }
 
 // ---- Part switch -----------------------------------------------------------------------------------------------------
@@ -160,7 +164,7 @@ async function partSwitch() {
   const u42 = M.U42, u43 = M.U43, leg = u42.leg, lf = R.legs[leg - 2];
   const legDir = fs.existsSync(path.join(REPO, CLIMB, 'legs', `${lf.name}.json`)) ? `${CLIMB}/legs` : `${WHOLE}/legs`;
   const log = path.join(TMP, 'switch.jsonl');
-  const r = await run('ptr', { 'from-snapshot': `${legDir}/${lf.name}.json`, profile: 'all', ticks: Math.round(R.legGs / R.diff), stall: 1e9, log, 'log-every': 600, 'wall-ms': 6 * 3600e3 });
+  const r = await run('ptr', { 'from-snapshot': `${legDir}/${lf.name}.json`, profile: 'all', ticks: Math.round(R.legGs / R.diff), stall: 1e9, log, 'log-every': 600, 'wall-ms': 6 * 3600e3, 'auto-table': path.join(REPO, TABLE) });
   const L = fs.existsSync(log) ? fs.readFileSync(log, 'utf8').split('\n').filter(Boolean).map((l) => JSON.parse(l)) : [];
   const on = L.find((x) => x.type === 'stage' && x.stage === NEW_STAGE && x.on);
   const firstQ = L.find((x) => x.type === 'action' && x.by === 'reset:q' && x.did && on && x.tick >= on.tick);
@@ -174,7 +178,7 @@ async function partSwitch() {
   // the leg ends at the record's leg end; the stage switches on the loop after Improvement Boost is bought
   const checks = { recorded: !!sw, afterU42: !!sw && sw.ticks >= u42.ticks && sw.ticks - u42.ticks <= 2, offAtU43: !!off && !!u43 && off.ticks >= u43.ticks && off.ticks - u43.ticks <= 2,
     logSaysSo: !!on && !!sw && on.tick === sw.ticks, ranLeg: !!r.ok && r.hashGame === R.legs[leg - 1].hashGame, cashesIn: !firstQ || ratioOk, notInOld: !(old.stages || []).some((x) => x.stage === NEW_STAGE) };
-  row({ gate: `S1 the new part's switch, from the state log of leg ${leg} replayed from ${legDir.split('/').slice(-2).join('/')}/${lf.name}: ${NEW_STAGE} on the loop after Improvement Boost (the record's U42) and off after More Layers (U43), the leg ends on the record's hash, and a q reset under it cashes in at the stage's ratio`, id: 'ptr',
+  row({ gate: `S1 the new part's switch, from the state log of leg ${leg} replayed from ${legDir.split('/').slice(-2).join('/')}/${lf.name} under climb-1's table: ${NEW_STAGE} on the loop after Improvement Boost (the record's U42) and off after More Layers (U43), the leg ends on the record's hash, and a q reset under it cashes in at the stage's ratio`, id: 'ptr',
     ok: Object.values(checks).every(Boolean), ticks: r.ticks, gameSeconds: r.gameSeconds, diff: R.diff, hash: r.hashGame,
     notes: `${ck(checks)} — record on ${sw ? sw.ticks : '—'} (U42 ${u42.ticks}), off ${off ? off.ticks : '—'} (U43 ${u43 ? u43.ticks : '—'}); log on ${on ? on.tick : '—'}; first reset:q under it in this leg ${firstQ ? `${firstQ.tick} (gain ÷ held ${ratio.toFixed(3)}, the stage's N ${N})` : 'none in this leg'}; leg end ${r.hashGame} vs ${R.legs[leg - 1].hashGame} ${r.error || ''}` });
 }
@@ -192,12 +196,12 @@ async function partUnchanged() {
   const old = fixture(OLD_RECORD), segs = unchangedSegments(old), SEG = a.seg === undefined ? null : Number(a.seg);
   const ids = old.marks.filter((m) => m.ticks <= byMark(old).M30.ticks).map((m) => m.id);
   const jobs = segs.map((s, k) => ({ ...s, k })).filter((s) => SEG === null || s.k === SEG);
-  const res = await Promise.all(jobs.map((s) => replay(old, { fromLeg: s.fromLeg, toLeg: s.toLeg, legDir: `${WHOLE}/legs`, only: ids, compareLegs: false }).then((x) => ({ s, x }))));
+  const res = await Promise.all(jobs.map((s) => replay(old, { fromLeg: s.fromLeg, toLeg: s.toLeg, legDir: `${WHOLE}/legs`, table: TABLE, only: ids, compareLegs: false }).then((x) => ({ s, x }))));
   for (const { s, x } of res) {
     // every leg's end before the M30 leg is whole-1's (the part cannot act before it); the M30 leg's end may differ
     const m30leg = byMark(old).M30.leg;
     const legBad = x.lines.filter((l) => l.leg < m30leg && (old.legs[l.leg - 1].hashGame !== l.hashGame || old.legs[l.leg - 1].ticks !== l.ticks));
-    row({ gate: `U1 segment ${s.k + 1}/${segs.length}: legs ${s.fromLeg + 1}–${s.toLeg} replayed from ${s.fromLeg ? `whole/legs/${old.legs[s.fromLeg - 1].name}` : 'a fresh save'} under the SHIPPED table = whole-1's record for every mark M01–M30 (ticks and hashGame) and every leg's end before the M30 leg`, id: 'ptr',
+    row({ gate: `U1 segment ${s.k + 1}/${segs.length}: legs ${s.fromLeg + 1}–${s.toLeg} replayed from ${s.fromLeg ? `whole/legs/${old.legs[s.fromLeg - 1].name}` : 'a fresh save'} under climb-1's table = whole-1's record for every mark M01–M30 (ticks and hashGame) and every leg's end before the M30 leg`, id: 'ptr',
       ok: x.r.code === 0 && x.lines.length === s.toLeg - s.fromLeg && !x.bad.length && !legBad.length, ticks: x.end && x.end.ticks, gameSeconds: x.end && x.end.gameSeconds, diff: old.diff, hash: x.end && x.end.hashGame,
       notes: `${x.exp.length} marks (${x.exp.map((m) => `${m.id} ${m.ticks}${x.got[m.id] && x.got[m.id].hashGame === m.hashGame && x.got[m.id].ticks === m.ticks ? '✓' : '✗'}`).join(' ') || 'none'}); legs differ ${legBad.map((l) => l.name).join(', ') || 'none'} ${x.r.code ? x.r.out.slice(-300) : ''}` });
   }
@@ -222,7 +226,7 @@ function partAccept() {
   }
   if (!M.QL8) f.push('QL8 is not reached by the cap');
   if (!R.wall || !R.wall.text) f.push('the record names no wall');
-  row({ gate: `A1 the climb: M01–M30 = whole-1's (tick and hash); past M30 the shipped table reaches the 8th Quirk Layer and every later mark before the cap EARLIER than the table before climb-1; the wall where it stops is named`, id: 'ptr', ok: !f.length,
+  row({ gate: `A1 the climb: M01–M30 = whole-1's (tick and hash); past M30 climb-1's table reaches the 8th Quirk Layer and every later mark before the cap EARLIER than the table before climb-1; the wall where it stops is named`, id: 'ptr', ok: !f.length,
     notes: `${f.length ? f.join('; ') + ' · ' : ''}${seen.join(' · ')} · stop ${R.stop.gameSeconds} game-s, ${R.stop.totalQuirks || ''} total quirks · wall: ${R.wall ? R.wall.text : '—'}` });
 }
 
@@ -240,8 +244,8 @@ async function partFull() {
     n++;
     const { fromLeg, toLeg } = segs[k];
     const legDir = fromLeg === first ? `${WHOLE}/legs` : `${CLIMB}/legs`;
-    const x = await replay(R, { fromLeg, toLeg, legDir, watch: WATCH });
-    row({ gate: `F1 segment ${k + 1}/${segs.length}: the climb's legs ${fromLeg + 1}–${toLeg} replayed from ${legDir.split('/').slice(-2).join('/')}/${R.legs[fromLeg - 1].name} under the shipped table = the climb record, every mark and every leg's end (ticks and hashGame)`, id: 'ptr',
+    const x = await replay(R, { fromLeg, toLeg, legDir, table: TABLE, watch: WATCH });
+    row({ gate: `F1 segment ${k + 1}/${segs.length}: the climb's legs ${fromLeg + 1}–${toLeg} replayed from ${legDir.split('/').slice(-2).join('/')}/${R.legs[fromLeg - 1].name} under climb-1's table = the climb record, every mark and every leg's end (ticks and hashGame)`, id: 'ptr',
       ok: x.ok, ticks: x.end && x.end.ticks, gameSeconds: x.end && x.end.gameSeconds, diff: R.diff, hash: x.end && x.end.hashGame,
       notes: `${x.exp.length} marks (${x.exp.map((m) => m.id).join(' ') || 'none'}); differ ${x.bad.map((m) => `${m.id} (${x.got[m.id] ? x.got[m.id].ticks + '/' + x.got[m.id].hashGame : 'not reached'} vs ${m.ticks}/${m.hashGame})`).join(', ') || 'none'}; not in the record ${x.extra.join(', ') || 'none'}; legs differ ${x.legBad.map((l) => l.name).join(', ') || 'none'} of ${x.lines.length} ${x.r.code ? x.r.out.slice(-300) : ''}` });
   }
@@ -431,6 +435,6 @@ const verdict = rows.length === expected && green === rows.length;
 console.log(`VERDICT climb part ${PART}: ${green}/${rows.length} GREEN (expected ${expected} rows)${verdict ? '' : ' — RED'}`);
 if (!a['no-write']) writeJSON(path.join(REPO, `tools/harness/results/tmp/gates-climb-part${PART}-last.json`), { commit, dirty, rows });
 if (!a['no-summary']) appendSection({ title: `climb-1 past M30 by parts, and the timeline's polish — part ${PART}`, commit, dirty, rows, slug: null,
-  reading: 'rows = the candidates\' 0.05 rows and the stage order; switch = the new part on at M30 from the state log; unchanged = M01–M30 on whole-1\'s ticks under the shipped table; accept = the climb past M30 against the table before; full = the climb chain again; timeline = the fold, a condition in words, the order; grep = no game id.' });
+  reading: 'rows = the candidates\' 0.05 rows and the stage order; switch = the new part on at M30 from the state log; unchanged = M01–M30 on whole-1\'s ticks under climb-1\'s table; accept = the climb past M30 against the table before; full = the climb chain again; timeline = the fold, a condition in words, the order; grep = no game id.' });
 fs.rmSync(TMP, { recursive: true, force: true });
 process.exit(a.assert && !verdict ? 1 : 0);

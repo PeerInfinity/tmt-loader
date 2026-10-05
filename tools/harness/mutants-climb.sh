@@ -12,7 +12,10 @@ OUT="${1:?usage: mutants-climb.sh <out-dir> [name-filter]}"
 ONLY="${2:-}"
 mkdir -p "$OUT"
 if [ -n "$(git status --porcelain --untracked-files=no)" ]; then echo "REFUSING: the tree is dirty. Commit first."; exit 1; fi
-FILES="loader/tmt-auto.js games-auto/ptr.json"
+# ⚖ climb-2: the rows read climb-1's table from its committed copy (the shipped table carries the stage switched off), so the
+# table mutants A and B mutate the copy
+COPY=tools/harness/snapshots/ptr/whole-climb1/table-climb1.json
+FILES="loader/tmt-auto.js games-auto/ptr.json $COPY"
 for f in $FILES; do cp "$f" "$OUT/$(basename "$f").orig"; done
 restore() { for f in $FILES; do cp "$OUT/$(basename "$f").orig" "$f"; done; }
 trap restore EXIT
@@ -35,8 +38,8 @@ mutant() {
 }
 rep() { printf "p='%s';s=open(p).read();o=%s;assert o in s,'mutation site gone';s=s.replace(o,%s,1);open(p,'w').write(s)" "$1" "$2" "$3"; }
 # the new stage moved after sg-keep (the losing order: sg-keep names the same slot and wins it)
-LOSING="import json;p='games-auto/ptr.json';t=json.load(open(p));st=t['stages'];s=[x for x in st if x['id']=='q43-longer-quirk-runs'][0];st.remove(s);i=[x['id'] for x in st].index('sg-keep');st.insert(i+1,s);open(p,'w').write(json.dumps(t,indent=2,ensure_ascii=False)+'\n')"
-NOPROV="import json;p='games-auto/ptr.json';t=json.load(open(p));s=[x for x in t['stages'] if x['id']=='q43-longer-quirk-runs'][0];s['provenance']=[];open(p,'w').write(json.dumps(t,indent=2,ensure_ascii=False)+'\n')"
+LOSING="import json;p='$COPY';t=json.load(open(p));st=t['stages'];s=[x for x in st if x['id']=='q43-longer-quirk-runs'][0];st.remove(s);i=[x['id'] for x in st].index('sg-keep');st.insert(i+1,s);open(p,'w').write(json.dumps(t,indent=2,ensure_ascii=False)+'\n')"
+NOPROV="import json;p='$COPY';t=json.load(open(p));s=[x for x in t['stages'] if x['id']=='q43-longer-quirk-runs'][0];s['provenance']=[];open(p,'w').write(json.dumps(t,indent=2,ensure_ascii=False)+'\n')"
 
 # A — the new stage in the losing order
 mutant A-losing-order "$LOSING" rows 'climb1 C2 the ORDER'
