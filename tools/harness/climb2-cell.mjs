@@ -38,10 +38,12 @@ const ladder = path.join(tmp, 'ladder.json');
 fs.writeFileSync(ladder, JSON.stringify({ marks: [{ id: snap.mark, name: 'the fixture', predicate: 'false' }, ...watch, { id: 'HORIZON', name: 'the horizon', predicate: 'false' }] }));
 // (the chaos probe) a READ-ONLY look at every tick: when the quirk run's clock goes back (a q reset, or a reset above it),
 // note the tick and what the run held the tick before — quirk energy, quirks — and how long the run was. It only reads.
-const PROBE = `(function () { var g = globalThis, q = player[${LAYER}];
-  if (g.__c2rt !== undefined && q.resetTime < g.__c2rt) g.__c2r.push([tmtLoader.ticks, String(g.__c2en), String(g.__c2qq), String(q.points), Math.round(g.__c2rt * 100) / 100]);
+// The run's clock is the layer's `resetTime`, or its own `time` where the game keeps one instead (measured: ptr's quirk
+// layer has no `resetTime`).
+const PROBE = `(function () { var g = globalThis, q = player[${LAYER}], t = Number(q.resetTime !== undefined ? q.resetTime : q.time);
+  if (g.__c2rt !== undefined && t < g.__c2rt) g.__c2r.push([tmtLoader.ticks, String(g.__c2en), String(g.__c2qq), String(q.points), Math.round(g.__c2rt * 100) / 100]);
   if (g.__c2r === undefined) g.__c2r = [];
-  g.__c2rt = q.resetTime; g.__c2en = q.energy; g.__c2qq = q.points; return false; })()`;
+  g.__c2rt = t; g.__c2en = q.energy; g.__c2qq = q.points; return false; })()`;
 const EVAL = `(function (q) { return { resets: globalThis.__c2r || [], total: String(q.total), quirks: String(q.points), energy: String(q.energy),
   layers: q.buyables ? String(q.buyables[Object.keys(q.buyables)[0]]) : null, upgrades: (q.upgrades || []).slice(), points: String(player.points),
   inForce: tmtLoader.stages ? tmtLoader.stages().filter(function (s) { return s.active; }).map(function (s) { return s.id; }) : null }; })(player[${LAYER}])`;
