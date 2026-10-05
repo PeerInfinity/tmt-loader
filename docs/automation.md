@@ -959,6 +959,35 @@ as data; the state log writes a `stage` record at every switch (`docs/log.md`).
 does while it is in force and why, with its measured result. They are what a player reads in the **Parts** subtab
 (docs/queues.md, "The Parts subtab"); the id stays the key and the readout's text. PTR's four carry both.
 
+### Shipped switched off — `enabled: false` (climb-2)
+
+⚖ The user (2026-10-05): *"Ship OFF, test robustness."* A stage may carry `enabled: false`, with the meaning shipped
+queues already have: **the table ships it switched off**. It is measured and kept — its `name`, `note`, `when`,
+`policies` / `gates` and provenance stay — but it is **never in force**: the loop skips it before its `when` is
+evaluated (evaluations = loops × stages that are enabled and not switched off by the player), no `stage` record is
+ever written for it, and no feature's readout names it (`explain()` rows' `stage.named` lists only stages that can be
+in force). Absent means `true`. `tmtLoader.stages()` rows grow `enabled: false` only for such a stage, and
+`T.autoStages` likewise, so every other pinned row is byte-identical. A table whose only difference is a disabled
+stage decides exactly as the table without it (measured: PTR's shipped table and the table before climb-1 run to the
+same hash for 60,000 game-seconds — `gates-climb2` REC1).
+
+**What a player sees.** The Parts subtab lists the stage with its name, note and evidence, and in place of its state the
+plain line **"measured but switched off in this game’s table — not yet confirmed to help everywhere"**. Its condition is
+shown as *it would be in force while:* and what it sets as *if the game switched it on, it would set:*. It offers no
+*switch off for me* and no *change its condition for me*.
+
+⚖ **A player cannot switch it on for themselves — decided here, and why.** (1) It is the shipped queues' meaning: a
+queue the game ships off is not armed by the player's store either (they may only copy it into their own queues). (2)
+The switch-on is a TABLE decision that waits on a measurement — the stage won on one chain and has not been confirmed
+from other start points; a per-player "on" would be a second path by which an unconfirmed part acts, and a new key in
+the `tmt-parts/1` record. (3) A player who wants the behaviour already has the plain tool for it: their own rule for
+the feature in the Advanced view. So `tmtLoader.parts.setStageOff(id, true)` and `setStageWhen(id, src)` refuse a
+disabled stage with *"this stage is switched off in this game's table — it was measured but is not yet confirmed to help
+everywhere, so it cannot be switched on here"* (clearing an old record is still allowed).
+
+PTR's `q43-longer-quirk-runs` (climb-1) ships this way: its last provenance record says why it is off. Its scoring from
+several starts is `tools/harness/recorded/climb2-robustness.json` (cloud-reports/tmt-climb-2.md).
+
 ### Switched off by you — the player's own switches on a stage (parts-1)
 
 ⚖ The user's goal (2026-10-02): every part shaping a player's game is visible, explained, and can be turned off or
@@ -1000,7 +1029,7 @@ than as a configuration.
 
 | stage | when (state) | sets | why this boundary |
 |---|---|---|---|
-| `q43-longer-quirk-runs` (climb-1) | Improvement Boost (q42) owned, More Layers (q43) not, Super Generators unlocked, outside every h challenge | `reset:q` = `gain>=4x` | More Layers costs a FIXED 1e175 quirk energy, and quirk energy only builds inside one quirk run (`(q.time × enGainMult)^(Quirk Layers − 1)` per second, zeroed by every row-3 reset) — so in this stretch a longer run reaches it sooner, while more cash-ins only raise the multiplier slowly. q43 lowers the Quirk Layer cost base to 1.75, and the 8th and 9th Quirk Layers are bought on the next loop. Measured at diff 0.05 over the whole chain (cloud-reports/tmt-climb-1.md): QL8 at **97,664.65** game-s against the table before's **99,889.6**; the neighbours are uneven (×3 99,715.2, ×3.5 100,514), so the win is real but not robust to the ratio. Every rule that cashes in MORE often loses at the page's tick, in this stretch and before q34 (where the ×2 rule's one long run is what crosses the total q34 needs). Listed FIRST: `sg-keep` names `reset:q`'s policy too, and listed after it the stage is shadowed — the table before climb-1 to the tick and hash (gates-climb C2) |
+| `q43-longer-quirk-runs` (climb-1) — **shipped switched off** (`enabled: false`, climb-2: never in force until the user switches it on on the robustness numbers) | Improvement Boost (q42) owned, More Layers (q43) not, Super Generators unlocked, outside every h challenge | `reset:q` = `gain>=4x` | More Layers costs a FIXED 1e175 quirk energy, and quirk energy only builds inside one quirk run (`(q.time × enGainMult)^(Quirk Layers − 1)` per second, zeroed by every row-3 reset) — so in this stretch a longer run reaches it sooner, while more cash-ins only raise the multiplier slowly. q43 lowers the Quirk Layer cost base to 1.75, and the 8th and 9th Quirk Layers are bought on the next loop. Measured at diff 0.05 over the whole chain (cloud-reports/tmt-climb-1.md): QL8 at **97,664.65** game-s against the table before's **99,889.6**; the neighbours are uneven (×3 99,715.2, ×3.5 100,514), so the win is real but not robust to the ratio. Every rule that cashes in MORE often loses at the page's tick, in this stretch and before q34 (where the ×2 rule's one long run is what crosses the total q34 needs). Listed FIRST: `sg-keep` names `reset:q`'s policy too, and listed after it the stage is shadowed — the table before climb-1 to the tick and hash (gates-climb C2) |
 | `sg-keep` | q33 owned, Super Generators unlocked (past M30), outside every h challenge | `reset:q` = `gain>=2x`; the resets that zero sg's BASE (`reset:e`, `reset:s`, `reset:sb`, `reset:t`, `reset:q`) act only while `player.sg.points.gt(0) \|\| player.g.points.gte(tmp.sg.nextAt)`; the resets that zero sg's own CURRENCY and not the goal's (`reset:h`, `reset:o`, `reset:ss`, `challenges:h`) only while `player.sg.points.eq(0) && player.g.points.gte(tmp.sg.nextAt)` | the `reset-requirement` REBUILD (docs/templates.md): under the table sg resets once at M30 and never again (every row-3 reset zeroes its point; Generators top out at 196–199 inside a ~33-tick q cycle). Held, a rebuild takes ~520 game-s and the q cycle's pending gain then grows faster than linearly, so the q reset cashes in by the derived default's ratio rule — `rate-peak` never sees a peak (every hold measured with it froze total quirks). From stages/M30: **5.10e25 total quirks at +30,000 game-s against the table's 1.86e23** (diff 1, twice equal), and **1.79e24 against 9.85e21 at +6,000 game-s at diff 0.05** (gates-m31 m31-A@…/m31-ctl@…). The gates are the engine's requirement, never its number; `!player.h.activeChallenge` keeps the hold off an open attempt (a hold that names `challenges:h` inside one holds its give-up: a deadlock in H31, measured). ⚠ It pauses H31 attempts for as long as it holds — H31 is SHORT by 10^1158 of points at M30 (challenge-attempt), and M33 needs the stage to end first. Listed FIRST: after `ql5-quirk-rate` it loses `reset:q`'s policy and total quirks freeze (m31-last@1) |
 | `q33-sg-unlock` | q33 owned, Super Generators not yet unlocked (M30) | the eight resets that zero Generators (`reset:e`, `reset:s`, `reset:sb`, `reset:t` — sg's row siblings — and `reset:h`, `reset:o`, `reset:q`, `reset:ss`) and `challenges:h` act only while `player.g.points.gte(tmp.sg.nextAt)` | the `reset-requirement` template (docs/templates.md): sg's requirement (200 Generators at 0 Super Generators) sits on a base those resets zero, and a never-reset layer is decided in the automation's fallback pass, after every one of them; held, the base reaches it 642 game-s after q33 and `reset:sg` makes the reset (M30 at +9,242 from stages/M28). The gate is the engine's requirement, never its number. ⚠ Past q milestone 6 it could not under the yield rule before yield-1 (`nativeYield=always`: reset:sg yielded to an auto-reset the engine skips for a locked layer, gates-m30 S3); under the default `slot` reset:sg makes the reset there too (tick 226,986 from the wall, gates-yield Y1). The stage stays: without it the fix alone reaches M30 at +26,614 instead of +9,242 (diff 1), and not in 20,000 game-s at diff 0.05 (cloud-reports/tmt-yield-1.md) |
 | ~~`ql6-h22-attempt`~~ | (shipq-1: no longer a stage) | — | the H22 attempt ships as the table's conditional QUEUE `ca-ch-h-22` since shipq-1 (docs/queues.md, "Shipped queues"): the same move, said directly — hold the resets that end it, enter, wait, finish — on the same ticks and hashes (M29 81,779, M28 85,279, M30 94,521 from all/M26; gates-shipq A1). The table before that slice is `tools/harness/snapshots/ptr/shipq/table-before-shipq.json` |
