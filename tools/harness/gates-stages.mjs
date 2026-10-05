@@ -182,7 +182,8 @@ async function partVocab() {
     const s = costOn.eval || {};
     const msOn = costOn.ticks_ms / 250, msOff = costOff.ticks_ms / 250;
     const checks = { ran: !!costOn.ok && !!costOff.ok, inertBeforeQL5: costOn.hashGame === costOff.hashGame && costOn.ticks === costOff.ticks,
-      oneEvalPerStagePerLoop: s.loops === 250 && s.evals === 250 * s.stages && s.stages === tableDoc().stages.length, offEvaluatesNothing: !!costOff.eval && costOff.eval.evals === 0 };
+      // ⚖ climb-2: a stage the table ships switched off (`enabled: false`) is never evaluated — one evaluation per ENABLED stage
+      oneEvalPerStagePerLoop: s.loops === 250 && s.evals === 250 * (s.enabled === undefined ? s.stages : s.enabled) && s.stages === tableDoc().stages.length && (s.enabled === undefined ? s.stages : s.enabled) === tableDoc().stages.filter((x) => x.enabled !== false).length, offEvaluatesNothing: !!costOff.eval && costOff.eval.evals === 0 };
     row({ gate: 'V4 the cost: ONE evaluation per stage per loop, nothing under `stages=off`, and the game identical before QL5', id: 'ptr', ok: Object.values(checks).every(Boolean),
       notes: `${ck(checks)} — ${JSON.stringify(s)}; ms/tick ${msOn.toFixed(2)} with the stages vs ${msOff.toFixed(2)} without (whole boot+run wall ÷ ticks, one sample each: a report, not a bound); ${costOn.ticks} / ${costOn.hashGame}` });
   }

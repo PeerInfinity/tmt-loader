@@ -2810,7 +2810,13 @@
       exclude: o.exclude === undefined ? '' : String(o.exclude).split(',').filter(Boolean).sort().join(','),
       include: o.include === undefined ? '' : String(o.include).split(',').filter(Boolean).sort().join(',') };
   };
-  T.stageStats = function () { return { stages: stagesNow.length, off: stagesOff, loops: stageStats.loops, evals: stageStats.evals }; };
+  T.stageStats = function () {
+    var o = { stages: stagesNow.length, off: stagesOff, loops: stageStats.loops, evals: stageStats.evals };
+    // (climb-2) a stage the table ships switched off is never evaluated: the count of those that can be, only when it differs
+    var n = stagesNow.filter(function (x) { return x.enabled; }).length;
+    if (n !== stagesNow.length) o.enabled = n;
+    return o;
+  };
 
   // ---- the tick: poll the tracker, then decide whether to escalate -------------------------------------------------
   // ⛔ ONCE PER `gameLoop`, BEFORE ANY FEATURE OF THAT LOOP DECIDES — `runLayer` calls it, so it runs ahead of the

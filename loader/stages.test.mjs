@@ -181,6 +181,7 @@ test('ENABLED FALSE: a stage shipped switched off is never evaluated and never i
   assert.equal(T(ctx).stages().find((s) => s.id === 's2').enabled, undefined, 'only a disabled stage grows the key');
   assert.ok(!T(ctx).stageHistory().some((r) => r.stage === 'off1'), 'no switch is ever recorded for it');
   assert.equal(T(ctx).stageStats().evals, 3, 'its `when` is not evaluated (one evaluation per loop: s2 alone)');
+  assert.equal(T(ctx).stageStats().enabled, 1, 'stageStats() counts the stages that can be evaluated, when one is shipped off');
   assert.equal(JSON.stringify(rowOf(ctx, 'reset:a').stage.named), JSON.stringify(['s2']), 'the readout names only the stages that can be in force');
   assert.notEqual(rowOf(ctx, 'reset:a').last.code, 'blocked:stage', 'its gate never holds the feature');
   // the player can neither switch it on (there is no "on" in the store) nor give it a condition
