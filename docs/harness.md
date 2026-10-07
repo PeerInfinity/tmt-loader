@@ -353,6 +353,56 @@ cloud-reports/tmt-whole-1.md. Gates: `gates-whole --part chain` (push: the openi
 full --seg k --segs 8` (`qrate1.yml -f part=whole`), `--part page` (the real page from four checkpoints, a reload in
 the middle of the H22 queue).
 
+### Past M30 (climb-1) — the climb record, the watched states, a chain under another table
+
+    node tools/harness/whole.mjs ptr … --watch tools/harness/whole/ptr-climb1-watch.json --auto-table <table.json>
+    node tools/harness/gates-climb.mjs --part write --chain <chain dir> --wall "<text>"
+
+- **`--watch <file>`** records states that are not ladder marks — the q34 and q41–q43 purchases, the 8th–10th Quirk
+  Layers, 1e60 total quirks — exactly like marks (the first tick each holds, a fixture in `--dir`), `watched: true` in
+  the record. They sit BEFORE the ladder's marks in each leg's ladder so a leg still stops only where the ladder's last
+  mark holds.
+- **`--auto-table <file>`** runs the chain under a whole other table (a candidate, or the table before a slice), named
+  in the record (`autoTable`). ⛔ A control that runs WITHOUT it reads `games-auto/<id>.json` at each leg's boot — an
+  edit to the shipped table during a long control run changes the control from that leg on (measured, climb-1: the
+  control's second run was restarted under `snapshots/ptr/whole-climb1/table-before-climb1.json`).
+- **The climb record** `recorded/whole-ptr-climb1.json` is whole-1's legs and marks up to its leg 35 (the new part is not
+  in force before Improvement Boost, at 90,327.85 game-s), then the chain resumed from `whole/legs/L035` under the
+  shipped table to the cap; its fixtures (the watched states, the marks past M30, every 5th leg) are under
+  `snapshots/ptr/whole-climb1/`. No selector reads that directory. `gates-climb --part full` replays its legs;
+  `--part unchanged` replays whole-1's legs up to the M30 leg under the shipped table (M01–M30 on whole-1's ticks).
+- ⛔ **A diff-1 screen pointed the wrong way, twice.** Past M30 the cash-in rules that won at diff 1 by thousands of
+  game-seconds (a stall fallback before q34: q34 at 76,234 against 89,394) LOST at 0.05 (92,254.3 against 88,001.15):
+  the total q34 needs is a different number at each tick size (its price is charged at the tick's start, one tick
+  behind). F1's rule held: only the 0.05 rows decided.
+
+### The standing record (climb-2) — the shipped table to 130,000 game-s
+
+⚖ The user (2026-10-05): *"Extend the record's cap."* whole-1's record stops at 80,000 game-s, in the middle of a
+21,000-s quirk run, which read as if the game stalls at M31. **The standing record of the whole-game run is now
+`recorded/whole-ptr-130k.json`**: the SHIPPED table (climb-1's stage shipped off) from a fresh save to 130,000 game-s at
+diff 0.05 — whole-1's legs 1–35, then the chain resumed from `whole/legs/L035` under the shipped table. Its fixtures
+(the states past M30 and the leg fixtures its rows start from) are in the NEW directory `snapshots/ptr/whole-130k/`;
+no selector reads it.
+
+- It reaches, past whole-1's cap: Booster Madness (q34) 88,001.15 · Quirkier (q41) 88,285.9 · Improvement Boost (q42)
+  90,327.85 · More Layers (q43) with the 8th and 9th Quirk Layers 99,889.6 · the 10th 109,942.45 · **M32** 114,018.5.
+- **M31 is the wall**: it needs 1e60 total quirks (q milestone 7); the record has 1.99e51 at 130,000.
+- With the stage off, the shipped table IS the table before climb-1 (`gates-climb2` R0), so this chain is climb-1's
+  control chain to the hash (REC1 checks QL8's tick and hash and the stop's).
+- `recorded/whole-ptr.json` (whole-1, cap 80,000) is kept as it is, with its gates (`gates-whole` W1/W2/WF);
+  `recorded/whole-ptr-climb1.json` is the record of climb-1's CANDIDATE (the stage on), and its gates
+  (`gates-climb`) name the table it ran under: `snapshots/ptr/whole-climb1/table-climb1.json`.
+- Gates: `gates-climb2 --part record` (its marks, states and wall), `--part replay` (the leg holding each state past M30,
+  from its own leg fixture), `--part full --seg k --segs 4` (`qrate1.yml -f part=climb2`).
+
+**Scoring a stage from several starts** (`climb2-cell.mjs`, `gates-climb2 --part robust`): one candidate table run in
+ONE process from a leg fixture to a fixed game-second, twice. Because a load is not neutral (above), cells that start
+from different leg fixtures of the SAME chain before a stage can act are different trajectories by the time it acts —
+a cheap and honest way to ask whether a win survives a perturbation. The cell also carries a read-only probe of every
+quirk reset (its tick, the quirk energy held the tick before, the run's length); the probe's `--until` expression only
+reads, and a cell's hash is the same with and without it.
+
 ## Scoring a DEFAULT: over WHOLE STRETCHES, never from the fixture the old default wrote (R2)
 
 ⛔ **A fixture bakes in the policy that produced it, and a layer UNLOCKS ON ITS FIRST RESET.** The two together make

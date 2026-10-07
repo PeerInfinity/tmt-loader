@@ -91,6 +91,11 @@
       "date": "2026-09-17",
       "subject": "feat(harness): R1′ — a sharper M13, an order= lever, and gate R1′'s chain driver"
     },
+    "ee5bcad": {
+      "commit": "ee5bcad72deba62a6ff25252aa51296e58d8105b",
+      "date": "2026-10-04",
+      "subject": "data(climb-1): q43-longer-quirk-runs at ×4 — in the real chain at 0.05 QL8 at 97,664.65 (×3 99,715.2 twice, ×3.5 100,514, the table before 99,889.6); rows pending twice"
+    },
     "f5653550f26126b926d6dffdfff0be637443d863": {
       "commit": "f5653550f26126b926d6dffdfff0be637443d863",
       "date": "2026-09-30",

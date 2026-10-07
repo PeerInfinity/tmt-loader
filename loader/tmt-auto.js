@@ -2608,6 +2608,10 @@
   // Precedence: where the player's saved choices sit — a switched-off stage is not in force (its features fall to the
   // next stage or the table), a switched-off shipped queue is skipped by name. Every read and write is wrapped.
   var PARTS_KEY = 'parts', PARTS_FORMAT = 'tmt-parts/1';
+  // ⚖ climb-2: a stage the table ships switched off (`enabled: false`) is NOT the player's to switch on — the same as a
+  // shipped queue the game ships off. It was measured to help in one run and not yet confirmed from other start points;
+  // the table's author switches it on once it is. So the store has no "on" for it, and its condition cannot be given.
+  var SHIPPED_OFF_WHY = 'this stage is switched off in this game\'s table — it was measured but is not yet confirmed to help everywhere, so it cannot be switched on here';
   var partsMem = null, partsWrites = 0, partsListeners = [];
   function partsKey() { var st = T.storage; return st && st.prefix && st.raw ? st.prefix + PARTS_KEY : null; }
   function partsBlank() { return { stagesOff: {}, queuesOff: {}, when: {} }; }
@@ -2653,6 +2657,7 @@
     stageWhen: function (id) { partsRead(); return stageWhenYours(id); },
     setStageOff: function (id, off) {
       if (!stageById(id)) return { ok: false, error: 'this game\'s automation has no stage "' + id + '"' };
+      if (off && !stageById(id).enabled) return { ok: false, error: SHIPPED_OFF_WHY };
       var p = partsRead();
       if (off) p.stagesOff[id] = true; else delete p.stagesOff[id];
       partsWrite();
@@ -2663,6 +2668,7 @@
       if (!stageById(id)) return { ok: false, error: 'this game\'s automation has no stage "' + id + '"' };
       var p = partsRead();
       if (src === null || src === undefined || String(src).trim() === '') { delete p.when[id]; partsWrite(); return { ok: true, error: null }; }
+      if (!stageById(id).enabled) return { ok: false, error: SHIPPED_OFF_WHY };
       src = String(src).trim();
       var w = checkPredicate(src);
       if (w) return { ok: false, error: w };
@@ -2693,8 +2699,9 @@
     for (var i = 0; i < stagesNow.length; i++) {
       var S = stagesNow[i], v = false;
       // (parts-1) a stage the PLAYER switched off is not in force and not evaluated; one they gave their own condition
-      // is evaluated by that condition instead of the table's
-      if (stageOffByYou(S.id)) continue;
+      // is evaluated by that condition instead of the table's. (climb-2) A stage the TABLE ships switched off
+      // (`enabled: false`) is never in force and never evaluated, whatever the player's store says.
+      if (!S.enabled || stageOffByYou(S.id)) continue;
       stageStats.evals++;
       try { v = !!T.predicate(stageWhenYours(S.id) || S.when)(); } catch (e) { v = false; err[S.id] = String((e && e.message) || e); }
       if (!v) continue;
@@ -2734,7 +2741,7 @@
     var named = [], errs = [];
     for (var i = 0; i < stagesNow.length; i++) {
       var S = stagesNow[i];
-      if (S.policies[f.id] === undefined && S.gates[f.id] === undefined) continue;
+      if (!S.enabled || (S.policies[f.id] === undefined && S.gates[f.id] === undefined)) continue;   // (climb-2) a stage shipped off names nothing
       named.push(S.id);
       if (stageErr[S.id]) errs.push({ stage: S.id, message: stageErr[S.id] });
     }
@@ -2755,7 +2762,7 @@
     if (partsMem === null) return out;
     for (var i = 0; i < stagesNow.length; i++) {
       var S = stagesNow[i];
-      if (stageOffByYou(S.id) && (S.policies[f.id] !== undefined || S.gates[f.id] !== undefined)) out.push(S.id);
+      if (S.enabled && stageOffByYou(S.id) && (S.policies[f.id] !== undefined || S.gates[f.id] !== undefined)) out.push(S.id);
     }
     return out;
   }
@@ -2783,11 +2790,14 @@
     for (var i = 0; i < stagesNow.length; i++) {
       var S = stagesNow[i], since = null;
       for (var h = stageHist.length - 1; h >= 0; h--) if (stageHist[h].stage === S.id) { since = stageHist[h]; break; }
-      out.push({ id: S.id, when: S.when, policies: Object.assign({}, S.policies), gates: Object.assign({}, S.gates), active: stageOn[S.id] !== undefined,
+      var o = { id: S.id, when: S.when, policies: Object.assign({}, S.policies), gates: Object.assign({}, S.gates), active: stageOn[S.id] !== undefined,
         error: stageErr[S.id] || null, since: since && since.on ? { tick: since.tick, gs: since.gs } : null, off: stagesOff,
         // (parts-1) what the Parts subtab shows: the stage's name and plain-words note, its evidence, and the player's own switches
         name: S.name, note: S.note, provenance: JSON.parse(JSON.stringify(S.provenance)),
-        offByYou: stageOffByYou(S.id), whenYours: stageWhenYours(S.id), whenInForce: stageWhenYours(S.id) || S.when });
+        offByYou: stageOffByYou(S.id), whenYours: stageWhenYours(S.id), whenInForce: stageWhenYours(S.id) || S.when };
+      // (climb-2) only a stage the table ships switched off grows the key, so every pinned row is byte-identical
+      if (!S.enabled) o.enabled = false;
+      out.push(o);
     }
     return out;
   };
@@ -2800,7 +2810,13 @@
       exclude: o.exclude === undefined ? '' : String(o.exclude).split(',').filter(Boolean).sort().join(','),
       include: o.include === undefined ? '' : String(o.include).split(',').filter(Boolean).sort().join(',') };
   };
-  T.stageStats = function () { return { stages: stagesNow.length, off: stagesOff, loops: stageStats.loops, evals: stageStats.evals }; };
+  T.stageStats = function () {
+    var o = { stages: stagesNow.length, off: stagesOff, loops: stageStats.loops, evals: stageStats.evals };
+    // (climb-2) a stage the table ships switched off is never evaluated: the count of those that can be, only when it differs
+    var n = stagesNow.filter(function (x) { return x.enabled; }).length;
+    if (n !== stagesNow.length) o.enabled = n;
+    return o;
+  };
 
   // ---- the tick: poll the tracker, then decide whether to escalate -------------------------------------------------
   // ⛔ ONCE PER `gameLoop`, BEFORE ANY FEATURE OF THAT LOOP DECIDES — `runLayer` calls it, so it runs ahead of the
@@ -3680,6 +3696,101 @@
     return true;
   };
 
+  // ---- (climb-1) A CONDITION IN WORDS — the Parts subtab's clause reader, moved here from `tmt-qedit.js` -------------
+  // so the run timeline (which lives here, and must not wait for the lazy editor) and the Parts subtab read a condition
+  // the same way. Split at its top-level `&&` (only where there is no top-level `||`), and each clause read in words
+  // where it is one of the engines' own questions (an upgrade owned, a milestone, a challenge open or completed, a layer
+  // unlocked, a challenge running, a currency against a reset's requirement) — by the GAME's names. A clause it cannot
+  // read is `null`: the caller shows the code (or, where a player reads it, says "a condition").
+  var CW = (function () {
+    function text(v) {
+      var s = '';
+      try { s = typeof v === 'function' ? v() : v; } catch (e) { s = ''; }
+      if (s === undefined || s === null) return '';
+      return String(s).replace(/<br\s*\/?>/gi, ' ').replace(/<[^>]*>/g, '').replace(/&nbsp;/g, ' ').replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>')
+        .replace(/\s+/g, ' ').trim().slice(0, 70);
+    }
+    function guarded(fn) { try { return withoutRaisingNaN(fn); } catch (e) { return ''; } }
+    function layerName(l) { return guarded(function () { var L = layers[l]; return (L && text(L.name)) || l; }) || l; }
+    var GROUP_WORD = { upgrades: 'upgrade', buyables: 'buyable', challenges: 'challenge', clickables: 'button' };
+    function itemName(l, group, id) {
+      var n = guarded(function () {
+        var d = layers[l] && layers[l][group] ? layers[l][group][id] : null;
+        if (!d) return '';
+        // the field the engine's own component draws as the item's name
+        return text(d.title) || text(d.name) || '';
+      });
+      return n || (GROUP_WORD[group] || group) + ' ' + id;
+    }
+    function splitTop(src, op) {
+      var out = [], depth = 0, q = null, start = 0;
+      for (var i = 0; i < src.length; i++) {
+        var c = src.charAt(i);
+        if (q) { if (c === '\\') i++; else if (c === q) q = null; continue; }
+        if (c === '"' || c === "'" || c === '`') { q = c; continue; }
+        if (c === '(' || c === '[' || c === '{') depth++;
+        else if (c === ')' || c === ']' || c === '}') depth--;
+        else if (depth === 0 && src.substr(i, op.length) === op) { out.push(src.slice(start, i)); start = i + op.length; i += op.length - 1; }
+      }
+      out.push(src.slice(start));
+      return out.map(function (x) { return x.trim(); }).filter(Boolean);
+    }
+    function balanced(x) { var d = 0, q = null; for (var i = 0; i < x.length; i++) { var c = x.charAt(i); if (q) { if (c === '\\') i++; else if (c === q) q = null; continue; } if (c === '"' || c === "'") q = c; else if (c === '(') d++; else if (c === ')') { d--; if (d < 0) return false; } } return d === 0; }
+    function unwrap(x) {
+      x = x.trim();
+      while (x.charAt(0) === '(' && x.charAt(x.length - 1) === ')' && balanced(x.slice(1, -1))) x = x.slice(1, -1).trim();
+      return x;
+    }
+    function clauses(src) {
+      var x = unwrap(String(src || ''));
+      if (!x) return [];
+      if (splitTop(x, '||').length > 1) return [x];
+      var parts = splitTop(x, '&&');
+      var out = [];
+      for (var i = 0; i < parts.length; i++) { var u = unwrap(parts[i]); var sub = splitTop(u, '||').length > 1 ? [u] : splitTop(u, '&&'); out.push.apply(out, sub.length > 1 ? clauses(u) : [u]); }
+      return out;
+    }
+    var ID = '["\']?([A-Za-z0-9_]+)["\']?';
+    var L_ = '(?:\\.([A-Za-z_][A-Za-z0-9_]*)|\\[["\']([^"\']+)["\']\\])';   // player.x  |  player["x"]
+    function lay(m, i) { return m[i] || m[i + 1]; }
+    function milestoneName(l, id) { return guarded(function () { var d = layers[l] && layers[l].milestones ? layers[l].milestones[id] : null; return d ? text(d.requirementDescription) : ''; }) || 'milestone ' + id; }
+    function resourceName(l) { return guarded(function () { return text((tmp[l] && tmp[l].resource) || (layers[l] && layers[l].resource)); }) || layerName(l) + ' points'; }
+    var CLAUSE = [
+      [new RegExp('^hasUpgrade\\(\\s*' + ID + '\\s*,\\s*' + ID + '\\s*\\)$'), function (m, neg) { return (neg ? 'you do not own ' : 'you own ') + '“' + itemName(m[1], 'upgrades', m[2]) + '” (' + layerName(m[1]) + ')'; }],
+      [new RegExp('^hasMilestone\\(\\s*' + ID + '\\s*,\\s*' + ID + '\\s*\\)$'), function (m, neg) { return (neg ? 'you do not have ' : 'you have ') + 'the ' + layerName(m[1]) + ' milestone “' + milestoneName(m[1], m[2]) + '”'; }],
+      [new RegExp('^hasChallenge\\(\\s*' + ID + '\\s*,\\s*' + ID + '\\s*\\)$'), function (m, neg) { return '“' + itemName(m[1], 'challenges', m[2]) + '” (' + layerName(m[1]) + ') is ' + (neg ? 'not ' : '') + 'completed'; }],
+      [new RegExp('^maxedChallenge\\(\\s*' + ID + '\\s*,\\s*' + ID + '\\s*\\)$'), function (m, neg) { return '“' + itemName(m[1], 'challenges', m[2]) + '” (' + layerName(m[1]) + ') is ' + (neg ? 'not yet fully' : 'fully') + ' completed'; }],
+      [new RegExp('^canCompleteChallenge\\(\\s*' + ID + '\\s*,\\s*' + ID + '\\s*\\)$'), function (m, neg) { return 'the goal of “' + itemName(m[1], 'challenges', m[2]) + '” is ' + (neg ? 'not ' : '') + 'met'; }],
+      [new RegExp('^player' + L_ + '\\.unlocked$'), function (m, neg) { return layerName(lay(m, 1)) + ' is ' + (neg ? 'not yet ' : '') + 'unlocked'; }],
+      [new RegExp('^player' + L_ + '\\.activeChallenge$'), function (m, neg) { return neg ? 'no ' + layerName(lay(m, 1)) + ' challenge is running' : 'you are inside a ' + layerName(lay(m, 1)) + ' challenge'; }],
+      [new RegExp('^String\\(player' + L_ + '\\.activeChallenge\\)\\s*(===|!==)\\s*["\']([^"\']+)["\']$'), function (m, neg) { var inside = (m[3] === '===') !== neg; return 'you are ' + (inside ? '' : 'not ') + 'inside “' + itemName(lay(m, 1), 'challenges', m[4]) + '”'; }],
+      [new RegExp('^tmp' + L_ + '\\.challenges\\[' + ID + '\\]\\.unlocked$'), function (m, neg) { return '“' + itemName(lay(m, 1), 'challenges', m[3]) + '” (' + layerName(lay(m, 1)) + ') is ' + (neg ? 'not yet ' : '') + 'open'; }],
+      [new RegExp('^tmp' + L_ + '\\.layerShown\\s*===\\s*true$'), function (m, neg) { return layerName(lay(m, 1)) + ' is ' + (neg ? 'not ' : '') + 'shown'; }],
+      [new RegExp('^player' + L_ + '\\.points\\.(gt|eq|lte)\\(0\\)$'), function (m, neg) { var some = (m[3] === 'gt') !== neg; return 'you have ' + (some ? 'some' : 'no') + ' ' + resourceName(lay(m, 1)); }],
+      [new RegExp('^player' + L_ + '\\.points\\.gte\\(tmp' + L_ + '\\.nextAt\\)$'), function (m, neg) { return 'your ' + resourceName(lay(m, 1)) + ' ' + (neg ? 'do not yet reach' : 'reach') + ' what ' + layerName(lay(m, 3)) + ' needs for its next reset'; }],
+      [new RegExp('^canReset\\(\\s*' + ID + '\\s*\\)$'), function (m, neg) { return layerName(m[1]) + ' can ' + (neg ? 'not yet ' : '') + 'reset'; }],
+      [new RegExp('^player' + L_ + '\\.buyables\\[' + ID + '\\](\\.plus\\(tmp' + L_ + '\\.[A-Za-z0-9_]+\\))?\\.(gte|gt)\\((\\d+(?:\\.\\d+)?)\\)$'), function (m, neg) {
+        var l = lay(m, 1), n = Number(m[8]) + (m[7] === 'gt' ? 1 : 0);
+        return '“' + itemName(l, 'buyables', m[3]) + '” (' + layerName(l) + ')' + (m[4] ? ', counting the free ones,' : '') + (neg ? ' is below ' : ' is at least ') + n; }],
+    ];
+    /** One clause in words, or null when it is not one of the questions this page can read. */
+    function clauseWords(c) {
+      var x = unwrap(c), neg = false;
+      var ors = splitTop(x, '||');
+      if (ors.length > 1) { var ws = ors.map(clauseWords); return ws.every(function (w) { return w; }) ? ws.join(', or ') : null; }
+      while (x.charAt(0) === '!' && x.charAt(1) !== '=') { neg = !neg; x = unwrap(x.slice(1)); }
+      for (var i = 0; i < CLAUSE.length; i++) { var m = CLAUSE[i][0].exec(x); if (m) { try { return CLAUSE[i][1](m, neg); } catch (e) { return null; } } }
+      return null;
+    }
+    /** a whole condition in words when EVERY clause of it can be read, else null */
+    function words(src) {
+      var r = clauses(src).map(clauseWords);
+      return r.length && r.every(function (x) { return x; }) ? r.join(' and ') : null;
+    }
+    return { text: text, guarded: guarded, layerName: layerName, itemName: itemName, splitTop: splitTop, unwrap: unwrap, clauses: clauses, clauseWords: clauseWords, words: words };
+  })();
+  T.conditionWords = CW;
+
   // ---- (whole-1) THE RUN TIMELINE (docs/automation.md, "The run timeline") ------------------------------------------
   // What happened in this run, in game time and in the player's words: the ladder's marks reached, the table's stages
   // switching on and off, the shipped moves (the table's queues) and the player's own queues starting and ending (and
@@ -3746,7 +3857,12 @@
   }
   /** what the speed controls report when a fast-forward ends (`at` = the game time it started from) */
   function tlFastForward(o) {
-    tlPush({ kind: 'ff', why: String(o.why), label: String(o.label || ''), gs: Number(o.gs) || 0, ticks: Number(o.ticks) || 0, mode: o.mode === 'coarse' ? 'coarse' : 'faithful', step: Number(o.step) || 0 },
+    var ev = { kind: 'ff', why: String(o.why), label: String(o.label || ''), gs: Number(o.gs) || 0, ticks: Number(o.ticks) || 0, mode: o.mode === 'coarse' ? 'coarse' : 'faithful', step: Number(o.step) || 0 };
+    // (climb-1) what it ran to, kept apart from the label: the player's line is written from these, the code stays a developer detail
+    if (o.target) ev.target = String(o.target);
+    if (o.src) ev.src = String(o.src).slice(0, 400);
+    if (o.name) ev.name = String(o.name).slice(0, 120);
+    tlPush(ev,
       typeof o.startGs === 'number' ? Math.round(o.startGs * 1000) / 1000 : undefined);
   }
   function tlTime(s) {
@@ -3755,6 +3871,26 @@
     s = Math.floor(s);
     var h = Math.floor(s / 3600), m = Math.floor(s / 60) % 60, x = s % 60;
     return h ? h + 'h ' + (m < 10 ? '0' : '') + m + 'm ' + (x < 10 ? '0' : '') + x + 's' : m ? m + 'm ' + (x < 10 ? '0' : '') + x + 's' : x + 's';
+  }
+  /** (climb-1) what a fast-forward ran to, in words: a mark by its name; a condition in words where every clause of it
+   *  is one the clause reader knows (the Parts subtab's), else "a condition" — the raw code is never a player's line
+   *  (it is under the developer details). An event recorded before climb-1 carries only its label, which is read back. */
+  function tlTarget(e) {
+    var target = e.target, src = e.src, name = e.name, lab = String(e.label || '');
+    if (!target) {
+      var mm = /^the mark \S+ \((.*)\)$/.exec(lab), mc = /^the condition ([\s\S]*)$/.exec(lab);
+      if (mm) { target = 'mark'; name = mm[1]; } else if (mc) { target = 'until'; src = mc[1]; } else target = 'gs';
+    }
+    if (target === 'mark') return name ? '“' + String(name).replace(/\*/g, '') + '”' : 'a mark';
+    if (target === 'until') { var w = src ? CW.words(src) : null; return w ? 'the point where ' + w : 'a condition'; }
+    return '';
+  }
+  /** (climb-1) the condition a fast-forward ran to, as code — for the developer details only */
+  function tlCode(e) {
+    if (e.kind !== 'ff') return '';
+    if (e.src) return e.target === 'mark' ? '' : e.src;
+    var mc = /^the condition ([\s\S]*)$/.exec(String(e.label || ''));
+    return mc ? mc[1] : '';
   }
   /** the event in the player's words — the ONLY place they are written */
   function tlText(e) {
@@ -3771,18 +3907,42 @@
     }
     if (e.kind === 'ff') {
       var how = e.mode === 'coarse' ? 'approximate ticks of ' + e.step + ' s — results can differ from normal play' : 'faithful ticks';
-      var span = tlTime(e.gs) + ' of game time';
-      if (e.why === 'reached') return 'Fast-forwarded ' + span + ' (' + how + ')' + (e.label && !/of game time$/.test(e.label) ? ' and reached ' + e.label : '');
-      if (e.why === 'cap') return 'Fast-forwarded ' + span + ' (' + how + ') and stopped at the limit before ' + e.label;
+      var span = tlTime(e.gs) + ' of game time', aim = tlTarget(e);
+      if (e.why === 'reached') return 'Fast-forwarded ' + span + ' (' + how + ')' + (aim ? ' and reached ' + aim : '');
+      if (e.why === 'cap') return 'Fast-forwarded ' + span + ' (' + how + ') and stopped at the limit before reaching ' + (aim || 'its goal');
       if (e.why === 'stopped') return 'Fast-forwarded ' + span + ' (' + how + '); you stopped it';
       return 'Fast-forwarded ' + span + ' (' + how + '); it stopped (' + e.why + ')';
     }
     if (e.kind === 'reload') return 'The page was reloaded; the automation carried on from where it was';
     return e.kind;
   }
+  /** (climb-1) newest first STRICTLY BY GAME TIME (a fast-forward is recorded when it ends, at the game time it started),
+   *  and events at the same game time keep the order they were recorded in. */
+  function tlOrdered() {
+    return tl.events.map(function (e, i) { return { e: e, i: i }; })
+      .sort(function (a, b) { return ((Number(b.e.at) || 0) - (Number(a.e.at) || 0)) || (a.i - b.i); })
+      .map(function (x) { var o = Object.assign({}, x.e); o.text = tlText(x.e); o.time = tlTime(x.e.at); var c = tlCode(x.e); if (c) o.code = c; return o; });
+  }
+  /** (climb-1) the rows the Progress subtab draws: the events, with every mark that was ALREADY PAST when the marks were
+   *  first read folded into ONE row (where the first of them is), its marks listed under it. */
+  function tlRows(ev) {
+    var late = ev.filter(function (e) { return e.kind === 'mark' && e.late; });
+    if (late.length < 2) return ev.map(function (e) { return { kind: e.kind, event: e }; });
+    var rows = [], folded = false;
+    for (var i = 0; i < ev.length; i++) {
+      var e = ev[i];
+      if (e.kind === 'mark' && e.late) {
+        if (folded) continue;
+        folded = true;
+        rows.push({ kind: 'late', text: 'Already past ' + late.length + ' marks when the marks were first read', time: e.time, at: e.at, tick: e.tick,
+          marks: late.map(function (x) { return { id: x.id, name: x.name }; }) });
+      } else rows.push({ kind: e.kind, event: e });
+    }
+    return rows;
+  }
   T.timeline = function () {
-    var ev = tl.events.slice().reverse().map(function (e) { var o = Object.assign({}, e); o.text = tlText(e); o.time = tlTime(e.at); return o; });
-    return { events: ev, total: tl.events.length + tl.dropped, dropped: tl.dropped, cap: TL_CAP, counts: Object.assign({}, tl.counts), marks: Object.assign({}, tl.marks),
+    var ev = tlOrdered();
+    return { events: ev, rows: tlRows(ev), total: tl.events.length + tl.dropped, dropped: tl.dropped, cap: TL_CAP, counts: Object.assign({}, tl.counts), marks: Object.assign({}, tl.marks),
       marksRead: tl.marksRead, kinds: TL_KINDS.slice(), stats: Object.assign({}, tlStats) };
   };
   T.timeline.note = function (kind, a, b, c) {
@@ -5779,9 +5939,14 @@
         + '<div class="tmtl-timeline" style="text-align:left;margin-bottom:10px">'
         +   '<div style="text-align:left"><b>What happened in this run</b> <span style="opacity:.75;font-size:.9em">\u2014 ' + TL_INTRO + '</span></div>'
         +   '<div v-if="p.tl.dropped" style="text-align:left;font-size:.85em;opacity:.7">showing the newest {{ p.tl.cap }} \u2014 {{ p.tl.dropped }} older event(s) are not listed</div>'
-        +   '<div v-for="(e, i) in p.tl.events" :key="e.tick + \':\' + i + \':\' + e.kind" class="tmtl-tl-row" :data-kind="e.kind" style="text-align:left;padding:1px 0;border-bottom:1px solid rgba(127,178,217,.12);overflow-wrap:anywhere">'
-        +     '<span style="opacity:.65;font-size:.85em">{{ e.time }}</span> <span>{{ e.text }}</span>'
-        +     '<span v-if="p.dev" class="tmtl-tl-dev" style="opacity:.55;font-size:.85em"> {{ e.kind }} {{ e.id || \'\' }} tick {{ e.tick }}</span>'
+        +   '<div v-for="(r, i) in p.tl.rows" :key="(r.event ? r.event.tick : r.tick) + \':\' + i + \':\' + r.kind" class="tmtl-tl-row" :data-kind="r.kind" style="text-align:left;padding:1px 0;border-bottom:1px solid rgba(127,178,217,.12);overflow-wrap:anywhere">'
+        // (climb-1) the marks already past when the marks were first read: ONE row, its marks under it
+        +     '<details v-if="r.kind === \'late\'" class="tmtl-tl-late" style="text-align:left"><summary style="cursor:pointer"><span style="opacity:.65;font-size:.85em">{{ r.time }}</span> <span>{{ r.text }}</span></summary>'
+        +       '<div v-for="m in r.marks" :key="m.id" class="tmtl-tl-late-mark" style="text-align:left;padding-left:1.2em;font-size:.9em">\u201c{{ m.name }}\u201d<span v-if="p.dev" class="tmtl-tl-dev" style="opacity:.55;font-size:.85em"> {{ m.id }}</span></div>'
+        +       '<div v-if="p.dev" class="tmtl-tl-dev" style="opacity:.55;font-size:.85em;text-align:left">mark (already past) tick {{ r.tick }}</div>'
+        +     '</details>'
+        +     '<template v-else><span style="opacity:.65;font-size:.85em">{{ r.event.time }}</span> <span>{{ r.event.text }}</span>'
+        +     '<span v-if="p.dev" class="tmtl-tl-dev" style="opacity:.55;font-size:.85em"> {{ r.event.kind }} {{ r.event.id || \'\' }} tick {{ r.event.tick }}<span v-if="r.event.code"> \u00b7 condition {{ r.event.code }}</span></span></template>'
         +   '</div>'
         +   '<div v-if="!p.tl.events.length" style="opacity:.7;text-align:left">nothing yet \u2014 a stage switching, a shipped move, a fast-forward or a mark reached will show here.</div>'
         + '</div>'
@@ -6101,6 +6266,9 @@
           // (parts-1) what a PLAYER reads in the Parts subtab: a short name and, in plain words, what the stage does and why
           name: { type: 'string', pattern: '^\\S', maxLength: 80, description: 'the stage\'s name, in the game\'s own words (the Parts subtab, the readout\'s tooltip)' },
           note: { type: 'string', pattern: '^\\S', description: 'in plain words: what the stage does while it is in force, and why' },
+          // (climb-2) the shipped queues' meaning: `enabled: false` ships the stage SWITCHED OFF — measured and kept with
+          // its provenance, never in force, shown in the Parts subtab with the plain line that says so
+          enabled: { type: 'boolean', description: 'false: the stage is shipped switched off — never in force (absent = true)' },
           when: { type: 'string', pattern: '^\\S', description: 'a JavaScript expression over the engine\'s globals (the `gates` language); a throw reads as FALSE' },
           policies: { type: 'object', additionalProperties: { type: 'string', pattern: '^\\S' } },
           gates: { type: 'object', additionalProperties: { type: 'string', pattern: '^\\S' } },
@@ -6320,7 +6488,7 @@
         if (gw) throw new Error(at + ': gate ' + sg + ' — ' + gw);
       }
       stagesNow.push({ id: s.id, when: s.when, policies: Object.assign({}, s.policies || {}), gates: Object.assign({}, s.gates || {}), provenance: [].concat(s.provenance),
-        name: typeof s.name === 'string' ? s.name : null, note: typeof s.note === 'string' ? s.note : null });
+        name: typeof s.name === 'string' ? s.name : null, note: typeof s.note === 'string' ? s.note : null, enabled: s.enabled !== false });
     });
     // ---- shipq-1: the SHIPPED QUEUES (schema above). The entry is checked here; the queue itself by the runner when it
     // loads them (it knows the step vocabulary). `--auto-opt shippedQueues=off` measures the table without them.
@@ -6342,7 +6510,7 @@
       T.autoQueues.push(JSON.parse(JSON.stringify({ id: e.id, when: e.when, rearm: e.rearm || 'once', cap: e.cap, coolOff: e.coolOff, enabled: e.enabled !== false, queue: e.queue })));
       T.autoQueueProvenance[e.id] = JSON.parse(JSON.stringify([].concat(e.provenance)));   // (parts-1) the Parts subtab's evidence
     });
-    T.autoStages = stagesNow.map(function (s) { return { id: s.id, when: s.when, policies: Object.assign({}, s.policies), gates: Object.assign({}, s.gates) }; });
+    T.autoStages = stagesNow.map(function (s) { return Object.assign({ id: s.id, when: s.when, policies: Object.assign({}, s.policies), gates: Object.assign({}, s.gates) }, s.enabled ? {} : { enabled: false }); });
     stagesOff = so === 'off';
     T.autoProvenance = {};
     T.autoProvenanceRecords = {};

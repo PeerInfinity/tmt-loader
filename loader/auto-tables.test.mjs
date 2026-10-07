@@ -113,3 +113,14 @@ test('every commit a shipped table cites is in the frozen list, and every entry 
   const r = checkProvenance(JSON.parse(fs.readFileSync(path.join(REPO, 'games-auto/ptr.json'), 'utf8')), { labels, known: (c) => Object.hasOwn(frozen, c) });
   assert.deepEqual(r.bad, []);
 });
+
+// climb-2: `enabled` on a stage is a boolean, with the shipped queues' meaning; both runners refuse anything else
+test('a stage\'s `enabled` is a boolean in the ONE schema — in the CI validator and in the loader', () => {
+  const t = clone(ptr);
+  assert.equal(t.stages.find((s) => s.id === 'q43-longer-quirk-runs').enabled, false, 'the shipped table carries climb-1\'s stage switched off');
+  assert.deepEqual(blk.schemaErrors(t, blk.TABLE_SCHEMA, 'ptr.json'), []);
+  t.stages[0].enabled = 'no';
+  assert.ok(blk.schemaErrors(t, blk.TABLE_SCHEMA, 'ptr.json').some((e) => /enabled: must be boolean/.test(e)));
+  const u = { formatVersion: 1, id: 'x', stages: [{ id: 's', when: 'true', enabled: 0, provenance: { unverified: true, note: 'n' } }] };
+  assert.match(String(loaderRefuses(u)), /enabled/);
+});

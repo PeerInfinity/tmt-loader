@@ -236,7 +236,7 @@ that skips the re-run is a red push, not a quietly larger download. Commit the r
 the same reason as at import.
 
 ⚠ **Why Pillow and not `sharp`** (measured 2026-09-22): `sharp` 0.34.5's bundled libvips carries an advisory on the
-GIF loader (GHSA-f88m-g3jw-g9cj) and the fixed 0.35.x needs Node ≥ 20, where this repo pins 18.20.6; every Pillow
+GIF loader (GHSA-f88m-g3jw-g9cj) and the fixed 0.35.x needs Node ≥ 20, where this repo pinned 18.20.6 at the time (CI moved to Node 22 on 2026-10-07; the choice was not revisited); every Pillow
 before 12.3.0 carries the 2026-07-20 advisories. The encoder refuses an older Pillow and opens files with
 `formats=['PNG','GIF','JPEG','WEBP']`, so no other decoder is reachable whatever a file's bytes claim. Both reach the
 same size on the worst file (Nitrogen.gif: `sharp` `minSize` 0.32 MB, Pillow 0.26 MB at method 6).

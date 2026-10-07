@@ -139,27 +139,9 @@
   }
 
   // ---- the GAME's own names --------------------------------------------------------------------------------------
-  function text(v) {
-    var s = '';
-    try { s = typeof v === 'function' ? v() : v; } catch (e) { s = ''; }
-    if (s === undefined || s === null) return '';
-    return String(s).replace(/<br\s*\/?>/gi, ' ').replace(/<[^>]*>/g, '').replace(/&nbsp;/g, ' ').replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>')
-      .replace(/\s+/g, ' ').trim().slice(0, 70);
-  }
-  function guarded(fn) { try { return K.withoutRaisingNaN(fn); } catch (e) { return ''; } }
-  function layerName(l) {
-    return guarded(function () { var L = layers[l]; return (L && text(L.name)) || l; }) || l;
-  }
-  var GROUP_WORD = { upgrades: 'upgrade', buyables: 'buyable', challenges: 'challenge', clickables: 'button' };
-  function itemName(l, group, id) {
-    var n = guarded(function () {
-      var d = layers[l] && layers[l][group] ? layers[l][group][id] : null;
-      if (!d) return '';
-      // the field the engine's own component draws as the item's name
-      return text(d.title) || text(d.name) || '';
-    });
-    return n || (GROUP_WORD[group] || group) + ' ' + id;
-  }
+  // (climb-1) the game's names and the clause reader live in the core now (`T.conditionWords`), shared with the run timeline
+  var CW = T.conditionWords;
+  var text = CW.text, guarded = CW.guarded, layerName = CW.layerName, itemName = CW.itemName;
   // an engine call → its words. The FUNCTIONS are the engines' public entry points (docs/log.md's hook list), not game ids.
   var CALLS = {
     buyUpgrade: { verb: 'Buy upgrade', group: 'upgrades' }, buyUpg: { verb: 'Buy upgrade', group: 'upgrades' },
@@ -499,71 +481,9 @@
   // words where it is one of the engines' own questions (an upgrade owned, a milestone, a challenge open or completed, a
   // layer unlocked, a challenge running, a currency against a reset's requirement) — by the GAME's names. A clause it
   // cannot read stays code. Each clause carries its truth NOW (✓ / ✗ / ⚠), read through the same compiled predicates.
-  function splitTop(src, op) {
-    var out = [], depth = 0, q = null, start = 0;
-    for (var i = 0; i < src.length; i++) {
-      var c = src.charAt(i);
-      if (q) { if (c === '\\') i++; else if (c === q) q = null; continue; }
-      if (c === '"' || c === "'" || c === '`') { q = c; continue; }
-      if (c === '(' || c === '[' || c === '{') depth++;
-      else if (c === ')' || c === ']' || c === '}') depth--;
-      else if (depth === 0 && src.substr(i, op.length) === op) { out.push(src.slice(start, i)); start = i + op.length; i += op.length - 1; }
-    }
-    out.push(src.slice(start));
-    return out.map(function (x) { return x.trim(); }).filter(Boolean);
-  }
-  function unwrap(x) {
-    x = x.trim();
-    while (x.charAt(0) === '(' && x.charAt(x.length - 1) === ')' && balanced(x.slice(1, -1))) x = x.slice(1, -1).trim();
-    return x;
-  }
-  function balanced(x) { var d = 0, q = null; for (var i = 0; i < x.length; i++) { var c = x.charAt(i); if (q) { if (c === '\\') i++; else if (c === q) q = null; continue; } if (c === '"' || c === "'") q = c; else if (c === '(') d++; else if (c === ')') { d--; if (d < 0) return false; } } return d === 0; }
-  function clauses(src) {
-    var x = unwrap(String(src || ''));
-    if (!x) return [];
-    if (splitTop(x, '||').length > 1) return [x];
-    var parts = splitTop(x, '&&');
-    var out = [];
-    for (var i = 0; i < parts.length; i++) { var u = unwrap(parts[i]); var sub = splitTop(u, '||').length > 1 ? [u] : splitTop(u, '&&'); out.push.apply(out, sub.length > 1 ? clauses(u) : [u]); }
-    return out;
-  }
-  var ID = '["\']?([A-Za-z0-9_]+)["\']?';
-  var L_ = '(?:\\.([A-Za-z_][A-Za-z0-9_]*)|\\[["\']([^"\']+)["\']\\])';   // player.x  |  player["x"]
-  function lay(m, i) { return m[i] || m[i + 1]; }
-  function milestoneName(l, id) { return guarded(function () { var d = layers[l] && layers[l].milestones ? layers[l].milestones[id] : null; return d ? text(d.requirementDescription) : ''; }) || 'milestone ' + id; }
-  function resourceName(l) { return guarded(function () { return text((tmp[l] && tmp[l].resource) || (layers[l] && layers[l].resource)); }) || layerName(l) + ' points'; }
-  var CLAUSE = [
-    [new RegExp('^hasUpgrade\\(\\s*' + ID + '\\s*,\\s*' + ID + '\\s*\\)$'), function (m, neg) { return (neg ? 'you do not own ' : 'you own ') + '“' + itemName(m[1], 'upgrades', m[2]) + '” (' + layerName(m[1]) + ')'; }],
-    [new RegExp('^hasMilestone\\(\\s*' + ID + '\\s*,\\s*' + ID + '\\s*\\)$'), function (m, neg) { return (neg ? 'you do not have ' : 'you have ') + 'the ' + layerName(m[1]) + ' milestone “' + milestoneName(m[1], m[2]) + '”'; }],
-    [new RegExp('^hasChallenge\\(\\s*' + ID + '\\s*,\\s*' + ID + '\\s*\\)$'), function (m, neg) { return '“' + itemName(m[1], 'challenges', m[2]) + '” (' + layerName(m[1]) + ') is ' + (neg ? 'not ' : '') + 'completed'; }],
-    [new RegExp('^maxedChallenge\\(\\s*' + ID + '\\s*,\\s*' + ID + '\\s*\\)$'), function (m, neg) { return '“' + itemName(m[1], 'challenges', m[2]) + '” (' + layerName(m[1]) + ') is ' + (neg ? 'not yet fully' : 'fully') + ' completed'; }],
-    [new RegExp('^canCompleteChallenge\\(\\s*' + ID + '\\s*,\\s*' + ID + '\\s*\\)$'), function (m, neg) { return 'the goal of “' + itemName(m[1], 'challenges', m[2]) + '” is ' + (neg ? 'not ' : '') + 'met'; }],
-    [new RegExp('^player' + L_ + '\\.unlocked$'), function (m, neg) { return layerName(lay(m, 1)) + ' is ' + (neg ? 'not yet ' : '') + 'unlocked'; }],
-    [new RegExp('^player' + L_ + '\\.activeChallenge$'), function (m, neg) { return neg ? 'no ' + layerName(lay(m, 1)) + ' challenge is running' : 'you are inside a ' + layerName(lay(m, 1)) + ' challenge'; }],
-    [new RegExp('^String\\(player' + L_ + '\\.activeChallenge\\)\\s*(===|!==)\\s*["\']([^"\']+)["\']$'), function (m, neg) { var inside = (m[3] === '===') !== neg; return 'you are ' + (inside ? '' : 'not ') + 'inside “' + itemName(lay(m, 1), 'challenges', m[4]) + '”'; }],
-    [new RegExp('^tmp' + L_ + '\\.challenges\\[' + ID + '\\]\\.unlocked$'), function (m, neg) { return '“' + itemName(lay(m, 1), 'challenges', m[3]) + '” (' + layerName(lay(m, 1)) + ') is ' + (neg ? 'not yet ' : '') + 'open'; }],
-    [new RegExp('^tmp' + L_ + '\\.layerShown\\s*===\\s*true$'), function (m, neg) { return layerName(lay(m, 1)) + ' is ' + (neg ? 'not ' : '') + 'shown'; }],
-    [new RegExp('^player' + L_ + '\\.points\\.(gt|eq|lte)\\(0\\)$'), function (m, neg) { var some = (m[3] === 'gt') !== neg; return 'you have ' + (some ? 'some' : 'no') + ' ' + resourceName(lay(m, 1)); }],
-    [new RegExp('^player' + L_ + '\\.points\\.gte\\(tmp' + L_ + '\\.nextAt\\)$'), function (m, neg) { return 'your ' + resourceName(lay(m, 1)) + ' ' + (neg ? 'do not yet reach' : 'reach') + ' what ' + layerName(lay(m, 3)) + ' needs for its next reset'; }],
-    [new RegExp('^canReset\\(\\s*' + ID + '\\s*\\)$'), function (m, neg) { return layerName(m[1]) + ' can ' + (neg ? 'not yet ' : '') + 'reset'; }],
-    [new RegExp('^player' + L_ + '\\.buyables\\[' + ID + '\\](\\.plus\\(tmp' + L_ + '\\.[A-Za-z0-9_]+\\))?\\.(gte|gt)\\((\\d+(?:\\.\\d+)?)\\)$'), function (m, neg) {
-      var l = lay(m, 1), n = Number(m[8]) + (m[7] === 'gt' ? 1 : 0);
-      return '“' + itemName(l, 'buyables', m[3]) + '” (' + layerName(l) + ')' + (m[4] ? ', counting the free ones,' : '') + (neg ? ' is below ' : ' is at least ') + n; }],
-  ];
-  /** One clause in words, or null when it is not one of the questions this page can read. */
-  function clauseWords(c) {
-    var x = unwrap(c), neg = false;
-    var ors = splitTop(x, '||');
-    if (ors.length > 1) { var ws = ors.map(clauseWords); return ws.every(function (w) { return w; }) ? ws.join(', or ') : null; }
-    while (x.charAt(0) === '!' && x.charAt(1) !== '=') { neg = !neg; x = unwrap(x.slice(1)); }
-    for (var i = 0; i < CLAUSE.length; i++) { var m = CLAUSE[i][0].exec(x); if (m) { try { return CLAUSE[i][1](m, neg); } catch (e) { return null; } } }
-    return null;
-  }
+  var splitTop = CW.splitTop, unwrap = CW.unwrap, clauses = CW.clauses, clauseWords = CW.clauseWords;
   /** (parts-1) a condition in words when every clause of it can be read, else its code */
-  function condWords(src) {
-    var r = clauses(src).map(clauseWords);
-    return r.length && r.every(function (x) { return x; }) ? r.join(' and ') : String(src);
-  }
+  function condWords(src) { return CW.words(src) || String(src); }
   function truth(src) { try { return T.predicate(src)() ? 'yes' : 'no'; } catch (e) { return 'error'; } }
   /** A condition as a list of {words, code, now}: `words` null where only the code can say it. */
   function readable(src) {
@@ -577,6 +497,8 @@
   }
   function featureWithLayer(id) { return featureTitle(id); }
   function kindOf(id) { var i = String(id).indexOf(':'); return i < 0 ? '' : String(id).slice(0, i); }
+  // (climb-2) the plain line a stage shipped switched off (`enabled: false`) carries in place of its state
+  var TABLE_OFF_WORDS = 'measured but switched off in this game’s table — not yet confirmed to help everywhere';
   /** The table's stages, for a player: name, note, condition in words, in force now, what it sets by TITLES, evidence. */
   function stagesView() {
     var st = typeof T.stages === 'function' ? T.stages() : [];
@@ -587,9 +509,10 @@
         var rw = readable(S.gates[g]), words = rw.every(function (x) { return x.words; }) ? rw.map(function (x) { return x.words; }).join(' and ') : null;
         sets.push({ id: g, title: featureWithLayer(g), what: 'acts only while ' + (words || S.gates[g]), raw: S.gates[g], code: !words });
       }
-      var state = S.off ? 'option-off' : S.offByYou ? 'yours-off' : S.error ? 'error' : S.active ? 'on' : 'waiting';
+      // (climb-2) a stage the TABLE ships switched off says so first: it is never in force, whatever else holds
+      var state = S.enabled === false ? 'table-off' : S.off ? 'option-off' : S.offByYou ? 'yours-off' : S.error ? 'error' : S.active ? 'on' : 'waiting';
       return { id: S.id, name: S.name || S.id, note: S.note || '', state: state,
-        stateWords: { 'option-off': 'not in force — this run has the stages switched off (an option)', 'yours-off': 'switched off by you — the game’s own settings apply to what it sets',
+        stateWords: { 'table-off': TABLE_OFF_WORDS, 'option-off': 'not in force — this run has the stages switched off (an option)', 'yours-off': 'switched off by you — the game’s own settings apply to what it sets',
           error: '⚠ its condition could not be read (' + S.error + '), so it is not in force', on: 'in force now', waiting: 'not in force now — waiting for its condition' }[state],
         when: S.whenInForce, whenTable: S.when, whenYours: S.whenYours, condition: readable(S.whenInForce), sets: sets, evidence: provLines(S.provenance), offByYou: S.offByYou,
         since: S.since };
@@ -863,17 +786,17 @@
       template: '<div class="tmtl-qstage tmtl-part" :data-part="\'stage:\' + s.id" :data-stage="s.id" :data-state="s.state" style="' + BLOCK + ';border-left-color:#5f8f6a">'
         + '<div style="' + ROW + '">'
         +   '<b class="tmtl-qstage-name" style="min-width:0;overflow-wrap:anywhere;flex:1 1 10em;text-align:left">{{ s.name }}</b>'
-        +   '<button type="button" class="tmtl-qstage-onoff" :data-off="s.offByYou ? 1 : 0" style="' + BTN + '" @click="toggle" @keydown.stop>{{ s.offByYou ? \'switch back on\' : \'switch off for me\' }}</button>'
+        +   '<button v-if="s.state !== \'table-off\'" type="button" class="tmtl-qstage-onoff" :data-off="s.offByYou ? 1 : 0" style="' + BTN + '" @click="toggle" @keydown.stop>{{ s.offByYou ? \'switch back on\' : \'switch off for me\' }}</button>'
         + '</div>'
         + '<div class="tmtl-qstage-state" :style="s.state === \'on\' ? \'color:#4f9a6a;text-align:left\' : s.state === \'error\' ? \'' + ERR + '\' : s.state === \'yours-off\' ? \'color:#c08a3e;text-align:left\' : \'' + DIM + '\'"><b>{{ s.stateWords }}</b></div>'
         + '<div v-if="s.note" class="tmtl-qstage-note" style="text-align:left;min-width:0;overflow-wrap:anywhere">{{ s.note }}</div>'
-        + '<div style="' + DIM + ';margin-top:3px">{{ s.whenYours ? \'in force while (your own condition):\' : \'in force while:\' }}</div>'
+        + '<div style="' + DIM + ';margin-top:3px">{{ s.state === \'table-off\' ? \'it would be in force while:\' : s.whenYours ? \'in force while (your own condition):\' : \'in force while:\' }}</div>'
         + '<tmtl-qcond :data="{ c: s.condition, dev: data.dev }"></tmtl-qcond>'
-        + '<div style="' + DIM + ';margin-top:3px">while it is in force, it sets:</div>'
+        + '<div style="' + DIM + ';margin-top:3px">{{ s.state === \'table-off\' ? \'if the game switched it on, it would set:\' : \'while it is in force, it sets:\' }}</div>'
         + '<div v-for="x in s.sets" :key="x.id + x.what" class="tmtl-qstage-sets" :data-feature="x.id" style="' + SUB + ';overflow-wrap:anywhere">• <b>{{ x.title }}</b> {{ x.what }}<span v-if="data.dev" style="opacity:.6;font-size:.85em"> ({{ x.id }}: {{ x.raw }})</span></div>'
         + '<div style="' + ROW + ';margin-top:3px">'
         +   '<button type="button" class="tmtl-qstage-evidence" style="' + BTN + '" @click="showEv = !showEv" @keydown.stop>{{ showEv ? \'hide the evidence\' : \'why: the measurements behind it\' }}</button>'
-        +   '<button type="button" class="tmtl-qstage-editwhen" style="' + BTN + '" @click="editWhen = !editWhen" @keydown.stop>{{ editWhen ? \'done\' : \'change its condition for me\' }}</button>'
+        +   '<button v-if="s.state !== \'table-off\'" type="button" class="tmtl-qstage-editwhen" style="' + BTN + '" @click="editWhen = !editWhen" @keydown.stop>{{ editWhen ? \'done\' : \'change its condition for me\' }}</button>'
         +   '<button v-if="s.whenYours" type="button" class="tmtl-qstage-gamewhen" style="' + BTN + '" @click="gameWhen" @keydown.stop>use the game’s condition</button>'
         + '</div>'
         + '<div v-if="showEv" class="tmtl-qstage-ev" style="' + SUB + '"><div v-for="(e, k) in s.evidence" :key="k" style="' + SUB + ';overflow-wrap:anywhere;border-bottom:1px solid rgba(127,178,217,.15)">{{ e.note }} <span style="opacity:.6;font-size:.85em">({{ e.where }})</span></div></div>'

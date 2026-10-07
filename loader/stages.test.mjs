@@ -166,3 +166,33 @@ test('LOAD REFUSALS — each by name, the load fails', () => {
   bad([{ id: 'x', when: 'flag', policies: { 'reset:a': 'always' } }], /missing "provenance"/);
   bad([stage({ id: 'x', when: 'flag', policies: { 'reset:a': 'always' } })], /option stages must be/, { stages: 'maybe' });
 });
+
+// ⚖ climb-2 (the user, 2026-10-05: "ship OFF, test robustness") — a stage the TABLE ships switched off.
+test('ENABLED FALSE: a stage shipped switched off is never evaluated and never in force; the next stage or the table decides; nothing names it', () => {
+  const table = { policies: { 'reset:a': 'always' }, provenance: { 'reset:a': PROV },
+    stages: [stage({ id: 'off1', enabled: false, when: 'flag', policies: { 'reset:a': 'gain>=4' }, gates: { 'reset:a': 'flag2' } }), stage({ id: 's2', when: 'flag', policies: { 'reset:a': 'gain>=7' } })] };
+  const ctx = boot(table);
+  ctx.flag = true; tick(ctx, 3);
+  // MUTANT "a disabled stage still in force": these red
+  assert.equal(pol(ctx), 'gain>=7', 'the next stage takes the feature, as if the disabled one were not listed');
+  const S = T(ctx).stages().find((s) => s.id === 'off1');
+  assert.equal(S.active, false);
+  assert.equal(S.enabled, false, 'T.stages() says the table ships it off');
+  assert.equal(T(ctx).stages().find((s) => s.id === 's2').enabled, undefined, 'only a disabled stage grows the key');
+  assert.ok(!T(ctx).stageHistory().some((r) => r.stage === 'off1'), 'no switch is ever recorded for it');
+  assert.equal(T(ctx).stageStats().evals, 3, 'its `when` is not evaluated (one evaluation per loop: s2 alone)');
+  assert.equal(T(ctx).stageStats().enabled, 1, 'stageStats() counts the stages that can be evaluated, when one is shipped off');
+  assert.equal(JSON.stringify(rowOf(ctx, 'reset:a').stage.named), JSON.stringify(['s2']), 'the readout names only the stages that can be in force');
+  assert.notEqual(rowOf(ctx, 'reset:a').last.code, 'blocked:stage', 'its gate never holds the feature');
+  // the player can neither switch it on (there is no "on" in the store) nor give it a condition
+  assert.equal(T(ctx).parts.setStageOff('off1', true).ok, false);
+  assert.match(T(ctx).parts.setStageWhen('off1', 'flag').error, /switched off in this game's table/);
+  ctx.flag = false; tick(ctx, 1);
+  assert.equal(pol(ctx), 'always');
+  // a table whose only stage is shipped off decides exactly as a table without it
+  const bare = boot({ policies: { 'reset:a': 'always' }, provenance: { 'reset:a': PROV } });
+  const off = boot({ policies: { 'reset:a': 'always' }, provenance: { 'reset:a': PROV }, stages: [stage({ id: 'off1', enabled: false, when: 'true', policies: { 'reset:a': 'gain>=4' } })] });
+  tick(bare, 5); tick(off, 5);
+  assert.equal(pol(off), pol(bare));
+  assert.equal(JSON.stringify(off.player.a), JSON.stringify(bare.player.a));
+});

@@ -183,6 +183,38 @@
   },
   "stages": [
     {
+      "id": "q43-longer-quirk-runs",
+      "name": "Longer quirk runs for More Layers",
+      "note": "From Improvement Boost until you own More Layers, the quirk reset waits until it would give you four times your quirks instead of twice. More Layers costs a fixed amount of quirk energy, and quirk energy only builds up inside one quirk run, so longer runs reach it sooner. Measured: More Layers and the 8th and 9th Quirk Layers at 97,665 game-seconds instead of 99,890, and the 10th at 108,120 instead of 109,942.",
+      "enabled": false,
+      "when": "hasUpgrade('q',42) && !hasUpgrade('q',43) && player.sg.unlocked && !player.h.activeChallenge",
+      "policies": {
+        "reset:q": "gain>=4x"
+      },
+      "provenance": [
+        {
+          "gate": "climb1 C1",
+          "commit": "ee5bcad",
+          "note": "tmt-climb-1, the cell q43-x4@0.05 (cloud-reports/tmt-climb-1.md; recorded/climb1-candidates.json; measured in the cloud session, twice equal): the whole chain at diff 0.05 resumed from whole/legs/L035 under the shipped table — q43 + QL8 + QL9 at 97,664.65 game-s (tick 1,953,293, 41a311e65aa5cb55), QL10 at 108,119.6; the table before climb-1 (snapshots/ptr/whole-climb1/table-before-climb1.json) from the same leg: 99,889.6 (1,997,792, 36e9c8b0cd2c18e1), QL10 109,942.45. Until Improvement Boost (90,327.85) both are the same chain, to the hash."
+        },
+        {
+          "gate": "climb1 C1",
+          "commit": "ee5bcad",
+          "note": "tmt-climb-1, the ratio cells @0.05: the ratio in the real chain — ×3 99,715.2 (twice), ×3.5 100,514 (once), ×4 97,664.65 (twice); from the control's 92,000-s leg ×2.5 101,038.95, ×3 98,137.3, ×3.5 98,243.45, ×4 98,384.6, ×6 99,001.45, ×10 100,323.2. Uneven between neighbours: a real win, not a robust one. Cashing in MORE often (×1, ×0.5, ×0.2, always) never reaches q43 by 102,000."
+        },
+        {
+          "gate": "climb1 C2",
+          "commit": "ee5bcad",
+          "note": "tmt-climb-1: listed AFTER sg-keep (which names reset:q's policy too) the stage is shadowed — legs 46–48 equal the table before to the tick and hash (3ae9473d06b45b15 at 1,920,000), twice; so it is listed first."
+        },
+        {
+          "gate": "climb1 C1",
+          "commit": "ee5bcad",
+          "note": "Why it is switched off (⚖ the user, 2026-10-05: ship it off, test robustness): its win was measured on ONE chain, and the neighbouring ratios did not fall in order there (×3 99,715.2, ×3.5 100,514, ×4 97,664.65) nor in the phase sweep (×3 98,137.3, ×3.5 98,243.45, ×4 98,384.6). It stays off until it is scored from several start points (tmt-climb-2, recorded/climb2-robustness.json) and the user switches it on."
+        }
+      ]
+    },
+    {
       "id": "sg-keep",
       "name": "Let Super Generators grow",
       "note": "Once you own Generated Progression and super generators are unlocked (and no hindrance is running), the resets that would wipe your generators wait until the next super generator is in reach, and the quirk reset waits until it at least doubles your quirks. Without it, super generators reset once and then never again. Measured: 5.1e25 total quirks after 30,000 game-seconds, against 1.9e23 without it.",

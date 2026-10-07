@@ -293,6 +293,10 @@
             "pattern": "^\\S",
             "description": "in plain words: what the stage does while it is in force, and why"
           },
+          "enabled": {
+            "type": "boolean",
+            "description": "false: the stage is shipped switched off — never in force (absent = true)"
+          },
           "when": {
             "type": "string",
             "pattern": "^\\S",

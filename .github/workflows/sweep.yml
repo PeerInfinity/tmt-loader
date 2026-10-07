@@ -39,7 +39,7 @@ concurrency:
 
 env:
   # Local and CI must agree, because the merge's verdicts are compared against a local full sweep's.
-  NODE_VERSION: '18.20.6'
+  NODE_VERSION: '22.23.3'
   SHARDS: '10'
 
 jobs:
@@ -933,6 +933,115 @@ jobs:
             echo ''
             echo '```'
             cat whole.txt 2>/dev/null | grep -aE '^(GREEN|RED|VERDICT)' | cut -c1-400 || echo 'no output'
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload the rows
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: whole
+          path: tools/harness/results/tmp/gates-whole-part*-last.json
+          if-no-files-found: warn
+          retention-days: 14
+
+  # ---------------------------------------------------------------------------------------------------------------
+  # p1a — THE PLANNER'S KNOWLEDGE WALK AND GOAL SOURCES (`gates-p1a.mjs --part 2` / `--part 3`, docs/planner.md).
+  # Until qrate1 this ran in NO CI job, and its goldens went stale unseen (design notes §16.1: nine reds, all expected
+  # drift). ⚖ Ruling (A), user 2026-09-30: the rows NAME the configuration they measure (Something's four under
+  # SOMETHING_OLD_TABLE, the Time-Energy row under PIN_A2); only ptr's four goals() goldens were re-recorded.
+  # ⛔ `--assert` holds each part to its exact row count (10 / 9), all green.
+  # ---------------------------------------------------------------------------------------------------------------
+  # climb-2 — climb-1's stage SHIPPED OFF (`enabled: false`), the standing record to 130,000 game-s, and the stage scored
+  # from several starts (`gates-climb2.mjs`). The bounded parts on every push: the tables, the state log of the leg that
+  # buys Improvement Boost (OFF1), the Parts subtab (OFF2), the record and its states replayed from its own legs (REC1,
+  # REC2 — five legs side by side), the robustness rows from the record (RB1–RB3), the grep. The record's whole chain
+  # and one robustness cell run again are `qrate1.yml -f part=climb2`.
+  climb2:
+    name: climb2 — the stage shipped off, the standing record to 130,000, the robustness rows, the grep
+    needs: fast
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+          fetch-depth: 1
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - run: npm ci
+
+      - name: Cache the Playwright browser
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+
+      - run: npx playwright install --with-deps chromium
+
+      - name: The battery — table, record, robust, grep, off, page, replay
+        shell: bash
+        run: |
+          set -o pipefail
+          node tools/harness/gates-climb2.mjs --part all --no-summary --assert | tee climb2.txt
+
+      - name: Summary
+        if: always()
+        shell: bash
+        run: |
+          {
+            echo '## climb2 — the stage shipped off, the standing record, the robustness rows'
+            echo ''
+            echo '```'
+            cat climb2.txt 2>/dev/null | grep -aE '^(GREEN|RED|VERDICT)' | cut -c1-400 || echo 'no output'
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  climb:
+    name: climb — past M30 by parts (the rows, the switch, the acceptance), the timeline's polish, the grep
+    needs: fast
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+          fetch-depth: 1
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - run: npm ci
+
+      - name: Cache the Playwright browser
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+
+      - run: npx playwright install --with-deps chromium
+
+      - name: The battery — rows, switch, accept, timeline, grep
+        shell: bash
+        run: |
+          set -o pipefail
+          node tools/harness/gates-climb.mjs --part all --no-summary --assert | tee climb.txt
+
+      - name: Summary
+        if: always()
+        shell: bash
+        run: |
+          {
+            echo '## climb — past M30 by parts, the timeline polish'
+            echo ''
+            echo '```'
+            cat climb.txt 2>/dev/null | grep -aE '^(GREEN|RED|VERDICT)' | cut -c1-400 || echo 'no output'
             echo '```'
           } >> "$GITHUB_STEP_SUMMARY"
 
