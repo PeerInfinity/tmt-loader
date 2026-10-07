@@ -402,9 +402,14 @@ async function partCell() {
   const x = await child([path.join(REPO, 'tools/harness/climb2-cell.mjs'), 'ptr', '--layer', 'q', '--watch', path.join(REPO, WATCH), '--table', path.join(REPO, c.table), '--from', path.join(REPO, st.fixture), '--horizon', String(Rb.horizon), '--out', out]);
   let got = null; try { got = JSON.parse(fs.readFileSync(out, 'utf8')); } catch { /* */ }
   const e = c.runs[0];
-  const ok = !!got && got.ok && got.stop.ticks === e.ticks && got.stop.hashGame === e.hashGame && JSON.stringify(got.marks) === JSON.stringify(e.marks) && got.stop.total === e.total;
+  // The record's cells list only the watched states reached AFTER the start: a state already held at the start fixture
+  // (q34/q41 at the 90,000 leg) reads as reached on the first tick in a replay. Those are dropped here, by that rule only.
+  const firstTick = Math.round(Number(st.gameSeconds) / Number(Rb.diff));   // the start fixture's own tick
+  const held0 = (m) => m.ticks === firstTick + 1;
+  const gotMarks = got ? got.marks.filter((m) => !held0(m)) : [];
+  const ok = !!got && got.ok && got.stop.ticks === e.ticks && got.stop.hashGame === e.hashGame && JSON.stringify(gotMarks) === JSON.stringify(e.marks) && got.stop.total === e.total;
   row({ gate: `RB4 the robustness cell ${s}×${r} run again from ${st.fixture.split('/').slice(-2).join('/')} = the record (the stop, every watched state, the total quirks)`, id: 'ptr', ok, ticks: got && got.stop.ticks, gameSeconds: got && got.stop.gameSeconds, diff: Rb.diff, hash: got && got.stop.hashGame,
-    notes: got ? `QL8 ${ql8Of(got)} (record ${ql8Of(e)}); stop ${got.stop.ticks}/${got.stop.hashGame} (record ${e.ticks}/${e.hashGame}); total ${got.stop.total} (record ${e.total}); marks ${JSON.stringify(got.marks) === JSON.stringify(e.marks) ? 'equal' : 'DIFFER — got ' + JSON.stringify(got.marks) + ' record ' + JSON.stringify(e.marks)}` : x.out.slice(-400) });
+    notes: got ? `QL8 ${ql8Of(got)} (record ${ql8Of(e)}); stop ${got.stop.ticks}/${got.stop.hashGame} (record ${e.ticks}/${e.hashGame}); total ${got.stop.total} (record ${e.total}); marks ${JSON.stringify(gotMarks) === JSON.stringify(e.marks) ? `equal (${got.marks.length - gotMarks.length} already held at the start)` : 'DIFFER — got ' + JSON.stringify(gotMarks) + ' record ' + JSON.stringify(e.marks)}` : x.out.slice(-400) });
 }
 
 // ---- Part grep -------------------------------------------------------------------------------------------------------
