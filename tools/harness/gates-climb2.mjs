@@ -404,7 +404,7 @@ async function partCell() {
   const e = c.runs[0];
   const ok = !!got && got.ok && got.stop.ticks === e.ticks && got.stop.hashGame === e.hashGame && JSON.stringify(got.marks) === JSON.stringify(e.marks) && got.stop.total === e.total;
   row({ gate: `RB4 the robustness cell ${s}×${r} run again from ${st.fixture.split('/').slice(-2).join('/')} = the record (the stop, every watched state, the total quirks)`, id: 'ptr', ok, ticks: got && got.stop.ticks, gameSeconds: got && got.stop.gameSeconds, diff: Rb.diff, hash: got && got.stop.hashGame,
-    notes: got ? `QL8 ${ql8Of(got)} (record ${ql8Of(e)}); stop ${got.stop.hashGame} (record ${e.hashGame}); total ${got.stop.total}` : x.out.slice(-400) });
+    notes: got ? `QL8 ${ql8Of(got)} (record ${ql8Of(e)}); stop ${got.stop.ticks}/${got.stop.hashGame} (record ${e.ticks}/${e.hashGame}); total ${got.stop.total} (record ${e.total}); marks ${JSON.stringify(got.marks) === JSON.stringify(e.marks) ? 'equal' : 'DIFFER — got ' + JSON.stringify(got.marks) + ' record ' + JSON.stringify(e.marks)}` : x.out.slice(-400) });
 }
 
 // ---- Part grep -------------------------------------------------------------------------------------------------------
