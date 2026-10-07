@@ -44,7 +44,7 @@ concurrency:
 
 env:
   # Local and CI must agree, because the merge's verdicts are compared against a local full sweep's.
-  NODE_VERSION: '18.20.6'
+  NODE_VERSION: '22.23.3'
   SHARDS: '10'
 
 jobs:
